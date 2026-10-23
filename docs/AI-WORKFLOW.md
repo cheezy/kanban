@@ -201,7 +201,7 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 A claim (step 3 above) succeeds only for a task that is available to you. The main conditions — each one is checked by the server — are:
 
-- **It is in the Ready column.** Tasks created through the API land in Backlog, which is never claimable — a human must promote the task to Ready in the board UI.
+- **It is in the Ready column.** A task created through the API without a `column_id` lands in the board's Backlog column (in Ready when the board has no Backlog, or else in its first column). Backlog is never claimable — a human must promote the task to Ready in the board UI. A task created with the `column_id` of the Ready column starts in Ready and needs no promotion.
 - **It is a `work` or `defect` task.** Goals are never claimed; their child tasks are. A task marked as a human task, or an archived task, is never offered to an agent either.
 - **It is not already claimed.** Its status is `open`, or an earlier claim on it has expired (claims expire after 60 minutes). An expired claim is not released on its own: the claimed task stays in Doing, still assigned, and its user gets a notification (on a paid board, or anywhere while paid plans are not enforced). It can be claimed again only once it is back in Ready, either because its agent unclaimed it (see [UNCLAIM-TASKS.md](UNCLAIM-TASKS.md)) or because a person moved it there.
 - **Every task in its `dependencies` is completed.**

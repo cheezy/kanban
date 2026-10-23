@@ -27,7 +27,7 @@ Authorization: Bearer <your_api_token>
 | `task.type` | string | **Strongly Recommended** | Type: `work` (new features), `defect` (bug fixes) or `goal` (a goal with nested `tasks`). Exact lowercase values only; omitted defaults to `work`, and any other value returns 422 (see [Task Type Values](#task-type-values)). Exception: when `task.tasks` is non-empty the request always creates a goal and this top-level value is ignored; each child's `type` is still validated and must be `work` or `defect`, because a goal cannot contain another goal |
 | `task.priority` | string | No | Priority: `low`, `medium`, `high`, `critical` (default: `medium`) |
 | `task.complexity` | string | **Strongly Recommended** | Complexity: `small`, `medium`, `large` (default: `small`) |
-| `task.needs_review` | boolean | No | Whether task requires human review (default: `true`) |
+| `task.needs_review` | boolean | No | Whether task requires human review (default: `false`) |
 | `task.labels` | array | No | Label **names** on this board to attach, e.g. `["Bug", "backend"]`, matched case-insensitively. Labels must already exist on the board; an unknown name returns 422 and nothing is created (see [Labels](#labels)). Each child under `task.tasks` may carry its own `labels` |
 
 #### Task Scheduling & Dependencies
@@ -69,7 +69,7 @@ in the board UI.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.acceptance_criteria` | string | **Strongly Recommended** | Specific, testable conditions for "done" (newline-separated) |
-| `task.verification_steps` | array | **Strongly Recommended** | Array of step objects with `command` and optional `description` (see format below) |
+| `task.verification_steps` | array | **Strongly Recommended** | Array of step objects with `step_type` (`command` or `manual`), `step_text` and `position`, plus an optional `expected_result` (see [Verification Steps Format](#verification-steps-format)) |
 | `task.patterns_to_follow` | string | No | Specific coding patterns to replicate (newline-separated) |
 | `task.database_changes` | string | No | Database schema changes required (migrations, tables, columns) |
 | `task.validation_rules` | string | No | Input validation requirements (constraints, formats, rules) |
@@ -100,7 +100,7 @@ in the board UI.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
-| `task.column_id` | integer | No | Column ID where task should be created (default: Ready). Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Column not found` (`Task not found` before 2026-10-21), and so does a whole number outside the signed 64-bit range. |
+| `task.column_id` | integer | No | Column ID where task should be created. Omitted, the task goes to the board's column named Backlog; a board with no Backlog uses its Ready column, and a board with neither uses its first column. Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Column not found` (`Task not found` before 2026-10-21), and so does a whole number outside the signed 64-bit range. |
 | `task.tasks` | array | No | Array of child task objects (for goals only). Each child's `type` must be `work` or `defect`; a child of type `goal` returns 422, and so does a child with a non-empty `tasks` list of its own (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
 | `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
 
@@ -714,9 +714,11 @@ board. The two cases are deliberately indistinguishable, and nothing is created:
 
 ```json
 {
-  "error": "Task not found"
+  "error": "Column not found"
 }
 ```
+
+Before 2026-10-21 this body read `Task not found`.
 
 A `task.column_id` that is a whole number outside the signed 64-bit range (below
 `-9223372036854775808` or above `9223372036854775807`) gets this same 404, whether
@@ -854,7 +856,7 @@ returns the same 422.
 
 ### Task Creation
 
-- Tasks are created in the Backlog or Ready column by default
+- A task sent without `task.column_id` is created in the board's Backlog column, or in Ready when the board has no Backlog, or else in the board's first column
 - The `created_by_id` is automatically set to your user ID
 - If your API token has an `agent_model`, it's recorded as `created_by_agent`
 - Task identifiers are automatically generated (e.g., W22, G10)
@@ -963,7 +965,7 @@ Use existing task identifiers directly:
 ### Capabilities
 
 - Required capabilities filter which agents can claim the task
-- Available capabilities: `code_generation`, `testing`, `documentation`, `review`, `deployment`
+- Valid capabilities are the 16 values in [Standard Capabilities](../AGENT-CAPABILITIES.md#standard-capabilities), for example `code_generation`, `code_review`, `devops`, `documentation` and `testing`. Any other value, such as `review` or `deployment`, is rejected with a 422 and nothing is created
 - If not specified, any agent can claim the task
 - Agents specify their capabilities in their API token configuration
 

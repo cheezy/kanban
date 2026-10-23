@@ -276,11 +276,29 @@ list naming them, beside `success`, `goals` and `total`. See
 
 ### Forbidden (403)
 
-Column doesn't belong to the board:
+The token's user does not have owner or modify access to the board. This is
+checked before any goal is created:
 
 ```json
 {
-  "error": "Column does not belong to this board"
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+A batch never gets a 403 for a column, because it ignores every `column_id` it
+is sent (see [Default Values](#default-values)).
+
+### Not Found (404)
+
+The board's default column could not be found. Every goal goes to the board's
+default column, which the server picks itself, so this is a defensive check
+rather than a response a request can cause. Nothing is created:
+
+```json
+{
+  "error": "Column not found"
 }
 ```
 
@@ -472,7 +490,7 @@ its compact goal and child shapes; read a task's labels with
 
 ### Default Values
 
-- All goals are created in the default column (typically "Backlog" or "Ready")
+- All goals are created in the default column: the board's Backlog column, or Ready when the board has no Backlog, or else the board's first column
 - **Note:** Any `column_id` specified in goal objects is ignored - all goals use the default column
 - A `column_id` on a child task is ignored too: every child is created in its
   goal's column, on the token's board
@@ -610,7 +628,7 @@ For best performance:
 - The batch operation is **not atomic** - partial success is possible
 - Task identifiers (W1, W2, G1, etc.) are assigned sequentially during creation
 - The `created_by_agent` field is automatically set from your API token
-- Dependencies are validated after all goals are created
+- Dependencies are validated goal by goal, inside each goal's own transaction, as that goal and its children are created. A goal whose dependencies fail validation is not created, the batch stops there, and the goals created before it remain
 - Circular dependencies are prevented by the system
 - Each child task is linked to the goal it is nested under: the server sets the
   child's `parent_id` to that goal's id. The batch endpoint always creates new

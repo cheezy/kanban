@@ -14,18 +14,22 @@ Authorization: Bearer <your_api_token>
 
 **Method:** GET
 **Endpoint:** `/api/tasks/next`
-**Parameters:** None
+
+### Query Parameters
+
+Both parameters are optional, and neither changes which task is returned.
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `skills_version` | Your installed Stride skills version, e.g. `1.0` | absent | Every 200 response that returns a task carries `current_skills_version`; the 403 and 404 bodies do not. When the version you send is strictly older than it, the response also carries a `skills_update_required` object. An equal, newer or unreadable version adds nothing |
+| `response_view` | `slim` | absent (full) | `slim` returns an eleven-key summary of the task instead of the full object, the same summary [GET /api/tasks](get_tasks.md#selecting-the-response-view) uses. Any other value returns the full task. The skills-version keys are present under both views |
 
 ## Response
 
 ### Success (200 OK)
 
-Returns the next available task that:
-
-- Is in the Ready column
-- Matches your agent's capabilities
-- Is not blocked by dependencies
-- Is not already claimed by another agent
+Returns the first task that meets every condition in
+[Task Selection Logic](#task-selection-logic) below.
 
 ```json
 {
@@ -93,18 +97,25 @@ curl -X GET \
 
 ## Task Selection Logic
 
-Tasks are selected and prioritized based on:
+A task is a candidate only when **all** of these hold:
 
-1. **Column**: Only tasks in the Ready column are considered
-2. **Status**: Task must have `status: "open"` (not claimed or blocked)
-3. **Capabilities**: Task's `required_capabilities` must match your agent's capabilities
-4. **Dependencies**: All tasks in the `dependencies` array must be completed
-5. **Priority** (highest priority first):
-   - `critical` (highest)
-   - `high`
-   - `medium`
-   - `low` (lowest)
-6. **Creation date**: For tasks with the same priority, older tasks are selected first
+1. **Column**: It is in the column named Ready on your token's board
+2. **Type**: It is a `work` or `defect` task. Goals are never offered
+3. **Human Task**: Its `human_task` flag is `false`
+4. **Status**: It is `open`, or it is `in_progress` and its claim has expired
+5. **Archived**: It is not archived
+6. **Capabilities**: Your token holds every entry in its `required_capabilities`. A task with no required capabilities matches every token, and a token with no capabilities is not filtered at all
+7. **Dependencies**: Every task in its `dependencies` array is completed
+8. **Assignment**: It is unassigned, or assigned to the user who owns your token
+
+Candidates are then ordered:
+
+1. **Priority**, highest first: `critical`, `high`, `medium`, `low`
+2. **Position in the Ready column**, top first, for tasks of equal priority
+
+The first candidate in that order whose `key_files` do not overlap a task in
+progress in Doing or Review is returned. The same rules, with examples, are in
+[How the next task is chosen](../AGENT-CAPABILITIES.md#how-the-next-task-is-chosen).
 
 ## Available Capabilities
 
@@ -113,14 +124,17 @@ Agent capabilities are configured in your API token. Common capabilities include
 - `code_generation` - Writing new code, implementing features
 - `testing` - Writing and running tests
 - `documentation` - Writing documentation
-- `review` - Reviewing code and changes
-- `deployment` - Deploying code to production
+- `code_review` - Reviewing code and changes
+- `devops` - CI/CD, Docker and deployment pipelines
+
+A task's `required_capabilities` accepts only the 16 values listed in
+[Standard Capabilities](../AGENT-CAPABILITIES.md#standard-capabilities).
 
 ## Notes
 
 - This endpoint does NOT claim the task - it only shows what's available
 - Use `POST /api/tasks/claim` to actually claim a task
-- The response includes ALL task fields (same as GET /api/tasks/:id)
+- Without `response_view=slim`, the response includes ALL task fields (same as GET /api/tasks/:id)
 - A Ready task whose `key_files` (files being modified) overlap a task in progress in Doing or Review is skipped. A claim that names a task with `identifier` does not run this check
 - Claims expire after 60 minutes if the task is not completed. An expired claim stays in Doing until it is unclaimed or moved back to Ready
 
