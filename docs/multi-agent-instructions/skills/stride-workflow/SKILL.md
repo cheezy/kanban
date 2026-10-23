@@ -336,9 +336,9 @@ Call `PATCH /api/tasks/:id/complete` with ALL required fields:
 ### If `needs_review=true`:
 1. Task moves to Review column
 2. **STOP.** Wait for human reviewer to approve/reject.
-3. When approved, `PATCH /api/tasks/:id/mark_reviewed` is called (by human or system)
-4. Execute `after_review` hook
-5. Task moves to Done
+3. When approved, execute the `after_review` hook first, then call `PATCH /api/tasks/:id/mark_reviewed` with its result as `after_review_result`
+4. When changes are requested or the task is rejected, do **not** execute `after_review`. Call `PATCH /api/tasks/:id/mark_reviewed` with a [placeholder `after_review_result`](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/patch_tasks_id_mark_reviewed.md#placeholder-result-for-changes-requested-or-rejected) and the task moves back to Doing
+5. On approval the task moves to Done
 
 ### If `needs_review=false`:
 1. Task moves to Done immediately

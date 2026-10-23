@@ -233,12 +233,18 @@ says what each lock does.
    - IF needs_review=true → Review column (wait for human)
    - IF needs_review=false → Done column (claim next task immediately)
 6. For reviewed tasks:
-   - Human reviews in Stride UI and sets review_status
-   - AI executes the after_review hook and calls
-     PATCH /api/tasks/:id/mark_reviewed with its result to finalize
-   - If approved → Done column
-   - If changes requested or rejected → back to the Doing column,
-     still claimed, for fixes
+   - Human reviews in Stride UI and records review_status
+   - If the human clicks Approve in the Review queue, the review is
+     finished: the task is already in Done and the AI does not call
+     mark_reviewed (it would get a 422)
+   - Otherwise the task stays in Review, and the AI finalizes it with
+     PATCH /api/tasks/:id/mark_reviewed:
+   - If approved → the AI executes the after_review hook first and
+     sends its result; the task moves to Done
+   - If changes requested or rejected → the AI does NOT execute the
+     after_review hook and sends a placeholder after_review_result
+     (exit_code 0); the task goes back to the Doing column, still
+     claimed, for fixes
 7. When the last task of a goal is done, AI executes the after_goal
    hook and reports it with PATCH /api/tasks/:id/after_goal; the goal
    moves to Done when it succeeds, or after a grace window if no
@@ -341,7 +347,7 @@ See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating
 - `POST /api/tasks/claim` - Claim the next available task, or the one named by `identifier` (with before_doing hook result)
 - `POST /api/tasks/:id/unclaim` - Release claimed task back to Ready
 - `PATCH /api/tasks/:id/complete` - Complete task (with after_doing, before_review hook results)
-- `PATCH /api/tasks/:id/mark_reviewed` - Finalize reviewed task (with after_review hook result)
+- `PATCH /api/tasks/:id/mark_reviewed` - Finalize reviewed task (with the after_review hook result on an approval, or a placeholder result on changes requested or rejected — see [docs](docs/api/patch_tasks_id_mark_reviewed.md))
 - `PATCH /api/tasks/:id/mark_done` - Move a task from Review straight to Done ([docs](docs/api/patch_tasks_id_mark_done.md))
 - `PUT /api/tasks/:id/changed_files` - Upload the per-file diff snapshot for a task ([docs](docs/api/put_tasks_id_changed_files.md))
 - `PATCH /api/tasks/:id/after_goal` - Report the after_goal hook result for a goal whose last task is done

@@ -112,6 +112,10 @@ The server sends each hook's `blocking` flag and its `timeout` in milliseconds i
 
 You run `after_doing` and `before_review` before calling `/complete`, and `after_review` before calling `/mark_reviewed`: their entries in the response describe hooks you have already run.
 
+Run `after_review` before `/mark_reviewed` **only when the task's `review_status` is `approved`**. On `changes_requested` or `rejected`, do not run it: the section typically merges or deploys, and the hook environment carries no review status, so it cannot stop itself. `/mark_reviewed` still needs an `after_review_result`, so send the [placeholder result](api/patch_tasks_id_mark_reviewed.md#placeholder-result-for-changes-requested-or-rejected) instead. That response has no `hooks` list.
+
+That rule binds an agent that runs hooks by hand. The [Claude Code](#automatic-hook-execution-via-claude-code-hooks-stride-plugin-v150) and [OpenCode](#automatic-hook-execution-via-opencode-plugin) plugins run `## after_review` after every `/mark_reviewed` call, whatever the decision, so with either one the placeholder call still runs the section. Guard its merge and deploy commands on the review decision; see [Guard after_review on the Review Decision](REVIEW-WORKFLOW.md#guard-after_review-on-the-review-decision).
+
 ### The after_goal Hook
 
 When a completion finishes the last open child task of a goal, the server arms the goal's `after_goal` hook and appends an `after_goal` entry to that response's `hooks` list. That is the `/complete` response when the child went straight to Done (`needs_review=false`), or the `/mark_reviewed` response that approved it.
@@ -137,7 +141,7 @@ The `after_goal` entry in `hooks` carries the completed child's `TASK_*` variabl
 **Examples:**
 - If `after_doing` tests fail, task completion is blocked
 - If `before_review` PR creation fails, task completion is blocked
-- If `after_review` deployment fails, mark_reviewed is blocked
+- If `after_review` deployment fails on an approved review, mark_reviewed is blocked
 - If `after_goal` fails, the goal stays out of Done until a successful report or the end of the grace window
 
 For the `422` bodies each endpoint returns, see its page under [api/](api/), for example [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md#unprocessable-entity-422).
@@ -811,6 +815,8 @@ The plugin registers PreToolUse and PostToolUse hooks on Bash commands. When a S
 | PostToolUse (Bash) | `/api/tasks/:id/complete` | `before_review` |
 | PostToolUse (Bash) | `/api/tasks/:id/mark_reviewed` | `after_review` |
 
+The `mark_reviewed` route runs `## after_review` after the call, whatever the review decision, including a `changes_requested` or `rejected` call that sends the task back to Doing. Guard merge and deploy commands in that section; see [Guard after_review on the Review Decision](REVIEW-WORKFLOW.md#guard-after_review-on-the-review-decision).
+
 ### Environment Variables
 
 When the `before_doing` hook runs after a successful claim, the script extracts task metadata from the API response and caches it to `.stride-env-cache`. All subsequent hooks load this cache, so commands in `.stride.md` can reference `$TASK_IDENTIFIER`, `$TASK_TITLE`, `$TASK_ID`, `$TASK_STATUS`, `$TASK_COMPLEXITY`, and `$TASK_PRIORITY`.
@@ -892,6 +898,8 @@ The plugin subscribes to OpenCode's `tool.execute.before` and `tool.execute.afte
 | `tool.execute.before` | `/api/tasks/:id/complete` | `after_doing` (blocks completion on failure) |
 | `tool.execute.after` | `/api/tasks/:id/complete` | `before_review` |
 | `tool.execute.after` | `/api/tasks/:id/mark_reviewed` | `after_review` |
+
+As with the Claude Code plugin, the `mark_reviewed` route runs `## after_review` whatever the review decision. Guard merge and deploy commands in that section; see [Guard after_review on the Review Decision](REVIEW-WORKFLOW.md#guard-after_review-on-the-review-decision).
 
 **Installation:**
 

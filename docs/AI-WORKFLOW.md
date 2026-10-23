@@ -173,9 +173,11 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - **DO NOT execute `after_review` hook yet!**
    - Wait for human reviewer to approve/reject the task
    - The human reviewer records `review_status` in the board UI: the Review queue's **Approve** and **Request changes** buttons, or the task's Review Status field. The API cannot set it
-   - Proceed to step 9 only when notified of approval
+   - Proceed to step 9 only when the human has recorded a decision
 
-9. **Execute `after_review` hook FIRST** (blocking; see [Hook System](#hook-system))
+9. **If approved, execute `after_review` hook FIRST** (blocking; see [Hook System](#hook-system))
+   - Read `review_status` with [GET /api/tasks/:id](api/get_tasks_id.md). Run `## after_review` only when it is `approved`
+   - **On `changes_requested` or `rejected`, do NOT run `## after_review`.** It typically merges or deploys, and the hook environment carries no review status, so it cannot stop itself. Go to step 10 with a [placeholder result](api/patch_tasks_id_mark_reviewed.md#placeholder-result-for-changes-requested-or-rejected)
    - Example: Deploy to production, notify stakeholders
    - Capture exit_code, output, and duration_ms
    - **Hook must succeed (exit_code 0) to proceed**
@@ -183,10 +185,10 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 10. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md)
     - **REQUIRED:** Include `after_review_result` parameter with hook execution result. It is the only body field: there is no `status` parameter, because the call acts on the `review_status` the human recorded
-    - **Only call this AFTER `after_review` hook succeeds** (if `needs_review=true`)
-    - API validates hook was executed and succeeded, before it looks at the review decision
+    - **On an approval, only call this AFTER `after_review` hook succeeds** (if `needs_review=true`)
+    - API validates the result's shape and `exit_code` `0` before it looks at the review decision
     - If approved: task moves to Done
-    - If changes requested or rejected: task returns to Doing, repeat from step 4. The request still needs an `after_review_result`
+    - If changes requested or rejected: task returns to Doing, repeat from step 4. The request still needs an `after_review_result`, so send the placeholder `{"after_review_result": {"exit_code": 0, "output": "after_review not run: review_status is changes_requested", "duration_ms": 0}}` without running `## after_review`
     - If the human used **Approve** in the Review queue, the server has already moved the task to Done, and this call returns `422` because the task is no longer in Review. See [When a Human Approves from the Review Queue](REVIEW-WORKFLOW.md#when-a-human-approves-from-the-review-queue)
 
 11. **Dependencies automatically unblock** - Next tasks become available once the task reaches Done
@@ -261,7 +263,8 @@ The `after_review` hook execution depends on whether the task requires human rev
 2. STOP and WAIT for human reviewer
 3. Human reviews and records approve/changes_requested/reject in the board UI
 4. IF approved and the task is still in Review: Execute after_review hook ← ONLY AFTER APPROVAL!
-5. Call /mark_reviewed with after_review_result
+   IF changes_requested or rejected: do NOT execute after_review; build the placeholder result
+5. Call /mark_reviewed with after_review_result (the hook's result, or the placeholder)
 6. Task moves to Done column (approved) or back to Doing (changes_requested, rejected)
 ```
 
@@ -295,6 +298,7 @@ On this path nothing reports the `after_review` result back to the server.
 7. IF needs_review=false: the task is in Done; execute after_review from the response's hooks list
    IF needs_review=true: STOP and wait for the human's decision
 8. IF needs_review=true and approved: execute after_review, then call /mark_reviewed WITH after_review_result
+   IF changes_requested or rejected: do NOT execute after_review; call /mark_reviewed WITH the placeholder result
 9. IF the hooks list from step 6 or step 8 includes after_goal: execute it and report it with PATCH /api/tasks/:id/after_goal
 ```
 
@@ -448,7 +452,7 @@ When a subagent did the exploring or reviewing, send the dispatched shape instea
 3. Task moves to Review column (or Done if `needs_review=false`)
 4. The response's `hooks` list carries `after_doing` and `before_review`, plus `after_review` if `needs_review=false`, plus `after_goal` if this task was the last open child of a goal
 5. If `needs_review=true`, wait for human review
-6. Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`)
+6. Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`: the hook's result on an approval, a placeholder on `changes_requested` or `rejected`)
 
 **Important:** If either the `after_doing` or `before_review` hook fails (non-zero exit code), DO NOT call the complete endpoint. Fix the issues first, then re-execute the hooks and try again.
 
@@ -478,11 +482,12 @@ If you use `mark_done` instead of the review workflow, your `after_review` hook 
 **Correct Approach:**
 ```
 ✅ Wait for the human's decision, then use PATCH /api/tasks/:id/mark_reviewed
-   - Requires after_review_result, so your after_review hook has run
+   - Requires after_review_result: your after_review hook's result on an approval,
+     a placeholder on changes_requested / rejected (never run after_review for those)
    - Acts on the review_status the human recorded (there is no status parameter)
-   - approved: moves the task to Done and unblocks dependent tasks
-   - changes_requested / rejected: moves the task back to Doing
-   - Returns after_review (and after_goal for a goal's last child) in its hooks list
+   - approved: moves the task to Done and unblocks dependent tasks, and returns
+     after_review (and after_goal for a goal's last child) in its hooks list
+   - changes_requested / rejected: moves the task back to Doing, with no hooks list
 ```
 
 **Incorrect Approach:**

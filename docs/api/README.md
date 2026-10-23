@@ -116,8 +116,8 @@ Tasks may also be `blocked` when one of their dependencies is incomplete.
 8. **Execute `before_review` hook** (blocking, 600s timeout) — open a PR, generate docs, etc.
 9. **Complete the task** — `PATCH /api/tasks/:id/complete` with `after_doing_result`, `before_review_result`, `explorer_result`, `reviewer_result`, and the six-entry `workflow_steps` telemetry array
 10. **Wait for human review** if `needs_review=true`; otherwise the task moves to Done immediately
-11. **Execute `after_review` hook** (blocking, 600s timeout) — deploy, notify stakeholders
-12. **Finalize review** — `PATCH /api/tasks/:id/mark_reviewed` with `after_review_result` (required, only after step 11 succeeds)
+11. **Execute `after_review` hook only if the review is `approved`** (blocking, 600s timeout) — deploy, notify stakeholders. On `changes_requested` or `rejected`, do **not** run it
+12. **Finalize review** — `PATCH /api/tasks/:id/mark_reviewed` with `after_review_result` (required): the step 11 result on an approval, only after it succeeds, or a [placeholder result](patch_tasks_id_mark_reviewed.md#placeholder-result-for-changes-requested-or-rejected) on `changes_requested` or `rejected`. Skip this call when the human approved from the Review queue: the task is already in Done
 
 ### Task Status vs. Column
 
@@ -171,7 +171,10 @@ rejects the request with a `422` when it is missing or its `exit_code` is not
 - `after_doing` and `before_review` — `PATCH /api/tasks/:id/complete` needs both
   results
 - `after_review` — `PATCH /api/tasks/:id/mark_reviewed` needs
-  `after_review_result`
+  `after_review_result`. Run the hook only for an approved review; for
+  `changes_requested` or `rejected`, send a
+  [placeholder result](patch_tasks_id_mark_reviewed.md#placeholder-result-for-changes-requested-or-rejected)
+  without running it
 
 Fix the failure and send the request again with the new result.
 
@@ -349,7 +352,7 @@ a filter it simply matches nothing.
 | POST | `/api/mcp` | MCP server: JSON-RPC over Streamable HTTP | Through its claim and complete tools |
 | GET, DELETE | `/api/mcp` | Not supported, returns `405` | No |
 
-*`after_review` hook is only returned when the task is moved to Done: by `/complete` when `needs_review=false`, or by `/mark_reviewed` when the review is approved. `/mark_reviewed` also needs that hook's result in its request, so run `after_review` before calling it. `/complete` with `needs_review=true` returns `after_doing` and `before_review` only. A response that moves a goal's last open child to Done also appends an `after_goal` hook.
+*`after_review` hook is only returned when the task is moved to Done: by `/complete` when `needs_review=false`, or by `/mark_reviewed` when the review is approved. `/mark_reviewed` also needs that hook's result in its request, so run `after_review` before calling it, but only when the review is `approved`. A `changes_requested` or `rejected` review gets a placeholder `after_review_result` instead, and its response has no `hooks` list. `/complete` with `needs_review=true` returns `after_doing` and `before_review` only. A response that moves a goal's last open child to Done also appends an `after_goal` hook.
 
 ## Errors
 
@@ -780,6 +783,8 @@ curl -X POST \
 
 ### Example 3: Poll for Review Completion
 
+`mark_reviewed` always needs an `after_review_result`. Run `## after_review` only for an approval; for `changes_requested` or `rejected`, send a placeholder result without running it. A task the human approved from the Review queue is already in Done, so do not call `mark_reviewed` for it. See [PATCH /api/tasks/:id/mark_reviewed](patch_tasks_id_mark_reviewed.md).
+
 ```bash
 # After completing a task, poll for review completion
 TASK_ID="W21"
@@ -787,23 +792,59 @@ TASK_ID="W21"
 while true; do
   # Check task status
   TASK=$(curl -s -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-    $STRIDE_API_URL/api/tasks/$TASK_ID)
+    "$STRIDE_API_URL/api/tasks/$TASK_ID")
 
-  REVIEW_STATUS=$(echo $TASK | jq -r '.data.review_status')
+  STATUS=$(echo "$TASK" | jq -r '.data.status')
+  REVIEW_STATUS=$(echo "$TASK" | jq -r '.data.review_status')
 
-  if [ "$REVIEW_STATUS" != "null" ]; then
-    echo "Review completed with status: $REVIEW_STATUS"
-
-    # Finalize the review
-    curl -X PATCH \
-      -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-      $STRIDE_API_URL/api/tasks/$TASK_ID/mark_reviewed
-
+  if [ "$STATUS" = "completed" ]; then
+    # Approved from the Review queue: already in Done, so no mark_reviewed call.
+    # Run your ## after_review section yourself if your project relies on it, and
+    # for a goal's child check GET /api/tasks/$TASK_ID/after_goal_status
+    echo "Review finished in the Review queue"
     break
   fi
 
-  echo "Waiting for review..."
-  sleep 60
+  case "$REVIEW_STATUS" in
+    approved)
+      # Run your ## after_review section first (merge, deploy, notify)
+      START_TIME=$(date +%s%3N)
+      OUTPUT=$(timeout 600 ./scripts/after_review.sh 2>&1)
+      EXIT_CODE=$?
+      DURATION=$(( $(date +%s%3N) - START_TIME ))
+      if [ "$EXIT_CODE" -ne 0 ]; then
+        echo "after_review failed - fix it before calling mark_reviewed"
+        exit 1
+      fi
+      BODY=$(jq -n --arg out "$OUTPUT" --argjson ms "$DURATION" \
+        '{after_review_result: {exit_code: 0, output: $out, duration_ms: $ms}}')
+      ;;
+    changes_requested|rejected)
+      # Do NOT run ## after_review for work the human did not accept
+      BODY=$(jq -n --arg out "after_review not run: review_status is $REVIEW_STATUS" \
+        '{after_review_result: {exit_code: 0, output: $out, duration_ms: 0}}')
+      ;;
+    *)
+      # null or pending: the review is not finished
+      echo "Waiting for review..."
+      sleep 60
+      continue
+      ;;
+  esac
+
+  # Finalize the review
+  RESPONSE=$(curl -s -X PATCH \
+    -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$BODY" \
+    "$STRIDE_API_URL/api/tasks/$TASK_ID/mark_reviewed")
+
+  # An approval of a goal's last open child carries after_goal in its hooks list:
+  # run ## after_goal and report it with PATCH /api/tasks/:id/after_goal on the goal
+  if echo "$RESPONSE" | jq -e '.hooks // [] | any(.name == "after_goal")' > /dev/null; then
+    echo "after_goal arrived - run it and report it"
+  fi
+  break
 done
 ```
 

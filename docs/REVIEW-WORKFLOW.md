@@ -83,7 +83,7 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 9. If approved: Execute `after_review` hook (blocking) - merge PR, deploy
 10. If approved: Agent calls `/api/tasks/:id/mark_reviewed` with `after_review_result`
 11. Task moves to Done. If the `mark_reviewed` response's `hooks` list carries `after_goal`, run it and report it
-12. If changes_requested or rejected: Agent calls `/api/tasks/:id/mark_reviewed`, and the task returns to Doing for agent to address feedback
+12. If changes_requested or rejected: Agent does **not** run `after_review`. It calls `/api/tasks/:id/mark_reviewed` with a [placeholder `after_review_result`](#the-placeholder-after_review_result), and the task returns to Doing for agent to address feedback
 
 When the human approves with the Review queue's **Approve** button, the server finishes steps 10 and 11 itself and the task is already in Done; see [When a Human Approves from the Review Queue](#when-a-human-approves-from-the-review-queue).
 
@@ -124,7 +124,23 @@ A task in the Review column carries a `review_status`, which a **human reviewer*
 | `changes_requested` | Moves the task back to Doing (status `in_progress`, still assigned to you) to address the feedback |
 | `rejected` | Moves the task back to Doing (status `in_progress`, still assigned to you), exactly like `changes_requested` |
 
-`mark_reviewed` has no `status` parameter. Its only body field is `after_review_result`, which it checks before it looks at the review decision, so a call that sends the task back to Doing needs a successful `after_review_result` too. A task that is not in the Review column is refused with `422`. An approval returns a `hooks` list with `after_review`, plus `after_goal` when the task was the last open child of a goal. See [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) for the request and the error bodies.
+`mark_reviewed` has no `status` parameter. Its only body field is `after_review_result`, which it checks before it looks at the review decision, so a call that sends the task back to Doing needs a successful `after_review_result` too. **That result must not come from running `## after_review`**: the section typically merges or deploys, and the human did not accept the work. Send the placeholder below instead. A task that is not in the Review column is refused with `422`. An approval returns a `hooks` list with `after_review`, plus `after_goal` when the task was the last open child of a goal. A call that sends the task back to Doing returns no `hooks` list. See [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) for the request and the error bodies.
+
+### The Placeholder after_review_result
+
+On `changes_requested` or `rejected`, **do not run `## after_review`**. The hook environment carries no review status (only `TASK_NEEDS_REVIEW`), so the section cannot tell a rejection from an approval and would merge or deploy the rejected work. Call `mark_reviewed` with this body instead:
+
+```json
+{
+  "after_review_result": {
+    "exit_code": 0,
+    "output": "after_review not run: review_status is changes_requested",
+    "duration_ms": 0
+  }
+}
+```
+
+Write `rejected` in `output` for a rejected review. The server checks only that `exit_code`, `output` and `duration_ms` are present and that `exit_code` is `0`, so this moves the task back to Doing without your running the section. An automatic-hook plugin is the exception: it runs `## after_review` after every `mark_reviewed` call, so read [Guard after_review on the Review Decision](#guard-after_review-on-the-review-decision).
 
 ### When a Human Approves from the Review Queue
 
@@ -140,7 +156,7 @@ So an agent waiting on a review cannot count on reaching `mark_reviewed`. Check 
 |---|---|
 | `status` is `completed` (it is in Done) | The review is finished. Do not call `mark_reviewed`. The server has not delivered or checked `after_review`, so run your `## after_review` section yourself if your project relies on it. If the task belongs to a goal, call [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md); when `after_goal_armed` is `true`, run `## after_goal` and report it with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md) before the five-minute grace window ends |
 | Still in Review, `review_status` is `approved` | Run `after_review`, then call `mark_reviewed` with its result |
-| Still in Review, `review_status` is `changes_requested` or `rejected` | Call `mark_reviewed` with an `after_review_result` to move the task back to Doing, then address the feedback |
+| Still in Review, `review_status` is `changes_requested` or `rejected` | Do **not** run `after_review`. Call `mark_reviewed` with the [placeholder `after_review_result`](#the-placeholder-after_review_result) to move the task back to Doing, then address the feedback |
 | Still in Review, `review_status` is `null` or `pending` | The review is not finished; wait |
 
 ## API Integration
@@ -253,7 +269,7 @@ Every hook is blocking, and the server sends each one's `timeout` in millisecond
 |------|------------------------|-----------------------|
 | `before_doing` | Claim response | Claim response |
 | `after_doing`, `before_review` | `/complete` response — you run both before the call and send their results with it | Same |
-| `after_review` | `/complete` response — run it after the call; nothing reports its result | Approving `/mark_reviewed` response — run it before the call and send `after_review_result` with it |
+| `after_review` | `/complete` response — run it after the call; nothing reports its result | Approving `/mark_reviewed` response — run it before the call, only when `review_status` is `approved`, and send `after_review_result` with it. On `changes_requested` or `rejected`, never run it; send the [placeholder](#the-placeholder-after_review_result). That response has no `hooks` list |
 | `after_goal` | Appended to the `/complete` response when the task was a goal's last open child | Appended to the approving `/mark_reviewed` response when the task was a goal's last open child |
 
 Report an `after_goal` result with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md), against the goal. An `exit_code` of `0` moves the goal to Done; otherwise the goal waits for another report, or for the server to move it to Done itself when the five-minute grace window ends.
@@ -285,6 +301,10 @@ fi
 
 ## after_review
 ```bash
+# Runs only after an approval: the agent runs this section when the task
+# went straight to Done (needs_review=false) or its review_status is
+# "approved". On changes_requested or rejected the agent never runs it.
+# The hook env has no review status, so this script cannot check that itself.
 if [ "$TASK_NEEDS_REVIEW" = "true" ]; then
   # Manual review approved - merge PR
   gh pr merge --auto --squash
@@ -298,6 +318,32 @@ git checkout main
 git pull origin main
 ```
 ````
+
+`TASK_NEEDS_REVIEW` says whether the task needed a review, not what the reviewer decided, so the `## after_review` example above is safe only when the agent runs it after an approval and never on `changes_requested` or `rejected`; see [The Placeholder after_review_result](#the-placeholder-after_review_result). An agent that runs hooks by hand can keep that promise. An automatic-hook plugin cannot, so with one, use the guarded section below instead.
+
+### Guard after_review on the Review Decision
+
+The Claude Code and OpenCode plugins run `## after_review` after **every** `mark_reviewed` call (see the routing tables in [Automatic Hook Execution via Claude Code Hooks](AGENT-HOOK-EXECUTION-GUIDE.md#automatic-hook-execution-via-claude-code-hooks-stride-plugin-v150)), including the placeholder call that sends a `changes_requested` or `rejected` task back to Doing. The plugins do not check the decision, and the hook environment does not carry it, so the section has to ask for it before it merges or deploys anything:
+
+````markdown
+## after_review
+```bash
+# Plugins run this section after every mark_reviewed call, so check the decision.
+# review_status is kept on the task after it moves back to Doing.
+# Only an explicit needs_review=false skips the check: an unset value does not.
+if [ "$TASK_NEEDS_REVIEW" != "false" ]; then
+  REVIEW_STATUS=$(curl -s -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+    "$STRIDE_API_URL/api/tasks/$TASK_ID" | jq -r '.data.review_status')
+  if [ "$REVIEW_STATUS" != "approved" ]; then
+    echo "after_review skipped: review_status is $REVIEW_STATUS"
+    exit 0
+  fi
+fi
+gh pr merge --squash
+```
+````
+
+The check fails closed: when `TASK_NEEDS_REVIEW`, `TASK_ID`, `STRIDE_API_URL` or `STRIDE_API_TOKEN` is missing from the hook's environment, or the request fails, `REVIEW_STATUS` is not `approved` and nothing is merged. Only a task whose `TASK_NEEDS_REVIEW` is exactly `false` skips the check, because it has no review decision, and its section runs as before.
 
 ## Continuous Work Loop
 
@@ -508,35 +554,41 @@ The report is then visible to human reviewers in the task detail view, providing
 
 This example shows the continuous work loop completing an entire goal with 3 dependent tasks.
 
-**Initial Setup:**
+**Initial Setup:** create the goal and its three tasks in one [POST /api/tasks](api/post_tasks.md) request. The body's root key is `task`, the server assigns every identifier, and each child names the tasks it depends on by their position in the `tasks` list (`0` is the first):
+
 ```json
 {
-  "goal": {
-    "identifier": "G1",
+  "task": {
     "title": "Add search feature",
+    "type": "goal",
+    "complexity": "large",
     "tasks": [
       {
-        "identifier": "W1",
         "title": "Add search schema",
-        "needs_review": false,
-        "dependencies": []
+        "type": "work",
+        "complexity": "small",
+        "needs_review": false
       },
       {
-        "identifier": "W2",
         "title": "Build search UI",
+        "type": "work",
+        "complexity": "medium",
         "needs_review": false,
-        "dependencies": ["W1"]
+        "dependencies": [0]
       },
       {
-        "identifier": "W3",
         "title": "Add search tests",
+        "type": "work",
+        "complexity": "small",
         "needs_review": false,
-        "dependencies": ["W1", "W2"]
+        "dependencies": [0, 1]
       }
     ]
   }
 }
 ```
+
+The walkthrough below calls the goal G1 and its tasks W1, W2 and W3. Those are stand-ins: the real identifiers are whatever the server returns.
 
 **Continuous Workflow Execution:**
 
@@ -688,6 +740,16 @@ When testing, verify both paths:
 # Agent calls mark_reviewed with after_review_result
 # Verify task moves to Done
 # (An Approve from the Review queue moves it to Done without mark_reviewed)
+```
+
+**Test 3: Changes Requested Path**
+```bash
+# Create task with needs_review=true
+# Complete task
+# Human clicks Request changes in the Review queue (task stays in Review)
+# Verify the agent does NOT run after_review
+# Agent calls mark_reviewed with the placeholder after_review_result
+# Verify task moves back to Doing, still assigned to the agent
 ```
 
 ## Summary
