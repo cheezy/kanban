@@ -101,7 +101,7 @@ Returns the task together with its child tasks and a counts summary:
       }
     ],
     "counts": {
-      "total": 3,
+      "total": 4,
       "completed": 1,
       "blocked": 1
     }
@@ -111,8 +111,14 @@ Returns the task together with its child tasks and a counts summary:
 
 `children` is a **flat** array of full task objects (each abbreviated above —
 the real render carries every field `data/1` returns). It is not recursive:
-children do not carry their own `children` key. `counts` summarises the
-children, and callers aggregate on it.
+children do not carry their own `children` key.
+
+`counts` covers the root `task` **and** its children, and callers aggregate on
+it. `total` is 1 plus the number of children, so the example above, a goal with
+three children, has a `total` of 4. `completed` and `blocked` count the root too
+when it has that status. To count only the children, use the length of
+`children`, or subtract 1 from `total` and the root's own status from the other
+two.
 
 ## Selecting the response view
 
@@ -136,7 +142,9 @@ selected only after the lookup succeeds.
 
 ### Success (200 OK) — `?response_view=slim`
 
-Each `children` entry carries exactly these eight keys:
+Each `children` entry carries exactly these eleven keys, the same compact row
+[GET /api/tasks?response_view=slim](get_tasks.md#selecting-the-response-view)
+returns:
 
 ```json
 {
@@ -147,14 +155,17 @@ Each `children` entry carries exactly these eight keys:
         "id": 126,
         "identifier": "W23",
         "title": "Create database schema for users",
+        "type": "work",
         "status": "completed",
         "priority": "critical",
         "complexity": "medium",
+        "parent_id": 125,
         "dependencies": [],
+        "claim_expires_at": null,
         "created_by_agent": "ai_agent:claude-sonnet-4-5"
       }
     ],
-    "counts": { "total": 3, "completed": 1, "blocked": 1 }
+    "counts": { "total": 4, "completed": 1, "blocked": 1 }
   }
 }
 ```
@@ -165,14 +176,6 @@ summary shape returned by
 [GET /api/tasks/:id/dependents](get_tasks_id_dependents.md).
 
 ### Forbidden (403)
-
-Task doesn't belong to the current board:
-
-```json
-{
-  "error": "Task does not belong to this board"
-}
-```
 
 Your token is a board token, and the user who created it no longer has access
 to the token's board. Every read checks this again on every request, so a board
@@ -238,7 +241,7 @@ The response is a single parent with a flat list of its children:
   data: {
     task: {...},        // The parent task/goal, always fully rendered
     children: [{...}],  // Flat array of child tasks (empty if none)
-    counts: {...}       // total / completed / blocked, summarising children
+    counts: {...}       // total / completed / blocked, over the root and its children
   }
 }
 ```
@@ -248,8 +251,9 @@ The response is a single parent with a flat list of its children:
   entry is a task object directly — children do not nest further, and do not
   carry their own `children` key. Under `?response_view=slim` each entry is the
   compact summary row instead.
-- `counts` - `total`, `completed` and `blocked` counts over the children.
-  Identical under both views.
+- `counts` - `total`, `completed` and `blocked` counts over the root task and
+  its children, so `total` is 1 plus the number of children. Identical under
+  both views.
 
 ## Notes
 
@@ -276,4 +280,4 @@ G10: Implement user authentication system [In Progress]
 
 - [GET /api/tasks/:id](get_tasks_id.md) - Get single task details without children
 - [POST /api/tasks](post_tasks.md) - Create goals with nested child tasks
-- [GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) - Get dependency tree (not yet documented)
+- [GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) - Get dependency tree

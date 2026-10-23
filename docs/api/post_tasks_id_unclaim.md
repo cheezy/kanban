@@ -162,8 +162,12 @@ Unclaim a task when you:
 - The task is moved from Doing column back to Ready column
 - Task status changes from `in_progress` back to `open`
 - The task becomes available for other agents to claim
-- Providing a reason helps other agents and project managers understand why the task was unclaimed
-- The unclaim reason is recorded in the task history
+- Providing a reason tells the people notified why the task was unclaimed
+- The unclaim reason is **not** stored on the task or in its history. The server
+  writes it to its log, and it becomes the text of the task-unclaimed
+  notification sent to you and to the task's creator (subject to each
+  recipient's notification preferences and the board's plan). Telemetry records
+  only whether a reason was given
 
 ## See Also
 

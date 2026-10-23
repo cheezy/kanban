@@ -48,9 +48,9 @@ Authorization: Bearer <your_api_token>
     "review_report": null,
     "parent_id": 120,
     "required_capabilities": ["code_generation"],
-    "dependencies": [119],
-    "inserted_at": "2025-12-28T10:00:00Z",
-    "updated_at": "2025-12-28T11:00:00Z",
+    "dependencies": ["W20"],
+    "inserted_at": "2025-12-28T10:00:00",
+    "updated_at": "2025-12-28T11:00:00",
     "completed_at": null
   },
   "comment_count": 2,
@@ -58,20 +58,16 @@ Authorization: Bearer <your_api_token>
 }
 ```
 
+The example is shortened: the real `data` object carries every field of the
+full task view, the same object each row of [GET /api/tasks](get_tasks.md)
+carries.
+
 `comment_count` is the number of comments on the task. Fetch them with
 [GET /api/tasks/:id/comments](get_tasks_id_comments.md). It sits next to `data`,
 not inside it, and only this full view carries it: the `response_view=slim`
 and `fields` views leave it out.
 
 ### Forbidden (403)
-
-Task doesn't belong to the current board:
-
-```json
-{
-  "error": "Task does not belong to this board"
-}
-```
 
 Your token is a board token, and the user who created it no longer has access
 to the token's board. Every read checks this again on every request, so a board
@@ -122,14 +118,14 @@ that names no task or a task on another board. See
 | `completed_by_agent` | string | Agent that completed the task |
 | `time_spent_minutes` | integer | Time spent on task in minutes |
 | `completion_notes` | string | Notes provided when completing the task |
-| `review_status` | string | Review decision: `approved`, `changes_requested`, `rejected` (null if not reviewed) |
+| `review_status` | string | Review decision: `pending`, `approved`, `changes_requested`, `rejected` (null if no review has been recorded; `pending` means the review is not finished) |
 | `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
 | `parent_id` | integer | ID of the parent goal (null if no parent). Read-only through the API: set by the server when a goal is created with nested tasks or via the batch endpoint; a human can change it in the board UI |
 | `required_capabilities` | array | Required agent capabilities to work on this task |
-| `dependencies` | array | Array of task IDs that must be completed before this task |
+| `dependencies` | array | Identifiers of the tasks that must be completed before this task, as strings such as `"W15"` (not numeric IDs) |
 | `labels` | array | The task's labels as `{name, color}` objects, ordered by name ignoring case. Set them by name with [POST /api/tasks](post_tasks.md#labels) or [PATCH /api/tasks/:id](patch_tasks_id.md#labels) |
-| `inserted_at` | string | When task was created (ISO 8601) |
-| `updated_at` | string | When task was last updated (ISO 8601) |
+| `inserted_at` | string | When task was created (ISO 8601, UTC, rendered with no offset, such as `2025-12-28T10:00:00`) |
+| `updated_at` | string | When task was last updated (ISO 8601, UTC, rendered with no offset) |
 | `completed_at` | string | When task was completed (null if not completed) |
 
 ## Fields Projection (W2076/W2094)
@@ -209,14 +205,17 @@ curl -X GET \
 - Verify task is ready to claim (not blocked by dependencies)
 - View task details before claiming
 - Check review status after submitting for review
-- Get parent goal information for child tasks
+- Find a child task's goal: `parent_id` is the goal's numeric ID, and the
+  goal itself is a separate request to this endpoint
 - View completion notes and time spent
 
 ## Notes
 
 - You can use either numeric ID or identifier (W21, G10, etc.)
-- Task must belong to the board associated with your API token
-- The `dependencies` array contains task IDs that must be completed first
+- Task must belong to the board associated with your API token. A task on
+  another board gets the same 404 as one that does not exist
+- The `dependencies` array contains the identifiers (such as `W15`) of the tasks
+  that must be completed first
 - Review status is only set after a human reviewer makes a decision
 - Goals (type=goal) are parent tasks that contain child tasks
 

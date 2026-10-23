@@ -63,7 +63,7 @@ Returns an array of tasks:
       "column_id": 6,
       "assigned_to_id": 5,
       "parent_id": null,
-      "estimated_files": 3,
+      "estimated_files": "3",
       "why": "Users need secure authentication",
       "what": "JWT-based login system",
       "where_context": "Authentication module",
@@ -99,7 +99,7 @@ Returns an array of tasks:
       "technology_requirements": null,
       "pitfalls": null,
       "out_of_scope": null,
-      "security_considerations": "Hash passwords with bcrypt",
+      "security_considerations": ["Hash passwords with bcrypt"],
       "testing_strategy": null,
       "integration_points": null,
       "created_by_id": 1,
@@ -494,7 +494,7 @@ not an integer at all, such as `abc`, still gets the 400. See
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `estimated_files` | integer | Estimated number of files to modify |
+| `estimated_files` | string | Estimated number of files to modify, as free text such as `"3"` or `"5+"` |
 | `why` | string | Why this task matters - business justification |
 | `what` | string | What needs to be done - concise summary |
 | `where_context` | string | Where in the codebase this work happens |
@@ -536,7 +536,7 @@ not an integer at all, such as `abc`, still gets the 400. See
 | `completed_by_id` | integer | User ID who completed the task |
 | `completed_by_agent` | string | Agent that completed the task |
 | `completion_summary` | string | Summary of work done upon completion |
-| `dependencies` | array | Array of task IDs that must be completed first |
+| `dependencies` | array | Identifiers of the tasks that must be completed first, as strings such as `"W15"` (not numeric IDs) |
 | `claimed_at` | string | When task was claimed (ISO 8601, null if unclaimed) |
 | `claim_expires_at` | string | When claim expires (ISO 8601, null if unclaimed) |
 | `required_capabilities` | array | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
@@ -546,14 +546,14 @@ not an integer at all, such as `abc`, still gets the 400. See
 | Field | Type | Description |
 |-------|------|-------------|
 | `actual_complexity` | string | Actual complexity after completion |
-| `actual_files_changed` | integer | Actual number of files modified |
+| `actual_files_changed` | string | Actual number of files modified, as free text such as `"4"` |
 | `time_spent_minutes` | integer | Time spent on task in minutes |
 
 ### Review Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `review_status` | string | Review decision: `approved`, `changes_requested`, `rejected` (null if not reviewed) |
+| `review_status` | string | Review decision: `pending`, `approved`, `changes_requested`, `rejected` (null if no review has been recorded; `pending` means the review is not finished) |
 | `review_notes` | string | Reviewer's notes and feedback |
 | `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
 | `reviewed_at` | string | When review was completed (ISO 8601) |
@@ -586,7 +586,7 @@ Each item in the `verification_steps` array has:
 
 ```json
 {
-  "step_type": "command",                     // Type: "command", "manual", "test"
+  "step_type": "command",                     // Type: "command" or "manual"
   "step_text": "mix test path/to/test.exs",  // The command or instruction
   "expected_result": "All tests pass",        // What success looks like
   "position": 0                               // Order of execution (0-indexed)
@@ -692,8 +692,11 @@ Use the web UI or inspect responses to find column IDs for your board.
 - Returns all tasks across all columns if no `column_id` is provided
 - Without page keys, tasks are ordered by column position then task position; in paginated mode, by `id` ascending
 - Includes both regular tasks and goals
-- Each task includes its parent goal information if it's a child task
-- The `dependencies` array shows which tasks must be completed first
+- A child task carries its goal's numeric ID in `parent_id` and nothing else
+  about the goal; fetch the goal with [GET /api/tasks/:id](get_tasks_id.md) for
+  its details
+- The `dependencies` array lists the identifiers (such as `W15`) of the tasks
+  that must be completed first
 
 ## Filtering and Sorting
 

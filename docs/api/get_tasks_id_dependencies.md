@@ -108,14 +108,6 @@ Returns the task and its complete dependency tree with nested dependencies:
 
 ### Forbidden (403)
 
-Task doesn't belong to the current board:
-
-```json
-{
-  "error": "Task does not belong to this board"
-}
-```
-
 Your token is a board token, and the user who created it no longer has access
 to the token's board. Every read checks this again on every request, so a board
 token stops reading once its user is removed from the board, or stops being an

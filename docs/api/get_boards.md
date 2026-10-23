@@ -14,8 +14,9 @@ Authorization: Bearer <your_api_token>
 
 A token is one of two kinds:
 
-- **Board token.** Scoped to one board. Every request acts on that board, and
-  the board selectors below are ignored.
+- **Board token.** Scoped to one board. Every request acts on that board, so it
+  needs no board selector. A selector it does send must name that board (see
+  [Board selectors with a board token](#board-selectors-with-a-board-token)).
 - **Workspace token.** Scoped to an Organization workspace. Only an org-admin
   of the workspace's Organization can create one, in the Tokens section of the
   workspace settings page, and the token acts as that org-admin. It reaches
@@ -50,6 +51,22 @@ whether a board you cannot use exists.
 A workspace token is revoked when its user stops being an org-admin of the
 Organization, when they are removed from the workspace, or when the workspace
 is archived. It expires after 90 days, like a board token.
+
+### Board selectors with a board token
+
+A board token needs no selector. If a request sends one anyway, it must name
+the token's own board, which is then accepted as if no selector were sent.
+Otherwise the request is refused before it acts on any board, so an agent
+configured for one board while holding another board's token finds out instead
+of writing to the token's board:
+
+| Situation | Status | Body |
+|-----------|--------|------|
+| The header or a `board_id` names a board other than the token's | `400` | `{"error": "Board selector does not match token", "message": "A board token acts only on the board it was created for. Remove the X-Stride-Board header and board_id parameter, or make them name that board."}` |
+| The header, the query-string `board_id` and the body `board_id` do not all name the same board, or the header or the query-string `board_id` is sent twice | `400` | `{"error": "Conflicting board selectors", "message": "The X-Stride-Board header, the query-string board_id and the body board_id must name the same board, and the header and the query-string board_id may each be sent once."}` |
+
+`GET /api/boards` itself ignores the selector for both kinds of token, so
+listing boards never gets either `400`.
 
 ## Request
 

@@ -221,7 +221,8 @@ An array with one object per workflow step (`claim_task`, `complete_task`,
 Complete hook system information:
 
 - Description of client-side execution
-- All four hook points with metadata
+- All five hook points with metadata: `before_doing`, `after_doing`,
+  `before_review`, `after_review` and `after_goal`
 - Environment variables available to hooks
 - Execution flow explanation
 
@@ -457,7 +458,10 @@ curl -X POST \
 - Upload entire project plan in one API call
 - Establish work structure before claiming individual tasks
 - Clear visibility of all planned work
-- Dependencies automatically enforced across goals
+- Dependencies between tasks of the same goal are created with the goal and
+  enforced automatically. A batch cannot create a dependency on a task in
+  another goal of the same batch; add it afterwards with
+  [PATCH /api/tasks/:id](patch_tasks_id.md)
 
 See [POST /api/tasks/batch](post_tasks_batch.md) for complete documentation on batch uploads.
 

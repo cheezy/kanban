@@ -91,7 +91,8 @@ succeeded. If your section fails, fix it and report again within the window.
 ### Success (200 OK)
 
 The body has two keys: `data`, the goal in the full task view (the same object
-[GET /api/tasks/:id](get_tasks_id.md) returns under `data`), and
+[GET /api/tasks/:id](get_tasks_id.md) returns under `data`, except that
+`labels` is always empty; see below), and
 `current_skills_version`. Unlike GET /api/tasks/:id, it has no `comment_count`
 key, and it has no `hooks` key.
 
@@ -115,6 +116,10 @@ key, and it has no `hooks` key.
 
 The example is shortened: the real `data` object carries every field of the
 full task view.
+
+`data.labels` is always `[]` here, even when the goal has labels: this response
+does not load them. Read the goal's labels with
+[GET /api/tasks/:id](get_tasks_id.md).
 
 The `data` object does not include the goal's `after_goal` status, result or
 attempt history.

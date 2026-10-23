@@ -114,6 +114,7 @@ These fields are not unwritable; they are written **somewhere else**. Use the en
 | `assigned_to_id`, `claimed_at`, `claim_expires_at` | [`POST /api/tasks/claim`](post_tasks_claim.md) and [`POST /api/tasks/:id/unclaim`](post_tasks_id_unclaim.md) |
 | `completed_at`, `completed_by_id`, `completed_by_agent`, `completion_summary`, `completion_notes`, `actual_complexity`, `actual_files_changed`, `time_spent_minutes`, `workflow_steps`, `explorer_result`, `reviewer_result`, `review_report` | [`PATCH /api/tasks/:id/complete`](patch_tasks_id_complete.md). `review_report` is submitted **with the completion**, despite its name — it is not written by `mark_reviewed` |
 | `review_status`, `review_notes` | The review **verdict**, recorded by a human reviewing in the board UI. No API route sets it: [`mark_reviewed`](patch_tasks_id_mark_reviewed.md) *reads* `review_status` and errors when it has not been set |
+| `review_requested_at` | Stamped by the server each time the task enters the Review column — when it is created straight into Review, by a completion that sends it to Review, or by a move into Review on the board. No caller sets it |
 | `reviewed_at`, `reviewed_by_id` | Review **attribution**, stamped by the server when a review is recorded — by [`mark_reviewed`](patch_tasks_id_mark_reviewed.md) and by the board UI review form |
 | `changed_files` | [`PUT /api/tasks/:id/changed_files`](put_tasks_id_changed_files.md), its sole writer |
 | `after_goal_status`, `after_goal_result`, `after_goal_attempts` | [`PATCH /api/tasks/:id/after_goal`](patch_tasks_id_after_goal.md) |
@@ -287,13 +288,32 @@ on every board.
 
 ### Forbidden (403)
 
-Task doesn't belong to the current board:
+The token's user does not have owner or modify access to the board. This is
+checked before the task is looked up, so nothing changes and the response does
+not say whether the task exists:
 
 ```json
 {
-  "error": "Task does not belong to this board"
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
 }
 ```
+
+The body sent a `column_id` that differs from the task's current column. This
+endpoint cannot move a task, and nothing changes (see
+[Column Changes](#column-changes)):
+
+```json
+{
+  "error": "Agents cannot move tasks between columns via update. Use the workflow endpoints (claim, complete, mark_reviewed, mark_done) to transition tasks.",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+A task on another board is never a 403. It gets the same 404 as a task that
+does not exist (see [Not Found (404)](#not-found-404)).
 
 ### Forbidden field (422)
 
