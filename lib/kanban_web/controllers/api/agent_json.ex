@@ -152,7 +152,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "Agents should work continuously: claim task → complete → IF needs_review=false THEN claim next task, ELSE stop and wait for review. Continue this loop until encountering a task that needs review or running out of available tasks."
       },
       quick_start: [
-        "Windows users: See #{base_url}/docs/WINDOWS-SETUP.md for platform-specific setup (WSL2/PowerShell/Git Bash) before proceeding",
+        "Windows users: See #{@docs_base_url}/docs/WINDOWS-SETUP.md for platform-specific setup (WSL2/PowerShell/Git Bash) before proceeding",
         "1. Check if .stride_auth.md exists - if NOT, create by copying the ENTIRE file_templates.stride_auth_md content exactly",
         "2. Check if .stride_auth.md is in .gitignore - if NOT, add it (CRITICAL - contains secrets)",
         "3. Check if .stride.md exists - if NOT, create by copying the ENTIRE file_templates.stride_md content exactly",
@@ -184,7 +184,7 @@ defmodule KanbanWeb.API.AgentJSON do
           name: "claim_task",
           endpoint: "POST #{base_url}/api/tasks/claim",
           description:
-            "Claim next available task matching your capabilities. Claims automatically expire after 60 minutes if not completed, releasing the task for other agents. REQUIRES before_doing_result parameter with proof of hook execution.",
+            "Claim next available task matching your capabilities. A claim expires after 60 minutes, but nothing releases the task then: it stays in Doing, still assigned to you, until you unclaim it with POST /api/tasks/:id/unclaim or a person moves it back to Ready. REQUIRES before_doing_result parameter with proof of hook execution.",
           required_parameters: ["before_doing_result"],
           hook_validation:
             "MANDATORY - Must execute before_doing hook BEFORE calling this endpoint and include result",
@@ -195,7 +195,7 @@ defmodule KanbanWeb.API.AgentJSON do
           name: "complete_task",
           endpoint: "PATCH #{base_url}/api/tasks/:id/complete",
           description:
-            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution, and every other field in required_parameters (explorer_result and reviewer_result are rejected when absent in strict mode, the production default). Note: changed_files included in this body is silently ignored — upload via PUT /api/tasks/:id/changed_files instead.",
+            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution, and every other field in required_parameters (explorer_result and reviewer_result are rejected when absent in strict mode, the production default). Note: this endpoint never stores changed_files — upload it via PUT /api/tasks/:id/changed_files. A changed_files value in this body is still validated, and a malformed one is rejected with 422 in strict mode.",
           required_parameters: EndpointDocs.complete_required_parameters(),
           hook_validation:
             "MANDATORY - Must execute BOTH after_doing AND before_review hooks BEFORE calling this endpoint and include both results",
@@ -207,10 +207,10 @@ defmodule KanbanWeb.API.AgentJSON do
           name: "upload_changed_files",
           endpoint: "PUT #{base_url}/api/tasks/:id/changed_files",
           description:
-            "Upload the per-file diff snapshot for a claimed-or-in-review task. Sole writer for tasks.changed_files — the completion endpoint silently ignores any changed_files in its body. Encoding (truncation marker, binary placeholder, 500-line cap) is defined in docs/diff-contract.md.",
+            "Upload the per-file diff snapshot for a task. Sole writer for tasks.changed_files — the completion endpoint never stores a changed_files value from its body, though it validates one. Encoding (truncation marker, binary placeholder, 500-line cap) is defined in docs/diff-contract.md.",
           required_parameters: ["changed_files"],
           hook_validation:
-            "Not a hook endpoint. Authz: caller must be the task assignee OR the task must be in the Review column.",
+            "Not a hook endpoint. Authz: the caller must have owner or modify access to the task's board, checked before the task is looked up, so an assignee without that access is refused; the task's column does not matter.",
           returns: "Task data with the persisted changed_files in the response body",
           documentation_url: "#{@docs_base_url}/docs/api/put_tasks_id_changed_files.md"
         },

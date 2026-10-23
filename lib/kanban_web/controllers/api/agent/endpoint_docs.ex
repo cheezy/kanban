@@ -150,7 +150,7 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
           method: "PATCH",
           path: "/api/tasks/:id/complete",
           description:
-            "Complete a task - REQUIRES after_doing_result and before_review_result (both hooks exit 0), completion_summary, actual_complexity, actual_files_changed and time_spent_minutes, plus explorer_result and reviewer_result (rejected when absent in strict mode, the production default; a dispatched reviewer_result needs the full structured block in every mode — see api_schema.reviewer_result_format). changed_files in the body is silently ignored; use PUT /api/tasks/:id/changed_files instead.",
+            "Complete a task - REQUIRES after_doing_result and before_review_result (both hooks exit 0), completion_summary, actual_complexity, actual_files_changed and time_spent_minutes, plus explorer_result and reviewer_result (rejected when absent in strict mode, the production default; a dispatched reviewer_result needs the full structured block in every mode — see api_schema.reviewer_result_format). changed_files in the body is never stored — use PUT /api/tasks/:id/changed_files — but it is still validated, and a malformed value is rejected in strict mode.",
           required_parameters: @complete_required_parameters,
           hook_validation_required: true,
           returns_hooks: [

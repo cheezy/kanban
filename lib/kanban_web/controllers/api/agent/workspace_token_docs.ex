@@ -17,10 +17,11 @@ defmodule KanbanWeb.API.Agent.WorkspaceTokenDocs do
         header: "X-Stride-Board",
         parameter: "board_id",
         rule:
-          "With a workspace token, every request except GET /api/boards must name its board by id in the X-Stride-Board header or the board_id parameter. Board tokens ignore both."
+          "With a workspace token, every request except GET /api/boards must name its board by id in the X-Stride-Board header or the board_id parameter. A board token needs neither, but a header or board_id naming another board, or an ambiguous selector, gets 400; GET /api/boards ignores the selector for both kinds of token."
       },
       errors: %{
-        "400" => "No board named, or the header and parameter name different boards.",
+        "400" =>
+          "No board named, or the header and parameter name different boards. With a board token, a selector naming another board.",
         "404" =>
           "The board does not exist, is outside the token's workspace, or its user can no longer modify it. The body is the same in every case."
       },

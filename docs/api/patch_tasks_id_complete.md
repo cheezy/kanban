@@ -2,7 +2,7 @@
 
 Mark a task as complete. This moves the task to the Review column (or directly to Done if `needs_review=false`).
 
-> **Note on `changed_files`.** The per-file diff snapshot is no longer written by this endpoint. As of W778, `changed_files` is owned exclusively by [`PUT /api/tasks/:id/changed_files`](put_tasks_id_changed_files.md) — the hook uploads it before this completion request fires. If you send `changed_files` in the completion body it is **silently ignored** at the schema cast layer (the request still 422s if the shape is malformed, via `CompletionResultGate`, but the field is dropped). New plugins should upload via the PUT endpoint and omit `changed_files` from the completion body. See the [Diff Contract](../diff-contract.md) for encoding rules.
+> **Note on `changed_files`.** The per-file diff snapshot is no longer written by this endpoint. As of W778, `changed_files` is owned exclusively by [`PUT /api/tasks/:id/changed_files`](put_tasks_id_changed_files.md) — the hook uploads it before this completion request fires. If you send `changed_files` in the completion body it is **never stored**, but it is still validated: a malformed value is rejected with `422` by `CompletionResultGate` in strict mode, the production default (grace mode logs a warning instead). New plugins should upload via the PUT endpoint and omit `changed_files` from the completion body. See the [Diff Contract](../diff-contract.md) for encoding rules.
 
 ## Authentication
 

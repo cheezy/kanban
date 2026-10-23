@@ -1,6 +1,6 @@
 # PUT /api/tasks/:id/changed_files
 
-Upload the per-file diff snapshot for a task. This is the **sole writer** for `tasks.changed_files`; the completion endpoint silently ignores any `changed_files` it receives in its body.
+Upload the per-file diff snapshot for a task. This is the **sole writer** for `tasks.changed_files`; the completion endpoint never stores a `changed_files` value it receives in its body, though it still validates one (see the Notes below).
 
 The endpoint is intentionally separate from completion: it lets the agent's hook upload a diff snapshot independently of the completion request, and protects the snapshot from being clobbered by a stale `changed_files: []` in a late-arriving completion body.
 
@@ -261,7 +261,7 @@ curl -X PUT \
 
 ### Re-upload after a `changes_requested` review
 
-Once a task moves to the Review column, the original assignee (or any other agent on the board, depending on workflow) can re-upload an updated snapshot without re-claiming:
+After a `changes_requested` review, a caller with owner or modify access to the board — the original assignee or a reviewer — can re-upload an updated snapshot without re-claiming, whatever column the task is in:
 
 ```bash
 curl -X PUT \
@@ -273,7 +273,7 @@ curl -X PUT \
 
 ## Notes
 
-- **The PUT endpoint is the only writer.** The completion endpoint at `PATCH /api/tasks/:id/complete` no longer mutates `tasks.changed_files`. Sending `changed_files` in the completion body is tolerated for backwards compatibility but silently ignored at the schema cast layer. See [patch_tasks_id_complete.md](patch_tasks_id_complete.md) for the migration note.
+- **The PUT endpoint is the only writer.** The completion endpoint at `PATCH /api/tasks/:id/complete` no longer mutates `tasks.changed_files`. Sending `changed_files` in the completion body is tolerated for backwards compatibility and never stored, but it is still validated: a malformed value is rejected with `422` in strict mode, the production default, and logged as a warning in grace mode. See [patch_tasks_id_complete.md](patch_tasks_id_complete.md) for the migration note.
 - **Last-write-wins.** Repeated PUTs overwrite. The empty list (`[]`) is a legitimate explicit-clear value.
 - **No status transition.** This endpoint does not move the task between columns or change `status`. Use the completion endpoint for that.
 - **Race-safe.** Because the completion endpoint cannot write the field, an agent's completion request finishing after the hook's PUT cannot clobber the snapshot.

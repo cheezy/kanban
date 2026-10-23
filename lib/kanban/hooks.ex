@@ -99,7 +99,7 @@ defmodule Kanban.Hooks do
 
   defp execution_timing("after_goal", :before),
     do:
-      "Reporting after_goal exit code on the next /complete or /mark_reviewed call — only returned when this completion finished the parent goal's last open child"
+      "Reporting the after_goal result to PATCH /api/tasks/:id/after_goal for the parent goal — only returned when this completion finished the parent goal's last open child"
 
   defp execution_timing("after_goal", :after), do: "Parent goal marked as done"
 

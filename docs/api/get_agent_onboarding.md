@@ -40,7 +40,7 @@ objects.
     "key_features": [...]
   },
   "quick_start": [
-    "Windows users: See https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md for platform-specific setup ...",
+    "Windows users: See https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/WINDOWS-SETUP.md for platform-specific setup ...",
     "1. Check if .stride_auth.md exists - if NOT, create by copying the ENTIRE file_templates.stride_auth_md content exactly",
     ...
   ],

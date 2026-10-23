@@ -54,6 +54,21 @@ defmodule Kanban.HooksTest do
       assert hook_info.blocking == true
     end
 
+    # D397: the after_goal result goes to its own endpoint, not to a later
+    # /complete or /mark_reviewed call.
+    test "after_goal names the endpoint its result is reported to" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, hook_info} = Hooks.get_hook_info(task, board, "after_goal", "Claude")
+
+      assert hook_info.execute_before =~ "PATCH /api/tasks/:id/after_goal"
+      refute hook_info.execute_before =~ "/complete"
+      refute hook_info.execute_before =~ "/mark_reviewed"
+    end
+
     test "raises ArgumentError for invalid hook name" do
       user = user_fixture()
       board = board_fixture(user)

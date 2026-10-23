@@ -265,6 +265,76 @@ defmodule KanbanWeb.API.AgentJSONTest do
     end
   end
 
+  # D397: agents act on these sentences, so each must state what the code does.
+  describe "GET /api/agent/onboarding statements (D397)" do
+    setup %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      %{body: json_response(conn, 200)}
+    end
+
+    defp workflow_entry(body, name), do: Enum.find(body["workflow"], &(&1["name"] == name))
+
+    test "the claim-expiry text says the task stays in Doing", %{body: body} do
+      description = workflow_entry(body, "claim_task")["description"]
+
+      assert description =~ "expires after 60 minutes"
+      assert description =~ "stays in Doing"
+      assert description =~ "POST /api/tasks/:id/unclaim"
+      assert description =~ "moves it back to Ready"
+      refute description =~ "releasing the task"
+    end
+
+    test "the Windows setup link is not a /docs path on the Stride host", %{body: body} do
+      host_docs = body["api_base_url"] <> "/docs/"
+      [windows] = Enum.filter(body["quick_start"], &(&1 =~ "WINDOWS-SETUP"))
+
+      refute windows =~ host_docs
+
+      assert windows =~
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/WINDOWS-SETUP.md"
+
+      assert File.exists?("docs/WINDOWS-SETUP.md")
+    end
+
+    test "changed_files in a /complete body is described as validated, not ignored", %{body: body} do
+      complete =
+        body
+        |> get_in(["api_reference", "endpoints", "management"])
+        |> Enum.find(&(&1["method"] == "PATCH" and &1["path"] == "/api/tasks/:id/complete"))
+
+      texts = [
+        workflow_entry(body, "complete_task")["description"],
+        workflow_entry(body, "upload_changed_files")["description"],
+        complete["description"]
+      ]
+
+      for text <- texts do
+        refute text =~ "silently ignore", text
+        assert text =~ "validate", text
+      end
+
+      assert workflow_entry(body, "complete_task")["description"] =~
+               "rejected with 422 in strict mode"
+    end
+
+    test "the upload authorization matches the board write-access check", %{body: body} do
+      authz = workflow_entry(body, "upload_changed_files")["hook_validation"]
+
+      assert authz =~ "owner or modify access"
+      assert authz =~ "an assignee without that access is refused"
+      refute authz =~ "Review column"
+    end
+
+    test "board tokens are told a mismatched selector gets 400", %{body: body} do
+      section = get_in(body, ["api_reference", "workspace_tokens"])
+
+      assert section["board_selector"]["rule"] =~ "naming another board"
+      assert section["board_selector"]["rule"] =~ "gets 400"
+      refute section["board_selector"]["rule"] =~ "Board tokens ignore"
+      assert section["errors"]["400"] =~ "With a board token"
+    end
+  end
+
   # D389: built only from what the onboarding payload serves, a completion must
   # be accepted, and dropping any parameter it calls required must be rejected.
   # Strict mode is on because it is the production default.
