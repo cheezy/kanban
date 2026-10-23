@@ -138,11 +138,13 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
 $env:STRIDE_API_TOKEN = "{{YOUR_TOKEN_HERE}}"
 $env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
 
-curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
-  $env:STRIDE_API_URL/api/tasks/next
+curl.exe -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
+  "$env:STRIDE_API_URL/api/tasks/next"
 ```
 
-**Windows Users:** For complete setup instructions including WSL2, PowerShell, and Git Bash options, see https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md
+Type `curl.exe`, not `curl`: in Windows PowerShell 5.1, `curl` is an alias for `Invoke-WebRequest`, which takes different arguments and fails on this command.
+
+**Windows Users:** For complete setup instructions including WSL2, PowerShell, and Git Bash options, see https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/WINDOWS-SETUP.md
 ````
 
 The file has no board field. An agent holding a workspace token names its board on each request instead; see [Naming the Board on Each Request](#naming-the-board-on-each-request). Windows setup is in [WINDOWS-SETUP.md](WINDOWS-SETUP.md).

@@ -19,9 +19,10 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
       formats: %{
         copilot: %{
           description:
-            "Stride Copilot Plugin — provides 6 Copilot-adapted skills and 4 custom agents via copilot plugin install",
+            "Stride Copilot Plugin — provides 7 Copilot-adapted skills and 5 custom agents via copilot plugin install",
           plugin_repo: "https://github.com/cheezy/stride-copilot",
           skills_provided: [
+            "stride-workflow",
             "stride-claiming-tasks",
             "stride-completing-tasks",
             "stride-creating-tasks",
@@ -33,6 +34,7 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
             "task-explorer",
             "task-reviewer",
             "task-decomposer",
+            "task-enricher",
             "hook-diagnostician"
           ],
           installation_unix: "copilot plugin install https://github.com/cheezy/stride-copilot",
@@ -40,14 +42,14 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
           update: "copilot plugin update stride-copilot",
           uninstall: "copilot plugin uninstall stride-copilot",
           note:
-            "The stride-copilot plugin provides Copilot-adapted versions of all 6 Stride skills with tool-agnostic language and 4 custom agents. Install via copilot plugin install for automatic skill and agent discovery. See https://github.com/cheezy/stride-copilot for details.",
+            "The stride-copilot plugin provides Copilot-adapted versions of all 7 Stride skills with tool-agnostic language and 5 custom agents. Install via copilot plugin install for automatic skill and agent discovery. See https://github.com/cheezy/stride-copilot for details.",
           fallback_note:
             "For manual installation of 7 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .claude/skills/ — GitHub Copilot discovers them automatically."
         },
         cursor: %{
           file_path: ".cursor/skills/<skill-name>/SKILL.md (7 skills total)",
           description:
-            "Stride skills for Cursor — 7 skills including the stride-workflow orchestrator, downloaded into .cursor/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result`, `reviewer_result`, and `workflow_steps` are required fields on `/api/tasks/:id/complete`. See the stride-completing-tasks skill for the full schema.",
+            "Stride skills for Cursor — 7 skills including the stride-workflow orchestrator, downloaded into .cursor/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result` and `reviewer_result` are required on `/api/tasks/:id/complete` (a request without them is rejected with 422 in strict mode, the production default), and `workflow_steps` is telemetry the server does not reject when absent. See the stride-completing-tasks skill for the full schema.",
           compatible_tools: ["Cursor", "Claude Code"],
           skills_provided: [
             "stride-workflow",
@@ -82,7 +84,7 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
         windsurf: %{
           file_path: ".windsurf/skills/<skill-name>/SKILL.md (7 skills total)",
           description:
-            "Stride skills for Windsurf — 7 skills including the stride-workflow orchestrator, downloaded into .windsurf/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result`, `reviewer_result`, and `workflow_steps` are required fields on `/api/tasks/:id/complete`. See the stride-completing-tasks skill for the full schema.",
+            "Stride skills for Windsurf — 7 skills including the stride-workflow orchestrator, downloaded into .windsurf/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result` and `reviewer_result` are required on `/api/tasks/:id/complete` (a request without them is rejected with 422 in strict mode, the production default), and `workflow_steps` is telemetry the server does not reject when absent. See the stride-completing-tasks skill for the full schema.",
           compatible_tools: ["Windsurf", "Claude Code"],
           skills_provided: [
             "stride-workflow",
@@ -116,7 +118,7 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
         continue: %{
           file_path: ".continue/skills/<skill-name>/SKILL.md (7 skills total)",
           description:
-            "Stride skills for Continue.dev — 7 skills including the stride-workflow orchestrator, downloaded into .continue/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result`, `reviewer_result`, and `workflow_steps` are required fields on `/api/tasks/:id/complete`. See the stride-completing-tasks skill for the full schema.",
+            "Stride skills for Continue.dev — 7 skills including the stride-workflow orchestrator, downloaded into .continue/skills/ for auto-discovery. Skills now include G65 completion-validation guidance: `explorer_result` and `reviewer_result` are required on `/api/tasks/:id/complete` (a request without them is rejected with 422 in strict mode, the production default), and `workflow_steps` is telemetry the server does not reject when absent. See the stride-completing-tasks skill for the full schema.",
           compatible_tools: ["Continue.dev"],
           skills_provided: [
             "stride-workflow",
@@ -146,9 +148,10 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
         },
         gemini: %{
           description:
-            "Stride Gemini Extension — provides 6 Gemini-adapted skills and 4 custom agents via gemini extensions install",
+            "Stride Gemini Extension — provides 7 Gemini-adapted skills and 5 custom agents via gemini extensions install",
           extension_repo: "https://github.com/cheezy/stride-gemini",
           skills_provided: [
+            "stride-workflow",
             "stride-claiming-tasks",
             "stride-completing-tasks",
             "stride-creating-tasks",
@@ -160,21 +163,23 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
             "task-explorer",
             "task-reviewer",
             "task-decomposer",
+            "task-enricher",
             "hook-diagnostician"
           ],
           installation_unix: "gemini extensions install https://github.com/cheezy/stride-gemini",
           installation_windows:
             "gemini extensions install https://github.com/cheezy/stride-gemini",
           note:
-            "The stride-gemini extension provides Gemini-adapted versions of all 6 Stride skills with Gemini tool names and 4 custom agents with Gemini-specific parameters (temperature, max_turns, timeout_mins). Includes GEMINI.md bridge file for workflow enforcement. See https://github.com/cheezy/stride-gemini for details.",
+            "The stride-gemini extension provides Gemini-adapted versions of all 7 Stride skills with Gemini tool names and 5 custom agents with Gemini-specific parameters (temperature, max_turns, timeout_mins). Includes GEMINI.md bridge file for workflow enforcement. See https://github.com/cheezy/stride-gemini for details.",
           fallback_note:
             "For manual installation of 7 generic skills as a fallback, install Claude Code skills from the claude_code_skills section above to .gemini/skills/ — Gemini discovers them automatically."
         },
         opencode: %{
           description:
-            "Stride OpenCode Plugin — provides 6 OpenCode-adapted skills, 4 custom agents, and automatic hook execution via npm plugin",
+            "Stride OpenCode Plugin — provides 7 OpenCode-adapted skills, 5 custom agents, and automatic hook execution via npm plugin",
           plugin_repo: "https://github.com/cheezy/stride-opencode",
           skills_provided: [
+            "stride-workflow",
             "stride-claiming-tasks",
             "stride-completing-tasks",
             "stride-creating-tasks",
@@ -186,22 +191,24 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
             "task-explorer",
             "task-reviewer",
             "task-decomposer",
+            "task-enricher",
             "hook-diagnostician"
           ],
           installation_unix:
-            "# Add to opencode.json:\n# {\"plugin\": [\"github:cheezy/stride-opencode\"]}\n# Or install locally:\ncurl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project",
+            "# 1. Add the plugin (runs your hooks) to opencode.json:\n# {\"plugin\": [\"github:cheezy/stride-opencode\"]}\n# 2. Copy the skills and agents into the project (OpenCode does not discover skills inside an installed plugin):\nsrc=$(mktemp -d) && git clone https://github.com/cheezy/stride-opencode.git \"$src/stride-opencode\" && mkdir -p .opencode/skills .opencode/agents && cp -R \"$src/stride-opencode/skills/.\" .opencode/skills/ && cp \"$src/stride-opencode/agents/\"*.md .opencode/agents/",
           installation_windows:
-            "# Add to opencode.json:\n# {\"plugin\": [\"github:cheezy/stride-opencode\"]}\n# Or install locally (requires git):\ngit clone https://github.com/cheezy/stride-opencode.git && xcopy /E stride-opencode\\skills .opencode\\skills\\ && xcopy /E stride-opencode\\agents .opencode\\agents\\",
+            "# 1. Add the plugin (runs your hooks) to opencode.json:\n# {\"plugin\": [\"github:cheezy/stride-opencode\"]}\n# 2. Copy the skills and agents into the project (requires git):\ngit clone https://github.com/cheezy/stride-opencode.git && xcopy /E stride-opencode\\skills .opencode\\skills\\ && xcopy /E stride-opencode\\agents .opencode\\agents\\",
           note:
-            "The stride-opencode plugin provides 6 OpenCode-adapted skills with OpenCode tool names, 4 custom agents, and a native TypeScript plugin for automatic hook execution via tool.execute.before/after events. Install via opencode.json plugin array or locally. See https://github.com/cheezy/stride-opencode for details.",
+            "The stride-opencode plugin provides 7 OpenCode-adapted skills with OpenCode tool names, 5 custom agents, and a native TypeScript plugin for automatic hook execution via tool.execute.before/after events. Installation is two steps: the opencode.json plugin entry runs your hooks, and the skills and agents are copied into .opencode/skills/ and .opencode/agents/. See https://github.com/cheezy/stride-opencode for details.",
           fallback_note:
-            "For manual installation, copy skills to .opencode/skills/ and agents to .opencode/agents/ from the GitHub repository."
+            "For a global install, copy the skills and agents into ~/.config/opencode/skills/ and ~/.config/opencode/agents/ instead of the project's .opencode/ directories."
         },
         codex: %{
           description:
-            "Stride Codex CLI Plugin — provides 6 Codex-adapted skills and 4 subagents with manual hook execution",
+            "Stride Codex CLI Plugin — provides 7 Codex-adapted skills and 5 subagents with manual hook execution",
           plugin_repo: "https://github.com/cheezy/stride-codex",
           skills_provided: [
+            "stride-workflow",
             "stride-claiming-tasks",
             "stride-completing-tasks",
             "stride-creating-tasks",
@@ -213,6 +220,7 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
             "task-explorer",
             "task-reviewer",
             "task-decomposer",
+            "task-enricher",
             "hook-diagnostician"
           ],
           installation_unix:
@@ -220,14 +228,40 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
           installation_windows:
             "git clone https://github.com/cheezy/stride-codex.git && xcopy /E stride-codex\\skills .agents\\skills\\ && xcopy /E stride-codex\\agents .agents\\agents\\ && copy stride-codex\\AGENTS.md AGENTS.md",
           note:
-            "The stride-codex plugin provides 6 Codex-adapted skills with manual hook execution (Codex has no automatic hook interception). Skills instruct the agent to read .stride.md and execute commands directly. Install globally with the install script or copy files manually. See https://github.com/cheezy/stride-codex for details.",
+            "The stride-codex plugin provides 7 Codex-adapted skills and 5 subagents with manual hook execution (Codex has no automatic hook interception). Skills instruct the agent to read .stride.md and execute commands directly. Install globally with the install script or copy files manually. See https://github.com/cheezy/stride-codex for details.",
           fallback_note:
             "For project-local installation, use: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project"
+        },
+        pi: %{
+          description:
+            "Stride Pi Plugin — provides 11 Pi skills (the 7 Stride skills plus 4 that stand in for subagents) and automatic hook execution through Pi extensions",
+          plugin_repo: "https://github.com/cheezy/stride-pi",
+          skills_provided: [
+            "stride-workflow",
+            "stride-claiming-tasks",
+            "stride-completing-tasks",
+            "stride-creating-tasks",
+            "stride-creating-goals",
+            "stride-enriching-tasks",
+            "stride-subagent-workflow",
+            "stride-task-explorer",
+            "stride-task-reviewer",
+            "stride-task-decomposer",
+            "stride-hook-diagnostician"
+          ],
+          installation_unix:
+            "# Download the install script and read it before running it:\ncurl -fsSLo stride-pi-install.sh https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh\nbash stride-pi-install.sh",
+          installation_windows:
+            "git clone https://github.com/cheezy/stride-pi.git; New-Item -ItemType Directory -Force -Path \"$HOME/.pi/agent/skills\" | Out-Null; Copy-Item -Recurse -Force stride-pi/skills/* \"$HOME/.pi/agent/skills/\"; Copy-Item stride-pi/AGENTS.md \"$HOME/.pi/agent/AGENTS.md\"",
+          note:
+            "install.sh is a bash script and also installs the Pi extensions that run your .stride.md hooks automatically. On Windows, run it from WSL2 or Git Bash; the PowerShell installation_windows command copies the skills and AGENTS.md only, as the stride-pi README's manual installation does, so the agent runs the .stride.md hooks itself. See https://github.com/cheezy/stride-pi for details.",
+          fallback_note:
+            "For project-local installation, run the downloaded script with --project: bash stride-pi-install.sh --project"
         },
         kimi: %{
           file_path: "AGENTS.md",
           description:
-            "Kimi Code CLI (k2.5) instructions with stride-workflow orchestrator, verification checklist, enforcement messaging, and G65 completion-validation requirements (explorer_result, reviewer_result, workflow_steps required on /complete) — append-mode, always-active",
+            "Kimi Code CLI (k2.5) instructions with stride-workflow orchestrator, verification checklist, enforcement messaging, and G65 completion-validation requirements (explorer_result and reviewer_result required on /complete; workflow_steps is telemetry the server does not reject when absent) — append-mode, always-active",
           compatible_tools: ["Kimi Code CLI (k2.5)"],
           download_url: "#{@docs_base_url}/docs/multi-agent-instructions/AGENTS.md",
           installation_unix:
@@ -259,12 +293,13 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
         "All formats cover the same core content: hook execution, critical mistakes, essential fields, code patterns",
         "Token limits vary by assistant - content is optimized accordingly",
         "Claude Code users should use claude_code_skills section above (not this section)",
-        "GitHub Copilot users: RECOMMENDED: copilot plugin install https://github.com/cheezy/stride-copilot (6 skills + 4 agents). Fallback: install Claude Code skills to .claude/skills/",
+        "GitHub Copilot users: RECOMMENDED: copilot plugin install https://github.com/cheezy/stride-copilot (7 skills + 5 agents). Fallback: install Claude Code skills to .claude/skills/",
         "Cursor users: Install 7 Stride skills (including stride-workflow orchestrator) to .cursor/skills/ - see multi_agent_instructions.cursor for curl commands",
         "Windsurf users: Install 7 Stride skills (including stride-workflow orchestrator) to .windsurf/skills/ - see multi_agent_instructions.windsurf for curl commands",
-        "Gemini CLI users: RECOMMENDED: gemini extensions install https://github.com/cheezy/stride-gemini (6 skills + 4 agents). Fallback: install Claude Code skills to .gemini/skills/",
-        "OpenCode users: RECOMMENDED: Add \"github:cheezy/stride-opencode\" to opencode.json plugin array (6 skills + 4 agents + auto hooks). Fallback: install skills to .opencode/skills/",
-        "Codex CLI users: RECOMMENDED: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash (6 skills + 4 agents). Manual hook execution.",
+        "Gemini CLI users: RECOMMENDED: gemini extensions install https://github.com/cheezy/stride-gemini (7 skills + 5 agents). Fallback: install Claude Code skills to .gemini/skills/",
+        "OpenCode users: Add \"github:cheezy/stride-opencode\" to the opencode.json plugin array (auto hooks), then copy its 7 skills + 5 agents into .opencode/skills/ and .opencode/agents/ - see multi_agent_instructions.opencode",
+        "Codex CLI users: RECOMMENDED: curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash (7 skills + 5 agents). Manual hook execution.",
+        "Pi users: RECOMMENDED: download https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh, read it, then run it with bash (11 skills: the 7 Stride skills plus 4 that stand in for subagents). Add --project for a project-local install - see multi_agent_instructions.pi",
         "Kimi Code CLI (k2.5) users: Enhanced AGENTS.md with stride-workflow orchestrator, verification checklist, and enforcement messaging. Append to existing AGENTS.md or create new"
       ],
       safe_installation: [
@@ -272,8 +307,9 @@ defmodule KanbanWeb.API.Agent.MultiAgentInstructions do
         "RECOMMENDED: Backup existing config: cp .cursorrules .cursorrules.backup",
         "ALTERNATIVE: Append Stride instructions: echo '\\n\\n# Stride Integration' >> .cursorrules && curl -s [url] >> .cursorrules",
         "ALTERNATIVE: Download to temp location and manually merge: curl -o /tmp/stride-instructions.txt [url]",
-        "For OpenCode: RECOMMENDED: Add to opencode.json plugin array. Local: install to .opencode/skills/ and .opencode/agents/",
+        "For OpenCode: Add the plugin to the opencode.json plugin array, then copy the skills and agents to .opencode/skills/ and .opencode/agents/",
         "For Codex CLI: Install globally with install.sh or copy skills to .agents/skills/ and agents to .agents/agents/",
+        "For Pi: Install globally with install.sh, or pass --project to install into .pi/skills/",
         "For Kimi Code CLI (k2.5): Use append-mode installation to add Stride instructions to existing AGENTS.md",
         "For more details see: #{@docs_base_url}/docs/MULTI-AGENT-INSTRUCTIONS.md#manual-installation"
       ]

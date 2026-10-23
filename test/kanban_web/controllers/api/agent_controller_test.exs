@@ -389,11 +389,11 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify skills and agents lists
       assert is_list(copilot["skills_provided"])
-      assert length(copilot["skills_provided"]) == 6
+      assert length(copilot["skills_provided"]) == 7
       assert "stride-claiming-tasks" in copilot["skills_provided"]
 
       assert is_list(copilot["custom_agents"])
-      assert length(copilot["custom_agents"]) == 4
+      assert length(copilot["custom_agents"]) == 5
       assert "task-explorer" in copilot["custom_agents"]
 
       # Verify update and uninstall commands
@@ -486,12 +486,12 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify skills and agents provided
       assert is_list(opencode["skills_provided"])
-      assert length(opencode["skills_provided"]) == 6
+      assert length(opencode["skills_provided"]) == 7
       assert "stride-claiming-tasks" in opencode["skills_provided"]
       assert "stride-enriching-tasks" in opencode["skills_provided"]
 
       assert is_list(opencode["agents_provided"])
-      assert length(opencode["agents_provided"]) == 4
+      assert length(opencode["agents_provided"]) == 5
       assert "task-explorer" in opencode["agents_provided"]
     end
 
@@ -523,10 +523,10 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert codex["plugin_repo"] == "https://github.com/cheezy/stride-codex"
 
       assert is_list(codex["skills_provided"])
-      assert length(codex["skills_provided"]) == 6
+      assert length(codex["skills_provided"]) == 7
 
       assert is_list(codex["agents_provided"])
-      assert length(codex["agents_provided"]) == 4
+      assert length(codex["agents_provided"]) == 5
 
       # Verify note mentions manual hook execution
       assert codex["note"] =~ "manual hook execution"
@@ -578,11 +578,11 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify skills and agents lists
       assert is_list(gemini["skills_provided"])
-      assert length(gemini["skills_provided"]) == 6
+      assert length(gemini["skills_provided"]) == 7
       assert "stride-claiming-tasks" in gemini["skills_provided"]
 
       assert is_list(gemini["custom_agents"])
-      assert length(gemini["custom_agents"]) == 4
+      assert length(gemini["custom_agents"]) == 5
       assert "task-explorer" in gemini["custom_agents"]
 
       # Verify note references the extension
@@ -1131,6 +1131,149 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert_file_contains(workflow_path, core_tokens)
       assert_file_contains(@agents_md_path, core_tokens)
     end
+  end
+
+  # D390: the setup templates and per-assistant install text the onboarding
+  # endpoint serves. Each number and link is checked against its source, so a
+  # new user scaffolding from this text gets commands that work.
+  describe "GET /api/agent/onboarding setup templates (D390)" do
+    setup %{conn: conn} do
+      %{body: conn |> get(~p"/api/agent/onboarding") |> json_response(200)}
+    end
+
+    test "served stride_md template uses the configured hook timeout", %{body: body} do
+      sections = stride_md_sections(body)
+
+      for {name, config} <- Kanban.Hooks.list_hooks() do
+        blocking = if config.blocking, do: "blocking", else: "non-blocking"
+        expected = "(#{blocking}, #{div(config.timeout, 1000)}s timeout)"
+        assert sections[name] =~ expected, "## #{name} does not state #{expected}"
+      end
+
+      refute get_in(body, ["file_templates", "stride_md"]) =~ ~r/\b(60|120)s timeout/
+    end
+
+    test "served stride_md template has all five hook sections", %{body: body} do
+      headings =
+        ~r/^## (\w+)$/m
+        |> Regex.scan(get_in(body, ["file_templates", "stride_md"]))
+        |> Enum.map(&List.last/1)
+
+      assert headings == Enum.map(Kanban.Hooks.list_hooks(), &elem(&1, 0))
+      assert "after_goal" in headings
+    end
+
+    test "PowerShell smoke test calls curl.exe, not the Invoke-WebRequest alias", %{body: body} do
+      auth = get_in(body, ["file_templates", "stride_auth_md"])
+      [_, powershell] = Regex.run(~r/```powershell\n(.*?)```/s, auth)
+
+      assert powershell =~ ~r/^curl\.exe -H "Authorization: Bearer \$env:STRIDE_API_TOKEN"/m
+      assert powershell =~ ~s("$env:STRIDE_API_URL/api/tasks/next")
+      refute powershell =~ ~r/^curl -H/m
+      assert auth =~ "{{YOUR_TOKEN_HERE}}"
+    end
+
+    test "no setup text links to /docs on the Stride host", %{body: body} do
+      host_docs = body["api_base_url"] <> "/docs/"
+
+      for key <- setup_text_keys(),
+          text <- served_strings(body[key]) do
+        refute text =~ host_docs, "#{key} links to the Stride host's /docs: #{text}"
+      end
+
+      windows_setup =
+        "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/WINDOWS-SETUP.md"
+
+      assert get_in(body, ["file_templates", "stride_md"]) =~ windows_setup
+      assert get_in(body, ["file_templates", "stride_auth_md"]) =~ windows_setup
+    end
+
+    test "the session checklist claims with a POST and a valid JSON body", %{body: body} do
+      claim =
+        body
+        |> get_in(["session_initialization", "checklist"])
+        |> Enum.find(&(is_binary(&1["command"]) and &1["command"] =~ "/api/tasks/claim"))
+
+      assert claim["command"] =~ "curl -X POST"
+      [_, payload] = Regex.run(~r/-d '([^']+)'/, claim["command"])
+      assert %{"before_doing_result" => result} = JSON.decode!(payload)
+      assert Map.keys(result) |> Enum.sort() == ["duration_ms", "exit_code", "output"]
+    end
+
+    test "plugin skill and agent counts match the plugins", %{body: body} do
+      formats = get_in(body, ["multi_agent_instructions", "formats"])
+
+      for name <- ["copilot", "gemini", "opencode", "codex"] do
+        format = formats[name]
+        agents = format["custom_agents"] || format["agents_provided"]
+        assert "stride-workflow" in format["skills_provided"], name
+        assert length(format["skills_provided"]) == 7, name
+        assert "task-enricher" in agents, name
+        assert length(agents) == 5, name
+      end
+
+      for key <- setup_text_keys(), text <- served_strings(body[key]) do
+        refute text =~ ~r/\b6 (\S+ )?skills\b/, "#{key} states six skills: #{text}"
+        refute text =~ ~r/\b4 (\S+ )?(agents|subagents)\b/, "#{key} states four agents: #{text}"
+      end
+    end
+
+    test "no install step points at the stride-opencode install.sh", %{body: body} do
+      for key <- setup_text_keys(), text <- served_strings(body[key]) do
+        refute text =~ "stride-opencode/main/install.sh", "#{key}: #{text}"
+      end
+
+      opencode = get_in(body, ["multi_agent_instructions", "formats", "opencode"])
+
+      assert opencode["installation_unix"] =~
+               "git clone https://github.com/cheezy/stride-opencode.git"
+
+      assert opencode["installation_unix"] =~ ".opencode/skills/"
+    end
+
+    test "Pi has an install entry in both per-assistant sections", %{body: body} do
+      pi = get_in(body, ["multi_agent_instructions", "formats", "pi"])
+
+      assert pi["installation_unix"] =~
+               "raw.githubusercontent.com/cheezy/stride-pi/main/install.sh"
+
+      assert pi["installation_windows"] =~ "git clone https://github.com/cheezy/stride-pi.git"
+      assert length(pi["skills_provided"]) == 11
+      refute pi["installation_unix"] =~ "| bash", "Pi install pipes the script into bash unread"
+
+      steps = get_in(body, ["memory_strategy", "agent_specific_instructions", "pi", "steps"])
+      assert Enum.join(steps, " ") =~ "cheezy/stride-pi/main/install.sh"
+    end
+
+    test "workflow_steps is not described as a required completion field", %{body: body} do
+      for text <- served_strings(body["multi_agent_instructions"]) do
+        refute text =~ ~r/workflow_steps[^.;]*required/, text
+      end
+    end
+  end
+
+  # The onboarding sections built by SetupDocs, AgentSpecificInstructions and
+  # MultiAgentInstructions (D390).
+  defp setup_text_keys,
+    do: [
+      "file_templates",
+      "memory_strategy",
+      "session_initialization",
+      "multi_agent_instructions"
+    ]
+
+  defp served_strings(value) when is_binary(value), do: [value]
+  defp served_strings(value) when is_map(value), do: Enum.flat_map(value, &served_strings/1)
+  defp served_strings({_key, value}), do: served_strings(value)
+  defp served_strings(value) when is_list(value), do: Enum.flat_map(value, &served_strings/1)
+  defp served_strings(_value), do: []
+
+  defp stride_md_sections(body) do
+    body
+    |> get_in(["file_templates", "stride_md"])
+    |> String.split("\n## ")
+    |> Enum.drop(1)
+    |> Map.new(fn section -> {section |> String.split("\n", parts: 2) |> hd(), section} end)
   end
 
   defp assert_file_contains(path, tokens) do

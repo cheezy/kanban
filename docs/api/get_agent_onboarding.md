@@ -103,7 +103,7 @@ objects.
     "note": "Claude Code users should use the claude_code_skills section above ...",
     "formats": {
       "copilot": {
-        "description": "Stride Copilot Plugin — provides 6 Copilot-adapted skills and 4 custom agents via copilot plugin install",
+        "description": "Stride Copilot Plugin — provides 7 Copilot-adapted skills and 5 custom agents via copilot plugin install",
         "installation_unix": "copilot plugin install https://github.com/cheezy/stride-copilot",
         "installation_windows": "copilot plugin install https://github.com/cheezy/stride-copilot",
         "update": "copilot plugin update stride-copilot",
@@ -120,6 +120,7 @@ objects.
       "gemini": {...},
       "kimi": {...},
       "opencode": {...},
+      "pi": {...},
       "windsurf": {...}
     },
     "safe_installation": [...],
@@ -230,7 +231,7 @@ Always-active code completion guidance for AI assistants other than Claude Code:
 
 - `description` and `note` — how this complements Claude Code Skills
 - `formats` — one entry per assistant: `copilot`, `codex`, `continue`,
-  `cursor`, `gemini`, `kimi`, `opencode` and `windsurf`
+  `cursor`, `gemini`, `kimi`, `opencode`, `pi` and `windsurf`
 - `safe_installation`, `installation_warning` and `usage_notes` — how to
   install without overwriting existing configuration
 
@@ -238,9 +239,10 @@ Each format entry has a `description` and installation commands for
 Unix/Linux/macOS (`installation_unix`) and Windows (`installation_windows`).
 The other keys depend on how that assistant is set up:
 
-- Plugin formats (`copilot`, `codex`, `gemini`, `opencode`) name their
-  repository (`plugin_repo` or `extension_repo`), the skills and agents they
-  provide, and a `fallback_note` for manual installation.
+- Plugin formats (`copilot`, `codex`, `gemini`, `opencode`, `pi`) name their
+  repository (`plugin_repo` or `extension_repo`), the skills they provide and,
+  except `pi`, whose skills stand in for agents, the agents too, and a
+  `fallback_note` for another way to install.
 - Instruction-file formats (`continue`, `cursor`, `kimi`, `windsurf`) give a
   `file_path` and a `token_limit`. `kimi` also gives a `download_url`.
 
@@ -336,7 +338,7 @@ curl -s https://www.stridelikeaboss.com/api/agent/onboarding | \
 **Alternative (with jq installed via chocolatey):**
 
 ```powershell
-curl -s https://www.stridelikeaboss.com/api/agent/onboarding | `
+curl.exe -s https://www.stridelikeaboss.com/api/agent/onboarding | `
   jq -r '.file_templates.stride_auth_md' | `
   Out-File -FilePath .stride_auth.md -Encoding utf8
 ```

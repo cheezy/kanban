@@ -159,11 +159,16 @@ Add the stride-opencode plugin to your project's `opencode.json`. It includes th
 }
 ```
 
-Or install it into the project with the setup script:
+OpenCode does not discover skills inside an installed plugin, so copy the skills and agents into the project as well:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project
+src=$(mktemp -d) && git clone https://github.com/cheezy/stride-opencode.git "$src/stride-opencode" && \
+  mkdir -p .opencode/skills .opencode/agents && \
+  cp -R "$src/stride-opencode/skills/." .opencode/skills/ && \
+  cp "$src/stride-opencode/agents/"*.md .opencode/agents/
 ```
+
+The [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md#7-opencode) have the global install.
 
 ### Install the Stride Plugin (Codex CLI)
 
@@ -245,11 +250,13 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
 $env:STRIDE_API_TOKEN = "{{YOUR_TOKEN_HERE}}"
 $env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
 
-curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
-  $env:STRIDE_API_URL/api/tasks/next
+curl.exe -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
+  "$env:STRIDE_API_URL/api/tasks/next"
 ```
 
-**Windows Users:** For complete setup instructions including WSL2, PowerShell, and Git Bash options, see https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md
+Type `curl.exe`, not `curl`: in Windows PowerShell 5.1, `curl` is an alias for `Invoke-WebRequest`, which takes different arguments and fails on this command.
+
+**Windows Users:** For complete setup instructions including WSL2, PowerShell, and Git Bash options, see https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/WINDOWS-SETUP.md
 ````
 
 Then add it to `.gitignore` **immediately**:
@@ -258,7 +265,7 @@ Then add it to `.gitignore` **immediately**:
 echo ".stride_auth.md" >> .gitignore
 ```
 
-The file format and what an agent does with it are in [AUTHENTICATION.md](AUTHENTICATION.md#the-stride_authmd-file). Windows users: the Windows setup link in both templates (at the end of `.stride_auth.md`, at the top of `.stride.md`) does not resolve on the server today; use [WINDOWS-SETUP.md](WINDOWS-SETUP.md) in this repository instead.
+The file format and what an agent does with it are in [AUTHENTICATION.md](AUTHENTICATION.md#the-stride_authmd-file). The Windows setup link in both templates points at [WINDOWS-SETUP.md](WINDOWS-SETUP.md) in this repository.
 
 ### Creating `.stride.md`
 
@@ -267,11 +274,11 @@ This file holds your hooks. Unlike `.stride_auth.md`, **commit it**, so the whol
 ````markdown
 # Stride Configuration
 
-**Note:** Examples below use Unix/Linux/macOS bash syntax. Windows users should see https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md for PowerShell equivalents.
+**Note:** Examples below use Unix/Linux/macOS bash syntax. Windows users should see https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/WINDOWS-SETUP.md for PowerShell equivalents.
 
 ## before_doing
 
-Executes before starting work on a task (blocking, 60s timeout).
+Executes before starting work on a task (blocking, 600s timeout).
 
 ```bash
 echo "Starting task $TASK_IDENTIFIER: $TASK_TITLE"
@@ -281,7 +288,7 @@ git pull origin main
 
 ## after_doing
 
-Executes after completing work (blocking, 120s timeout).
+Executes after completing work (blocking, 600s timeout).
 If this fails, task completion should fail.
 
 ```bash
@@ -294,7 +301,7 @@ echo "Running tests for $TASK_IDENTIFIER"
 
 ## before_review
 
-Executes when task enters review (blocking, 60s timeout).
+Executes when task enters review (blocking, 600s timeout).
 If this fails, task completion should fail.
 
 ```bash
@@ -304,18 +311,25 @@ echo "Creating PR for $TASK_IDENTIFIER"
 
 ## after_review
 
-Executes after review approval (blocking, 60s timeout).
+Executes after review approval (blocking, 600s timeout).
 If this fails, mark_reviewed should fail.
 
 ```bash
 echo "Deploying $TASK_IDENTIFIER"
 # Add deployment commands here
 ```
-````
 
-The `60s` and `120s` timeouts in the served template are out of date. The
-server gives every hook a 10-minute (600,000 ms) timeout; see
-[Hook Types Explained](#hook-types-explained).
+## after_goal
+
+Executes once, when the last task of a goal is done (blocking, 600s timeout).
+Report its result with PATCH /api/tasks/:id/after_goal, where :id is the goal.
+The goal moves to Done only when the reported exit code is 0.
+
+```bash
+echo "Goal finished with $TASK_IDENTIFIER"
+# git push origin main
+```
+````
 
 What to put in each section:
 
@@ -334,6 +348,10 @@ Runs when the completed task enters review. A common use is opening a pull reque
 #### after_review
 
 Runs after the task is approved. A common use is merging or deploying.
+
+#### after_goal
+
+Runs once, when the last task of a goal is done. A common use is pushing the goal's work or cutting a release. Its result is reported to the server, and the goal moves to Done only when the reported exit code is 0.
 
 ### Hook Types Explained
 

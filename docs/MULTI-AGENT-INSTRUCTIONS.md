@@ -14,7 +14,7 @@ Stride works with many AI coding assistants, not only Claude Code. Each one gets
 
 **Supported AI Assistants:** Claude Code, GitHub Copilot CLI, Cursor, Windsurf, Continue.dev, Gemini CLI, OpenCode, Codex CLI, Kimi Code CLI (k2.5) and Pi.
 
-The onboarding endpoint, `GET /api/agent/onboarding`, carries the same install instructions as data: Claude Code under `claude_code_skills`, and every other tool except Pi under `multi_agent_instructions.formats`. See [GET /api/agent/onboarding](api/get_agent_onboarding.md).
+The onboarding endpoint, `GET /api/agent/onboarding`, carries the same install instructions as data: Claude Code under `claude_code_skills`, and every other tool, Pi included, under `multi_agent_instructions.formats`. See [GET /api/agent/onboarding](api/get_agent_onboarding.md).
 
 ## Architecture
 
@@ -250,8 +250,6 @@ The fresh `mktemp -d` directory and the `&&` chain mean nothing is copied unless
 
 For a global install, copy into `~/.config/opencode/skills/` and `~/.config/opencode/agents/` instead. The [stride-opencode README](https://github.com/cheezy/stride-opencode) has the full steps, including its commands and `AGENTS.md`.
 
-**IMPORTANT:** The onboarding response's OpenCode entry also offers an `install.sh` one-liner from the stride-opencode repository. The repository's main branch has no `install.sh`, so use the steps above.
-
 ### 8. Codex CLI
 
 **Installation Method:** Stride Codex Plugin
@@ -382,7 +380,7 @@ bash stride-pi-install.sh
 bash stride-pi-install.sh --project
 ```
 
-The onboarding response has no Pi entry yet; the [stride-pi README](https://github.com/cheezy/stride-pi) is the reference.
+The onboarding response carries the same download, read and run steps under `multi_agent_instructions.formats.pi`; the [stride-pi README](https://github.com/cheezy/stride-pi) is the reference.
 
 ## Content Strategy
 
@@ -558,15 +556,15 @@ The onboarding response links to the instruction files instead of embedding thei
 When AI agents fetch the onboarding endpoint, they can install their own format:
 
 1. Agent fetches `/api/agent/onboarding`
-2. Agent identifies its tool (Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode, Codex CLI, Kimi)
+2. Agent identifies its tool (Copilot, Cursor, Windsurf, Continue.dev, Gemini, OpenCode, Codex CLI, Kimi, Pi)
 3. Agent reads its entry in `multi_agent_instructions.formats`
 4. Agent runs that entry's `installation_unix` or `installation_windows` command
 5. The plugin or the files land in the right place
    - For Cursor, Windsurf and Continue.dev: the seven skill directories under `.cursor/skills/`, `.windsurf/skills/` or `.continue/skills/`
    - For Kimi: Appends to existing AGENTS.md or creates new file
-   - For OpenCode: follow [Section 7](#7-opencode) instead of the entry's `install.sh` line
+   - For OpenCode: the entry adds the plugin to `opencode.json` and copies the skills and agents into `.opencode/`, as in [Section 7](#7-opencode)
 
-Claude Code installs from `claude_code_skills`, and Pi has no entry; see [Section 1](#1-claude-code) and [Section 10](#10-pi).
+Claude Code installs from `claude_code_skills`; see [Section 1](#1-claude-code).
 
 ### Manual Installation
 
