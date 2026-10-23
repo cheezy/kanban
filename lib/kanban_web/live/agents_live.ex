@@ -374,7 +374,7 @@ defmodule KanbanWeb.AgentsLive do
             throughput_trends={@throughput_trends}
           />
 
-          <div class="flex-1 min-h-0 flex flex-col md:flex-row">
+          <div data-agents-panes class="flex-1 min-h-0 flex flex-col md:flex-row">
             <Roster.roster
               agents={@agents}
               dormant_agents={@dormant_agents}

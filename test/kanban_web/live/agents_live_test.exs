@@ -2008,6 +2008,17 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ "data-agent-feed"
     end
 
+    test "wraps the roster and feed in the floored panes row inside the second tier",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      # app.css gives [data-agents-panes] a min-height floor while pinned, so a
+      # tall risk explainer cannot squeeze the roster and feed to nothing.
+      assert has_element?(view, "[data-agents-second-tier] > [data-agents-panes]")
+      assert has_element?(view, "[data-agents-panes] > [data-agents-roster]")
+      assert has_element?(view, "[data-agents-panes] [data-agent-feed]")
+    end
+
     test "tethers a feed entry to the target and goal its agent serves",
          %{conn: conn, user: user} do
       board = board_fixture(user)

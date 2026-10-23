@@ -88,4 +88,21 @@ defmodule KanbanWeb.ResponsivePrimitivesTest do
     assert String.contains?(css, "min-height: 700px"),
            "Missing the /agents height-aware pinning media query."
   end
+
+  test "the pinned /agents panes keep a floor so a tall risk explainer cannot hide them" do
+    css = File.read!(@app_css)
+
+    [_, pin_block] =
+      Regex.run(~r/@media \(min-width: 768px\) and \(min-height: 700px\) \{(.*?)\n\}/s, css)
+
+    # The second tier must be allowed to grow past its flex share, and the
+    # panes need a floor plus contain: size — without contain the tier sizes
+    # to every roster card and feed row and the whole page unpins.
+    assert pin_block =~ ~r/\[data-agents-second-tier\] \{\s*min-height: auto;\s*\}/,
+           "The pinned /agents second tier lost its min-height: auto."
+
+    assert pin_block =~
+             ~r/\[data-agents-panes\] \{\s*min-height: 280px;\s*contain: size;\s*\}/,
+           "The pinned /agents roster/feed panes lost their 280px floor or contain: size."
+  end
 end

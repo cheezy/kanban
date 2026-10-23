@@ -1305,10 +1305,31 @@
    header ~191 + delivery tier ~85 + live indicator ~27 +
    pm_trends ~179). At 700px the panes still get ~180px of
    workable room; much below that they would collapse to nothing.
+
+   That derivation assumes the delivery tier stays short. The risk
+   explainer lists every at-risk milestone and cannot shrink, so a
+   target with ten milestones (~470px) left the roster/feed panes
+   0-30px tall with nothing to scroll to. The panes therefore keep a
+   280px floor (what they get at 1440x750 with no explainer, so
+   ordinary short windows are unchanged) and the page scrolls to
+   reach them when the chrome above is taller. The second tier must
+   be allowed to grow past its flex share for that (min-height:
+   auto), and `contain: size` keeps the panes' own content out of
+   that minimum: without it the tier sizes to every roster card and
+   feed row and the whole page unpins.
    ============================================================ */
 @media (min-width: 768px) and (min-height: 700px) {
   .stride-screen.stride-pin-when-tall {
     height: 100%;
+  }
+
+  .stride-screen.stride-pin-when-tall [data-agents-second-tier] {
+    min-height: auto;
+  }
+
+  .stride-screen.stride-pin-when-tall [data-agents-panes] {
+    min-height: 280px;
+    contain: size;
   }
 }
 
