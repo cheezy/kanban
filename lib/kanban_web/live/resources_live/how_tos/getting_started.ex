@@ -75,7 +75,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
             content:
               "**AI-optimized boards** come with five pre-configured columns designed for AI agent workflows. These columns **cannot be added, removed, or renamed**:\n\n- **Backlog**: Tasks that are not yet ready to be worked on\n- **Ready**: Tasks available for AI agents to claim\n- **Doing**: Tasks currently being worked on\n- **Review**: Tasks awaiting human review\n- **Done**: Completed tasks\n\nThis fixed structure ensures consistency for AI agents working across multiple boards.",
             image: "/images/resources/guides/understanding-columns-step-2.png",
-            image_width: 714,
+            image_width: 1280,
             image_height: 317
           },
           %{

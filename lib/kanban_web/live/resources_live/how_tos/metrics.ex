@@ -32,13 +32,17 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
             title: "Filter Your Data",
             content:
               "Use the filters at the top of the dashboard to narrow your view:\n\n- **Time Range**: Today, Last 7 Days, Last 30 Days, Last 90 Days, or All Time\n- **Agent**: Filter by a specific agent to see their individual performance\n- **Exclude Weekends**: Toggle to remove weekend data from calculations\n\nFilters apply to all metrics shown on the dashboard.",
-            image: "/images/resources/guides/metrics-filter.png"
+            image: "/images/resources/guides/metrics-filter.png",
+            image_width: 1053,
+            image_height: 178
           },
           %{
             title: "Understand the Summary Cards",
             content:
               "The dashboard displays summary cards for each metric:\n\n- **Throughput**: How many tasks are being completed over time\n- **Cycle Time**: How long tasks take from start to finish\n- **Lead Time**: Total time from task creation to completion\n- **Wait Time**: How long tasks sit idle before work begins or review happens\n\nClick on any card to navigate to the detailed view for that metric.",
-            image: "/images/resources/guides/metrics-summary-cards.png"
+            image: "/images/resources/guides/metrics-summary-cards.png",
+            image_width: 1053,
+            image_height: 160
           },
           %{
             title: "Export Your Data",
@@ -69,13 +73,17 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
             title: "Navigate to Throughput",
             content:
               "From the metrics dashboard, click **Throughput** to see the detailed view. You can also navigate directly from the board by going to **Metrics → Throughput**.",
-            image: "/images/resources/guides/throughput-summary.png"
+            image: "/images/resources/guides/throughput-summary.png",
+            image_width: 1053,
+            image_height: 143
           },
           %{
             title: "Reading the Chart",
             content:
               "The throughput chart shows completed tasks over your selected time range. Look for:\n\n- **Upward trends**: Team is delivering more over time\n- **Flat lines**: Consistent delivery rate\n- **Dips**: Potential blockers, holidays, or capacity changes\n\nUse the agent filter to compare individual agent throughput.",
-            image: "/images/resources/guides/throughput-chart.png"
+            image: "/images/resources/guides/throughput-chart.png",
+            image_width: 1053,
+            image_height: 413
           },
           %{
             title: "Using Throughput Effectively",
@@ -106,13 +114,17 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
             title: "Navigate to Cycle Time",
             content:
               "From the metrics dashboard, click **Cycle Time** to see the detailed view. You can also navigate directly from the board by going to **Metrics → Cycle Time**.",
-            image: "/images/resources/guides/cycle-time-summary.png"
+            image: "/images/resources/guides/cycle-time-summary.png",
+            image_width: 1053,
+            image_height: 137
           },
           %{
             title: "Reading the Chart",
             content:
               "The cycle time chart shows how long completed tasks took. Look for:\n\n- **Average cycle time**: Your typical delivery speed\n- **Outliers**: Tasks that took much longer than usual may indicate blockers or unclear requirements\n- **Trends**: Is cycle time improving, stable, or getting worse over time?\n\nFilter by agent to identify differences in working speed across your team.",
-            image: "/images/resources/guides/cycle-time-chart.png"
+            image: "/images/resources/guides/cycle-time-chart.png",
+            image_width: 1053,
+            image_height: 634
           },
           %{
             title: "Reducing Cycle Time",
@@ -143,13 +155,17 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
             title: "Navigate to Lead Time",
             content:
               "From the metrics dashboard, click **Lead Time** to see the detailed view. You can also navigate directly from the board by going to **Metrics → Lead Time**.",
-            image: "/images/resources/guides/lead-time-summary.png"
+            image: "/images/resources/guides/lead-time-summary.png",
+            image_width: 1053,
+            image_height: 140
           },
           %{
             title: "Lead Time vs. Cycle Time",
             content:
               "Understanding the difference is key:\n\n- **Lead Time** = Wait time in backlog + Cycle time + Review time\n- **Cycle Time** = Only the active working time\n\nA large gap between lead time and cycle time means tasks are spending a lot of time waiting. This is an opportunity to improve prioritization or increase capacity.",
-            image: "/images/resources/guides/lead-time-chart.png"
+            image: "/images/resources/guides/lead-time-chart.png",
+            image_width: 1053,
+            image_height: 629
           },
           %{
             title: "Reducing Lead Time",
@@ -189,11 +205,15 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
             images: [
               %{
                 url: "/images/resources/guides/review-wait-time.png",
-                alt: "Review Wait Time"
+                alt: "Review Wait Time",
+                width: 1053,
+                height: 655
               },
               %{
                 url: "/images/resources/guides/backlog-wait-time.png",
-                alt: "Backlog Wait Time"
+                alt: "Backlog Wait Time",
+                width: 1053,
+                height: 894
               }
             ]
           },
