@@ -30,8 +30,8 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `after_doing_result` | object | **Yes** | Result of executing the `after_doing` hook. Must include `exit_code`, `output`, and `duration_ms`. |
 | `before_review_result` | object | **Yes** | Result of executing the `before_review` hook. Must include `exit_code`, `output`, and `duration_ms`. |
-| `explorer_result` | object | **Yes** (grace-warned, strict-rejected) | Exploration outcome — dispatched-subagent shape or self-reported skip-form. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
-| `reviewer_result` | object | **Yes** (grace-warned, strict-rejected) | Review outcome — same two shapes as `explorer_result`. Dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`). See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
+| `explorer_result` | object | **Yes** | Exploration outcome — dispatched-subagent shape or self-reported skip-form. A present but malformed value is rejected with `422` in every mode; an absent one is rejected in strict mode (the production default) and only warned in grace mode. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
+| `reviewer_result` | object | **Yes** | Review outcome — same two shapes as `explorer_result`. The dispatched shape also requires `acceptance_criteria_checked`, `issues_found` and the **full structured block** (`schema_version`, `status` or `issue_counts`, `issues[]`, `acceptance_criteria[]`, `project_checks[]`, `testing_strategy`, `patterns`, `pitfalls`, `security_considerations`). A dispatched result without that block, or any present but malformed value, is rejected with `422` in every mode. Only an absent one, and the two consistency checks listed under **Validation modes** below, follow the strict-validation setting. See [Completion Validation Format (G65)](#completion-validation-format-g65) below and [completion-contract.md](../completion-contract.md). |
 | `workflow_steps` | array | Recommended (telemetry) | Six-entry telemetry array, one object per workflow phase. Cast onto the task struct for aggregation. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
 | `agent_name` | string | No | Name of the agent completing the task (e.g., "Claude Sonnet 4.5"). Defaults to "Unknown". |
 | `time_spent_minutes` | integer | **Yes** | Time spent on the task in minutes |
@@ -71,30 +71,47 @@ Both `after_doing_result` and `before_review_result` parameters must be objects 
   "summary": "<at least 40 non-whitespace characters>",
   "duration_ms": 12000
 }
+```
 
+A dispatched `explorer_result` needs only `summary` and `duration_ms`. A dispatched `reviewer_result` needs much more: `summary`, `duration_ms`, `acceptance_criteria_checked` and `issues_found` (non-negative integers), **and the full structured block** listed in the table below. This is the smallest `reviewer_result` the server accepts, for a project with no `CODE-REVIEW.md`:
+
+```json
 "reviewer_result": {
   "dispatched": true,
-  "summary": "<at least 40 non-whitespace characters>",
+  "summary": "Reviewed the diff against both acceptance criteria, the task's pitfalls and its patterns; nothing to fix.",
   "duration_ms": 8000,
-  "acceptance_criteria_checked": 5,
-  "issues_found": 0
+  "acceptance_criteria_checked": 2,
+  "issues_found": 0,
+  "schema_version": "1.5",
+  "status": "approved",
+  "issue_counts": {"critical": 0, "important": 0, "minor": 0},
+  "issues": [],
+  "acceptance_criteria": [
+    {"criterion": "Validator accepts arrays", "status": "met", "evidence": "test/foo_test.exs:12"},
+    {"criterion": "Status enum enforced", "status": "met", "evidence": "test/foo_test.exs:30"}
+  ],
+  "project_checks": [],
+  "testing_strategy": {"status": "passed", "note": "Both listed unit tests are present."},
+  "patterns": {"status": "passed"},
+  "pitfalls": {"status": "passed"},
+  "security_considerations": {"status": "passed", "note": "Board-scoped query; no new input surface."}
 }
 ```
 
-`reviewer_result` (dispatched=true) **also requires** `acceptance_criteria_checked` and `issues_found` as non-negative integers. `explorer_result` does not.
+**Structured fields (required on a dispatched review)** — a dispatched `reviewer_result` must carry every section below, in every validation mode. A legacy summary-only payload — `summary`, `duration_ms` and the two counts with no structured block — is **rejected with `422`** whatever the `:strict_completion_validation` setting is; only the skip form leaves the block out. The full rules, including the task cross-field checks, are in [completion-contract.md](../completion-contract.md), and the list of required keys is `@required_review_sections` in `lib/kanban/tasks/completion_validation/review_contract.ex`. The server shape-validates every field and tolerates unknown forward-compatible fields. Your task-reviewer subagent's structured JSON report is the source of these fields (see the `stride-workflow` plugin's `task-reviewer` agent prompt for the canonical schema).
 
-**Structured fields (additive, optional, backwards compatible)** — `reviewer_result` (dispatched=true) additionally accepts the structured schema described below. Structured fields are optional; legacy summary-only payloads continue to validate unchanged. **One exception, added in D231:** if you send a section verdict whose `status` is `"failed"`, that verdict must carry a substantive `note` — see the section-verdict row below. Nothing else about the structured block became mandatory. The server shape-validates whatever is present and tolerates unknown forward-compatible fields. Use these when your task-reviewer subagent emits a structured JSON report (see the `stride-workflow` plugin's `task-reviewer` agent prompt for the canonical schema).
-
-| Field | Type | Notes |
-|---|---|---|
-| `schema_version` | string | Permissive semver — `MAJOR.MINOR` (e.g. `"1.0"`), `MAJOR.MINOR.PATCH`, optional pre-release (`-beta.1`) and build (`+build.7`) suffixes. The validator checks shape only; it does not gate on specific values. |
-| `status` | string | Top-level outcome flag (typically `"approved"` or `"changes_requested"`). Not enum-validated server-side — the agent prompt is the source of truth. |
-| `issue_counts` | object | Per-severity count — keys mirror the severity enum: `critical`, `important`, `minor`. Missing keys are tolerated. |
-| `issues[]` | array of objects | Per-finding detail. Each entry must be a map with valid `severity` and `category`. Both enums are required when an entry is present; unknown fields per entry are tolerated. |
-| `acceptance_criteria[]` | array of objects | Per-criterion verdict. Each entry must be a map with a valid `status`. The status enum uses underscore form: **`met` / `not_met`** (a space form `"not met"` is rejected). |
-| `testing_strategy` | object | Section verdict — `{status, note?}`. Status enum: `passed` / `failed` / `not_assessed`. **`note` is the rendered key (singular)** — the review queue reads only `note`. On `passed` and `not_assessed` it is optional and may be omitted or empty. **On `"failed"` it is REQUIRED** and must name the specific violation in at least 20 non-whitespace characters; an empty string, a bare `placeholder` / `TODO` / `TBD` / `n/a`, padding built from those words, or a note that merely restates the status is rejected with `422`, naming the offending section (D231). A plural `notes` key is still shape-validated for legacy payloads but is **never rendered and never satisfies the failed-verdict requirement**. |
-| `patterns` | object | Same section-verdict shape as `testing_strategy`. |
-| `pitfalls` | object | Same section-verdict shape as `testing_strategy`. |
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `schema_version` | string | **Yes** | Permissive semver — `MAJOR.MINOR` (e.g. `"1.0"`), `MAJOR.MINOR.PATCH`, optional pre-release (`-beta.1`) and build (`+build.7`) suffixes. The validator checks shape only; it does not gate on specific values. |
+| `status` | string | **Yes**, unless `issue_counts` is sent | Top-level outcome flag (typically `"approved"` or `"changes_requested"`). Not enum-validated server-side — the agent prompt is the source of truth. A dispatched review must carry `status` or `issue_counts`, and may carry both. |
+| `issue_counts` | object | **Yes**, unless `status` is sent | Per-severity count — keys mirror the severity enum: `critical`, `important`, `minor`. Missing keys are tolerated. |
+| `issues[]` | array of objects | **Yes** (may be `[]`) | Per-finding detail. Each entry must be a map with valid `severity` and `category`. Both enums are required when an entry is present; unknown fields per entry are tolerated. |
+| `acceptance_criteria[]` | array of objects | **Yes** | Per-criterion verdict. Each entry must be a map with a valid `status`. The status enum uses underscore form: **`met` / `not_met`** (a space form `"not met"` is rejected). The array needs at least one entry per non-blank line of the task's `acceptance_criteria`. |
+| `project_checks[]` | array of objects | **Yes** (may be `[]`) | One verdict per bullet of the calling project's optional root `CODE-REVIEW.md`. The key must be present and must be a list; the list may be any length, and `[]` means the project has no checklist. The server never sees that file, so it never gates on the length. |
+| `testing_strategy` | object | **Yes** | Section verdict — `{status, note?}`. Status enum: `passed` / `failed` / `not_assessed`. **`note` is the rendered key (singular)** — the review queue reads only `note`. On `passed` and `not_assessed` it is optional and may be omitted or empty. **On `"failed"` it is REQUIRED** and must name the specific violation in at least 20 non-whitespace characters; an empty string, a bare `placeholder` / `TODO` / `TBD` / `n/a`, padding built from those words, or a note that merely restates the status is rejected with `422`, naming the offending section (D231). A plural `notes` key is still shape-validated for legacy payloads but is **never rendered and never satisfies the failed-verdict requirement**. When the task supplied a `testing_strategy`, this verdict must be `passed` or `failed`, never `not_assessed`. |
+| `patterns` | object | **Yes** | Same section-verdict shape as `testing_strategy`. |
+| `pitfalls` | object | **Yes** | Same section-verdict shape as `testing_strategy`. |
+| `security_considerations` | object | **Yes** | Same section-verdict shape as `testing_strategy`, plus an optional `considerations[]` breakdown (one `{consideration, status, evidence?, note?}` per task consideration). When the task supplied `security_considerations`, this verdict must be `passed` or `failed`, never `not_assessed`. |
 
 Per-entry enums:
 
@@ -103,22 +120,23 @@ Per-entry enums:
 | `issues[].severity` | `critical`, `important`, `minor` |
 | `issues[].category` | `acceptance_criteria`, `pitfall`, `pattern`, `testing`, `security`, `code_quality`, `project_check` |
 | `acceptance_criteria[].status` | `met`, `not_met` |
-| `testing_strategy.status`, `patterns.status`, `pitfalls.status` | `passed`, `failed`, `not_assessed` |
+| `testing_strategy.status`, `patterns.status`, `pitfalls.status`, `security_considerations.status` | `passed`, `failed`, `not_assessed` |
+| `security_considerations.considerations[].status` | `mitigated`, `partial`, `unmitigated` |
 
 Optional per-issue fields (all forward-compatible — not server-validated, passed through verbatim): `file`, `line`, `description`, `suggested_fix`. Optional per-criterion fields: `criterion`, `evidence`. Anything not listed above is also persisted as `:jsonb` and survives a round trip through GET — see `task_json.ex` for the verbatim pass-through contract.
 
-Structured `reviewer_result` example:
+Structured `reviewer_result` example for a review that found problems, with a project checklist and a security breakdown:
 
 ```json
 "reviewer_result": {
   "dispatched": true,
-  "summary": "Reviewed against 4 acceptance criteria and 5 pitfalls; one important pattern deviation surfaced.",
+  "summary": "Reviewed against 2 acceptance criteria and 5 pitfalls; one criterion unmet and one pattern deviation surfaced.",
   "duration_ms": 8000,
-  "acceptance_criteria_checked": 4,
-  "issues_found": 1,
-  "schema_version": "1.0",
+  "acceptance_criteria_checked": 2,
+  "issues_found": 2,
+  "schema_version": "1.5",
   "status": "changes_requested",
-  "issue_counts": {"critical": 0, "important": 1, "minor": 0},
+  "issue_counts": {"critical": 0, "important": 2, "minor": 0},
   "issues": [
     {
       "severity": "important",
@@ -127,17 +145,46 @@ Structured `reviewer_result` example:
       "line": 528,
       "description": "Cast list omits the new field — payload would be silently dropped.",
       "suggested_fix": "Add the field to the cast/2 list and the changeset validation."
+    },
+    {
+      "severity": "important",
+      "category": "acceptance_criteria",
+      "file": "test/kanban/tasks_test.exs",
+      "description": "No test covers the status enum.",
+      "suggested_fix": "Add a case that sends an unknown status and expects a 422."
     }
   ],
   "acceptance_criteria": [
-    {"criterion": "Validator accepts arrays", "status": "met"},
-    {"criterion": "Status enum enforced", "status": "not_met", "evidence": "Spec case missing"}
+    {"criterion": "Validator accepts arrays", "status": "met", "evidence": "test/foo_test.exs:12"},
+    {"criterion": "Status enum enforced", "status": "not_met", "evidence": "See issues[1]"}
   ],
-  "testing_strategy": {"status": "passed", "note": "All 5 required test cases present."},
-  "patterns": {"status": "passed"},
-  "pitfalls": {"status": "passed", "note": "None violated."}
+  "project_checks": [
+    {
+      "check": "Every new public function has a unit test",
+      "source": "CODE-REVIEW.md",
+      "status": "met",
+      "evidence": "test/kanban/tasks_test.exs:88"
+    }
+  ],
+  "testing_strategy": {"status": "passed", "note": "All 5 required test cases present in the new describe block."},
+  "patterns": {"status": "failed", "note": "The cast list skips the new field, so the changeset drops it (issues[0])."},
+  "pitfalls": {"status": "passed", "note": "None violated."},
+  "security_considerations": {
+    "status": "passed",
+    "note": "Board-scoped query; no new input surface.",
+    "considerations": [
+      {
+        "consideration": "Move query scoped to the requesting user's board",
+        "status": "mitigated",
+        "evidence": "lib/kanban/tasks.ex:142",
+        "note": "Query filters by current_scope.user.id."
+      }
+    ]
+  }
 }
 ```
+
+These two examples are the ones `GET /api/agent/onboarding` serves as `api_schema.reviewer_result_format.example` and `.structured_example`, and the server's own tests run both through the completion gate in strict mode.
 
 **Skip form** — use when exploration/review was skipped or produced inline (for platforms without subagent dispatch, or when the task's decision matrix skipped the step):
 
@@ -163,10 +210,12 @@ Free-form reasons are rejected — the enum is the contract.
 
 **Minimum summary length:** Summaries must contain at least **40 non-whitespace characters**. Trivial summaries like `"explored files"` or `"reviewed code"` are rejected (the 40-char threshold is counted after stripping all whitespace).
 
-**Rollout mode:** The server is rolling out enforcement behind the `:strict_completion_validation` application flag:
+**Validation modes:** Some rules reject with `422` in **every** mode: a dispatched `reviewer_result` without the full structured block, a present but malformed `explorer_result` or `reviewer_result`, and a missing or failing hook result. The `:strict_completion_validation` application flag decides the rest — an **absent** `explorer_result` or `reviewer_result`, a malformed `changed_files` array, and the two consistency checks described in [completion-contract.md](../completion-contract.md#checks-that-follow-the-strict-validation-setting):
 
-- **Grace (current default):** Missing or invalid `explorer_result` / `reviewer_result` log a structured warning and the request succeeds.
-- **Strict (post-rollout):** Missing or invalid results return `422` with a `failures` list. See the 422 example below.
+- **Strict (the production default):** those failures return `422` with a `failures` list. See [Completion validation failed](#completion-validation-failed) below.
+- **Grace (the default in development and test):** those failures log a structured warning and the request succeeds.
+
+The `STRIDE_STRICT_COMPLETION_VALIDATION` environment variable (`true` or `false`) overrides the default (`config/runtime.exs`).
 
 **`workflow_steps`** is a six-entry telemetry array (one object per phase: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). It is cast onto the task struct for aggregation but is not currently rejected when missing. Include it to contribute telemetry. Each entry has `{name, dispatched, duration_ms}` when the step ran, or `{name, dispatched: false, reason}` when it was skipped.
 
@@ -214,10 +263,23 @@ The vocabulary was derived by classifying the 73 skipped entries persisted on th
   },
   "reviewer_result": {
     "dispatched": true,
-    "summary": "Reviewed the diff against all 5 acceptance criteria and 3 pitfalls; no issues found",
+    "summary": "Reviewed the diff against both acceptance criteria and 3 pitfalls; no issues found",
     "duration_ms": 8000,
-    "acceptance_criteria_checked": 5,
-    "issues_found": 0
+    "acceptance_criteria_checked": 2,
+    "issues_found": 0,
+    "schema_version": "1.5",
+    "status": "approved",
+    "issue_counts": {"critical": 0, "important": 0, "minor": 0},
+    "issues": [],
+    "acceptance_criteria": [
+      {"criterion": "Access tokens expire after 15 minutes", "status": "met", "evidence": "test/my_app/auth_test.exs:24"},
+      {"criterion": "A refresh token issues a new access token", "status": "met", "evidence": "test/my_app/auth_test.exs:51"}
+    ],
+    "project_checks": [],
+    "testing_strategy": {"status": "passed", "note": "The expiry and refresh unit tests are both present."},
+    "patterns": {"status": "passed"},
+    "pitfalls": {"status": "passed"},
+    "security_considerations": {"status": "passed", "note": "Tokens are signed and never logged; no new input surface."}
   },
   "workflow_steps": [
     {"name": "explorer",       "dispatched": true,  "duration_ms": 12000},
@@ -259,7 +321,8 @@ either as a query-string parameter or as a top-level key in the JSON request
 body, since Phoenix merges the two into the same params map.
 
 **Why you would want it.** The full response echoes back everything you just
-submitted — `reviewer_result` with its 25 `project_checks`, plus
+submitted — `reviewer_result` with its whole structured block, including every
+`project_checks` entry, plus
 `explorer_result`, `review_report`, `workflow_steps` and the completion fields.
 That is the largest response in the workflow, and a response that large can
 exceed an agent harness's output-truncation threshold, cutting the JSON
@@ -296,7 +359,8 @@ selected only after the completion succeeds.
   },
   "hooks": [
     { "name": "after_doing", "timeout": 600000, "blocking": true, "env": { "...": "..." } },
-    { "name": "before_review", "timeout": 600000, "blocking": true, "env": { "...": "..." } }
+    { "name": "before_review", "timeout": 600000, "blocking": true, "env": { "...": "..." } },
+    { "name": "after_review", "timeout": 600000, "blocking": true, "env": { "...": "..." } }
   ],
   "current_skills_version": "1.0"
 }
@@ -310,15 +374,19 @@ The full record — including `reviewer_result`, `explorer_result`,
 
 ### Success (200 OK)
 
-Returns the completed task and hook metadata. The number of hooks depends on the task's `needs_review` setting:
+Returns the completed task and hook metadata. The hooks list depends on the task's `needs_review` setting (`Kanban.Hooks.Metadata.build_completion_hooks/4` in `lib/kanban/hooks/metadata.ex`):
 
 **If `needs_review=true`** (task goes to Review column):
 
-- Returns `after_doing` hook only (both `after_doing` and `before_review` were already executed and validated)
+- Returns `[after_doing, before_review]`. Both were already executed and validated before this request; nothing in this list still needs to run.
+- Never includes `after_review` or `after_goal`. Once a human approves the task, run the `## after_review` section first, then call [`PATCH /api/tasks/:id/mark_reviewed`](patch_tasks_id_mark_reviewed.md) with its `after_review_result` (see [AI-WORKFLOW.md](../AI-WORKFLOW.md) steps 9 and 10). The `after_goal` hook, when this task was the last open child of a goal, arrives on that `mark_reviewed` response. If the human approved from the Review queue, the task is already in Done and `mark_reviewed` returns `422`; see [When a Human Approves from the Review Queue](../REVIEW-WORKFLOW.md#when-a-human-approves-from-the-review-queue).
 
 **If `needs_review=false`** (task goes directly to Done):
 
-- Returns `after_doing` and `after_review` hooks (`after_doing` and `before_review` were already executed; `after_review` still needs execution)
+- Returns `[after_doing, before_review, after_review]`. `after_doing` and `before_review` were already executed; `after_review` still needs execution.
+- Appends a fourth entry, `after_goal`, when this task was the last open child of a goal. Run the `## after_goal` section and report its result with [`PATCH /api/tasks/:id/after_goal`](patch_tasks_id_after_goal.md).
+
+The example below is a `needs_review=true` response.
 
 ```json
 {
@@ -465,6 +533,33 @@ Or task is not in a valid state to complete:
 }
 ```
 
+#### Completion validation failed
+
+`explorer_result` or `reviewer_result` failed validation — for example, a dispatched `reviewer_result` sent without `project_checks`. A dispatched review that is missing a required section gets this body in every mode; an absent result and the two consistency checks get it in strict mode only (see **Validation modes** above). A present but malformed `explorer_result` or `reviewer_result` that strict mode would catch here is refused in grace mode by the task changeset instead, with the `{"errors": ..., "documentation": ...}` validation-error body.
+
+```json
+{
+  "error": "completion validation failed",
+  "failures": [
+    {
+      "field": "reviewer_result",
+      "errors": [
+        {
+          "field": "project_checks",
+          "message": "is required on a dispatched review: the structured project_checks field the review queue renders is missing"
+        }
+      ]
+    }
+  ],
+  "required_format": { "...": "..." },
+  "documentation": "...",
+  "related_docs": [ "..." ],
+  "common_causes": [ "..." ]
+}
+```
+
+Values shown as `"..."` are elided. `required_format` holds one accepted payload each for `explorer_result`, a dispatched `reviewer_result` with every required section, the skip form, and `changed_files`; `documentation`, `related_docs` and `common_causes` point at the docs that explain the failure.
+
 ## Workflow
 
 **CRITICAL: Hook execution is mandatory!** Follow this workflow:
@@ -490,6 +585,7 @@ Or task is not in a valid state to complete:
 
 5. **Execute remaining hooks** (returned in the response):
    - `after_review` hook (blocking, 600s timeout) - only if `needs_review=false`
+   - `after_goal` hook - only if `needs_review=false` and this task was the last open child of a goal
 
 6. **Wait for review** (if `needs_review=true`)
    - A human reviewer will approve or request changes
@@ -498,6 +594,8 @@ Or task is not in a valid state to complete:
 ## Example Usage
 
 ### Complete Workflow Example
+
+These two examples show how to capture and send the hook results, so their request bodies leave out the other fields. A real request also carries `explorer_result`, `reviewer_result`, `workflow_steps` and the other required fields shown in the [Request Body Example](#request-body-example). Without `explorer_result` and `reviewer_result` it is rejected with `422` in strict mode, the production default.
 
 ```bash
 # Step 1: Execute after_doing hook FIRST

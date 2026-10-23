@@ -216,7 +216,7 @@ Each accepts one of two shapes:
 
 `reviewer_result` (dispatched=true) **also requires** `acceptance_criteria_checked` and `issues_found` as non-negative integers.
 
-`reviewer_result` (dispatched=true) **additionally accepts** a structured schema — all fields optional, all backwards-compatible: `schema_version` (semver), `status`, `issue_counts`, `issues[]` (with `severity` ∈ `critical|important|minor` and `category` ∈ `acceptance_criteria|pitfall|pattern|testing|security|code_quality|project_check`), `acceptance_criteria[]` (with `status` ∈ `met|not_met`), and the section verdicts `testing_strategy` / `patterns` / `pitfalls` / `security_considerations`, plus the optional `behaviour_test_matrix` (each `{status, note?}` with `status` ∈ `passed|failed|not_assessed`). `note` is optional on `passed` / `not_assessed`, but **required and substantive on `failed`** — on all five — and a placeholder or sub-20-character note is rejected with `422` naming the section (D231). Unknown fields per entry are tolerated. See [patch_tasks_id_complete.md](patch_tasks_id_complete.md#completion-validation-format-g65) for the field table and a complete example.
+`reviewer_result` (dispatched=true) **also requires the full structured block, in every mode** — the shape above is not enough on its own, and a summary-only dispatched `reviewer_result` is rejected with `422` whatever the strict-validation setting is. The block is: `schema_version` (semver); `status` or `issue_counts` (at least one); `issues[]` (may be empty; each entry with `severity` ∈ `critical|important|minor` and `category` ∈ `acceptance_criteria|pitfall|pattern|testing|security|code_quality|project_check`); `acceptance_criteria[]` (with `status` ∈ `met|not_met`, at least one entry per task criterion line); `project_checks[]` (one entry per bullet of the project's optional `CODE-REVIEW.md` — any length, and `[]` is valid); and the section verdicts `testing_strategy` / `patterns` / `pitfalls` / `security_considerations` (each `{status, note?}` with `status` ∈ `passed|failed|not_assessed`). The optional `behaviour_test_matrix` verdict has the same shape. `note` is optional on `passed` / `not_assessed`, but **required and substantive on `failed`** — on all five — and a placeholder or sub-20-character note is rejected with `422` naming the section (D231). When the task supplied `testing_strategy` or `security_considerations`, that verdict must be `passed` or `failed`, never `not_assessed`. Unknown fields per entry are tolerated. [completion-contract.md](../completion-contract.md) is the authoritative statement of these rules; see [patch_tasks_id_complete.md](patch_tasks_id_complete.md#completion-validation-format-g65) for the field table and complete examples.
 
 **Skip form** — when exploration/review was legitimately skipped or self-reported:
 
@@ -349,7 +349,7 @@ a filter it simply matches nothing.
 | POST | `/api/mcp` | MCP server: JSON-RPC over Streamable HTTP | Through its claim and complete tools |
 | GET, DELETE | `/api/mcp` | Not supported, returns `405` | No |
 
-*`after_review` hook is only returned when the task is automatically moved to Done (`needs_review=false` or review approved).
+*`after_review` hook is only returned when the task is moved to Done: by `/complete` when `needs_review=false`, or by `/mark_reviewed` when the review is approved. `/mark_reviewed` also needs that hook's result in its request, so run `after_review` before calling it. `/complete` with `needs_review=true` returns `after_doing` and `before_review` only. A response that moves a goal's last open child to Done also appends an `after_goal` hook.
 
 ## Errors
 
@@ -704,10 +704,23 @@ cat > /tmp/complete_payload.json <<JSON
   },
   "reviewer_result": {
     "dispatched": true,
-    "summary": "Reviewed the diff against all 5 acceptance criteria and the 4 listed pitfalls; no critical or important findings.",
+    "summary": "Reviewed the diff against both acceptance criteria and the 4 listed pitfalls; no critical or important findings.",
     "duration_ms": 15300,
-    "acceptance_criteria_checked": 5,
-    "issues_found": 0
+    "acceptance_criteria_checked": 2,
+    "issues_found": 0,
+    "schema_version": "1.5",
+    "status": "approved",
+    "issue_counts": {"critical": 0, "important": 0, "minor": 0},
+    "issues": [],
+    "acceptance_criteria": [
+      {"criterion": "Access tokens expire after 15 minutes", "status": "met", "evidence": "test/foo_test.exs:24"},
+      {"criterion": "A refresh token issues a new access token", "status": "met", "evidence": "test/foo_test.exs:51"}
+    ],
+    "project_checks": [],
+    "testing_strategy": {"status": "passed", "note": "The expiry and refresh unit tests are both present."},
+    "patterns": {"status": "passed"},
+    "pitfalls": {"status": "passed"},
+    "security_considerations": {"status": "passed", "note": "Tokens are signed and never logged; no new input surface."}
   },
   "workflow_steps": [
     {"name": "explorer",       "dispatched": true, "duration_ms": 12450},
@@ -798,7 +811,7 @@ done
 
 1. **Execute hooks BEFORE API calls** — Hook execution is mandatory and validated by the API
 2. **Include hook results** — All hook results (exit_code, output, duration_ms) must be provided in API requests
-3. **Include explorer/reviewer results** — `PATCH /complete` requires `explorer_result` and `reviewer_result` per the validation rules above (currently grace-warned, will be strict-rejected once the feature flag flips)
+3. **Include explorer/reviewer results** — `PATCH /complete` requires `explorer_result` and `reviewer_result` per the validation rules above. A dispatched `reviewer_result` without the full structured block is rejected in every mode; an absent result is rejected in strict mode, the production default
 4. **Include the `workflow_steps` telemetry** — six entries always, one per phase, with `dispatched: false` + a `reason` for any phase intentionally skipped
 5. **Use the 5-value skip-reason enum** — free-form reasons are rejected
 6. **All blocking hooks must succeed** — the server sends every hook as blocking with a 600s timeout; `before_doing` and `after_doing` must exit 0 before the corresponding API call
@@ -830,6 +843,7 @@ done
 - Make sure the field is present and is a JSON object (not `null`, not omitted)
 - For `dispatched: true`, the summary must be at least 40 non-whitespace characters
 - For `dispatched: true` on `reviewer_result`, also include `acceptance_criteria_checked` and `issues_found` as non-negative integers
+- For `dispatched: true` on `reviewer_result`, also include every structured section — `schema_version`, `status` or `issue_counts`, `issues`, `acceptance_criteria`, `project_checks` (`[]` when the project has no `CODE-REVIEW.md`), `testing_strategy`, `patterns`, `pitfalls` and `security_considerations`. A missing section is rejected in every mode, and the 422 body names it; see [completion-contract.md](../completion-contract.md)
 - For `dispatched: false`, the `reason` must be one of the five enum values exactly (see [Completion Validation](#completion-validation-explorer_result-reviewer_result-workflow_steps))
 - The summary minimum applies in skip form too — explain what you did instead, in 40+ non-whitespace characters
 
