@@ -118,13 +118,13 @@ defmodule Kanban.MixProject do
         "phx.digest"
       ],
       precommit: [
-        "compile --warning-as-errors",
+        "compile --warnings-as-errors",
         "deps.unlock --unused",
         "format",
         "gettext.extract --check-up-to-date",
         "dark_mode.scan",
         "dark_mode.contrast --enforce",
-        "test",
+        "test --warnings-as-errors",
         "credo --strict"
       ]
     ]

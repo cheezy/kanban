@@ -22,13 +22,13 @@ are kept current.
 
 The `precommit` alias in `mix.exs` runs these steps:
 
-1. `compile --warning-as-errors`
+1. `compile --warnings-as-errors`
 2. `deps.unlock --unused`
 3. `format`
 4. `gettext.extract --check-up-to-date`
 5. `dark_mode.scan`
 6. `dark_mode.contrast --enforce`
-7. `test`
+7. `test --warnings-as-errors`
 8. `credo --strict`
 
 It does **not** run the security audits, `sobelow` or coverage, so run those

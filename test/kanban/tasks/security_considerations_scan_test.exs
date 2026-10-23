@@ -17,8 +17,6 @@ defmodule Kanban.Tasks.SecurityConsiderationsScanTest do
   alias Kanban.Tasks.SecurityConsiderationsScan
   alias Kanban.Tasks.Task
 
-  require Logger
-
   doctest Kanban.Tasks.SecurityConsiderationsScan
 
   # Fake values only.

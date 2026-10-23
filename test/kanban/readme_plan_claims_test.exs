@@ -51,7 +51,7 @@ defmodule Kanban.ReadmePlanClaimsTest do
       note = list_item_containing(readme, "While paid plans are\n  enforced")
 
       fields = Kanban.Plans.locked_task_fields()
-      assert fields != []
+      refute Enum.empty?(fields)
 
       for field <- fields do
         assert note =~ "`#{field}`",

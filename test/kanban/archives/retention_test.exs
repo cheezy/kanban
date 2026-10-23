@@ -85,7 +85,7 @@ defmodule Kanban.Archives.RetentionTest do
   end
 
   test "keeps an archived task that a live task on the same board still depends on",
-       %{board: board, column: column} do
+       %{column: column} do
     needed = column |> task_fixture() |> archive!(60)
     column |> task_fixture() |> depends_on!(needed)
 
