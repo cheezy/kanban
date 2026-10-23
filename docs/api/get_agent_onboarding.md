@@ -250,21 +250,27 @@ The other keys depend on how that assistant is set up:
 
 `base_url`, the `authentication` scheme, and `openapi_url` — the absolute URL of
 the machine-readable OpenAPI 3.1 spec ([GET /api/openapi.json](get_openapi_json.md)) —
-plus an organized list of the core API endpoints:
+plus a list of every `/api` route in the router, organized in three groups
+(a test fails when a route is missing):
 
-- Discovery endpoints (browse tasks)
-- Management endpoints (claim, complete, review)
-- Creation endpoints (create tasks/goals)
+- Discovery endpoints (this onboarding payload, the OpenAPI spec, boards, and
+  reading tasks, their trees, dependencies, dependents and comments)
+- Management endpoints (claim, complete, review, after_goal, comments and the
+  MCP server)
+- Creation endpoints (create tasks and goals, and update a task)
 
 Each endpoint includes:
 
 - `method` and `path`
 - `description`
-- `auth_required`
+- `auth_required`, which is `false` only for this payload and the OpenAPI spec
 - `documentation_url`, a link to the detailed page
 
 Some endpoints also carry `required_parameters`, `hook_validation_required`
-and `returns_hooks` (the hooks the response includes).
+and `returns_hooks` (the hooks the response includes). For
+`PATCH /api/tasks/:id/complete`, `required_parameters` is the same list the
+`complete_task` workflow step publishes, and a test sends a completion built
+only from the payload's own examples to check that the server accepts it.
 
 `workspace_tokens` explains workspace-scoped tokens: who creates them, the
 `X-Stride-Board` header and `board_id` parameter that name the board each

@@ -198,7 +198,7 @@ Every hook receives these environment variables:
 
 In addition to hook results, `PATCH /api/tasks/:id/complete` requires three orchestrator-telemetry fields. The full shape and the validation rules live in [patch_tasks_id_complete.md](patch_tasks_id_complete.md); the summary below is for orientation.
 
-The server validates these fields via `Kanban.Tasks.CompletionValidation`. Strict enforcement is rolling out behind a `:strict_completion_validation` feature flag — currently in **grace mode** (warning, request still succeeds); once enabled, missing or invalid results return **422** with a `failures` list.
+The server validates these fields via `Kanban.Tasks.CompletionValidation`. Two rules return **422** in every mode: a dispatched `reviewer_result` must carry the full structured block (see [completion-contract.md](../completion-contract.md)), and a present but malformed `explorer_result` or `reviewer_result` is rejected. The `:strict_completion_validation` flag (`STRIDE_STRICT_COMPLETION_VALIDATION`) decides the rest. Strict mode is the production default and also returns **422** with a `failures` list when either result is missing. Grace mode, the default in development and test, logs a warning for a missing result and lets the request succeed.
 
 ### `explorer_result` and `reviewer_result`
 

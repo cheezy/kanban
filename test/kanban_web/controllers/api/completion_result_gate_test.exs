@@ -1,6 +1,7 @@
 defmodule KanbanWeb.API.CompletionResultGateTest do
   use ExUnit.Case, async: false
 
+  alias Kanban.Tasks.CompletionValidation
   alias KanbanWeb.API.CompletionResultGate
 
   # Several tests intentionally drive the gate down its reject/grace paths,
@@ -218,6 +219,44 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
       request = build_request(full_reviewer())
 
       assert :ok = CompletionResultGate.gate(request, strict: false)
+      assert :ok = CompletionResultGate.gate(request, strict: true)
+    end
+  end
+
+  # D389: a client that rebuilds its request from the 422's required_format must
+  # not be rejected again. Before D389 the hint lacked project_checks and the
+  # four section verdicts, so a retry built from it failed the same contract.
+  describe "build_body/1 required_format (D389)" do
+    defp required_sections,
+      do: Enum.map(CompletionValidation.required_review_sections(), &Atom.to_string/1)
+
+    defp rejection_body do
+      request = build_request(thin_reviewer())
+      assert {:reject, body} = CompletionResultGate.gate(request, strict: false)
+
+      body
+    end
+
+    test "required_format lists every required review section" do
+      reviewer = rejection_body().required_format["reviewer_result"]
+
+      for section <- required_sections() do
+        assert Map.has_key?(reviewer, section),
+               "required_format reviewer_result omits the required #{section} section"
+      end
+
+      assert reviewer["project_checks"] == []
+      assert Map.has_key?(reviewer, "status") or Map.has_key?(reviewer, "issue_counts")
+    end
+
+    test "a request rebuilt from required_format passes the gate in strict mode" do
+      format = rejection_body().required_format
+
+      request = %{
+        "explorer_result" => format["explorer_result"],
+        "reviewer_result" => format["reviewer_result"]
+      }
+
       assert :ok = CompletionResultGate.gate(request, strict: true)
     end
   end

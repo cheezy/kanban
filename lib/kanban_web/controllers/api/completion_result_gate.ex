@@ -3,22 +3,48 @@ defmodule KanbanWeb.API.CompletionResultGate do
   Gates `PATCH /api/tasks/:id/complete` on `explorer_result` and
   `reviewer_result` payloads.
 
-  Runs `Kanban.Tasks.CompletionValidation` on each field. Grace mode
-  (default) logs a structured warning and lets the request through.
-  Strict mode returns a rejection body the controller renders as 422.
+  Runs `Kanban.Tasks.CompletionValidation` on each field. The review
+  contract (a dispatched `reviewer_result` must be fully populated) rejects
+  in every mode. For everything else, strict mode returns a rejection body
+  the controller renders as 422 and grace mode logs a structured warning
+  and lets the request through.
 
-  The mode is read from `Application.get_env(:kanban,
-  :strict_completion_validation, false)` so it can be flipped at runtime
-  via the `STRIDE_STRICT_COMPLETION_VALIDATION` environment variable
-  without a redeploy. Validation runs in both modes — the flag only
-  decides whether failures become a 422 or a log line, which means the
-  grace-mode warning volume is a faithful predictor of strict-mode
-  rejection volume.
+  Strict mode is the production default: `config/runtime.exs` turns it on
+  for `:prod` unless `STRIDE_STRICT_COMPLETION_VALIDATION` says otherwise,
+  and development and test run in grace mode. The mode is read from
+  `Application.get_env(:kanban, :strict_completion_validation, false)` so
+  that variable can flip it without a redeploy. Validation runs in both
+  modes — the flag only decides whether gated failures become a 422 or a
+  log line, which means the grace-mode warning volume is a faithful
+  predictor of strict-mode rejection volume.
+
+  The rejection body's `required_format` is a payload the gate accepts:
+  its `reviewer_result` carries every section of
+  `CompletionValidation.required_review_sections/0`, so a client that
+  rebuilds its request from the 422 is not rejected again.
   """
 
   alias Kanban.Tasks.CompletionValidation
 
   require Logger
+
+  # Example values for every section the review contract can require. The
+  # reviewer_result hint takes the keys from
+  # CompletionValidation.required_review_sections/0, so a section the contract
+  # drops leaves the hint too. A section it adds needs an entry here, and
+  # completion_result_gate_test fails until it has one.
+  @required_section_examples %{
+    "issues" => [],
+    "acceptance_criteria" => [
+      %{"criterion" => "All positions recalculate on move", "status" => "met"}
+    ],
+    "project_checks" => [],
+    "testing_strategy" => %{"status" => "passed", "note" => "Every listed test is present."},
+    "patterns" => %{"status" => "passed"},
+    "pitfalls" => %{"status" => "passed"},
+    "security_considerations" => %{"status" => "passed"},
+    "schema_version" => "1.0"
+  }
 
   @doc """
   Validates the payload and returns one of:
@@ -197,43 +223,48 @@ defmodule KanbanWeb.API.CompletionResultGate do
             errors: Enum.map(errors, fn {f, msg} -> %{field: to_string(f), message: msg} end)
           }
         end),
-      required_format: %{
-        "explorer_result" => %{
-          "dispatched" => true,
-          "summary" =>
-            "A substantive summary of what the subagent explored (40+ non-whitespace chars)",
-          "duration_ms" => 12_000
-        },
-        "reviewer_result" => %{
+      required_format: required_format()
+    }
+  end
+
+  defp required_format do
+    %{
+      "explorer_result" => %{
+        "dispatched" => true,
+        "summary" =>
+          "A substantive summary of what the subagent explored (40+ non-whitespace chars)",
+        "duration_ms" => 12_000
+      },
+      "reviewer_result" =>
+        %{
           "dispatched" => true,
           "summary" =>
             "A substantive summary of what the reviewer checked (40+ non-whitespace chars)",
           "duration_ms" => 8_000,
-          "acceptance_criteria_checked" => 5,
+          "acceptance_criteria_checked" => 1,
           "issues_found" => 0,
           "status" => "approved",
-          "issue_counts" => %{"critical" => 0, "important" => 0, "minor" => 0},
-          "issues" => [],
-          "acceptance_criteria" => [
-            %{"criterion" => "All positions recalculate on move", "status" => "met"}
-          ],
-          "schema_version" => "1.0"
+          "issue_counts" => %{"critical" => 0, "important" => 0, "minor" => 0}
+        }
+        |> Map.merge(required_review_sections()),
+      "skip_form" => %{
+        "dispatched" => false,
+        "reason" =>
+          "one of: #{Enum.map_join(CompletionValidation.skip_reasons(), ", ", &Atom.to_string/1)}",
+        "summary" => "A substantive summary of what was self-reported (40+ non-whitespace chars)"
+      },
+      "changed_files" => [
+        %{
+          "path" => "lib/foo.ex",
+          "diff" => "Unified-patch text — see docs/diff-contract.md (≤ 500 lines per file)"
         },
-        "skip_form" => %{
-          "dispatched" => false,
-          "reason" =>
-            "one of: #{Enum.map_join(CompletionValidation.skip_reasons(), ", ", &Atom.to_string/1)}",
-          "summary" =>
-            "A substantive summary of what was self-reported (40+ non-whitespace chars)"
-        },
-        "changed_files" => [
-          %{
-            "path" => "lib/foo.ex",
-            "diff" => "Unified-patch text — see docs/diff-contract.md (≤ 500 lines per file)"
-          },
-          %{"path" => "assets/logo.png", "diff" => "[binary file — no diff captured]"}
-        ]
-      }
+        %{"path" => "assets/logo.png", "diff" => "[binary file — no diff captured]"}
+      ]
     }
+  end
+
+  defp required_review_sections do
+    keys = Enum.map(CompletionValidation.required_review_sections(), &Atom.to_string/1)
+    Map.take(@required_section_examples, keys)
   end
 end

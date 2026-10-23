@@ -12,6 +12,33 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
 
   @docs_base_url "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main"
 
+  # What PATCH /api/tasks/:id/complete rejects without (D389): the two blocking
+  # hook results (TaskActions), the four fields the completion changeset
+  # requires (AgentWorkflow), and explorer_result and reviewer_result, which
+  # strict mode — the production default — rejects when absent.
+  @complete_required_parameters [
+    "after_doing_result",
+    "before_review_result",
+    "completion_summary",
+    "actual_complexity",
+    "actual_files_changed",
+    "time_spent_minutes",
+    "explorer_result",
+    "reviewer_result"
+  ]
+
+  @doc """
+  The body parameters `PATCH /api/tasks/:id/complete` needs. `AgentJSON`
+  publishes the same list, so the two catalogues cannot disagree.
+  """
+  def complete_required_parameters, do: @complete_required_parameters
+
+  @doc """
+  The body parameters `PATCH /api/tasks/:id/mark_reviewed` needs: the blocking
+  `after_review` hook result.
+  """
+  def mark_reviewed_required_parameters, do: ["after_review_result"]
+
   @doc "The `api_reference.endpoints` section of the onboarding payload."
   def endpoints do
     %{
@@ -23,6 +50,22 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
             "List the boards this token can use: a board token's one board, or the boards of a workspace token's workspace its user can modify. Needs no X-Stride-Board header",
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/get_boards.md"
+        },
+        %{
+          method: "GET",
+          path: "/api/agent/onboarding",
+          description:
+            "This onboarding payload: setup files, hooks, the workflow and the API schema. Needs no token",
+          auth_required: false,
+          documentation_url: "#{@docs_base_url}/docs/api/get_agent_onboarding.md"
+        },
+        %{
+          method: "GET",
+          path: "/api/openapi.json",
+          description:
+            "Machine-readable OpenAPI 3.1 description of every /api route, for client generation and tool schemas. Needs no token",
+          auth_required: false,
+          documentation_url: "#{@docs_base_url}/docs/api/get_openapi_json.md"
         },
         %{
           method: "GET",
@@ -52,6 +95,20 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
           description: "Get task tree (goals with children)",
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id_tree.md"
+        },
+        %{
+          method: "GET",
+          path: "/api/tasks/:id/dependencies",
+          description: "List the tasks this task depends on",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id_dependencies.md"
+        },
+        %{
+          method: "GET",
+          path: "/api/tasks/:id/dependents",
+          description: "List the tasks that depend on this task",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id_dependents.md"
         },
         %{
           method: "GET",
@@ -93,8 +150,8 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
           method: "PATCH",
           path: "/api/tasks/:id/complete",
           description:
-            "Complete a task - REQUIRES after_doing_result parameter. changed_files in the body is silently ignored; use PUT /api/tasks/:id/changed_files instead.",
-          required_parameters: ["after_doing_result"],
+            "Complete a task - REQUIRES after_doing_result and before_review_result (both hooks exit 0), completion_summary, actual_complexity, actual_files_changed and time_spent_minutes, plus explorer_result and reviewer_result (rejected when absent in strict mode, the production default; a dispatched reviewer_result needs the full structured block in every mode — see api_schema.reviewer_result_format). changed_files in the body is silently ignored; use PUT /api/tasks/:id/changed_files instead.",
+          required_parameters: @complete_required_parameters,
           hook_validation_required: true,
           returns_hooks: [
             "after_doing",
@@ -119,7 +176,10 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
         %{
           method: "PATCH",
           path: "/api/tasks/:id/mark_reviewed",
-          description: "Finalize review",
+          description:
+            "Finalize review - REQUIRES after_review_result, the result of running the after_review hook",
+          required_parameters: ["after_review_result"],
+          hook_validation_required: true,
           returns_hooks: [
             "after_review (if approved)",
             "after_goal (if approved and the task was the last open child of a goal)"
@@ -155,6 +215,28 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
           returns_hooks: [],
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/post_tasks_id_comments.md"
+        },
+        %{
+          method: "POST",
+          path: "/api/mcp",
+          description:
+            "Model Context Protocol server (JSON-RPC 2.0 over Streamable HTTP). Its claim and complete tools run the same validation as the REST endpoints",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/MCP.md"
+        },
+        %{
+          method: "GET",
+          path: "/api/mcp",
+          description: "Not supported: returns 405. Use POST /api/mcp",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/MCP.md"
+        },
+        %{
+          method: "DELETE",
+          path: "/api/mcp",
+          description: "Not supported: returns 405. Use POST /api/mcp",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/MCP.md"
         }
       ],
       creation: [
@@ -165,6 +247,21 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
             "Create task, or goal with nested work and defect tasks (a goal cannot contain a goal). A work or defect task whose column is at its WIP limit returns 422; goals are never WIP-checked",
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/post_tasks.md"
+        },
+        %{
+          method: "PATCH",
+          path: "/api/tasks/:id",
+          description:
+            "Update a task's fields (title, description, labels, behaviour_test_matrix and so on). Send them under a task root key",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id.md"
+        },
+        %{
+          method: "PUT",
+          path: "/api/tasks/:id",
+          description: "Same action as PATCH /api/tasks/:id",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id.md"
         },
         %{
           method: "POST",

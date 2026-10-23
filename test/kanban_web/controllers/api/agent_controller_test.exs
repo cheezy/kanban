@@ -796,7 +796,9 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       sec = fmt["structured_fields"]["security_considerations"]
       assert sec["type"] == "section_verdict"
-      assert sec["required"] == false
+      # The verdict is required on a dispatched review (D389); only the nested
+      # breakdown below is optional.
+      assert sec["required"] == true
 
       breakdown = sec["considerations_breakdown"]
       assert breakdown["type"] == "array_of_objects"

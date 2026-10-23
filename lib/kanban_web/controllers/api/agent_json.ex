@@ -195,8 +195,8 @@ defmodule KanbanWeb.API.AgentJSON do
           name: "complete_task",
           endpoint: "PATCH #{base_url}/api/tasks/:id/complete",
           description:
-            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution. Note: changed_files included in this body is silently ignored — upload via PUT /api/tasks/:id/changed_files instead.",
-          required_parameters: ["after_doing_result", "before_review_result"],
+            "Mark task as complete. If needs_review=false, task moves to Done (claim next task immediately). If needs_review=true, task moves to Review (stop and wait for human review). REQUIRES after_doing_result AND before_review_result parameters with proof of hook execution, and every other field in required_parameters (explorer_result and reviewer_result are rejected when absent in strict mode, the production default). Note: changed_files included in this body is silently ignored — upload via PUT /api/tasks/:id/changed_files instead.",
+          required_parameters: EndpointDocs.complete_required_parameters(),
           hook_validation:
             "MANDATORY - Must execute BOTH after_doing AND before_review hooks BEFORE calling this endpoint and include both results",
           returns:
@@ -219,7 +219,7 @@ defmodule KanbanWeb.API.AgentJSON do
           endpoint: "PATCH #{base_url}/api/tasks/:id/mark_reviewed",
           description:
             "Finalize review after human reviewer sets status. REQUIRES after_review_result parameter with proof of hook execution.",
-          required_parameters: ["after_review_result"],
+          required_parameters: EndpointDocs.mark_reviewed_required_parameters(),
           hook_validation:
             "MANDATORY - Must execute after_review hook BEFORE calling this endpoint and include result",
           returns: "Task data",
@@ -417,7 +417,7 @@ defmodule KanbanWeb.API.AgentJSON do
         description: "Ultra-condensed reference for experienced agents - the essentials only",
         onboarding_url: "#{base_url}/api/agent/onboarding",
         critical_requirement:
-          "Hook validation is MANDATORY - must include before_doing_result when claiming, both after_doing_result AND before_review_result when completing",
+          "Hook validation is MANDATORY - must include before_doing_result when claiming, both after_doing_result AND before_review_result when completing, and after_review_result when marking reviewed. A completion also needs explorer_result and reviewer_result; a dispatched reviewer_result needs the full structured block (api_schema.reviewer_result_format)",
         workflow:
           "EXECUTE before_doing hook → claim WITH result → work → EXECUTE after_doing hook → EXECUTE before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop] → [after a goal's last child: after_goal hook → PATCH /api/tasks/:goal_id/after_goal]",
         required_files: [".stride.md (hooks)", ".stride_auth.md (token, gitignored)"],
@@ -433,8 +433,9 @@ defmodule KanbanWeb.API.AgentJSON do
         key_endpoints: %{
           claim: "POST /api/tasks/claim (REQUIRES before_doing_result parameter)",
           complete:
-            "PATCH /api/tasks/:id/complete (REQUIRES after_doing_result AND before_review_result parameters)",
-          mark_reviewed: "PATCH /api/tasks/:id/mark_reviewed",
+            "PATCH /api/tasks/:id/complete (REQUIRES #{Enum.join(EndpointDocs.complete_required_parameters(), ", ")})",
+          mark_reviewed:
+            "PATCH /api/tasks/:id/mark_reviewed (REQUIRES after_review_result parameter)",
           after_goal:
             "PATCH /api/tasks/:id/after_goal (report a goal's after_goal hook result; :id is the goal)",
           after_goal_status:

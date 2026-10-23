@@ -5,8 +5,19 @@ defmodule KanbanWeb.API.AgentJSONTest do
   SetupDocs}. The onboarding endpoint is consumed by external agents, so a
   changed or dropped top-level key silently breaks integrations — these tests
   fail loudly if the composed key set drifts.
+
+  Not async: the D389 describe turns on strict completion validation, which is
+  global Application env.
   """
-  use KanbanWeb.ConnCase, async: true
+  use KanbanWeb.ConnCase, async: false
+
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+
+  alias Kanban.ApiTokens
+  alias Kanban.Columns
+  alias Kanban.Tasks
+  alias KanbanWeb.API.Agent.EndpointDocs
 
   # The complete top-level key set external agents depend on. Composed from the
   # inline literals plus the extracted SchemaDoc/MultiAgentInstructions/SetupDocs
@@ -251,6 +262,109 @@ defmodule KanbanWeb.API.AgentJSONTest do
       assert key_endpoints["after_goal"] =~ "PATCH /api/tasks/:id/after_goal"
       assert key_endpoints["after_goal_status"] =~ "GET /api/tasks/:id/after_goal_status"
       assert key_endpoints["mark_done"] =~ "PATCH /api/tasks/:id/mark_done"
+    end
+  end
+
+  # D389: built only from what the onboarding payload serves, a completion must
+  # be accepted, and dropping any parameter it calls required must be rejected.
+  # Strict mode is on because it is the production default.
+  describe "PATCH /api/tasks/:id/complete built from the onboarding payload (D389)" do
+    @describetag :capture_log
+
+    setup %{conn: conn} do
+      previous = Application.get_env(:kanban, :strict_completion_validation, false)
+      Application.put_env(:kanban, :strict_completion_validation, true)
+      on_exit(fn -> Application.put_env(:kanban, :strict_completion_validation, previous) end)
+
+      onboarding = conn |> get(~p"/api/agent/onboarding") |> json_response(200)
+
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      {:ok, {_token, plain}} = ApiTokens.create_api_token(user, board, %{"name" => "D389"})
+      doing = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(doing, %{
+          "title" => "Completion built from the docs",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => true
+        })
+
+      authed =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain}")
+
+      %{onboarding: onboarding, authed: authed, task: task}
+    end
+
+    defp documented_complete_parameters(onboarding) do
+      onboarding["workflow"]
+      |> Enum.find(&(&1["name"] == "complete_task"))
+      |> Map.fetch!("required_parameters")
+    end
+
+    # A value for each documented parameter, taken from the served examples
+    # where the schema has one.
+    defp completion_from_docs(onboarding) do
+      schema = onboarding["api_schema"]
+      hook = schema["hook_result_format"]["example"]
+
+      %{
+        "after_doing_result" => hook,
+        "before_review_result" => hook,
+        "completion_summary" => "Built from the onboarding payload only.",
+        "actual_complexity" => "small",
+        "actual_files_changed" => "lib/foo.ex",
+        "time_spent_minutes" => 5,
+        "explorer_result" => schema["explorer_result_format"]["example"],
+        "reviewer_result" => schema["reviewer_result_format"]["structured_example"]
+      }
+    end
+
+    test "complete_task required_parameters match the gate", ctx do
+      %{onboarding: onboarding, authed: authed, task: task} = ctx
+      documented = documented_complete_parameters(onboarding)
+      params = completion_from_docs(onboarding)
+
+      assert documented == EndpointDocs.complete_required_parameters()
+      assert params |> Map.keys() |> Enum.sort() == Enum.sort(documented)
+
+      # Every documented parameter is really required ...
+      for param <- documented do
+        conn = patch(authed, ~p"/api/tasks/#{task.id}/complete", Map.delete(params, param))
+
+        assert conn.status == 422,
+               "completion without #{param} returned #{conn.status}, not 422"
+      end
+
+      # ... and nothing undocumented is: the documented set alone completes.
+      conn = patch(authed, ~p"/api/tasks/#{task.id}/complete", params)
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "the plain reviewer_result example completes too", ctx do
+      %{onboarding: onboarding, authed: authed, task: task} = ctx
+      example = onboarding["api_schema"]["reviewer_result_format"]["example"]
+      params = onboarding |> completion_from_docs() |> Map.put("reviewer_result", example)
+
+      conn = patch(authed, ~p"/api/tasks/#{task.id}/complete", params)
+      assert json_response(conn, 200)["data"]["id"] == task.id
+    end
+
+    test "the quick reference card names the real required parameters", %{onboarding: onboarding} do
+      endpoints = onboarding["quick_reference_card"]["key_endpoints"]
+
+      for param <- EndpointDocs.complete_required_parameters() do
+        assert endpoints["complete"] =~ param
+      end
+
+      assert endpoints["mark_reviewed"] =~ "after_review_result"
+      assert onboarding["quick_reference_card"]["critical_requirement"] =~ "after_review_result"
     end
   end
 end
