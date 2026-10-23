@@ -19,6 +19,15 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "using-complexity-priority"
   ]
 
+  @developer_ids [
+    "setting-up-hooks",
+    "api-authentication",
+    "claim-complete-workflow",
+    "debugging-hooks"
+  ]
+
+  @hook_names ~w(before_doing after_doing before_review after_review after_goal)
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -697,6 +706,207 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert File.read!("docs/TASK-WRITING-GUIDE.md") =~
                "Small (< 1 hour), Medium (1-2 hours), Large (> 2 hours)"
+    end
+  end
+
+  describe "developer guides" do
+    defp developer_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "every bolded UI label in the developer guides exists in the source" do
+      sources =
+        Enum.map_join(
+          [
+            "lib/kanban_web/components/board_tabs.ex",
+            "lib/kanban_web/components/side_nav.ex",
+            "lib/kanban_web/components/workspace_switcher.ex"
+            | Path.wildcard("lib/kanban_web/components/review_*.ex") ++
+                Path.wildcard("lib/kanban_web/live/workspace_live/**/*.{ex,heex}") ++
+                Path.wildcard("lib/kanban_web/live/{board,task}_live/**/*.{ex,heex}")
+          ],
+          &File.read!/1
+        )
+
+      columns = File.read!("lib/kanban/boards/creation.ex")
+
+      labels =
+        for id <- @developer_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @developer_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        # Hook names, API fields and statuses belong in inline code.
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        translated = ~r/gettext\("#{Regex.escape(label)}"/
+
+        assert sources =~ translated or
+                 (label in @ai_board_columns and columns =~ ~s(name: "#{label}")),
+               "#{id} names **#{label}**, which no screen shows"
+      end
+    end
+
+    test "developer guides keep their ids, titles and minimum step counts" do
+      for {id, title, steps} <- [
+            {"setting-up-hooks", "Setting Up Hook Execution", 6},
+            {"api-authentication", "Configuring API Authentication", 6},
+            {"claim-complete-workflow", "Understanding Claim/Complete Workflow", 10},
+            {"debugging-hooks", "Debugging Hook Failures", 5}
+          ] do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert length(guide.steps) >= steps, "#{id} should have at least #{steps} steps"
+      end
+    end
+
+    test "developer guides drop the claims the server no longer makes" do
+      content = developer_content(@developer_ids)
+
+      for stale <- [
+            "four hooks",
+            "60s timeout",
+            "120s timeout",
+            "60-120s",
+            "under 60 seconds",
+            "In Progress",
+            "source .stride.md",
+            "The API returns hook output",
+            "board settings",
+            "Generate Token",
+            "**API Tokens**",
+            "Rotate tokens periodically",
+            "60-second grace",
+            "do not execute for regular boards",
+            "notified of approval",
+            "**CRITICAL:**",
+            "**Important:**",
+            "**Remember:**",
+            "1. **Open**",
+            "Local User Email",
+            "the next `hook`",
+            "The responses say which hooks come next"
+          ] do
+        refute content =~ stale, "a developer guide still says #{inspect(stale)}"
+      end
+    end
+
+    test "the hook facts match the server" do
+      hooks = developer_content(["setting-up-hooks"])
+      server = File.read!("lib/kanban/hooks.ex")
+
+      for name <- @hook_names do
+        assert server =~ ~s("#{name}" => %{blocking: true, timeout: 600_000}),
+               "#{name} is no longer blocking with a 600 s timeout"
+
+        assert hooks =~ "`#{name}`"
+      end
+
+      assert hooks =~ "All five hooks are sent as blocking, with a timeout of 600 seconds"
+      assert hooks =~ "Stride's server never runs them"
+      assert server =~ "The server does NOT execute hooks"
+
+      environment = File.read!("lib/kanban/hooks/environment.ex")
+
+      for var <-
+            ~w(TASK_ID TASK_IDENTIFIER TASK_TITLE TASK_DESCRIPTION TASK_STATUS TASK_COMPLEXITY
+               TASK_PRIORITY TASK_NEEDS_REVIEW BOARD_ID BOARD_NAME COLUMN_ID COLUMN_NAME
+               AGENT_NAME HOOK_NAME) do
+        assert environment =~ ~s("#{var}" =>), "the server no longer sends #{var}"
+        assert hooks =~ "`#{var}`", "the hooks guide doesn't list #{var}"
+      end
+
+      metadata = File.read!("lib/kanban/hooks/metadata.ex")
+      assert metadata =~ "[after_doing, before_review, after_review]"
+      assert hooks =~ "plus `after_review` when `needs_review` is false"
+
+      assert File.read!("lib/kanban/tasks/agent_workflow.ex") =~
+               ~s|Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)|
+
+      assert hooks =~
+               "The claim response's `hook` is the `before_doing` hook the agent has just run"
+
+      assert metadata =~ "def build_mark_reviewed_hooks"
+      assert hooks =~ "or the `mark_reviewed` call that approves it"
+
+      assert File.read!("config/config.exs") =~
+               "config :kanban, :after_goal_grace_window_ms, 300_000"
+
+      assert hooks =~ "five-minute grace window"
+      assert File.read!("lib/kanban_web/router.ex") =~ ~s(patch "/tasks/:id/after_goal")
+    end
+
+    test "the claim and complete facts match the server" do
+      workflow = developer_content(["claim-complete-workflow"])
+      agent_workflow = File.read!("lib/kanban/tasks/agent_workflow.ex")
+
+      assert workflow =~ "A claim lasts 60 minutes"
+      assert agent_workflow =~ "DateTime.add(60 * 60, :second)"
+      assert workflow =~ "moves it to **Doing**"
+      assert agent_workflow =~ ~s{get_column_by_name(board_id, "Doing")}
+      assert File.read!("lib/kanban/notifications/claim_expiry_worker.ex") =~ "never unclaims"
+
+      assert File.read!("lib/kanban/tasks/agent_queries.ex") =~
+               "t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now)"
+
+      assert workflow =~ "Status `open`, or `in_progress` with a claim that has run out"
+
+      assert File.read!("lib/kanban_web/router.ex") =~ ~s(post "/tasks/:id/unclaim")
+      assert workflow =~ "`POST /api/tasks/:id/unclaim`"
+
+      for field <-
+            ~w(completion_summary actual_complexity actual_files_changed time_spent_minutes) do
+        assert agent_workflow =~ ~r/validate_required\(\[[^\]]*:#{field}/,
+               "complete no longer requires #{field}"
+
+        assert workflow =~ "`#{field}`"
+      end
+
+      for status <- Ecto.Enum.values(Kanban.Tasks.Task, :status) do
+        assert workflow =~ "`#{status}`", "the workflow guide doesn't name the #{status} status"
+      end
+
+      header = File.read!("lib/kanban_web/components/review_detail_header.ex")
+
+      for label <- ["Approve", "Request changes"] do
+        assert workflow =~ "**#{label}**"
+        assert header =~ ~s{gettext("#{label}")}
+      end
+    end
+
+    test "the token and debugging facts match the code" do
+      auth = developer_content(["api-authentication"])
+
+      assert File.read!("lib/kanban_web/components/board_tabs.ex") =~
+               "hidden?(:tokens, flags), do: not (flags.modify? and flags.ai_optimized?)"
+
+      assert auth =~ "click the **Tokens** tab; only the owner and members with edit access"
+      assert File.read!("lib/kanban/api_tokens/api_token.ex") =~ "@default_token_lifetime_days 90"
+      assert auth =~ "Tokens expire 90 days after they are created"
+      assert File.read!("lib/kanban_web/plugs/authenticate_api_token.ex") =~ "X-Stride-Board"
+      assert auth =~ "`X-Stride-Board`"
+
+      debugging = developer_content(["debugging-hooks"])
+
+      assert File.read!("lib/kanban/hooks/validator.ex") =~
+               ~S"is a blocking hook and failed with exit code #{code}. Fix the issues and try again."
+
+      assert debugging =~
+               "after_doing is a blocking hook and failed with exit code 1. Fix the issues and try again."
+
+      assert debugging =~ "you can't source it"
+      assert debugging =~ "one at a time"
+      assert File.read!("docs/AGENT-HOOK-EXECUTION-GUIDE.md") =~ "one at a time"
     end
   end
 

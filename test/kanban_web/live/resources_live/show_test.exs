@@ -33,11 +33,14 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       {:ok, _view, html} = live(conn, ~p"/resources/claim-complete-workflow")
 
       assert html =~ ~s(<ol class="list-decimal list-inside space-y-1 my-2">)
-      assert html =~ "<li><strong>Open</strong> → Available for claiming</li>"
+
+      assert html =~
+               "<li><strong>Backlog</strong> → planned work, not offered to agents (status <code"
+
       assert html =~ "<p>Agents automatically discover, claim, and complete tasks"
-      refute html =~ "1. <strong>Open</strong>"
+      refute html =~ "1. <strong>Backlog</strong>"
       # A list wrapped in <p> comes back with <br/> between its items.
-      assert html =~ ~r{<ol class="list-decimal[^"]*">\s*<li><strong>Open</strong>}
+      assert html =~ ~r{<ol class="list-decimal[^"]*">\s*<li><strong>Backlog</strong>}
       refute html =~ "<br/><li>"
     end
 
@@ -93,6 +96,32 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
         refute html =~ "&lt;", "#{id} renders escaped HTML"
         refute html =~ "**", "#{id} renders a literal **"
         assert html =~ "<strong>", "#{id} renders no bold UI label"
+      end
+    end
+
+    test "renders each developer guide without raw markup", %{conn: conn} do
+      for id <- [
+            "setting-up-hooks",
+            "api-authentication",
+            "claim-complete-workflow",
+            "debugging-hooks"
+          ] do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+      end
+    end
+
+    test "the developer guides show the recaptured hook and token images", %{conn: conn} do
+      {:ok, _view, hooks} = live(conn, ~p"/resources/setting-up-hooks")
+      assert hooks =~ ~s(src="/images/resources/guides/hooks-step-2.png")
+
+      {:ok, _view, auth} = live(conn, ~p"/resources/api-authentication")
+
+      for step <- 1..3 do
+        assert auth =~ ~s(src="/images/resources/guides/api-auth-step-#{step}.png")
       end
     end
 
