@@ -21,11 +21,12 @@ The completion API requires fields that are ONLY documented here:
 - `completion_summary` (required — not the same as `completion_notes`)
 - `actual_complexity` (required — enum: "small", "medium", "large")
 - `actual_files_changed` (required — comma-separated STRING, not array)
+- `time_spent_minutes` (required — non-negative integer)
 - `after_doing_result` (required — object with `exit_code`, `output`, `duration_ms`)
 - `before_review_result` (required — object with `exit_code`, `output`, `duration_ms`)
-- `workflow_steps` (required — array of six telemetry entries, one per workflow phase; see the `stride-workflow` skill for the schema)
 - `explorer_result` (required — object: dispatched-subagent result OR self-reported skip with reason enum; on Cursor/Windsurf/Continue/Kimi the skip form is the default because these platforms have no subagents. See Explorer/Reviewer Result Schema)
-- `reviewer_result` (required — object: dispatched-subagent result OR self-reported skip with reason enum; same shape guidance as `explorer_result`. See Explorer/Reviewer Result Schema)
+- `reviewer_result` (required — object: dispatched-subagent result OR self-reported skip with reason enum; same shape guidance as `explorer_result`. A dispatched one must carry the full structured review block. See Explorer/Reviewer Result Schema)
+- `workflow_steps` (optional telemetry — array of six entries, one per workflow phase; see the `stride-workflow` skill for the schema. The server checks its shape only when you send it)
 
 **Attempting to complete a task from memory without this skill results in 3+ failed API calls** as you discover each missing field one at a time. This has been observed in practice.
 
@@ -131,8 +132,8 @@ Use when you've finished implementing a Stride task and are ready to mark it com
 - [ ] **Did you explore the codebase before coding?** If no → read the task's `key_files`, search for `patterns_to_follow`, and understand the existing code before proceeding.
 - [ ] **Did you review your changes against `acceptance_criteria`?** If no → walk through each acceptance criterion and verify your implementation meets it. Check `pitfalls` too.
 - [ ] **Are you ready to run the `after_doing` hook (tests, linting)?** If no → fix any known issues first. The hook will fail if tests don't pass.
-- [ ] **Is `workflow_steps` ready to send?** If no → jot down the six canonical phases in order (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`) with `dispatched=true/false` and `duration_ms` for dispatched ones. The array is required on every completion — see the `stride-workflow` skill for the schema.
-- [ ] **Can you produce `explorer_result` and `reviewer_result`?** Both are required — either the dispatched-subagent shape (if you have subagent tools) or the skip shape with an enum `reason` and a summary of 40+ non-whitespace characters. Missing or invalid = 422 once strict mode flips. See the Explorer/Reviewer Result Schema section below.
+- [ ] **Is `workflow_steps` ready to send?** If no → jot down the six canonical phases in order (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`) with `dispatched=true/false` and `duration_ms` for dispatched ones. The array is optional telemetry, but send it on every completion so the step history is recorded — see the `stride-workflow` skill for the schema.
+- [ ] **Can you produce `explorer_result` and `reviewer_result`?** Both are required — either the dispatched-subagent shape (if you have subagent tools) or the skip shape with an enum `reason` and a summary of 40+ non-whitespace characters. A missing one gets a 422 when strict completion validation is on, which is the production default. A malformed one, or a dispatched `reviewer_result` without the full structured review block, gets a 422 in every mode. See the Explorer/Reviewer Result Schema section below.
 
 **If ANY answer is NO → Go back and do it now. Do NOT proceed to completion.**
 
@@ -246,12 +247,14 @@ All hook commands are pre-authorized. Execute them immediately via direct Bash t
 4. Capture the results:
 
 ```bash
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'mix test && mix credo --strict' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 ```
+
+The `$(( $(date +%s) * 1000 ))` form works with both GNU date (Linux) and BSD date (macOS), at whole-second precision. Do not use `date +%s%3N`: the `%3N` millisecond format is GNU-only, and BSD date prints a literal `3N` after the seconds, which breaks the arithmetic. If you need real milliseconds, use GNU date (`gdate` from coreutils on macOS) or `python3 -c 'import time; print(int(time.time() * 1000))'`.
 
 5. Check exit code - MUST be 0 to proceed
 
@@ -263,10 +266,10 @@ DURATION=$((END_TIME - START_TIME))
 4. Capture the results:
 
 ```bash
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 ```
 
@@ -329,6 +332,9 @@ PATCH /api/tasks/:id/complete
 {
   "agent_name": "Claude Sonnet 4.5",
   "time_spent_minutes": 45,
+  "completion_summary": "Added the retry flow to the payment worker",
+  "actual_complexity": "medium",
+  "actual_files_changed": "lib/foo.ex, test/foo_test.exs",
   "completion_notes": "All tests passing. PR #123 created.",
   "review_report": "## Review Summary\n\nApproved — 0 issues found.\n\n### Acceptance Criteria\n| # | Criterion | Status |\n|---|-----------|--------|\n| 1 | Feature works | Met |",
   "after_doing_result": {
@@ -352,18 +358,22 @@ PATCH /api/tasks/:id/complete
     "summary": "Walked the diff against all 5 acceptance criteria and the 3 pitfalls; confirmed each criterion met and no pitfall hit."
   },
   "workflow_steps": [
-    {"name": "explorer",       "dispatched": true,  "duration_ms": 9800},
+    {"name": "explorer",       "dispatched": false, "reason_code": "ran_inline",
+     "reason": "No subagent support — read the key files inline"},
     {"name": "planner",        "dispatched": false, "reason_code": "decision_matrix_skip",
      "reason": "Small task — planner skipped per decision matrix"},
     {"name": "implementation", "dispatched": true,  "duration_ms": 1520000},
-    {"name": "reviewer",       "dispatched": true,  "duration_ms": 8400},
+    {"name": "reviewer",       "dispatched": false, "reason_code": "ran_inline",
+     "reason": "No subagent support — walked the diff against the criteria inline"},
     {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},
     {"name": "before_review",  "dispatched": true,  "duration_ms": 2340}
   ]
 }
 ```
 
-**Critical:** `after_doing_result`, `before_review_result`, `workflow_steps`, `explorer_result`, and `reviewer_result` are ALL required. The API will reject requests missing any of them — see the Explorer/Reviewer Result Schema section below for accepted shapes.
+**Critical:** `completion_summary`, `actual_complexity`, `actual_files_changed`, `time_spent_minutes`, `after_doing_result`, `before_review_result`, `explorer_result`, and `reviewer_result` are ALL required. The server rejects a request missing any of the first six with a `422` in every mode. A missing `explorer_result` or `reviewer_result` gets a `422` when strict completion validation is on, which is the production default, and is only logged when it is off. A malformed one is rejected with a `422` in every mode. See the Explorer/Reviewer Result Schema section below for accepted shapes.
+
+**`workflow_steps` is optional telemetry.** The server does not reject a request that leaves it out, but it does check the array's shape when you send one, so a malformed array gets a `422`. Send it on every completion: it is how the step history and the compliance dashboard are recorded.
 
 **Schema reference:** The `workflow_steps` array must match the schema documented in the `stride-workflow` skill — key-for-key. Always include one entry per step name (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). Skipped steps use `{"name": "<step>", "dispatched": false, "reason": "<why>"}`.
 
@@ -384,7 +394,7 @@ Never substitute the code for the prose, and never reach for `decision_matrix_sk
 
 ## Explorer/Reviewer Result Schema
 
-Every `/complete` call **must** include both `explorer_result` and `reviewer_result` as top-level objects. Each accepts two shapes: a dispatched-subagent result (when a subagent tool is available, e.g. Claude Code's `stride:task-explorer`) or a self-reported skip (for platforms without subagents, or when the decision matrix legitimately skipped the step). Server-side validation is pre-validated by `Kanban.Tasks.CompletionValidation`; invalid payloads are logged during the grace-period rollout and rejected with `422` once `:strict_completion_validation` flips.
+Every `/complete` call **must** include both `explorer_result` and `reviewer_result` as top-level objects. Each accepts two shapes: a dispatched-subagent result (when a subagent tool is available, e.g. Claude Code's `stride:task-explorer`) or a self-reported skip (for platforms without subagents, or when the decision matrix legitimately skipped the step). The server validates both with `Kanban.Tasks.CompletionValidation`. A missing one is rejected with `422` when `:strict_completion_validation` is on, which is the production default, and only logged when it is off. A present but malformed one, including a dispatched `reviewer_result` that lacks the structured review block, is rejected with `422` in either mode.
 
 **Platform note:** On Cursor, Windsurf, Continue, and Kimi Code, subagent dispatch is not available. Use **Shape 2 (self-reported skip)** — typically with `reason: "no_subagent_support"` when you read `key_files` inline during implementation, or `self_reported_exploration`/`self_reported_review` if you did substantive inline analysis beyond what a bare skip implies.
 
@@ -401,12 +411,34 @@ Every `/complete` call **must** include both `explorer_result` and `reviewer_res
   "dispatched": true,
   "summary": "<40+ non-whitespace characters describing what was reviewed>",
   "duration_ms": 8000,
-  "acceptance_criteria_checked": 5,
-  "issues_found": 0
+  "acceptance_criteria_checked": 2,
+  "issues_found": 0,
+  "schema_version": "1.0",
+  "status": "approved",
+  "issue_counts": {"critical": 0, "important": 0, "minor": 0},
+  "issues": [],
+  "acceptance_criteria": [
+    {"criterion": "<task criterion line 1, verbatim>", "status": "met", "evidence": "lib/foo.ex:12"},
+    {"criterion": "<task criterion line 2, verbatim>", "status": "met", "evidence": "test/foo_test.exs:40"}
+  ],
+  "project_checks": [],
+  "testing_strategy": {"status": "passed", "note": "The unit tests the task listed are present and pass."},
+  "patterns": {"status": "passed"},
+  "pitfalls": {"status": "passed"},
+  "security_considerations": {"status": "passed", "note": "No new input reaches a query or a shell."}
 }
 ```
 
-`reviewer_result` additionally requires `acceptance_criteria_checked` and `issues_found` as non-negative integers when `dispatched` is `true`.
+**A dispatched `reviewer_result` must carry the full structured review block.** Do not shorten it to the summary fields: the server rejects a dispatched review that is missing any structured section with a `422`, whatever the strict-validation setting. The full contract is in [completion-contract.md](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/completion-contract.md). In short, when `dispatched` is `true`:
+
+- `summary` (40+ non-whitespace characters), `duration_ms`, `acceptance_criteria_checked` and `issues_found` (non-negative integers) are required.
+- These sections must all be present: `issues`, `acceptance_criteria`, `project_checks`, `testing_strategy`, `patterns`, `pitfalls`, `security_considerations` and `schema_version`.
+- `status` or `issue_counts` must be present. `status` is usually `"approved"` or `"changes_requested"`. `issue_counts` keys are `critical`, `important` and `minor`.
+- `issues[]` entries need a `severity` (`critical`, `important`, `minor`) and a `category` (`acceptance_criteria`, `pitfall`, `pattern`, `testing`, `security`, `code_quality`, `project_check`). The list may be empty.
+- `acceptance_criteria[]` needs one entry per non-blank line of the task's `acceptance_criteria`, each with `status` `met` or `not_met`.
+- `project_checks` is one verdict per bullet of your project's root `CODE-REVIEW.md`. When the project has no such file, send `[]`. The key must be present, and it must be a list.
+- `testing_strategy`, `patterns`, `pitfalls` and `security_considerations` are section verdicts: `{"status": "passed" | "failed" | "not_assessed", "note": "..."}`. A `failed` verdict needs a `note` of at least 20 non-whitespace characters that names the problem. Use `not_assessed` only when the task left that field empty: when the task supplied `testing_strategy` or `security_considerations`, the verdict must be `passed` or `failed`.
+- `schema_version` is a version string such as `"1.0"`.
 
 ### Shape 2 — self-reported skip (for no-subagent platforms or decision-matrix skips)
 
@@ -456,7 +488,7 @@ When strict mode is on and a payload fails validation:
 
 ### Grace-period rollout
 
-The rollout is over in production: a production server defaults `:strict_completion_validation` to true, so a missing or invalid `explorer_result`/`reviewer_result` gets the 422 above. Outside production the default is still grace mode, where those payloads produce a structured warning log and the request succeeds. `STRIDE_STRICT_COMPLETION_VALIDATION=true` or `=false` overrides the default in any environment. A dispatched review that is present but incomplete is rejected in either mode. **Emit the fields correctly.**
+The rollout is over in production: a production server defaults `:strict_completion_validation` to true, so a missing `explorer_result`/`reviewer_result` gets the 422 above. Outside production the default is still grace mode, where a missing one produces a structured warning log and the request succeeds. A present but malformed one is rejected with a 422 in both modes. `STRIDE_STRICT_COMPLETION_VALIDATION=true` or `=false` overrides the default in any environment. A dispatched review that is present but incomplete is rejected in either mode. **Emit the fields correctly.**
 
 ## Review vs Auto-Approval Decision
 
@@ -464,11 +496,22 @@ After the complete endpoint succeeds:
 
 ### If needs_review=true:
 1. Task moves to Review column
-2. Agent MUST STOP immediately
-3. Wait for human reviewer to approve/reject
-4. When approved, human calls `/mark_reviewed`
-5. Execute after_review hook
+2. Agent MUST STOP immediately. Do NOT run the after_review hook yet
+3. Wait for the human reviewer to approve or request changes. The human records the decision in the board UI; the API cannot set it
+4. When approved, execute the after_review hook FIRST (600s timeout, blocking) and capture `exit_code`, `output` and `duration_ms`. If it fails, fix the problem and do not call `/mark_reviewed`
+5. Then call `PATCH /api/tasks/:id/mark_reviewed` with the hook's result as `after_review_result`, the only body field: `{"after_review_result": {"exit_code": 0, "output": "...", "duration_ms": 1200}}`. The server rejects the call with a `422` when `after_review_result` is missing or has a non-zero `exit_code`
 6. Task moves to Done column
+
+**If the reviewer requested changes or rejected the task**, it stays in Review until you call `/mark_reviewed`. Run the after_review hook, call `PATCH /api/tasks/:id/mark_reviewed` with its `after_review_result` (the call needs a successful result in this case too), and the task moves back to Doing. Then address the feedback.
+
+**Check the task before you call `/mark_reviewed`.** If the human approved from the Review queue's **Approve** button, the server has already moved the task to Done, sent no hooks to anyone, and `/mark_reviewed` returns a `422` because the task is no longer in Review. So call `GET /api/tasks/:id` first:
+
+- **`status` is `completed`:** the review is finished. Do not call `/mark_reviewed`. Run your `## after_review` section yourself if your project relies on it. If the task belongs to a goal, call `GET /api/tasks/:id/after_goal_status`; when `after_goal_armed` is `true`, run `## after_goal` and report it with `PATCH /api/tasks/:id/after_goal` before the five-minute grace window ends (see The after_goal Hook below).
+- **Still in Review with `review_status` `approved`:** run after_review, then call `/mark_reviewed` with its result, as in steps 4 and 5.
+- **Still in Review with `review_status` `changes_requested` or `rejected`:** call `/mark_reviewed` with an `after_review_result` to move the task back to Doing, then address the feedback.
+- **Still in Review with `review_status` `null` or `pending`:** the review is not finished; wait.
+
+A task in Review and a task in Doing both show `status: in_progress`, so tell them apart by `column_id`. See [When a Human Approves from the Review Queue](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/REVIEW-WORKFLOW.md#when-a-human-approves-from-the-review-queue).
 
 ### If needs_review=false:
 1. Task moves to Done column immediately
@@ -477,6 +520,27 @@ After the complete endpoint succeeds:
 4. **Continue working WITHOUT prompting the user**
 
 **CRITICAL AUTOMATION:** When needs_review=false, the agent should AUTOMATICALLY continue to the next task by invoking the stride-claiming-tasks skill. Do NOT ask "Would you like me to claim the next task?" or "Should I continue?" - just proceed automatically.
+
+## The after_goal Hook (Last Task of a Goal)
+
+When the task you just finished was the last open child of a goal, the server adds a fifth hook, `after_goal`, to the `hooks` list in the response. It arrives on the `/complete` response when `needs_review=false`, or on the `/mark_reviewed` response that approves the task when `needs_review=true`. Check the `hooks` list on both responses. When the human approved from the Review queue's **Approve** button, no response carries the hook: call `GET /api/tasks/:id/after_goal_status` instead, as described under "Check the task before you call `/mark_reviewed`" above.
+
+When `after_goal` is in the list:
+
+1. Execute the `## after_goal` section of `.stride.md` (600s timeout, blocking), one line at a time, and capture `exit_code`, `output` and `duration_ms`. This section usually pushes the goal's work.
+2. Report the result with `PATCH /api/tasks/:id/after_goal`, where `:id` is the **goal's** ID or identifier, not the task's. The goal is the task's `parent_id`, and `GET /api/tasks/:id/after_goal_status` also names it. The three fields sit at the top level of the body, and all three are required:
+
+```bash
+curl -s -X PATCH \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"exit_code": 0, "output": "Pushed 4 commits to origin/main", "duration_ms": 2140}' \
+  $STRIDE_API_URL/api/tasks/G12/after_goal
+```
+
+3. A report with `exit_code: 0` moves the goal to Done. Any other exit code is recorded and the goal stays where it is: fix the problem, run the section again and report again.
+
+An empty `## after_goal` section did no work, so report it as `{"exit_code": 0, "output": "", "duration_ms": 0}`. Completing the last child also starts a five-minute grace window. If the goal is still waiting when it ends, because no report arrived or only failed ones did, the server marks the hook as succeeded and moves the goal to Done itself. The server never runs your section, so anything the section does, such as a push, does not happen unless you run it. Run the section and report the result yourself. The full endpoint reference is [PATCH /api/tasks/:id/after_goal](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/patch_tasks_id_after_goal.md).
 
 ## Red Flags - STOP
 
@@ -511,13 +575,13 @@ After the complete endpoint succeeds:
    # Then running hooks afterward
 
 ✅ # Execute after_doing hook first
-   START_TIME=$(date +%s%3N)
+   START_TIME=$(( $(date +%s) * 1000 ))
    OUTPUT=$(timeout 600 bash -c 'mix test' 2>&1)
    EXIT_CODE=$?
    # ...capture results
 
    # Execute before_review hook second
-   START_TIME=$(date +%s%3N)
+   START_TIME=$(( $(date +%s) * 1000 ))
    OUTPUT=$(timeout 600 bash -c 'gh pr create' 2>&1)
    EXIT_CODE=$?
    # ...capture results
@@ -594,7 +658,8 @@ After the complete endpoint succeeds:
 8. **Call complete endpoint** - Include BOTH hook results
 9. **Check needs_review flag** - Stop if true, continue if false
 10. **If false:** Execute after_review hook AUTOMATICALLY (DO NOT prompt user)
-11. **Claim next task** - Continue the workflow
+11. **If the response's `hooks` list includes `after_goal`:** Execute the `## after_goal` section and report it with `PATCH /api/tasks/:id/after_goal` on the goal (see The after_goal Hook above)
+12. **Claim next task** - Continue the workflow
 
 ## Quick Reference Card
 
@@ -607,7 +672,9 @@ CLAUDE CODE COMPLETION WORKFLOW (automatic hooks):
 │      hooks.json PostToolUse auto-runs before_review after)
 ├─ 4. PreToolUse hook failed? → Fix issues, retry curl ✓
 ├─ 5. needs_review=true? → STOP, wait for human ✓
-└─ 6. needs_review=false? → after_review auto-fires, claim next ✓
+├─ 6. needs_review=false? → after_review auto-fires, claim next ✓
+└─ 7. after_goal in the response's hooks list? → run it, report it with
+      PATCH /api/tasks/:id/after_goal on the goal ✓
 
 🚨 DO NOT manually execute .stride.md commands in Claude Code
 🚨 DO NOT run separate Bash commands to "capture hook results"
@@ -620,14 +687,22 @@ OTHER ENVIRONMENTS (manual hooks):
 ├─ 4. Execute before_review (600s timeout, blocking) ✓
 ├─ 5. Hook fails? → FIX, retry, DO NOT proceed ✓
 ├─ 6. Both succeed? → Call PATCH /api/tasks/:id/complete WITH both results ✓
-├─ 7. needs_review=true? → STOP, wait for human ✓
-└─ 8. needs_review=false? → Execute after_review, claim next ✓
+├─ 7. needs_review=true? → STOP, wait for human. On approval: execute
+│     after_review FIRST, then PATCH /api/tasks/:id/mark_reviewed WITH
+│     {"after_review_result": {...}} ✓
+├─ 8. needs_review=false? → Execute after_review, claim next ✓
+└─ 9. after_goal in the response's hooks list? → Execute after_goal, then
+      PATCH /api/tasks/:id/after_goal on the goal with
+      {"exit_code": 0, "output": "...", "duration_ms": 2140} ✓
 
 API ENDPOINT: PATCH /api/tasks/:id/complete
 REQUIRED BODY: {
   "agent_name": "Claude Opus 4.6",
   "time_spent_minutes": 45,
-  "completion_notes": "...",
+  "completion_summary": "<one-line summary of the change>",
+  "actual_complexity": "medium",
+  "actual_files_changed": "lib/foo.ex, test/foo_test.exs",
+  "completion_notes": "..." (optional — long-form findings for the human),
   "review_report": "..." (optional — include when a review was performed),
   "skills_version": "1.0",
   "after_doing_result": {
@@ -649,10 +724,24 @@ REQUIRED BODY: {
     "dispatched": true,
     "summary": "<40+ non-whitespace chars>",
     "duration_ms": 8000,
-    "acceptance_criteria_checked": 5,
-    "issues_found": 0
-  },
-  "workflow_steps": [
+    "acceptance_criteria_checked": 2,
+    "issues_found": 0,
+    "schema_version": "1.0",
+    "status": "approved",
+    "issue_counts": {"critical": 0, "important": 0, "minor": 0},
+    "issues": [],
+    "acceptance_criteria": [
+      {"criterion": "<criterion line 1>", "status": "met"},
+      {"criterion": "<criterion line 2>", "status": "met"}
+    ],
+    "project_checks": [] (one verdict per CODE-REVIEW.md bullet; [] when none),
+    "testing_strategy": {"status": "passed"},
+    "patterns": {"status": "passed"},
+    "pitfalls": {"status": "passed"},
+    "security_considerations": {"status": "passed"}
+  } (the full structured block is required when dispatched=true — see
+     Shape 1 above and completion-contract.md),
+  "workflow_steps": (optional telemetry — send it anyway) [
     {"name": "explorer",       "dispatched": true,  "duration_ms": 12450},
     {"name": "planner",        "dispatched": true,  "duration_ms": 8200},
     {"name": "implementation", "dispatched": true,  "duration_ms": 1820000},
@@ -691,17 +780,17 @@ VERSION: Send skills_version from your SKILL.md frontmatter with every complete 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `agent_name` | string | Yes | Name of the completing agent |
+| `agent_name` | string | No | Name of the completing agent. Defaults to `"Unknown"` when omitted, so send it |
 | `time_spent_minutes` | integer | Yes | Actual time spent on the task |
-| `completion_notes` | string | Yes | Summary of what was done |
+| `completion_notes` | string | No | Long-form notes a human should read on the Review queue |
 | `completion_summary` | string | Yes | Brief summary for tracking |
 | `actual_complexity` | enum | Yes | `"small"`, `"medium"`, or `"large"` |
 | `actual_files_changed` | string | Yes | Comma-separated file paths (NOT an array) |
 | `after_doing_result` | object | Yes | Hook result (see format below) |
 | `before_review_result` | object | Yes | Hook result (see format below) |
-| `workflow_steps` | array | Yes | Telemetry array with one entry per step name. See the `stride-workflow` skill for the full schema (six canonical step names: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). |
+| `workflow_steps` | array | No | Optional telemetry, but send it on every completion. The server checks its shape when present. One entry per step name. See the `stride-workflow` skill for the full schema (six canonical step names: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). |
 | `explorer_result` | object | Yes | Result of codebase exploration — either the dispatched-subagent shape (on platforms with subagent tools) or the self-reported skip shape (on Cursor/Windsurf/Continue/Kimi). See the Explorer/Reviewer Result Schema section. |
-| `reviewer_result` | object | Yes | Result of code review against acceptance criteria. Same two shapes as `explorer_result`. When `dispatched=true`, also requires `acceptance_criteria_checked` and `issues_found`. See the Explorer/Reviewer Result Schema section. |
+| `reviewer_result` | object | Yes | Result of code review against acceptance criteria. Same two shapes as `explorer_result`. When `dispatched=true`, also requires `acceptance_criteria_checked`, `issues_found` and the full structured review block (`issues`, `acceptance_criteria`, `project_checks`, `testing_strategy`, `patterns`, `pitfalls`, `security_considerations`, `schema_version`, and `status` or `issue_counts`). See the Explorer/Reviewer Result Schema section and [completion-contract.md](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/completion-contract.md). |
 | `review_report` | string | No | Structured review report from task-reviewer agent. Include when a review was performed; omit when no review was done. |
 | `skills_version` | string | No | Your skills version from SKILL.md frontmatter |
 

@@ -387,38 +387,44 @@ Phase 4: Assemble and Validate
 
 ### Submitting the Enriched Task
 
-After enrichment is complete, submit via `POST /api/tasks`:
+After enrichment is complete, submit via `POST /api/tasks`, with the task wrapped in a top-level `task` key:
 
 ```bash
 curl -s -X POST \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{...enriched task JSON...}' \
+  -d '{"task": {...enriched task JSON...}}' \
   $STRIDE_API_URL/api/tasks
 ```
 
+A body without the `task` key is rejected with a `422`.
+
 ### Enriching an Existing Minimal Task
 
-If a task already exists in Stride with minimal fields, use `PATCH /api/tasks/:id` to add the enriched fields:
+If a task already exists in Stride with minimal fields, use `PATCH /api/tasks/:id` to add the enriched fields. Wrap the fields in a top-level `task` key:
 
 ```bash
 curl -s -X PATCH \
   -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "key_files": [...],
-    "testing_strategy": {...},
-    "patterns_to_follow": "...",
-    "verification_steps": [...],
-    "pitfalls": [...],
-    "acceptance_criteria": "...",
-    "where_context": "...",
-    "complexity": "medium",
-    "why": "...",
-    "what": "..."
+    "task": {
+      "key_files": [...],
+      "testing_strategy": {...},
+      "patterns_to_follow": "...",
+      "verification_steps": [...],
+      "pitfalls": [...],
+      "acceptance_criteria": "...",
+      "where_context": "...",
+      "complexity": "medium",
+      "why": "...",
+      "what": "..."
+    }
   }' \
   $STRIDE_API_URL/api/tasks/:id
 ```
+
+**The `task` key is required.** A body that sends the fields bare, without it, is rejected with a `422` ("Missing 'task' key") and no field is changed.
 
 **Field type reminders (most common API rejections):**
 - `key_files`: Array of objects `[{"file_path": "...", "note": "...", "position": 0}]`
@@ -773,8 +779,8 @@ DECISION RULE:
   Neither?                     → Ask human with 2-3 specific options
 
 API ENDPOINTS:
-  New task:      POST /api/tasks (full enriched JSON)
-  Existing task: PATCH /api/tasks/:id (enriched fields only)
+  New task:      POST /api/tasks with {"task": {...full enriched JSON...}}
+  Existing task: PATCH /api/tasks/:id with {"task": {...enriched fields only...}}
 ```
 
 ---
