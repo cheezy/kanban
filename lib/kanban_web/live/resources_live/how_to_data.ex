@@ -21,6 +21,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
   # the catalog order, which also drives previous/next navigation.
   @how_tos HowTos.GettingStarted.how_tos() ++
              HowTos.Account.how_tos() ++
+             HowTos.Organizations.how_tos() ++
              HowTos.Developer.how_tos() ++
              HowTos.WorkingWithTasks.how_tos() ++
              HowTos.Metrics.how_tos()
@@ -45,7 +46,9 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     "reviewing",
     "dependencies",
     "priority",
-    "metrics"
+    "metrics",
+    "organizations",
+    "workspaces"
   ]
 
   @doc """

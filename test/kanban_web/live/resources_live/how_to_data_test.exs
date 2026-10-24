@@ -52,6 +52,21 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "lib/kanban_web/components/organization_two_factor_banner.ex"
   ]
 
+  @organization_ids ["free-and-paid-boards", "working-in-a-workspace", "accepting-an-invitation"]
+
+  # The plan, workspace and invitation screens whose gettext strings the
+  # organizations guides may bold.
+  @organization_sources [
+                          "lib/kanban_web/components/workspace_switcher.ex",
+                          "lib/kanban_web/components/locked_feature.ex",
+                          "lib/kanban_web/components/notifications_locked.ex",
+                          "lib/kanban_web/components/bulk_action_bar.ex",
+                          "lib/kanban_web/components/board_tabs.ex",
+                          "lib/kanban_web/components/side_nav.ex",
+                          "lib/kanban_web/live/board_live/members_form_component.ex",
+                          "lib/kanban_web/controllers/page_html/pricing.html.heex"
+                        ] ++ Path.wildcard("lib/kanban_web/live/workspace_live/*.{ex,heex}")
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -1212,11 +1227,16 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     test "includes priority tag" do
       assert "priority" in HowToData.all_tags()
     end
+
+    test "includes the organizations tags" do
+      assert "organizations" in HowToData.all_tags()
+      assert "workspaces" in HowToData.all_tags()
+    end
   end
 
   describe "total guide count" do
-    test "has all 22 guides" do
-      assert length(HowToData.all_how_tos()) == 22
+    test "has all 25 guides" do
+      assert length(HowToData.all_how_tos()) == 25
     end
 
     test "every guide id is unique across the area modules" do
@@ -1495,6 +1515,208 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       # member without an authenticator is left with their saved codes.
       assert two_factor =~ "**Generate new codes** needs a code from your authenticator"
       assert accounts_two_factor =~ ":ok <- use_code(totp, code) do"
+    end
+  end
+
+  describe "organizations guides" do
+    defp organization_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "the organizations guides exist with their tags and steps" do
+      expected = [
+        {"free-and-paid-boards", "Free and Paid Boards", ["organizations", "boards"], 7},
+        {"working-in-a-workspace", "Working in a Workspace", ["organizations", "workspaces"], 9},
+        {"accepting-an-invitation", "Accepting an Invitation",
+         ["organizations", "workspaces", "beginner"], 6}
+      ]
+
+      assert Enum.map(KanbanWeb.ResourcesLive.HowTos.Organizations.how_tos(), & &1.id) ==
+               @organization_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.created_at == ~D[2026-10-24]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+      end
+
+      # No other guide shares the first tag, so navigation stays within the trio.
+      assert Enum.filter(HowToData.all_how_tos(), &("organizations" in &1.tags))
+             |> Enum.map(& &1.id) == @organization_ids
+    end
+
+    test "the organizations guides navigate free and paid → workspace → invitation" do
+      [free, workspace, invitation] =
+        Enum.map(@organization_ids, fn id ->
+          {:ok, guide} = HowToData.get_how_to(id)
+          guide
+        end)
+
+      assert {nil, %{id: "working-in-a-workspace"}} = HowToData.get_navigation(free)
+
+      assert {%{id: "free-and-paid-boards"}, %{id: "accepting-an-invitation"}} =
+               HowToData.get_navigation(workspace)
+
+      assert {%{id: "working-in-a-workspace"}, nil} = HowToData.get_navigation(invitation)
+    end
+
+    test "every bolded UI label in the organizations guides exists in the source" do
+      sources = Enum.map_join(@organization_sources, &File.read!/1)
+
+      labels =
+        for id <- @organization_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @organization_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        assert sources =~ ~r/gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no organizations screen shows"
+      end
+    end
+
+    test "the organizations guides link to pages that exist" do
+      content = organization_content(@organization_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\((\/[^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert "/pricing" in links
+
+      for "/resources/" <> id <- links do
+        assert id in ids, "an organizations guide links to the missing guide #{id}"
+      end
+
+      assert File.read!("lib/kanban_web/router.ex") =~
+               ~s(get "/pricing", PageController, :pricing)
+    end
+
+    test "the free and paid board facts match the code" do
+      free = organization_content(["free-and-paid-boards"])
+      plans = File.read!("lib/kanban/plans.ex")
+
+      assert free =~ "A free board holds up to 3 people"
+      assert plans =~ "@free_board_member_cap 3"
+      assert plans =~ "member_count >= @free_board_member_cap and not board_unlocked?(board)"
+
+      assert free =~
+               "The limits in this guide apply only when your Stride instance switches its plans on"
+
+      assert plans =~ "Application.get_env(:kanban, :plans_enforced, false) == true"
+
+      assert free =~ "Removing people always works, but nobody new can join"
+
+      for label <- ["Bulk actions", "Telemetry", "MCP", "Integrations", "Notifications"] do
+        assert free =~ "**#{label}**"
+      end
+
+      refute free =~ "Everything else on the board works as usual"
+
+      assert File.read!("lib/kanban_web/mcp/server.ex") =~
+               "Plans.check_board(board, :mcp, surface: :mcp)"
+
+      assert free =~
+               "to reach **Get Stride for your organization** on the [Pricing](/pricing) page, where **Talk to us** emails the Stride team"
+
+      refute free =~ "contact form"
+      pricing = File.read!("lib/kanban_web/controllers/page_html/pricing.html.heex")
+      assert pricing =~ ~s(id="contact")
+      assert pricing =~ ~s(href="mailto:)
+
+      assert File.read!("lib/kanban_web/controllers/locked_feature_controller.ex") =~
+               ~s(redirect(conn, to: ~p"/pricing" <> "#contact"\))
+
+      assert free =~
+               "the switched-on ones are marked Paused until the board moves into an Organization"
+
+      assert File.read!("lib/kanban_web/live/board_live/webhook_state.ex") =~
+               "Sends again once this board moves into an Organization."
+
+      assert free =~ "they come only from paid boards"
+
+      assert File.read!("lib/kanban/notifications.ex") =~
+               "drops every event on a board that\n  is not paid"
+
+      assert free =~ "a board can't be moved back"
+
+      assert File.read!("lib/kanban_web/live/workspace_live/settings.html.heex") =~
+               "Boards can't be moved back."
+    end
+
+    test "the workspace facts match the code" do
+      workspace = organization_content(["working-in-a-workspace"])
+      settings = File.read!("lib/kanban_web/live/workspace_live/settings.ex")
+
+      assert settings =~
+               ~s|{:members, gettext("Members"), gettext("roles · removal")},\n      {:boards, gettext("Boards"), gettext("list · move a board here")}\n    ] ++\n      if can_manage?,|
+
+      assert workspace =~ "Org-admins also see **Invitations**, **Tokens** and **Export**"
+
+      assert workspace =~ "Your personal boards are not in the list"
+
+      assert File.read!("lib/kanban/workspaces/listing.ex") =~
+               "A personal workspace is\n  never returned"
+
+      assert workspace =~
+               "A Guest works on the boards they are invited to, but can't create boards there"
+
+      assert File.read!("lib/kanban/workspaces/policy.ex") =~ "where: m.role == ^:member"
+
+      assert workspace =~ "a link that works once and expires in 7 days"
+      assert File.read!("lib/kanban/workspaces/invitation.ex") =~ "@validity_days 7"
+
+      assert workspace =~ "It acts as you and expires in 90 days"
+
+      assert File.read!("lib/kanban_web/live/workspace_live/tokens_card.ex") =~
+               "It expires in 90 days."
+
+      assert workspace =~ "zip archive"
+      assert workspace =~ "Archives are kept for 7 days, and only org-admins can download them"
+      assert File.read!("lib/kanban/workspaces/export.ex") =~ "@retention_days 7"
+
+      assert workspace =~
+               "Changing a Member to a Guest also revokes any open invitation sent to that person"
+
+      assert File.read!("lib/kanban/workspaces/members.ex") =~
+               "Lowering a\n  `:member` to `:guest` revokes the open invitations addressed to `user`"
+    end
+
+    test "the invitation facts match the code" do
+      invitation = organization_content(["accepting-an-invitation"])
+      messages = File.read!("lib/kanban_web/live/workspace_live/invitation_messages.ex")
+
+      assert invitation =~ "a link that works once and expires after 7 days"
+      assert invitation =~ "The invitation is accepted when you confirm your email"
+      assert invitation =~ "Nothing changes until you click **Accept invitation**"
+
+      assert invitation =~ "clicking **Accept invitation** shows **This board is full**"
+      assert invitation =~ "Your invitation stays open"
+
+      assert messages =~
+               "This board is full: free boards hold %{cap} people. Ask the board owner to make room, then open the link again."
+
+      assert messages =~ "This invitation link is invalid or has expired."
+
+      assert invitation =~
+               "for a workspace invitation, when you already belong to a different Organization"
+
+      assert File.read!("lib/kanban/workspaces/invitation_acceptance.ex") =~
+               "defp in_other_organization?(%Invitation{role: nil}, _user), do: false"
+
+      assert File.read!("lib/kanban_web/live/user_live/confirmation.ex") =~
+               "# An account registered from an invitation link joins once its email is"
     end
   end
 

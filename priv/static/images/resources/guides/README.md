@@ -90,6 +90,23 @@ seed, because Organizations can't be deleted and the seed won't create one.
 Use an existing dev Organization that the person who owns the dev data names,
 and check that every name and email on screen is a test account.
 
+The organizations guides were captured in such an Organization, renamed for
+the shots: **Northwind Studio**, with Maya as org-admin, and its workspace
+**Product Team**, with Priya as a Member and Marcus as a Guest. Its paid
+board **Mobile App Launch** has Priya (can edit) and Marcus (read only).
+Once Maya belongs to an Organization, the workspace switcher shows at the top
+of her sidebar and any of its other boards show on `/boards`. When you
+recapture an older shot, hide the switcher (`#workspace-switcher`) and those
+boards in the page.
+
+Locked states (**Available to organizations** and the free-board limit) show
+only while plans are enforced. Switch them on in the running VM with
+`Application.put_env(:kanban, :plans_enforced, true)`, capture, then switch
+them off again with `false` and check `Application.get_env(:kanban, :plans_enforced)`.
+Revoke any invitation you sent for a shot, and never click
+**Accept invitation** with a demo account you mean to keep out of the
+Organization.
+
 ## 3. Capture
 
 1. **Viewport:** a browser window 1280 to 1440 CSS pixels wide, zoom at 100%.
@@ -185,6 +202,16 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp and
 | `managing-your-account-step-4.png` | managing-your-account / 4 Changing Your Password | `/users/settings?section=password` | Both password fields empty | Crop the card |
 | `managing-your-account-step-6.png` | managing-your-account / 6 Single Sign-On | `/users/settings?section=sso` | The not-linked paragraph (plans off, so no lock) | Crop the card |
 | `managing-your-account-step-7.png` | managing-your-account / 7 Before You Can Delete Your Account | `/users/settings?section=danger_zone` | The two board blockers (Checkout Revamp, Marketing Site Launch) with **Transfer ownership to**. If a `RESOURCES_DEMO_VIEWER` account is on the boards, remove its option from both selects in the page so only demo members show. Don't transfer anything: the confirmation window can't be reached without moving a board, so step 8 has no image | From the card title to the last blocker |
+| `free-and-paid-boards-step-3.png` | free-and-paid-boards / 3 The Free-Board Limit | `/boards/<Checkout>/members` (as Maya, plans enforced) | The **Add user by email** card with "4 of 3 people" (a demo viewer makes the fourth) and **Get Stride for your organization**, nothing typed | Crop the card, not the member list |
+| `free-and-paid-boards-step-4.png` | free-and-paid-boards / 4 Locked Features on a Board | `/boards/<Checkout>` (plans enforced) | The filter bar and the inline **Bulk actions** lock | From the filter bar to the lock, full board width |
+| `free-and-paid-boards-step-5.png` | free-and-paid-boards / 5 Integrations and Notifications | `/boards/<Checkout>` **Integrations** window (plans enforced) | The **Integrations** lock panel under Webhooks, nothing focused | From the window title to the lock |
+| `working-in-a-workspace-step-2.png` | working-in-a-workspace / 2 Switching Workspaces | `/boards` (as Maya, in Northwind Studio) | The switcher open on Product Team | Crop the top of the sidebar |
+| `working-in-a-workspace-step-3.png` | working-in-a-workspace / 3 Opening Workspace Settings | `/workspace/settings` | **Members** tab with Marcus (Guest) and Priya (Member) | From the workspace name to the end of the members card; no sidebar |
+| `working-in-a-workspace-step-5.png` | working-in-a-workspace / 5 Moving a Board Here | `/workspace/settings?section=boards` | Mobile App Launch listed; **Move a board here** with Checkout Revamp chosen. Don't click **Move here**: boards can't be moved back. Hide any other boards in the list | Both cards |
+| `working-in-a-workspace-step-6.png` | working-in-a-workspace / 6 Inviting People | `/workspace/settings?section=invitations` | **Invite people** filled for `sam.ortiz@example.test` as Guest with Mobile App Launch, not sent; one pending invitation to Jordan, revoked after the shot | Both cards |
+| `working-in-a-workspace-step-8.png` | working-in-a-workspace / 8 Exporting a Workspace | `/workspace/settings?section=export` | No exports yet; don't request one | Both cards |
+| `accepting-an-invitation-step-2.png` | accepting-an-invitation / 2 Opening the Link Without an Account | `/invitations/<token>`, signed out | **You're invited** with **Create account** and **Sign in**; the address bar (which holds the token) not in the shot | Crop the card |
+| `accepting-an-invitation-step-4.png` | accepting-an-invitation / 4 When the Link Doesn't Work | `/invitations/not-a-real-token`, signed out | **Invitation unavailable** | Crop the card |
 | `two-factor-authentication-step-3.png` | two-factor-authentication / 3 Open Two-Factor Settings | `/users/settings?section=two_factor` | "Two-factor authentication is off." and **Set up two-factor authentication** | Crop the card |
 | `two-factor-authentication-step-5.png` | two-factor-authentication / 5 Scan the QR Code | `/users/settings?section=two_factor`, **Set up two-factor authentication** clicked | Before capturing, replace the QR image with a plain placeholder and the key text with `XXXX XXXX XXXX XXXX` in the page; leave **6-digit code** empty. Then click **Cancel**, which deletes the unconfirmed secret, and check Maya has no `user_totps` row. Never click **Verify and turn on**: two-factor stays off for the demo user | Crop the card |
 | `hooks-step-2.png` | setting-up-hooks / 2 Create .stride.md | an editor view, not the app | `.stride.md` with the guide's five example sections, `before_doing` to `after_goal`, each "(blocking, 600s timeout)"; no hostnames, home paths or usernames | Crop the editor pane |

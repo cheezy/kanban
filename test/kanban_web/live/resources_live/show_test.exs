@@ -185,6 +185,34 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       end
     end
 
+    test "renders each organizations guide with its links and screenshots", %{conn: conn} do
+      images = %{
+        "free-and-paid-boards" => [3, 4, 5],
+        "working-in-a-workspace" => [2, 3, 5, 6, 8],
+        "accepting-an-invitation" => [2, 4]
+      }
+
+      for {id, steps} <- images do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+
+        for step <- steps do
+          assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
+        end
+      end
+
+      {:ok, _view, free} = live(conn, ~p"/resources/free-and-paid-boards")
+      assert free =~ ~s(href="/pricing")
+      assert free =~ ~s(href="/resources/working-in-a-workspace")
+
+      {:ok, _view, workspace} = live(conn, ~p"/resources/working-in-a-workspace")
+      assert workspace =~ ~s(href="/resources/api-authentication")
+      assert workspace =~ ~s(href="/resources/accepting-an-invitation")
+    end
+
     test "the reviewing guide shows the Review queue screenshots", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
 
