@@ -148,6 +148,69 @@ defmodule Kanban.ResourcesDemoSeedsTest do
     assert review.completed_by_id
   end
 
+  @reviewed_title "Add a delivery estimate to the order summary"
+
+  defp reviewed_tasks(board) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board.id and t.title == @reviewed_title,
+      select: {c.name, t}
+    )
+    |> Repo.all()
+  end
+
+  test "the reviewed Done task carries every section the task view can show" do
+    run_seed()
+    assert [{"Done", task}] = reviewed_tasks(demo_board("Checkout Revamp"))
+    result = task.reviewer_result
+
+    assert task.status == :completed
+    assert task.review_status == :approved
+    assert task.reviewed_by_id && task.reviewed_at
+    assert Repo.preload(task, :created_by).created_by.name == "Maya Chen"
+    assert task.why && task.what && task.where_context
+    assert length(task.key_files) == 2
+    assert length(task.verification_steps) == 2
+
+    assert task.behaviour_test_matrix |> Enum.map(& &1.category) |> Enum.sort() ==
+             Enum.sort(Kanban.Schemas.Task.BehaviourTestRow.categories())
+
+    assert Enum.any?(task.behaviour_test_matrix, &(&1.status == "not_applicable"))
+    assert task.telemetry_event && task.metrics_to_track && task.logging_requirements
+    assert task.explorer_result["dispatched"] == true
+    assert task.actual_complexity == :medium
+    assert task.time_spent_minutes == 95
+
+    assert {:ok, _} = CompletionValidation.validate_changed_files(task.changed_files)
+
+    assert Enum.map(task.changed_files, & &1["path"]) ==
+             String.split(task.actual_files_changed, ", ")
+
+    refute ChangedFilesAudit.diff_missing?(task)
+    assert {:ok, _} = CompletionValidation.validate_reviewer_result(result)
+    assert CompletionValidation.review_contract_failures(result, task) == []
+    assert CompletionValidation.acceptance_criteria_count_failures(result, task) == []
+    assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(result, task)
+    assert ReviewAcceptance.acceptance_value(task) == "3/3"
+  end
+
+  test "a Checkout board seeded before the reviewed task existed gets it once" do
+    run_seed()
+    assert_received {:summary, %{reviewed_task: :created}}
+    board = demo_board("Checkout Revamp")
+    [{"Done", task}] = reviewed_tasks(board)
+
+    # A board seeded by an older version of the script has no such task.
+    Repo.delete!(task)
+    run_seed()
+    assert_received {:summary, %{boards_created: [], reviewed_task: :created}}
+    assert [{"Done", _}] = reviewed_tasks(board)
+
+    run_seed()
+    assert_received {:summary, %{reviewed_task: :exists}}
+    assert [{"Done", _}] = reviewed_tasks(board)
+  end
+
   test "the Doing goal child depends on the finished one and stays in progress" do
     run_seed()
     tasks = demo_board("Checkout Revamp") |> tasks_by_column() |> Map.values() |> List.flatten()

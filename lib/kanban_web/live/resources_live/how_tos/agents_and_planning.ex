@@ -5,7 +5,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentsAndPlanning do
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog. It sits after
-  `HowTos.WorkingWithTasks` and before `HowTos.Metrics`.
+  `HowTos.TaskDetails` and before `HowTos.Metrics`.
 
   - `watching-your-agents` leads with `ai-agents`, so it ends that chain:
     writing tasks for AI → watching your agents.

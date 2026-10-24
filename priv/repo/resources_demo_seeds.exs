@@ -18,8 +18,10 @@
 # built.
 #
 # It is idempotent. Users and memberships are found or created; a board that
-# already exists is left exactly as it is, so delete a demo board in the UI and
-# run the seed again to rebuild it.
+# already exists is left as it is, so delete a demo board in the UI and run the
+# seed again to rebuild it. The one exception is the reviewed agent task "Add a
+# delivery estimate to the order summary", which is added to an existing
+# Checkout Revamp board when it is missing.
 #
 # Optional environment variables:
 #
@@ -761,6 +763,249 @@ created =
     name
   end
 
+# --- A reviewed agent task, added even to an existing board ----------------------
+
+# A finished, approved agent task with every section the task view can show:
+# context, key files, a behaviour/test matrix, observability, an explorer
+# result, a review, actuals and a diff, for the "reading a task's details"
+# guide. It is found or created by title, so it also reaches a Checkout Revamp
+# board seeded before it existed (rebuilding that board would orphan the demo
+# delivery target, which can't be deleted).
+reviewed_title = "Add a delivery estimate to the order summary"
+
+reviewed_criteria = [
+  "The order summary shows the delivery estimate for the chosen shipping method",
+  "The estimate updates when the shopper changes the shipping method",
+  "Without an estimate from the carrier, the summary shows no date rather than a guess"
+]
+
+reviewed_diffs = [
+  %{
+    "path" => "lib/storefront/shipping/estimate.ex",
+    "diff" => """
+    --- a/lib/storefront/shipping/estimate.ex
+    +++ b/lib/storefront/shipping/estimate.ex
+    @@ -8,6 +8,17 @@ defmodule Storefront.Shipping.Estimate do
+       alias Storefront.Shipping.Carrier
+
+    +  @doc "The delivery window for `method`, or nil when the carrier gives none."
+    +  def for_method(%{carrier: carrier, service: service}, postcode) do
+    +    case Carrier.quote(carrier, service, postcode) do
+    +      {:ok, %{earliest: earliest, latest: latest}} -> {earliest, latest}
+    +      _ -> nil
+    +    end
+    +  end
+    +
+       def business_days(from, days) do
+    """
+  },
+  %{
+    "path" => "lib/storefront_web/components/order_summary.ex",
+    "diff" => """
+    --- a/lib/storefront_web/components/order_summary.ex
+    +++ b/lib/storefront_web/components/order_summary.ex
+    @@ -21,6 +21,9 @@ defmodule StorefrontWeb.Components.OrderSummary do
+             <.line_items items={@cart.items} />
+             <.totals cart={@cart} compact={@compact} />
+    +        <p :if={@estimate} class="order-summary__delivery">
+    +          Arrives {format_window(@estimate)}
+    +        </p>
+           </section>
+    """
+  },
+  %{
+    "path" => "test/storefront/shipping/estimate_test.exs",
+    "diff" => """
+    --- a/test/storefront/shipping/estimate_test.exs
+    +++ b/test/storefront/shipping/estimate_test.exs
+    @@ -30,3 +30,15 @@ defmodule Storefront.Shipping.EstimateTest do
+         assert Estimate.business_days(~D[2026-10-23], 2) == ~D[2026-10-27]
+       end
+    +
+    +  test "for_method/2 returns the carrier's window" do
+    +    stub_carrier({:ok, %{earliest: ~D[2026-10-27], latest: ~D[2026-10-29]}})
+    +    assert Estimate.for_method(standard(), "M5V 2T6") == {~D[2026-10-27], ~D[2026-10-29]}
+    +  end
+    +
+    +  test "for_method/2 returns nil when the carrier gives no window" do
+    +    stub_carrier({:error, :no_quote})
+    +    assert Estimate.for_method(standard(), "M5V 2T6") == nil
+    +  end
+     end
+    """
+  }
+]
+
+reviewed_matrix =
+  [
+    {"Happy path", "Shows the carrier's window for the chosen method",
+     "test/storefront/shipping/estimate_test.exs — \"for_method/2 returns the carrier's window\"",
+     "unit"},
+    {"Boundary", "A window that ends on a weekend skips to the next business day",
+     "test/storefront/shipping/estimate_test.exs — \"business_days/2 skips weekends\"", "unit"},
+    {"Error / exception", "No date is shown when the carrier returns an error",
+     "test/storefront/shipping/estimate_test.exs — \"for_method/2 returns nil when the carrier gives no window\"",
+     "unit"},
+    {"Null / empty", "A cart with no shipping method shows no estimate",
+     "test/storefront_web/components/order_summary_test.exs — \"no estimate without a method\"",
+     "unit"},
+    {"Concurrency", nil, nil, nil},
+    {"Lifecycle / wiring", "Changing the shipping method refreshes the estimate",
+     "test/storefront_web/live/checkout_live_test.exs — \"estimate follows the shipping method\"",
+     "integration"},
+    {"Contract / serialization", "The carrier quote's dates parse as ISO 8601",
+     "test/storefront/shipping/carrier_test.exs — \"quote dates are ISO 8601\"", "unit"}
+  ]
+  |> Enum.with_index()
+  |> Enum.map(fn
+    {{"Concurrency" = category, nil, nil, nil}, i} ->
+      %{
+        category: category,
+        behaviour: "N/A: the estimate is read-only and per request",
+        test_name: "N/A",
+        status: "not_applicable",
+        na_reason: "Nothing is written, so there is no shared state to race",
+        position: i
+      }
+
+    {{category, behaviour, test_name, type}, i} ->
+      %{
+        category: category,
+        behaviour: behaviour,
+        test_name: test_name,
+        type: type,
+        status: "passing",
+        position: i
+      }
+  end)
+
+ensure_reviewed_task = fn board ->
+  existing =
+    Repo.exists?(
+      from t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board.id and t.title == ^reviewed_title
+    )
+
+  if existing do
+    :exists
+  else
+    columns = columns_by_name.(board)
+
+    add_task.(
+      columns["Done"],
+      %{
+        title: reviewed_title,
+        type: :work,
+        priority: :medium,
+        complexity: :medium,
+        estimated_files: "3-5",
+        status: :completed,
+        description:
+          "Shoppers abandon checkout when they can't tell when an order will arrive. Show the carrier's delivery window in the order summary.",
+        why: "Shoppers leave checkout when they can't see when their order will arrive.",
+        what: "A delivery window from the carrier, shown in the order summary.",
+        where_context: "Checkout: the order summary on the review step",
+        acceptance_criteria: Enum.join(reviewed_criteria, "\n"),
+        key_files: [
+          %{
+            file_path: "lib/storefront/shipping/estimate.ex",
+            note: "Ask the carrier for a delivery window",
+            position: 0
+          },
+          %{
+            file_path: "lib/storefront_web/components/order_summary.ex",
+            note: "Show the window under the totals",
+            position: 1
+          }
+        ],
+        verification_steps: [
+          %{
+            step_type: "command",
+            step_text: "mix test test/storefront/shipping",
+            expected_result: "All tests pass",
+            position: 0
+          },
+          %{
+            step_type: "manual",
+            step_text: "Switch between Standard and Express on the review step",
+            expected_result: "The delivery date changes with the method",
+            position: 1
+          }
+        ],
+        pitfalls: ["Don't invent a date when the carrier gives none"],
+        security_considerations: ["Send the carrier only the postcode, never the full address"],
+        testing_strategy: %{
+          "unit_tests" => ["Estimate.for_method/2 with and without a carrier window"],
+          "integration_tests" => ["The checkout refreshes the estimate when the method changes"],
+          "manual_tests" => ["Check the estimate on the review step at 375px"]
+        },
+        behaviour_test_matrix: reviewed_matrix,
+        telemetry_event: "[:storefront, :shipping, :estimate]",
+        metrics_to_track: "Share of checkouts that show an estimate; carrier quote latency",
+        logging_requirements: "Log carrier errors at warning level with the carrier and service",
+        created_by_id: maya.id,
+        claimed_at: ago.(30),
+        completed_at: ago.(27),
+        completed_by_agent: "Claude Opus 5.5",
+        completed_by_id: priya.id,
+        completion_summary:
+          "Added Estimate.for_method/2 and a delivery line in the order summary that follows the shipping method.",
+        completion_notes:
+          "The carrier sandbox returns no window for PO boxes, so those orders show no date. Checked Standard and Express at 375px.",
+        actual_complexity: :medium,
+        actual_files_changed: Enum.map_join(reviewed_diffs, ", ", & &1["path"]),
+        time_spent_minutes: 95,
+        changed_files: reviewed_diffs,
+        workflow_steps: demo_workflow_steps.(0),
+        explorer_result: %{
+          "dispatched" => true,
+          "duration_ms" => 52_000,
+          "summary" =>
+            "The carrier client already returns quotes; the order summary had no slot for a date."
+        },
+        reviewer_result: %{
+          "dispatched" => true,
+          "schema_version" => "1.0",
+          "status" => "approved",
+          "summary" =>
+            "All three acceptance criteria are met, and every matrix row has a passing test or a reason.",
+          "duration_ms" => 61_000,
+          "acceptance_criteria_checked" => length(reviewed_criteria),
+          "issues_found" => 0,
+          "issues" => [],
+          "acceptance_criteria" =>
+            Enum.map(reviewed_criteria, fn criterion ->
+              %{
+                "criterion" => criterion,
+                "status" => "met",
+                "evidence" => "test/storefront/shipping/estimate_test.exs"
+              }
+            end),
+          "project_checks" => [],
+          "testing_strategy" => %{"status" => "passed"},
+          "patterns" => %{"status" => "passed"},
+          "pitfalls" => %{"status" => "passed"},
+          "security_considerations" => %{"status" => "passed"}
+        },
+        needs_review: true,
+        review_status: :approved,
+        reviewed_at: ago.(26),
+        reviewed_by_id: maya.id,
+        review_notes: "Looks good on my phone. Ship it.",
+        inserted_hours_ago: 96
+      },
+      [],
+      maya
+    )
+
+    :created
+  end
+end
+
+{:ok, reviewed_task} =
+  Repo.transaction(fn -> ensure_reviewed_task.(owned_board.(maya, "Checkout Revamp")) end)
+
 viewer_boards =
   for name <- ["Checkout Revamp", "Marketing Site Launch"],
       viewer && ensure_member.(owned_board.(maya, name), viewer, maya) == :member,
@@ -769,6 +1014,7 @@ viewer_boards =
 summary = %{
   demo_owner: maya.email,
   boards_created: created,
+  reviewed_task: reviewed_task,
   boards: ["Checkout Revamp", "Marketing Site Launch"],
   viewer: viewer && viewer.email,
   viewer_member_of: viewer_boards

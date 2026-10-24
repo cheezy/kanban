@@ -28,8 +28,10 @@ The seed (`priv/repo/resources_demo_seeds.exs`) refuses to run against
 anything but the dev database (and the test database, so its own test can run
 it), creates no Organization, and is safe to run
 again: it finds or creates the users and memberships, and leaves a demo board
-that already exists untouched. To rebuild a board, delete it in the UI and run
-the seed again.
+that already exists untouched, apart from adding the reviewed agent task below
+when it is missing. To rebuild a board, delete it in the UI and run the seed
+again. Don't rebuild Checkout Revamp: the demo delivery target "Checkout
+launch" uses its goal, and targets can't be deleted.
 
 It creates:
 
@@ -48,6 +50,11 @@ It creates:
     show;
   - "Show saved cards in the payment sheet" in Doing, depending on the
     finished "Store card tokens with the payment provider";
+  - "Add a delivery estimate to the order summary" in Done: a finished,
+    approved agent task with context, key files, a behaviour/test matrix,
+    observability values, an explorer result, a review, actuals and a diff,
+    for the task details guide. Unlike the rest of the board, it is added to
+    an existing Checkout Revamp board when it is missing;
   - an API token record named "Checkout agent";
   - four weeks of completed work by several agents, so every metrics page
     has data, with the workflow steps each agent reported, so the Compliance
@@ -197,6 +204,14 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp and
 | `planning-with-targets-step-3.png` | planning-with-targets / 3 Adding Goals | `/targets/<Checkout launch>/edit` | **Assigned Goals** with Checkout G1 and **Available Goals**. The target was created once as Maya ("Checkout launch", due 2026-11-20, G1 assigned) and stays, since targets can't be deleted; reuse it | Crop to the two goal lists |
 | `planning-with-targets-step-5.png` | planning-with-targets / 5 The Target Page | `/targets/<Checkout launch>` | Date, status, estimate, the column bar and **Goals** | From the heading to the goal row |
 | `planning-with-targets-step-9.png` | planning-with-targets / 9 The Goal Page | `/boards/<Checkout>/goals/<G1>` | Header, **Hierarchy**, **Progress** and **Time** | From the header to the bottom of the first column group |
+| `reading-a-tasks-details-step-2.png` | reading-a-tasks-details / 2 The Top and the Side Panel | `/boards/<Checkout>`, "Add a delivery estimate to the order summary" card clicked | First turn on, as Maya, the Field visibility toggles Context, Key Files, Verification Steps, Pitfalls, Security Considerations, Testing Strategy, Behaviour/Test Matrix and Observability, and turn them off again after the last details shot. Capture this one before or after the toggles (only Acceptance Criteria shows), hiding the main-column sections from **Actual vs estimated** down in the page so the side panel shows through **Edit task** | The modal's content box |
+| `reading-a-tasks-details-step-3.png` | reading-a-tasks-details / 3 What Was Asked | same task | Scrolled so **Acceptance criteria** is at the top | From **Acceptance criteria** to the end of **Verification steps**, main column only |
+| `reading-a-tasks-details-step-4.png` | reading-a-tasks-details / 4 The Behaviour/Test Matrix | same task | Scrolled to **Behaviour/Test Matrix** | The matrix, main column only |
+| `reading-a-tasks-details-step-6.png` | reading-a-tasks-details / 6 What the Agent Reported | same task | Scrolled to **Review status** | From **Review status** to the end of **Workflow steps** |
+| `reading-a-tasks-details-step-7.png` | reading-a-tasks-details / 7 Completion and Actual vs Estimated | same task | Hide the sections between **Actual vs estimated** and **Completion** in the page | **Actual vs estimated** and **Completion** |
+| `reading-a-tasks-details-step-8.png` | reading-a-tasks-details / 8 Changed Files and the Diff | same task | The first changed file clicked, so its diff is open | **Changed files** with the open diff |
+| `commenting-and-mentioning-step-4.png` | commenting-and-mentioning / 4 Mentioning Someone | `/boards/<Checkout>`, "Move the order summary above the fold" card clicked | "@ma" typed in **Add a comment** so the list shows Marcus Bell, Maya Chen and Priya Raman; never post it, and clear the box after. Don't type a bare "@": it lists every member, including any non-demo viewer | From **Comments** to the bottom of the list |
+| `commenting-and-mentioning-step-7.png` | commenting-and-mentioning / 7 Editing and Deleting | same task, as Maya | Priya's comment with the @Maya Chen chip and only **Delete** (Maya owns the board but didn't write it) | From **Comments** to **Add Comment** |
 | `understanding-columns-step-2.png` | understanding-columns / 2 AI-Optimized Boards: Fixed Columns | `/boards/<Checkout>` | All five column headers with cards, page zoomed to 80% | Column headers and first cards |
 | `understanding-columns-step-3.png` | understanding-columns / 3 Custom Boards: Flexible Columns | `/boards/<Marketing>` | Four custom columns, In Progress at 3/3 | Crop the columns |
 | `understanding-columns-step-5-1.png` | understanding-columns / 5 WIP Limits | `/boards/<Marketing>/columns/<In Progress>/edit` | Column form with **WIP Limit** 3, nothing focused | Crop the form |

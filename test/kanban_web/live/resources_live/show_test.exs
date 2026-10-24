@@ -240,6 +240,35 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert sso =~ ~s(href="/resources/provisioning-users-with-scim")
     end
 
+    test "renders each task-details guide with its links and screenshots", %{conn: conn} do
+      images = %{
+        "reading-a-tasks-details" => [2, 3, 4, 6, 7, 8],
+        "commenting-and-mentioning" => [4, 7]
+      }
+
+      for {id, steps} <- images do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+
+        for step <- steps do
+          assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
+        end
+      end
+
+      {:ok, _view, details} = live(conn, ~p"/resources/reading-a-tasks-details")
+
+      for target <-
+            ~w(managing-board-settings free-and-paid-boards reviewing-completed-work commenting-and-mentioning) do
+        assert details =~ ~s(href="/resources/#{target}")
+      end
+
+      {:ok, _view, comments} = live(conn, ~p"/resources/commenting-and-mentioning")
+      assert comments =~ ~s(href="/resources/free-and-paid-boards")
+    end
+
     test "renders each agents-and-planning guide with its links and screenshots", %{conn: conn} do
       images = %{
         "watching-your-agents" => [2, 3, 4, 5],

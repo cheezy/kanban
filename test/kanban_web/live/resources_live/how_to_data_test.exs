@@ -135,6 +135,22 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                                  Path.wildcard("lib/kanban_web/live/agents_live/**/*.ex") ++
                                  Path.wildcard("lib/kanban_web/live/target_live/*.{ex,heex}")
 
+  @task_details_ids ["reading-a-tasks-details", "commenting-and-mentioning"]
+
+  # The task details view and its components, the comment thread, and the
+  # settings and notification screens the two guides send readers to.
+  @task_details_sources [
+                          "lib/kanban_web/live/task_live/view_component.ex",
+                          "lib/kanban_web/live/task_live/comment_thread_component.ex",
+                          "lib/kanban_web/components/behaviour_test_labels.ex",
+                          "lib/kanban_web/components/review_diff_panel.ex",
+                          "lib/kanban_web/components/review_report_panel.ex",
+                          "lib/kanban_web/components/task_activity_log.ex",
+                          "lib/kanban_web/live/board_live/settings_form_component.ex",
+                          "lib/kanban_web/notification_labels.ex",
+                          "lib/kanban_web/live/user_live/notification_preferences.ex"
+                        ] ++ Path.wildcard("lib/kanban_web/live/task_live/components/*.ex")
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -548,17 +564,19 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "non-developer guides content" do
-    test "all 3 non-developer guides exist" do
+    test "all 5 non-developer guides exist" do
       non_dev_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("non-developer" in &1.tags))
 
-      assert length(non_dev_guides) == 3
+      assert length(non_dev_guides) == 5
 
       guide_ids = Enum.map(non_dev_guides, & &1.id)
       assert "writing-tasks-for-ai" in guide_ids
       assert "monitoring-task-progress" in guide_ids
       assert "reviewing-completed-work" in guide_ids
+      assert "reading-a-tasks-details" in guide_ids
+      assert "commenting-and-mentioning" in guide_ids
     end
 
     test "writing-tasks-for-ai guide has complete content" do
@@ -1305,6 +1323,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "admin" in HowToData.all_tags()
     end
 
+    test "includes the task-details tags" do
+      for tag <- ~w(non-developer reviewing tasks) do
+        assert tag in HowToData.all_tags()
+      end
+
+      for id <- @task_details_ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          tag <- guide.tags do
+        assert tag in HowToData.all_tags(), "#{id} uses #{tag}, which isn't in all_tags"
+      end
+    end
+
     test "includes the agents-and-planning tags" do
       for tag <- ~w(planning ai-agents monitoring workflow) do
         assert tag in HowToData.all_tags()
@@ -1319,8 +1349,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 37 guides" do
-      assert length(HowToData.all_how_tos()) == 37
+    test "has all 39 guides" do
+      assert length(HowToData.all_how_tos()) == 39
     end
 
     test "every guide id is unique across the area modules" do
@@ -2471,6 +2501,242 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       planning = agents_and_planning_content(["planning-with-targets"])
       assert planning =~ "Members of the board can open it."
       refute planning =~ ~r/publicly|shared board/i
+    end
+  end
+
+  describe "task details guides" do
+    defp task_details_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "the task details guides exist with their tags and steps" do
+      expected = [
+        {"reading-a-tasks-details", "Reading a Task's Details",
+         ["non-developer", "reviewing", "tasks"], 9},
+        {"commenting-and-mentioning", "Commenting and Mentioning", ["non-developer", "tasks"], 7}
+      ]
+
+      assert Enum.map(KanbanWeb.ResourcesLive.HowTos.TaskDetails.how_tos(), & &1.id) ==
+               @task_details_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.created_at == ~D[2026-10-24]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+
+        for tag <-
+              ~w(getting-started developer best-practices security boards organizations metrics collaboration ai-agents planning) do
+          refute tag in guide.tags, "#{id} would join the #{tag} chain or its count"
+        end
+      end
+    end
+
+    test "the task details guides extend the non-developer chain after reviewing" do
+      {:ok, reviewing} = HowToData.get_how_to("reviewing-completed-work")
+      {prev, next} = HowToData.get_navigation(reviewing)
+      assert prev.id == "monitoring-task-progress"
+      assert next.id == "reading-a-tasks-details"
+
+      chain = [
+        "reviewing-completed-work",
+        "reading-a-tasks-details",
+        "commenting-and-mentioning",
+        nil
+      ]
+
+      for [prev, id, next] <- Enum.chunk_every(chain, 3, 1, :discard) do
+        {:ok, guide} = HowToData.get_how_to(id)
+        {p, n} = HowToData.get_navigation(guide)
+        assert (p && p.id) == prev, "#{id} has the wrong previous guide"
+        assert (n && n.id) == next, "#{id} has the wrong next guide"
+      end
+    end
+
+    test "every bolded UI label in the task details guides exists in the source" do
+      sources = Enum.map_join(@task_details_sources, &File.read!/1)
+
+      labels =
+        for id <- @task_details_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @task_details_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        # An aria-label is read out, not shown, so it can't be a bold label.
+        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no task details or comment screen shows"
+      end
+    end
+
+    test "the task details guides link to guides that exist" do
+      content = task_details_content(@task_details_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\((\/[^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert links != []
+
+      for link <- links do
+        assert "/resources/" <> id = link
+        assert id in ids, "a task details guide links to the missing guide #{id}"
+      end
+    end
+
+    test "the task view facts match the code" do
+      details = task_details_content(["reading-a-tasks-details"])
+      view = File.read!("lib/kanban_web/live/task_live/view_component.ex")
+      panels = File.read!("lib/kanban_web/review_report_helpers/panels.ex")
+
+      # Field visibility: only acceptance criteria is on by default.
+      defaults = %Kanban.Boards.Board{}.field_visibility
+      assert defaults["acceptance_criteria"] == true
+
+      for key <- ~w(context key_files behaviour_test_matrix observability) do
+        assert defaults[key] == false, "#{key} is on by default"
+      end
+
+      assert details =~ "Only **Acceptance Criteria** is on by default."
+
+      # Observability: Telemetry and Metrics are paid; Logging stays.
+      assert view =~ "do: not Plans.board_unlocked?(board_id)"
+      assert view =~ "defp observability_shown?(task, true), do: !!task.logging_requirements"
+
+      assert File.read!("lib/kanban/plans.ex") =~
+               "def board_unlocked?(board), do: not enforced?() or paid_board?(board)"
+
+      assert details =~
+               "a free board doesn't show them. The values stay on the task, and **Logging** still shows."
+
+      # When the agent's sections appear.
+      assert panels =~ "review_or_done?(task) and has_completion_content?(task)"
+      assert panels =~ "review_or_done?(task) and has_changed_files?(task)"
+
+      assert File.read!("lib/kanban_web/review_report_helpers/explorer.ex") =~
+               "has_explorer_result?(task) and Panels.review_or_done?(task)"
+
+      assert details =~ "Once a task reaches Review, it shows what the agent reported"
+
+      assert view =~
+               "@task.status == :completed && (@task.actual_complexity || @task.actual_files_changed || @task.time_spent_minutes)"
+
+      assert details =~ "**Actual vs estimated** appears once the task is Done."
+
+      # The checklist here is never ticked; verdicts live in the Review queue.
+      assert view =~ ~s|"0/\#{total}"|
+      assert details =~ "The list isn't ticked off here"
+
+      # Who sees what.
+      assert File.read!("lib/kanban_web/live/task_live/components/task_detail_aside.ex") =~
+               ":if={@can_modify && @board_id}"
+
+      assert File.read!("lib/kanban_web/live/task_live/components/completion_section.ex") =~
+               "deliberately not gated on board membership (D209)"
+
+      assert details =~ "including someone signed in who is viewing a shared board"
+      assert view =~ ~s|field_visible?(@field_visibility, "behaviour_test_matrix")|
+
+      for field <- ~w(patterns_to_follow database_changes validation_rules) do
+        assert view =~ "@task.#{field} && field_visible?(@field_visibility, \"technical_notes\")"
+      end
+
+      assert details =~ "which share the **Technical Notes** toggle"
+
+      assert File.read!("lib/kanban_web/components/review_diff_panel.ex") =~
+               ~s|gettext("Diff truncated at 500 lines.")|
+
+      refute details =~ "Re-fetch diff"
+    end
+
+    test "the comment facts match the code" do
+      comments = task_details_content(["commenting-and-mentioning"])
+      policy = File.read!("lib/kanban/tasks/comment_policy.ex")
+      notifier = File.read!("lib/kanban/tasks/comment_notifier.ex")
+      notifications = File.read!("lib/kanban/notifications.ex")
+
+      # Who can comment, edit and delete.
+      assert policy =~ "def allowed?(%{access: access}, :comment), do: not is_nil(access)"
+      assert policy =~ "members are included; non-members are refused"
+
+      assert comments =~
+               "Every member of the board can comment, including members with read-only access"
+
+      assert File.read!("lib/kanban_web/live/task_live/comment_thread_component.ex") =~
+               ":if={@can_comment}"
+
+      assert policy =~ "def allowed?(viewer, :edit, %TaskComment{author_user_id: author_id}),"
+      assert policy =~ "def allowed?(%{access: :owner}, :delete, %TaskComment{}), do: true"
+      assert policy =~ "Kanban.Boards.get_user_access/2"
+      assert File.read!("lib/kanban/boards.ex") =~ "owner-equivalent access an org-admin derives"
+      assert comments =~ "Only the person who wrote a comment can edit it"
+      assert comments =~ "the board's owner can delete anyone's; an org-admin counts as the owner"
+
+      # Limits and order.
+      assert Kanban.Tasks.TaskComment.content_max_length() == 10_000
+      assert comments =~ "up to 10,000 characters"
+      assert Kanban.Tasks.Mentions.max_mentions() == 20
+      assert comments =~ "up to 20 people in one comment"
+
+      assert File.read!("lib/kanban_web/live/task_live/comment_thread_component.ex") =~
+               "@mention_limit 8"
+
+      assert comments =~ "A list of up to 8 board members appears"
+      assert File.read!("lib/kanban/tasks/comments.ex") =~ "asc: c.inserted_at, asc: c.id"
+      assert comments =~ "Comments are listed oldest first."
+      assert File.read!("lib/kanban/tasks/comments.ex") =~ "active_only: true"
+
+      # Who is notified.
+      assert notifier =~ "id == comment.author_user_id or MapSet.member?(previous, id)"
+      assert notifier =~ "leaves the mentions unchanged notifies nobody"
+      assert comments =~ "Editing a comment notifies only the people the edit adds"
+      assert Kanban.Notifications.default_preference(:mentioned).email == true
+      assert Kanban.Notifications.default_preference(:mentioned).in_app == true
+      assert comments =~ "Mentions arrive in Stride and by email."
+
+      # A plain comment notifies nobody: nothing emits :comment_added.
+      for path <- Path.wildcard("lib/kanban/**/*.ex"),
+          path not in ["lib/kanban/notifications.ex", "lib/kanban/notifications/preference.ex"] do
+        refute File.read!(path) =~ "comment_added", "#{path} now emits comment notifications"
+      end
+
+      assert comments =~ "A comment with no mention notifies nobody"
+
+      # The notification links to the edit form, which needs modify access.
+      assert notifier =~
+               ~s|url_path: "/boards/\#{board_id}/tasks/\#{task.id}/edit#comment-\#{comment.id}"|
+
+      assert File.read!("lib/kanban_web/live/board_live/authorization.ex") =~
+               "if user_access in [:owner, :modify] do"
+
+      assert comments =~ "A read-only member lands on the board instead"
+
+      # Paid rule.
+      assert notifications =~ "if Plans.board_unlocked?(board_id), do: :ok, else: {:ok, []}"
+
+      assert File.read!("lib/kanban/notifications/email_worker.ex") =~
+               "plan_verdict(Plans.user_unlocked?(user) and Plans.board_unlocked?(board_id))"
+
+      assert notifications =~ "Plans.check_user(scope, :notifications"
+
+      assert comments =~
+               "When Stride's plans are switched on, a free board sends no notifications."
+
+      for path <- ["lib/kanban/tasks/comment_policy.ex", "lib/kanban/tasks/comments.ex"] do
+        refute File.read!(path) =~ ~r/Plans\./, "#{path} now gates comments on a plan"
+      end
+
+      assert comments =~ "Comments and mentions themselves work on every board."
     end
   end
 
