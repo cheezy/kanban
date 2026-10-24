@@ -8,7 +8,9 @@ of `%{url:, alt:, width:, height:}` maps.
 
 `test/kanban_web/live/resources_live/guide_images_test.exs` fails, naming the
 guide and step, when a step points at a file that isn't here, at something that
-isn't a PNG in this directory, or declares a size the PNG doesn't have.
+isn't a PNG in this directory, or declares a size the PNG doesn't have. It
+also fails when a PNG here is used by no guide, so delete a screenshot when you
+replace it.
 
 ## 1. Load the demo data
 

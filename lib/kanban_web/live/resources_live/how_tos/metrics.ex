@@ -18,7 +18,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
         tags: ["best-practices", "metrics", "monitoring"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/metrics-dashboard.png",
         created_at: ~D[2026-02-11],
         steps: [
           %{
@@ -61,7 +60,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
         tags: ["best-practices", "metrics", "monitoring"],
         content_type: "guide",
         reading_time: 3,
-        thumbnail: "/images/resources/throughput-metrics.png",
         created_at: ~D[2026-02-11],
         steps: [
           %{
@@ -102,7 +100,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
         tags: ["best-practices", "metrics", "monitoring"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/cycle-time-metrics.png",
         created_at: ~D[2026-02-11],
         steps: [
           %{
@@ -143,7 +140,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
         tags: ["best-practices", "metrics", "monitoring"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/lead-time-metrics.png",
         created_at: ~D[2026-02-11],
         steps: [
           %{
@@ -184,7 +180,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
         tags: ["best-practices", "metrics", "monitoring"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/wait-time-metrics.png",
         created_at: ~D[2026-02-11],
         steps: [
           %{
@@ -236,7 +231,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Metrics do
         tags: ["metrics", "best-practices", "monitoring"],
         content_type: "guide",
         reading_time: 6,
-        thumbnail: "/images/resources/workspace-and-compliance-metrics.png",
         created_at: ~D[2026-10-23],
         steps: [
           %{

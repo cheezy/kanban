@@ -3,7 +3,8 @@ defmodule KanbanWeb.ResourcesLive.GuideImagesTest do
   Guards the screenshots the Resources guides point at: each one must exist
   under priv/static, be a PNG in images/resources/guides, and declare the
   size it really is. The page reserves the declared size before the image
-  loads, so a wrong size makes the page jump.
+  loads, so a wrong size makes the page jump. Every PNG in that folder must
+  also be used by some guide, so a replaced screenshot doesn't linger.
   """
   use ExUnit.Case, async: true
 
@@ -28,6 +29,10 @@ defmodule KanbanWeb.ResourcesLive.GuideImagesTest do
 
     test "declared image_width/image_height match the PNG header" do
       assert size_mismatches(HowToData.all_how_tos()) == []
+    end
+
+    test "no PNG in images/resources/guides is unreferenced" do
+      assert unreferenced(HowToData.all_how_tos(), guide_pngs()) == []
     end
   end
 
@@ -99,6 +104,28 @@ defmodule KanbanWeb.ResourcesLive.GuideImagesTest do
       assert misplaced([guide]) == []
       assert size_mismatches([guide]) == []
     end
+
+    test "reports a PNG in the folder that no guide uses, from either image key" do
+      guide =
+        guide("demo-guide", [
+          %{title: "One", content: "", image: "/images/resources/guides/used-single.png"},
+          %{
+            title: "Many",
+            content: "",
+            images: [%{url: "/images/resources/guides/used-many.png"}]
+          }
+        ])
+
+      pngs =
+        Enum.map(
+          ~w(used-single.png used-many.png left-over.png),
+          &static_path(@guides_dir <> &1)
+        )
+
+      assert unreferenced([guide], pngs) == [
+               "/images/resources/guides/left-over.png is in the folder but no guide uses it"
+             ]
+    end
   end
 
   defp guide(id, steps), do: %{id: id, steps: steps}
@@ -151,6 +178,19 @@ defmodule KanbanWeb.ResourcesLive.GuideImagesTest do
         "but is #{actual_width}x#{actual_height}"
     end
   end
+
+  defp unreferenced(guides, pngs) do
+    used =
+      guides
+      |> image_slots()
+      |> MapSet.new(fn {_id, _title, {url, _size}} -> static_path(url) end)
+
+    for path <- pngs, path not in used do
+      "#{@guides_dir}#{Path.basename(path)} is in the folder but no guide uses it"
+    end
+  end
+
+  defp guide_pngs, do: [@static_root, @guides_dir, "*.png"] |> Path.join() |> Path.wildcard()
 
   defp static_path(url), do: Path.join(@static_root, url)
 

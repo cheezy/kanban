@@ -455,6 +455,18 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert html =~ "Beginner"
       assert html =~ "Boards"
     end
+
+    # The index reads ?tags= (a comma-separated list), so a chip that sent
+    # ?tag= opened the index with no filter applied.
+    test "each tag chip opens the index filtered to that tag", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/resources/creating-your-first-board")
+
+      for tag <- ~w(getting-started beginner boards) do
+        assert has_element?(view, ~s(a[href="/resources?tags=#{tag}"]))
+      end
+
+      refute render(view) =~ "/resources?tag="
+    end
   end
 
   describe "steps content" do
@@ -543,6 +555,11 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       result = Show.render_markdown("Use `mix test` command")
       assert result =~ "<code"
       assert result =~ "mix test"
+    end
+
+    test "lets long inline code wrap so it can't widen a phone-width page" do
+      result = Show.render_markdown("Saved as `stride_workspace_metrics_14d_2026-10-23.pdf`")
+      assert result =~ ~r{<code class="[^"]*\bbreak-words\b[^"]*">stride_workspace_metrics}
     end
 
     test "handles nil input" do

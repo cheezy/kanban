@@ -145,6 +145,27 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
   end
 
   describe "how_to_content/1" do
+    # Without these, a code block or a row of images pushes a phone-width
+    # page sideways (the step column can't shrink below its content).
+    test "lets the step column and image grid shrink on narrow screens" do
+      steps = [
+        %{
+          title: "Step",
+          content: "Content",
+          images: [%{url: "/a.png", width: 640, height: 360}]
+        }
+      ]
+
+      html =
+        render_component(&Components.how_to_content/1,
+          steps: steps,
+          render_markdown_fn: &simple_markdown/1
+        )
+
+      assert html =~ "flex: 1; min-width: 0;"
+      assert html =~ "minmax(min(280px, 100%), 1fr)"
+    end
+
     test "renders steps with numbers" do
       steps = sample_steps()
 

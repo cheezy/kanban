@@ -17,7 +17,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Developer do
         tags: ["developer", "hooks", "automation", "ai-agents"],
         content_type: "tutorial",
         reading_time: 9,
-        thumbnail: "/images/resources/hooks-setup.png",
         created_at: ~D[2026-01-16],
         steps: [
           %{
@@ -68,7 +67,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Developer do
         tags: ["developer", "api", "security"],
         content_type: "tutorial",
         reading_time: 6,
-        thumbnail: "/images/resources/api-auth.png",
         created_at: ~D[2026-01-16],
         steps: [
           %{
@@ -123,7 +121,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Developer do
         tags: ["developer", "workflow", "api"],
         content_type: "guide",
         reading_time: 12,
-        thumbnail: "/images/resources/claim-complete.png",
         created_at: ~D[2026-01-16],
         steps: [
           %{
@@ -196,7 +193,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Developer do
         tags: ["developer", "hooks", "troubleshooting"],
         content_type: "guide",
         reading_time: 6,
-        thumbnail: "/images/resources/debug-hooks.png",
         created_at: ~D[2026-01-16],
         steps: [
           %{

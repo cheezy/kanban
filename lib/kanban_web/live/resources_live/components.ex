@@ -221,7 +221,9 @@ defmodule KanbanWeb.ResourcesLive.Components do
             >
               {index}
             </div>
-            <div style="flex: 1; padding-top: 4px;">
+            <%!-- min-width: 0 lets a wide code block scroll inside the column
+                 instead of pushing the page sideways on a phone --%>
+            <div style="flex: 1; min-width: 0; padding-top: 4px;">
               <h2 style={[
                 "margin: 0 0 12px;",
                 "font-size: 16px; font-weight: 600; color: var(--ink);"
@@ -237,7 +239,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
               <%= if step[:images] do %>
                 <div style={[
                   "margin-top: 18px; display: grid; gap: 12px;",
-                  "grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"
+                  "grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));"
                 ]}>
                   <%= for img <- step.images do %>
                     <div>

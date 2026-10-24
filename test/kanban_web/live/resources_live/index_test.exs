@@ -3,6 +3,7 @@ defmodule KanbanWeb.ResourcesLive.IndexTest do
 
   import Phoenix.LiveViewTest
 
+  alias KanbanWeb.ResourcesLive.HowToData
   alias KanbanWeb.ResourcesLive.Index
 
   describe "GET /resources" do
@@ -149,6 +150,37 @@ defmodule KanbanWeb.ResourcesLive.IndexTest do
       # Should show guides matching either tag
       assert html =~ "Creating Your First Board"
       assert html =~ "Setting Up Hook Execution"
+    end
+  end
+
+  describe "every tag" do
+    test "every tag in all_tags filters to at least one guide" do
+      all = HowToData.all_how_tos()
+
+      for tag <- HowToData.all_tags() do
+        assert Index.filter_how_tos(all, "", [tag]) != [], "the #{tag} filter shows no guide"
+      end
+
+      # And the other way round: a guide's tag that isn't in all_tags has no
+      # filter button, so no reader can filter to it.
+      for guide <- all, tag <- guide.tags do
+        assert tag in HowToData.all_tags(), "#{guide.id} carries #{tag}, which has no filter"
+      end
+    end
+
+    test "opening /resources?tags=<tag> shows exactly that tag's guides", %{conn: conn} do
+      all = HowToData.all_how_tos()
+
+      for tag <- HowToData.all_tags() do
+        {:ok, view, _html} = live(conn, ~p"/resources?tags=#{tag}")
+
+        assert has_element?(view, ~s(button[phx-value-tag="#{tag}"][data-tag-filter-active]))
+
+        for guide <- all do
+          assert has_element?(view, ~s(a[href="/resources/#{guide.id}"])) == tag in guide.tags,
+                 "?tags=#{tag} shows the wrong set of guides (#{guide.id})"
+        end
+      end
     end
   end
 
@@ -320,7 +352,7 @@ defmodule KanbanWeb.ResourcesLive.IndexTest do
     end
 
     test "formats multi-word tag" do
-      assert Index.format_tag("api-authentication-guide") == "Api Authentication Guide"
+      assert Index.format_tag("api-authentication-guide") == "API Authentication Guide"
     end
   end
 end

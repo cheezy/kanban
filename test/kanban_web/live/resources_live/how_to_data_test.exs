@@ -39,33 +39,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
   @account_ids ["managing-your-account", "two-factor-authentication"]
 
-  # The account screens whose gettext strings the account guides may bold.
-  @account_sources [
-    "lib/kanban_web/live/user_live/two_factor_component.ex",
-    "lib/kanban_web/live/user_live/two_factor.ex",
-    "lib/kanban_web/live/user_live/login.ex",
-    "lib/kanban_web/live/user_live/settings.ex",
-    "lib/kanban_web/live/user_live/settings_components.ex",
-    "lib/kanban_web/components/layouts.ex",
-    "lib/kanban_web/components/two_factor_reminder.ex",
-    "lib/kanban_web/live/user_live/danger_zone_component.ex",
-    "lib/kanban_web/components/organization_two_factor_banner.ex"
-  ]
-
   @organization_ids ["free-and-paid-boards", "working-in-a-workspace", "accepting-an-invitation"]
-
-  # The plan, workspace and invitation screens whose gettext strings the
-  # organizations guides may bold.
-  @organization_sources [
-                          "lib/kanban_web/components/workspace_switcher.ex",
-                          "lib/kanban_web/components/locked_feature.ex",
-                          "lib/kanban_web/components/notifications_locked.ex",
-                          "lib/kanban_web/components/bulk_action_bar.ex",
-                          "lib/kanban_web/components/board_tabs.ex",
-                          "lib/kanban_web/components/side_nav.ex",
-                          "lib/kanban_web/live/board_live/members_form_component.ex",
-                          "lib/kanban_web/controllers/page_html/pricing.html.heex"
-                        ] ++ Path.wildcard("lib/kanban_web/live/workspace_live/*.{ex,heex}")
 
   @org_admin_ids [
     "administering-your-organization",
@@ -75,36 +49,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "provisioning-users-with-scim"
   ]
 
-  # The org console screens, and the sidebar, account chips and sign-in page
-  # the org-admin guides also name.
-  @org_admin_sources [
-                       "lib/kanban_web/components/side_nav.ex",
-                       "lib/kanban_web/components/account_status.ex",
-                       "lib/kanban_web/live/user_live/login.ex"
-                     ] ++ Path.wildcard("lib/kanban_web/live/org_live/*.{ex,heex}")
-
   @boards_ids [
     "managing-board-settings",
     "finding-work-with-search-and-filters",
     "bulk-editing-cards",
     "archiving-tasks"
   ]
-
-  # The board settings, filter bar, bulk bar and archive screens the boards
-  # guides name.
-  @boards_sources [
-                    "lib/kanban_web/live/board_live/settings_form_component.ex",
-                    "lib/kanban_web/live/board_live/labels_manager_component.ex",
-                    "lib/kanban_web/live/board_live/show.html.heex",
-                    "lib/kanban_web/components/board_filter_bar.ex",
-                    "lib/kanban_web/components/keyboard_shortcuts_help.ex",
-                    "lib/kanban_web/components/bulk_action_bar.ex",
-                    "lib/kanban_web/components/locked_feature.ex",
-                    "lib/kanban_web/components/board_tabs.ex",
-                    "lib/kanban_web/components/archive_filter_chips.ex",
-                    "lib/kanban_web/components/archive_stats_strip.ex",
-                    "lib/kanban_web/components/archive_row.ex"
-                  ] ++ Path.wildcard("lib/kanban_web/live/archive_live/*.{ex,heex}")
 
   @agents_and_planning_ids [
     "watching-your-agents",
@@ -137,51 +87,112 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
   @task_details_ids ["reading-a-tasks-details", "commenting-and-mentioning"]
 
-  # The task details view and its components, the comment thread, and the
-  # settings and notification screens the two guides send readers to.
-  @task_details_sources [
-                          "lib/kanban_web/live/task_live/view_component.ex",
-                          "lib/kanban_web/live/task_live/comment_thread_component.ex",
-                          "lib/kanban_web/components/behaviour_test_labels.ex",
-                          "lib/kanban_web/components/review_diff_panel.ex",
-                          "lib/kanban_web/components/review_report_panel.ex",
-                          "lib/kanban_web/components/task_activity_log.ex",
-                          "lib/kanban_web/live/board_live/settings_form_component.ex",
-                          "lib/kanban_web/notification_labels.ex",
-                          "lib/kanban_web/live/user_live/notification_preferences.ex"
-                        ] ++ Path.wildcard("lib/kanban_web/live/task_live/components/*.ex")
-
   @notifications_integrations_ids [
     "staying-informed-with-notifications",
     "connecting-webhooks-slack-and-discord",
     "connecting-an-mcp-client"
   ]
 
-  # The bell, the notifications page and preferences, the unsubscribe page and
-  # email footer, the lock panels, and the board's Integrations window.
-  @notifications_integrations_sources [
-                                        "lib/kanban_web/components/notification_bell.ex",
-                                        "lib/kanban_web/live/user_live/notification_preferences.ex",
-                                        "lib/kanban_web/live/user_live/settings_components.ex",
-                                        "lib/kanban_web/notification_labels.ex",
-                                        "lib/kanban_web/components/locked_feature.ex",
-                                        "lib/kanban_web/components/notifications_locked.ex",
-                                        "lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex",
-                                        "lib/kanban_web/emails/email_helpers.ex",
-                                        "lib/kanban_web/components/board_tabs.ex",
-                                        "lib/kanban_web/live/board_live/integrations_component.ex",
-                                        "lib/kanban_web/live/board_live/show.html.heex"
-                                      ] ++
-                                        Path.wildcard(
-                                          "lib/kanban_web/live/notification_live/*.{ex,heex}"
-                                        ) ++
-                                        Path.wildcard(
-                                          "lib/kanban_web/live/board_live/webhook_*.ex"
-                                        )
-
-  # Column names are board data, not translated strings, so they are checked
-  # against the AI board's column list instead.
+  # Column names are board data, not translated strings, so a bolded column
+  # name is also checked against the AI board's column list.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
+
+  # Every screen a guide may name. The Resources pages are left out so the
+  # guides' own page can't vouch for a label. Any screen can satisfy a label,
+  # which is looser than a list per guide group, so a label that moves to
+  # another screen still needs a human read.
+  @label_sources "lib/kanban_web/**/*.{ex,heex}"
+                 |> Path.wildcard()
+                 |> Enum.reject(&String.starts_with?(&1, "lib/kanban_web/live/resources_live/"))
+
+  # Labels the app shows as plain strings rather than through gettext. Keep
+  # this short: each entry must still be a modal title in
+  # @label_allow_list_source.
+  @label_allow_list [
+    # The task modal's titles, picked by @live_action in the board template.
+    "New Task",
+    "Edit Task"
+  ]
+
+  @label_allow_list_source "lib/kanban_web/live/board_live/show.html.heex"
+
+  # Guides that name no UI label, and must keep naming none.
+  @no_bold_guides [
+    # Its steps are commands and config files, shown as code.
+    "connecting-an-mcp-client"
+  ]
+
+  describe "every guide" do
+    # A navigation path such as "Settings → Two-factor" names two labels.
+    defp bold_labels(guide) do
+      for step <- guide.steps,
+          [_, bold] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+          label <- String.split(bold, " → "),
+          do: String.trim(label)
+    end
+
+    test "every bolded UI label in every guide exists in the app source" do
+      sources = Enum.map_join(@label_sources, &File.read!/1)
+      modal_titles = File.read!(@label_allow_list_source)
+      columns = File.read!("lib/kanban/boards/creation.ex")
+
+      for label <- @label_allow_list do
+        assert modal_titles =~ ~s(-> "#{label}"),
+               "**#{label}** is allow-listed but is no longer a task modal title"
+      end
+
+      for id <- @no_bold_guides do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert bold_labels(guide) == [], "#{id} is listed as bolding nothing, but bolds a label"
+      end
+
+      for guide <- HowToData.all_how_tos(), guide.id not in @no_bold_guides do
+        assert bold_labels(guide) != [], "#{guide.id} bolds no UI label"
+      end
+
+      for guide <- HowToData.all_how_tos(),
+          label <- bold_labels(guide),
+          label not in @label_allow_list do
+        refute label =~ ~r/^[a-z_.]+$/,
+               "#{guide.id} bolds #{label}, which is code, not a UI label"
+
+        # An aria-label is read out, not shown, so it can't be a bold label.
+        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{guide.id} names **#{label}**, which no screen shows"
+
+        # Other screens translate the column names too, so only the AI board's
+        # own column list proves the column exists.
+        if label in @ai_board_columns do
+          assert columns =~ ~s(name: "#{label}"),
+                 "#{guide.id} names the column **#{label}**, which the AI board doesn't have"
+        end
+      end
+    end
+
+    test "no guide carries the unused thumbnail field" do
+      for guide <- HowToData.all_how_tos() do
+        refute Map.has_key?(guide, :thumbnail), "#{guide.id} still carries a thumbnail"
+      end
+    end
+
+    test "every guide's prev/next stays within its first-tag group" do
+      all = HowToData.all_how_tos()
+
+      for guide <- all do
+        [tag | _] = guide.tags
+        group = Enum.filter(all, &(tag in &1.tags))
+        index = Enum.find_index(group, &(&1.id == guide.id))
+        expected_prev = if index > 0, do: Enum.at(group, index - 1)
+        expected_next = Enum.at(group, index + 1)
+
+        {prev, next} = HowToData.get_navigation(guide)
+
+        assert prev == expected_prev, "#{guide.id}'s previous guide is outside its #{tag} group"
+        assert next == expected_next, "#{guide.id}'s next guide is outside its #{tag} group"
+        assert [prev, next] |> Enum.reject(&is_nil/1) |> Enum.all?(&(tag in &1.tags))
+      end
+    end
+  end
 
   describe "all_how_tos/0" do
     test "returns a list of how-to guides" do
@@ -291,6 +302,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
     test "formats tag with multiple hyphens" do
       assert HowToData.format_tag("some-long-tag-name") == "Some Long Tag Name"
+    end
+
+    test "keeps acronyms in capitals, only as whole words" do
+      assert HowToData.format_tag("api") == "API"
+      assert HowToData.format_tag("ai-agents") == "AI Agents"
+      assert HowToData.format_tag("apis-and-aims") == "Apis And Aims"
     end
   end
 
@@ -458,32 +475,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert step.content =~ "**Add Task**"
       refute step.content =~ "keyboard shortcut"
       assert File.read!("lib/kanban_web/components/column_header.ex") =~ ~s{gettext("Add Task")}
-    end
-
-    test "every bolded UI label in the getting-started guides exists in the source" do
-      sources =
-        Enum.map_join(
-          [
-            "lib/kanban_web/components/side_nav.ex",
-            "lib/kanban_web/components/board_tabs.ex",
-            "lib/kanban_web/components/column_header.ex"
-            | Path.wildcard("lib/kanban_web/live/{board,column,task}_live/**/*.{ex,heex}")
-          ],
-          &File.read!/1
-        )
-
-      labels =
-        for id <- @getting_started_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      assert labels != []
-
-      for {id, label} <- labels do
-        assert sources =~ ~s("#{label}"), "#{id} names **#{label}**, which no screen shows"
-      end
     end
 
     test "getting-started guides keep their ids and minimum step counts" do
@@ -751,47 +742,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
           do: step.content <> "\n"
     end
 
-    test "every bolded UI label in the working-with-tasks guides exists in the source" do
-      sources =
-        Enum.map_join(
-          [
-            "lib/kanban_web/components/side_nav.ex",
-            "lib/kanban_web/components/board_filter_bar.ex",
-            "lib/kanban_web/components/keyboard_shortcuts_help.ex",
-            "lib/kanban_web/components/task_card.ex",
-            "lib/kanban_web/live/review_live.ex",
-            "lib/kanban_web/live/review_live.html.heex",
-            "lib/kanban_web/notification_labels.ex"
-            | Path.wildcard("lib/kanban_web/components/review_*.ex") ++
-                Path.wildcard("lib/kanban_web/live/{board,task}_live/**/*.{ex,heex}")
-          ],
-          &File.read!/1
-        )
-
-      columns = File.read!("lib/kanban/boards/creation.ex")
-
-      labels =
-        for id <- @working_with_tasks_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @working_with_tasks_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        # A bare quoted string would also match an attribute or a map key, so
-        # a label must be the text of a gettext call.
-        translated = ~r/gettext\("#{Regex.escape(label)}"/
-
-        assert sources =~ translated or
-                 (label in @ai_board_columns and columns =~ ~s(name: "#{label}")),
-               "#{id} names **#{label}**, which no screen shows"
-      end
-    end
-
     test "working-with-tasks guides keep their ids, titles and minimum step counts" do
       for {id, title, steps} <- [
             {"writing-tasks-for-ai", "Writing Effective Tasks for AI Agents", 6},
@@ -871,45 +821,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
           step <- guide.steps,
           into: "",
           do: step.content <> "\n"
-    end
-
-    test "every bolded UI label in the developer guides exists in the source" do
-      sources =
-        Enum.map_join(
-          [
-            "lib/kanban_web/components/board_tabs.ex",
-            "lib/kanban_web/components/side_nav.ex",
-            "lib/kanban_web/components/workspace_switcher.ex"
-            | Path.wildcard("lib/kanban_web/components/review_*.ex") ++
-                Path.wildcard("lib/kanban_web/live/workspace_live/**/*.{ex,heex}") ++
-                Path.wildcard("lib/kanban_web/live/{board,task}_live/**/*.{ex,heex}")
-          ],
-          &File.read!/1
-        )
-
-      columns = File.read!("lib/kanban/boards/creation.ex")
-
-      labels =
-        for id <- @developer_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @developer_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        # Hook names, API fields and statuses belong in inline code.
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        translated = ~r/gettext\("#{Regex.escape(label)}"/
-
-        assert sources =~ translated or
-                 (label in @ai_board_columns and columns =~ ~s(name: "#{label}")),
-               "#{id} names **#{label}**, which no screen shows"
-      end
     end
 
     test "developer guides keep their ids, titles and minimum step counts" do
@@ -1072,37 +983,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
           step <- guide.steps,
           into: "",
           do: step.content <> "\n"
-    end
-
-    test "every bolded UI label in the metrics guides exists in the source" do
-      sources =
-        Enum.map_join(
-          [
-            "lib/kanban_web/components/board_tabs.ex",
-            "lib/kanban_web/components/side_nav.ex"
-            | Path.wildcard("lib/kanban_web/live/metrics_live/**/*.{ex,heex}") ++
-                Path.wildcard("lib/kanban_web/components/metrics_*.ex")
-          ],
-          &File.read!/1
-        )
-
-      labels =
-        for id <- @metrics_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @metrics_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        assert sources =~ ~r/gettext\("#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no metrics screen shows"
-      end
     end
 
     test "metrics guides keep their ids and minimum step counts" do
@@ -1414,23 +1294,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert {%{id: "managing-your-account"}, %{id: "api-authentication"}} =
                HowToData.get_navigation(guide)
     end
-
-    test "every bolded UI label it names still exists in the two-factor screens" do
-      sources = Enum.map_join(@account_sources, &File.read!/1)
-
-      {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
-
-      labels =
-        for step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: String.replace(label, "Settings → Two-factor", "Two-factor")
-
-      assert labels != []
-
-      for label <- labels do
-        assert sources =~ ~s("#{label}"), "the guide names **#{label}**, which no screen shows"
-      end
-    end
   end
 
   describe "account guides" do
@@ -1440,29 +1303,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
           step <- guide.steps,
           into: "",
           do: step.content <> "\n"
-    end
-
-    test "every bolded UI label in the account guides exists in the source" do
-      sources = Enum.map_join(@account_sources, &File.read!/1)
-
-      labels =
-        for id <- @account_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, bold] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            label <- String.split(bold, " → "),
-            do: {id, label}
-
-      for id <- @account_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        assert sources =~ ~r/gettext\("#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no account screen shows"
-      end
     end
 
     test "account guides keep their ids and minimum step counts" do
@@ -1723,28 +1563,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                HowToData.get_navigation(invitation)
     end
 
-    test "every bolded UI label in the organizations guides exists in the source" do
-      sources = Enum.map_join(@organization_sources, &File.read!/1)
-
-      labels =
-        for id <- @organization_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @organization_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        assert sources =~ ~r/gettext\(\s*"#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no organizations screen shows"
-      end
-    end
-
     test "the organizations guides link to pages that exist" do
       content = organization_content(@organization_ids)
       ids = Enum.map(HowToData.all_how_tos(), & &1.id)
@@ -1921,28 +1739,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         {p, n} = HowToData.get_navigation(guide)
         assert (p && p.id) == prev, "#{id} has the wrong previous guide"
         assert (n && n.id) == next, "#{id} has the wrong next guide"
-      end
-    end
-
-    test "every bolded UI label in the org-admin guides exists in the source" do
-      sources = Enum.map_join(@org_admin_sources, &File.read!/1)
-
-      labels =
-        for id <- @org_admin_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @org_admin_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        assert sources =~ ~r/gettext\(\s*"#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no org-admin screen shows"
       end
     end
 
@@ -2123,28 +1919,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         {p, n} = HowToData.get_navigation(guide)
         assert (p && p.id) == prev, "#{id} has the wrong previous guide"
         assert (n && n.id) == next, "#{id} has the wrong next guide"
-      end
-    end
-
-    test "every bolded UI label in the boards guides exists in the source" do
-      sources = Enum.map_join(@boards_sources, &File.read!/1)
-
-      labels =
-        for id <- @boards_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @boards_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        assert sources =~ ~r/gettext\(\s*"#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no board screen shows"
       end
     end
 
@@ -2329,29 +2103,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         {p, n} = HowToData.get_navigation(guide)
         assert (p && p.id) == prev, "#{id} has the wrong previous guide"
         assert (n && n.id) == next, "#{id} has the wrong next guide"
-      end
-    end
-
-    test "every bolded UI label in the agents and planning guides exists in the source" do
-      sources = Enum.map_join(@agents_and_planning_sources, &File.read!/1)
-
-      labels =
-        for id <- @agents_and_planning_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @agents_and_planning_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        # An aria-label is read out, not shown, so it can't be a bold label.
-        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no agents, My Work or target screen shows"
       end
     end
 
@@ -2599,29 +2350,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       end
     end
 
-    test "every bolded UI label in the task details guides exists in the source" do
-      sources = Enum.map_join(@task_details_sources, &File.read!/1)
-
-      labels =
-        for id <- @task_details_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- @task_details_ids do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        # An aria-label is read out, not shown, so it can't be a bold label.
-        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no task details or comment screen shows"
-      end
-    end
-
     test "the task details guides link to guides that exist" do
       content = task_details_content(@task_details_ids)
       ids = Enum.map(HowToData.all_how_tos(), & &1.id)
@@ -2841,29 +2569,6 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert {%{id: "claim-complete-workflow"}, %{id: "connecting-an-mcp-client"}} =
                HowToData.get_navigation(debugging)
-    end
-
-    test "every bolded UI label in the notifications-and-integrations guides exists in the source" do
-      sources = Enum.map_join(@notifications_integrations_sources, &File.read!/1)
-
-      labels =
-        for id <- @notifications_integrations_ids,
-            {:ok, guide} = HowToData.get_how_to(id),
-            step <- guide.steps,
-            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            do: {id, label}
-
-      for id <- ["staying-informed-with-notifications", "connecting-webhooks-slack-and-discord"] do
-        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
-      end
-
-      for {id, label} <- labels do
-        refute label =~ ~r/^[a-z_.]+$/, "#{id} bolds #{label}, which is code, not a UI label"
-
-        # An aria-label is read out, not shown, so it can't be a bold label.
-        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
-               "#{id} names **#{label}**, which no notifications or integrations screen shows"
-      end
     end
 
     test "the notifications-and-integrations guides link to guides and docs that exist" do

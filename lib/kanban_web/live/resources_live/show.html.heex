@@ -48,7 +48,7 @@
         <div class="flex flex-wrap gap-1.5">
           <.link
             :for={tag <- @how_to.tags}
-            navigate={~p"/resources?tag=#{tag}"}
+            navigate={~p"/resources?tags=#{tag}"}
             class="px-2 py-0.5 text-[10.5px] font-mono no-underline"
             style={[
               "background: var(--surface-2);",

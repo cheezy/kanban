@@ -110,11 +110,13 @@ defmodule KanbanWeb.ResourcesLive.Show do
     String.replace(content, ~r/\*\*([^*]+)\*\*/, "<strong>\\1</strong>")
   end
 
+  # break-words lets a long file name or token wrap on a phone instead of
+  # pushing the page sideways.
   defp convert_inline_code(content) do
     String.replace(
       content,
       ~r/`([^`]+)`/,
-      "<code class=\"px-1.5 py-0.5 rounded bg-base-200 text-sm font-mono\">\\1</code>"
+      "<code class=\"px-1.5 py-0.5 rounded bg-base-200 text-sm font-mono break-words\">\\1</code>"
     )
   end
 

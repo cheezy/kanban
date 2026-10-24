@@ -93,15 +93,21 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     Map.get(@type_icons, content_type, "hero-document")
   end
 
+  # Words a tag spells in capitals, which String.capitalize/1 would turn
+  # into "Api" and "Ai".
+  @acronyms %{"api" => "API", "ai" => "AI"}
+
   @doc """
-  Formats a tag for display (kebab-case to Title Case).
+  Formats a tag for display (kebab-case to Title Case, acronyms in capitals).
   """
   def format_tag(tag) do
     tag
     |> String.replace("-", " ")
     |> String.split()
-    |> Enum.map_join(" ", &String.capitalize/1)
+    |> Enum.map_join(" ", &format_tag_word/1)
   end
+
+  defp format_tag_word(word), do: Map.get(@acronyms, word, String.capitalize(word))
 
   @doc """
   Returns previous and next how-tos within the same tags.

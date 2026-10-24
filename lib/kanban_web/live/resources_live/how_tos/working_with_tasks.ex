@@ -17,7 +17,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
         tags: ["non-developer", "tasks", "ai-agents"],
         content_type: "guide",
         reading_time: 6,
-        thumbnail: "/images/resources/writing-tasks.png",
         created_at: ~D[2026-01-17],
         steps: [
           %{
@@ -66,7 +65,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
         tags: ["non-developer", "workflow", "monitoring"],
         content_type: "guide",
         reading_time: 5,
-        thumbnail: "/images/resources/monitoring-progress.png",
         created_at: ~D[2026-01-17],
         steps: [
           %{
@@ -113,7 +111,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
         tags: ["non-developer", "workflow", "reviewing"],
         content_type: "guide",
         reading_time: 6,
-        thumbnail: "/images/resources/reviewing-work.png",
         created_at: ~D[2026-01-17],
         steps: [
           %{
@@ -170,7 +167,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
         tags: ["best-practices", "tasks", "dependencies"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/dependencies.png",
         created_at: ~D[2026-01-17],
         steps: [
           %{
@@ -213,7 +209,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
         tags: ["best-practices", "tasks", "priority"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/complexity-priority.png",
         created_at: ~D[2026-01-17],
         steps: [
           %{

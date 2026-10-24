@@ -17,7 +17,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
         tags: ["getting-started", "beginner", "boards"],
         content_type: "guide",
         reading_time: 3,
-        thumbnail: "/images/resources/board-creation.png",
         created_at: ~D[2026-01-15],
         steps: [
           %{
@@ -62,7 +61,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
         tags: ["getting-started", "beginner", "workflow"],
         content_type: "guide",
         reading_time: 4,
-        thumbnail: "/images/resources/columns-workflow.png",
         created_at: ~D[2026-01-15],
         steps: [
           %{
@@ -119,7 +117,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
         tags: ["getting-started", "beginner", "tasks"],
         content_type: "guide",
         reading_time: 3,
-        thumbnail: "/images/resources/task-creation.png",
         created_at: ~D[2026-01-15],
         steps: [
           %{
@@ -162,7 +159,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
         tags: ["getting-started", "beginner", "collaboration"],
         content_type: "guide",
         reading_time: 3,
-        thumbnail: "/images/resources/invite-members.png",
         created_at: ~D[2026-01-15],
         steps: [
           %{
@@ -212,7 +208,6 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
         tags: ["collaboration", "best-practices", "workflow", "ai-agents"],
         content_type: "guide",
         reading_time: 5,
-        thumbnail: "/images/resources/team-workflow.png",
         created_at: ~D[2026-05-09],
         steps: [
           %{
