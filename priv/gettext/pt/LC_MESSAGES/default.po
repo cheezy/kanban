@@ -160,7 +160,7 @@ msgstr "Senha"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:25
 #: lib/kanban_web/live/admin/organization_live/form.ex:98
 #: lib/kanban_web/live/board_live/form.html.heex:52
-#: lib/kanban_web/live/board_live/settings_form_component.ex:176
+#: lib/kanban_web/live/board_live/settings_form_component.ex:180
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
@@ -211,7 +211,7 @@ msgstr "Quadro atualizado com sucesso"
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
-#: lib/kanban_web/live/board_live/settings_form_component.ex:172
+#: lib/kanban_web/live/board_live/settings_form_component.ex:176
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
 #: lib/kanban_web/live/org_live/console.html.heex:280
 #: lib/kanban_web/live/review_live.html.heex:146
@@ -1019,7 +1019,7 @@ msgid "Back to App"
 msgstr "Voltar ao aplicativo"
 
 #: lib/kanban_web/live/board_live/form.html.heex:88
-#: lib/kanban_web/live/board_live/settings_form_component.ex:292
+#: lib/kanban_web/live/board_live/settings_form_component.ex:296
 #: lib/kanban_web/live/task_live/form_component.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Acceptance Criteria"
@@ -1275,7 +1275,7 @@ msgid "Complexity & Planning"
 msgstr "Complexidade e planejamento"
 
 #: lib/kanban_web/live/board_live/form.html.heex:98
-#: lib/kanban_web/live/board_live/settings_form_component.ex:293
+#: lib/kanban_web/live/board_live/settings_form_component.ex:297
 #, elixir-autogen, elixir-format
 msgid "Complexity & Scope"
 msgstr "Complexidade e Escopo"
@@ -1286,7 +1286,7 @@ msgid "Context"
 msgstr "Contexto"
 
 #: lib/kanban_web/live/board_live/form.html.heex:108
-#: lib/kanban_web/live/board_live/settings_form_component.ex:294
+#: lib/kanban_web/live/board_live/settings_form_component.ex:298
 #, elixir-autogen, elixir-format
 msgid "Context (Why/What/Where)"
 msgstr "Contexto (Por quê/O quê/Onde)"
@@ -1319,7 +1319,7 @@ msgid "Depends on tasks"
 msgstr "Depende das tarefas"
 
 #: lib/kanban_web/live/board_live/form.html.heex:158
-#: lib/kanban_web/live/board_live/settings_form_component.ex:299
+#: lib/kanban_web/live/board_live/settings_form_component.ex:303
 #: lib/kanban_web/live/task_live/form_component.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "Error Handling"
@@ -1348,7 +1348,7 @@ msgid "Field Visibility Settings"
 msgstr "Configurações de Visibilidade de Campos"
 
 #: lib/kanban_web/live/board_live/form.html.heex:118
-#: lib/kanban_web/live/board_live/settings_form_component.ex:295
+#: lib/kanban_web/live/board_live/settings_form_component.ex:299
 #, elixir-autogen, elixir-format
 msgid "Key Files"
 msgstr "Arquivos Principais"
@@ -1388,7 +1388,7 @@ msgid "Needs Review"
 msgstr "Necessita revisão"
 
 #: lib/kanban_web/live/board_live/form.html.heex:148
-#: lib/kanban_web/live/board_live/settings_form_component.ex:298
+#: lib/kanban_web/live/board_live/settings_form_component.ex:302
 #: lib/kanban_web/live/task_live/form_component.html.heex:265
 #: lib/kanban_web/live/task_live/view_component.ex:327
 #, elixir-autogen, elixir-format
@@ -1416,7 +1416,7 @@ msgid "Open"
 msgstr "Aberta"
 
 #: lib/kanban_web/live/board_live/form.html.heex:188
-#: lib/kanban_web/live/board_live/settings_form_component.ex:302
+#: lib/kanban_web/live/board_live/settings_form_component.ex:306
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:101
 #, elixir-autogen, elixir-format
 msgid "Out of Scope"
@@ -1446,7 +1446,7 @@ msgstr "Pendente"
 #: lib/kanban_web/components/review_report_panel.ex:446
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
-#: lib/kanban_web/live/board_live/settings_form_component.ex:301
+#: lib/kanban_web/live/board_live/settings_form_component.ex:305
 #: lib/kanban_web/live/task_live/view_component.ex:288
 #: lib/kanban_web/review_report_helpers.ex:56
 #, elixir-autogen, elixir-format
@@ -1460,7 +1460,7 @@ msgid "Rejected"
 msgstr "Rejeitada"
 
 #: lib/kanban_web/live/board_live/form.html.heex:198
-#: lib/kanban_web/live/board_live/settings_form_component.ex:303
+#: lib/kanban_web/live/board_live/settings_form_component.ex:307
 #, elixir-autogen, elixir-format
 msgid "Required Agent Capabilities"
 msgstr "Capacidades Requeridas do Agente"
@@ -1529,14 +1529,14 @@ msgid "Task identifier (e.g., W01A)"
 msgstr "Identificador da tarefa (ex.: W01A)"
 
 #: lib/kanban_web/live/board_live/form.html.heex:138
-#: lib/kanban_web/live/board_live/settings_form_component.ex:297
+#: lib/kanban_web/live/board_live/settings_form_component.ex:301
 #: lib/kanban_web/live/task_live/form_component.html.heex:221
 #, elixir-autogen, elixir-format
 msgid "Technical Notes"
 msgstr "Notas Técnicas"
 
 #: lib/kanban_web/live/board_live/form.html.heex:168
-#: lib/kanban_web/live/board_live/settings_form_component.ex:300
+#: lib/kanban_web/live/board_live/settings_form_component.ex:304
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:22
 #, elixir-autogen, elixir-format
 msgid "Technology Requirements"
@@ -1587,7 +1587,7 @@ msgid "Validation Rules"
 msgstr "Regras de validação"
 
 #: lib/kanban_web/live/board_live/form.html.heex:128
-#: lib/kanban_web/live/board_live/settings_form_component.ex:296
+#: lib/kanban_web/live/board_live/settings_form_component.ex:300
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:71
 #, elixir-autogen, elixir-format
 msgid "Verification Steps"
@@ -1711,7 +1711,7 @@ msgid "Failed to revoke token"
 msgstr "Falha ao revogar o token"
 
 #: lib/kanban_web/live/board_live/form.html.heex:228
-#: lib/kanban_web/live/board_live/settings_form_component.ex:306
+#: lib/kanban_web/live/board_live/settings_form_component.ex:310
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:15
 #: lib/kanban_web/live/task_live/form/planning_sections.ex:146
 #, elixir-autogen, elixir-format
@@ -1771,7 +1771,7 @@ msgid "Revoke"
 msgstr "Revogar"
 
 #: lib/kanban_web/live/board_live/form.html.heex:208
-#: lib/kanban_web/live/board_live/settings_form_component.ex:304
+#: lib/kanban_web/live/board_live/settings_form_component.ex:308
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:140
 #, elixir-autogen, elixir-format
 msgid "Security Considerations"
@@ -1789,7 +1789,7 @@ msgid "Telemetry Events"
 msgstr "Eventos de telemetria"
 
 #: lib/kanban_web/live/board_live/form.html.heex:218
-#: lib/kanban_web/live/board_live/settings_form_component.ex:305
+#: lib/kanban_web/live/board_live/settings_form_component.ex:309
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:13
 #: lib/kanban_web/live/task_live/form/planning_sections.ex:27
 #, elixir-autogen, elixir-format
@@ -2086,7 +2086,7 @@ msgstr "Tem certeza de que deseja excluir este token?"
 msgid "Failed to delete token"
 msgstr "Falha ao excluir token"
 
-#: lib/kanban_web/live/resources_live/components.ex:377
+#: lib/kanban_web/live/resources_live/components.ex:379
 #, elixir-autogen, elixir-format
 msgid "%{count} min read"
 msgid_plural "%{count} min read"
@@ -2119,7 +2119,7 @@ msgstr "Ver todos os guias"
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "Não é possível excluir a tarefa: outras tarefas dependem dela. Remova as dependências primeiro."
 
-#: lib/kanban_web/live/resources_live/components.ex:432
+#: lib/kanban_web/live/resources_live/components.ex:434
 #, elixir-autogen, elixir-format
 msgid "Clear all filters"
 msgstr "Limpar todos os filtros"
@@ -2143,7 +2143,7 @@ msgid "Learn how to get the most out of Stride with our guides and tutorials."
 msgstr "Aprenda a aproveitar ao máximo o Stride com nossos guias e tutoriais."
 
 #: lib/kanban_web/live/board_live/form.html.heex:39
-#: lib/kanban_web/live/board_live/settings_form_component.ex:133
+#: lib/kanban_web/live/board_live/settings_form_component.ex:137
 #, elixir-autogen, elixir-format
 msgid "Make board publicly readable"
 msgstr "Tornar o quadro de leitura pública"
@@ -2158,22 +2158,22 @@ msgstr "Mais relevantes"
 msgid "Newest"
 msgstr "Mais novos"
 
-#: lib/kanban_web/live/resources_live/components.ex:551
+#: lib/kanban_web/live/resources_live/components.ex:553
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr "Próximo"
 
-#: lib/kanban_web/live/resources_live/components.ex:413
+#: lib/kanban_web/live/resources_live/components.ex:415
 #, elixir-autogen, elixir-format
 msgid "No guides found"
 msgstr "Nenhum guia encontrado"
 
-#: lib/kanban_web/live/resources_live/show.ex:38
+#: lib/kanban_web/live/resources_live/show.ex:40
 #, elixir-autogen, elixir-format
 msgid "Not Found"
 msgstr "Não encontrado"
 
-#: lib/kanban_web/live/resources_live/components.ex:517
+#: lib/kanban_web/live/resources_live/components.ex:519
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr "Anterior"
@@ -2237,7 +2237,7 @@ msgstr "Este quadro é compartilhado publicamente. Você pode ver todas as taref
 msgid "This task may have been deleted or you may not have permission to view it."
 msgstr "Esta tarefa pode ter sido excluída ou você pode não ter permissão para visualizá-la."
 
-#: lib/kanban_web/live/resources_live/components.ex:419
+#: lib/kanban_web/live/resources_live/components.ex:421
 #, elixir-autogen, elixir-format
 msgid "Try adjusting your search or filters to find what you're looking for."
 msgstr "Tente ajustar sua busca ou filtros para encontrar o que procura."
@@ -2247,12 +2247,12 @@ msgstr "Tente ajustar sua busca ou filtros para encontrar o que procura."
 msgid "You are viewing this board in read-only mode"
 msgstr "Você está vendo este quadro no modo somente leitura"
 
-#: lib/kanban_web/live/resources_live/components.ex:464
+#: lib/kanban_web/live/resources_live/components.ex:466
 #, elixir-autogen, elixir-format
 msgid "You're all set!"
 msgstr "Tudo pronto!"
 
-#: lib/kanban_web/live/resources_live/components.ex:467
+#: lib/kanban_web/live/resources_live/components.ex:469
 #, elixir-autogen, elixir-format
 msgid "You've completed all the steps in this guide."
 msgstr "Você concluiu todas as etapas deste guia."
@@ -4656,7 +4656,7 @@ msgid "Close"
 msgstr "Fechar"
 
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
-#: lib/kanban_web/live/board_live/settings_form_component.ex:184
+#: lib/kanban_web/live/board_live/settings_form_component.ex:188
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
 #: lib/kanban_web/live/org_live/console.html.heex:272
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
@@ -4681,7 +4681,7 @@ msgstr "Adicionar Usuário por E-mail"
 msgid "Board settings"
 msgstr "Configurações do quadro"
 
-#: lib/kanban_web/live/board_live/settings_form_component.ex:153
+#: lib/kanban_web/live/board_live/settings_form_component.ex:157
 #, elixir-autogen, elixir-format
 msgid "Control which task fields are visible on the board."
 msgstr "Controlar quais campos de tarefa são visíveis no quadro"
@@ -4691,7 +4691,7 @@ msgstr "Controlar quais campos de tarefa são visíveis no quadro"
 msgid "Current users"
 msgstr "Usuários Atuais"
 
-#: lib/kanban_web/live/board_live/settings_form_component.ex:150
+#: lib/kanban_web/live/board_live/settings_form_component.ex:154
 #, elixir-autogen, elixir-format
 msgid "Field visibility"
 msgstr "Visibilidade dos campos"
@@ -5787,28 +5787,28 @@ msgstr "ciclo 1h 24m"
 msgid "All notable changes to the Kanban Board application will be documented in this file."
 msgstr "Todas as alterações notáveis na aplicação Kanban Board serão documentadas neste arquivo."
 
-#: lib/kanban_web/live/resources_live/components.ex:351
+#: lib/kanban_web/live/resources_live/components.ex:353
 #, elixir-autogen, elixir-format
 msgid "Guide"
 msgstr "Guia"
 
-#: lib/kanban_web/live/resources_live/components.ex:261
+#: lib/kanban_web/live/resources_live/components.ex:263
 #, elixir-autogen, elixir-format
 msgid "Placeholder - %{w} × %{h}px"
 msgstr "Marcador - %{w} × %{h}px"
 
-#: lib/kanban_web/live/resources_live/components.ex:290
+#: lib/kanban_web/live/resources_live/components.ex:292
 #, elixir-autogen, elixir-format
 msgid "Placeholder image - Replace with actual screenshot (%{w} × %{h}px)"
 msgstr "Imagem marcador - Substitua por uma captura real (%{w} × %{h}px)"
 
-#: lib/kanban_web/live/resources_live/components.ex:353
+#: lib/kanban_web/live/resources_live/components.ex:355
 #, elixir-autogen, elixir-format
 msgid "Reference"
 msgstr "Referência"
 
-#: lib/kanban_web/live/resources_live/components.ex:246
-#: lib/kanban_web/live/resources_live/components.ex:275
+#: lib/kanban_web/live/resources_live/components.ex:248
+#: lib/kanban_web/live/resources_live/components.ex:277
 #, elixir-autogen, elixir-format
 msgid "Step %{n}: %{title}"
 msgstr "Passo %{n}: %{title}"
@@ -5823,12 +5823,12 @@ msgstr "Logo do Stride"
 msgid "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
 msgstr "O formato é baseado em Keep a Changelog, e este projeto adere ao Versionamento Semântico."
 
-#: lib/kanban_web/live/resources_live/components.ex:352
+#: lib/kanban_web/live/resources_live/components.ex:354
 #, elixir-autogen, elixir-format
 msgid "Tutorial"
 msgstr "Tutorial"
 
-#: lib/kanban_web/live/resources_live/components.ex:354
+#: lib/kanban_web/live/resources_live/components.ex:356
 #, elixir-autogen, elixir-format
 msgid "Video"
 msgstr "Vídeo"
@@ -6678,12 +6678,12 @@ msgstr "Seções de configurações"
 msgid "Review data unavailable"
 msgstr "Dados de revisão indisponíveis"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:345
+#: lib/kanban/tasks/completion_validation/review_contract.ex:350
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "é obrigatório em uma revisão despachada: inclua status ou issue_counts para que a fila de revisão possa exibir o veredito"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:338
+#: lib/kanban/tasks/completion_validation/review_contract.ex:343
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field} que a fila de revisão exibe está ausente"
@@ -7192,7 +7192,7 @@ msgid "Reviewed"
 msgstr "Revisado"
 
 #: lib/kanban_web/live/board_live/form.html.heex:238
-#: lib/kanban_web/live/board_live/settings_form_component.ex:307
+#: lib/kanban_web/live/board_live/settings_form_component.ex:311
 #: lib/kanban_web/live/task_live/form_component.html.heex:248
 #, elixir-autogen, elixir-format
 msgid "Technical Details"
@@ -8596,7 +8596,7 @@ msgstr "Adicionar linha de comportamento"
 msgid "Behaviour to verify"
 msgstr "Comportamento a verificar"
 
-#: lib/kanban_web/live/board_live/settings_form_component.ex:308
+#: lib/kanban_web/live/board_live/settings_form_component.ex:312
 #: lib/kanban_web/live/review_live.html.heex:492
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:122
 #: lib/kanban_web/live/task_live/view_component.ex:281
@@ -8716,7 +8716,7 @@ msgstr "Atrasado"
 msgid "Completion notes"
 msgstr "Notas da conclusão"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:351
+#: lib/kanban/tasks/completion_validation/review_contract.ex:356
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr "deve ser uma lista em uma revisão despachada: uma entrada por item da lista de verificação do projeto, ou uma lista vazia quando o projeto não tem CODE-REVIEW.md"
@@ -8771,22 +8771,22 @@ msgstr "Resultado do explorador"
 msgid "Explorer result"
 msgstr "Resultado do explorador"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:312
+#: lib/kanban/tasks/completion_validation/review_contract.ex:317
 #, elixir-autogen, elixir-format
 msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
 msgstr "%{field}.note é obrigatório quando o veredito da seção é \"failed\": ele deve nomear a violação ou lacuna específica"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:319
+#: lib/kanban/tasks/completion_validation/review_contract.ex:324
 #, elixir-autogen, elixir-format
 msgid "%{field}.note must be a string"
 msgstr "%{field}.note deve ser uma string"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:323
+#: lib/kanban/tasks/completion_validation/review_contract.ex:328
 #, elixir-autogen, elixir-format
 msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
 msgstr "%{field}.note deve nomear a violação específica em pelo menos %{min} caracteres sem espaços quando o veredito da seção é \"failed\""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:331
+#: lib/kanban/tasks/completion_validation/review_contract.ex:336
 #, elixir-autogen, elixir-format
 msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
 msgstr "%{field}.note parece um espaço reservado em vez de nomear a violação. Se não houver nada substancial a escrever, o errado é o veredito e não a nota — verifique novamente se a seção deveria ser \"passed\" ou \"not_assessed\"."
@@ -11987,7 +11987,7 @@ msgid "Ready to download"
 msgstr "Pronta para baixar"
 
 #: lib/kanban_web/live/board_live/form.html.heex:42
-#: lib/kanban_web/live/board_live/settings_form_component.ex:136
+#: lib/kanban_web/live/board_live/settings_form_component.ex:140
 #, elixir-autogen, elixir-format
 msgid "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
 msgstr "Quando ativado, qualquer usuário conectado pode ver este quadro (acesso somente leitura). Os membros mantêm as permissões atribuídas."

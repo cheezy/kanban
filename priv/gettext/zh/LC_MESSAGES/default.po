@@ -160,7 +160,7 @@ msgstr "密码"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:25
 #: lib/kanban_web/live/admin/organization_live/form.ex:98
 #: lib/kanban_web/live/board_live/form.html.heex:52
-#: lib/kanban_web/live/board_live/settings_form_component.ex:176
+#: lib/kanban_web/live/board_live/settings_form_component.ex:180
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
@@ -211,7 +211,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
-#: lib/kanban_web/live/board_live/settings_form_component.ex:172
+#: lib/kanban_web/live/board_live/settings_form_component.ex:176
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
 #: lib/kanban_web/live/org_live/console.html.heex:280
 #: lib/kanban_web/live/review_live.html.heex:146
@@ -1019,7 +1019,7 @@ msgid "Back to App"
 msgstr "返回应用"
 
 #: lib/kanban_web/live/board_live/form.html.heex:88
-#: lib/kanban_web/live/board_live/settings_form_component.ex:292
+#: lib/kanban_web/live/board_live/settings_form_component.ex:296
 #: lib/kanban_web/live/task_live/form_component.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Acceptance Criteria"
@@ -1275,7 +1275,7 @@ msgid "Complexity & Planning"
 msgstr "复杂度与规划"
 
 #: lib/kanban_web/live/board_live/form.html.heex:98
-#: lib/kanban_web/live/board_live/settings_form_component.ex:293
+#: lib/kanban_web/live/board_live/settings_form_component.ex:297
 #, elixir-autogen, elixir-format
 msgid "Complexity & Scope"
 msgstr "复杂度与范围"
@@ -1286,7 +1286,7 @@ msgid "Context"
 msgstr "上下文"
 
 #: lib/kanban_web/live/board_live/form.html.heex:108
-#: lib/kanban_web/live/board_live/settings_form_component.ex:294
+#: lib/kanban_web/live/board_live/settings_form_component.ex:298
 #, elixir-autogen, elixir-format
 msgid "Context (Why/What/Where)"
 msgstr "上下文（为什么/是什么/在哪里）"
@@ -1319,7 +1319,7 @@ msgid "Depends on tasks"
 msgstr "依赖的任务"
 
 #: lib/kanban_web/live/board_live/form.html.heex:158
-#: lib/kanban_web/live/board_live/settings_form_component.ex:299
+#: lib/kanban_web/live/board_live/settings_form_component.ex:303
 #: lib/kanban_web/live/task_live/form_component.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "Error Handling"
@@ -1348,7 +1348,7 @@ msgid "Field Visibility Settings"
 msgstr "字段可见性设置"
 
 #: lib/kanban_web/live/board_live/form.html.heex:118
-#: lib/kanban_web/live/board_live/settings_form_component.ex:295
+#: lib/kanban_web/live/board_live/settings_form_component.ex:299
 #, elixir-autogen, elixir-format
 msgid "Key Files"
 msgstr "关键文件"
@@ -1388,7 +1388,7 @@ msgid "Needs Review"
 msgstr "需要审核"
 
 #: lib/kanban_web/live/board_live/form.html.heex:148
-#: lib/kanban_web/live/board_live/settings_form_component.ex:298
+#: lib/kanban_web/live/board_live/settings_form_component.ex:302
 #: lib/kanban_web/live/task_live/form_component.html.heex:265
 #: lib/kanban_web/live/task_live/view_component.ex:327
 #, elixir-autogen, elixir-format
@@ -1416,7 +1416,7 @@ msgid "Open"
 msgstr "开放"
 
 #: lib/kanban_web/live/board_live/form.html.heex:188
-#: lib/kanban_web/live/board_live/settings_form_component.ex:302
+#: lib/kanban_web/live/board_live/settings_form_component.ex:306
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:101
 #, elixir-autogen, elixir-format
 msgid "Out of Scope"
@@ -1446,7 +1446,7 @@ msgstr "待处理"
 #: lib/kanban_web/components/review_report_panel.ex:446
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
-#: lib/kanban_web/live/board_live/settings_form_component.ex:301
+#: lib/kanban_web/live/board_live/settings_form_component.ex:305
 #: lib/kanban_web/live/task_live/view_component.ex:288
 #: lib/kanban_web/review_report_helpers.ex:56
 #, elixir-autogen, elixir-format
@@ -1460,7 +1460,7 @@ msgid "Rejected"
 msgstr "已拒绝"
 
 #: lib/kanban_web/live/board_live/form.html.heex:198
-#: lib/kanban_web/live/board_live/settings_form_component.ex:303
+#: lib/kanban_web/live/board_live/settings_form_component.ex:307
 #, elixir-autogen, elixir-format
 msgid "Required Agent Capabilities"
 msgstr "所需代理能力"
@@ -1529,14 +1529,14 @@ msgid "Task identifier (e.g., W01A)"
 msgstr "任务标识符(例如 W01A)"
 
 #: lib/kanban_web/live/board_live/form.html.heex:138
-#: lib/kanban_web/live/board_live/settings_form_component.ex:297
+#: lib/kanban_web/live/board_live/settings_form_component.ex:301
 #: lib/kanban_web/live/task_live/form_component.html.heex:221
 #, elixir-autogen, elixir-format
 msgid "Technical Notes"
 msgstr "技术说明"
 
 #: lib/kanban_web/live/board_live/form.html.heex:168
-#: lib/kanban_web/live/board_live/settings_form_component.ex:300
+#: lib/kanban_web/live/board_live/settings_form_component.ex:304
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:22
 #, elixir-autogen, elixir-format
 msgid "Technology Requirements"
@@ -1587,7 +1587,7 @@ msgid "Validation Rules"
 msgstr "验证规则"
 
 #: lib/kanban_web/live/board_live/form.html.heex:128
-#: lib/kanban_web/live/board_live/settings_form_component.ex:296
+#: lib/kanban_web/live/board_live/settings_form_component.ex:300
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:71
 #, elixir-autogen, elixir-format
 msgid "Verification Steps"
@@ -1711,7 +1711,7 @@ msgid "Failed to revoke token"
 msgstr "撤销 token 失败"
 
 #: lib/kanban_web/live/board_live/form.html.heex:228
-#: lib/kanban_web/live/board_live/settings_form_component.ex:306
+#: lib/kanban_web/live/board_live/settings_form_component.ex:310
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:15
 #: lib/kanban_web/live/task_live/form/planning_sections.ex:146
 #, elixir-autogen, elixir-format
@@ -1771,7 +1771,7 @@ msgid "Revoke"
 msgstr "撤销"
 
 #: lib/kanban_web/live/board_live/form.html.heex:208
-#: lib/kanban_web/live/board_live/settings_form_component.ex:304
+#: lib/kanban_web/live/board_live/settings_form_component.ex:308
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:140
 #, elixir-autogen, elixir-format
 msgid "Security Considerations"
@@ -1789,7 +1789,7 @@ msgid "Telemetry Events"
 msgstr "遥测事件"
 
 #: lib/kanban_web/live/board_live/form.html.heex:218
-#: lib/kanban_web/live/board_live/settings_form_component.ex:305
+#: lib/kanban_web/live/board_live/settings_form_component.ex:309
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:13
 #: lib/kanban_web/live/task_live/form/planning_sections.ex:27
 #, elixir-autogen, elixir-format
@@ -2086,7 +2086,7 @@ msgstr "您确定要删除此令牌吗？"
 msgid "Failed to delete token"
 msgstr "删除令牌失败"
 
-#: lib/kanban_web/live/resources_live/components.ex:377
+#: lib/kanban_web/live/resources_live/components.ex:379
 #, elixir-autogen, elixir-format
 msgid "%{count} min read"
 msgid_plural "%{count} min read"
@@ -2118,7 +2118,7 @@ msgstr "浏览所有指南"
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "无法删除任务:有其他任务依赖它。请先移除依赖。"
 
-#: lib/kanban_web/live/resources_live/components.ex:432
+#: lib/kanban_web/live/resources_live/components.ex:434
 #, elixir-autogen, elixir-format
 msgid "Clear all filters"
 msgstr "清除所有筛选"
@@ -2142,7 +2142,7 @@ msgid "Learn how to get the most out of Stride with our guides and tutorials."
 msgstr "通过我们的指南和教程,了解如何充分使用 Stride。"
 
 #: lib/kanban_web/live/board_live/form.html.heex:39
-#: lib/kanban_web/live/board_live/settings_form_component.ex:133
+#: lib/kanban_web/live/board_live/settings_form_component.ex:137
 #, elixir-autogen, elixir-format
 msgid "Make board publicly readable"
 msgstr "将看板设为公开可读"
@@ -2157,22 +2157,22 @@ msgstr "最相关"
 msgid "Newest"
 msgstr "最新"
 
-#: lib/kanban_web/live/resources_live/components.ex:551
+#: lib/kanban_web/live/resources_live/components.ex:553
 #, elixir-autogen, elixir-format
 msgid "Next"
 msgstr "下一步"
 
-#: lib/kanban_web/live/resources_live/components.ex:413
+#: lib/kanban_web/live/resources_live/components.ex:415
 #, elixir-autogen, elixir-format
 msgid "No guides found"
 msgstr "未找到指南"
 
-#: lib/kanban_web/live/resources_live/show.ex:38
+#: lib/kanban_web/live/resources_live/show.ex:40
 #, elixir-autogen, elixir-format
 msgid "Not Found"
 msgstr "未找到"
 
-#: lib/kanban_web/live/resources_live/components.ex:517
+#: lib/kanban_web/live/resources_live/components.ex:519
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr "上一步"
@@ -2235,7 +2235,7 @@ msgstr "此看板已公开共享。您可以查看所有任务,但无法进行�
 msgid "This task may have been deleted or you may not have permission to view it."
 msgstr "此任务可能已被删除,或您没有权限查看。"
 
-#: lib/kanban_web/live/resources_live/components.ex:419
+#: lib/kanban_web/live/resources_live/components.ex:421
 #, elixir-autogen, elixir-format
 msgid "Try adjusting your search or filters to find what you're looking for."
 msgstr "请尝试调整搜索或筛选条件以找到所需内容。"
@@ -2245,12 +2245,12 @@ msgstr "请尝试调整搜索或筛选条件以找到所需内容。"
 msgid "You are viewing this board in read-only mode"
 msgstr "您正在以只读模式查看此看板"
 
-#: lib/kanban_web/live/resources_live/components.ex:464
+#: lib/kanban_web/live/resources_live/components.ex:466
 #, elixir-autogen, elixir-format
 msgid "You're all set!"
 msgstr "全部就绪!"
 
-#: lib/kanban_web/live/resources_live/components.ex:467
+#: lib/kanban_web/live/resources_live/components.ex:469
 #, elixir-autogen, elixir-format
 msgid "You've completed all the steps in this guide."
 msgstr "您已完成此指南的所有步骤。"
@@ -4648,7 +4648,7 @@ msgid "Close"
 msgstr "关闭"
 
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
-#: lib/kanban_web/live/board_live/settings_form_component.ex:184
+#: lib/kanban_web/live/board_live/settings_form_component.ex:188
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
 #: lib/kanban_web/live/org_live/console.html.heex:272
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
@@ -4673,7 +4673,7 @@ msgstr "通过电子邮件添加用户"
 msgid "Board settings"
 msgstr "看板设置"
 
-#: lib/kanban_web/live/board_live/settings_form_component.ex:153
+#: lib/kanban_web/live/board_live/settings_form_component.ex:157
 #, elixir-autogen, elixir-format
 msgid "Control which task fields are visible on the board."
 msgstr "控制看板上显示哪些任务字段"
@@ -4683,7 +4683,7 @@ msgstr "控制看板上显示哪些任务字段"
 msgid "Current users"
 msgstr "当前用户"
 
-#: lib/kanban_web/live/board_live/settings_form_component.ex:150
+#: lib/kanban_web/live/board_live/settings_form_component.ex:154
 #, elixir-autogen, elixir-format
 msgid "Field visibility"
 msgstr "字段可见性"
@@ -5775,28 +5775,28 @@ msgstr "周期 1小时24分"
 msgid "All notable changes to the Kanban Board application will be documented in this file."
 msgstr "Kanban Board 应用程序的所有值得注意的变更都将记录在此文件中。"
 
-#: lib/kanban_web/live/resources_live/components.ex:351
+#: lib/kanban_web/live/resources_live/components.ex:353
 #, elixir-autogen, elixir-format
 msgid "Guide"
 msgstr "指南"
 
-#: lib/kanban_web/live/resources_live/components.ex:261
+#: lib/kanban_web/live/resources_live/components.ex:263
 #, elixir-autogen, elixir-format
 msgid "Placeholder - %{w} × %{h}px"
 msgstr "占位 - %{w} × %{h}px"
 
-#: lib/kanban_web/live/resources_live/components.ex:290
+#: lib/kanban_web/live/resources_live/components.ex:292
 #, elixir-autogen, elixir-format
 msgid "Placeholder image - Replace with actual screenshot (%{w} × %{h}px)"
 msgstr "占位图片 - 请替换为实际截图(%{w} × %{h}px)"
 
-#: lib/kanban_web/live/resources_live/components.ex:353
+#: lib/kanban_web/live/resources_live/components.ex:355
 #, elixir-autogen, elixir-format
 msgid "Reference"
 msgstr "参考"
 
-#: lib/kanban_web/live/resources_live/components.ex:246
-#: lib/kanban_web/live/resources_live/components.ex:275
+#: lib/kanban_web/live/resources_live/components.ex:248
+#: lib/kanban_web/live/resources_live/components.ex:277
 #, elixir-autogen, elixir-format
 msgid "Step %{n}: %{title}"
 msgstr "步骤 %{n}:%{title}"
@@ -5811,12 +5811,12 @@ msgstr "Stride 标志"
 msgid "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
 msgstr "格式基于 Keep a Changelog,本项目遵循语义化版本规范。"
 
-#: lib/kanban_web/live/resources_live/components.ex:352
+#: lib/kanban_web/live/resources_live/components.ex:354
 #, elixir-autogen, elixir-format
 msgid "Tutorial"
 msgstr "教程"
 
-#: lib/kanban_web/live/resources_live/components.ex:354
+#: lib/kanban_web/live/resources_live/components.ex:356
 #, elixir-autogen, elixir-format
 msgid "Video"
 msgstr "视频"
@@ -6648,12 +6648,12 @@ msgstr "设置部分"
 msgid "Review data unavailable"
 msgstr "审查数据不可用"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:345
+#: lib/kanban/tasks/completion_validation/review_contract.ex:350
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "在已派发的评审中为必填项：请包含 status 或 issue_counts，以便评审队列能够渲染评审结论"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:338
+#: lib/kanban/tasks/completion_validation/review_contract.ex:343
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字段 %{field} 缺失"
@@ -7162,7 +7162,7 @@ msgid "Reviewed"
 msgstr "审查完成"
 
 #: lib/kanban_web/live/board_live/form.html.heex:238
-#: lib/kanban_web/live/board_live/settings_form_component.ex:307
+#: lib/kanban_web/live/board_live/settings_form_component.ex:311
 #: lib/kanban_web/live/task_live/form_component.html.heex:248
 #, elixir-autogen, elixir-format
 msgid "Technical Details"
@@ -8558,7 +8558,7 @@ msgstr "添加行为行"
 msgid "Behaviour to verify"
 msgstr "待验证的行为"
 
-#: lib/kanban_web/live/board_live/settings_form_component.ex:308
+#: lib/kanban_web/live/board_live/settings_form_component.ex:312
 #: lib/kanban_web/live/review_live.html.heex:492
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:122
 #: lib/kanban_web/live/task_live/view_component.ex:281
@@ -8678,7 +8678,7 @@ msgstr "已延期"
 msgid "Completion notes"
 msgstr "完成备注"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:351
+#: lib/kanban/tasks/completion_validation/review_contract.ex:356
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr "在已派发的评审中必须为列表：项目检查清单的每个条目对应一项，若项目没有 CODE-REVIEW.md 则为空列表"
@@ -8733,22 +8733,22 @@ msgstr "探索器结果"
 msgid "Explorer result"
 msgstr "探索器结果"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:312
+#: lib/kanban/tasks/completion_validation/review_contract.ex:317
 #, elixir-autogen, elixir-format
 msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
 msgstr "当分区判定为 \"failed\" 时，%{field}.note 为必填项：必须指明具体的违规或缺口"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:319
+#: lib/kanban/tasks/completion_validation/review_contract.ex:324
 #, elixir-autogen, elixir-format
 msgid "%{field}.note must be a string"
 msgstr "%{field}.note 必须是字符串"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:323
+#: lib/kanban/tasks/completion_validation/review_contract.ex:328
 #, elixir-autogen, elixir-format
 msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
 msgstr "当分区判定为 \"failed\" 时，%{field}.note 必须以至少 %{min} 个非空白字符指明具体的违规"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:331
+#: lib/kanban/tasks/completion_validation/review_contract.ex:336
 #, elixir-autogen, elixir-format
 msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
 msgstr "%{field}.note 看起来像占位符，而没有指明违规内容。如果没有实质内容可写，那么错误的是判定而非该说明——请重新检查该分区是否应为 \"passed\" 或 \"not_assessed\"。"
@@ -11941,7 +11941,7 @@ msgid "Ready to download"
 msgstr "可下载"
 
 #: lib/kanban_web/live/board_live/form.html.heex:42
-#: lib/kanban_web/live/board_live/settings_form_component.ex:136
+#: lib/kanban_web/live/board_live/settings_form_component.ex:140
 #, elixir-autogen, elixir-format
 msgid "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
 msgstr "启用后,任何已登录的用户都可以查看此看板(只读访问)。成员仍保留其被分配的权限。"
