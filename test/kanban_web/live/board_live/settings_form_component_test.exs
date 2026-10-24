@@ -248,6 +248,54 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponentTest do
       assert html =~ "can&#39;t be blank"
     end
 
+    test "ticking Make board publicly readable and saving shares the board",
+         %{conn: conn, user: user, board: board, scope: scope} do
+      view = open_settings(conn, user, board)
+
+      view
+      |> form("#board-settings-form-#{board.id}", board: %{read_only: "true"})
+      |> render_submit()
+
+      assert {:ok, %{read_only: true}} = Boards.get_board(board.id, scope.user)
+    end
+
+    test "renaming a public board through the form keeps it public",
+         %{conn: conn, user: user, board: board, scope: scope} do
+      {:ok, board} = Boards.update_board(board, %{read_only: true}, user)
+      view = open_settings(conn, user, board)
+
+      # A browser submits a ticked box's value attribute, or "on" when it has
+      # none, which Ecto refuses to cast to a boolean. LiveViewTest doesn't
+      # mimic that, so pin the value the browser will send.
+      assert has_element?(
+               view,
+               ~s(#board-settings-form-#{board.id} input[type="checkbox"][name="board[read_only]"][value="true"])
+             )
+
+      view
+      |> form("#board-settings-form-#{board.id}", board: %{name: "New name"})
+      |> render_submit()
+
+      assert {:ok, %{name: "New name", read_only: true}} = Boards.get_board(board.id, scope.user)
+    end
+
+    test "unticking Make board publicly readable and saving makes the board private",
+         %{conn: conn, user: user, board: board, scope: scope} do
+      {:ok, board} = Boards.update_board(board, %{read_only: true}, user)
+      view = open_settings(conn, user, board)
+
+      assert has_element?(
+               view,
+               ~s(#board-settings-form-#{board.id} input[type="checkbox"][checked])
+             )
+
+      view
+      |> form("#board-settings-form-#{board.id}", board: %{read_only: "false"})
+      |> render_submit()
+
+      assert {:ok, %{read_only: false}} = Boards.get_board(board.id, scope.user)
+    end
+
     test "the form shows no error before anything is submitted",
          %{conn: conn, user: user, board: board} do
       view = open_settings(conn, user, board)

@@ -240,6 +240,35 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert sso =~ ~s(href="/resources/provisioning-users-with-scim")
     end
 
+    test "renders each boards guide with its links and screenshots", %{conn: conn} do
+      images = %{
+        "managing-board-settings" => [2, 4, 5],
+        "finding-work-with-search-and-filters" => [2, 6],
+        "bulk-editing-cards" => [2, 3],
+        "archiving-tasks" => [2, 4]
+      }
+
+      for {id, steps} <- images do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+
+        for step <- steps do
+          assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
+        end
+      end
+
+      {:ok, _view, filters} = live(conn, ~p"/resources/finding-work-with-search-and-filters")
+      assert filters =~ ~s(href="/resources/monitoring-task-progress")
+      assert filters =~ ~r{<code[^>]*>/</code>}
+
+      {:ok, _view, bulk} = live(conn, ~p"/resources/bulk-editing-cards")
+      assert bulk =~ ~s(href="/resources/free-and-paid-boards")
+      assert bulk =~ ~s(href="/resources/archiving-tasks")
+    end
+
     test "the reviewing guide shows the Review queue screenshots", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
 

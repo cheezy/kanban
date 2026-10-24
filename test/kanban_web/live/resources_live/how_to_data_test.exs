@@ -83,6 +83,29 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                        "lib/kanban_web/live/user_live/login.ex"
                      ] ++ Path.wildcard("lib/kanban_web/live/org_live/*.{ex,heex}")
 
+  @boards_ids [
+    "managing-board-settings",
+    "finding-work-with-search-and-filters",
+    "bulk-editing-cards",
+    "archiving-tasks"
+  ]
+
+  # The board settings, filter bar, bulk bar and archive screens the boards
+  # guides name.
+  @boards_sources [
+                    "lib/kanban_web/live/board_live/settings_form_component.ex",
+                    "lib/kanban_web/live/board_live/labels_manager_component.ex",
+                    "lib/kanban_web/live/board_live/show.html.heex",
+                    "lib/kanban_web/components/board_filter_bar.ex",
+                    "lib/kanban_web/components/keyboard_shortcuts_help.ex",
+                    "lib/kanban_web/components/bulk_action_bar.ex",
+                    "lib/kanban_web/components/locked_feature.ex",
+                    "lib/kanban_web/components/board_tabs.ex",
+                    "lib/kanban_web/components/archive_filter_chips.ex",
+                    "lib/kanban_web/components/archive_stats_strip.ex",
+                    "lib/kanban_web/components/archive_row.ex"
+                  ] ++ Path.wildcard("lib/kanban_web/live/archive_live/*.{ex,heex}")
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -1252,11 +1275,17 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     test "includes the org-admin tags" do
       assert "admin" in HowToData.all_tags()
     end
+
+    test "includes the boards tags" do
+      for tag <- ~w(boards tasks monitoring workflow) do
+        assert tag in HowToData.all_tags()
+      end
+    end
   end
 
   describe "total guide count" do
-    test "has all 30 guides" do
-      assert length(HowToData.all_how_tos()) == 30
+    test "has all 34 guides" do
+      assert length(HowToData.all_how_tos()) == 34
     end
 
     test "every guide id is unique across the area modules" do
@@ -1944,6 +1973,207 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert scim =~ "can't deprovision your Organization's last enabled org-admin"
       assert File.read!("lib/kanban/scim/lifecycle.ex") =~ ":last_org_admin"
+    end
+  end
+
+  describe "boards guides" do
+    defp boards_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "the boards guides exist with their tags and steps" do
+      expected = [
+        {"managing-board-settings", "Managing Board Settings", ["boards", "tasks"], 6},
+        {"finding-work-with-search-and-filters", "Finding Work With Search and Filters",
+         ["boards", "monitoring"], 6},
+        {"bulk-editing-cards", "Editing Many Cards at Once", ["boards", "tasks", "workflow"], 7},
+        {"archiving-tasks", "Archiving Tasks", ["boards", "tasks"], 6}
+      ]
+
+      assert Enum.map(KanbanWeb.ResourcesLive.HowTos.Boards.how_tos(), & &1.id) == @boards_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.created_at == ~D[2026-10-24]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+
+        for tag <- ~w(getting-started developer non-developer best-practices security) do
+          refute tag in guide.tags, "#{id} would join the #{tag} chain or its count"
+        end
+      end
+    end
+
+    test "the boards guides run from the first board to free and paid boards" do
+      chain = ["creating-your-first-board"] ++ @boards_ids ++ ["free-and-paid-boards"]
+
+      for [prev, id, next] <- Enum.chunk_every(chain, 3, 1, :discard) do
+        {:ok, guide} = HowToData.get_how_to(id)
+        {p, n} = HowToData.get_navigation(guide)
+        assert (p && p.id) == prev, "#{id} has the wrong previous guide"
+        assert (n && n.id) == next, "#{id} has the wrong next guide"
+      end
+    end
+
+    test "every bolded UI label in the boards guides exists in the source" do
+      sources = Enum.map_join(@boards_sources, &File.read!/1)
+
+      labels =
+        for id <- @boards_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @boards_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        assert sources =~ ~r/gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no board screen shows"
+      end
+    end
+
+    test "the boards guides link to guides that exist" do
+      content = boards_content(@boards_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\((\/[^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert links != []
+
+      for link <- links do
+        assert "/resources/" <> id = link
+        assert id in ids, "a boards guide links to the missing guide #{id}"
+      end
+    end
+
+    test "the settings facts match the code" do
+      settings = boards_content(["managing-board-settings"])
+      form = File.read!("lib/kanban_web/live/board_live/settings_form_component.ex")
+      tabs = File.read!("lib/kanban_web/components/board_tabs.ex")
+      boards = File.read!("lib/kanban/boards.ex")
+
+      # Only acceptance criteria is on for a new board.
+      on = for {field, true} <- %Kanban.Boards.Board{}.field_visibility, do: field
+      assert on == ["acceptance_criteria"]
+      assert settings =~ "A new board shows only **Acceptance Criteria**."
+
+      # Name, description and field visibility are owner-only, and an
+      # org-admin's derived access counts as owner.
+      assert form =~ ":if={@is_owner}"
+      assert boards =~ "get_user_access(board_id, user.id) == :owner"
+      assert boards =~ "owner-equivalent access an org-admin derives"
+      assert settings =~ "its org-admins can too"
+
+      # Settings is for members; a public read-only board is open to any
+      # signed-in user.
+      assert tabs =~ "defp hidden?(:settings, flags), do: not flags.member?"
+      assert boards =~ "if board.read_only, do: {:ok, %{board | user_access: nil}}"
+      assert settings =~ "anyone signed in to Stride"
+
+      # Labels: nine colours, 40 characters, unique ignoring capitals.
+      assert length(Kanban.Labels.Label.colors()) == 9
+      assert File.read!("lib/kanban/labels/label.ex") =~ "@max_name_length 40"
+      assert File.read!("lib/kanban/labels.ex") =~ "in [:owner, :modify]"
+      # Sharing takes a Save, and unticking reaches the server.
+      assert form =~ ~s(<input type="hidden" name={f[:read_only].name} value="false" />)
+      assert form =~ ~s(value="true")
+      assert settings =~ "Tick **Make board publicly readable** and click **Save**"
+      assert settings =~ "untick the box and click **Save**"
+
+      assert settings =~ "pick one of nine colours"
+      assert settings =~ "up to 40 characters"
+      assert settings =~ "ignoring capitals"
+    end
+
+    test "the search and filter facts match the code" do
+      filters = boards_content(["finding-work-with-search-and-filters"])
+      board_filters = File.read!("lib/kanban/tasks/board_filters.ex")
+
+      assert KanbanWeb.BoardLive.FilterParams.max_search_length() == 100
+      assert filters =~ "A search can be up to 100 characters."
+
+      assert board_filters =~ "against the title or the identifier"
+      assert filters =~ "part of a task's title or its ID"
+      assert filters =~ "It doesn't search descriptions."
+
+      assert board_filters =~
+               "or when\n      it is a goal with at least one non-archived child that matches"
+
+      assert filters =~ "A goal stays on the board while one of its tasks matches"
+    end
+
+    test "the bulk action facts match the code" do
+      bulk = boards_content(["bulk-editing-cards"])
+      actions = File.read!("lib/kanban/tasks/bulk_actions.ex")
+
+      assert actions =~ "Boards.get_user_access(board_id, user_id) in [:owner, :modify]"
+      assert bulk =~ "The board's owner and members with modify access see **Select**"
+
+      assert actions =~ "Goals are skipped by move, assign and archive"
+      assert actions =~ "Labels apply to goals too."
+      assert bulk =~ "Goals are skipped, because a goal moves with its tasks."
+      assert bulk =~ "they apply to goals as well"
+
+      # The bar shows in select mode; Esc only empties the selection.
+      show = File.read!("lib/kanban_web/live/board_live/show.html.heex")
+      selection = File.read!("lib/kanban_web/live/board_live/bulk_selection.ex")
+      assert show =~ ":if={@can_modify and (@selection_mode or"
+      assert File.read!("assets/js/hooks/keyboard_shortcuts.js") =~ ~s|pushEvent("bulk_clear"|
+
+      assert selection =~
+               ~s|selection_event("bulk_clear", _params, socket),\n    do: socket \|> assign(:selected_ids, MapSet.new())|
+
+      assert bulk =~ "show a checkbox on every card and the bulk bar above the columns"
+      assert bulk =~ "**Esc** unticks every card but leaves you selecting."
+
+      assert actions =~ "{:error, :wip_limit_reached}"
+      assert bulk =~ "past its WIP limit, nothing moves"
+      assert actions =~ "so an action succeeds or fails as\n  a whole"
+      assert bulk =~ "changes every selected card or none of them"
+    end
+
+    test "the archive facts match the code" do
+      archive = boards_content(["archiving-tasks"])
+      archiving = File.read!("lib/kanban/tasks/archiving.ex")
+      index = File.read!("lib/kanban_web/live/archive_live/index.ex")
+      export = File.read!("lib/kanban_web/controllers/archive_export_controller.ex")
+
+      # Archive old: completed more than 30 days ago, in any column.
+      assert archiving =~ "cutoff_days \\\\ 30"
+      assert archiving =~ "where: t.status == :completed"
+      refute archiving =~ ~r/bulk_archive_completed_tasks_older_than.*column_id/s
+      assert archive =~ "completed more than 30 days ago, whichever column it's in"
+
+      # Restore and Delete forever: owner and modify.
+      assert index =~ "assign(:can_modify, user_access in [:owner, :modify])"
+      assert index =~ ~s|gettext("Restore")|
+      assert index =~ ~s|gettext("Delete forever")|
+      assert archive =~ "The board's owner and members with modify access see both."
+
+      # Restore goes to the bottom of the column and drops a lost assignee.
+      assert archiving =~ "Positioning.get_next_position_locked(column)"
+      assert archiving =~ "drop_assignee_without_write_access"
+      assert archive =~ "at the bottom of the column it came from"
+      assert archive =~ "comes back unassigned"
+
+      # The CSV: every archived task, its columns, any viewer.
+      assert export =~ "Boards.get_board(board_id, user)"
+      assert export =~ "Archives.export_csv_for_board(board.id)"
+
+      assert File.read!("lib/kanban/archives.ex") =~
+               ~s|@csv_headers ~w(Identifier Title Type Goal Assignee)a ++\n                 ["Archive Reason", "Archived At", "Archived By"]|
+
+      assert archive =~
+               "its ID, title, type, goal, assignee, archive reason, when it was archived and who archived it"
     end
   end
 

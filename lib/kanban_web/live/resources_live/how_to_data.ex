@@ -20,6 +20,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
   # The guide data lives in one module per area (HowTos.*); the order here is
   # the catalog order, which also drives previous/next navigation.
   @how_tos HowTos.GettingStarted.how_tos() ++
+             HowTos.Boards.how_tos() ++
              HowTos.Account.how_tos() ++
              HowTos.Organizations.how_tos() ++
              HowTos.OrgAdmin.how_tos() ++

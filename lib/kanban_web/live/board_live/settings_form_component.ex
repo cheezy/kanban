@@ -122,9 +122,13 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
             "margin-top: 14px; padding: 10px 12px; border-radius: 6px;",
             "background: var(--surface-sunken); cursor: pointer;"
           ]}>
+            <%!-- The hidden "false" makes unticking reach the server, and
+                 value="true" is what Ecto casts: a bare checkbox sends "on". --%>
+            <input type="hidden" name={f[:read_only].name} value="false" />
             <input
               type="checkbox"
               name={f[:read_only].name}
+              value="true"
               checked={Phoenix.HTML.Form.normalize_value("checkbox", f[:read_only].value)}
               style="margin-top: 2px;"
             />
