@@ -106,6 +106,35 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                     "lib/kanban_web/components/archive_row.ex"
                   ] ++ Path.wildcard("lib/kanban_web/live/archive_live/*.{ex,heex}")
 
+  @agents_and_planning_ids [
+    "watching-your-agents",
+    "your-work-across-boards",
+    "planning-with-targets"
+  ]
+
+  # The Agents page, My Work, target and goal screens. The `**` reaches
+  # agents_live/components/, where the intervention dialogs live.
+  @agents_and_planning_sources [
+                                 "lib/kanban_web/components/side_nav.ex",
+                                 "lib/kanban_web/live/agents_live.ex",
+                                 "lib/kanban_web/components/agents_header.ex",
+                                 "lib/kanban_web/components/agent_activity_feed.ex",
+                                 "lib/kanban_web/components/agent_detail_panel.ex",
+                                 "lib/kanban_web/components/agent_roster_card.ex",
+                                 "lib/kanban_web/components/delivery_health_band.ex",
+                                 "lib/kanban_web/components/target_risk_explainer.ex",
+                                 "lib/kanban_web/live/my_work_live.ex",
+                                 "lib/kanban_web/live/board_live/index.html.heex",
+                                 "lib/kanban_web/components/targets_strip.ex",
+                                 "lib/kanban_web/components/target_progress_header.ex",
+                                 "lib/kanban_web/live/goal_live/show.ex",
+                                 "lib/kanban_web/components/goal_sidebar.ex",
+                                 "lib/kanban_web/components/goal_progress_header.ex",
+                                 "lib/kanban_web/components/task_activity_log.ex"
+                               ] ++
+                                 Path.wildcard("lib/kanban_web/live/agents_live/**/*.ex") ++
+                                 Path.wildcard("lib/kanban_web/live/target_live/*.{ex,heex}")
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -1276,6 +1305,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "admin" in HowToData.all_tags()
     end
 
+    test "includes the agents-and-planning tags" do
+      for tag <- ~w(planning ai-agents monitoring workflow) do
+        assert tag in HowToData.all_tags()
+      end
+    end
+
     test "includes the boards tags" do
       for tag <- ~w(boards tasks monitoring workflow) do
         assert tag in HowToData.all_tags()
@@ -1284,8 +1319,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 34 guides" do
-      assert length(HowToData.all_how_tos()) == 34
+    test "has all 37 guides" do
+      assert length(HowToData.all_how_tos()) == 37
     end
 
     test "every guide id is unique across the area modules" do
@@ -2174,6 +2209,268 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert archive =~
                "its ID, title, type, goal, assignee, archive reason, when it was archived and who archived it"
+    end
+  end
+
+  describe "agents and planning guides" do
+    defp agents_and_planning_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "the agents and planning guides exist with their tags and steps" do
+      expected = [
+        {"watching-your-agents", "Watching Your Agents", ["ai-agents", "monitoring"], 9},
+        {"your-work-across-boards", "Your Work Across Boards", ["planning", "workflow"], 5},
+        {"planning-with-targets", "Planning With Targets", ["planning", "workflow"], 9}
+      ]
+
+      assert Enum.map(KanbanWeb.ResourcesLive.HowTos.AgentsAndPlanning.how_tos(), & &1.id) ==
+               @agents_and_planning_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.created_at == ~D[2026-10-24]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+
+        for tag <-
+              ~w(getting-started developer non-developer best-practices security boards organizations metrics collaboration) do
+          refute tag in guide.tags, "#{id} would join the #{tag} chain or its count"
+        end
+      end
+    end
+
+    test "the agents guide ends the ai-agents chain and the planning pair stands alone" do
+      {:ok, watching} = HowToData.get_how_to("watching-your-agents")
+      {prev, next} = HowToData.get_navigation(watching)
+      assert prev.id == "writing-tasks-for-ai"
+      assert next == nil
+
+      chain = [nil, "your-work-across-boards", "planning-with-targets", nil]
+
+      for [prev, id, next] <- Enum.chunk_every(chain, 3, 1, :discard) do
+        {:ok, guide} = HowToData.get_how_to(id)
+        {p, n} = HowToData.get_navigation(guide)
+        assert (p && p.id) == prev, "#{id} has the wrong previous guide"
+        assert (n && n.id) == next, "#{id} has the wrong next guide"
+      end
+    end
+
+    test "every bolded UI label in the agents and planning guides exists in the source" do
+      sources = Enum.map_join(@agents_and_planning_sources, &File.read!/1)
+
+      labels =
+        for id <- @agents_and_planning_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @agents_and_planning_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        # An aria-label is read out, not shown, so it can't be a bold label.
+        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no agents, My Work or target screen shows"
+      end
+    end
+
+    test "the agents and planning guides link to guides that exist" do
+      content = agents_and_planning_content(@agents_and_planning_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\((\/[^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert links != []
+
+      for link <- links do
+        assert "/resources/" <> id = link
+        assert id in ids, "an agents or planning guide links to the missing guide #{id}"
+      end
+    end
+
+    test "the intervention facts match the code" do
+      agents = agents_and_planning_content(["watching-your-agents"])
+      interventions = File.read!("lib/kanban/tasks/interventions.ex")
+      transactions = File.read!("lib/kanban/tasks/intervention_transactions.ex")
+      live_interventions = File.read!("lib/kanban_web/live/agents_live/interventions.ex")
+      live = File.read!("lib/kanban_web/live/agents_live.ex")
+
+      # Who can step in: the target owner on an accessible board, or the board
+      # owner (an org-admin counts as owner).
+      assert interventions =~ "owner?(goal, user) and accessible?(scope, goal)"
+
+      assert interventions =~
+               "Targets.owner?(target, user) or Boards.owner?(goal.column.board, user)"
+
+      assert File.read!("lib/kanban/boards.ex") =~ "owner-equivalent access an org-admin derives"
+
+      assert agents =~
+               "the target's owner, if they also belong to the goal's board, with any access, or"
+
+      assert agents =~ "An org-admin counts as the owner of their Organization's boards."
+
+      # Only not-started, unclaimed children change.
+      assert transactions =~ "where: t.column_id in ^not_started_column_ids"
+      assert transactions =~ "status == :open end)"
+      assert agents =~ "haven't started yet and that no one has claimed"
+
+      # Who is offered, and who is notified.
+      assert interventions =~ "Read-only members are left out"
+
+      assert interventions =~
+               "One task_assigned notification for the goal, never one per moved child."
+
+      assert interventions =~ "deliberately narrower than the `Lifecycle` assignment"
+
+      assert File.read!("lib/kanban/notifications.ex") =~
+               "drops every event on a board that\n  is not paid"
+
+      assert interventions =~ "when new_id != old_id do"
+
+      assert File.read!("lib/kanban/notifications/events.ex") =~
+               "defp emit_task_assigned(%Task{assigned_to_id: id}, %{id: id}), do: :ok"
+
+      assert agents =~
+               "one notification, for the goal, unless the goal was already theirs or you picked yourself"
+
+      assert agents =~ "Other members don't see them"
+      refute agents =~ "Members with modify or read-only access don't see them"
+      assert agents =~ "notifications only come from paid boards"
+
+      # Undo lasts 8 seconds, only for the latest change, and lives in the page.
+      assert live_interventions =~ "@default_undo_window_ms 8_000"
+      assert live =~ "undo: nil"
+      assert live =~ "def handle_info({:clear_undo, token}"
+      assert agents =~ "offers **Undo** for 8 seconds"
+      assert agents =~ "after you make another change, or after you reload or leave the page"
+    end
+
+    test "the roster and feed facts match the code" do
+      agents = agents_and_planning_content(["watching-your-agents"])
+      roster = File.read!("lib/kanban/agents/roster.ex")
+
+      assert roster =~ "@stuck_threshold_minutes 60"
+      assert agents =~ "hasn't moved for over an hour"
+      assert roster =~ "Enum.any?(tasks, &Agents.doing?/1) -> :working"
+      assert roster =~ "Enum.any?(tasks, &Agents.in_review?/1)"
+      assert agents =~ "agents with a task in Review and none in Doing"
+
+      # Stalls explain an at-risk target; only lag or a slipped estimate cause one.
+      assert File.read!("lib/kanban/targets/status.ex") =~
+               "lagging?(target, goal_progress, today) or slipped?(estimate, target.target_date) -> :at_risk"
+
+      assert agents =~
+               "A target turns **At-risk** when its work falls behind or its estimate slips"
+
+      refute agents =~ "because a goal has stalled"
+      assert roster =~ "@dormant_threshold_days 14"
+      assert agents =~ "no activity for 14 days"
+
+      assert File.read!("lib/kanban_web/live/agents_live/data_loader.ex") =~
+               "@recent_activity_limit 200"
+
+      assert agents =~ "the latest 200 events"
+      assert File.read!("lib/kanban/agents/detail.ex") =~ "@agent_detail_activity_limit 20"
+      assert agents =~ "its last 20 events"
+    end
+
+    test "the My Work facts match the code" do
+      my_work = agents_and_planning_content(["your-work-across-boards"])
+      context = File.read!("lib/kanban/tasks/my_work.ex")
+      live = File.read!("lib/kanban_web/live/my_work_live.ex")
+
+      assert context =~
+               "t.assigned_to_id == ^user_id and is_nil(t.archived_at) and t.status != :completed"
+
+      assert context =~ ~s|c.name) != "done"|
+      assert my_work =~ "aren't completed or archived"
+      assert my_work =~ "Anything in a Done column is left out."
+
+      assert context =~ "an assignment on a public board they never joined"
+      assert my_work =~ "A shared board you never joined"
+
+      assert context =~ "asc: b.name"
+      assert context =~ "WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2"
+      assert my_work =~ "**Critical**, **High**, **Medium**, **Low**, then by ID"
+
+      assert live =~ "max={3}"
+      assert my_work =~ "up to three labels"
+
+      refute live =~ "handle_info"
+      assert my_work =~ "doesn't update by itself"
+    end
+
+    test "the target facts match the code" do
+      planning = agents_and_planning_content(["planning-with-targets"])
+      targets = File.read!("lib/kanban/targets.ex")
+      show = File.read!("lib/kanban_web/live/target_live/show.ex")
+
+      assert File.read!("lib/kanban/targets/delivery_target.ex") =~
+               "validate_required([:name, :target_date])"
+
+      assert planning =~ "**Name** and **Target Date** are required"
+
+      assert File.read!("lib/kanban/targets/queries.ex") =~
+               "t.type == :goal and is_nil(t.target_id)"
+
+      assert planning =~ "aren't in a target yet"
+      assert File.read!("lib/kanban_web/live/target_live/form.ex") =~ "hide_archived: true"
+      assert planning =~ "**Hide archived goals** starts ticked"
+
+      assert targets =~ "Boards.get_user_access(board_id, user_id) in [:owner, :modify]"
+      assert planning =~ "you need owner or modify access on its board"
+
+      assert show =~ "Targets.get_owned_target(scope, id)"
+      assert planning =~ "Only the owner can open a target's page."
+
+      assert File.read!("lib/kanban/targets/status.ex") =~ "@lag_threshold 0.15"
+      assert planning =~ "by more than 15 points"
+
+      assert File.read!("lib/kanban_web/live/target_live/show.html.heex") =~
+               ":if={@summary.status == :complete and not @archived?}"
+
+      assert planning =~ "Once a target is **Complete**, its owner sees **Archive target**"
+
+      assert File.read!("lib/kanban_web/live/target_live/archived.ex") =~
+               "listing is board-scoped but mutation is owner-scoped"
+
+      assert planning =~
+               "only a target's owner can unarchive it. Anyone else gets **Target not found**."
+
+      # Opening a child from the goal page goes to the task editor, which needs
+      # owner or modify access.
+      assert File.read!("lib/kanban_web/live/goal_live/show.ex") =~
+               ~s|to: ~p"/boards/\#{socket.assigns.board}/tasks/\#{id}/edit"|
+
+      assert File.read!("lib/kanban_web/live/board_live/authorization.ex") =~
+               "You do not have permission to modify tasks on this board"
+
+      assert planning =~ "Clicking one opens it for editing, which needs owner or modify access."
+    end
+
+    test "the guides claim no plan gate and avoid the public goal-page case" do
+      for path <-
+            @agents_and_planning_sources ++
+              ["lib/kanban/tasks/interventions.ex", "lib/kanban/tasks/my_work.ex"] do
+        refute File.read!(path) =~ ~r/Plans\.|plans_enforced|LockedFeature/,
+               "#{path} has a plan gate the guides don't mention"
+      end
+
+      # A non-member on a publicly readable board sees no children on the goal
+      # page (tasks/queries.ex list_children_for_goal), so the guide only
+      # promises the page to board members.
+      planning = agents_and_planning_content(["planning-with-targets"])
+      assert planning =~ "Members of the board can open it."
+      refute planning =~ ~r/publicly|shared board/i
     end
   end
 

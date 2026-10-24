@@ -26,6 +26,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
              HowTos.OrgAdmin.how_tos() ++
              HowTos.Developer.how_tos() ++
              HowTos.WorkingWithTasks.how_tos() ++
+             HowTos.AgentsAndPlanning.how_tos() ++
              HowTos.Metrics.how_tos()
 
   @all_tags [
@@ -48,6 +49,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     "reviewing",
     "dependencies",
     "priority",
+    "planning",
     "metrics",
     "organizations",
     "workspaces",
