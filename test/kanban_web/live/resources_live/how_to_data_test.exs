@@ -67,6 +67,22 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                           "lib/kanban_web/controllers/page_html/pricing.html.heex"
                         ] ++ Path.wildcard("lib/kanban_web/live/workspace_live/*.{ex,heex}")
 
+  @org_admin_ids [
+    "administering-your-organization",
+    "reading-the-organization-audit-log",
+    "organization-security-policy",
+    "setting-up-single-sign-on",
+    "provisioning-users-with-scim"
+  ]
+
+  # The org console screens, and the sidebar, account chips and sign-in page
+  # the org-admin guides also name.
+  @org_admin_sources [
+                       "lib/kanban_web/components/side_nav.ex",
+                       "lib/kanban_web/components/account_status.ex",
+                       "lib/kanban_web/live/user_live/login.ex"
+                     ] ++ Path.wildcard("lib/kanban_web/live/org_live/*.{ex,heex}")
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -1232,11 +1248,15 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "organizations" in HowToData.all_tags()
       assert "workspaces" in HowToData.all_tags()
     end
+
+    test "includes the org-admin tags" do
+      assert "admin" in HowToData.all_tags()
+    end
   end
 
   describe "total guide count" do
-    test "has all 25 guides" do
-      assert length(HowToData.all_how_tos()) == 25
+    test "has all 30 guides" do
+      assert length(HowToData.all_how_tos()) == 30
     end
 
     test "every guide id is unique across the area modules" do
@@ -1546,9 +1566,10 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         assert length(guide.steps) >= min_steps, "#{id} lost steps"
       end
 
-      # No other guide shares the first tag, so navigation stays within the trio.
-      assert Enum.filter(HowToData.all_how_tos(), &("organizations" in &1.tags))
-             |> Enum.map(& &1.id) == @organization_ids
+      # Only these and the org-admin guides lead with the tag, so navigation
+      # runs through the trio and on into the org-admin guides.
+      assert Enum.filter(HowToData.all_how_tos(), &(List.first(&1.tags) == "organizations"))
+             |> Enum.map(& &1.id) == @organization_ids ++ @org_admin_ids
     end
 
     test "the organizations guides navigate free and paid → workspace → invitation" do
@@ -1563,7 +1584,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert {%{id: "free-and-paid-boards"}, %{id: "accepting-an-invitation"}} =
                HowToData.get_navigation(workspace)
 
-      assert {%{id: "working-in-a-workspace"}, nil} = HowToData.get_navigation(invitation)
+      assert {%{id: "working-in-a-workspace"}, %{id: "administering-your-organization"}} =
+               HowToData.get_navigation(invitation)
     end
 
     test "every bolded UI label in the organizations guides exists in the source" do
@@ -1717,6 +1739,211 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert File.read!("lib/kanban_web/live/user_live/confirmation.ex") =~
                "# An account registered from an invitation link joins once its email is"
+    end
+  end
+
+  describe "org-admin guides" do
+    defp org_admin_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "the org-admin guides exist with their tags and steps" do
+      expected = [
+        {"administering-your-organization", "Administering Your Organization",
+         ["organizations", "admin"], 7},
+        {"reading-the-organization-audit-log", "Reading the Organization Audit Log",
+         ["organizations", "admin"], 7},
+        {"organization-security-policy", "Setting Your Organization's Security Policy",
+         ["organizations", "admin"], 5},
+        {"setting-up-single-sign-on", "Setting Up Single Sign-On", ["organizations", "admin"], 7},
+        {"provisioning-users-with-scim", "Provisioning Users With SCIM",
+         ["organizations", "admin"], 5}
+      ]
+
+      assert Enum.map(KanbanWeb.ResourcesLive.HowTos.OrgAdmin.how_tos(), & &1.id) ==
+               @org_admin_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.created_at == ~D[2026-10-24]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+        assert guide.description =~ ~r/^For org-admins: /, "#{id} doesn't say who it is for"
+        refute "security" in guide.tags, "#{id} would join the security navigation chain"
+      end
+    end
+
+    test "the org-admin guides continue the organizations navigation" do
+      chain = ["working-in-a-workspace", "accepting-an-invitation"] ++ @org_admin_ids ++ [nil]
+
+      for [prev, id, next] <- Enum.chunk_every(chain, 3, 1, :discard) do
+        {:ok, guide} = HowToData.get_how_to(id)
+        {p, n} = HowToData.get_navigation(guide)
+        assert (p && p.id) == prev, "#{id} has the wrong previous guide"
+        assert (n && n.id) == next, "#{id} has the wrong next guide"
+      end
+    end
+
+    test "every bolded UI label in the org-admin guides exists in the source" do
+      sources = Enum.map_join(@org_admin_sources, &File.read!/1)
+
+      labels =
+        for id <- @org_admin_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @org_admin_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        assert sources =~ ~r/gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no org-admin screen shows"
+      end
+    end
+
+    test "the org-admin guides link to guides that exist" do
+      content = org_admin_content(@org_admin_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\((\/[^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert links != []
+
+      for link <- links do
+        assert "/resources/" <> id = link
+        assert id in ids, "an org-admin guide links to the missing guide #{id}"
+      end
+    end
+
+    test "the console facts match the code" do
+      console = org_admin_content(["administering-your-organization"])
+      router = File.read!("lib/kanban_web/router.ex")
+      heex = File.read!("lib/kanban_web/live/org_live/console.html.heex")
+
+      for view <- ~w(console audit_log security sso scim) do
+        assert File.read!("lib/kanban_web/live/org_live/#{view}.ex") =~
+                 "on_mount {KanbanWeb.UserAuth, :require_org_admin}"
+      end
+
+      assert console =~ "Members don't see the link"
+      assert File.read!("lib/kanban_web/components/side_nav.ex") =~ "org_admin_membership"
+
+      assert console =~
+               "creating an Organization, changing its details, and appointing or removing org-admins"
+
+      assert router =~ ~s(live "/organizations/new", OrganizationLive.Form, :new)
+      assert heex =~ "Read-only. Ask a site admin to change them."
+
+      assert console =~ "Org-admins have no **Remove** button"
+      assert heex =~ ~r/:if=\{member\.role == :member\}/
+
+      assert console =~ "Stride refuses to remove, disable or delete its last one"
+
+      assert File.read!("lib/kanban/organizations/membership_writes.ex") =~
+               "ensure_not_last_org_admin"
+
+      assert console =~ "Archive** removes a workspace that no longer holds any boards"
+      assert heex =~ "A workspace can be archived once it holds no boards."
+
+      assert console =~
+               "Archiving revokes the workspace's API tokens and open invitations, frees its name"
+
+      # Boards only move from a personal workspace into an org one, so a
+      # workspace is emptied by deleting its boards, never by moving them.
+      refute console =~ "Move its boards out"
+
+      assert console =~
+               "Boards can't be moved out of a workspace, so their owners must delete them first"
+
+      assert File.read!("lib/kanban/workspaces/board_moves.ex") =~ ":not_in_personal_workspace"
+      assert File.read!("lib/kanban/boards.ex") =~ "Deletes a board. Owner-only."
+
+      assert console =~
+               "No two workspaces in the Organization can share a name, ignoring capitals"
+
+      assert File.read!("lib/kanban/organizations/org_workspaces.ex") =~
+               "no two unarchived workspaces share a name, compared\n  ignoring case"
+    end
+
+    test "the audit log facts match the code" do
+      audit = org_admin_content(["reading-the-organization-audit-log"])
+      live = File.read!("lib/kanban_web/live/org_live/audit_log.ex")
+      export = File.read!("lib/kanban_web/controllers/org_audit_log_export_controller.ex")
+
+      assert audit =~ "The log shows 50 events at a time"
+      assert live =~ "@page_size 50"
+
+      assert audit =~ "**Outside your Organization** replaces their name"
+      assert live =~ ~s|gettext("Outside your Organization")|
+
+      assert audit =~ "at most the 50,000 newest matching events"
+      assert export =~ "50_000"
+      assert audit =~ "You can export 10 times an hour"
+      assert audit =~ "each export is itself recorded in the log"
+      assert export =~ "org_audit_log_exported"
+
+      assert audit =~ "There is no filter by person, on purpose"
+    end
+
+    test "the security policy facts match the code" do
+      security = org_admin_content(["organization-security-policy"])
+      policy = File.read!("lib/kanban/organizations/security_policy.ex")
+
+      assert security =~ "from 1 to 30 days, 7 unless you change it"
+      assert Kanban.Organizations.SecurityPolicy.grace_days_range() == 1..30
+      assert %Kanban.Organizations.SecurityPolicy{}.two_factor_grace_days == 7
+
+      assert security =~ "from 90 to 3650"
+      assert Kanban.Organizations.SecurityPolicy.retention_days_range() == 90..3650
+
+      assert security =~
+               "Shortening the grace period while the requirement is on restarts everyone's clock"
+
+      assert policy =~
+               "grace_shortened?(changeset, policy) -> put_change(changeset, :two_factor_enforced_at, now)"
+
+      assert security =~ "Members who sign in through single sign-on are not affected"
+
+      assert File.read!("lib/kanban_web/live/org_live/security.html.heex") =~
+               "Members who sign in through single sign-on are not affected."
+    end
+
+    test "the single sign-on and SCIM facts match the code" do
+      sso = org_admin_content(["setting-up-single-sign-on"])
+      scim = org_admin_content(["provisioning-users-with-scim"])
+      verification = File.read!("lib/kanban/sso/domain_verification.ex")
+
+      assert sso =~ "`_stride-verification.` followed by the domain"
+      assert sso =~ "starts with `stride-verification=`"
+      assert verification =~ "_stride-verification."
+      assert verification =~ "stride-verification="
+
+      assert sso =~ "after 3 checks in a row without it"
+      assert File.read!("lib/kanban/sso/domain_recheck.ex") =~ "@misses_before_unverify 3"
+
+      assert sso =~ "Stride has no setting that limits your Organization to single sign-on"
+      assert sso =~ "Single sign-on never makes anyone an org-admin"
+
+      assert scim =~ "Stride keeps only a fingerprint of it, so it can't be shown again"
+      assert File.read!("lib/kanban/scim/scim_token.ex") =~ "token_hash"
+
+      assert scim =~
+               "Creating, renaming and archiving workspaces stays in the Organization console"
+
+      assert File.read!("lib/kanban/scim/groups.ex") =~
+               "Groups are created, renamed and\n  archived by org-admins in the org console, never through SCIM."
+
+      assert scim =~ "can't deprovision your Organization's last enabled org-admin"
+      assert File.read!("lib/kanban/scim/lifecycle.ex") =~ ":last_org_admin"
     end
   end
 

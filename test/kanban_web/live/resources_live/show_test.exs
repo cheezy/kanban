@@ -213,6 +213,33 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert workspace =~ ~s(href="/resources/accepting-an-invitation")
     end
 
+    test "renders each org-admin guide with its screenshots", %{conn: conn} do
+      images = %{
+        "administering-your-organization" => [2, 4, 6],
+        "reading-the-organization-audit-log" => [3, 5],
+        "organization-security-policy" => [2, 5],
+        "setting-up-single-sign-on" => [2, 4, 5],
+        "provisioning-users-with-scim" => [2]
+      }
+
+      for {id, steps} <- images do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+        assert html =~ "For org-admins", "#{id} doesn't say who it is for"
+
+        for step <- steps do
+          assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
+        end
+      end
+
+      {:ok, _view, sso} = live(conn, ~p"/resources/setting-up-single-sign-on")
+      assert sso =~ ~r{<code[^>]*>_stride-verification\.</code>}
+      assert sso =~ ~s(href="/resources/provisioning-users-with-scim")
+    end
+
     test "the reviewing guide shows the Review queue screenshots", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
 

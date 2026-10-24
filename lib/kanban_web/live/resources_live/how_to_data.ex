@@ -22,6 +22,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
   @how_tos HowTos.GettingStarted.how_tos() ++
              HowTos.Account.how_tos() ++
              HowTos.Organizations.how_tos() ++
+             HowTos.OrgAdmin.how_tos() ++
              HowTos.Developer.how_tos() ++
              HowTos.WorkingWithTasks.how_tos() ++
              HowTos.Metrics.how_tos()
@@ -48,7 +49,8 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     "priority",
     "metrics",
     "organizations",
-    "workspaces"
+    "workspaces",
+    "admin"
   ]
 
   @doc """

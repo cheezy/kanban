@@ -4,8 +4,9 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Organizations do
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog. All three guides lead with the
-  `organizations` tag, which no other guide carries, so navigation runs free
-  and paid boards → working in a workspace → accepting an invitation.
+  `organizations` tag, so navigation runs free and paid boards → working in a
+  workspace → accepting an invitation, then on into the org-admin guides in
+  `HowTos.OrgAdmin`, which lead with the same tag.
 
   The free/paid guide follows `Kanban.Plans`, the `LockedFeature` component
   and the board members screen's free-board limit. The workspace guide follows
