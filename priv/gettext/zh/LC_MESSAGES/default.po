@@ -7075,6 +7075,7 @@ msgstr "看板是您工作的所在——为您的团队或项目创建一个吧
 msgid "Generate an API token"
 msgstr "生成 API 令牌"
 
+#: lib/kanban_web/live/resources_live/components.ex:682
 #: lib/kanban_web/live/user_live/confirmation.ex:44
 #, elixir-autogen, elixir-format
 msgid "Getting started"
@@ -12927,3 +12928,18 @@ msgstr "添加它的人的账户被停用期间，它不会发送任何内容。
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
 msgstr "由于添加它的人已无法访问此看板，它已被自动停用。将此看板移入组织后，启用即可由你接管。"
+
+#: lib/kanban_web/live/resources_live/components.ex:685
+#, elixir-autogen, elixir-format
+msgid "Best practices"
+msgstr "最佳实践"
+
+#: lib/kanban_web/live/resources_live/components.ex:683
+#, elixir-autogen, elixir-format
+msgid "For developers"
+msgstr "面向开发者"
+
+#: lib/kanban_web/live/resources_live/components.ex:684
+#, elixir-autogen, elixir-format
+msgid "For non-developers"
+msgstr "面向非开发者"

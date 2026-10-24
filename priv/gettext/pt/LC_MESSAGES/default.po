@@ -7105,6 +7105,7 @@ msgstr "Os quadros são onde seu trabalho acontece — crie um para sua equipe o
 msgid "Generate an API token"
 msgstr "Gere um token de API"
 
+#: lib/kanban_web/live/resources_live/components.ex:682
 #: lib/kanban_web/live/user_live/confirmation.ex:44
 #, elixir-autogen, elixir-format
 msgid "Getting started"
@@ -12974,3 +12975,18 @@ msgstr "Não envia nada enquanto a conta da pessoa que o adicionou estiver desat
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
 msgstr "Desativado automaticamente porque a pessoa que o adicionou não tem mais acesso a este quadro. Depois que este quadro for movido para uma organização, ative-o para assumi-lo."
+
+#: lib/kanban_web/live/resources_live/components.ex:685
+#, elixir-autogen, elixir-format
+msgid "Best practices"
+msgstr "Boas práticas"
+
+#: lib/kanban_web/live/resources_live/components.ex:683
+#, elixir-autogen, elixir-format
+msgid "For developers"
+msgstr "Para desenvolvedores"
+
+#: lib/kanban_web/live/resources_live/components.ex:684
+#, elixir-autogen, elixir-format
+msgid "For non-developers"
+msgstr "Para não desenvolvedores"

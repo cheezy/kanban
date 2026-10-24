@@ -571,6 +571,10 @@ defmodule KanbanWeb.ResourcesLive.Components do
   @doc """
   Renders a category-specific illustration with gradient background.
 
+  The four named categories carry a label in the top-left corner, so the
+  picture says what it stands for. Guides outside them get the plain book
+  picture and no label.
+
   ## Attributes
 
     * `:tags` - List of tags to determine the category
@@ -592,10 +596,25 @@ defmodule KanbanWeb.ResourcesLive.Components do
       |> assign(:category, category)
       |> assign(:bg_class, category_bg_class(category))
       |> assign(:icon_class, category_icon_class(category))
+      |> assign(:label, category_label(category))
 
     ~H"""
     <div class="absolute inset-0">
       <div data-category={@category} class={["absolute inset-0 bg-gradient-to-br", @bg_class]}></div>
+
+      <span
+        :if={@label}
+        data-category-label
+        class="absolute top-3 left-3 z-10 inline-flex items-center px-2.5 py-1 text-[11px] font-medium font-mono"
+        style={[
+          "background: var(--surface);",
+          "color: var(--ink-2);",
+          "border: 1px solid var(--line);",
+          "border-radius: 999px;"
+        ]}
+      >
+        {@label}
+      </span>
 
       <div class="absolute inset-0 flex items-center justify-center">
         <div :if={@category == :getting_started} class="relative">
@@ -659,6 +678,12 @@ defmodule KanbanWeb.ResourcesLive.Components do
   defp category_icon_class(:non_developer), do: "text-warning"
   defp category_icon_class(:best_practices), do: "text-accent"
   defp category_icon_class(:default), do: "text-info"
+
+  defp category_label(:getting_started), do: gettext("Getting started")
+  defp category_label(:developer), do: gettext("For developers")
+  defp category_label(:non_developer), do: gettext("For non-developers")
+  defp category_label(:best_practices), do: gettext("Best practices")
+  defp category_label(:default), do: nil
 
   @doc """
   Returns the icon name for a content type.

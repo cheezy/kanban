@@ -351,6 +351,42 @@ defmodule KanbanWeb.ResourcesLive.ComponentsTest do
       assert html =~ ~s(data-category="getting_started")
       assert html =~ "hero-rocket-launch"
     end
+
+    test "names each of the four categories on the picture" do
+      for {tag, label} <- [
+            {"getting-started", "Getting started"},
+            {"developer", "For developers"},
+            {"non-developer", "For non-developers"},
+            {"best-practices", "Best practices"}
+          ] do
+        html = render_component(&Components.category_illustration/1, tags: [tag])
+
+        assert [{"span", _attrs, [text]}] =
+                 html
+                 |> LazyHTML.from_fragment()
+                 |> LazyHTML.query("[data-category-label]")
+                 |> LazyHTML.to_tree()
+
+        assert String.trim(text) == label
+      end
+    end
+
+    test "leaves the plain book picture unlabelled" do
+      html = render_component(&Components.category_illustration/1, tags: ["boards"])
+
+      refute html =~ "data-category-label"
+    end
+
+    test "labels by the first matching category, like the picture" do
+      html =
+        render_component(&Components.category_illustration/1,
+          tags: ["best-practices", "developer"]
+        )
+
+      assert html =~ ~s(data-category="developer")
+      assert html =~ "For developers"
+      refute html =~ "Best practices"
+    end
   end
 
   describe "reading_time/1" do

@@ -7075,6 +7075,7 @@ msgstr "Les tableaux sont le cœur de votre travail — créez-en un pour votre 
 msgid "Generate an API token"
 msgstr "Générez un jeton API"
 
+#: lib/kanban_web/live/resources_live/components.ex:682
 #: lib/kanban_web/live/user_live/confirmation.ex:44
 #, elixir-autogen, elixir-format
 msgid "Getting started"
@@ -12944,3 +12945,18 @@ msgstr "N'envoie rien tant que le compte de la personne qui l'a ajouté est dés
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
 msgstr "Désactivé automatiquement, car la personne qui l'a ajouté n'a plus accès à ce tableau. Une fois ce tableau déplacé dans une organisation, activez-le pour le reprendre à votre nom."
+
+#: lib/kanban_web/live/resources_live/components.ex:685
+#, elixir-autogen, elixir-format
+msgid "Best practices"
+msgstr "Bonnes pratiques"
+
+#: lib/kanban_web/live/resources_live/components.ex:683
+#, elixir-autogen, elixir-format
+msgid "For developers"
+msgstr "Pour les développeurs"
+
+#: lib/kanban_web/live/resources_live/components.ex:684
+#, elixir-autogen, elixir-format
+msgid "For non-developers"
+msgstr "Pour les non-développeurs"

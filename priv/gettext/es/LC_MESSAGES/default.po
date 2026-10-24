@@ -7128,6 +7128,7 @@ msgstr "Los tableros son donde vive tu trabajo: crea uno para tu equipo o proyec
 msgid "Generate an API token"
 msgstr "Genera un token de API"
 
+#: lib/kanban_web/live/resources_live/components.ex:682
 #: lib/kanban_web/live/user_live/confirmation.ex:44
 #, elixir-autogen, elixir-format
 msgid "Getting started"
@@ -12997,3 +12998,18 @@ msgstr "No envía nada mientras la cuenta de la persona que lo añadió esté de
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
 msgstr "Desactivado automáticamente porque la persona que lo añadió ya no tiene acceso a este tablero. Cuando este tablero pase a una organización, habilítalo para hacerte cargo de él."
+
+#: lib/kanban_web/live/resources_live/components.ex:685
+#, elixir-autogen, elixir-format
+msgid "Best practices"
+msgstr "Buenas prácticas"
+
+#: lib/kanban_web/live/resources_live/components.ex:683
+#, elixir-autogen, elixir-format
+msgid "For developers"
+msgstr "Para desarrolladores"
+
+#: lib/kanban_web/live/resources_live/components.ex:684
+#, elixir-autogen, elixir-format
+msgid "For non-developers"
+msgstr "Para no desarrolladores"

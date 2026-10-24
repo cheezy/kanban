@@ -7075,6 +7075,7 @@ msgstr "ボードは作業の拠点です。チームやプロジェクト用に
 msgid "Generate an API token"
 msgstr "APIトークンを生成する"
 
+#: lib/kanban_web/live/resources_live/components.ex:682
 #: lib/kanban_web/live/user_live/confirmation.ex:44
 #, elixir-autogen, elixir-format
 msgid "Getting started"
@@ -12927,3 +12928,18 @@ msgstr "追加した人のアカウントが無効になっている間は何も
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
 msgstr "追加した人がこのボードにアクセスできなくなったため、自動的に無効になりました。このボードを組織に移動した後に有効にすると、あなたが引き継ぎます。"
+
+#: lib/kanban_web/live/resources_live/components.ex:685
+#, elixir-autogen, elixir-format
+msgid "Best practices"
+msgstr "ベストプラクティス"
+
+#: lib/kanban_web/live/resources_live/components.ex:683
+#, elixir-autogen, elixir-format
+msgid "For developers"
+msgstr "開発者向け"
+
+#: lib/kanban_web/live/resources_live/components.ex:684
+#, elixir-autogen, elixir-format
+msgid "For non-developers"
+msgstr "非開発者向け"

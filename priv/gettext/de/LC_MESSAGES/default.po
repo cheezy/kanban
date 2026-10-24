@@ -7135,6 +7135,7 @@ msgstr "Boards sind das Zuhause Ihrer Arbeit — richten Sie eines für Ihr Team
 msgid "Generate an API token"
 msgstr "Erstellen Sie ein API-Token"
 
+#: lib/kanban_web/live/resources_live/components.ex:682
 #: lib/kanban_web/live/user_live/confirmation.ex:44
 #, elixir-autogen, elixir-format
 msgid "Getting started"
@@ -13004,3 +13005,18 @@ msgstr "Sendet nichts, solange das Konto der Person, die ihn hinzugefügt hat, d
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
 msgstr "Automatisch deaktiviert, weil die Person, die ihn hinzugefügt hat, keinen Zugriff mehr auf dieses Board hat. Sobald dieses Board in eine Organisation verschoben ist, aktiviere ihn, um ihn zu übernehmen."
+
+#: lib/kanban_web/live/resources_live/components.ex:685
+#, elixir-autogen, elixir-format
+msgid "Best practices"
+msgstr "Bewährte Vorgehensweisen"
+
+#: lib/kanban_web/live/resources_live/components.ex:683
+#, elixir-autogen, elixir-format
+msgid "For developers"
+msgstr "Für Entwickler"
+
+#: lib/kanban_web/live/resources_live/components.ex:684
+#, elixir-autogen, elixir-format
+msgid "For non-developers"
+msgstr "Für Nicht-Entwickler"
