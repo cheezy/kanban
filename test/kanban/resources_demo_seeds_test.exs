@@ -4,6 +4,7 @@ defmodule Kanban.ResourcesDemoSeedsTest do
 
   import ExUnit.CaptureIO
 
+  alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.ApiTokens.ApiToken
   alias Kanban.Boards.Board
@@ -20,6 +21,7 @@ defmodule Kanban.ResourcesDemoSeedsTest do
   alias KanbanWeb.ReviewAcceptance
 
   @seed Path.expand("../../priv/repo/resources_demo_seeds.exs", __DIR__)
+  @demo_boards ["Checkout Revamp", "Marketing Site Launch", "Storefront Search"]
   @password "demo-password-for-the-seed-test"
 
   setup do
@@ -76,11 +78,11 @@ defmodule Kanban.ResourcesDemoSeedsTest do
   test "seeding twice creates the demo data once" do
     before = counts()
     output = run_seed()
-    assert_received {:summary, %{boards_created: ["Checkout Revamp", "Marketing Site Launch"]}}
+    assert_received {:summary, %{boards_created: @demo_boards}}
     after_first = counts()
 
     assert after_first.users == before.users + 4
-    assert after_first.boards == before.boards + 2
+    assert after_first.boards == before.boards + 3
 
     run_seed()
     assert_received {:summary, %{boards_created: []}}
@@ -375,15 +377,153 @@ defmodule Kanban.ResourcesDemoSeedsTest do
     refute from(l in Label, where: l.name == "Payments") |> Repo.exists?()
   end
 
-  test "adds an existing viewer to both demo boards when asked" do
+  @showcase "Storefront Search"
+
+  defp showcase_tasks(board) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board.id,
+      select: {c.name, t}
+    )
+    |> Repo.all()
+  end
+
+  # Created, claimed, completed and reviewed in that order, none in the future.
+  defp assert_events_in_order(tasks, now) do
+    for {_column, t} <- tasks, t.claimed_at || t.completed_at, do: assert_task_events(t, now)
+  end
+
+  defp assert_task_events(t, now) do
+    assert t.claimed_at, "#{t.title} was completed without a claim"
+    inserted = DateTime.from_naive!(t.inserted_at, "Etc/UTC")
+    stamps = Enum.reject([inserted, t.claimed_at, t.completed_at, t.reviewed_at], &is_nil/1)
+    assert stamps == stamps |> Enum.uniq() |> Enum.sort(DateTime), "#{t.title} is out of order"
+    assert stamps |> List.last() |> DateTime.compare(now) != :gt, "#{t.title} is in the future"
+  end
+
+  test "seeds the showcase history and is safe to run twice" do
+    run_seed()
+    assert_received {:summary, %{boards_created: created}}
+    assert @showcase in created
+
+    board = demo_board(@showcase)
+    assert board.ai_optimized_board
+    tasks = showcase_tasks(board)
+    now = DateTime.utc_now()
+    done = for {"Done", t} <- tasks, do: t
+
+    # Weeks of work finished by agents and by people.
+    {by_agents, by_people} = Enum.split_with(done, & &1.completed_by_agent)
+    assert length(by_agents) >= 25
+    assert length(by_people) >= 10
+    assert Enum.all?(by_people, & &1.completed_by_id)
+    assert by_people |> Enum.map(& &1.completed_by_id) |> Enum.uniq() |> length() >= 2
+    assert by_agents |> Enum.map(& &1.completed_by_agent) |> Enum.uniq() |> length() == 4
+    assert Enum.all?(by_people, &(&1.workflow_steps == []))
+
+    assert by_agents
+           |> Enum.flat_map(& &1.workflow_steps)
+           |> Enum.all?(&WorkflowSteps.valid_step?/1)
+
+    weeks_ago = Enum.map(done, &div(DateTime.diff(now, &1.completed_at, :day), 7))
+    assert Enum.max(weeks_ago) == 5, "the history should reach back six weeks"
+
+    assert weeks_ago |> Enum.uniq() |> Enum.sort() == Enum.to_list(0..5),
+           "every week has completions"
+
+    assert Enum.any?(done, & &1.reviewed_at)
+    assert_events_in_order(tasks, now)
+
+    # The agent at work right now, with a fresh run of completions.
+    agents = Kanban.Agents.list_agents(scope: Scope.for_user(maya()), board_id: board.id)
+    opus = Enum.find(agents, &(&1.name == "Claude Opus 5.5" and &1.status == :working))
+    assert opus, "Claude Opus 5.5 should be working on #{@showcase}"
+    refute opus.stuck
+    assert opus.owner.name == "Maya Chen"
+    assert opus.current_task.title == "Suggest spellings when a search finds nothing"
+    assert opus.last_7d >= 5
+
+    sonnet = Enum.find(agents, &(&1.name == "Claude Sonnet 5.5" and &1.status == :waiting))
+    assert sonnet, "Claude Sonnet 5.5 should be waiting on its Review task"
+    refute sonnet.stuck
+
+    # The Review task carries a written report, a structured review and a diff.
+    assert [review] = for({"Review", t} <- tasks, do: t)
+    assert review.needs_review and review.review_status == :pending
+    assert review.review_report =~ "## Acceptance criteria status"
+    result = review.reviewer_result
+
+    assert {:ok, _} = CompletionValidation.validate_changed_files(review.changed_files)
+
+    assert Enum.map(review.changed_files, & &1["path"]) ==
+             String.split(review.actual_files_changed, ", ")
+
+    refute ChangedFilesAudit.diff_missing?(review)
+    assert {:ok, _} = CompletionValidation.validate_reviewer_result(result)
+    assert CompletionValidation.review_contract_failures(result, review) == []
+    assert CompletionValidation.acceptance_criteria_count_failures(result, review) == []
+    assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(result, review)
+    assert ReviewAcceptance.acceptance_value(review) == "3/3 · 1 issue"
+    refute ReviewAcceptance.acceptance_inconsistent?(review)
+
+    # A second run changes nothing.
+    after_first = counts()
+    run_seed()
+    assert_received {:summary, %{boards_created: [], showcase_refresh: :current}}
+    assert counts() == after_first
+    assert length(showcase_tasks(board)) == length(tasks)
+  end
+
+  test "a later run moves the showcase history up to now" do
+    run_seed()
+    board = demo_board(@showcase)
+    before = showcase_tasks(board)
+    ids = Enum.map(before, fn {_column, t} -> t.id end)
+
+    # Three hours pass: the agent's claim goes stale.
+    columns =
+      ~w(inserted_at claimed_at claim_expires_at completed_at reviewed_at review_requested_at)a
+
+    for column <- columns do
+      from(t in Task,
+        where: t.id in ^ids,
+        update: [set: [{^column, fragment("? - interval '3 hours'", field(t, ^column))}]]
+      )
+      |> Repo.update_all([])
+    end
+
+    counts_before = counts()
+    run_seed()
+    assert_received {:summary, %{boards_created: [], showcase_refresh: :shifted}}
+    assert counts() == counts_before
+
+    tasks = showcase_tasks(board)
+    now = DateTime.utc_now()
+    doing = Enum.find_value(tasks, fn {_c, t} -> t.created_by_agent == "Claude Opus 5.5" && t end)
+    assert DateTime.diff(now, doing.claimed_at, :minute) in 0..15
+    assert_events_in_order(tasks, now)
+
+    # Every task kept the same gap between its events.
+    gaps = fn list ->
+      Map.new(list, fn {_c, t} ->
+        {t.id, t.completed_at && DateTime.diff(t.completed_at, t.claimed_at)}
+      end)
+    end
+
+    assert gaps.(tasks) == gaps.(before)
+  end
+
+  defp maya, do: Repo.get_by!(User, email: "maya.chen@example.test")
+
+  test "adds an existing viewer to every demo board when asked" do
     viewer = Kanban.AccountsFixtures.user_fixture()
     System.put_env("RESOURCES_DEMO_VIEWER", viewer.email)
     on_exit(fn -> System.delete_env("RESOURCES_DEMO_VIEWER") end)
 
     run_seed()
-    assert_received {:summary, %{viewer_member_of: ["Checkout Revamp", "Marketing Site Launch"]}}
+    assert_received {:summary, %{viewer_member_of: @demo_boards}}
 
-    for name <- ["Checkout Revamp", "Marketing Site Launch"] do
+    for name <- @demo_boards do
       board = demo_board(name)
       assert Repo.get_by(BoardUser, board_id: board.id, user_id: viewer.id).access == :modify
     end

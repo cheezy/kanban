@@ -5,8 +5,11 @@
 # in every column, a goal with children, a task waiting in Review, labels, a
 # comment with a mention, an API token record, and four weeks of completed work
 # so the metrics charts have data, with the workflow steps each agent reported
-# so the Compliance page has data too. See
-# priv/static/images/resources/guides/README.md for how to use it.
+# so the Compliance page has data too. A third board, Storefront Search, is the
+# showcase for the marketing screenshots: six weeks of work finished by agents
+# and people, an agent at work right now, and a Review task with a written
+# report. See priv/static/images/resources/guides/README.md and
+# priv/static/images/marketing/README.md for how to use it.
 #
 # Run it inside the running dev app with Tidewave project_eval, never with mix
 # in a shell while the dev server is up:
@@ -21,14 +24,15 @@
 # already exists is left as it is, so delete a demo board in the UI and run the
 # seed again to rebuild it. The one exception is the reviewed agent task "Add a
 # delivery estimate to the order summary", which is added to an existing
-# Checkout Revamp board when it is missing.
+# Checkout Revamp board when it is missing. The other is Storefront Search: each
+# run moves its timestamps up to the present, so its agent is always at work.
 #
 # Optional environment variables:
 #
 #   * RESOURCES_DEMO_PASSWORD - the password for the demo users (12+ characters).
 #     Without it each user gets a random password that is never printed.
-#   * RESOURCES_DEMO_VIEWER - the email of an existing dev user to add to both
-#     demo boards with modify access, so you can photograph them from a browser
+#   * RESOURCES_DEMO_VIEWER - the email of an existing dev user to add to every
+#     demo board with modify access, so you can photograph them from a browser
 #     that is already signed in.
 #
 # It refuses to run anywhere but the dev database (and the test database, so
@@ -749,12 +753,353 @@ seed_custom_board = fn ->
   board
 end
 
+# --- Showcase board: Storefront Search ----------------------------------------------
+
+# The marketing screenshots (priv/static/images/marketing/README.md) need what
+# the guides' boards lack: six weeks of work finished by agents AND people, an
+# agent working right now with a fresh run of completions, and a Review task
+# with a reviewer's written report. Every timestamp here is relative to `now`,
+# and refresh_showcase below moves them up to the present on each later run.
+showcase_name = "Storefront Search"
+ago_min = fn minutes -> DateTime.add(now, -minutes * 60, :second) end
+
+# The person each agent works for, so /agents shows an owner on every card.
+operators = %{
+  "Claude Opus 5.5" => maya,
+  "Claude Sonnet 5.5" => priya,
+  "Codex" => marcus,
+  "Claude Haiku 4.5" => marcus
+}
+
+showcase_history = ~w(
+  Index product titles for full-text search|Show the result count above the grid|
+  Search returns nothing for plural words|Add a price range filter|
+  Highlight the matched words in results|Keep filters in the URL|
+  Log searches that find nothing|Brand filter shows empty brands|
+  Add a sort-by-newest option|Debounce search-as-you-type|
+  Paginate results with infinite scroll|Size filter ignores half sizes|
+  Cache popular searches for an hour|Show recently viewed products|
+  Translate filter labels into French|Search box loses text on back|
+  Add colour swatches to the filters|Boost in-stock products|
+  Record which result a shopper clicks|Clear all filters with one click|
+  Accent marks break the search|Add a reindex job for the catalogue|
+  Show a spinner while results load|Rank by sales in each category|
+  Support search by product code|Filter chips wrap badly on phones|
+  Remove discontinued products from results|Add keyboard navigation to suggestions|
+  Measure search latency per query|Sale badge missing on results|
+  Group results by category|Announce the result count to screen readers|
+  Compress the search index
+) |> Enum.join(" ") |> String.split("|", trim: true) |> Enum.map(&String.trim/1)
+
+# One digit per day for the last 41 days, oldest last: how many history tasks
+# were finished that day. Zeros are quiet days, not weekends: refresh_showcase
+# moves the whole history forward, so a day cannot keep its day of the week.
+showcase_days =
+  for {count, day} <-
+        Enum.with_index(String.graphemes("11200121100211001210012100211001110012011"), 1),
+      _ <- 1..String.to_integer(count)//1,
+      do: day
+
+length(showcase_days) == length(showcase_history) ||
+  raise "showcase_days and showcase_history must be the same length"
+
+showcase_criteria = [
+  "An exact title match ranks above every partial match",
+  "Partial matches keep their current relevance order",
+  "Ranking adds no more than 20ms to a search"
+]
+
+showcase_diffs = [
+  %{
+    "path" => "lib/storefront/search/ranking.ex",
+    "diff" => """
+    --- a/lib/storefront/search/ranking.ex
+    +++ b/lib/storefront/search/ranking.ex
+    @@ -12,7 +12,12 @@ defmodule Storefront.Search.Ranking do
+       def score(product, query) do
+    -    relevance(product, query)
+    +    relevance(product, query) + exact_bonus(product.title, query)
+       end
+    +
+    +  defp exact_bonus(title, query) do
+    +    if String.downcase(title) == String.downcase(query), do: 1_000, else: 0
+    +  end
+    """
+  },
+  %{
+    "path" => "test/storefront/search/ranking_test.exs",
+    "diff" => """
+    --- a/test/storefront/search/ranking_test.exs
+    +++ b/test/storefront/search/ranking_test.exs
+    @@ -40,3 +40,10 @@ defmodule Storefront.Search.RankingTest do
+         assert [_ | _] = Ranking.rank(products(), "boot")
+       end
+    +
+    +  test "an exact title match comes first" do
+    +    products = [product("Trail boot liner"), product("Trail boot")]
+    +    assert [%{title: "Trail boot"} | _] = Ranking.rank(products, "trail boot")
+    +  end
+     end
+    """
+  }
+]
+
+showcase_report = """
+## Summary
+
+Exact title matches now get a fixed bonus, so they always rank first. Partial
+matches keep the order they had before.
+
+## Acceptance criteria status
+
+1. #{Enum.at(showcase_criteria, 0)} — Met
+2. #{Enum.at(showcase_criteria, 1)} — Met
+3. #{Enum.at(showcase_criteria, 2)} — Met
+
+## Notes
+
+- Minor: the bonus is a magic number in `exact_bonus/2`; a named module
+  attribute would explain it.
+- Benchmarked on the demo catalogue: ranking adds about 4ms to a search.
+"""
+
+# Who finished showcase task i: every third history task is a person's, the
+# recent run is Claude Opus 5.5's, and the rest rotate through the agents.
+showcase_worker = fn
+  :recent, _i -> {:agent, "Claude Opus 5.5"}
+  :history, i when rem(i, 3) == 1 -> {:human, Enum.at([priya, marcus, maya], rem(div(i, 3), 3))}
+  :history, i -> {:agent, Enum.at(agents, rem(i, length(agents)))}
+end
+
+# Hours ago the task was completed, claimed and created. People take longer
+# than agents, so the cycle-time chart shows both.
+showcase_hours = fn
+  :recent, _worker, i, hours ->
+    {hours, hours + 1 + rem(i, 3), hours + 1 + rem(i, 3) + 20}
+
+  :history, worker, i, day ->
+    completed = day * 24 + 3 + rem(i * 5, 8)
+    cycle = if match?({:human, _}, worker), do: 6 + rem(i * 11, 40), else: 1 + rem(i * 7, 6)
+    {completed, completed + cycle, completed + cycle + 24 * (1 + rem(i * 3, 5))}
+end
+
+# Every other agent task finished at least four hours ago was approved.
+showcase_review = fn
+  {:agent, _name}, i, completed when rem(i, 2) == 0 and completed >= 4 ->
+    %{
+      needs_review: true,
+      review_status: :approved,
+      reviewed_at: ago.(completed - 1 - rem(i, 3)),
+      reviewed_by_id: Enum.at([maya, priya], rem(div(i, 2), 2)).id
+    }
+
+  _worker, _i, _completed ->
+    %{}
+end
+
+showcase_done = fn {title, kind, when_done}, i ->
+  worker = showcase_worker.(kind, i)
+  {completed, claimed, inserted} = showcase_hours.(kind, worker, i, when_done)
+
+  {agent, person, steps} =
+    case worker do
+      {:agent, name} -> {name, Map.fetch!(operators, name), demo_workflow_steps.(i)}
+      {:human, person} -> {nil, person, []}
+    end
+
+  Map.merge(
+    %{
+      title: title,
+      type: if(rem(i, 7) == 3, do: :defect, else: :work),
+      priority: Enum.at([:medium, :high, :low, :medium], rem(i, 4)),
+      complexity: Enum.at([:small, :medium, :small, :large], rem(i, 4)),
+      status: :completed,
+      claimed_at: ago.(claimed),
+      completed_at: ago.(completed),
+      completed_by_agent: agent,
+      completed_by_id: person.id,
+      assigned_to_id: person.id,
+      workflow_steps: steps,
+      inserted_hours_ago: inserted
+    },
+    showcase_review.(worker, i, completed)
+  )
+end
+
+seed_showcase_board = fn ->
+  {:ok, board} =
+    Boards.create_ai_optimized_board(maya, %{
+      name: showcase_name,
+      description: "Faster product search and filters for the web store"
+    })
+
+  Enum.each([priya, marcus], &ensure_member.(board, &1, maya))
+  columns = columns_by_name.(board)
+
+  open_tasks = [
+    {"Backlog", "Search inside product descriptions", :work, 200},
+    {"Backlog", "Filters forget the chosen size on Safari", :defect, 150},
+    {"Ready", "Add a 'did you mean' line above the results", :work, 120},
+    {"Ready", "Show filter counts next to each option", :work, 100},
+    {"Ready", "Let shoppers save a search", :work, 90}
+  ]
+
+  for {column, title, type, inserted} <- open_tasks do
+    add_task.(
+      columns[column],
+      %{
+        title: title,
+        type: type,
+        priority: :medium,
+        complexity: :medium,
+        description: "#{title}.",
+        inserted_hours_ago: inserted
+      },
+      [],
+      maya
+    )
+  end
+
+  # The agent at work right now. Its claim is the newest timestamp on the
+  # board, which is what refresh_showcase measures from.
+  add_task.(
+    columns["Doing"],
+    %{
+      title: "Suggest spellings when a search finds nothing",
+      type: :work,
+      priority: :high,
+      complexity: :medium,
+      status: :in_progress,
+      created_by_id: maya.id,
+      created_by_agent: "Claude Opus 5.5",
+      assigned_to_id: maya.id,
+      claimed_at: ago_min.(8),
+      claim_expires_at: ago_min.(-52),
+      inserted_hours_ago: 26
+    },
+    [],
+    maya
+  )
+
+  add_task.(
+    columns["Doing"],
+    %{
+      title: "Choose the synonyms list for search",
+      type: :work,
+      priority: :medium,
+      complexity: :small,
+      status: :in_progress,
+      assigned_to_id: marcus.id,
+      claimed_at: ago.(20),
+      inserted_hours_ago: 60
+    },
+    [],
+    maya
+  )
+
+  # The same agent's last few finished tasks, so its card shows a fresh run.
+  recent = [
+    {"Trim stop words from search queries", 1},
+    {"Return results in under 200ms", 2},
+    {"Fix the empty state when filters match nothing", 4},
+    {"Show the search box on the 404 page", 9},
+    {"Lowercase queries before matching", 15}
+  ]
+
+  history =
+    Enum.map(recent, fn {title, hours} -> {title, :recent, hours} end) ++
+      Enum.zip_with(showcase_history, showcase_days, fn title, day -> {title, :history, day} end)
+
+  history
+  |> Enum.with_index()
+  |> Enum.each(fn {entry, i} ->
+    add_task.(columns["Done"], showcase_done.(entry, i), [], maya)
+  end)
+
+  # Waiting in Review with a written report as well as a structured review.
+  review_task =
+    add_task.(
+      columns["Review"],
+      %{
+        title: "Rank exact title matches above partial ones",
+        type: :work,
+        priority: :high,
+        complexity: :small,
+        status: :in_progress,
+        needs_review: true,
+        review_status: :pending,
+        claimed_at: ago.(4),
+        completed_at: ago_min.(25),
+        completed_by_agent: "Claude Sonnet 5.5",
+        completed_by_id: priya.id,
+        assigned_to_id: priya.id,
+        workflow_steps: demo_workflow_steps.(2),
+        completion_summary:
+          "Exact title matches now rank first; partial matches keep their order.",
+        completion_notes: "Benchmarked on the demo catalogue: ranking adds about 4ms a search.",
+        acceptance_criteria: Enum.join(showcase_criteria, "\n"),
+        testing_strategy: %{
+          "unit_tests" => ["An exact title match comes first"],
+          "manual_tests" => ["Search for a product by its full name"]
+        },
+        pitfalls: ["Don't reorder the partial matches"],
+        security_considerations: ["Rank only on product fields shoppers can already see"],
+        actual_files_changed: Enum.map_join(showcase_diffs, ", ", & &1["path"]),
+        changed_files: showcase_diffs,
+        review_report: showcase_report,
+        reviewer_result: %{
+          "dispatched" => true,
+          "schema_version" => "1.0",
+          "status" => "approved",
+          "summary" =>
+            "All three acceptance criteria are met; one minor note about an unnamed constant.",
+          "duration_ms" => 54_000,
+          "acceptance_criteria_checked" => length(showcase_criteria),
+          "issues_found" => 1,
+          "issue_counts" => %{"critical" => 0, "important" => 0, "minor" => 1},
+          "issues" => [
+            %{
+              "severity" => "minor",
+              "category" => "code_quality",
+              "description" =>
+                "The exact-match bonus is a bare number; a named module attribute would explain it.",
+              "file" => "lib/storefront/search/ranking.ex",
+              "line" => 18
+            }
+          ],
+          "acceptance_criteria" =>
+            Enum.map(showcase_criteria, fn criterion ->
+              %{
+                "criterion" => criterion,
+                "status" => "met",
+                "evidence" => "test/storefront/search/ranking_test.exs"
+              }
+            end),
+          "project_checks" => [],
+          "testing_strategy" => %{"status" => "passed"},
+          "patterns" => %{"status" => "passed"},
+          "pitfalls" => %{"status" => "passed"},
+          "security_considerations" => %{"status" => "passed"}
+        },
+        inserted_hours_ago: 30
+      },
+      [],
+      maya
+    )
+
+  from(t in Task, where: t.id == ^review_task.id)
+  |> Repo.update_all(set: [review_requested_at: ago_min.(25)])
+
+  board
+end
+
 # --- Run -------------------------------------------------------------------------
 
 created =
   for {name, seed} <- [
         {"Checkout Revamp", seed_ai_board},
-        {"Marketing Site Launch", seed_custom_board}
+        {"Marketing Site Launch", seed_custom_board},
+        {showcase_name, seed_showcase_board}
       ],
       is_nil(owned_board.(maya, name)) do
     # One transaction per board, so a run that fails part-way leaves no
@@ -1006,8 +1351,78 @@ end
 {:ok, reviewed_task} =
   Repo.transaction(fn -> ensure_reviewed_task.(owned_board.(maya, "Checkout Revamp")) end)
 
+# --- Keep the showcase board current ---------------------------------------------
+
+# Moves every timestamp on the showcase board forward by the time since its
+# newest one (the working agent's claim), so on any later run the agent is at
+# work again, its recent completions are recent and the six weeks end today.
+# It adds and removes nothing, keeps every task's order of events, and does
+# nothing when the board is already current.
+refresh_showcase = fn ->
+  case owned_board.(maya, showcase_name) do
+    nil ->
+      :missing
+
+    board ->
+      task_ids = from(t in Task, join: c in assoc(t, :column), where: c.board_id == ^board.id)
+
+      newest =
+        task_ids
+        |> select(
+          [t],
+          max(
+            fragment(
+              "GREATEST(?, ?, ?, ?)",
+              t.claimed_at,
+              t.completed_at,
+              t.reviewed_at,
+              t.review_requested_at
+            )
+          )
+        )
+        |> Repo.one()
+
+      shift =
+        if newest,
+          do: DateTime.diff(ago_min.(8), DateTime.from_naive!(newest, "Etc/UTC")),
+          else: 0
+
+      if shift < 60 do
+        :current
+      else
+        seconds = shift * 1.0
+
+        later = fn column ->
+          dynamic([t], fragment("? + make_interval(secs => ?)", field(t, ^column), ^seconds))
+        end
+
+        columns =
+          [
+            :inserted_at,
+            :claimed_at,
+            :claim_expires_at,
+            :completed_at,
+            :reviewed_at,
+            :review_requested_at
+          ]
+
+        from(t in Task, where: t.id in subquery(select(task_ids, [t], t.id)))
+        |> update([t],
+          set: ^(Enum.map(columns, &{&1, later.(&1)}) ++ [updated_at: DateTime.to_naive(now)])
+        )
+        |> Repo.update_all([])
+
+        :shifted
+      end
+  end
+end
+
+showcase_refresh = refresh_showcase.()
+
+demo_boards = ["Checkout Revamp", "Marketing Site Launch", showcase_name]
+
 viewer_boards =
-  for name <- ["Checkout Revamp", "Marketing Site Launch"],
+  for name <- demo_boards,
       viewer && ensure_member.(owned_board.(maya, name), viewer, maya) == :member,
       do: name
 
@@ -1015,7 +1430,8 @@ summary = %{
   demo_owner: maya.email,
   boards_created: created,
   reviewed_task: reviewed_task,
-  boards: ["Checkout Revamp", "Marketing Site Launch"],
+  showcase_refresh: showcase_refresh,
+  boards: demo_boards,
   viewer: viewer && viewer.email,
   viewer_member_of: viewer_boards
 }

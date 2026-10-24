@@ -63,6 +63,13 @@ It creates:
     page has dispatch rates, skip reasons and per-agent numbers.
 - **Marketing Site Launch**, a custom board with To Do, In Progress (WIP limit
   3, and full), In Review and Published.
+- **Storefront Search**, an AI-optimized board for the marketing screenshots,
+  with six weeks of work finished by agents and people, an agent at work and a
+  Review task with a written report. Each run of the seed moves its timestamps
+  up to the present. See [the marketing images README](../../marketing/README.md).
+  It shows on `/boards`, `/agents` and `/metrics` too, so filter those pages to
+  Checkout Revamp, or hide the board in the page, when a guide shot shouldn't
+  include it.
 
 Two optional environment variables, set in the VM before the eval (for
 example `System.put_env("RESOURCES_DEMO_VIEWER", "you@example.com")`):
@@ -70,7 +77,7 @@ example `System.put_env("RESOURCES_DEMO_VIEWER", "you@example.com")`):
 - `RESOURCES_DEMO_PASSWORD` gives the demo users a password you choose (12 to
   72 characters), so you can sign in as Maya. Without it the password is
   random and never printed. Setting it on a later run replaces the old one.
-- `RESOURCES_DEMO_VIEWER` adds an existing dev user to both demo boards with
+- `RESOURCES_DEMO_VIEWER` adds an existing dev user to every demo board with
   modify access.
 
 ### Notification and integration shots
