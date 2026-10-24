@@ -28,6 +28,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
              HowTos.WorkingWithTasks.how_tos() ++
              HowTos.TaskDetails.how_tos() ++
              HowTos.AgentsAndPlanning.how_tos() ++
+             HowTos.NotificationsAndIntegrations.how_tos() ++
              HowTos.Metrics.how_tos()
 
   @all_tags [
@@ -54,7 +55,9 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
     "metrics",
     "organizations",
     "workspaces",
-    "admin"
+    "admin",
+    "notifications",
+    "integrations"
   ]
 
   @doc """

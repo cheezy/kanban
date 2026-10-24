@@ -151,6 +151,34 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                           "lib/kanban_web/live/user_live/notification_preferences.ex"
                         ] ++ Path.wildcard("lib/kanban_web/live/task_live/components/*.ex")
 
+  @notifications_integrations_ids [
+    "staying-informed-with-notifications",
+    "connecting-webhooks-slack-and-discord",
+    "connecting-an-mcp-client"
+  ]
+
+  # The bell, the notifications page and preferences, the unsubscribe page and
+  # email footer, the lock panels, and the board's Integrations window.
+  @notifications_integrations_sources [
+                                        "lib/kanban_web/components/notification_bell.ex",
+                                        "lib/kanban_web/live/user_live/notification_preferences.ex",
+                                        "lib/kanban_web/live/user_live/settings_components.ex",
+                                        "lib/kanban_web/notification_labels.ex",
+                                        "lib/kanban_web/components/locked_feature.ex",
+                                        "lib/kanban_web/components/notifications_locked.ex",
+                                        "lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex",
+                                        "lib/kanban_web/emails/email_helpers.ex",
+                                        "lib/kanban_web/components/board_tabs.ex",
+                                        "lib/kanban_web/live/board_live/integrations_component.ex",
+                                        "lib/kanban_web/live/board_live/show.html.heex"
+                                      ] ++
+                                        Path.wildcard(
+                                          "lib/kanban_web/live/notification_live/*.{ex,heex}"
+                                        ) ++
+                                        Path.wildcard(
+                                          "lib/kanban_web/live/board_live/webhook_*.ex"
+                                        )
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -285,18 +313,19 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "developer guides content" do
-    test "all 4 developer guides exist" do
+    test "all 5 developer guides exist" do
       developer_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("developer" in &1.tags))
 
-      assert length(developer_guides) == 4
+      assert length(developer_guides) == 5
 
       guide_ids = Enum.map(developer_guides, & &1.id)
       assert "setting-up-hooks" in guide_ids
       assert "api-authentication" in guide_ids
       assert "claim-complete-workflow" in guide_ids
       assert "debugging-hooks" in guide_ids
+      assert "connecting-an-mcp-client" in guide_ids
     end
 
     test "setting-up-hooks guide has complete content" do
@@ -1335,6 +1364,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       end
     end
 
+    test "includes the notifications-and-integrations tags" do
+      for tag <- ~w(notifications integrations monitoring automation api developer) do
+        assert tag in HowToData.all_tags()
+      end
+
+      for id <- @notifications_integrations_ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          tag <- guide.tags do
+        assert tag in HowToData.all_tags(), "#{id} uses #{tag}, which isn't in all_tags"
+      end
+    end
+
     test "includes the agents-and-planning tags" do
       for tag <- ~w(planning ai-agents monitoring workflow) do
         assert tag in HowToData.all_tags()
@@ -1349,8 +1390,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 39 guides" do
-      assert length(HowToData.all_how_tos()) == 39
+    test "has all 42 guides" do
+      assert length(HowToData.all_how_tos()) == 42
     end
 
     test "every guide id is unique across the area modules" do
@@ -2737,6 +2778,249 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       end
 
       assert comments =~ "Comments and mentions themselves work on every board."
+    end
+  end
+
+  describe "notifications and integrations guides" do
+    defp notifications_integrations_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "the notifications-and-integrations guides exist with their tags and steps" do
+      expected = [
+        {"staying-informed-with-notifications", "Staying Informed With Notifications",
+         ["notifications", "integrations", "monitoring"], 7},
+        {"connecting-webhooks-slack-and-discord", "Connecting Webhooks, Slack and Discord",
+         ["integrations", "notifications", "automation"], 6},
+        {"connecting-an-mcp-client", "Connecting an MCP Client",
+         ["developer", "api", "automation"], 5}
+      ]
+
+      assert Enum.map(
+               KanbanWeb.ResourcesLive.HowTos.NotificationsAndIntegrations.how_tos(),
+               & &1.id
+             ) == @notifications_integrations_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.created_at == ~D[2026-10-24]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+
+        for tag <-
+              ~w(getting-started non-developer best-practices security boards organizations metrics collaboration ai-agents planning) do
+          refute tag in guide.tags, "#{id} would join the #{tag} chain or its count"
+        end
+      end
+
+      for id <- ["staying-informed-with-notifications", "connecting-webhooks-slack-and-discord"] do
+        {:ok, guide} = HowToData.get_how_to(id)
+        refute "developer" in guide.tags, "#{id} would join the developer chain"
+      end
+    end
+
+    test "the notifications-and-integrations guides navigate as a pair and the MCP guide ends the developer chain" do
+      {:ok, notifications} = HowToData.get_how_to("staying-informed-with-notifications")
+      {:ok, webhooks} = HowToData.get_how_to("connecting-webhooks-slack-and-discord")
+
+      assert {nil, %{id: "connecting-webhooks-slack-and-discord"}} =
+               HowToData.get_navigation(notifications)
+
+      assert {%{id: "staying-informed-with-notifications"}, nil} =
+               HowToData.get_navigation(webhooks)
+
+      {:ok, mcp} = HowToData.get_how_to("connecting-an-mcp-client")
+      assert {%{id: "debugging-hooks"}, nil} = HowToData.get_navigation(mcp)
+
+      {:ok, debugging} = HowToData.get_how_to("debugging-hooks")
+
+      assert {%{id: "claim-complete-workflow"}, %{id: "connecting-an-mcp-client"}} =
+               HowToData.get_navigation(debugging)
+    end
+
+    test "every bolded UI label in the notifications-and-integrations guides exists in the source" do
+      sources = Enum.map_join(@notifications_integrations_sources, &File.read!/1)
+
+      labels =
+        for id <- @notifications_integrations_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- ["staying-informed-with-notifications", "connecting-webhooks-slack-and-discord"] do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_.]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        # An aria-label is read out, not shown, so it can't be a bold label.
+        assert sources =~ ~r/(?<!aria-label=\{)gettext\(\s*"#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no notifications or integrations screen shows"
+      end
+    end
+
+    test "the notifications-and-integrations guides link to guides and docs that exist" do
+      content = notifications_integrations_content(@notifications_integrations_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\(([^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert links != []
+
+      for link <- links do
+        case link do
+          "/resources/" <> id ->
+            assert id in ids,
+                   "a notifications or integrations guide links to the missing guide #{id}"
+
+          "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/" <> path ->
+            assert File.exists?(path), "#{link} names a file the repo doesn't have"
+
+          other ->
+            flunk("#{other} is neither a Resources guide nor a doc in the repo")
+        end
+      end
+    end
+
+    test "the notifications facts match the code" do
+      content = notifications_integrations_content(["staying-informed-with-notifications"])
+      notifications = File.read!("lib/kanban/notifications.ex")
+
+      assert File.read!("lib/kanban_web/components/notification_bell.ex") =~
+               ~s|count > 99, do: "99+"|
+
+      assert content =~ "above that it shows 99+"
+      refute content =~ "9+ " or content =~ " 9+"
+
+      assert File.read!("lib/kanban_web/live/notification_live/index.ex") =~ "@page_size 25"
+      assert content =~ "25 at a time"
+
+      assert File.read!("config/config.exs") =~
+               ~s|{"0 13 * * 1", Kanban.Notifications.DigestFanoutWorker}|
+
+      assert content =~ "Mondays at 13:00 UTC"
+
+      assert File.read!("lib/kanban/notifications/digest_worker.ex") =~
+               "event_type: :weekly_digest, in_app: false"
+
+      assert content =~ "never in the bell"
+
+      assert notifications =~ "@email_off_by_default [:goal_completed, :comment_added]"
+      assert content =~ "except the email for **Completed goals** and **Comments**"
+
+      # Two gates: the board must be paid, and the user must be in an Organization.
+      assert notifications =~ "A free board's events are dropped while plans are enforced"
+      assert notifications =~ "Plans.check_user(scope, :notifications, surface: :context)"
+      assert content =~ "a free board sends no notifications at all, even to Organization members"
+      assert content =~ "only Organization members can change their preferences"
+
+      # Comments has a preference row but nothing produces it.
+      refute File.read!("lib/kanban/notifications/events.ex") =~ "comment_added"
+      assert content =~ "a comment with no mention notifies nobody"
+
+      # Unsubscribing: a confirm page, 90 days, never a paid action.
+      assert File.read!("lib/kanban_web/unsubscribe_token.ex") =~ "@max_age 90 * 24 * 60 * 60"
+      assert notifications =~ "turning email off is never a paid action"
+      assert content =~ "opens a page that asks you to confirm"
+      assert content =~ "The link works for 90 days, and unsubscribing never needs a paid plan."
+    end
+
+    test "the integrations facts match the code" do
+      content = notifications_integrations_content(["connecting-webhooks-slack-and-discord"])
+      webhooks = File.read!("lib/kanban/webhooks.ex")
+
+      # Owner only; effective access makes an org-admin the owner.
+      assert File.read!("lib/kanban_web/components/board_tabs.ex") =~
+               "defp hidden?(:integrations, flags), do: not flags.owner?"
+
+      assert File.read!("lib/kanban_web/live/board_live/integrations.ex") =~
+               ~s|gettext("Only the board owner can manage integrations")|
+
+      assert File.read!("lib/kanban/boards.ex") =~
+               "Policy.effective_board_access(board_id, user_id)"
+
+      assert content =~ "Only the board's owner sees the **Integrations** tab"
+
+      assert webhooks =~ ":ok <- check_plan(board_id)"
+
+      assert File.read!("lib/kanban_web/live/board_live/webhook_state.ex") =~
+               "do: locked? and enabled and not not_sending?(endpoint)"
+
+      assert content =~
+               "Endpoints that are switched on show **Paused** and start sending again once the board moves into an Organization; a disabled endpoint stays off until you enable it."
+
+      assert File.read!("lib/kanban/webhooks/signer.ex") =~ "@tolerance_seconds 300"
+      assert content =~ "Reject a timestamp more than 5 minutes old."
+
+      worker = File.read!("lib/kanban/webhooks/delivery_worker.ex")
+      assert worker =~ "max_attempts: 8"
+      assert worker =~ "@retryable_4xx [408, 429]"
+      assert content =~ "up to 8 attempts over about an hour"
+      assert content =~ "A 4xx response isn't retried, except 408 and 429."
+
+      assert File.read!("lib/kanban_web/live/board_live/integrations_component.ex") =~
+               "@log_size 20"
+
+      assert content =~ "the 20 most recent attempts"
+
+      assert webhooks =~ ~s|DeliveryWorker.enqueue(endpoint.id, "ping", payload)|
+      assert webhooks =~ ":ok <- check_enabled(endpoint)"
+      assert content =~ "**Send test** sends a `ping` event to an enabled endpoint."
+
+      # There is no endpoint cap and no delivery retention to promise.
+      refute webhooks =~ ~r/max_endpoints|endpoint_limit/
+      refute content =~ ~r/up to \d+ endpoints|kept for \d+ days/
+    end
+
+    test "the MCP facts match the code" do
+      content = notifications_integrations_content(["connecting-an-mcp-client"])
+      docs = File.read!("docs/MCP.md")
+
+      assert File.read!("lib/kanban_web/router.ex") =~ ~s|post "/mcp", McpController, :handle|
+
+      assert File.read!("lib/kanban_web/mcp/server.ex") =~
+               "Plans.check_board(board, :mcp, surface: :mcp)"
+
+      assert File.read!("lib/kanban_web/mcp/json_rpc.ex") =~ "@plan_required -32_001"
+      assert content =~ "every call returns error `-32001`"
+
+      # The client config is the one docs/MCP.md documents.
+      command =
+        "claude mcp add --transport http stride https://www.stridelikeaboss.com/api/mcp \\\n  --header \"Authorization: Bearer ${STRIDE_API_TOKEN}\""
+
+      assert docs =~ command
+      assert content =~ command
+      assert docs =~ ~s|"type": "http",\n      "url": "https://www.stridelikeaboss.com/api/mcp",|
+
+      assert content =~
+               ~s|"type": "http",\n      "url": "https://www.stridelikeaboss.com/api/mcp",|
+
+      tools = File.read!("lib/kanban_web/mcp/tool_schemas.ex")
+
+      names =
+        Regex.scan(~r/"name" => "(stride_[a-z_]+)"/, tools, capture: :all_but_first)
+        |> List.flatten()
+
+      assert length(names) == 6
+
+      for name <- names do
+        assert content =~ "`#{name}`", "the MCP guide doesn't name the #{name} tool"
+      end
+
+      assert File.read!("lib/kanban_web/plugs/authenticate_api_token/board_selector.ex") =~
+               ~s|@header "x-stride-board"|
+
+      assert content =~ "needs the board's ID in an `X-Stride-Board` header on each tool call"
+
+      # A placeholder, never a real-looking token.
+      refute content =~ ~r/stride_(dev|live)?_?[A-Za-z0-9]{20,}/
+      assert content =~ ~s|export STRIDE_API_TOKEN="paste-your-token-here"|
     end
   end
 

@@ -71,6 +71,35 @@ example `System.put_env("RESOURCES_DEMO_VIEWER", "you@example.com")`):
 - `RESOURCES_DEMO_VIEWER` adds an existing dev user to both demo boards with
   modify access.
 
+### Notification and integration shots
+
+The seed creates no notifications and no webhook endpoints, so the
+notifications and integrations guides need a little more data, made in the
+dev VM with `project_eval`:
+
+- **Notifications for Maya.** Call `Kanban.Notifications.notify/3` with Maya
+  as the only recipient, using the title, link and dedupe-key formats in
+  `Kanban.Notifications.Events`: review requests for "Move the order summary
+  above the fold", "Add a delivery estimate to the order summary" and "Show
+  delivery estimates on the review step", and an unclaimed-task notice for
+  "Show a clear message when a card is declined" by Priya Raman with a reason.
+  Then backdate them and mark the two oldest read. Never call `Events.*`, which
+  would also notify the other board members. Dev mail goes to the local
+  mailbox.
+- **Endpoints on Mobile App Launch.** This board is in an Organization, so it
+  is paid, and its members are all demo users. Call
+  `Kanban.Webhooks.create_endpoint/4` as Maya with a `resolver:` option, since
+  dev can't resolve `.test` hosts. Create a generic webhook to a `.test` host,
+  a Slack endpoint and a Discord endpoint with all-zero, all-X URLs. Then
+  insert a few `Kanban.Webhooks.Delivery` rows for the generic one: successes,
+  and a 503 followed by a successful retry.
+- **Never click Send test** on these endpoints. The Slack and Discord ones
+  would post to the real services. Disable all three after the last shot.
+- For the signing secret, click **Rotate secret** in the window and replace
+  the secret in the page with an obviously fake value, such as
+  `whsec_EXAMPLE_not_a_real_secret_000000000000`, before capturing, so no
+  reader mistakes the image for a leaked secret.
+
 ## 2. Sign in to photograph
 
 The best option is to sign in as `maya.chen@example.test` in a private window,
@@ -176,8 +205,8 @@ Organization.
 ## 4. Checklist
 
 One row per image the guides use today. Board ids differ between databases,
-so routes say which demo board to open. `Checkout` is Checkout Revamp and
-`Marketing` is Marketing Site Launch.
+so routes say which demo board to open. `Checkout` is Checkout Revamp,
+`Marketing` is Marketing Site Launch and `Mobile` is Mobile App Launch.
 
 | File | Guide / step | Route | UI state | Viewport / crop |
 |---|---|---|---|---|
@@ -212,6 +241,13 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp and
 | `reading-a-tasks-details-step-8.png` | reading-a-tasks-details / 8 Changed Files and the Diff | same task | The first changed file clicked, so its diff is open | **Changed files** with the open diff |
 | `commenting-and-mentioning-step-4.png` | commenting-and-mentioning / 4 Mentioning Someone | `/boards/<Checkout>`, "Move the order summary above the fold" card clicked | "@ma" typed in **Add a comment** so the list shows Marcus Bell, Maya Chen and Priya Raman; never post it, and clear the box after. Don't type a bare "@": it lists every member, including any non-demo viewer | From **Comments** to the bottom of the list |
 | `commenting-and-mentioning-step-7.png` | commenting-and-mentioning / 7 Editing and Deleting | same task, as Maya | Priya's comment with the @Maya Chen chip and only **Delete** (Maya owns the board but didn't write it) | From **Comments** to **Add Comment** |
+| `staying-informed-with-notifications-step-3.png` | staying-informed-with-notifications / 3 The Bell | `/notifications` (as Maya) | Three unread, so the bell shows 3 | Top-right corner: the bell and **Mark all read** |
+| `staying-informed-with-notifications-step-4.png` | staying-informed-with-notifications / 4 The Notifications Page | `/notifications` (as Maya) | **All**, with three unread and two read notifications | From the heading to the last notification |
+| `staying-informed-with-notifications-step-5.png` | staying-informed-with-notifications / 5 Choosing What Reaches You | `/users/notifications` (as Maya) | The defaults; toggle nothing, because changes save at once | Settings menu and the first three cards |
+| `connecting-webhooks-slack-and-discord-step-2.png` | connecting-webhooks-slack-and-discord / 2 Adding an Endpoint | `/boards/<Mobile>/integrations` | **Kind** set to **Slack**, the URL empty, two events ticked, not submitted | **Add an endpoint** |
+| `connecting-webhooks-slack-and-discord-step-3.png` | connecting-webhooks-slack-and-discord / 3 Managing Endpoints | same | The generic and Slack endpoints enabled, Discord disabled | From **Integrations** to the Discord endpoint's buttons |
+| `connecting-webhooks-slack-and-discord-step-4.png` | connecting-webhooks-slack-and-discord / 4 The Signing Secret | same | **Rotate secret** clicked on the generic endpoint, the secret replaced in the page | The secret box and the generic endpoint |
+| `connecting-webhooks-slack-and-discord-step-5.png` | connecting-webhooks-slack-and-discord / 5 Testing and the Delivery Log | same | **Deliveries** open on the generic endpoint | The generic endpoint and **Recent deliveries** |
 | `understanding-columns-step-2.png` | understanding-columns / 2 AI-Optimized Boards: Fixed Columns | `/boards/<Checkout>` | All five column headers with cards, page zoomed to 80% | Column headers and first cards |
 | `understanding-columns-step-3.png` | understanding-columns / 3 Custom Boards: Flexible Columns | `/boards/<Marketing>` | Four custom columns, In Progress at 3/3 | Crop the columns |
 | `understanding-columns-step-5-1.png` | understanding-columns / 5 WIP Limits | `/boards/<Marketing>/columns/<In Progress>/edit` | Column form with **WIP Limit** 3, nothing focused | Crop the form |

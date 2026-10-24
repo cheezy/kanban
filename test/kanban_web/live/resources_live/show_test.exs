@@ -269,6 +269,42 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert comments =~ ~s(href="/resources/free-and-paid-boards")
     end
 
+    test "renders each notifications-and-integrations guide", %{conn: conn} do
+      images = %{
+        "staying-informed-with-notifications" => [3, 4, 5],
+        "connecting-webhooks-slack-and-discord" => [2, 3, 4, 5]
+      }
+
+      for {id, steps} <- images do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+        assert html =~ ~s(href="/resources/free-and-paid-boards")
+
+        for step <- steps do
+          assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
+        end
+      end
+
+      {:ok, _view, webhooks} = live(conn, ~p"/resources/connecting-webhooks-slack-and-discord")
+
+      assert webhooks =~
+               ~s(href="https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/webhooks.md")
+
+      {:ok, _view, mcp} = live(conn, ~p"/resources/connecting-an-mcp-client")
+
+      refute mcp =~ "&lt;", "the MCP guide renders escaped HTML"
+      refute mcp =~ "**", "the MCP guide renders a literal **"
+      assert mcp =~ "<pre"
+      assert mcp =~ "https://www.stridelikeaboss.com/api/mcp"
+
+      for target <- ~w(api-authentication claim-complete-workflow free-and-paid-boards) do
+        assert mcp =~ ~s(href="/resources/#{target}")
+      end
+    end
+
     test "renders each agents-and-planning guide with its links and screenshots", %{conn: conn} do
       images = %{
         "watching-your-agents" => [2, 3, 4, 5],
