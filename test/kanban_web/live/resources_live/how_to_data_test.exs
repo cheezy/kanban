@@ -37,6 +37,21 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "workspace-and-compliance-metrics"
   ]
 
+  @account_ids ["managing-your-account", "two-factor-authentication"]
+
+  # The account screens whose gettext strings the account guides may bold.
+  @account_sources [
+    "lib/kanban_web/live/user_live/two_factor_component.ex",
+    "lib/kanban_web/live/user_live/two_factor.ex",
+    "lib/kanban_web/live/user_live/login.ex",
+    "lib/kanban_web/live/user_live/settings.ex",
+    "lib/kanban_web/live/user_live/settings_components.ex",
+    "lib/kanban_web/components/layouts.ex",
+    "lib/kanban_web/components/two_factor_reminder.ex",
+    "lib/kanban_web/live/user_live/danger_zone_component.ex",
+    "lib/kanban_web/components/organization_two_factor_banner.ex"
+  ]
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -1200,8 +1215,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 21 guides" do
-      assert length(HowToData.all_how_tos()) == 21
+    test "has all 22 guides" do
+      assert length(HowToData.all_how_tos()) == 22
     end
 
     test "every guide id is unique across the area modules" do
@@ -1215,38 +1230,24 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
       assert guide.tags == ["security", "beginner"]
       assert guide.created_at == ~D[2026-10-08]
-      assert length(guide.steps) >= 10
+      assert length(guide.steps) >= 13
     end
 
-    test "sits next to the API authentication guide in security navigation" do
+    test "sits between the account guide and the API authentication guide in security navigation" do
       {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
 
-      assert {nil, %{id: "api-authentication"}} = HowToData.get_navigation(guide)
+      assert {%{id: "managing-your-account"}, %{id: "api-authentication"}} =
+               HowToData.get_navigation(guide)
     end
 
     test "every bolded UI label it names still exists in the two-factor screens" do
-      sources =
-        Enum.map_join(
-          [
-            "lib/kanban_web/live/user_live/two_factor_component.ex",
-            "lib/kanban_web/live/user_live/two_factor.ex",
-            "lib/kanban_web/live/user_live/login.ex",
-            "lib/kanban_web/live/user_live/settings.ex",
-            "lib/kanban_web/live/user_live/settings_components.ex",
-            "lib/kanban_web/components/layouts.ex",
-            "lib/kanban_web/components/two_factor_reminder.ex"
-          ],
-          &File.read!/1
-        )
+      sources = Enum.map_join(@account_sources, &File.read!/1)
 
       {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
 
       labels =
         for step <- guide.steps,
             [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
-            label not in ["and", "An authenticator app", "A safe place for ten recovery codes"],
-            not String.ends_with?(label, "."),
-            not String.ends_with?(label, "?"),
             do: String.replace(label, "Settings → Two-factor", "Two-factor")
 
       assert labels != []
@@ -1254,6 +1255,246 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       for label <- labels do
         assert sources =~ ~s("#{label}"), "the guide names **#{label}**, which no screen shows"
       end
+    end
+  end
+
+  describe "account guides" do
+    defp account_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "every bolded UI label in the account guides exists in the source" do
+      sources = Enum.map_join(@account_sources, &File.read!/1)
+
+      labels =
+        for id <- @account_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, bold] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            label <- String.split(bold, " → "),
+            do: {id, label}
+
+      for id <- @account_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        assert sources =~ ~r/gettext\("#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no account screen shows"
+      end
+    end
+
+    test "account guides keep their ids and minimum step counts" do
+      expected = [
+        {"managing-your-account", "Managing Your Account", 8},
+        {"two-factor-authentication", "Setting Up Two-Factor Authentication", 13}
+      ]
+
+      assert Enum.map(KanbanWeb.ResourcesLive.HowTos.Account.how_tos(), & &1.id) == @account_ids
+
+      for {id, title, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == ["security", "beginner"]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+      end
+
+      {:ok, account} = HowToData.get_how_to("managing-your-account")
+      assert account.created_at == ~D[2026-10-23]
+
+      assert {nil, %{id: "two-factor-authentication"}} = HowToData.get_navigation(account)
+    end
+
+    test "the two-factor guide drops the claims the app no longer makes" do
+      content = account_content(["two-factor-authentication"])
+
+      for stale <- [
+            "Two-factor is optional and applies only to you",
+            "If you have not signed in recently",
+            "Save them now",
+            "**and**",
+            "**An authenticator app**",
+            "**Check your device's clock.**"
+          ] do
+        refute content =~ stale, "the two-factor guide still says #{inspect(stale)}"
+      end
+    end
+
+    test "the account settings facts match the code" do
+      account = account_content(["managing-your-account"])
+      user_auth = File.read!("lib/kanban_web/user_auth.ex")
+      session = File.read!("lib/kanban_web/controllers/user_session_controller.ex")
+
+      assert account =~ "within the last 10 minutes"
+      assert user_auth =~ "Accounts.sudo_mode?(user, -10)"
+      assert session =~ "Accounts.sudo_mode?(user, -10)"
+
+      # The re-authentication flash is hard-coded English, so it is quoted, never bolded.
+      assert account =~ ~s("You must re-authenticate to access this page.")
+      assert user_auth =~ ~s(put_flash(:error, "You must re-authenticate to access this page."\))
+      assert account =~ "Stride takes you to Settings"
+
+      assert user_auth =~
+               ~r/def signed_in_path\(%Plug.Conn\{assigns: %\{current_scope: %Scope\{user: %Accounts.User\{\}\}\}\}\) do\s+~p"\/users\/settings"/
+
+      tabs =
+        Regex.scan(
+          ~r/gettext\("([^"]+)"\), gettext\("[^"]+"\)\}/,
+          File.read!("lib/kanban_web/live/user_live/settings_components.ex"),
+          capture: :all_but_first
+        )
+        |> List.flatten()
+
+      assert tabs == ["Profile", "Password", "Two-factor", "Single sign-on", "Delete account"]
+      assert account =~ "Settings has five tabs"
+
+      assert Enum.map(tabs, &"- **#{&1}**") ==
+               Regex.scan(~r/^- \*\*[^*]+\*\*/m, account) |> List.flatten() |> Enum.take(5)
+
+      assert account =~ "[Notification preferences](/users/notifications)"
+
+      assert File.read!("lib/kanban_web/router.ex") =~
+               ~s(live "/users/notifications", UserLive.NotificationPreferences)
+
+      assert account =~ "The link works for 7 days"
+      assert account =~ "your email changes only when you click that link"
+      assert File.read!("lib/kanban/accounts/user_token.ex") =~ "@change_email_validity_in_days 7"
+
+      user = File.read!("lib/kanban/accounts/user.ex")
+      assert account =~ "12 to 72 characters long"
+      assert account =~ "The 72 counts bytes"
+      assert user =~ "validate_length(:password, min: 12, max: 72)"
+      assert user =~ "validate_length(:password, max: 72, count: :bytes)"
+
+      assert account =~ "signs you out on every other device"
+      assert session =~ "UserAuth.disconnect_sessions(expired_tokens)"
+      assert File.read!("lib/kanban/accounts.ex") =~ "|> update_user_and_delete_all_tokens()"
+
+      assert account =~ "an account that does not belong to an Organization sees a lock"
+
+      assert File.read!("lib/kanban_web/live/user_live/settings.ex") =~
+               "not Plans.user_unlocked?(socket.assigns.current_scope)"
+
+      assert File.read!("lib/kanban/plans.ex") =~
+               "def user_has_paid_access?(%Scope{organization_membership: %OrganizationMember{}}), do: true"
+    end
+
+    test "the account deletion facts match the code" do
+      account = account_content(["managing-your-account"])
+      danger = File.read!("lib/kanban_web/live/user_live/danger_zone_component.ex")
+
+      assert account =~ "type `delete my account` exactly as shown"
+      assert Kanban.Accounts.AccountDeletion.confirmation_phrase() == "delete my account"
+
+      for blocker <- [
+            "You own %{board}, which other people use.",
+            "A Stride admin must appoint another org-admin before you can delete your account.",
+            "You are the last site admin. Make another user a site admin before you delete your account."
+          ] do
+        assert danger =~ ~r/gettext\(\s*"#{Regex.escape(blocker)}"/
+      end
+
+      assert account =~ "A Stride admin must appoint another org-admin first"
+      assert account =~ "Make another user a site admin first"
+
+      assert account =~ "The **Delete my account** button appears only once that list is empty"
+      assert danger =~ "<div :if={@blockers == []}>"
+
+      assert account =~ "After a few wrong passwords, Stride makes you wait a few minutes"
+
+      assert File.read!("lib/kanban/rate_limit.ex") =~
+               "account_delete: %{scale_ms: 300_000, id_limit: 5}"
+
+      assert account =~ "Use **Forgot?** on the sign-in page to set one first"
+
+      assert File.read!("docs/single-sign-on.md") =~
+               "An account created by single sign-on starts without a password"
+    end
+
+    test "the two-factor facts match the code" do
+      two_factor = account_content(["two-factor-authentication"])
+      accounts_two_factor = File.read!("lib/kanban/accounts/two_factor.ex")
+
+      assert two_factor =~ "within the last 10 minutes"
+      assert two_factor =~ "**Not now** hides the card for 10 days"
+      assert accounts_two_factor =~ "@reminder_snooze_days 10"
+
+      assert two_factor =~
+               "The card does not appear while your Organization's two-factor banner is showing"
+
+      assert File.read!("lib/kanban_web/components/layouts.ex") =~
+               ":if={!(@current_scope && @current_scope.two_factor_deadline)}"
+
+      assert two_factor =~ "Enter it within five minutes"
+      assert KanbanWeb.TwoFactorPending.ttl_seconds() == 300
+
+      assert two_factor =~ "about a minute and a half"
+      assert accounts_two_factor =~ "@period 30"
+      assert accounts_two_factor =~ "@drift_steps [0, -1, 1]"
+
+      assert two_factor =~ "ten recovery codes"
+      assert accounts_two_factor =~ "@recovery_code_count 10"
+
+      rate_limit = File.read!("lib/kanban/rate_limit.ex")
+      assert two_factor =~ "a few minutes at first, and up to a day"
+      assert rate_limit =~ "two_factor: %{scale_ms: 300_000, id_limit: 10}"
+      assert rate_limit =~ "two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30}"
+
+      assert two_factor =~ "from 1 to 30 days (7 unless they change it)"
+      assert Kanban.Organizations.SecurityPolicy.grace_days_range() == 1..30
+      assert %Kanban.Organizations.SecurityPolicy{}.two_factor_grace_days == 7
+
+      assert two_factor =~
+               "opening a board or any other signed-in page sends you to **Settings → Two-factor**"
+
+      refute two_factor =~ "from every other page"
+
+      assert File.read!("lib/kanban_web/user_auth/organization_two_factor_gate.ex") =~
+               "public pages, and every `/api` route"
+
+      assert KanbanWeb.UserAuth.OrganizationTwoFactorGate.redirect_path() ==
+               "/users/settings?section=two_factor"
+
+      assert two_factor =~ "While it is required, you cannot turn two-factor off"
+      assert two_factor =~ "the **Turn off two-factor** section says so and has no button"
+      refute two_factor =~ "**Turn off two-factor** is not shown"
+
+      component = File.read!("lib/kanban_web/live/user_live/two_factor_component.ex")
+      assert component =~ ~s(id="two-factor-required-by-organization")
+      assert component =~ ":if={!@required_by_organization}"
+      assert accounts_two_factor =~ "do: {:error, :required_by_organization}"
+
+      assert two_factor =~ "the banner cannot be dismissed"
+
+      assert File.read!("lib/kanban_web/components/organization_two_factor_banner.ex") =~
+               "it cannot be dismissed"
+
+      assert two_factor =~ "satisfies the requirement"
+
+      assert File.read!("lib/kanban_web/live/org_live/security.html.heex") =~
+               "Members who sign in through single sign-on are not affected."
+
+      # Only the two-factor context touches the secrets table, so no admin
+      # screen can reset someone's two-factor.
+      assert two_factor =~ "Stride cannot turn off two-factor for you"
+
+      assert Path.wildcard("lib/**/*.{ex,heex}")
+             |> Enum.filter(&(File.read!(&1) =~ ~r/UserTotp|user_totps/))
+             |> Enum.sort() == [
+               "lib/kanban/accounts/two_factor.ex",
+               "lib/kanban/accounts/user_totp.ex"
+             ]
+
+      # New recovery codes take an authenticator code only, so an org-required
+      # member without an authenticator is left with their saved codes.
+      assert two_factor =~ "**Generate new codes** needs a code from your authenticator"
+      assert accounts_two_factor =~ ":ok <- use_code(totp, code) do"
     end
   end
 

@@ -155,6 +155,36 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       end
     end
 
+    test "renders each account guide without raw markup", %{conn: conn} do
+      for id <- ["managing-your-account", "two-factor-authentication"] do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+      end
+    end
+
+    test "the account guides show the settings and two-factor screenshots", %{conn: conn} do
+      {:ok, _view, account} = live(conn, ~p"/resources/managing-your-account")
+
+      for step <- [1, 2, 4, 6, 7] do
+        assert account =~
+                 ~s(src="/images/resources/guides/managing-your-account-step-#{step}.png")
+      end
+
+      assert account =~ ~s(href="/users/notifications")
+      assert account =~ ~s(href="/resources/two-factor-authentication")
+      assert account =~ ~r{<code[^>]*>delete my account</code>}
+
+      {:ok, _view, two_factor} = live(conn, ~p"/resources/two-factor-authentication")
+
+      for step <- [3, 5] do
+        assert two_factor =~
+                 ~s(src="/images/resources/guides/two-factor-authentication-step-#{step}.png")
+      end
+    end
+
     test "the reviewing guide shows the Review queue screenshots", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
 
