@@ -69,11 +69,7 @@ defmodule KanbanWeb.MarketingComponents do
         <.link href={~p"/workflows"} class="hover:opacity-70 transition-opacity">
           {gettext("Workflows")}
         </.link>
-        <.link
-          :if={@current_scope && @current_scope.user.type == :admin}
-          href={~p"/pricing"}
-          class="hover:opacity-70 transition-opacity"
-        >
+        <.link href={~p"/pricing"} class="hover:opacity-70 transition-opacity">
           {gettext("Pricing")}
         </.link>
         <.link
