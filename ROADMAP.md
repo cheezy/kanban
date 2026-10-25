@@ -49,6 +49,39 @@ Make busy boards fast to work with.
 
 Deadlines stay with delivery targets rather than individual tasks, so tasks don't get their own due dates.
 
+## ✅ Organizations and the Free plan
+
+Give teams that work together a paid home in Stride, and keep Stride free for everyone else.
+
+- Organizations, the paid plan for teams. Stride sets each one up and appoints its first org-admin, who manages it from an Organization console.
+- An Organization audit log of its security events, with filters and CSV or JSON export.
+- A Free plan for boards outside an Organization. A free board holds up to 3 people, and AI agents never count. Notifications, bulk actions, integrations, task telemetry and MCP access are for Organization boards, and each one shows "Available to organizations" on a free board.
+- Plans are switched on by the Stride operator. A self-hosted Stride that doesn't switch them on keeps every feature on every board, with no member limit.
+- Updated pricing, terms and privacy pages for the two plans.
+
+## ✅ Workspaces, invitations and account lifecycle
+
+Give teams a home for their boards and people.
+
+- Workspaces that group boards and people. Every account has a personal workspace, and an Organization can have several, with a workspace switcher in the side navigation. Inside a workspace, people are Members, who can create boards there, or Guests, who can't.
+- Every existing board moved into its owner's personal workspace automatically, and everyone kept the access they had.
+- Invite people to a workspace, and optionally to one of its boards, by email, whether or not they already have an account. The owner of a free board can invite someone to that board.
+- A single workspace API token that works across every AI Optimized board in the workspace, alongside board tokens.
+- Delete your own account from your account settings, once any board other people use has been handed over.
+- Export a workspace archive, and restore it on a self-hosted Stride instance. The archive never contains passwords, tokens or webhook secrets.
+
+## ✅ Enterprise identity and compliance
+
+Meet the security and compliance needs of larger organisations.
+
+- Two-factor authentication with an authenticator app, plus single-use recovery codes, a reminder after sign-in for people who haven't turned it on, and a step-by-step setup guide.
+- A permanent, tamper-proof audit log of important account and board activity.
+- An audit log viewer for administrators, with filters and CSV or JSON export.
+- Telemetry for every important event — sign-ins and account changes, board access, task and goal activity, agent work, notifications, rate limits and data exports — with a documented event catalogue, no personal data in event details, and a configurable retention period for stored metrics.
+- Organization security policies: require two-factor authentication for every member, with a grace period so nobody is locked out the moment it's turned on, and set how long the Organization's audit events are kept.
+- Single sign-on with OIDC and SAML identity providers, limited to email domains the Organization has verified. Verified domains are re-checked every day.
+- Automatic user provisioning and deprovisioning through SCIM. Removing someone ends their access to the Organization's boards and revokes their API tokens there, and an account the Organization manages is also signed out everywhere.
+
 ## 🚧 Developer integrations
 
 Plug Stride into the tools teams and agents already use.
@@ -59,29 +92,6 @@ Plug Stride into the tools teams and agents already use.
 - ✅ Slack notifications for board activity.
 - GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
 - ✅ An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
-
-## 🚧 Enterprise identity and compliance
-
-Meet the security and compliance needs of larger organisations.
-
-- ✅ Two-factor authentication with an authenticator app, plus single-use recovery codes, a reminder after sign-in for people who haven't turned it on, and a step-by-step setup guide.
-- ✅ A permanent, tamper-proof audit log of important account and board activity.
-- ✅ An audit log viewer for administrators, with filters and CSV or JSON export.
-- ✅ Telemetry for every important event — sign-ins and account changes, board access, task and goal activity, agent work, notifications, rate limits and data exports — with a documented event catalogue, no personal data in event details, and a configurable retention period for stored metrics.
-- Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
-- Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
-- Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.
-
-## 🔜 Workspaces, invitations and account lifecycle
-
-Give teams a home for their boards and people.
-
-- Workspaces that group boards and people, with owner, admin, member and guest roles.
-- Every existing board moves into its owner's personal workspace automatically, and everyone keeps the access they have today.
-- Invite people to a workspace or board by email, whether or not they already have an account.
-- A single workspace API token that works across every board in the workspace you can access, alongside today's board tokens.
-- Delete your own account from Settings, once any boards you own have been handed over.
-- Export a complete workspace archive, and restore it on a self-hosted Stride instance.
 
 ## 🔄 Ongoing plugin improvement
 
@@ -98,3 +108,9 @@ Recently shipped for OpenCode (Stride for OpenCode 1.41.0 and 1.42.0, and OpenCo
 - ✅ New tasks get a full behaviour test matrix by default and a consistency check across their fields before they are created.
 - ✅ Lighter instructions: background reading moved out of the always-loaded skills, and finding the next task asks for a smaller reply.
 - ✅ Exploratory testing can save its full report to a file, re-check a single fixed bug, and turn findings into regression tests without stopping to ask questions.
+
+Recently shipped for the security reviewer (Stride Security Review 2.7.1 and 2.7.2, and Stride Security Review for OpenCode 0.2.0):
+
+- ✅ When the reviewer tries out a suspicious snippet, it runs in a confined copy of your project that hides your home directory.
+- ✅ The reviewer's git commands no longer start the hooks, diff tools or signing programs a reviewed repository configures.
+- ✅ On OpenCode, the reviewer gives a verdict on each of a task's security considerations, loads its framework rules only when they apply, saves its full result to a file, and removes credential-shaped text from that result.
