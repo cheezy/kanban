@@ -647,7 +647,7 @@ msgstr "Benutzer konnte nicht vom Board entfernt werden"
 msgid "Manage Users"
 msgstr "Benutzer verwalten"
 
-#: lib/kanban_web/live/board_live/index.ex:299
+#: lib/kanban_web/live/board_live/index.ex:232
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "Nur der Board-Besitzer kann dieses Board löschen"
@@ -2743,7 +2743,7 @@ msgstr "Aufgaben abgeschlossen"
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:133
-#: lib/kanban_web/live/board_live/index.ex:307
+#: lib/kanban_web/live/board_live/index.ex:240
 #: lib/kanban_web/live/board_live/params.ex:44
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -4128,17 +4128,11 @@ msgstr[1] "%{count} aktiv"
 msgid "Boards"
 msgstr "Boards"
 
-#: lib/kanban_web/live/board_live/index.ex:114
-#, elixir-autogen, elixir-format
-msgid "Create new board"
-msgstr "Neues Board erstellen"
-
 #: lib/kanban_web/live/board_live/board_groups.ex:40
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Board löschen"
 
-#: lib/kanban_web/live/board_live/index.ex:125
 #: lib/kanban_web/live/board_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "New board"
@@ -4149,21 +4143,11 @@ msgstr "Neues Board"
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr "Ein Board ist ein Workspace für ein einzelnes Produkt oder Codebase. Stride bietet Ihnen den 5-Spalten-KI-Fluss ab Werk — Ihre Agenten ziehen aus „Bereit“, Menschen genehmigen in „Prüfung“. Sie können die Spalten später ändern."
 
-#: lib/kanban_web/live/board_live/index.ex:51
-#, elixir-autogen, elixir-format
-msgid "Coming soon"
-msgstr "Demnächst verfügbar"
-
 #: lib/kanban_web/live/board_live/index.ex:45
 #: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Erstellen Sie Ihr erstes Board"
-
-#: lib/kanban_web/live/board_live/index.ex:56
-#, elixir-autogen, elixir-format
-msgid "Import from Linear or Jira"
-msgstr "Aus Linear oder Jira importieren"
 
 #: lib/kanban_web/live/board_live/index.ex:31
 #, elixir-autogen, elixir-format
@@ -4174,21 +4158,6 @@ msgstr "Beginnen wir mit einem."
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr "Noch keine Boards"
-
-#: lib/kanban_web/live/board_live/index.ex:63
-#, elixir-autogen, elixir-format
-msgid "Tip: start with the board your team already works in. Stride can backfill history."
-msgstr "Tipp: Beginnen Sie mit dem Board, in dem Ihr Team bereits arbeitet. Stride kann die Historie nachträglich befüllen."
-
-#: lib/kanban_web/live/board_live/index.ex:152
-#, elixir-autogen, elixir-format
-msgid "AI Optimized"
-msgstr "KI-optimiert"
-
-#: lib/kanban_web/live/board_live/index.ex:139
-#, elixir-autogen, elixir-format
-msgid "Empty Board"
-msgstr "Leeres Board"
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:150
@@ -11138,7 +11107,7 @@ msgstr "Wird verschoben..."
 msgid "No boards in this workspace yet."
 msgstr "Noch keine Boards in diesem Workspace."
 
-#: lib/kanban_web/live/board_live/index.html.heex:150
+#: lib/kanban_web/live/board_live/index.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "No other boards are shared with you."
 msgstr "Keine weiteren Boards sind mit Ihnen geteilt."
@@ -11163,12 +11132,12 @@ msgstr "Nur ein Org-Admin kann diesen Workspace verwalten."
 msgid "Org-admins can't be removed here."
 msgstr "Org-Admins können hier nicht entfernt werden."
 
-#: lib/kanban_web/live/board_live/index.html.heex:147
+#: lib/kanban_web/live/board_live/index.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Other shared boards"
 msgstr "Weitere geteilte Boards"
 
-#: lib/kanban_web/live/board_live/index.html.heex:140
+#: lib/kanban_web/live/board_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Personal boards"
 msgstr "Persönliche Boards"
@@ -11250,7 +11219,7 @@ msgstr "Workspace-Einstellungen sind nicht verfügbar."
 msgid "You have no personal boards you own to move."
 msgstr "Sie haben keine eigenen persönlichen Boards, die Sie verschieben können."
 
-#: lib/kanban_web/live/board_live/index.html.heex:143
+#: lib/kanban_web/live/board_live/index.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "You have no personal boards."
 msgstr "Sie haben keine persönlichen Boards."

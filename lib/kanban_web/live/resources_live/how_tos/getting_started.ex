@@ -30,7 +30,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
           %{
             title: "Choose a Board Type",
             content:
-              "Click **New board** at the top of the page, or use the **New board** card after your boards. There are two kinds of board:\n\n- **AI Optimized** (**New AI Optimized Board** in the menu) gives you five fixed columns built for AI agents.\n- **Empty Board** (**New Empty Board** in the menu) gives you a board with no columns, so you can add your own.\n\nYou can't change a board's type later, so pick the one that fits how you work.",
+              "Click **New board** at the top of the page. The menu offers two kinds of board:\n\n- **New AI Optimized Board** gives you five fixed columns built for AI agents.\n- **New Empty Board** gives you a board with no columns, so you can add your own.\n\nYou can't change a board's type later, so pick the one that fits how you work.",
             image: "/images/resources/guides/board-creation-step-2.png",
             image_width: 820,
             image_height: 312
@@ -87,7 +87,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
           %{
             title: "Choosing the Right Board Type",
             content:
-              "You choose the type when you create the board:\n\n- **AI Optimized** if AI agents will work on the board, or you want the standard agent workflow\n- **Empty Board** if your team needs its own columns\n\nYou can't change a board's type after you create it, so choose with care."
+              "You choose the type when you create the board:\n\n- **New AI Optimized Board** if AI agents will work on the board, or you want the standard agent workflow\n- **New Empty Board** if your team needs its own columns\n\nYou can't change a board's type after you create it, so choose with care."
           },
           %{
             title: "WIP Limits (Custom Boards Only)",

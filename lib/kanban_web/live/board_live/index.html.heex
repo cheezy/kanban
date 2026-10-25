@@ -132,9 +132,7 @@
           count={@group_counts.workspace}
           stream={@streams.workspace_boards}
           empty={gettext("No boards in this workspace yet.")}
-        >
-          <.new_board_affordance />
-        </BoardGroups.board_section>
+        />
         <BoardGroups.board_section
           id="personal-boards"
           title={gettext("Personal boards")}
@@ -160,8 +158,6 @@
               board={board}
             />
           </div>
-
-          <.new_board_affordance />
         </div>
     <% end %>
   </div>

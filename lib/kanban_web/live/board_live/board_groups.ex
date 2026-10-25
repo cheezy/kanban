@@ -48,15 +48,13 @@ defmodule KanbanWeb.BoardLive.BoardGroups do
 
   @doc """
   Renders a headed group of board cards from a stream, with `empty` shown when
-  the group has no boards. `inner_block` renders after the cards inside the
-  grid (the new-board affordance).
+  the group has no boards.
   """
   attr :id, :string, required: true
   attr :title, :string, required: true
   attr :count, :integer, required: true
   attr :stream, :any, required: true
   attr :empty, :string, required: true
-  slot :inner_block
 
   def board_section(assigns) do
     ~H"""
@@ -71,19 +69,15 @@ defmodule KanbanWeb.BoardLive.BoardGroups do
         <span class="ident" style="color: var(--ink-3);">{@count}</span>
       </div>
       <p
-        :if={@count == 0 and @inner_block == []}
+        :if={@count == 0}
         style="margin: 0; font-size: 12.5px; color: var(--ink-2);"
       >
         {@empty}
       </p>
-      <div
-        :if={@count > 0 or @inner_block != []}
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-      >
+      <div :if={@count > 0} class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div id={"#{@id}-grid"} phx-update="stream" class="contents">
           <.board_card :for={{dom_id, board} <- @stream} id={dom_id} board={board} />
         </div>
-        {render_slot(@inner_block)}
       </div>
     </section>
     """

@@ -89,55 +89,6 @@ defmodule KanbanWeb.BoardLive.Index do
     """
   end
 
-  defp new_board_affordance(assigns) do
-    ~H"""
-    <div
-      role="region"
-      aria-label={gettext("Create new board")}
-      style={[
-        "border: 1.5px dashed var(--line-strong); border-radius: 8px;",
-        "padding: 14px 14px 12px; background: transparent;",
-        "min-height: 220px; display: flex; flex-direction: column;",
-        "align-items: center; justify-content: center; gap: 10px;",
-        "color: var(--ink-3);"
-      ]}
-    >
-      <.icon name="hero-plus-circle" class="h-8 w-8" />
-      <p style="margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-2);">
-        {gettext("New board")}
-      </p>
-      <div class="flex flex-col gap-2 w-full max-w-[12rem]">
-        <.link
-          navigate={~p"/boards/new"}
-          class="inline-flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          style={[
-            "padding: 6px 10px; border-radius: 5px;",
-            "background: transparent; color: var(--ink-2);",
-            "border: 1px solid var(--line-strong);",
-            "font-size: 12px; font-weight: 500;"
-          ]}
-        >
-          <.icon name="hero-document" class="h-3.5 w-3.5" />
-          <span>{gettext("Empty Board")}</span>
-        </.link>
-        <.link
-          navigate={~p"/boards/new?ai_optimized=true"}
-          class="inline-flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          style={[
-            "padding: 6px 10px; border-radius: 5px;",
-            "background: var(--ink); color: var(--color-base-100); border: none;",
-            "font-size: 12px; font-weight: 500;",
-            "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
-          ]}
-        >
-          <.icon name="hero-sparkles" class="h-3.5 w-3.5" />
-          <span>{gettext("AI Optimized")}</span>
-        </.link>
-      </div>
-    </div>
-    """
-  end
-
   # The boards index polls for fresh metrics every 30 seconds in
   # production. Tests override this via app env to avoid the timer
   # firing after the Ecto sandbox is checked back in.

@@ -647,7 +647,7 @@ msgstr "ボードからのユーザー削除に失敗しました"
 msgid "Manage Users"
 msgstr "ユーザー管理"
 
-#: lib/kanban_web/live/board_live/index.ex:299
+#: lib/kanban_web/live/board_live/index.ex:232
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "ボードの所有者のみがこのボードを削除できます"
@@ -2741,7 +2741,7 @@ msgstr "タスク完了"
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:133
-#: lib/kanban_web/live/board_live/index.ex:307
+#: lib/kanban_web/live/board_live/index.ex:240
 #: lib/kanban_web/live/board_live/params.ex:44
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -4124,17 +4124,11 @@ msgstr[0] "%{count}件アクティブ"
 msgid "Boards"
 msgstr "ボード"
 
-#: lib/kanban_web/live/board_live/index.ex:114
-#, elixir-autogen, elixir-format
-msgid "Create new board"
-msgstr "新しいボードを作成"
-
 #: lib/kanban_web/live/board_live/board_groups.ex:40
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "ボードを削除"
 
-#: lib/kanban_web/live/board_live/index.ex:125
 #: lib/kanban_web/live/board_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "New board"
@@ -4145,21 +4139,11 @@ msgstr "新しいボード"
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr "ボードは単一の製品またはコードベースのためのワークスペースです。Strideは5列のAIフローを最初から提供します — エージェントは「Ready」からプルし、人間は「Review」で承認します。列は後で変更できます。"
 
-#: lib/kanban_web/live/board_live/index.ex:51
-#, elixir-autogen, elixir-format
-msgid "Coming soon"
-msgstr "近日公開"
-
 #: lib/kanban_web/live/board_live/index.ex:45
 #: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "最初のボードを作成"
-
-#: lib/kanban_web/live/board_live/index.ex:56
-#, elixir-autogen, elixir-format
-msgid "Import from Linear or Jira"
-msgstr "LinearまたはJiraからインポート"
 
 #: lib/kanban_web/live/board_live/index.ex:31
 #, elixir-autogen, elixir-format
@@ -4170,21 +4154,6 @@ msgstr "1つから始めましょう。"
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr "ボードがまだありません"
-
-#: lib/kanban_web/live/board_live/index.ex:63
-#, elixir-autogen, elixir-format
-msgid "Tip: start with the board your team already works in. Stride can backfill history."
-msgstr "ヒント: チームがすでに使用しているボードから始めてください。Strideは履歴をさかのぼって取り込めます。"
-
-#: lib/kanban_web/live/board_live/index.ex:152
-#, elixir-autogen, elixir-format
-msgid "AI Optimized"
-msgstr "AI最適化"
-
-#: lib/kanban_web/live/board_live/index.ex:139
-#, elixir-autogen, elixir-format
-msgid "Empty Board"
-msgstr "空のボード"
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:150
@@ -11067,7 +11036,7 @@ msgstr "移動中..."
 msgid "No boards in this workspace yet."
 msgstr "このワークスペースにはまだボードがありません。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:150
+#: lib/kanban_web/live/board_live/index.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "No other boards are shared with you."
 msgstr "共有されている他のボードはありません。"
@@ -11092,12 +11061,12 @@ msgstr "このワークスペースを管理できるのは組織管理者だけ
 msgid "Org-admins can't be removed here."
 msgstr "組織管理者はここでは削除できません。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:147
+#: lib/kanban_web/live/board_live/index.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Other shared boards"
 msgstr "共有されている他のボード"
 
-#: lib/kanban_web/live/board_live/index.html.heex:140
+#: lib/kanban_web/live/board_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Personal boards"
 msgstr "個人ボード"
@@ -11179,7 +11148,7 @@ msgstr "ワークスペースの設定は利用できません。"
 msgid "You have no personal boards you own to move."
 msgstr "移動できる自分所有の個人ボードはありません。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:143
+#: lib/kanban_web/live/board_live/index.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "You have no personal boards."
 msgstr "個人ボードはありません。"

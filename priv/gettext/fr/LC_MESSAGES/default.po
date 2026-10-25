@@ -647,7 +647,7 @@ msgstr "Échec de la suppression de l'utilisateur du tableau"
 msgid "Manage Users"
 msgstr "Gérer les Utilisateurs"
 
-#: lib/kanban_web/live/board_live/index.ex:299
+#: lib/kanban_web/live/board_live/index.ex:232
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "Seul le propriétaire du tableau peut supprimer ce tableau"
@@ -2743,7 +2743,7 @@ msgstr "tâches terminées"
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:133
-#: lib/kanban_web/live/board_live/index.ex:307
+#: lib/kanban_web/live/board_live/index.ex:240
 #: lib/kanban_web/live/board_live/params.ex:44
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -4128,17 +4128,11 @@ msgstr[1] "%{count} actifs"
 msgid "Boards"
 msgstr "Tableaux"
 
-#: lib/kanban_web/live/board_live/index.ex:114
-#, elixir-autogen, elixir-format
-msgid "Create new board"
-msgstr "Créer un nouveau tableau"
-
 #: lib/kanban_web/live/board_live/board_groups.ex:40
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Supprimer le tableau"
 
-#: lib/kanban_web/live/board_live/index.ex:125
 #: lib/kanban_web/live/board_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "New board"
@@ -4149,21 +4143,11 @@ msgstr "Nouveau Tableau"
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr "Un tableau est un espace de travail pour un seul produit ou une seule base de code. Stride vous offre le flux IA à 5 colonnes prêt à l'emploi — vos agents prennent depuis « Prêt », les humains approuvent dans « Relecture ». Vous pourrez changer les colonnes plus tard."
 
-#: lib/kanban_web/live/board_live/index.ex:51
-#, elixir-autogen, elixir-format
-msgid "Coming soon"
-msgstr "Bientôt disponible"
-
 #: lib/kanban_web/live/board_live/index.ex:45
 #: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Créez votre premier tableau"
-
-#: lib/kanban_web/live/board_live/index.ex:56
-#, elixir-autogen, elixir-format
-msgid "Import from Linear or Jira"
-msgstr "Importer depuis Linear ou Jira"
 
 #: lib/kanban_web/live/board_live/index.ex:31
 #, elixir-autogen, elixir-format
@@ -4174,21 +4158,6 @@ msgstr "Commençons par un."
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr "Aucun tableau pour le moment"
-
-#: lib/kanban_web/live/board_live/index.ex:63
-#, elixir-autogen, elixir-format
-msgid "Tip: start with the board your team already works in. Stride can backfill history."
-msgstr "Astuce : commencez par le tableau sur lequel votre équipe travaille déjà. Stride peut remplir l'historique."
-
-#: lib/kanban_web/live/board_live/index.ex:152
-#, elixir-autogen, elixir-format
-msgid "AI Optimized"
-msgstr "Optimisé pour l'IA"
-
-#: lib/kanban_web/live/board_live/index.ex:139
-#, elixir-autogen, elixir-format
-msgid "Empty Board"
-msgstr "Tableau Vide"
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:150
@@ -11088,7 +11057,7 @@ msgstr "Déplacement..."
 msgid "No boards in this workspace yet."
 msgstr "Aucun tableau dans cet espace de travail pour le moment."
 
-#: lib/kanban_web/live/board_live/index.html.heex:150
+#: lib/kanban_web/live/board_live/index.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "No other boards are shared with you."
 msgstr "Aucun autre tableau n'est partagé avec vous."
@@ -11113,12 +11082,12 @@ msgstr "Seul un admin d'organisation peut gérer cet espace de travail."
 msgid "Org-admins can't be removed here."
 msgstr "Les admins d'organisation ne peuvent pas être retirés ici."
 
-#: lib/kanban_web/live/board_live/index.html.heex:147
+#: lib/kanban_web/live/board_live/index.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Other shared boards"
 msgstr "Autres tableaux partagés"
 
-#: lib/kanban_web/live/board_live/index.html.heex:140
+#: lib/kanban_web/live/board_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Personal boards"
 msgstr "Tableaux personnels"
@@ -11200,7 +11169,7 @@ msgstr "Les paramètres de l'espace de travail ne sont pas disponibles."
 msgid "You have no personal boards you own to move."
 msgstr "Vous n'avez aucun tableau personnel vous appartenant à déplacer."
 
-#: lib/kanban_web/live/board_live/index.html.heex:143
+#: lib/kanban_web/live/board_live/index.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "You have no personal boards."
 msgstr "Vous n'avez aucun tableau personnel."

@@ -647,7 +647,7 @@ msgstr "从看板移除用户失败"
 msgid "Manage Users"
 msgstr "管理用户"
 
-#: lib/kanban_web/live/board_live/index.ex:299
+#: lib/kanban_web/live/board_live/index.ex:232
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "只有看板所有者可以删除此看板"
@@ -2741,7 +2741,7 @@ msgstr "任务已完成"
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:133
-#: lib/kanban_web/live/board_live/index.ex:307
+#: lib/kanban_web/live/board_live/index.ex:240
 #: lib/kanban_web/live/board_live/params.ex:44
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -4124,17 +4124,11 @@ msgstr[0] "%{count} 个活跃"
 msgid "Boards"
 msgstr "看板"
 
-#: lib/kanban_web/live/board_live/index.ex:114
-#, elixir-autogen, elixir-format
-msgid "Create new board"
-msgstr "创建新看板"
-
 #: lib/kanban_web/live/board_live/board_groups.ex:40
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "删除看板"
 
-#: lib/kanban_web/live/board_live/index.ex:125
 #: lib/kanban_web/live/board_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "New board"
@@ -4145,21 +4139,11 @@ msgstr "新建看板"
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr "一个看板对应一个产品或代码库的工作空间。Stride 开箱即为您提供 5 列的 AI 流程 — 您的代理从「就绪」中拉取,人类在「审核」中批准。您可以稍后修改这些列。"
 
-#: lib/kanban_web/live/board_live/index.ex:51
-#, elixir-autogen, elixir-format
-msgid "Coming soon"
-msgstr "即将推出"
-
 #: lib/kanban_web/live/board_live/index.ex:45
 #: lib/kanban_web/live/user_live/confirmation.ex:105
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "创建您的第一个看板"
-
-#: lib/kanban_web/live/board_live/index.ex:56
-#, elixir-autogen, elixir-format
-msgid "Import from Linear or Jira"
-msgstr "从 Linear 或 Jira 导入"
 
 #: lib/kanban_web/live/board_live/index.ex:31
 #, elixir-autogen, elixir-format
@@ -4170,21 +4154,6 @@ msgstr "让我们从一个开始。"
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr "尚无看板"
-
-#: lib/kanban_web/live/board_live/index.ex:63
-#, elixir-autogen, elixir-format
-msgid "Tip: start with the board your team already works in. Stride can backfill history."
-msgstr "提示:从您团队当前使用的看板开始。Stride 可以回填历史记录。"
-
-#: lib/kanban_web/live/board_live/index.ex:152
-#, elixir-autogen, elixir-format
-msgid "AI Optimized"
-msgstr "AI 优化"
-
-#: lib/kanban_web/live/board_live/index.ex:139
-#, elixir-autogen, elixir-format
-msgid "Empty Board"
-msgstr "空白看板"
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:150
@@ -11070,7 +11039,7 @@ msgstr "正在移动..."
 msgid "No boards in this workspace yet."
 msgstr "此工作区中还没有看板。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:150
+#: lib/kanban_web/live/board_live/index.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "No other boards are shared with you."
 msgstr "没有其他与您共享的看板。"
@@ -11095,12 +11064,12 @@ msgstr "只有组织管理员可以管理此工作区。"
 msgid "Org-admins can't be removed here."
 msgstr "无法在此处移除组织管理员。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:147
+#: lib/kanban_web/live/board_live/index.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Other shared boards"
 msgstr "其他共享看板"
 
-#: lib/kanban_web/live/board_live/index.html.heex:140
+#: lib/kanban_web/live/board_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Personal boards"
 msgstr "个人看板"
@@ -11182,7 +11151,7 @@ msgstr "工作区设置不可用。"
 msgid "You have no personal boards you own to move."
 msgstr "您没有可移动的自有个人看板。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:143
+#: lib/kanban_web/live/board_live/index.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "You have no personal boards."
 msgstr "您没有个人看板。"

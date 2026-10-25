@@ -85,6 +85,36 @@ defmodule KanbanWeb.BoardLive.WorkspaceBoardsTest do
 
       assert {:error, {_kind, %{to: "/boards"}}} = live(conn, ~p"/boards/#{backfilled.id}")
     end
+
+    test "a workspace group with no boards says so and draws no grid", ctx do
+      board_fixture(ctx.member, %{name: "Personal board"})
+
+      {:ok, view, _html} = live(log_in_user(build_conn(), ctx.member), ~p"/boards")
+
+      assert view |> element("#workspace-boards") |> render() =~
+               "No boards in this workspace yet."
+
+      refute has_element?(view, "#workspace-boards-grid")
+    end
+
+    test "the header menu is the only place to start a new board", ctx do
+      flat_user = user_fixture()
+      board_fixture(flat_user, %{name: "Flat board"})
+      board_fixture(ctx.member, %{name: "Personal board"})
+
+      for user <- [flat_user, ctx.member] do
+        {:ok, view, html} = live(log_in_user(build_conn(), user), ~p"/boards")
+
+        refute has_element?(view, ~s([aria-label="Create new board"]))
+        assert href_count(html, "/boards/new") == 1
+        assert href_count(html, "/boards/new?ai_optimized=true") == 1
+      end
+    end
+  end
+
+  defp href_count(html, path) do
+    needle = ~s|href="#{path}"|
+    html |> String.split(needle) |> length() |> Kernel.-(1)
   end
 
   describe "creating a board" do
