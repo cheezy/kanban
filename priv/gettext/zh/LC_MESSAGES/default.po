@@ -3550,7 +3550,7 @@ msgstr "静态分析在每次提交时通过 CI 运行;发现任何问题构建�
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr "使用 SQL SELECT FOR UPDATE SKIP LOCKED,因此两个代理不可能同时认领同一任务——并发安全由数据库保证,而非应用代码尽力而为。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:197
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:204
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr ",并附上您项目的简短说明,我们就会为您完成设置。"
@@ -3737,7 +3737,7 @@ msgstr "允许某用户访问其他用户工作区数据的授权缺陷。"
 msgid "CSRF protection"
 msgstr "CSRF 保护"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:177
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Can I switch between self-hosted and hosted later?"
 msgstr "我以后可以在自托管和托管之间切换吗?"
@@ -3818,7 +3818,7 @@ msgstr "视您所在地而定,您可能享有以下权利:"
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr "诊断错误、衡量性能并防止滥用(限速、欺诈检测)。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr "你们为非营利组织或开源项目提供折扣吗?"
@@ -3828,7 +3828,7 @@ msgstr "你们为非营利组织或开源项目提供折扣吗?"
 msgid "Free"
 msgstr "免费"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:149
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Frequently asked questions"
 msgstr "常见问题"
@@ -3858,7 +3858,7 @@ msgstr "如果您认为在 Stride 中发现了安全漏洞,请以私密方式向
 msgid "Information we collect"
 msgstr "我们收集的信息"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:155
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Is Stride really free if I self-host?"
 msgstr "如果我自托管,Stride 真的免费吗?"
@@ -4003,8 +4003,8 @@ msgid "Structured schema, not free-text"
 msgstr "结构化的模式,而非自由文本"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:176
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:119
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:140
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:126
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Talk to us"
 msgstr "与我们交流"
@@ -4076,12 +4076,12 @@ msgstr "工作区协作者"
 msgid "Workspace content"
 msgstr "工作区内容"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr "可以。请发送邮件至 "
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:158
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "是。整个代码库以 MIT 许可证开源。可以在您自己的机器、服务器或 Kubernetes 集群上运行。您不需要付费给我们。"
@@ -8903,7 +8903,7 @@ msgstr "未找到通知。"
 #: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:93
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:102
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:83
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:90
 #: lib/kanban_web/emails/announcement_email.ex:101
 #: lib/kanban_web/live/notification_live/index.ex:38
 #: lib/kanban_web/live/notification_live/index.html.heex:5
@@ -9938,7 +9938,7 @@ msgstr "批量操作失败，未做任何更改。"
 #: lib/kanban_web/components/bulk_action_bar.ex:148
 #: lib/kanban_web/components/locked_feature.ex:140
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:103
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:99
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:106
 #: lib/kanban_web/emails/announcement_email.ex:102
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
@@ -10605,7 +10605,7 @@ msgstr "审计日志"
 msgid "Back to Organization"
 msgstr "返回组织"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:87
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:94
 #: lib/kanban_web/live/org_live/audit_log.ex:45
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
@@ -10688,7 +10688,7 @@ msgid "Workspace renamed."
 msgstr "工作区已重命名。"
 
 #: lib/kanban_web/components/locked_feature.ex:139
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:95
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:102
 #: lib/kanban_web/live/org_live/console.ex:392
 #: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
@@ -12481,7 +12481,7 @@ msgctxt "audit action"
 msgid "Organization domain no longer verified"
 msgstr "组织域名不再处于已验证状态"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:79
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Everything in Free, with no user or board limits, plus:"
 msgstr "包含免费方案的全部内容，不限用户数和看板数，另外还有："
@@ -12491,26 +12491,21 @@ msgstr "包含免费方案的全部内容，不限用户数和看板数，另外
 msgid "For individuals and small teams. No card required."
 msgstr "适合个人和小团队。无需信用卡。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:72
-#, elixir-autogen, elixir-format
-msgid "For teams that need more. Contact us for pricing."
-msgstr "适合需要更多功能的团队。请联系我们了解价格。"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:129
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:136
 #: lib/kanban_web/live/board_live/members_form_component.ex:115
 #, elixir-autogen, elixir-format
 msgid "Get Stride for your organization"
 msgstr "为您的组织使用 Stride"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:105
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:103
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:110
 #: lib/kanban_web/emails/announcement_email.ex:103
 #, elixir-autogen, elixir-format
 msgid "Integrations (webhooks)"
 msgstr "集成（Webhook）"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:110
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:111
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:118
 #: lib/kanban_web/emails/announcement_email.ex:109
 #, elixir-autogen, elixir-format
 msgid "MCP access"
@@ -12523,22 +12518,17 @@ msgstr "MCP 访问"
 msgid "Metrics and exports"
 msgstr "指标和导出"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:91
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Single sign-on (SSO)"
 msgstr "单点登录（SSO）"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:109
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:107
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:114
 #: lib/kanban_web/emails/announcement_email.ex:108
 #, elixir-autogen, elixir-format
 msgid "Task telemetry fields"
 msgstr "任务遥测字段"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:132
-#, elixir-autogen, elixir-format
-msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with pricing and next steps."
-msgstr "组织方案由我们直接与您一起设置。请发邮件告诉我们您的团队情况，我们会回复价格和后续步骤。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:124
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:43
@@ -12561,7 +12551,7 @@ msgstr "无限看板、任务和目标"
 msgid "Up to 3 people per board — AI agents do not count"
 msgstr "每个看板最多 3 人 — AI 代理不计入"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:166
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "Who counts toward the 3-person limit on a free board?"
 msgstr "免费看板的 3 人上限计算哪些人？"
@@ -12760,12 +12750,12 @@ msgstr "如果你的组织还通过其身份提供商管理账户（SCIM），�
 msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
 msgstr "如果你所在组织的身份提供商已停用你的账户，你将无法登录并自行删除账户；请发送电子邮件至下方地址，我们会为你删除。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:192
 #, elixir-autogen, elixir-format
 msgid " and we will help you move."
 msgstr "，我们会协助您迁移。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
 msgstr "可以，双向都行，数据模型也相同。组织的组织管理员可在工作区设置中导出工作区，我们会在另一端为您导入。使用免费方案时，请发送邮件至 "
@@ -13548,7 +13538,7 @@ msgstr "适用于你的代理"
 msgid "Your hooks, in one file"
 msgstr "你的钩子，集中在一个文件里"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:169
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "Only the human members of the board, including its owner. Agents — Claude, Gemini, OpenCode, Codex, your own — never count. They authenticate via API tokens scoped to a board and a user, and there is no per-agent fee. Boards in an Organization have no member limit."
 msgstr "只计算看板的人类成员，包括看板所有者。代理 — Claude、Gemini、OpenCode、Codex 或您自己的 — 从不计入。它们通过限定于某个看板和某个用户的 API 令牌进行身份验证，并且不按代理收费。组织中的看板没有成员数量限制。"
@@ -13557,3 +13547,28 @@ msgstr "只计算看板的人类成员，包括看板所有者。代理 — Clau
 #, elixir-autogen, elixir-format
 msgid "Bring any agent — Claude, Gemini, OpenCode, Codex, your own"
 msgstr "带上任何代理 — Claude、Gemini、OpenCode、Codex 或您自己的"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "$12 CAD"
+msgstr "12 加元"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "For teams that need more."
+msgstr "适合需要更多功能的团队。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "For up to 250 users. More than 250? Contact us for pricing."
+msgstr "最多 250 名用户。超过 250 名？请联系我们了解价格。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:139
+#, elixir-autogen, elixir-format
+msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with next steps. For more than 250 users, we will send you a price."
+msgstr "组织方案由我们直接与您一起设置。请发邮件告诉我们您的团队情况，我们会回复后续步骤。超过 250 名用户的，我们会向您报价。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "per user / month"
+msgstr "每用户 / 月"

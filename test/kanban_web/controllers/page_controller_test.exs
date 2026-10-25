@@ -534,11 +534,11 @@ defmodule KanbanWeb.PageControllerTest do
       assert text =~ "we import it on the other side"
 
       assert text =~
-               "On the free plan, email hello@stridelikeaboss.com and we will help you move."
+               "On the free plan, email enterprise@letstango.ca and we will help you move."
 
       refute text =~ "Export your workspace from one and import it into the other"
 
-      assert faq |> LazyHTML.query("a[href='mailto:hello@stridelikeaboss.com']") |> Enum.count() ==
+      assert faq |> LazyHTML.query("a[href='mailto:enterprise@letstango.ca']") |> Enum.count() ==
                1
     end
 
@@ -587,16 +587,43 @@ defmodule KanbanWeb.PageControllerTest do
       assert text =~ "no user or board limits"
 
       assert organization
-             |> LazyHTML.query("a[href='mailto:enterprise@stridelikeaboss.com']")
+             |> LazyHTML.query("a[href='mailto:enterprise@letstango.ca']")
              |> LazyHTML.text() =~ "Talk to us"
     end
 
-    test "has no price, trial, checkout or seat-limit wording", %{conn: conn} do
+    test "the Organization plan costs $12 CAD per user a month for up to 250 users",
+         %{conn: conn} do
+      document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
+
+      price =
+        document |> LazyHTML.query("#plan-organization #organization-price") |> LazyHTML.text()
+
+      limit =
+        document
+        |> LazyHTML.query("#plan-organization #organization-price-limit")
+        |> LazyHTML.text()
+
+      assert price =~ "$12 CAD"
+      assert price =~ "per user / month"
+      assert limit =~ "For up to 250 users. More than 250? Contact us for pricing."
+      refute document |> LazyHTML.query("#plan-free") |> LazyHTML.text() =~ "$12"
+
+      assert document |> LazyHTML.query("#contact") |> LazyHTML.text() =~
+               "For more than 250 users, we will send you a price."
+    end
+
+    test "shows the Organization price in German", %{conn: conn} do
+      body = conn |> get(~p"/pricing?locale=de") |> html_response(200)
+
+      assert body =~ "12 CAD"
+      assert body =~ "pro Benutzer / Monat"
+      refute body =~ "per user / month"
+    end
+
+    test "has no trial, checkout or old plan wording", %{conn: conn} do
       body = conn |> get(~p"/pricing") |> html_response(200)
 
       refute body =~ "Start free trial"
-      refute body =~ "$12"
-      refute body =~ "/ user / month"
       refute body =~ "Up to 25 users"
       refute body =~ "Team plan"
       refute body =~ "Most popular"
@@ -620,7 +647,7 @@ defmodule KanbanWeb.PageControllerTest do
       assert LazyHTML.text(contact) =~ "Get Stride for your organization"
 
       assert contact
-             |> LazyHTML.query("a[href='mailto:enterprise@stridelikeaboss.com']")
+             |> LazyHTML.query("a[href='mailto:enterprise@letstango.ca']")
              |> LazyHTML.text() =~ "Talk to us"
     end
 

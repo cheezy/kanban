@@ -60,8 +60,10 @@ The pricing page names two plans:
   unlimited boards, tasks and goals, up to 3 people per board (AI agents do
   not count), any agent, the full REST API and client-side hooks, and metrics
   and exports.
-- **Organization**, "For teams that need more. Contact us for pricing." It is
-  everything in Free with no user or board limits, plus notifications, the
+- **Organization**, "For teams that need more." It costs $12 CAD per user per
+  month for up to 250 users; an Organization with more than 250 users contacts
+  Stride for pricing. It is everything in Free with no user or board limits,
+  plus notifications, the
   Organization audit log, single sign-on (SSO), workspaces, bulk actions,
   integrations (webhooks), task telemetry fields and MCP access.
 

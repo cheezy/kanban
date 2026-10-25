@@ -3553,7 +3553,7 @@ msgstr " análise estática roda no CI em cada commit; o build falha em qualquer
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr " usa SQL SELECT FOR UPDATE SKIP LOCKED, então dois agentes nunca podem reservar a mesma tarefa — a segurança de concorrência é uma garantia do banco de dados, não um esforço aproximado do código da aplicação."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:197
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:204
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr " com uma breve nota sobre seu projeto e cuidaremos da configuração."
@@ -3740,7 +3740,7 @@ msgstr "Bugs de autorização que permitem a um usuário acessar os dados de esp
 msgid "CSRF protection"
 msgstr "Proteção CSRF"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:177
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Can I switch between self-hosted and hosted later?"
 msgstr "Posso alternar entre auto-hospedado e hospedado depois?"
@@ -3821,7 +3821,7 @@ msgstr "Dependendo de onde você mora, pode ter o direito de:"
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr "Diagnosticar erros, medir desempenho e prevenir abusos (limite de taxa, detecção de fraude)."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:198
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr "Vocês oferecem desconto para organizações sem fins lucrativos ou projetos open source?"
@@ -3831,7 +3831,7 @@ msgstr "Vocês oferecem desconto para organizações sem fins lucrativos ou proj
 msgid "Free"
 msgstr "Grátis"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:149
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Frequently asked questions"
 msgstr "Perguntas frequentes"
@@ -3861,7 +3861,7 @@ msgstr "Se você acredita ter encontrado uma vulnerabilidade de segurança no St
 msgid "Information we collect"
 msgstr "Informações que coletamos"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:155
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Is Stride really free if I self-host?"
 msgstr "O Stride é realmente grátis se eu auto-hospedar?"
@@ -4006,8 +4006,8 @@ msgid "Structured schema, not free-text"
 msgstr "Esquema estruturado, não texto livre"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:176
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:119
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:140
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:126
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Talk to us"
 msgstr "Fale com a gente"
@@ -4079,12 +4079,12 @@ msgstr "Colaboradores do espaço de trabalho"
 msgid "Workspace content"
 msgstr "Conteúdo do espaço de trabalho"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr "Sim. Escreva para "
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:158
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "Sim. Todo o código é open source sob a licença MIT. Rode na sua própria máquina, no seu próprio servidor ou no seu próprio cluster Kubernetes. Você não nos deve nada."
@@ -8937,7 +8937,7 @@ msgstr "Notificação não encontrada."
 #: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:93
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:102
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:83
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:90
 #: lib/kanban_web/emails/announcement_email.ex:101
 #: lib/kanban_web/live/notification_live/index.ex:38
 #: lib/kanban_web/live/notification_live/index.html.heex:5
@@ -9977,7 +9977,7 @@ msgstr "A ação em massa falhou. Nada foi alterado."
 #: lib/kanban_web/components/bulk_action_bar.ex:148
 #: lib/kanban_web/components/locked_feature.ex:140
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:103
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:99
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:106
 #: lib/kanban_web/emails/announcement_email.ex:102
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
@@ -10645,7 +10645,7 @@ msgstr "Log de auditoria"
 msgid "Back to Organization"
 msgstr "Voltar à organização"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:87
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:94
 #: lib/kanban_web/live/org_live/audit_log.ex:45
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
@@ -10728,7 +10728,7 @@ msgid "Workspace renamed."
 msgstr "Espaço de trabalho renomeado."
 
 #: lib/kanban_web/components/locked_feature.ex:139
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:95
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:102
 #: lib/kanban_web/live/org_live/console.ex:392
 #: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
@@ -12523,7 +12523,7 @@ msgctxt "audit action"
 msgid "Organization domain no longer verified"
 msgstr "Domínio da organização não está mais verificado"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:79
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Everything in Free, with no user or board limits, plus:"
 msgstr "Tudo do Grátis, sem limites de usuários ou de quadros, e mais:"
@@ -12533,26 +12533,21 @@ msgstr "Tudo do Grátis, sem limites de usuários ou de quadros, e mais:"
 msgid "For individuals and small teams. No card required."
 msgstr "Para pessoas e equipes pequenas. Sem cartão."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:72
-#, elixir-autogen, elixir-format
-msgid "For teams that need more. Contact us for pricing."
-msgstr "Para equipes que precisam de mais. Fale com a gente para saber os preços."
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:129
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:136
 #: lib/kanban_web/live/board_live/members_form_component.ex:115
 #, elixir-autogen, elixir-format
 msgid "Get Stride for your organization"
 msgstr "Stride para a sua organização"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:105
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:103
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:110
 #: lib/kanban_web/emails/announcement_email.ex:103
 #, elixir-autogen, elixir-format
 msgid "Integrations (webhooks)"
 msgstr "Integrações (webhooks)"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:110
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:111
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:118
 #: lib/kanban_web/emails/announcement_email.ex:109
 #, elixir-autogen, elixir-format
 msgid "MCP access"
@@ -12565,22 +12560,17 @@ msgstr "Acesso MCP"
 msgid "Metrics and exports"
 msgstr "Métricas e exportações"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:91
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Single sign-on (SSO)"
 msgstr "Login único (SSO)"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:109
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:107
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:114
 #: lib/kanban_web/emails/announcement_email.ex:108
 #, elixir-autogen, elixir-format
 msgid "Task telemetry fields"
 msgstr "Campos de telemetria de tarefas"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:132
-#, elixir-autogen, elixir-format
-msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with pricing and next steps."
-msgstr "O plano Organização é configurado diretamente com você. Envie um e-mail sobre a sua equipe e responderemos com os preços e os próximos passos."
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:124
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:43
@@ -12603,7 +12593,7 @@ msgstr "Quadros, tarefas e metas ilimitados"
 msgid "Up to 3 people per board — AI agents do not count"
 msgstr "Até 3 pessoas por quadro — agentes de IA não contam"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:166
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "Who counts toward the 3-person limit on a free board?"
 msgstr "Quem conta para o limite de 3 pessoas em um quadro gratuito?"
@@ -12802,12 +12792,12 @@ msgstr "Se a sua organização também gerencia as contas pelo provedor de ident
 msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
 msgstr "Se o provedor de identidade da sua organização desativou a sua conta, você não consegue fazer login para excluí-la; envie um e-mail para o endereço indicado abaixo e nós a excluiremos para você."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:192
 #, elixir-autogen, elixir-format
 msgid " and we will help you move."
 msgstr " e ajudaremos você na mudança."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
 msgstr "Sim, nos dois sentidos, e o modelo de dados é o mesmo. Os administradores de uma organização exportam um espaço de trabalho nas configurações dele, e nós o importamos do outro lado. No plano gratuito, escreva para "
@@ -13590,7 +13580,7 @@ msgstr "Funciona com o seu agente"
 msgid "Your hooks, in one file"
 msgstr "Seus hooks, em um único arquivo"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:169
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "Only the human members of the board, including its owner. Agents — Claude, Gemini, OpenCode, Codex, your own — never count. They authenticate via API tokens scoped to a board and a user, and there is no per-agent fee. Boards in an Organization have no member limit."
 msgstr "Somente os membros humanos do quadro, incluindo o proprietário. Agentes — Claude, Gemini, OpenCode, Codex, o seu — nunca contam. Eles se autenticam por tokens de API restritos a um quadro e a um usuário, e não há cobrança por agente. Quadros em uma organização não têm limite de membros."
@@ -13599,3 +13589,28 @@ msgstr "Somente os membros humanos do quadro, incluindo o proprietário. Agentes
 #, elixir-autogen, elixir-format
 msgid "Bring any agent — Claude, Gemini, OpenCode, Codex, your own"
 msgstr "Traga qualquer agente — Claude, Gemini, OpenCode, Codex, o seu"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:75
+#, elixir-autogen, elixir-format
+msgid "$12 CAD"
+msgstr "CA$ 12"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "For teams that need more."
+msgstr "Para equipes que precisam de mais."
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "For up to 250 users. More than 250? Contact us for pricing."
+msgstr "Para até 250 usuários. Mais de 250? Fale com a gente para saber os preços."
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:139
+#, elixir-autogen, elixir-format
+msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with next steps. For more than 250 users, we will send you a price."
+msgstr "O plano Organização é configurado diretamente com você. Envie um e-mail sobre a sua equipe e responderemos com os próximos passos. Para mais de 250 usuários, enviaremos um preço."
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:76
+#, elixir-autogen, elixir-format
+msgid "per user / month"
+msgstr "por usuário / mês"
