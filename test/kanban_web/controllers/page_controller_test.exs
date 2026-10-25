@@ -607,7 +607,16 @@ defmodule KanbanWeb.PageControllerTest do
     product-target.png
     product-notifications.png
     product-integrations.png
+    product-board-metrics.png
     product-metrics.png
+    product-compliance.png
+    product-workspaces.png
+    product-free-boards.png
+    product-org-console.png
+    product-audit-log.png
+    product-security-policy.png
+    product-sso.png
+    product-scim.png
   )
 
   test "GET /product", %{conn: conn} do
@@ -729,37 +738,133 @@ defmodule KanbanWeb.PageControllerTest do
            ]
   end
 
-  # Three phrases per locale: the hero headline, a Build heading and the
-  # Operate heading. Like the
+  # The Measure and Govern themes (W2459): per section, each subsection's
+  # heading, its screenshot and the Resources guide it links to, in page order.
+  # Two Measure subsections share a guide, so links are counted per subsection.
+  @measure_govern_sections [
+    {"measure",
+     [
+       {"Flow metrics for every board", "product-board-metrics.png", "metrics-dashboard"},
+       {"Trends across all your boards", "product-metrics.png",
+        "workspace-and-compliance-metrics"},
+       {"See how agents follow your workflow", "product-compliance.png",
+        "workspace-and-compliance-metrics"}
+     ]},
+    {"govern",
+     [
+       {"A workspace for each team", "product-workspaces.png", "working-in-a-workspace"},
+       {"Free boards and paid boards", "product-free-boards.png", "free-and-paid-boards"},
+       {"One console for org-admins", "product-org-console.png",
+        "administering-your-organization"},
+       {"An audit log of security events", "product-audit-log.png",
+        "reading-the-organization-audit-log"},
+       {"Require two-factor for every member", "product-security-policy.png",
+        "organization-security-policy"},
+       {"Single sign-on with your identity provider", "product-sso.png",
+        "setting-up-single-sign-on"},
+       {"Provision people with SCIM", "product-scim.png", "provisioning-users-with-scim"}
+     ]}
+  ]
+
+  test "GET /product shows the measure and govern sections and links to their guides", %{
+    conn: conn
+  } do
+    body = conn |> get(~p"/product") |> html_response(200)
+
+    # Operate, then Measure, then Govern, then the closing call to action.
+    positions =
+      for marker <- [~s(id="operate"), ~s(id="measure"), ~s(id="govern"), "Ready to see it run?"] do
+        body |> :binary.match(marker) |> elem(0)
+      end
+
+    assert positions == Enum.sort(positions)
+    assert body =~ "Know where work waits"
+    assert body =~ "Run Stride for your whole organization"
+
+    document = LazyHTML.from_document(body)
+
+    for {section_id, subsections} <- @measure_govern_sections do
+      section = LazyHTML.query(document, "main section##{section_id}")
+      items = section |> LazyHTML.query("[data-showcase-item]") |> Enum.to_list()
+      assert length(items) == length(subsections), "#{section_id} has #{length(items)} items"
+
+      for {item, {heading, image, guide_id}} <- Enum.zip(items, subsections) do
+        assert item |> LazyHTML.query("h3") |> LazyHTML.text() |> String.trim() == heading
+
+        assert [src] = item |> LazyHTML.query("img") |> LazyHTML.attribute("src")
+        assert src =~ "/images/marketing/#{image}", "#{heading}: expected #{image}, got #{src}"
+
+        # Exactly one link, to a /resources/<id> guide.
+        assert [href] = item |> LazyHTML.query("a") |> LazyHTML.attribute("href")
+        assert href == "/resources/#{guide_id}", "#{heading} links to #{href}"
+      end
+    end
+
+    # Every guide the sections link to exists and opens.
+    guide_ids =
+      for {_section, subsections} <- @measure_govern_sections,
+          {_heading, _image, guide_id} <- subsections,
+          uniq: true,
+          do: guide_id
+
+    for guide_id <- guide_ids do
+      assert {:ok, _guide} = KanbanWeb.ResourcesLive.HowToData.get_how_to(guide_id)
+      assert build_conn() |> get("/resources/#{guide_id}") |> html_response(200)
+    end
+
+    # Claims the code does not back stay off the page: no agent-versus-human
+    # chart, and single sign-on never replaces passwords.
+    refute body =~ "split by agent vs human"
+    refute body =~ ~r/SSO[- ]only/i
+    assert body =~ "Members who have a password can still use it."
+
+    # The plan limits are stated as applying only when plans are switched on,
+    # which is off by default.
+    assert body =~ "When a Stride has its plans switched on, a free board holds up to 3 people"
+    assert body =~ "With plans switched off"
+  end
+
+  # Four phrases per locale: the hero headline, a Build heading, the Operate
+  # heading and the Govern heading. Like the
   # /workflows test below, the locale is seeded into the session so the real
   # KanbanWeb.Plugs.Locale path sets it.
   @product_translations %{
     "de" => [
       "Das Board, das Ihre Leute und Ihre Agenten teilen.",
       "Alles, was ein Agent braucht, in einer Aufgabe",
-      "Arbeit in Bewegung halten, sobald sie beginnt"
+      "Arbeit in Bewegung halten, sobald sie beginnt",
+      "Stride für Ihre gesamte Organisation"
     ],
     "es" => [
       "El tablero que comparten tu equipo y tus agentes.",
       "Todo lo que un agente necesita, en una sola tarea",
-      "Mantén el trabajo en marcha una vez que empieza"
+      "Mantén el trabajo en marcha una vez que empieza",
+      "Usa Stride en toda tu organización"
     ],
     "fr" => [
       "Le tableau que partagent vos équipes et vos agents.",
       "Tout ce dont un agent a besoin, dans une seule tâche",
-      "Faites avancer le travail une fois lancé"
+      "Faites avancer le travail une fois lancé",
+      "Stride pour toute votre organisation"
     ],
     "ja" => [
       "人とエージェントが共有するボード。",
       "エージェントに必要なすべてを、1つのタスクに",
-      "始まった仕事を止めない"
+      "始まった仕事を止めない",
+      "組織全体で Stride を運用する"
     ],
     "pt" => [
       "O quadro que sua equipe e seus agentes compartilham.",
       "Tudo o que um agente precisa, em uma só tarefa",
-      "Mantenha o trabalho andando depois que ele começa"
+      "Mantenha o trabalho andando depois que ele começa",
+      "Use o Stride em toda a sua organização"
     ],
-    "zh" => ["你的团队与代理共享的看板。", "代理所需的一切，尽在一个任务中", "工作一旦开始，就让它持续推进"]
+    "zh" => [
+      "你的团队与代理共享的看板。",
+      "代理所需的一切，尽在一个任务中",
+      "工作一旦开始，就让它持续推进",
+      "在整个组织中运行 Stride"
+    ]
   }
 
   for {locale, expected} <- @product_translations do
@@ -778,6 +883,7 @@ defmodule KanbanWeb.PageControllerTest do
       refute body =~ "The board your people and your agents share."
       refute body =~ "Everything an agent needs, in one task"
       refute body =~ "Keep work moving once it starts"
+      refute body =~ "Run Stride for your whole organization"
     end
   end
 
@@ -805,7 +911,7 @@ defmodule KanbanWeb.PageControllerTest do
       end
 
       headings = LazyHTML.query(main, "h1, h2[id$=\"-heading\"]")
-      assert Enum.count(headings) == 6
+      assert Enum.count(headings) == 7
 
       for heading <- headings do
         [style] = LazyHTML.attribute(heading, "style")

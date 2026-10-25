@@ -2,7 +2,7 @@
   <div class="max-w-5xl mx-auto px-6 py-16">
     <%!--
       The showcase: a hero, then one <section> per theme in the order a visitor
-      evaluates Stride (Plan, Build, Review, then Operate and Measure). Every
+      evaluates Stride (Plan, Build, Review, Operate, Measure, then Govern). Every
       screenshot comes from demo data and is listed, with how to retake it, in
       priv/static/images/marketing/README.md. test/kanban_web/controllers/marketing_images_test.exs
       checks each <img> exists under /images/marketing/ and declares its real size,
@@ -491,10 +491,11 @@
       </div>
     </section>
 
-    <%!-- Measure theme (interim). W2459 extends this section with the metrics
-    pages and adds a Govern theme (Organizations and admin) after it. --%>
+    <%!-- Measure theme (W2459): the board metrics dashboard, the workspace
+    Metrics page and a board's Compliance page. Each subsection is a
+    [data-showcase-item] with a screenshot and a guide link. --%>
     <section id="measure" class="mb-24" aria-labelledby="measure-heading">
-      <div class="max-w-3xl mx-auto text-center mb-6">
+      <div class="max-w-3xl mx-auto text-center">
         <span class="ucase">{gettext("05 · Measure")}</span>
         <h2
           id="measure-heading"
@@ -505,26 +506,372 @@
         </h2>
         <p class="leading-relaxed" style="color: var(--ink-2);">
           {gettext(
-            "Workspace metrics show median cycle time, median lead time, throughput and review wait time over 7, 14, 30 or 90 days, for all your boards or just the ones you pick, with cumulative flow and a leaderboard of the agents and people finishing the work."
+            "Every board has its own metrics, the Metrics page adds up all the boards you can open, and on AI-optimized boards a Compliance page shows how agents follow the workflow."
           )}
         </p>
       </div>
-      <img
-        src={~p"/images/marketing/product-metrics.png"}
-        alt={
-          gettext(
-            "Stride workspace metrics with cycle time, lead time, throughput, review wait time and a leaderboard of agents and people"
-          )
-        }
-        width="1232"
-        height="782"
-        loading="lazy"
-        class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
-        style="border: 1px solid var(--line);"
-      />
+
+      <div class="mt-14" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Flow metrics for every board")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "A board's Metrics Dashboard shows throughput, cycle time, lead time and wait time for today, the last 7, 30 or 90 days, or all time, with or without weekends. On an AI-optimized board, pick one agent to count only its tasks. Each metric opens its own page, which exports to PDF or Excel."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/metrics-dashboard"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Using the Metrics Dashboard")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-board-metrics.png"}
+          alt={
+            gettext(
+              "A Stride board's metrics dashboard with its filters and the throughput, cycle time, lead time, wait time and compliance cards"
+            )
+          }
+          width="1210"
+          height="330"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Trends across all your boards")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Workspace metrics show median cycle time, median lead time, throughput and review wait time over 7, 14, 30 or 90 days, for all your boards or just the ones you pick, with cumulative flow and a leaderboard of the agents and people finishing the work."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/workspace-and-compliance-metrics"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Workspace Metrics and Compliance")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-metrics.png"}
+          alt={
+            gettext(
+              "Stride workspace metrics with cycle time, lead time, throughput, review wait time and a leaderboard of agents and people"
+            )
+          }
+          width="1232"
+          height="782"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("See how agents follow your workflow")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "On an AI-optimized board, the Compliance page shows how often agents ran each of the six workflow steps, why they skipped the ones they did, and which agents report their steps at all. The board's owner and members who can edit it can open it."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/workspace-and-compliance-metrics"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Workspace Metrics and Compliance")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-compliance.png"}
+          alt={
+            gettext(
+              "Step dispatch rates on a Stride board's Compliance page, one row for each workflow step"
+            )
+          }
+          width="1194"
+          height="382"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
     </section>
 
-    <%!-- Govern theme slot: W2459 adds Organizations and the admin console here. --%>
+    <%!-- Govern theme (W2459): Organizations, workspaces, free and paid boards
+    and the org-admin pages. The /org screenshots are copies of Resources
+    guide images taken from the demo Organization (see the README rows). --%>
+    <section id="govern" class="mb-24" aria-labelledby="govern-heading">
+      <div class="max-w-3xl mx-auto text-center">
+        <span class="ucase">{gettext("06 · Govern")}</span>
+        <h2
+          id="govern-heading"
+          class="font-semibold mt-3 mb-4"
+          style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+        >
+          {gettext("Run Stride for your whole organization")}
+        </h2>
+        <p class="leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "An Organization gives a company its own workspaces and paid boards, and gives its org-admins one place to manage members, read the audit log, set a security policy and connect single sign-on and SCIM. The Stride team sets up each Organization and appoints its org-admins."
+          )}
+        </p>
+      </div>
+
+      <div class="mt-14" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("A workspace for each team")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "An Organization groups its boards into workspaces, such as one per team, each with its own members and boards. Members can create boards in a workspace; guests work only on the boards they are invited to. Org-admins invite people, move boards in, create a workspace token for agents and export a workspace as a zip archive."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/working-in-a-workspace"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Working in a Workspace")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-workspaces.png"}
+          alt={
+            gettext(
+              "A Stride workspace's settings with its members, each one a Member or a Guest"
+            )
+          }
+          width="1189"
+          height="361"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Free boards and paid boards")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "A board is paid when it sits in one of an Organization's workspaces, and every other board is free. When a Stride has its plans switched on, a free board holds up to 3 people, not counting AI agents, and notifications, integrations, bulk actions, task telemetry and MCP need a paid board. A board that already had more people keeps them. With plans switched off, as they can be on a Stride you run yourself, every board works like a paid one."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/free-and-paid-boards"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Free and Paid Boards")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-free-boards.png"}
+          alt={
+            gettext(
+              "The members window of a free Stride board that had more than 3 people before the limit started, with a link to get Stride for your organization"
+            )
+          }
+          width="593"
+          height="162"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("One console for org-admins")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "The Organization console shows your details, your members and your workspaces. Org-admins remove members, create, rename and archive workspaces, and open the security policy, single sign-on, SCIM provisioning and the audit log from it. An Organization with other members always keeps at least one enabled org-admin."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/administering-your-organization"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Administering Your Organization")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-org-console.png"}
+          alt={
+            gettext(
+              "The Stride Organization console with its details and the Security, Single sign-on, SCIM provisioning and Audit log buttons"
+            )
+          }
+          width="1191"
+          height="352"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("An audit log of security events")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "The audit log records changes to the Organization and its security policy, org-admins appointed, members and workspaces added or removed, single sign-on, domain and SCIM events, and refused requests. Filter it by action and date, and export up to 50,000 events as CSV or JSON."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/reading-the-organization-audit-log"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Reading the Organization Audit Log")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-audit-log.png"}
+          alt={
+            gettext("Organization audit log events with their time, action, actor and details")
+          }
+          width="1162"
+          height="312"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Require two-factor for every member")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "The security policy can require two-factor authentication for every member, with a grace period of 1 to 30 days. Members who sign in through single sign-on are not affected, because your identity provider handles the second step. The same page sets how long audit events are kept: from 90 to 3,650 days, or forever."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/organization-security-policy"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Setting Your Organization's Security Policy")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-security-policy.png"}
+          alt={
+            gettext(
+              "A security policy that requires two-factor authentication for every member, with a 7-day grace period"
+            )
+          }
+          width="742"
+          height="251"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Single sign-on with your identity provider")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Verify your email domains with a DNS TXT record, then connect an OpenID Connect or SAML 2.0 identity provider. People on those domains sign in through it and join as members, never as org-admins. Members who have a password can still use it."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/setting-up-single-sign-on"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Setting Up Single Sign-On")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-sso.png"}
+          alt={gettext("Adding an email domain to verify for single sign-on")}
+          width="742"
+          height="202"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Provision people with SCIM")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Give your identity provider a SCIM 2.0 token and it adds people on your verified domains, keeps each workspace's members in step with a group, and removes access at once when it deprovisions someone. A token is shown once and can be revoked at any time."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/provisioning-users-with-scim"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Provisioning Users With SCIM")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-scim.png"}
+          alt={gettext("Creating a SCIM token for an identity provider")}
+          width="741"
+          height="202"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+    </section>
 
     <section class="bg-base-100 rounded-2xl border border-base-300 p-8 md:p-12 text-center">
       <h2 class="text-2xl md:text-3xl font-bold text-base-content mb-4">

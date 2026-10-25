@@ -3929,7 +3929,7 @@ msgstr ""
 msgid "Rate limiting"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:531
+#: lib/kanban_web/controllers/page_html/product.html.heex:878
 #, elixir-autogen, elixir-format
 msgid "Ready to see it run?"
 msgstr ""
@@ -6001,7 +6001,7 @@ msgstr "Stride boards view"
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:534
+#: lib/kanban_web/controllers/page_html/product.html.heex:881
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams."
 msgstr "Free for you and your teams."
@@ -6441,7 +6441,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_closing.ex:66
 #: lib/kanban_web/components/marketing_components.ex:125
 #: lib/kanban_web/components/marketing_components.ex:432
-#: lib/kanban_web/controllers/page_html/product.html.heex:541
+#: lib/kanban_web/controllers/page_html/product.html.heex:888
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:546
 #, elixir-autogen, elixir-format
 msgid "Start now"
@@ -12821,7 +12821,7 @@ msgstr ""
 msgid "04 · Operate"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:498
+#: lib/kanban_web/controllers/page_html/product.html.heex:499
 #, elixir-autogen, elixir-format
 msgid "05 · Measure"
 msgstr ""
@@ -12886,7 +12886,7 @@ msgstr ""
 msgid "Goals that track their own progress"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:504
+#: lib/kanban_web/controllers/page_html/product.html.heex:505
 #, elixir-autogen, elixir-format
 msgid "Know where work waits"
 msgstr ""
@@ -12906,7 +12906,7 @@ msgstr ""
 msgid "See what every agent is doing"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:515
+#: lib/kanban_web/controllers/page_html/product.html.heex:572
 #, elixir-autogen, elixir-format
 msgid "Stride workspace metrics with cycle time, lead time, throughput, review wait time and a leaderboard of agents and people"
 msgstr ""
@@ -12956,7 +12956,7 @@ msgstr ""
 msgid "The review checks and changed files in the Stride review queue, with one file's diff open"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:507
+#: lib/kanban_web/controllers/page_html/product.html.heex:555
 #, elixir-autogen, elixir-format
 msgid "Workspace metrics show median cycle time, median lead time, throughput and review wait time over 7, 14, 30 or 90 days, for all your boards or just the ones you pick, with cumulative flow and a leaderboard of the agents and people finishing the work."
 msgstr ""
@@ -13089,4 +13089,210 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/product.html.heex:300
 #, elixir-autogen, elixir-format
 msgid "When a goal under an at-risk delivery target stalls, the target's owner or the board's owner can reassign or reprioritize it from this page, with 8 seconds to undo."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:625
+#, elixir-autogen, elixir-format
+msgid "06 · Govern"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:537
+#, elixir-autogen, elixir-format
+msgid "A Stride board's metrics dashboard with its filters and the throughput, cycle time, lead time, wait time and compliance cards"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:663
+#, elixir-autogen, elixir-format
+msgid "A Stride workspace's settings with its members, each one a Member or a Guest"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:681
+#, elixir-autogen, elixir-format
+msgid "A board is paid when it sits in one of an Organization's workspaces, and every other board is free. When a Stride has its plans switched on, a free board holds up to 3 people, not counting AI agents, and notifications, integrations, bulk actions, task telemetry and MCP need a paid board. A board that already had more people keeps them. With plans switched off, as they can be on a Stride you run yourself, every board works like a paid one."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:520
+#, elixir-autogen, elixir-format
+msgid "A board's Metrics Dashboard shows throughput, cycle time, lead time and wait time for today, the last 7, 30 or 90 days, or all time, with or without weekends. On an AI-optimized board, pick one agent to count only its tasks. Each metric opens its own page, which exports to PDF or Excel."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:801
+#, elixir-autogen, elixir-format
+msgid "A security policy that requires two-factor authentication for every member, with a 7-day grace period"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:643
+#, elixir-autogen, elixir-format
+msgid "A workspace for each team"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:835
+#, elixir-autogen, elixir-format
+msgid "Adding an email domain to verify for single sign-on"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:634
+#, elixir-autogen, elixir-format
+msgid "An Organization gives a company its own workspaces and paid boards, and gives its org-admins one place to manage members, read the audit log, set a security policy and connect single sign-on and SCIM. The Stride team sets up each Organization and appoints its org-admins."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:646
+#, elixir-autogen, elixir-format
+msgid "An Organization groups its boards into workspaces, such as one per team, each with its own members and boards. Members can create boards in a workspace; guests work only on the boards they are invited to. Org-admins invite people, move boards in, create a workspace token for agents and export a workspace as a zip archive."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:748
+#, elixir-autogen, elixir-format
+msgid "An audit log of security events"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:866
+#, elixir-autogen, elixir-format
+msgid "Creating a SCIM token for an identity provider"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:508
+#, elixir-autogen, elixir-format
+msgid "Every board has its own metrics, the Metrics page adds up all the boards you can open, and on AI-optimized boards a Compliance page shows how agents follow the workflow."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:517
+#, elixir-autogen, elixir-format
+msgid "Flow metrics for every board"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:678
+#, elixir-autogen, elixir-format
+msgid "Free boards and paid boards"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:850
+#, elixir-autogen, elixir-format
+msgid "Give your identity provider a SCIM 2.0 token and it adds people on your verified domains, keeps each workspace's members in step with a group, and removes access at once when it deprovisions someone. A token is shown once and can be revoked at any time."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:590
+#, elixir-autogen, elixir-format
+msgid "On an AI-optimized board, the Compliance page shows how often agents ran each of the six workflow steps, why they skipped the ones they did, and which agents report their steps at all. The board's owner and members who can edit it can open it."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:713
+#, elixir-autogen, elixir-format
+msgid "One console for org-admins"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:768
+#, elixir-autogen, elixir-format
+msgid "Organization audit log events with their time, action, actor and details"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:847
+#, elixir-autogen, elixir-format
+msgid "Provision people with SCIM"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:726
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Administering Your Organization"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:691
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Free and Paid Boards"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:860
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Provisioning Users With SCIM"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:761
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Reading the Organization Audit Log"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:829
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Setting Up Single Sign-On"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:794
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Setting Your Organization's Security Policy"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:530
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Using the Metrics Dashboard"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:656
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Working in a Workspace"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:565
+#: lib/kanban_web/controllers/page_html/product.html.heex:600
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Workspace Metrics and Compliance"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:781
+#, elixir-autogen, elixir-format
+msgid "Require two-factor for every member"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:631
+#, elixir-autogen, elixir-format
+msgid "Run Stride for your whole organization"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:587
+#, elixir-autogen, elixir-format
+msgid "See how agents follow your workflow"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:816
+#, elixir-autogen, elixir-format
+msgid "Single sign-on with your identity provider"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:607
+#, elixir-autogen, elixir-format
+msgid "Step dispatch rates on a Stride board's Compliance page, one row for each workflow step"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:716
+#, elixir-autogen, elixir-format
+msgid "The Organization console shows your details, your members and your workspaces. Org-admins remove members, create, rename and archive workspaces, and open the security policy, single sign-on, SCIM provisioning and the audit log from it. An Organization with other members always keeps at least one enabled org-admin."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:733
+#, elixir-autogen, elixir-format
+msgid "The Stride Organization console with its details and the Security, Single sign-on, SCIM provisioning and Audit log buttons"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:751
+#, elixir-autogen, elixir-format
+msgid "The audit log records changes to the Organization and its security policy, org-admins appointed, members and workspaces added or removed, single sign-on, domain and SCIM events, and refused requests. Filter it by action and date, and export up to 50,000 events as CSV or JSON."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:698
+#, elixir-autogen, elixir-format
+msgid "The members window of a free Stride board that had more than 3 people before the limit started, with a link to get Stride for your organization"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:784
+#, elixir-autogen, elixir-format
+msgid "The security policy can require two-factor authentication for every member, with a grace period of 1 to 30 days. Members who sign in through single sign-on are not affected, because your identity provider handles the second step. The same page sets how long audit events are kept: from 90 to 3,650 days, or forever."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:552
+#, elixir-autogen, elixir-format
+msgid "Trends across all your boards"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:819
+#, elixir-autogen, elixir-format
+msgid "Verify your email domains with a DNS TXT record, then connect an OpenID Connect or SAML 2.0 identity provider. People on those domains sign in through it and join as members, never as org-admins. Members who have a password can still use it."
 msgstr ""

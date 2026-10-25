@@ -117,16 +117,29 @@ One row per planned image. Board ids differ between databases, so routes name th
 | `product-target.png` | `/product`, Operate / "Plan toward a date across boards" | `/targets/<Checkout launch>` | Maya Chen | Copied from the guide image `planning-with-targets-step-5.png`: the target as it stands. Don't click **Edit target** | From the date and status to the Goals list | Light |
 | `product-notifications.png` | `/product`, Operate / "Told when work needs you" | `/notifications` | Maya Chen | Copied from the guide image `staying-informed-with-notifications-step-4.png`: the demo notifications on **All** | The header and the notification list, no sidebar | Light |
 | `product-integrations.png` | `/product`, Operate / "Send board events to Slack, Discord or your own service" | `/boards/<Mobile>/integrations` | Maya Chen | Copied from the guide image `connecting-webhooks-slack-and-discord-step-5.png`: the generic `.test` endpoint's **Deliveries** open. No signing secret, no Slack or Discord host, and never **Send test** | The generic endpoint and its recent deliveries | Light |
-| `product-metrics.png` | `/product`, Measure / "Know where work waits" | `/metrics`, Storefront Search only in the board selector | Maya Chen | 30-day window, page zoomed to 80% | From the KPI strip to the leaderboard, no sidebar | Light |
+| `product-board-metrics.png` | `/product`, Measure / "Flow metrics for every board" | `/boards/<Search>/metrics` | Maya Chen | **Last 30 Days**, **All Agents**, weekends included | From the **Metrics Dashboard** title to the five summary cards, no sidebar | Light |
+| `product-metrics.png` | `/product`, Measure / "Trends across all your boards" | `/metrics`, Storefront Search only in the board selector | Maya Chen | 30-day window, page zoomed to 80%, board selector and workspace switcher hidden | From the KPI strip to the leaderboard, no sidebar | Light |
+| `product-compliance.png` | `/product`, Measure / "See how agents follow your workflow" | `/boards/<Search>/metrics/compliance` | Maya Chen | As it stands; the page has no filters | From the **Compliance Metrics** title to the end of **Step Dispatch Rates**, no sidebar | Light |
+| `product-workspaces.png` | `/product`, Govern / "A workspace for each team" | `/workspace/settings`, Product Team selected | Maya Chen | Copied from the guide image `working-in-a-workspace-step-3.png`: the **Members** tab with Marcus (Guest) and Priya (Member) | The workspace header, the tab list and the members | Light |
+| `product-free-boards.png` | `/product`, Govern / "Free boards and paid boards" | `/boards/<Checkout>/members` | Maya Chen | Copied from the guide image `free-and-paid-boards-step-3.png`: plans switched on for that capture and off again; "4 of 3 people" on a board that was over the limit before it started | The **Add user by email** card | Light |
+| `product-org-console.png` | `/product`, Govern / "One console for org-admins" | `/org` | Maya Chen (org-admin of Northwind Studio) | Copied from the guide image `administering-your-organization-step-2.png`: the **Details** tab | The header with its four buttons and the **Details** card | Light |
+| `product-audit-log.png` | `/product`, Govern / "An audit log of security events" | `/org/audit` | Maya Chen | Copied from the guide image `reading-the-organization-audit-log-step-5.png`: demo events only, actors outside the Organization shown as such | The event table | Light |
+| `product-security-policy.png` | `/product`, Govern / "Require two-factor for every member" | `/org/security` | Maya Chen | Copied from the guide image `organization-security-policy-step-2.png`: the requirement ticked, 7-day grace period | The **Two-factor authentication** card | Light |
+| `product-sso.png` | `/product`, Govern / "Single sign-on with your identity provider" | `/org/sso` | Maya Chen | Copied from the guide image `setting-up-single-sign-on-step-2.png`: `northwind.example` typed in **Email domain**, no TXT record shown | The **Verified domains** card | Light |
+| `product-scim.png` | `/product`, Govern / "Provision people with SCIM" | `/org/scim` | Maya Chen | Cropped from the guide image `provisioning-users-with-scim-step-2.png` so the SCIM base URL is left out; no token shown | The **Create a SCIM token** card only | Light |
 | `workflows-ready.png` | `/workflows`, "Getting ready for development" | `/boards/<Search>` | Maya Chen | The Backlog and Ready columns | The two columns | Light |
 | `workflows-claim.png` | `/workflows`, "The AI development lifecycle" | `/boards/<Search>` | Maya Chen | The Doing column with Claude Opus 5.5's card | The Doing column | Light |
 | `workflows-compliance.png` | `/workflows`, "The AI development lifecycle" (hooks and subagents) | `/boards/<Checkout>/metrics/compliance` | Maya Chen | Step dispatch rates and skip reasons | The two charts | Light |
 | `workflows-flagged-for-review.png` | `/workflows`, "Human review and completion" / "Flagged for review" | `/review`, "Rank exact title matches above partial ones" selected | Maya Chen | The acceptance criteria and the diff | The review pane | Light |
 | `workflows-cleared-to-ship.png` | `/workflows`, "Human review and completion" / "Cleared to ship" | `/boards/<Search>/metrics/wait-time` | Maya Chen | Review wait time from the approved history | The Review Wait Time section | Light |
 
-Four Operate rows reuse Resources guide screenshots, which were taken from the
-same demo data under the guide README's capture and redaction rules. To retake
-one, follow that guide row and keep the `/product` file name. The Operate MCP
+Four Operate rows and the seven Govern rows reuse Resources guide
+screenshots, which were taken from the same demo data under the guide README's
+capture and redaction rules. To retake one, follow that guide row and keep the
+`/product` file name. The Govern screens need an org-admin of the demo
+Organization, so sign in as Maya Chen; never appoint your own account. Leave
+SCIM tokens, SSO client secrets, redirect and base URLs and DNS verification
+values out of the frame. The Operate MCP
 subsection shows the commands from `KanbanWeb.PageHTML.mcp_snippet/0` instead
 of a screenshot, so it has no row.
 
