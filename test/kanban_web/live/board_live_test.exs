@@ -171,12 +171,9 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ ~s(href="/boards/new")
       assert html =~ "Create your first board"
 
-      # Secondary CTA is disabled (no crash, no href).
-      assert html =~ "Import from Linear or Jira"
-      assert html =~ ~s(disabled)
-
-      # Footnote mono tip.
-      assert html =~ "Stride can backfill history"
+      # There is no import feature, so the empty state never offers one.
+      refute html =~ "Import from Linear or Jira"
+      refute html =~ "Stride can backfill history"
     end
 
     test "renders the targets strip with an assigned target for the scoped user",

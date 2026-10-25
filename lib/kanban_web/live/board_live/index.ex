@@ -45,25 +45,7 @@ defmodule KanbanWeb.BoardLive.Index do
                 {gettext("Create your first board")}
               </.button>
             </.link>
-            <button
-              type="button"
-              disabled
-              title={gettext("Coming soon")}
-              class="btn btn-sm btn-outline gap-2 w-full sm:w-auto"
-              style="cursor: not-allowed; opacity: 0.6;"
-            >
-              <.icon name="hero-link" class="h-4 w-4" />
-              {gettext("Import from Linear or Jira")}
-            </button>
           </div>
-          <p
-            class="ident"
-            style="margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3);"
-          >
-            {gettext(
-              "Tip: start with the board your team already works in. Stride can backfill history."
-            )}
-          </p>
         </div>
 
         <div class="hidden md:flex md:justify-center">
