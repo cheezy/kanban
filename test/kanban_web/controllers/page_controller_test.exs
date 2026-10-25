@@ -921,6 +921,22 @@ defmodule KanbanWeb.PageControllerTest do
     end
   end
 
+  # One screenshot per stage of the lifecycle (W2460), in page order. The Review
+  # step shows two: the reviewer's report and the behaviour test matrix.
+  @workflows_images ~w(
+    workflows-requirements.png
+    workflows-ready.png
+    workflows-needs-review.png
+    workflows-claim.png
+    workflows-explore.png
+    workflows-implement.png
+    workflows-review-report.png
+    workflows-review-matrix.png
+    workflows-validate.png
+    workflows-flagged-for-review.png
+    workflows-cleared-to-ship.png
+  )
+
   test "GET /workflows", %{conn: conn} do
     conn = get(conn, ~p"/workflows")
     body = html_response(conn, 200)
@@ -935,6 +951,37 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "after_doing"
     assert body =~ "before_review"
     assert body =~ "after_review"
+
+    main = body |> LazyHTML.from_document() |> LazyHTML.query("main")
+    images = LazyHTML.query(main, "img")
+
+    # Every stage shows its screenshot, in page order, and nothing else.
+    assert Enum.flat_map(images, &LazyHTML.attribute(&1, "src")) ==
+             Enum.map(@workflows_images, &"/images/marketing/#{&1}")
+
+    # Each one has alt text, loads lazily and scales down to a 375px screen.
+    for img <- images do
+      [alt] = LazyHTML.attribute(img, "alt")
+      assert String.trim(alt) != ""
+      assert LazyHTML.attribute(img, "loading") == ["lazy"]
+      [class] = LazyHTML.attribute(img, "class")
+      classes = String.split(class)
+      assert "max-w-full" in classes and "h-auto" in classes, "#{class} can overflow"
+    end
+
+    # The five lifecycle steps are still disclosures, and their pictures sit
+    # inside them (two for Review).
+    assert main |> LazyHTML.query("details") |> Enum.count() == 5
+    assert main |> LazyHTML.query("details > summary") |> Enum.count() == 5
+    assert main |> LazyHTML.query("details img") |> Enum.count() == 6
+
+    # Copy that the code contradicted (W2460): new tasks land in the Backlog,
+    # the claim itself moves the card to Doing, and the review queue offers
+    # only Approve and Request changes.
+    assert body =~ "The goal and its tasks land in the Backlog."
+    refute body =~ "land in Ready"
+    refute body =~ "prior to the task moving to the Doing column"
+    refute body =~ "sends it back"
   end
 
   # D210 was filed reporting empty msgstr entries for this page in all six
@@ -977,7 +1024,22 @@ defmodule KanbanWeb.PageControllerTest do
       # The English source of the second phrase must be gone, which is what
       # separates "translated" from "the catalog merely has an entry".
       refute body =~ "Human review and completion"
+
+      # Every screenshot's alt text is translated too: none is left in English.
+      english_alts = build_conn() |> get(~p"/workflows") |> html_response(200) |> image_alts()
+      translated_alts = image_alts(body)
+
+      assert length(translated_alts) == length(@workflows_images)
+      english_set = MapSet.new(english_alts)
+      assert translated_alts |> MapSet.new() |> MapSet.disjoint?(english_set)
     end
+  end
+
+  defp image_alts(html) do
+    html
+    |> LazyHTML.from_document()
+    |> LazyHTML.query("main img")
+    |> Enum.flat_map(&LazyHTML.attribute(&1, "alt"))
   end
 
   test "GET /tango", %{conn: conn} do

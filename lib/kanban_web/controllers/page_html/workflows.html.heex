@@ -69,12 +69,22 @@
             <div class="font-semibold text-base-content">{gettext("On the board")}</div>
             <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
-                "The goal and its tasks land in Ready. Agents claim them, and the lifecycle below takes over."
+                "The goal and its tasks land in the Backlog. Once a human moves them to Ready, agents claim them and the lifecycle below takes over."
               )}
             </div>
           </div>
         </div>
       </div>
+
+      <img
+        src={~p"/images/marketing/workflows-requirements.png"}
+        alt={gettext("A goal with its three child tasks and the column each one is in")}
+        width="1176"
+        height="586"
+        loading="lazy"
+        class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+        style="border: 1px solid var(--line);"
+      />
     </section>
 
     <section class="mb-16">
@@ -135,6 +145,27 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="space-y-6 mb-8">
+        <img
+          src={~p"/images/marketing/workflows-ready.png"}
+          alt={gettext("The Backlog and Ready columns of a Stride board")}
+          width="862"
+          height="412"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line); width: 575px;"
+        />
+        <img
+          src={~p"/images/marketing/workflows-needs-review.png"}
+          alt={gettext("The Needs Review checkbox on a task's form")}
+          width="1236"
+          height="276"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line); width: 824px;"
+        />
       </div>
 
       <p class="leading-relaxed text-center max-w-3xl mx-auto" style="color: var(--ink-2);">
@@ -208,7 +239,7 @@
                 {raw(
                   String.replace(
                     gettext(
-                      "When the agent claims the task, the developer-defined before_doing hook runs on the developer's workstation prior to the task moving to the Doing column. This developer hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and run the tests — so the agent starts from a known state."
+                      "When the agent claims the task, the card moves to the Doing column and the developer-defined before_doing hook runs on the developer's workstation. This developer hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and run the tests — so the agent starts from a known state."
                     ),
                     "before_doing",
                     ~s|<span class="font-mono" style="color: var(--st-doing);">before_doing</span>|,
@@ -216,6 +247,17 @@
                   )
                 )}
               </div>
+              <figure class="mt-4 sm:pl-10">
+                <img
+                  src={~p"/images/marketing/workflows-claim.png"}
+                  alt={gettext("The Doing column with two tasks in progress")}
+                  width="420"
+                  height="326"
+                  loading="lazy"
+                  class="block max-w-full h-auto rounded-2xl shadow-lg"
+                  style="border: 1px solid var(--line); width: 280px;"
+                />
+              </figure>
             </details>
           </li>
           <li>
@@ -291,6 +333,22 @@
                   )}
                 </p>
               </div>
+              <figure class="mt-4 sm:pl-10">
+                <img
+                  src={~p"/images/marketing/workflows-explore.png"}
+                  alt={gettext("The explorer's result in a task's details")}
+                  width="792"
+                  height="272"
+                  loading="lazy"
+                  class="block max-w-full h-auto rounded-2xl shadow-lg"
+                  style="border: 1px solid var(--line); width: 528px;"
+                />
+                <figcaption class="mt-2 text-xs leading-relaxed" style="color: var(--ink-2);">
+                  {gettext(
+                    "The task's details record the explorer's result: whether it ran, how long it took, and its summary."
+                  )}
+                </figcaption>
+              </figure>
             </details>
           </li>
           <li>
@@ -338,6 +396,17 @@
                   )
                 )}
               </div>
+              <figure class="mt-4 sm:pl-10">
+                <img
+                  src={~p"/images/marketing/workflows-implement.png"}
+                  alt={gettext("A finished task's changed files with one file's diff open")}
+                  width="776"
+                  height="580"
+                  loading="lazy"
+                  class="block max-w-full h-auto rounded-2xl shadow-lg"
+                  style="border: 1px solid var(--line); width: 517px;"
+                />
+              </figure>
             </details>
           </li>
           <li>
@@ -395,6 +464,37 @@
                   )
                 )}
               </div>
+              <figure class="mt-4 sm:pl-10">
+                <div class="space-y-4">
+                  <img
+                    src={~p"/images/marketing/workflows-review-report.png"}
+                    alt={gettext("The task-reviewer's report with one minor issue")}
+                    width="792"
+                    height="592"
+                    loading="lazy"
+                    class="block max-w-full h-auto rounded-2xl shadow-lg"
+                    style="border: 1px solid var(--line); width: 528px;"
+                  />
+                  <img
+                    src={~p"/images/marketing/workflows-review-matrix.png"}
+                    alt={
+                      gettext(
+                        "A task's behaviour test matrix with a test and a status for each behaviour"
+                      )
+                    }
+                    width="796"
+                    height="854"
+                    loading="lazy"
+                    class="block max-w-full h-auto rounded-2xl shadow-lg"
+                    style="border: 1px solid var(--line); width: 531px;"
+                  />
+                </div>
+                <figcaption class="mt-2 text-xs leading-relaxed" style="color: var(--ink-2);">
+                  {gettext(
+                    "The task's details show the task-reviewer's report and, when the board's field visibility settings turn it on, the task's behaviour test matrix: each behaviour, the test that covers it, and its status."
+                  )}
+                </figcaption>
+              </figure>
             </details>
           </li>
           <li>
@@ -450,6 +550,22 @@
                   )
                 )}
               </div>
+              <figure class="mt-4 sm:pl-10">
+                <img
+                  src={~p"/images/marketing/workflows-validate.png"}
+                  alt={gettext("The workflow steps a task recorded, including After Doing")}
+                  width="792"
+                  height="394"
+                  loading="lazy"
+                  class="block max-w-full h-auto rounded-2xl shadow-lg"
+                  style="border: 1px solid var(--line); width: 528px;"
+                />
+                <figcaption class="mt-2 text-xs leading-relaxed" style="color: var(--ink-2);">
+                  {gettext(
+                    "When the task is completed, the steps the agent ran, the after_doing hook among them, are recorded under Workflow steps in the task's details."
+                  )}
+                </figcaption>
+              </figure>
             </details>
           </li>
         </ol>
@@ -485,7 +601,7 @@
           <p class="text-sm leading-relaxed" style="color: var(--ink-2);">
             {raw(
               gettext(
-                "A task with needs_review set to true lands in the Review column and stops. It surfaces in the review queue — the shared list of finished tasks awaiting a human — which shows a full diff of every changed file alongside the task-reviewer's report. The reviewer reads through it and then approves the task, sends it back, or requests changes. On approval the after_review hook fires — merge, deploy, notify — and the task moves to Done."
+                "A task with needs_review set to true lands in the Review column and stops. It surfaces in the review queue — the shared list of finished tasks awaiting a human — which shows a full diff of every changed file alongside the task-reviewer's report. The reviewer reads through it and then approves the task or requests changes. On approval the after_review hook fires — merge, deploy, notify — and the task moves to Done."
               )
               |> String.replace(
                 "needs_review",
@@ -520,6 +636,27 @@
             )}
           </p>
         </div>
+      </div>
+
+      <div class="space-y-6 mb-8">
+        <img
+          src={~p"/images/marketing/workflows-flagged-for-review.png"}
+          alt={gettext("The review queue with a waiting task's diff")}
+          width="1196"
+          height="748"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+        <img
+          src={~p"/images/marketing/workflows-cleared-to-ship.png"}
+          alt={gettext("The Review and Done columns of a Stride board")}
+          width="856"
+          height="474"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line); width: 571px;"
+        />
       </div>
 
       <p class="leading-relaxed text-center max-w-3xl mx-auto" style="color: var(--ink-2);">
