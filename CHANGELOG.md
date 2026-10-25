@@ -50,7 +50,7 @@ Operators get a read-only report of boards over the member limit (`mix kanban.ov
 
 #### Public pages
 
-- **`/pricing`, `/terms` and `/privacy`** are rewritten for the Free plan and the sales-led Organization plan. `/changelog` announces Organizations and the Free plan.
+- **`/pricing`, `/terms` and `/privacy`** are rewritten for the Free plan and the sales-led Organization plan.
 - **`/product` and `/workflows`** are redesigned around Stride's features, with current screenshots, and `/workflows` shows how Stride plugs into your coding agent.
 - Stride is published under the MIT license that the pricing page and terms refer to.
 

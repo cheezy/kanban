@@ -4,7 +4,7 @@ defmodule Kanban.MixProject do
   def project do
     [
       app: :kanban,
-      version: "2.21.0",
+      version: "3.0.0",
       elixir: "~> 1.20",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,

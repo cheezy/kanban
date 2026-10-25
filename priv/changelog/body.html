@@ -3,6 +3,476 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [3.0.0] - 2026-10-25
+        </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          Stride now has <strong>Organizations</strong>: a paid plan for
+          teams, with shared workspaces, org-admins, an Organization audit
+          log, single sign-on, SCIM provisioning and security policies. Boards
+          outside an Organization are on the new <strong>Free</strong> plan.
+          This is a major version because the Free plan's limits change what a
+          board can do once they are switched on, and because several API
+          requests that used to succeed are now refused (see Changed below).
+        </p>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          <strong>The Free plan's limits are off until launch day.</strong>
+          Plans are enforced only when the operator sets
+          <code>STRIDE_PLANS_ENFORCED</code> to exactly <code>true</code> and
+          restarts Stride. Until then, and on any self-hosted instance that
+          does not set it, every board keeps every feature and has no member
+          limit. Organizations, workspaces, roles, invitations, board moves,
+          the audit log and account deletion work the same either way. The
+          Organizations launch runbook
+          (<code>docs/organizations-launch-runbook.md</code>) is the
+          operator's checklist for turning enforcement on.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Organizations and workspaces
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Organizations.</strong> A Stride site admin creates an
+                Organization from the new <code>/admin/organizations</code>
+                screens and appoints its first org-admin by email. An address
+                with no account gets a new one and an email with instructions
+                to set a password. A person belongs to at most one
+                Organization.
+              </li>
+              <li>
+                <strong>The Organization console.</strong> Org-admins open
+                <code>/org</code> from <strong>Organization</strong> in the
+                side navigation. It shows the Organization's details and
+                members, and lets org-admins create, rename and archive
+                workspaces and remove members.
+              </li>
+              <li>
+                <strong>Workspaces.</strong> Every account has a hidden
+                personal workspace, and existing boards were moved into their
+                owners' personal workspaces. An Organization can have several
+                workspaces. Its people get a <strong>workspace
+                switcher</strong> in the side navigation and a
+                <strong>Workspace settings</strong> page, with Members and
+                Boards for everyone, and Invitations, Tokens and Export for
+                org-admins.
+              </li>
+              <li>
+                <strong>Invitations.</strong> Org-admins invite people to a
+                workspace by email, as a Member or a Guest, optionally with
+                access to one board. Links work once and expire after 7 days.
+                On a free board, the owner can invite someone to that one
+                board from its members screen.
+              </li>
+              <li>
+                <strong>Moving a board into a workspace.</strong> An org-admin
+                moves a board they own into an Organization workspace from
+                <strong>Move a board here</strong>. Everyone on the board must
+                already belong to the Organization, and the move cannot be
+                undone. Once moved, the board is a paid board.
+              </li>
+              <li>
+                <strong>Workspace tokens.</strong> One API token for every AI
+                Optimized board in a workspace, instead of one per board. Each
+                request names its board. Tokens expire after 90 days and stop
+                working when revoked or when the org-admin who created them
+                leaves.
+              </li>
+              <li>
+                <strong>Workspace export.</strong> Org-admins download a
+                workspace as a zip of JSON files, built in the background and
+                kept for 7 days. A self-hosted instance restores one with
+                <code>mix kanban.import_workspace</code> (or
+                <code>Kanban.Release.import_workspace/3</code> in a release).
+                The archive never contains passwords, tokens or webhook
+                secrets.
+              </li>
+              <li>
+                <strong>The Organization audit log</strong> at
+                <code>/org/audit</code> lists the Organization's security
+                events, 50 to a page, filtered by action and date, with CSV
+                and JSON export.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Organizations and Workspaces
+              (<code>docs/organizations.md</code>) covers all of this, and the
+              Resources section has new guides for org-admins.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Single sign-on, SCIM and security policies
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Single sign-on</strong> with OpenID Connect or SAML
+                2.0, one identity provider per Organization. Org-admins verify
+                their email domains with a DNS TXT record, and people on those
+                domains use <strong>Sign in with SSO</strong>. Their first
+                sign-in creates their account and makes them a member.
+                Verified domains are re-checked daily, and a domain whose
+                record is missing three days in a row stops being verified.
+                See Single Sign-On (<code>docs/single-sign-on.md</code>).
+              </li>
+              <li>
+                <strong>SCIM 2.0 provisioning</strong> at
+                <code>/scim/v2</code>. An identity provider creates, updates
+                and deprovisions members and keeps workspace membership in
+                step with its groups, using Organization-scoped tokens created
+                on <code>/org/scim</code>. See SCIM Provisioning
+                (<code>docs/scim-provisioning.md</code>).
+              </li>
+              <li>
+                <strong>Security policies</strong> on
+                <code>/org/security</code>: require two-factor authentication
+                for every member, with a grace period of 1 to 30 days (7 by
+                default) that each person gets once, and set how long the
+                Organization's audit events are kept (90 to 3,650 days, or
+                forever). See Organization Security Policies
+                (<code>docs/organization-security-policies.md</code>).
+              </li>
+            </ul>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              The Free and Organization plans
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              When plans are enforced:
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>A free board holds at most 3 people.</strong> AI
+                agents never count. A board already over the limit keeps
+                everyone, but nobody new can be added until there is room.
+                Public read-only boards can still be read by any signed-in
+                user; readers do not count.
+              </li>
+              <li>
+                <strong>Notifications, bulk actions, integrations, the task
+                telemetry fields and MCP access are
+                Organization-only.</strong> On a free board each shows its
+                name with "Available to organizations" and links to the
+                pricing page. Webhook, Slack and Discord endpoints are paused
+                rather than deleted, and send again once the board moves into
+                an Organization. MCP requests for a free board get a JSON-RPC
+                <code>-32001</code> error. The REST API and client-side hooks
+                stay available on free boards; the REST API accepts the
+                telemetry fields but does not store them, and says so in a
+                <code>warnings</code> list.
+              </li>
+              <li>
+                People without paid access stop getting notification emails.
+                Tasks waiting for them are still listed in the Review queue
+                and My Work.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Operators get a read-only report of boards over the member limit
+              (<code>mix kanban.over_cap_boards</code>, or
+              <code>Kanban.Release.report_over_cap_boards/0</code>), a release
+              function that creates Stride's own internal Organization, and a
+              one-time launch announcement email.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Account deletion
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Anyone with a password can delete their own
+                account</strong> from <strong>Delete account</strong> in
+                account settings. Deletion is refused while they own a board
+                other people use, or while they are the last org-admin of an
+                Organization that has other members. Their claimed tasks go
+                back to Ready, and their tasks and comments are kept without
+                their name.
+              </li>
+              <li>
+                A site admin can delete an account that an Organization's
+                identity provider deprovisioned, on its owner's request.
+              </li>
+              <li>
+                Every account deletion, and every refused one, from
+                <code>/admin/users</code> is recorded in the audit log.
+              </li>
+            </ul>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Public pages
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong><code>/pricing</code>, <code>/terms</code> and
+                <code>/privacy</code></strong> are rewritten for the Free plan
+                and the sales-led Organization plan.
+              </li>
+              <li>
+                <strong><code>/product</code> and
+                <code>/workflows</code></strong> are redesigned around
+                Stride's features, with current screenshots, and
+                <code>/workflows</code> shows how Stride plugs into your
+                coding agent.
+              </li>
+              <li>
+                Stride is published under the MIT license that the pricing
+                page and terms refer to.
+              </li>
+            </ul>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Documentation
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Every doc under <code>docs/</code> and the README was
+                checked against the code</strong> and corrected, and
+                <code>docs/README.md</code> indexes every doc by audience. A
+                test keeps the index complete.
+              </li>
+              <li>
+                <strong>The in-app Resources guides were refreshed</strong>
+                against the current app, with new screenshots and new guides
+                for account settings, board settings, labels, search and
+                filters, bulk actions, the archive, task details, comments and
+                mentions, the Agents page, My Work, Targets, notifications,
+                integrations, MCP, free and paid boards, workspaces,
+                invitations, and the org-admin pages. Guides are now grouped
+                into Getting started, For developers, For non-developers and
+                Best practices.
+              </li>
+              <li>
+                The onboarding endpoint and the skills and setup templates it
+                serves to agents were corrected to match the payloads the
+                server accepts.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Changed
+          </h3>
+
+          <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            These requests used to succeed and are now refused:
+          </p>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>A <code>security_considerations</code> entry shaped like
+              a real credential</strong> is refused with a <code>422</code> on
+              task create, batch create and update, and nothing is stored. The
+              error names the entry's position and never echoes the value.
+              <code>Kanban.Release.scan_credential_considerations/0</code>
+              finds entries stored before this change.
+            </li>
+            <li>
+              <strong>A dependency that names no task on the task's
+              board</strong> is refused, in the API and the board form.
+            </li>
+            <li>
+              <strong>A repeated or conflicting <code>board_id</code></strong>
+              (in the query string twice, or different in the query and the
+              body) gets a <code>400</code>.
+            </li>
+            <li>
+              <strong>A board token whose user has lost access to the
+              board</strong> is refused on reads as well as writes, with the
+              documented <code>403</code>.
+            </li>
+            <li>
+              <strong>Boards in an Organization workspace accept only members
+              of that Organization.</strong> Read-only members are no longer
+              offered as assignees.
+            </li>
+            <li>
+              Names made only of invisible characters, and text with NUL bytes
+              or invalid UTF-8, are refused as form errors instead of being
+              stored or crashing.
+            </li>
+          </ul>
+
+          <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+            And these responses changed:
+          </p>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              A <code>column_id</code> that is not on the board answers
+              <code>404</code> "Column not found" instead of "Task not found".
+            </li>
+            <li>
+              <code>mark_done</code> and <code>mark_reviewed</code> for a
+              token without write access answer the documented
+              <code>403</code> instead of a <code>500</code> or
+              <code>422</code>.
+            </li>
+            <li>
+              A goal's <code>child_tasks</code> in a create response now
+              include each child's <code>column_id</code>.
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Security
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Site audit events are purged after 90 days</strong>, as
+              <code>/privacy</code> says. An Organization's own audit events
+              follow its retention setting.
+            </li>
+            <li>
+              <strong>Single sign-on and SCIM refuse site-admin
+              accounts</strong>, so an Organization's identity provider can
+              never sign in a site admin.
+            </li>
+            <li>
+              <strong>SSO and SCIM hardening:</strong> SAML responses with a
+              repeated attribute are refused, sign-in cannot be started from
+              another site, provider requests are bounded in time and size, a
+              SCIM-deprovisioned member stays out of single sign-on until SCIM
+              re-activates them, and single sign-on asks for the two-factor
+              code before it first links an existing account that has
+              two-factor turned on.
+            </li>
+            <li>
+              <strong>API tokens in a request path are kept out of the request
+              log and the error tracker</strong>, and
+              <code>security_considerations</code> is filtered from logged
+              request parameters.
+            </li>
+            <li>
+              <strong>Losing access ends access everywhere:</strong> removing
+              someone from a board, a workspace or an Organization revokes
+              their tokens and stale invitations there, returns their claimed
+              tasks to Ready, and switches off webhook endpoints they added. A
+              disabled account's endpoints send nothing until it is enabled
+              again, and the Integrations tab shows who added each endpoint.
+            </li>
+            <li>
+              <strong>Workspace export downloads refuse symbolic
+              links</strong>, and the export directory gets a random,
+              exclusive name.
+            </li>
+            <li>
+              <code>plug_crypto</code> is upgraded to 2.2.1 for
+              EEF-CVE-2026-105963. HTTP/2 stays off on the web server.
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Form fields have a 3:1 border in light mode</strong>, so
+              inputs are easy to see.
+            </li>
+            <li>
+              <strong>The Agents page roster and feed stay reachable</strong>
+              when a long list of at-risk targets is shown.
+            </li>
+            <li>
+              <strong>The language you choose before signing in is
+              kept</strong> after sign-in and stored on your account.
+            </li>
+            <li>
+              <strong>The language switcher opens</strong> on the home,
+              pricing, terms and privacy pages.
+            </li>
+            <li>
+              <strong>Background jobs left running when a server stops are
+              retried</strong> after an hour instead of being stuck.
+            </li>
+            <li>
+              Task history entries with the same time are always shown in the
+              same order.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.21.0] - 2026-10-14
         </h2>
 

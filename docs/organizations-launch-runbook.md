@@ -60,12 +60,14 @@ below are placeholders.
    production serves; if they are not deployed yet, deploy them now or on
    launch day (step 1 of [Launch day](#launch-day)).
 
-3. **Set the launch date and publish the changelog entry.** The
-   "Announcing Organizations and the Free plan" entry on `/changelog` (W2415)
-   says "Launch date: to be announced on this page." Replace that sentence
-   with the agreed date in
-   `lib/kanban_web/controllers/page_html/changelog.html.heex`, update its
-   translations, and deploy. The launch email links to this page.
+3. **Set the launch date and decide where it is published.** `/changelog`
+   lists release entries only, so it no longer carries the "Announcing
+   Organizations and the Free plan" entry (W2415) or a launch date. The
+   launch email still says "The launch date is published on the Stride
+   changelog.", and the broadcast message below says the date is on the
+   changelog. Decide where the date goes before sending either one, then
+   update the email (`lib/kanban_web/emails/announcement_email.ex`) and the
+   broadcast draft to match, with the email's translations.
 
 4. **Post the broadcast message.** In `/admin/messages`, create a message.
    The form has a title and a body only; the message shows to every signed-in

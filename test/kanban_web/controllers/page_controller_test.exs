@@ -1521,98 +1521,24 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
-  describe "GET /changelog Organizations announcement" do
-    test "is the newest entry, above every release section", %{conn: conn} do
-      body = conn |> get(~p"/changelog") |> html_response(200)
+  test "GET /changelog lists only release entries, newest first", %{conn: conn} do
+    document = conn |> get(~p"/changelog") |> html_response(200) |> LazyHTML.from_document()
 
-      {announcement_at, _} = :binary.match(body, "data-changelog-announcement")
-      {first_release_at, _} = :binary.match(body, ~s(<section class="mb-10">\n))
+    headings =
+      document
+      |> LazyHTML.query("[data-changelog] section h2")
+      |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
 
-      assert announcement_at < first_release_at
-    end
+    assert headings != []
+    assert Enum.all?(headings, &(&1 =~ ~r/^\[(\d+\.\d+\.\d+|Unreleased)\]/))
 
-    test "lists what becomes Organization-only, what stays free and the 3-person limit",
-         %{conn: conn} do
-      text =
-        conn
-        |> get(~p"/changelog")
-        |> html_response(200)
-        |> LazyHTML.from_document()
-        |> LazyHTML.query("[data-changelog-announcement]")
-        |> LazyHTML.text()
+    versions =
+      for heading <- headings,
+          [_, version] <- [Regex.run(~r/^\[(\d+\.\d+\.\d+)\]/, heading)],
+          do: Version.parse!(version)
 
-      assert text =~ "Announcing Organizations and the Free plan"
-      assert text =~ "Launch date: to be announced on this page."
-
-      for paid <- [
-            "Notifications",
-            "Bulk actions",
-            "Integrations (webhooks)",
-            "Task telemetry fields",
-            "MCP access"
-          ] do
-        assert text =~ paid
-      end
-
-      assert text =~ "paused, not deleted"
-      assert text =~ "Unlimited boards, tasks and goals"
-      assert text =~ "The full REST API and client-side hooks"
-      assert text =~ "Metrics and exports"
-      assert text =~ "Up to 3 people per board — AI agents do not count"
-      assert text =~ "Existing boards keep every member they already have."
-      assert text =~ "Tasks waiting for you are always listed in the Review queue and My Work."
-    end
-
-    test "links to the Review queue, My Work and the pricing contact form with in-app paths",
-         %{conn: conn} do
-      announcement =
-        conn
-        |> get(~p"/changelog")
-        |> html_response(200)
-        |> LazyHTML.from_document()
-        |> LazyHTML.query("[data-changelog-announcement]")
-
-      assert announcement |> LazyHTML.query("a[href='/pricing#contact']") |> Enum.count() == 1
-      assert announcement |> LazyHTML.query("a[href='/review']") |> Enum.count() == 1
-      assert announcement |> LazyHTML.query("a[href='/my-work']") |> Enum.count() == 1
-    end
-
-    test "joins its Japanese and Chinese sentences with no space after 。", %{conn: conn} do
-      for locale <- ~w(ja zh) do
-        text =
-          conn
-          |> init_test_session(%{locale: locale})
-          |> get(~p"/changelog")
-          |> html_response(200)
-          |> LazyHTML.from_document()
-          |> LazyHTML.query("[data-changelog-announcement] p")
-          |> Enum.map(&LazyHTML.text/1)
-
-        refute Enum.any?(text, &(&1 =~ ~r/。\s+\S/u)),
-               "space after 。 in the #{locale} announcement"
-      end
-    end
-
-    test "separates its sentences with a space in English", %{conn: conn} do
-      text =
-        conn
-        |> get(~p"/changelog")
-        |> html_response(200)
-        |> LazyHTML.from_document()
-        |> LazyHTML.query("[data-changelog-announcement]")
-        |> LazyHTML.text()
-
-      assert text =~ "Launch date: to be announced on this page. The changes below take effect"
-      assert text =~ "on launch day. Tasks waiting for you"
-    end
-
-    test "renders under the app shell for a signed-in user", %{conn: conn} do
-      %{conn: conn} = register_and_log_in_user(%{conn: conn})
-      body = conn |> get(~p"/changelog") |> html_response(200)
-
-      assert body =~ "data-changelog-announcement"
-      assert body =~ "Announcing Organizations and the Free plan"
-    end
+    assert versions == Enum.sort(versions, {:desc, Version})
+    assert document |> LazyHTML.query("[data-changelog-announcement]") |> Enum.count() == 0
   end
 
   test "CHANGELOG.md and the /changelog page each have at most one [Unreleased] section",
