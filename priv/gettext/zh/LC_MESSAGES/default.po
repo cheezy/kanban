@@ -3375,7 +3375,7 @@ msgstr "隐私"
 
 #: lib/kanban_web/components/marketing_components.ex:67
 #: lib/kanban_web/components/marketing_components.ex:272
-#: lib/kanban_web/controllers/page_html/product.html.heex:11
+#: lib/kanban_web/controllers/page_html/product.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Product"
 msgstr "产品"
@@ -3905,7 +3905,7 @@ msgstr "处处使用参数化查询"
 msgid "Passwords"
 msgstr "密码"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:47
+#: lib/kanban_web/controllers/page_html/product.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at"
 msgstr "在您思考的层面进行规划"
@@ -3926,7 +3926,7 @@ msgstr "对本政策有疑问、担忧或请求?请发送邮件至 "
 msgid "Rate limiting"
 msgstr "限速"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:335
+#: lib/kanban_web/controllers/page_html/product.html.heex:531
 #, elixir-autogen, elixir-format
 msgid "Ready to see it run?"
 msgstr "准备好看它运行了吗?"
@@ -4001,7 +4001,7 @@ msgstr "Stride 部署在加密基础设施上,密码使用 bcrypt 哈希,API 令
 msgid "Stride's `before_doing`, `after_doing`, `before_review`, and `after_review` hooks are shell commands that run on the agent's machine — never on Stride's servers. This is a deliberate architectural choice: you hold the keys; agents hold the loop. Stride never executes user-supplied code or untrusted input on its own infrastructure."
 msgstr "Stride 的 `before_doing`、`after_doing`、`before_review` 和 `after_review` 钩子是运行在代理机器上的 shell 命令 — 绝不会在 Stride 的服务器上运行。这是有意的架构选择:钥匙由您持有,循环由代理持有。Stride 从不在自己的基础设施上执行用户提供的代码或不受信任的输入。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:137
+#: lib/kanban_web/controllers/page_html/product.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Structured schema, not free-text"
 msgstr "结构化的模式,而非自由文本"
@@ -4257,7 +4257,7 @@ msgstr "将子项提升至「就绪」"
 #: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:232
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:146
-#: lib/kanban_web/controllers/page_html/product.html.heex:219
+#: lib/kanban_web/controllers/page_html/product.html.heex:221
 #: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
@@ -5964,22 +5964,22 @@ msgstr "对你和你的团队免费 · 支持自托管"
 msgid "Free for you and your teams. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
 msgstr "对你和你的团队免费。任意 agent 都可以接入 — Claude、Copilot、Gemini、Codex、OpenCode,或你自己的。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:19
+#: lib/kanban_web/controllers/page_html/product.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
 msgstr "Stride 是一款 AI 原生的工作管理系统。每一个界面都被设计成让人类与 agent 都能在同一块看板上工作而互不干扰。以下是各部分的样子。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:27
+#: lib/kanban_web/controllers/page_html/product.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Stride kanban board showing the Backlog, Ready, Doing, Review, and Done columns"
 msgstr "Stride 看板,显示 Backlog、Ready、Doing、Review 和 Done 列"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:118
+#: lib/kanban_web/controllers/page_html/product.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "Stride goal view with the segmented progress bar and child tasks beneath it"
 msgstr "Stride 目标视图,带有分段进度条以及下方的子任务"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:69
+#: lib/kanban_web/controllers/page_html/product.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "Stride boards view"
 msgstr "Stride 看板视图"
@@ -5989,7 +5989,7 @@ msgstr "Stride 看板视图"
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "在你的项目文件夹里放一个 .stride.md,为你的 agent 获取一个 API token,然后观察循环在你自己的机器上运行。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:338
+#: lib/kanban_web/controllers/page_html/product.html.heex:534
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams."
 msgstr "对你和你的团队免费。"
@@ -6465,7 +6465,7 @@ msgstr "人工审查与完成"
 #: lib/kanban_web/components/marketing_closing.ex:66
 #: lib/kanban_web/components/marketing_components.ex:125
 #: lib/kanban_web/components/marketing_components.ex:432
-#: lib/kanban_web/controllers/page_html/product.html.heex:345
+#: lib/kanban_web/controllers/page_html/product.html.heex:541
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:546
 #, elixir-autogen, elixir-format
 msgid "Start now"
@@ -12830,172 +12830,292 @@ msgstr "面向开发者"
 msgid "For non-developers"
 msgstr "面向非开发者"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:41
+#: lib/kanban_web/controllers/page_html/product.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "01 · Plan"
 msgstr "01 · 规划"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:131
+#: lib/kanban_web/controllers/page_html/product.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "02 · Build"
 msgstr "02 · 构建"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:201
+#: lib/kanban_web/controllers/page_html/product.html.heex:203
 #, elixir-autogen, elixir-format
 msgid "03 · Review"
 msgstr "03 · 审核"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:273
+#: lib/kanban_web/controllers/page_html/product.html.heex:276
 #, elixir-autogen, elixir-format
 msgid "04 · Operate"
 msgstr "04 · 运营"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:302
+#: lib/kanban_web/controllers/page_html/product.html.heex:498
 #, elixir-autogen, elixir-format
 msgid "05 · Measure"
 msgstr "05 · 度量"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:160
+#: lib/kanban_web/controllers/page_html/product.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "A Stride task showing its why, what, where, acceptance criteria and key files"
 msgstr "显示原因、内容、位置、验收标准和关键文件的 Stride 任务"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:186
+#: lib/kanban_web/controllers/page_html/product.html.heex:188
 #, elixir-autogen, elixir-format
 msgid "A Stride task's verification steps, behaviour/test matrix, pitfalls and security considerations"
 msgstr "Stride 任务的验证步骤、行为/测试矩阵、陷阱和安全注意事项"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:81
+#: lib/kanban_web/controllers/page_html/product.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "A fixed flow for agents, or columns of your own"
 msgstr "为代理准备的固定流程，或你自己的列"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:178
+#: lib/kanban_web/controllers/page_html/product.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "A task can also carry verification steps, a behaviour/test matrix that names the test for each behaviour, pitfalls to avoid, security considerations, a testing strategy and the telemetry and logging it needs, so finished work is checked against what was asked."
 msgstr "任务还可以包含验证步骤、为每个行为指明测试的行为/测试矩阵、需要避免的陷阱、安全注意事项、测试策略以及所需的遥测和日志，从而按照需求检查已完成的工作。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:140
+#: lib/kanban_web/controllers/page_html/product.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "A task carries more than a title: why, what, acceptance criteria, testing strategy, security considerations, pitfalls to avoid and observability. Agents claim with enough context to work without round-trips, and people review against criteria they wrote."
 msgstr "任务不只是一个标题：它包含原因、内容、验收标准、测试策略、安全注意事项、需要避免的陷阱和可观测性。代理认领任务时拥有足够的上下文，无需反复沟通即可工作；人则按照自己写下的标准进行审核。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:84
+#: lib/kanban_web/controllers/page_html/product.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "AI-optimized boards use five fixed columns, Backlog, Ready, Doing, Review and Done, so people and agents follow one protocol: people specify in Backlog, agents pull from Ready, and people review in Review. On a custom board you add, rename, reorder and remove your own columns and set WIP limits. Cards move live as work happens."
 msgstr "AI 优化看板使用 Backlog、Ready、Doing、Review 和 Done 五个固定列，让人和代理遵循同一套协议：人在 Backlog 中编写需求，代理从 Ready 中领取任务，人在 Review 中审核。在自定义看板上，你可以添加、重命名、重新排序和删除自己的列，并设置 WIP 限制。卡片会随着工作进展实时移动。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:59
+#: lib/kanban_web/controllers/page_html/product.html.heex:61
 #, elixir-autogen, elixir-format
 msgid "All your boards at a glance"
 msgstr "一眼纵览所有看板"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:207
+#: lib/kanban_web/controllers/page_html/product.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Approve with the evidence in front of you"
 msgstr "证据就在眼前，再做批准"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:62
+#: lib/kanban_web/controllers/page_html/product.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Each board card shows its tasks in To Do, Doing, Review and Done, its throughput over the last 14 days and when work last moved. The page refreshes every 30 seconds."
 msgstr "每张看板卡片都会显示 To Do、Doing、Review 和 Done 中的任务、过去 14 天的吞吐量以及工作最近一次推进的时间。页面每 30 秒刷新一次。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:149
+#: lib/kanban_web/controllers/page_html/product.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "Everything an agent needs, in one task"
 msgstr "代理所需的一切，尽在一个任务中"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:210
+#: lib/kanban_web/controllers/page_html/product.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "Finished work waits in one review queue. Read the reviewer's report, check the diff, then approve it or send it back with notes."
 msgstr "已完成的工作在同一个审核队列中等待。阅读审核者的报告，检查差异，然后批准或附上备注退回。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:107
+#: lib/kanban_web/controllers/page_html/product.html.heex:109
 #, elixir-autogen, elixir-format
 msgid "Goals that track their own progress"
 msgstr "自动跟踪进度的目标"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:308
+#: lib/kanban_web/controllers/page_html/product.html.heex:504
 #, elixir-autogen, elixir-format
 msgid "Know where work waits"
 msgstr "看清工作在哪里等待"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:152
+#: lib/kanban_web/controllers/page_html/product.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Open a task to see why it matters, what to build, where in the code it lives, its acceptance criteria and the key files to touch, next to its status, priority, complexity and whether it needs review."
 msgstr "打开任务即可看到它为何重要、要构建什么、位于代码的哪个位置、验收标准以及需要修改的关键文件，旁边还有状态、优先级、复杂度以及是否需要审核。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:50
+#: lib/kanban_web/controllers/page_html/product.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "See every board at a glance, choose the flow your work follows, and break big outcomes into goals that agents and people can pick up."
 msgstr "一眼纵览每个看板，选择工作遵循的流程，并将大目标拆解为代理和人都可以认领的目标。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:279
+#: lib/kanban_web/controllers/page_html/product.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "See what every agent is doing"
 msgstr "掌握每个代理正在做什么"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:319
+#: lib/kanban_web/controllers/page_html/product.html.heex:515
 #, elixir-autogen, elixir-format
 msgid "Stride workspace metrics with cycle time, lead time, throughput, review wait time and a leaderboard of agents and people"
 msgstr "显示周期时间、前置时间、吞吐量、审核等待时间以及代理和人员排行榜的 Stride 工作区指标"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:175
+#: lib/kanban_web/controllers/page_html/product.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Tests, security and pitfalls, spelled out"
 msgstr "测试、安全和陷阱，一一写明"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:282
+#: lib/kanban_web/controllers/page_html/product.html.heex:297
 #, elixir-autogen, elixir-format
 msgid "The Agents page shows each agent on your boards as working, waiting for review or idle, with its completions today and over seven days, its success rate and claims, next to a live feed of claims, completions and reviews."
 msgstr "代理页面将你看板上的每个代理显示为工作中、等待审核或空闲，并列出其今日和七天内的完成数、成功率和认领数，旁边是认领、完成和审核的实时动态。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:92
+#: lib/kanban_web/controllers/page_html/product.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "The Ready, Doing and Review columns of a Stride board, with cards waiting, in progress and in review"
 msgstr "Stride 看板的 Ready、Doing 和 Review 列，其中有等待中、进行中和审核中的卡片"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:289
+#: lib/kanban_web/controllers/page_html/product.html.heex:316
 #, elixir-autogen, elixir-format
 msgid "The Stride Agents page with the agent roster and the activity feed"
 msgstr "显示代理列表和活动动态的 Stride 代理页面"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:230
+#: lib/kanban_web/controllers/page_html/product.html.heex:232
 #, elixir-autogen, elixir-format
 msgid "The Stride review queue with a selected task's reviewer report and acceptance checks"
 msgstr "显示所选任务的审核者报告和验收检查的 Stride 审核队列"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:16
+#: lib/kanban_web/controllers/page_html/product.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "The board your people and your agents share."
 msgstr "你的团队与代理共享的看板。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:245
+#: lib/kanban_web/controllers/page_html/product.html.heex:247
 #, elixir-autogen, elixir-format
 msgid "The checks and the diff, file by file"
 msgstr "检查结果与差异，逐个文件查看"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:222
+#: lib/kanban_web/controllers/page_html/product.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "The queue lists the tasks waiting for your review across your boards, oldest first, with how long each has waited. Select one to see its completion summary, the reviewer's report with issues by severity, and how it did on acceptance criteria, testing strategy, patterns and pitfalls."
 msgstr "队列列出你所有看板上等待你审核的任务，最早的排在最前，并显示每个任务已等待的时间。选择一个任务即可查看其完成摘要、按严重程度列出问题的审核者报告，以及它在验收标准、测试策略、模式和陷阱方面的结果。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:256
+#: lib/kanban_web/controllers/page_html/product.html.heex:258
 #, elixir-autogen, elixir-format
 msgid "The review checks and changed files in the Stride review queue, with one file's diff open"
 msgstr "Stride 审核队列中的审核检查和已更改文件，其中一个文件的差异已展开"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:311
+#: lib/kanban_web/controllers/page_html/product.html.heex:507
 #, elixir-autogen, elixir-format
 msgid "Workspace metrics show median cycle time, median lead time, throughput and review wait time over 7, 14, 30 or 90 days, for all your boards or just the ones you pick, with cumulative flow and a leaderboard of the agents and people finishing the work."
 msgstr "工作区指标显示 7、14、30 或 90 天内的周期时间中位数、前置时间中位数、吞吐量和审核等待时间，可查看所有看板或仅所选看板，并提供累积流和完成工作的代理与人员排行榜。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:110
+#: lib/kanban_web/controllers/page_html/product.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "A goal groups related tasks and shows how many are complete, with a progress bar split by status. Break work down from the top and claim it from the bottom. Reassigning a goal moves every unfinished task under it to the new assignee in one step."
 msgstr "目标将相关任务归为一组，显示已完成的数量，并用按状态分段的进度条呈现。自上而下拆解工作，自下而上认领任务。重新分配目标时，其下所有未完成的任务会一步转给新的负责人。"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:248
+#: lib/kanban_web/controllers/page_html/product.html.heex:250
 #, elixir-autogen, elixir-format
 msgid "See the reviewer's evidence for each acceptance criterion, the review checks, and every file the agent changed with its diff inline. Approve to move the task to Done, or request changes with notes the agent picks up."
 msgstr "查看审核者为每条验收标准给出的依据、审核检查结果，以及代理修改的每个文件及其内联差异。批准后任务移至 Done，或附上备注请求修改，代理会接收这些备注。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:383
+#, elixir-autogen, elixir-format
+msgid "A Stride delivery target with its date, status, estimated finish, progress by column and its goal"
+msgstr "一个 Stride 交付目标，显示其日期、状态、预计完成时间、各列进度及其目标"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:453
+#, elixir-autogen, elixir-format
+msgid "A Stride generic webhook with its events and its recent deliveries, including a failed attempt"
+msgstr "一个 Stride 通用 Webhook，显示其事件和最近的投递记录，其中包括一次失败的尝试"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:436
+#, elixir-autogen, elixir-format
+msgid "A board's owner can send its task events, such as a task created, moved to Review or completed, to a Slack or Discord channel or to a webhook of their own. Generic webhooks are signed with HMAC-SHA256 in an X-Stride-Signature header, failed deliveries are retried, and each endpoint keeps a log of recent deliveries."
+msgstr "看板所有者可以将看板的任务事件（例如任务创建、移至评审或完成）发送到 Slack 或 Discord 频道，或发送到自己的 Webhook。通用 Webhook 会在 X-Stride-Signature 请求头中使用 HMAC-SHA256 签名，失败的投递会重试，每个端点都会保留最近的投递日志。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:366
+#, elixir-autogen, elixir-format
+msgid "A delivery target groups goals from any of your boards under one date. Stride estimates when the work will finish from how long tasks have been taking and marks the target On-track, At-risk, Missed or Complete, so you see a date at risk before it slips."
+msgstr "交付目标把来自你任意看板的目标归到同一个日期下。Stride 根据任务以往所用的时间估算工作何时完成，并将其标记为正常、有风险、未达成或已完成，让你在日期延误之前就发现风险。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:478
+#, elixir-autogen, elixir-format
+msgid "Commands that add Stride's MCP server to Claude Code"
+msgstr "将 Stride 的 MCP 服务器添加到 Claude Code 的命令"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:328
+#, elixir-autogen, elixir-format
+msgid "Everything assigned to you, on one page"
+msgstr "分配给你的一切，尽在一页"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:282
+#, elixir-autogen, elixir-format
+msgid "Keep work moving once it starts"
+msgstr "工作一旦开始，就让它持续推进"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:468
+#, elixir-autogen, elixir-format
+msgid "Let agents work through MCP"
+msgstr "让代理通过 MCP 工作"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:331
+#, elixir-autogen, elixir-format
+msgid "My Work lists the open tasks assigned to you on every board you belong to, one card per board, most urgent first: Critical, then High, Medium and Low. Click a task to open it on its board."
+msgstr "“我的工作”列出你所在的每个看板上分配给你的未完成任务，每个看板一张卡片，最紧急的排在前面：紧急，然后是高、中、低。点击任务即可在其看板上打开。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:363
+#, elixir-autogen, elixir-format
+msgid "Plan toward a date across boards"
+msgstr "跨看板朝着日期做计划"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:488
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Connecting an MCP client"
+msgstr "阅读指南：连接 MCP 客户端"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:446
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Connecting webhooks, Slack and Discord"
+msgstr "阅读指南：连接 Webhook、Slack 和 Discord"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:376
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Planning with targets"
+msgstr "阅读指南：用交付目标做计划"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:411
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Staying informed with notifications"
+msgstr "阅读指南：通过通知随时了解动态"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:310
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Watching your agents"
+msgstr "阅读指南：关注你的代理"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:341
+#, elixir-autogen, elixir-format
+msgid "Read the guide: Your work across boards"
+msgstr "阅读指南：跨看板查看你的工作"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:433
+#, elixir-autogen, elixir-format
+msgid "Send board events to Slack, Discord or your own service"
+msgstr "将看板事件发送到 Slack、Discord 或你自己的服务"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:471
+#, elixir-autogen, elixir-format
+msgid "Stride's MCP server gives an agent the task loop as six tools: get the next task, claim it, read a task, list tasks, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
+msgstr "Stride 的 MCP 服务器以六个工具的形式为代理提供任务循环：获取下一个任务、认领任务、读取任务、列出任务、添加评论和完成工作。它使用与 REST API 相同的 API 令牌。用你自己的地址和令牌将其添加到 Claude Code："
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:348
+#, elixir-autogen, elixir-format
+msgid "The Stride My Work page with assigned tasks grouped by board, the most urgent first"
+msgstr "Stride 的“我的工作”页面，分配的任务按看板分组，最紧急的排在前面"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:418
+#, elixir-autogen, elixir-format
+msgid "The Stride notifications page with review requests, a released claim and a mention"
+msgstr "Stride 通知页面，显示评审请求、一个被释放的认领和一次提及"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:401
+#, elixir-autogen, elixir-format
+msgid "The bell counts your unread notifications: review requests and results, task assignments, released claims, mentions and more. For each event you choose in-app, email or both, and a weekly digest email on Mondays sums up the past week, skipping quiet weeks."
+msgstr "铃铛会统计你的未读通知：评审请求和结果、任务分配、被释放的认领、提及等。你可以为每个事件选择应用内、邮件或两者兼有，每周一还会收到一封汇总上周情况的每周摘要邮件，没有动态的周则不发送。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:398
+#, elixir-autogen, elixir-format
+msgid "Told when work needs you"
+msgstr "工作需要你时及时通知"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:285
+#, elixir-autogen, elixir-format
+msgid "Watch every agent as it works, see what is yours across boards, plan toward dates and hear about what needs you, in Stride, by email, in Slack or Discord, or through your own tools."
+msgstr "观察每个代理的工作，跨看板查看属于你的任务，朝着日期做计划，并通过 Stride、邮件、Slack 或 Discord，或你自己的工具了解需要你处理的事项。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:300
+#, elixir-autogen, elixir-format
+msgid "When a goal under an at-risk delivery target stalls, the target's owner or the board's owner can reassign or reprioritize it from this page, with 8 seconds to undo."
+msgstr "当有风险的交付目标下的某个目标停滞时，交付目标的所有者或看板所有者可以在此页面重新分配它或调整其优先级，并有 8 秒时间撤销。"

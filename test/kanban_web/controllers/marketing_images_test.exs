@@ -5,7 +5,8 @@ defmodule KanbanWeb.MarketingImagesTest do
   images/marketing, and declare the size it really is. The page reserves the
   declared size before the image loads, so a wrong or missing size makes the
   page jump. Every PNG in images/marketing must also be used by one of the
-  pages, so a replaced screenshot doesn't linger.
+  pages, so a replaced screenshot doesn't linger, and every /product
+  subsection (`data-showcase-item`) must show an image or a code snippet.
   priv/static/images/marketing/README.md is the capture checklist.
   """
   use KanbanWeb.ConnCase, async: true
@@ -34,6 +35,17 @@ defmodule KanbanWeb.MarketingImagesTest do
 
     test "no PNG in images/marketing is unreferenced", %{conn: conn} do
       assert unreferenced(page_images(conn), marketing_pngs()) == []
+    end
+
+    # Each /product subsection is a [data-showcase-item]; every one must show a
+    # screenshot or, like the MCP subsection, a code snippet (W2458).
+    test "every showcase subsection on /product shows an image or a code snippet", %{
+      conn: conn
+    } do
+      html = conn |> get(~p"/product") |> html_response(200)
+
+      assert bare_items(html, "/product") == []
+      assert unmarked_subsections(html) == 0
     end
   end
 
@@ -94,6 +106,25 @@ defmodule KanbanWeb.MarketingImagesTest do
       assert misplaced([]) == []
       assert size_mismatches([]) == []
       assert unreferenced([], []) == []
+    end
+
+    test "report a showcase subsection with no image or code snippet" do
+      html = """
+      <main>
+        <section id="plan">
+          <div data-showcase-item><h3>Boards</h3><img src="/images/marketing/a.png"></div>
+          <div data-showcase-item><h3>MCP</h3><pre><code>claude mcp add</code></pre></div>
+          <div data-showcase-item><h3>Targets</h3><p>No picture yet</p></div>
+          <div><h3>Unmarked</h3></div>
+        </section>
+      </main>
+      """
+
+      assert bare_items(html, "/product") == [
+               ~s(/product: "Targets" shows no image or code snippet)
+             ]
+
+      assert unmarked_subsections(html) == 1
     end
 
     test "report a PNG in the folder that no page uses" do
@@ -189,6 +220,28 @@ defmodule KanbanWeb.MarketingImagesTest do
       {actual_width, actual_height} ->
         ["#{page}: #{src} declares #{width}x#{height} but is #{actual_width}x#{actual_height}"]
     end
+  end
+
+  # The heading of every [data-showcase-item] in <main> holding neither an
+  # <img> nor a <pre>.
+  defp bare_items(html, page) do
+    html
+    |> LazyHTML.from_document()
+    |> LazyHTML.query("main [data-showcase-item]")
+    |> Enum.filter(&(LazyHTML.query(&1, "img, pre") |> Enum.empty?()))
+    |> Enum.map(fn item ->
+      heading = item |> LazyHTML.query("h3") |> LazyHTML.text() |> String.trim()
+      ~s(#{page}: "#{heading}" shows no image or code snippet)
+    end)
+  end
+
+  # How many theme subsection headings sit outside a [data-showcase-item], so
+  # a subsection added without the marker can't escape bare_items/2.
+  defp unmarked_subsections(html) do
+    main = html |> LazyHTML.from_document() |> LazyHTML.query("main")
+    headings = main |> LazyHTML.query("section h3") |> Enum.count()
+    marked = main |> LazyHTML.query("section [data-showcase-item] h3") |> Enum.count()
+    headings - marked
   end
 
   defp unreferenced(images, pngs) do

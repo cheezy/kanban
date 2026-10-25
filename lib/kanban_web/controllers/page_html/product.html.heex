@@ -5,7 +5,9 @@
       evaluates Stride (Plan, Build, Review, then Operate and Measure). Every
       screenshot comes from demo data and is listed, with how to retake it, in
       priv/static/images/marketing/README.md. test/kanban_web/controllers/marketing_images_test.exs
-      checks each <img> exists under /images/marketing/ and declares its real size.
+      checks each <img> exists under /images/marketing/ and declares its real size,
+      and that every subsection marked data-showcase-item shows an image or a code
+      snippet.
     --%>
     <header class="text-center mb-20">
       <span class="ucase">{gettext("Product")}</span>
@@ -53,7 +55,7 @@
         </p>
       </div>
 
-      <div class="mt-14">
+      <div class="mt-14" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("All your boards at a glance")}
@@ -75,7 +77,7 @@
         />
       </div>
 
-      <div class="mt-16">
+      <div class="mt-16" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("A fixed flow for agents, or columns of your own")}
@@ -101,7 +103,7 @@
         />
       </div>
 
-      <div class="mt-16">
+      <div class="mt-16" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("Goals that track their own progress")}
@@ -143,7 +145,7 @@
         </p>
       </div>
 
-      <div class="mt-14">
+      <div class="mt-14" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("Everything an agent needs, in one task")}
@@ -169,7 +171,7 @@
         />
       </div>
 
-      <div class="mt-16">
+      <div class="mt-16" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("Tests, security and pitfalls, spelled out")}
@@ -213,7 +215,7 @@
         </p>
       </div>
 
-      <div class="mt-14">
+      <div class="mt-14" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("Review queue")}
@@ -239,7 +241,7 @@
         />
       </div>
 
-      <div class="mt-16">
+      <div class="mt-16" data-showcase-item>
         <div class="max-w-3xl mx-auto text-center mb-6">
           <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
             {gettext("The checks and the diff, file by file")}
@@ -266,33 +268,227 @@
       </div>
     </section>
 
-    <%!-- Operate theme (interim). W2458 extends this section: the Agents page,
-    My Work, delivery targets, notifications, integrations and MCP. --%>
+    <%!-- Operate theme (W2458): the Agents page, My Work, delivery targets,
+    notifications, integrations and the MCP server. Every subsection is a
+    [data-showcase-item] with an image or a code snippet and a guide link. --%>
     <section id="operate" class="mb-24" aria-labelledby="operate-heading">
-      <div class="max-w-3xl mx-auto text-center mb-6">
+      <div class="max-w-3xl mx-auto text-center">
         <span class="ucase">{gettext("04 · Operate")}</span>
         <h2
           id="operate-heading"
           class="font-semibold mt-3 mb-4"
           style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
         >
-          {gettext("See what every agent is doing")}
+          {gettext("Keep work moving once it starts")}
         </h2>
         <p class="leading-relaxed" style="color: var(--ink-2);">
           {gettext(
-            "The Agents page shows each agent on your boards as working, waiting for review or idle, with its completions today and over seven days, its success rate and claims, next to a live feed of claims, completions and reviews."
+            "Watch every agent as it works, see what is yours across boards, plan toward dates and hear about what needs you, in Stride, by email, in Slack or Discord, or through your own tools."
           )}
         </p>
       </div>
-      <img
-        src={~p"/images/marketing/product-agent-activity.png"}
-        alt={gettext("The Stride Agents page with the agent roster and the activity feed")}
-        width="1206"
-        height="640"
-        loading="lazy"
-        class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
-        style="border: 1px solid var(--line);"
-      />
+
+      <div class="mt-14" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("See what every agent is doing")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "The Agents page shows each agent on your boards as working, waiting for review or idle, with its completions today and over seven days, its success rate and claims, next to a live feed of claims, completions and reviews."
+            )}
+            {gettext(
+              "When a goal under an at-risk delivery target stalls, the target's owner or the board's owner can reassign or reprioritize it from this page, with 8 seconds to undo."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/watching-your-agents"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Watching your agents")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-agent-activity.png"}
+          alt={gettext("The Stride Agents page with the agent roster and the activity feed")}
+          width="1206"
+          height="640"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Everything assigned to you, on one page")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "My Work lists the open tasks assigned to you on every board you belong to, one card per board, most urgent first: Critical, then High, Medium and Low. Click a task to open it on its board."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/your-work-across-boards"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Your work across boards")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-my-work.png"}
+          alt={
+            gettext(
+              "The Stride My Work page with assigned tasks grouped by board, the most urgent first"
+            )
+          }
+          width="1198"
+          height="306"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Plan toward a date across boards")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "A delivery target groups goals from any of your boards under one date. Stride estimates when the work will finish from how long tasks have been taking and marks the target On-track, At-risk, Missed or Complete, so you see a date at risk before it slips."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/planning-with-targets"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Planning with targets")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-target.png"}
+          alt={
+            gettext(
+              "A Stride delivery target with its date, status, estimated finish, progress by column and its goal"
+            )
+          }
+          width="1194"
+          height="328"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Told when work needs you")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "The bell counts your unread notifications: review requests and results, task assignments, released claims, mentions and more. For each event you choose in-app, email or both, and a weekly digest email on Mondays sums up the past week, skipping quiet weeks."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/staying-informed-with-notifications"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Staying informed with notifications")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-notifications.png"}
+          alt={
+            gettext(
+              "The Stride notifications page with review requests, a released claim and a mention"
+            )
+          }
+          width="1179"
+          height="481"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Send board events to Slack, Discord or your own service")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "A board's owner can send its task events, such as a task created, moved to Review or completed, to a Slack or Discord channel or to a webhook of their own. Generic webhooks are signed with HMAC-SHA256 in an X-Stride-Signature header, failed deliveries are retried, and each endpoint keeps a log of recent deliveries."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/connecting-webhooks-slack-and-discord"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Connecting webhooks, Slack and Discord")}
+            </.link>
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-integrations.png"}
+          alt={
+            gettext(
+              "A Stride generic webhook with its events and its recent deliveries, including a failed attempt"
+            )
+          }
+          width="574"
+          height="348"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16" data-showcase-item>
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Let agents work through MCP")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Stride's MCP server gives an agent the task loop as six tools: get the next task, claim it, read a task, list tasks, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
+            )}
+          </p>
+        </div>
+        <pre
+          tabindex="0"
+          aria-label={gettext("Commands that add Stride's MCP server to Claude Code")}
+          class="mx-auto max-w-3xl overflow-x-auto rounded-2xl p-5 text-left text-sm leading-relaxed"
+          style="background: var(--surface-sunken); border: 1px solid var(--line); color: var(--ink);"
+        ><code class="font-mono">{mcp_snippet()}</code></pre>
+        <p class="mt-4 text-sm text-center">
+          <.link
+            href={~p"/resources/connecting-an-mcp-client"}
+            class="font-medium underline"
+            style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+          >
+            {gettext("Read the guide: Connecting an MCP client")}
+          </.link>
+        </p>
+      </div>
     </section>
 
     <%!-- Measure theme (interim). W2459 extends this section with the metrics

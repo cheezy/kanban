@@ -100,7 +100,7 @@ with these differences:
 ## 4. Checklist
 
 One row per planned image. Board ids differ between databases, so routes name the demo board:
-`Checkout` is Checkout Revamp and `Search` is Storefront Search.
+`Checkout` is Checkout Revamp, `Search` is Storefront Search and `Mobile` is Mobile App Launch.
 
 | File | Page / section | Route | Demo user | UI state | Crop | Theme |
 |---|---|---|---|---|---|---|
@@ -113,11 +113,25 @@ One row per planned image. Board ids differ between databases, so routes name th
 | `product-review-queue.png` | `/product`, Review / "Review queue" | `/review` | Maya Chen | Click "Rank exact title matches above partial ones" (the queue opens on the Checkout task); the report and 3/3 · 1 issue showing. Don't click **Approve** | The queue and the review pane, below the page header | Light |
 | `product-review-diff.png` | `/product`, Review / "The checks and the diff, file by file" | `/review`, same task | Maya Chen | `lib/storefront/search/ranking.ex` clicked so its diff is open, pane scrolled to the end | The review pane from the acceptance criteria to the changed files | Light |
 | `product-agent-activity.png` | `/product`, Operate / "See what every agent is doing" | `/agents`, filtered to Storefront Search | Maya Chen | Claude Opus 5.5 working (seed run just before), the feed on **All** | The header, the roster and the feed, no sidebar | Light |
+| `product-my-work.png` | `/product`, Operate / "Everything assigned to you, on one page" | `/my-work` | Maya Chen | Copied from the guide image `your-work-across-boards-step-2.png`: Checkout D1, W1, W2 and Marketing W1 assigned to Maya | The header and the two board cards, no sidebar | Light |
+| `product-target.png` | `/product`, Operate / "Plan toward a date across boards" | `/targets/<Checkout launch>` | Maya Chen | Copied from the guide image `planning-with-targets-step-5.png`: the target as it stands. Don't click **Edit target** | From the date and status to the Goals list | Light |
+| `product-notifications.png` | `/product`, Operate / "Told when work needs you" | `/notifications` | Maya Chen | Copied from the guide image `staying-informed-with-notifications-step-4.png`: the demo notifications on **All** | The header and the notification list, no sidebar | Light |
+| `product-integrations.png` | `/product`, Operate / "Send board events to Slack, Discord or your own service" | `/boards/<Mobile>/integrations` | Maya Chen | Copied from the guide image `connecting-webhooks-slack-and-discord-step-5.png`: the generic `.test` endpoint's **Deliveries** open. No signing secret, no Slack or Discord host, and never **Send test** | The generic endpoint and its recent deliveries | Light |
 | `product-metrics.png` | `/product`, Measure / "Know where work waits" | `/metrics`, Storefront Search only in the board selector | Maya Chen | 30-day window, page zoomed to 80% | From the KPI strip to the leaderboard, no sidebar | Light |
 | `workflows-ready.png` | `/workflows`, "Getting ready for development" | `/boards/<Search>` | Maya Chen | The Backlog and Ready columns | The two columns | Light |
 | `workflows-claim.png` | `/workflows`, "The AI development lifecycle" | `/boards/<Search>` | Maya Chen | The Doing column with Claude Opus 5.5's card | The Doing column | Light |
 | `workflows-compliance.png` | `/workflows`, "The AI development lifecycle" (hooks and subagents) | `/boards/<Checkout>/metrics/compliance` | Maya Chen | Step dispatch rates and skip reasons | The two charts | Light |
 | `workflows-flagged-for-review.png` | `/workflows`, "Human review and completion" / "Flagged for review" | `/review`, "Rank exact title matches above partial ones" selected | Maya Chen | The acceptance criteria and the diff | The review pane | Light |
 | `workflows-cleared-to-ship.png` | `/workflows`, "Human review and completion" / "Cleared to ship" | `/boards/<Search>/metrics/wait-time` | Maya Chen | Review wait time from the approved history | The Review Wait Time section | Light |
+
+Four Operate rows reuse Resources guide screenshots, which were taken from the
+same demo data under the guide README's capture and redaction rules. To retake
+one, follow that guide row and keep the `/product` file name. The Operate MCP
+subsection shows the commands from `KanbanWeb.PageHTML.mcp_snippet/0` instead
+of a screenshot, so it has no row.
+
+Each `/product` subsection is a `<div data-showcase-item>` holding its `h3`, and
+the image test fails when one shows neither an image nor a code snippet, or when
+a theme `h3` sits outside such a `div`. Mark every new subsection the same way.
 
 When you add an image to a page, add or update its row here in the same change.

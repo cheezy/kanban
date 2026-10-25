@@ -603,6 +603,10 @@ defmodule KanbanWeb.PageControllerTest do
     product-review-queue.png
     product-review-diff.png
     product-agent-activity.png
+    product-my-work.png
+    product-target.png
+    product-notifications.png
+    product-integrations.png
     product-metrics.png
   )
 
@@ -646,28 +650,116 @@ defmodule KanbanWeb.PageControllerTest do
     refute main =~ ~r/text-base-content[^"]*opacity-\d/
   end
 
-  # Two phrases per locale: the hero headline and a Build heading. Like the
+  # The Operate theme (W2458): each subsection's heading, its screenshot (or,
+  # for MCP, the code snippet) and the Resources guide it links to, in page
+  # order.
+  @operate_sections [
+    {"See what every agent is doing", "product-agent-activity.png", "watching-your-agents"},
+    {"Everything assigned to you, on one page", "product-my-work.png", "your-work-across-boards"},
+    {"Plan toward a date across boards", "product-target.png", "planning-with-targets"},
+    {"Told when work needs you", "product-notifications.png",
+     "staying-informed-with-notifications"},
+    {"Send board events to Slack, Discord or your own service", "product-integrations.png",
+     "connecting-webhooks-slack-and-discord"},
+    {"Let agents work through MCP", nil, "connecting-an-mcp-client"}
+  ]
+
+  test "GET /product shows the operate sections and links to their guides", %{conn: conn} do
+    body = conn |> get(~p"/product") |> html_response(200)
+
+    # Operate follows Review.
+    [review_at, operate_at] =
+      for id <- ~w(review operate), do: body |> :binary.match(~s(id="#{id}")) |> elem(0)
+
+    assert review_at < operate_at
+    assert body =~ "Keep work moving once it starts"
+
+    operate = body |> LazyHTML.from_document() |> LazyHTML.query("main section#operate")
+
+    headings = operate |> LazyHTML.query("h3") |> Enum.map(&LazyHTML.text/1)
+    assert Enum.map(headings, &String.trim/1) == Enum.map(@operate_sections, &elem(&1, 0))
+
+    srcs = operate |> LazyHTML.query("img") |> LazyHTML.attribute("src")
+    expected_images = for {_, image, _} <- @operate_sections, image, do: image
+    assert length(srcs) == length(expected_images)
+
+    for {src, image} <- Enum.zip(srcs, expected_images) do
+      assert src =~ "/images/marketing/#{image}", "expected #{image}, got #{src}"
+    end
+
+    # The MCP subsection shows a code block instead of a screenshot. It
+    # scrolls sideways at 375px instead of widening the page, can be
+    # scrolled with the keyboard, and carries only placeholders.
+    [pre] = operate |> LazyHTML.query("pre") |> Enum.to_list()
+
+    assert pre
+           |> LazyHTML.attribute("class")
+           |> hd()
+           |> String.split()
+           |> Enum.member?("overflow-x-auto")
+
+    assert LazyHTML.attribute(pre, "tabindex") == ["0"]
+
+    snippet = pre |> LazyHTML.query("code") |> LazyHTML.text()
+    assert snippet == KanbanWeb.PageHTML.mcp_snippet()
+    assert snippet =~ "claude mcp add --transport http stride"
+    assert snippet =~ "/api/mcp"
+    assert snippet =~ "Bearer ${STRIDE_API_TOKEN}"
+    refute snippet =~ "stridelikeaboss"
+    refute snippet =~ ~r/stride_(dev|test|prod|live)_/
+
+    # One link per subsection, each to a Resources guide that exists.
+    for {_heading, _image, guide_id} <- @operate_sections do
+      href = "/resources/#{guide_id}"
+      links = LazyHTML.query(operate, ~s(a[href="#{href}"]))
+      assert Enum.count(links) == 1, "expected one link to #{href}"
+      assert {:ok, _guide} = KanbanWeb.ResourcesLive.HowToData.get_how_to(guide_id)
+      assert build_conn() |> get(href) |> html_response(200)
+    end
+  end
+
+  test "PageHTML.mcp_snippet/0 adds the MCP server with a placeholder host and token" do
+    lines = String.split(KanbanWeb.PageHTML.mcp_snippet(), "\n")
+
+    assert lines == [
+             ~s(export STRIDE_URL="https://your-stride-host"),
+             ~s(export STRIDE_API_TOKEN="paste-your-token-here"),
+             ~S(claude mcp add --transport http stride "${STRIDE_URL}/api/mcp" ) <> "\\",
+             ~S(  --header "Authorization: Bearer ${STRIDE_API_TOKEN}")
+           ]
+  end
+
+  # Three phrases per locale: the hero headline, a Build heading and the
+  # Operate heading. Like the
   # /workflows test below, the locale is seeded into the session so the real
   # KanbanWeb.Plugs.Locale path sets it.
   @product_translations %{
     "de" => [
       "Das Board, das Ihre Leute und Ihre Agenten teilen.",
-      "Alles, was ein Agent braucht, in einer Aufgabe"
+      "Alles, was ein Agent braucht, in einer Aufgabe",
+      "Arbeit in Bewegung halten, sobald sie beginnt"
     ],
     "es" => [
       "El tablero que comparten tu equipo y tus agentes.",
-      "Todo lo que un agente necesita, en una sola tarea"
+      "Todo lo que un agente necesita, en una sola tarea",
+      "Mantén el trabajo en marcha una vez que empieza"
     ],
     "fr" => [
       "Le tableau que partagent vos équipes et vos agents.",
-      "Tout ce dont un agent a besoin, dans une seule tâche"
+      "Tout ce dont un agent a besoin, dans une seule tâche",
+      "Faites avancer le travail une fois lancé"
     ],
-    "ja" => ["人とエージェントが共有するボード。", "エージェントに必要なすべてを、1つのタスクに"],
+    "ja" => [
+      "人とエージェントが共有するボード。",
+      "エージェントに必要なすべてを、1つのタスクに",
+      "始まった仕事を止めない"
+    ],
     "pt" => [
       "O quadro que sua equipe e seus agentes compartilham.",
-      "Tudo o que um agente precisa, em uma só tarefa"
+      "Tudo o que um agente precisa, em uma só tarefa",
+      "Mantenha o trabalho andando depois que ele começa"
     ],
-    "zh" => ["你的团队与代理共享的看板。", "代理所需的一切，尽在一个任务中"]
+    "zh" => ["你的团队与代理共享的看板。", "代理所需的一切，尽在一个任务中", "工作一旦开始，就让它持续推进"]
   }
 
   for {locale, expected} <- @product_translations do
@@ -685,6 +777,7 @@ defmodule KanbanWeb.PageControllerTest do
 
       refute body =~ "The board your people and your agents share."
       refute body =~ "Everything an agent needs, in one task"
+      refute body =~ "Keep work moving once it starts"
     end
   end
 
