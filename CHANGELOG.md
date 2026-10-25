@@ -5,6 +5,101 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-10-25
+
+Stride now has **Organizations**: a paid plan for teams, with shared workspaces, org-admins, an Organization audit log, single sign-on, SCIM provisioning and security policies. Boards outside an Organization are on the new **Free** plan. This is a major version because the Free plan's limits change what a board can do once they are switched on, and because several API requests that used to succeed are now refused (see [Changed](#changed)).
+
+> **The Free plan's limits are off until launch day.** Plans are enforced only when the operator sets `STRIDE_PLANS_ENFORCED` to exactly `true` and restarts Stride. Until then, and on any self-hosted instance that does not set it, every board keeps every feature and has no member limit. Organizations, workspaces, roles, invitations, board moves, the audit log and account deletion work the same either way. The [Organizations launch runbook](docs/organizations-launch-runbook.md) is the operator's checklist for turning enforcement on.
+
+### Added
+
+#### Organizations and workspaces
+
+- **Organizations.** A Stride site admin creates an Organization from the new `/admin/organizations` screens and appoints its first org-admin by email. An address with no account gets a new one and an email with instructions to set a password. A person belongs to at most one Organization.
+- **The Organization console.** Org-admins open `/org` from **Organization** in the side navigation. It shows the Organization's details and members, and lets org-admins create, rename and archive workspaces and remove members.
+- **Workspaces.** Every account has a hidden personal workspace, and existing boards were moved into their owners' personal workspaces. An Organization can have several workspaces. Its people get a **workspace switcher** in the side navigation and a **Workspace settings** page, with Members and Boards for everyone, and Invitations, Tokens and Export for org-admins.
+- **Invitations.** Org-admins invite people to a workspace by email, as a Member or a Guest, optionally with access to one board. Links work once and expire after 7 days. On a free board, the owner can invite someone to that one board from its members screen.
+- **Moving a board into a workspace.** An org-admin moves a board they own into an Organization workspace from **Move a board here**. Everyone on the board must already belong to the Organization, and the move cannot be undone. Once moved, the board is a paid board.
+- **Workspace tokens.** One API token for every AI Optimized board in a workspace, instead of one per board. Each request names its board. Tokens expire after 90 days and stop working when revoked or when the org-admin who created them leaves.
+- **Workspace export.** Org-admins download a workspace as a zip of JSON files, built in the background and kept for 7 days. A self-hosted instance restores one with `mix kanban.import_workspace` (or `Kanban.Release.import_workspace/3` in a release). The archive never contains passwords, tokens or webhook secrets.
+- **The Organization audit log** at `/org/audit` lists the Organization's security events, 50 to a page, filtered by action and date, with CSV and JSON export.
+
+[Organizations and Workspaces](docs/organizations.md) covers all of this, and the Resources section has new guides for org-admins.
+
+#### Single sign-on, SCIM and security policies
+
+- **Single sign-on** with OpenID Connect or SAML 2.0, one identity provider per Organization. Org-admins verify their email domains with a DNS TXT record, and people on those domains use **Sign in with SSO**. Their first sign-in creates their account and makes them a member. Verified domains are re-checked daily, and a domain whose record is missing three days in a row stops being verified. See [Single Sign-On](docs/single-sign-on.md).
+- **SCIM 2.0 provisioning** at `/scim/v2`. An identity provider creates, updates and deprovisions members and keeps workspace membership in step with its groups, using Organization-scoped tokens created on `/org/scim`. See [SCIM Provisioning](docs/scim-provisioning.md).
+- **Security policies** on `/org/security`: require two-factor authentication for every member, with a grace period of 1 to 30 days (7 by default) that each person gets once, and set how long the Organization's audit events are kept (90 to 3,650 days, or forever). See [Organization Security Policies](docs/organization-security-policies.md).
+
+#### The Free and Organization plans
+
+When plans are enforced:
+
+- **A free board holds at most 3 people.** AI agents never count. A board already over the limit keeps everyone, but nobody new can be added until there is room. Public read-only boards can still be read by any signed-in user; readers do not count.
+- **Notifications, bulk actions, integrations, the task telemetry fields and MCP access are Organization-only.** On a free board each shows its name with "Available to organizations" and links to the pricing page. Webhook, Slack and Discord endpoints are paused rather than deleted, and send again once the board moves into an Organization. MCP requests for a free board get a JSON-RPC `-32001` error. The REST API and client-side hooks stay available on free boards; the REST API accepts the telemetry fields but does not store them, and says so in a `warnings` list.
+- People without paid access stop getting notification emails. Tasks waiting for them are still listed in the Review queue and My Work.
+
+Operators get a read-only report of boards over the member limit (`mix kanban.over_cap_boards`, or `Kanban.Release.report_over_cap_boards/0`), a release function that creates Stride's own internal Organization, and a one-time launch announcement email.
+
+#### Account deletion
+
+- **Anyone with a password can delete their own account** from **Delete account** in account settings. Deletion is refused while they own a board other people use, or while they are the last org-admin of an Organization that has other members. Their claimed tasks go back to Ready, and their tasks and comments are kept without their name.
+- A site admin can delete an account that an Organization's identity provider deprovisioned, on its owner's request.
+- Every account deletion, and every refused one, from `/admin/users` is recorded in the audit log.
+
+#### Public pages
+
+- **`/pricing`, `/terms` and `/privacy`** are rewritten for the Free plan and the sales-led Organization plan. `/changelog` announces Organizations and the Free plan.
+- **`/product` and `/workflows`** are redesigned around Stride's features, with current screenshots, and `/workflows` shows how Stride plugs into your coding agent.
+- Stride is published under the MIT license that the pricing page and terms refer to.
+
+#### Documentation
+
+- **Every doc under `docs/` and the README was checked against the code** and corrected, and [docs/README.md](docs/README.md) indexes every doc by audience. A test keeps the index complete.
+- **The in-app Resources guides were refreshed** against the current app, with new screenshots and new guides for account settings, board settings, labels, search and filters, bulk actions, the archive, task details, comments and mentions, the Agents page, My Work, Targets, notifications, integrations, MCP, free and paid boards, workspaces, invitations, and the org-admin pages. Guides are now grouped into Getting started, For developers, For non-developers and Best practices.
+- The onboarding endpoint and the skills and setup templates it serves to agents were corrected to match the payloads the server accepts.
+
+### Changed
+
+These requests used to succeed and are now refused:
+
+- **A `security_considerations` entry shaped like a real credential** is refused with a `422` on task create, batch create and update, and nothing is stored. The error names the entry's position and never echoes the value. `Kanban.Release.scan_credential_considerations/0` finds entries stored before this change.
+- **A dependency that names no task on the task's board** is refused, in the API and the board form.
+- **A repeated or conflicting `board_id`** (in the query string twice, or different in the query and the body) gets a `400`.
+- **A board token whose user has lost access to the board** is refused on reads as well as writes, with the documented `403`.
+- **Boards in an Organization workspace accept only members of that Organization.** Read-only members are no longer offered as assignees.
+- Names made only of invisible characters, and text with NUL bytes or invalid UTF-8, are refused as form errors instead of being stored or crashing.
+
+And these responses changed:
+
+- A `column_id` that is not on the board answers `404` "Column not found" instead of "Task not found".
+- `mark_done` and `mark_reviewed` for a token without write access answer the documented `403` instead of a `500` or `422`.
+- A goal's `child_tasks` in a create response now include each child's `column_id`.
+
+### Security
+
+- **Site audit events are purged after 90 days**, as `/privacy` says. An Organization's own audit events follow its retention setting.
+- **Single sign-on and SCIM refuse site-admin accounts**, so an Organization's identity provider can never sign in a site admin.
+- **SSO and SCIM hardening:** SAML responses with a repeated attribute are refused, sign-in cannot be started from another site, provider requests are bounded in time and size, a SCIM-deprovisioned member stays out of single sign-on until SCIM re-activates them, and single sign-on asks for the two-factor code before it first links an existing account that has two-factor turned on.
+- **API tokens in a request path are kept out of the request log and the error tracker**, and `security_considerations` is filtered from logged request parameters.
+- **Losing access ends access everywhere:** removing someone from a board, a workspace or an Organization revokes their tokens and stale invitations there, returns their claimed tasks to Ready, and switches off webhook endpoints they added. A disabled account's endpoints send nothing until it is enabled again, and the Integrations tab shows who added each endpoint.
+- **Workspace export downloads refuse symbolic links**, and the export directory gets a random, exclusive name.
+- `plug_crypto` is upgraded to 2.2.1 for [EEF-CVE-2026-105963](https://osv.dev/vulnerability/EEF-CVE-2026-105963). HTTP/2 stays off on the web server.
+
+### Fixed
+
+- **Form fields have a 3:1 border in light mode**, so inputs are easy to see.
+- **The Agents page roster and feed stay reachable** when a long list of at-risk targets is shown.
+- **The language you choose before signing in is kept** after sign-in and stored on your account.
+- **The language switcher opens** on the home, pricing, terms and privacy pages.
+- **Background jobs left running when a server stops are retried** after an hour instead of being stuck.
+- Task history entries with the same time are always shown in the same order.
+
+### Dependencies
+
+- Phoenix 1.8.16, Phoenix LiveView 1.2.13, Bandit 1.13.1, plug_crypto 2.2.1, and updates to castore, Oban, esbuild, tailwind and mdex.
+
 ## [2.21.0] - 2026-10-14
 
 Boards can now tell other systems what happens to their tasks: board owners send task events to a signed webhook, a Slack channel or a Discord channel from a new **Integrations** tab. Stride also sends a monitoring event for most things people and agents do, charts every one of them on the admin Metrics page, documents them in a new reference, and keeps stored metrics for 90 days.
