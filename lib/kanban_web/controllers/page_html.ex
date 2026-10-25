@@ -143,6 +143,31 @@ defmodule KanbanWeb.PageHTML do
     """
   end
 
+  @doc """
+  Renders a translated sentence that contains `%{channel}`, with the channel
+  name in a span that never wraps, so a name like `#stride-community` can't
+  break at its hyphen. Translate the sentence with
+  `gettext("... %{channel} ...", channel: "%{channel}")` so the placeholder
+  survives and each locale keeps its own word order. Both halves stay
+  HTML-escaped. A translation that drops the placeholder renders as written,
+  with no channel name.
+  """
+  attr :text, :string, required: true
+  attr :channel, :string, required: true
+
+  def with_channel(assigns) do
+    assigns = assign(assigns, :parts, String.split(assigns.text, "%{channel}", parts: 2))
+
+    ~H"""
+    <%= case @parts do %>
+      <% [before, rest] -> %>
+        {before}<span class="whitespace-nowrap">{@channel}</span>{rest}
+      <% [text] -> %>
+        {text}
+    <% end %>
+    """
+  end
+
   defp pill_style(:hook), do: "background: var(--st-doing-soft); color: var(--st-doing);"
 
   defp pill_style(_kind),

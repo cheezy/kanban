@@ -50,6 +50,15 @@
             <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
             <span>{gettext("Community support on GitHub")}</span>
           </li>
+          <li class="flex items-start gap-2">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>
+              <.with_channel
+                text={gettext("Access to our Slack %{channel} channel", channel: "%{channel}")}
+                channel="#stride-community"
+              />
+            </span>
+          </li>
         </ul>
 
         <.link
@@ -116,6 +125,19 @@
           <li class="flex items-start gap-2">
             <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
             <span>{gettext("MCP access")}</span>
+          </li>
+          <li id="organization-support" class="flex items-start gap-2">
+            <.icon name="hero-check" class="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>
+              {gettext(
+                "Your own Slack support channel that only your organization can see, with a response to support questions within 24 hours"
+              )}
+              <span class="block mt-1 text-pretty">
+                {gettext(
+                  "For every 100 users, or part of 100, add 2 people to the channel. For example, 60 users get 2 people and 110 users get 4."
+                )}
+              </span>
+            </span>
           </li>
         </ul>
 

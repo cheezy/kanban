@@ -563,6 +563,32 @@ defmodule KanbanWeb.PageControllerTest do
       assert free =~ "Up to 3 people per board — AI agents do not count"
       assert free =~ "The full REST API and client-side hooks"
       assert free =~ "Metrics and exports"
+      assert free =~ "Access to our Slack #stride-community channel"
+      refute free =~ "#stride-support"
+
+      assert document
+             |> LazyHTML.query("#plan-free span.whitespace-nowrap")
+             |> LazyHTML.text() == "#stride-community"
+    end
+
+    test "the Organization plan includes its own private support channel", %{conn: conn} do
+      document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
+      organization = document |> LazyHTML.query("#plan-organization") |> LazyHTML.text()
+
+      assert organization =~ "Everything in Free"
+
+      text =
+        document
+        |> LazyHTML.query("#plan-organization #organization-support")
+        |> LazyHTML.text()
+        |> String.replace(~r/\s+/, " ")
+
+      assert text =~
+               "Your own Slack support channel that only your organization can see, with a response to support questions within 24 hours"
+
+      assert text =~ "For every 100 users, or part of 100, add 2 people to the channel."
+      assert text =~ "For example, 60 users get 2 people and 110 users get 4."
+      refute organization =~ "#stride-support"
     end
 
     test "the Organization plan lists the eight paid features and a contact call to action",
@@ -1421,6 +1447,52 @@ defmodule KanbanWeb.PageControllerTest do
 
     assert optional =~ "border-dashed"
     assert optional =~ "var(--stride-violet-ink)"
+  end
+
+  describe "PageHTML.with_channel/1" do
+    import Phoenix.Component, only: [sigil_H: 2]
+    import Phoenix.LiveViewTest, only: [rendered_to_string: 1]
+
+    test "keeps the channel name on one line inside the sentence" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.PageHTML.with_channel
+          text="Join our %{channel} channel today"
+          channel="#stride-support"
+        />
+        """)
+
+      assert html =~
+               ~s(Join our <span class="whitespace-nowrap">#stride-support</span> channel today)
+    end
+
+    test "escapes both halves of the sentence and the channel name" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.PageHTML.with_channel text="<b>a</b> %{channel} <i>b</i>" channel="<x>" />
+        """)
+
+      assert html =~ "&lt;b&gt;a&lt;/b&gt;"
+      assert html =~ "&lt;x&gt;"
+      assert html =~ "&lt;i&gt;b&lt;/i&gt;"
+      refute html =~ "<b>"
+    end
+
+    test "renders a sentence without the placeholder as written" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.PageHTML.with_channel text="No channel here" channel="#stride-support" />
+        """)
+
+      assert html =~ "No channel here"
+      refute html =~ "#stride-support"
+    end
   end
 
   test "GET /tango", %{conn: conn} do

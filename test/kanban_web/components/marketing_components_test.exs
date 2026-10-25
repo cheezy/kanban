@@ -21,9 +21,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Uses the canonical Stride logo SVG (shared with the app nav)
       assert html =~ "/images/logos/abstract-s-motion.svg"
 
-      # The public marketing nav links. Workflows is now visible to everyone
-      # (desktop nav + mobile menu = 2 occurrences); Pricing remains admin-
-      # gated and is verified separately.
+      # The public marketing nav links. Workflows and Pricing are visible to
+      # everyone (desktop nav + mobile menu = 2 occurrences each).
       assert html =~ "Product"
       assert html =~ "Workflows"
       assert html =~ "Resources"
@@ -33,10 +32,10 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ ~s|href="/product"|
       assert href_count(html, "/workflows") == 2
 
-      # Pricing is still admin-only — hidden from unauthenticated visitors in
-      # both the desktop nav and the mobile menu.
-      refute html =~ "Pricing"
-      refute html =~ ~s|href="/pricing"|
+      # Pricing is public, so signed-out visitors see it in both the desktop
+      # nav and the mobile menu.
+      assert html =~ "Pricing"
+      assert href_count(html, "/pricing") == 2
     end
 
     test "Workflows link is visible in both desktop and mobile nav for non-admin users" do
@@ -63,7 +62,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert href_count(html, "/workflows") == 2
     end
 
-    test "Pricing link is hidden for non-admin users" do
+    test "Pricing link is visible in both desktop and mobile nav for non-admin users" do
       assigns = %{current_scope: %{user: %{email: "member@example.com", type: :member}}}
 
       html =
@@ -71,8 +70,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <MarketingComponents.marketing_nav current_scope={@current_scope} />
         """)
 
-      refute html =~ "Pricing"
-      refute html =~ ~s|href="/pricing"|
+      assert html =~ "Pricing"
+      assert href_count(html, "/pricing") == 2
     end
 
     test "Pricing link is visible to admin users" do

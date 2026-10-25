@@ -274,7 +274,6 @@ defmodule KanbanWeb.MarketingComponents do
       {gettext("Workflows")}
     </.link>
     <.link
-      :if={@current_scope && @current_scope.user.type == :admin}
       href={~p"/pricing"}
       class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
     >

@@ -58,14 +58,18 @@ The pricing page names two plans:
 
 - **Free**, "For individuals and small teams. No card required." It includes
   unlimited boards, tasks and goals, up to 3 people per board (AI agents do
-  not count), any agent, the full REST API and client-side hooks, and metrics
-  and exports.
+  not count), any agent, the full REST API and client-side hooks, metrics and
+  exports, community support on GitHub, and access to the Stride Slack
+  #stride-community channel.
 - **Organization**, "For teams that need more." It costs $12 CAD per user per
   month for up to 250 users; an Organization with more than 250 users contacts
   Stride for pricing. It is everything in Free with no user or board limits,
-  plus notifications, the
-  Organization audit log, single sign-on (SSO), workspaces, bulk actions,
-  integrations (webhooks), task telemetry fields and MCP access.
+  plus notifications, the Organization audit log, single sign-on (SSO),
+  workspaces, bulk actions, integrations (webhooks), task telemetry fields and
+  MCP access. Each Organization also gets its own Slack support channel that
+  only it can see, where support questions get a response within 24 hours.
+  For every 100 users, or part of 100, it may add 2 people to that channel:
+  60 users get 2 people, and 110 users get 4.
 
 There is no self-serve billing. The Organization plan is set up with Stride
 directly under a separate written agreement: use **Talk to us** on the
