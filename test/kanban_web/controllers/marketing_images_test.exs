@@ -6,11 +6,6 @@ defmodule KanbanWeb.MarketingImagesTest do
   declared size before the image loads, so a wrong or missing size makes the
   page jump. Every PNG in images/marketing must also be used by one of the
   pages, so a replaced screenshot doesn't linger.
-
-  The pages still show the old design mockups listed in `@legacy_mockups`.
-  Those are exempt from the placement and size checks until the page rewrite
-  replaces them, and the last test fails once a page stops using one, so the
-  list only ever shrinks. Every new image is checked in full as it lands.
   priv/static/images/marketing/README.md is the capture checklist.
   """
   use KanbanWeb.ConnCase, async: true
@@ -23,18 +18,6 @@ defmodule KanbanWeb.MarketingImagesTest do
   @fixture_png "/images/resources/guides/adding-task-step-1.png"
   @other_fixture_png "/images/resources/guides/adding-task-step-4.png"
 
-  # The pre-rewrite mockups /product shows today. Remove an entry in the same
-  # change that takes the image off the page.
-  @legacy_mockups ~w(
-    /images/boards.png
-    /images/kanban_board.png
-    /images/task_detail.png
-    /images/goal_view.png
-    /images/review_queue.png
-    /images/agent_activity.png
-    /images/workspace_metrics.png
-  )
-
   describe "the showcase pages' images" do
     test "every image the showcase pages reference exists under priv/static", %{conn: conn} do
       assert missing(page_images(conn)) == []
@@ -43,7 +26,7 @@ defmodule KanbanWeb.MarketingImagesTest do
     test "every showcase image is a PNG under /images/marketing/ with its real size", %{
       conn: conn
     } do
-      images = conn |> page_images() |> Enum.reject(&(&1.src in @legacy_mockups))
+      images = page_images(conn)
 
       assert misplaced(images) == []
       assert size_mismatches(images) == []
@@ -51,13 +34,6 @@ defmodule KanbanWeb.MarketingImagesTest do
 
     test "no PNG in images/marketing is unreferenced", %{conn: conn} do
       assert unreferenced(page_images(conn), marketing_pngs()) == []
-    end
-
-    test "every legacy mockup is still on a page", %{conn: conn} do
-      used = conn |> page_images() |> MapSet.new(& &1.src)
-
-      assert Enum.reject(@legacy_mockups, &(&1 in used)) == [],
-             "a mockup left the page: remove it from @legacy_mockups too"
     end
   end
 
@@ -86,8 +62,8 @@ defmodule KanbanWeb.MarketingImagesTest do
     end
 
     # The size checks read real PNGs, so they use guide screenshots whose sizes
-    # guide_images_test.exs pins, never the legacy mockups, which are deleted
-    # as the showcase images replace them.
+    # guide_images_test.exs pins rather than showcase images, which are retaken
+    # whenever the UI changes.
     test "report a declared size that doesn't match the PNG header" do
       images = [image("/product", @fixture_png, 517, 263)]
 
@@ -132,8 +108,16 @@ defmodule KanbanWeb.MarketingImagesTest do
     test "read src, width and height from a page's main content only", %{conn: conn} do
       images = conn |> get(~p"/product") |> html_response(200) |> images_in("/product")
 
-      assert length(images) == length(@legacy_mockups)
-      assert Enum.all?(images, &(&1.page == "/product" and is_integer(&1.width)))
+      # The layout's logos sit outside <main>, so only the showcase's own
+      # screenshots are read.
+      assert images != []
+
+      assert Enum.all?(images, fn image ->
+               image.page == "/product" and
+                 String.starts_with?(image.src, "/images/marketing/product-") and
+                 is_integer(image.width) and is_integer(image.height)
+             end)
+
       assert images_in("<main><p>No pictures</p></main>", "/workflows") == []
     end
   end

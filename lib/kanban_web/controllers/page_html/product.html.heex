@@ -1,225 +1,340 @@
 <main class="min-h-screen">
   <div class="max-w-5xl mx-auto px-6 py-16">
-    <div class="text-center mb-14">
-      <h1 class="text-4xl md:text-5xl font-bold text-base-content mb-4">
-        {gettext("Product")}
+    <%!--
+      The showcase: a hero, then one <section> per theme in the order a visitor
+      evaluates Stride (Plan, Build, Review, then Operate and Measure). Every
+      screenshot comes from demo data and is listed, with how to retake it, in
+      priv/static/images/marketing/README.md. test/kanban_web/controllers/marketing_images_test.exs
+      checks each <img> exists under /images/marketing/ and declares its real size.
+    --%>
+    <header class="text-center mb-20">
+      <span class="ucase">{gettext("Product")}</span>
+      <h1
+        class="font-semibold mt-3 mb-5"
+        style="font-size: clamp(32px, 6vw, 56px); letter-spacing: -0.04em; line-height: 1.05; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+      >
+        {gettext("The board your people and your agents share.")}
       </h1>
-      <p class="text-lg text-base-content opacity-70 max-w-2xl mx-auto">
+      <p class="text-lg max-w-2xl mx-auto leading-relaxed" style="color: var(--ink-2);">
         {gettext(
           "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
         )}
       </p>
-    </div>
-
-    <%!--
-      Each <section> below pairs a short description with an image placeholder.
-      Drop a screenshot into the placeholder by replacing the <div class="image-placeholder">
-      block with an <img> tag. The placeholder spec (purpose, suggested aspect
-      ratio, what to capture) is right next to the slot for guidance.
-    --%>
-
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("01 · Boards")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
-          {gettext("Organization wide real-time activity")}
-        </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
-          {gettext(
-            "At a glance, see how work is flowing through the organization with details and metrics updated in real-time."
-          )}
-        </p>
-      </div>
 
       <img
-        src={~p"/images/boards.png"}
-        alt={gettext("Stride boards view")}
-        width="961"
-        height="717"
-        loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
-      />
-    </section>
-
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("02 · The board")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
-          {gettext("Five-column flow, AI-optimized")}
-        </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
-          {gettext(
-            "Backlog → Ready → Doing → Review → Done. The columns are fixed because the protocol is fixed: humans specify in Backlog, agents pull from Ready, humans focus on Review, and the board's shape is the same one your team and your agents both speak."
-          )}
-        </p>
-      </div>
-
-      <img
-        src={~p"/images/kanban_board.png"}
+        src={~p"/images/marketing/product-hero.png"}
         alt={
           gettext(
             "Stride kanban board showing the Backlog, Ready, Doing, Review, and Done columns"
           )
         }
-        width="1266"
-        height="814"
-        loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
+        width="1222"
+        height="700"
+        fetchpriority="high"
+        class="mt-12 block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+        style="border: 1px solid var(--line);"
       />
-    </section>
+    </header>
 
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("03 · Task detail")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
-          {gettext("Structured schema, not free-text")}
-        </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
-          {gettext(
-            "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
-          )}
-        </p>
-      </div>
-
-      <img
-        src={~p"/images/task_detail.png"}
-        alt={
-          gettext(
-            "Stride task detail showing the why, what, acceptance criteria, key files, and hooks fields"
-          )
-        }
-        width="1299"
-        height="814"
-        loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
-      />
-    </section>
-
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("04 · Goals")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
+    <section id="plan" class="mb-24" aria-labelledby="plan-heading">
+      <div class="max-w-3xl mx-auto text-center">
+        <span class="ucase">{gettext("01 · Plan")}</span>
+        <h2
+          id="plan-heading"
+          class="font-semibold mt-3 mb-4"
+          style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+        >
           {gettext("Plan at the level you think at")}
         </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
+        <p class="leading-relaxed" style="color: var(--ink-2);">
           {gettext(
-            "A goal wraps a set of related tasks with aggregate progress and status segmentation. Decompose top-down, claim bottom-up. Goal-level assignment cascades to children atomically."
+            "See every board at a glance, choose the flow your work follows, and break big outcomes into goals that agents and people can pick up."
           )}
         </p>
       </div>
 
+      <div class="mt-14">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("All your boards at a glance")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Each board card shows its tasks in To Do, Doing, Review and Done, its throughput over the last 14 days and when work last moved. The page refreshes every 30 seconds."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-boards.png"}
+          alt={gettext("Stride boards view")}
+          width="1212"
+          height="400"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("A fixed flow for agents, or columns of your own")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "AI-optimized boards use five fixed columns, Backlog, Ready, Doing, Review and Done, so people and agents follow one protocol: people specify in Backlog, agents pull from Ready, and people review in Review. On a custom board you add, rename, reorder and remove your own columns and set WIP limits. Cards move live as work happens."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-board.png"}
+          alt={
+            gettext(
+              "The Ready, Doing and Review columns of a Stride board, with cards waiting, in progress and in review"
+            )
+          }
+          width="860"
+          height="292"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Goals that track their own progress")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "A goal groups related tasks and shows how many are complete, with a progress bar split by status. Break work down from the top and claim it from the bottom. Reassigning a goal moves every unfinished task under it to the new assignee in one step."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-goal.png"}
+          alt={
+            gettext("Stride goal view with the segmented progress bar and child tasks beneath it")
+          }
+          width="1218"
+          height="622"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+    </section>
+
+    <section id="build" class="mb-24" aria-labelledby="build-heading">
+      <div class="max-w-3xl mx-auto text-center">
+        <span class="ucase">{gettext("02 · Build")}</span>
+        <h2
+          id="build-heading"
+          class="font-semibold mt-3 mb-4"
+          style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+        >
+          {gettext("Structured schema, not free-text")}
+        </h2>
+        <p class="leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "A task carries more than a title: why, what, acceptance criteria, testing strategy, security considerations, pitfalls to avoid and observability. Agents claim with enough context to work without round-trips, and people review against criteria they wrote."
+          )}
+        </p>
+      </div>
+
+      <div class="mt-14">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Everything an agent needs, in one task")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Open a task to see why it matters, what to build, where in the code it lives, its acceptance criteria and the key files to touch, next to its status, priority, complexity and whether it needs review."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-task-detail.png"}
+          alt={
+            gettext(
+              "A Stride task showing its why, what, where, acceptance criteria and key files"
+            )
+          }
+          width="990"
+          height="765"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Tests, security and pitfalls, spelled out")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "A task can also carry verification steps, a behaviour/test matrix that names the test for each behaviour, pitfalls to avoid, security considerations, a testing strategy and the telemetry and logging it needs, so finished work is checked against what was asked."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-task-schema.png"}
+          alt={
+            gettext(
+              "A Stride task's verification steps, behaviour/test matrix, pitfalls and security considerations"
+            )
+          }
+          width="724"
+          height="625"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+    </section>
+
+    <section id="review" class="mb-24" aria-labelledby="review-heading">
+      <div class="max-w-3xl mx-auto text-center">
+        <span class="ucase">{gettext("03 · Review")}</span>
+        <h2
+          id="review-heading"
+          class="font-semibold mt-3 mb-4"
+          style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+        >
+          {gettext("Approve with the evidence in front of you")}
+        </h2>
+        <p class="leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "Finished work waits in one review queue. Read the reviewer's report, check the diff, then approve it or send it back with notes."
+          )}
+        </p>
+      </div>
+
+      <div class="mt-14">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("Review queue")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "The queue lists the tasks waiting for your review across your boards, oldest first, with how long each has waited. Select one to see its completion summary, the reviewer's report with issues by severity, and how it did on acceptance criteria, testing strategy, patterns and pitfalls."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-review-queue.png"}
+          alt={
+            gettext(
+              "The Stride review queue with a selected task's reviewer report and acceptance checks"
+            )
+          }
+          width="1206"
+          height="738"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+
+      <div class="mt-16">
+        <div class="max-w-3xl mx-auto text-center mb-6">
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--ink);">
+            {gettext("The checks and the diff, file by file")}
+          </h3>
+          <p class="leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "See the reviewer's evidence for each acceptance criterion, the review checks, and every file the agent changed with its diff inline. Approve to move the task to Done, or request changes with notes the agent picks up."
+            )}
+          </p>
+        </div>
+        <img
+          src={~p"/images/marketing/product-review-diff.png"}
+          alt={
+            gettext(
+              "The review checks and changed files in the Stride review queue, with one file's diff open"
+            )
+          }
+          width="846"
+          height="722"
+          loading="lazy"
+          class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+          style="border: 1px solid var(--line);"
+        />
+      </div>
+    </section>
+
+    <%!-- Operate theme (interim). W2458 extends this section: the Agents page,
+    My Work, delivery targets, notifications, integrations and MCP. --%>
+    <section id="operate" class="mb-24" aria-labelledby="operate-heading">
+      <div class="max-w-3xl mx-auto text-center mb-6">
+        <span class="ucase">{gettext("04 · Operate")}</span>
+        <h2
+          id="operate-heading"
+          class="font-semibold mt-3 mb-4"
+          style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+        >
+          {gettext("See what every agent is doing")}
+        </h2>
+        <p class="leading-relaxed" style="color: var(--ink-2);">
+          {gettext(
+            "The Agents page shows each agent on your boards as working, waiting for review or idle, with its completions today and over seven days, its success rate and claims, next to a live feed of claims, completions and reviews."
+          )}
+        </p>
+      </div>
       <img
-        src={~p"/images/goal_view.png"}
-        alt={
-          gettext("Stride goal view with the segmented progress bar and child tasks beneath it")
-        }
-        width="1111"
-        height="622"
+        src={~p"/images/marketing/product-agent-activity.png"}
+        alt={gettext("The Stride Agents page with the agent roster and the activity feed")}
+        width="1206"
+        height="640"
         loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
+        class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+        style="border: 1px solid var(--line);"
       />
     </section>
 
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("05 · Review queue")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
-          {gettext("Approve at the speed of keystrokes")}
+    <%!-- Measure theme (interim). W2459 extends this section with the metrics
+    pages and adds a Govern theme (Organizations and admin) after it. --%>
+    <section id="measure" class="mb-24" aria-labelledby="measure-heading">
+      <div class="max-w-3xl mx-auto text-center mb-6">
+        <span class="ucase">{gettext("05 · Measure")}</span>
+        <h2
+          id="measure-heading"
+          class="font-semibold mt-3 mb-4"
+          style="font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); text-wrap: pretty; overflow-wrap: break-word; hyphens: auto;"
+        >
+          {gettext("Know where work waits")}
         </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
+        <p class="leading-relaxed" style="color: var(--ink-2);">
           {gettext(
-            "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
+            "Workspace metrics show median cycle time, median lead time, throughput and review wait time over 7, 14, 30 or 90 days, for all your boards or just the ones you pick, with cumulative flow and a leaderboard of the agents and people finishing the work."
           )}
         </p>
       </div>
-
       <img
-        src={~p"/images/review_queue.png"}
+        src={~p"/images/marketing/product-metrics.png"}
         alt={
           gettext(
-            "Stride review queue with the task list and the diff, tests, and acceptance checks pane"
+            "Stride workspace metrics with cycle time, lead time, throughput, review wait time and a leaderboard of agents and people"
           )
         }
-        width="1119"
-        height="860"
+        width="1232"
+        height="782"
         loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
+        class="block mx-auto max-w-full h-auto rounded-2xl shadow-lg"
+        style="border: 1px solid var(--line);"
       />
     </section>
 
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("06 · Agent activity")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
-          {gettext("AI ops as a first-class surface")}
-        </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
-          {gettext(
-            "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
-          )}
-        </p>
-      </div>
-
-      <img
-        src={~p"/images/agent_activity.png"}
-        alt={
-          gettext(
-            "Stride agent activity surface with the agent roster and the live event stream below it"
-          )
-        }
-        width="1124"
-        height="652"
-        loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
-      />
-    </section>
-
-    <section class="mb-20">
-      <div class="max-w-3xl mx-auto text-center mb-8">
-        <span class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80">
-          {gettext("07 · Metrics")}
-        </span>
-        <h2 class="text-3xl font-bold text-base-content mt-2 mb-4">
-          {gettext("Cycle time, split by agent vs human on all levels")}
-        </h2>
-        <p class="text-base-content opacity-70 leading-relaxed">
-          {gettext(
-            "Lead time, cycle time, wait time, throughput — every metric is split by who did the work. See exactly where your humans become the bottleneck and where agents are crushing it."
-          )}
-        </p>
-      </div>
-
-      <img
-        src={~p"/images/workspace_metrics.png"}
-        alt={
-          gettext(
-            "Stride workspace metrics dashboard with lead time, cycle time, wait time, and throughput split by agent and human"
-          )
-        }
-        width="1103"
-        height="898"
-        loading="lazy"
-        class="my-4 w-full h-auto rounded-2xl border border-base-300 shadow-lg"
-      />
-    </section>
+    <%!-- Govern theme slot: W2459 adds Organizations and the admin console here. --%>
 
     <section class="bg-base-100 rounded-2xl border border-base-300 p-8 md:p-12 text-center">
       <h2 class="text-2xl md:text-3xl font-bold text-base-content mb-4">
         {gettext("Ready to see it run?")}
       </h2>
-      <p class="text-base-content opacity-70 mb-6 max-w-xl mx-auto">
+      <p class="mb-6 max-w-xl mx-auto" style="color: var(--ink-2);">
         {gettext("Free for you and your teams.")}
       </p>
       <div class="flex flex-col sm:flex-row gap-3 justify-center">

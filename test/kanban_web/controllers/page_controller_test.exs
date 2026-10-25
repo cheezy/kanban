@@ -590,22 +590,136 @@ defmodule KanbanWeb.PageControllerTest do
     end
   end
 
+  # One screenshot per showcase slot, captured from demo data
+  # (priv/static/images/marketing/README.md). marketing_images_test.exs checks
+  # each file exists and declares its real size.
+  @product_images ~w(
+    product-hero.png
+    product-boards.png
+    product-board.png
+    product-goal.png
+    product-task-detail.png
+    product-task-schema.png
+    product-review-queue.png
+    product-review-diff.png
+    product-agent-activity.png
+    product-metrics.png
+  )
+
   test "GET /product", %{conn: conn} do
-    conn = get(conn, ~p"/product")
-    body = html_response(conn, 200)
-    # Hero + at least the first three feature sections render
-    assert body =~ "Five-column flow"
-    assert body =~ "Structured schema"
+    # Served by PageController :product to a visitor who is not signed in.
+    body = conn |> get(~p"/product") |> html_response(200)
+
+    # The hero, then the Plan, Build and Review themes in that order.
+    assert body =~ "The board your people and your agents share."
+
+    positions =
+      for id <- ~w(plan build review) do
+        assert body =~ ~s(id="#{id}"), "expected the #{id} theme"
+        body |> :binary.match(~s(id="#{id}")) |> elem(0)
+      end
+
+    assert positions == Enum.sort(positions)
     assert body =~ "Plan at the level you think at"
-    # All six section screenshots have been wired in (no placeholders remain).
-    assert body =~ "/images/boards.png"
-    assert body =~ "/images/kanban_board.png"
-    assert body =~ "/images/task_detail.png"
-    assert body =~ "/images/goal_view.png"
-    assert body =~ "/images/review_queue.png"
-    assert body =~ "/images/agent_activity.png"
-    assert body =~ "/images/workspace_metrics.png"
+    assert body =~ "Structured schema, not free-text"
+    assert body =~ "Approve with the evidence in front of you"
+
+    for image <- @product_images do
+      assert body =~ "/images/marketing/#{image}", "expected #{image} on /product"
+    end
+
+    # No placeholder or old mockup is left on the page.
     refute body =~ "image-placeholder"
+
+    refute body =~
+             ~r{/images/(boards|kanban_board|task_detail|goal_view|review_queue|agent_activity|workspace_metrics)\.png}
+
+    # Claims the code does not back are gone (W2457).
+    refute body =~ "J/K navigates"
+    refute body =~ "The columns are fixed"
+    refute body =~ "split by agent vs human"
+    refute body =~ "which test covers each acceptance criterion"
+    refute body =~ "not-started, unclaimed tasks"
+
+    # Secondary text uses ink tokens, never an opacity class (D214).
+    main = body |> LazyHTML.from_document() |> LazyHTML.query("main") |> LazyHTML.to_html()
+    refute main =~ ~r/text-base-content[^"]*opacity-\d/
+  end
+
+  # Two phrases per locale: the hero headline and a Build heading. Like the
+  # /workflows test below, the locale is seeded into the session so the real
+  # KanbanWeb.Plugs.Locale path sets it.
+  @product_translations %{
+    "de" => [
+      "Das Board, das Ihre Leute und Ihre Agenten teilen.",
+      "Alles, was ein Agent braucht, in einer Aufgabe"
+    ],
+    "es" => [
+      "El tablero que comparten tu equipo y tus agentes.",
+      "Todo lo que un agente necesita, en una sola tarea"
+    ],
+    "fr" => [
+      "Le tableau que partagent vos équipes et vos agents.",
+      "Tout ce dont un agent a besoin, dans une seule tâche"
+    ],
+    "ja" => ["人とエージェントが共有するボード。", "エージェントに必要なすべてを、1つのタスクに"],
+    "pt" => [
+      "O quadro que sua equipe e seus agentes compartilham.",
+      "Tudo o que um agente precisa, em uma só tarefa"
+    ],
+    "zh" => ["你的团队与代理共享的看板。", "代理所需的一切，尽在一个任务中"]
+  }
+
+  for {locale, expected} <- @product_translations do
+    test "GET /product renders translated copy under #{locale}", %{conn: conn} do
+      body =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/product")
+        |> html_response(200)
+
+      for phrase <- unquote(expected) do
+        assert body =~ phrase,
+               "expected #{unquote(locale)} translation #{inspect(phrase)} on /product"
+      end
+
+      refute body =~ "The board your people and your agents share."
+      refute body =~ "Everything an agent needs, in one task"
+    end
+  end
+
+  # The 375px and long-heading edge cases: every screenshot scales down to the
+  # viewport, and the hero and theme headings may break and hyphenate a long
+  # German or French word instead of overflowing.
+  for locale <- ~w(en de fr) do
+    test "GET /product keeps screenshots and headings inside a narrow screen under #{locale}",
+         %{conn: conn} do
+      main =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/product")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("main")
+
+      images = LazyHTML.query(main, "img")
+      assert Enum.count(images) == length(@product_images)
+
+      for img <- images do
+        [class] = LazyHTML.attribute(img, "class")
+        classes = String.split(class)
+        assert "max-w-full" in classes and "h-auto" in classes, "#{class} can overflow"
+      end
+
+      headings = LazyHTML.query(main, "h1, h2[id$=\"-heading\"]")
+      assert Enum.count(headings) == 6
+
+      for heading <- headings do
+        [style] = LazyHTML.attribute(heading, "style")
+        assert style =~ "overflow-wrap: break-word", "#{LazyHTML.text(heading)} cannot wrap"
+        assert style =~ "hyphens: auto", "#{LazyHTML.text(heading)} cannot hyphenate"
+      end
+    end
   end
 
   test "GET /workflows", %{conn: conn} do

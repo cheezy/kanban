@@ -13,17 +13,9 @@ in each page's `<main>` and fails when an image:
 - has no `width` and `height`, or declares a size the PNG doesn't have;
 - is in this directory but neither page uses it.
 
-`/product` still shows seven older mockups from `/images/`. They are listed in
-`@legacy_mockups` in that test, which skips the directory and size checks for
-them. When a screenshot from this checklist replaces a mockup, do all of
-these in the same change:
-
-1. Commit the PNG here and point the page's `<img>` at it, with its real size.
-2. Remove the mockup's path from `@legacy_mockups` (the test fails while a
-   listed mockup is no longer on a page).
-3. Update the image assertions in the `GET /product` test in
-   `test/kanban_web/controllers/page_controller_test.exs`.
-4. Delete the old PNG from `priv/static/images/`.
+`/product` shows only images from this directory. When you retake one, keep
+its file name, declare its new size in the page's `width` and `height`, and
+update its row in the checklist below in the same change.
 
 Like everything under `priv/static`, this file is served publicly, so it names
 demo data only.
@@ -69,6 +61,18 @@ its goal, and targets can't be deleted.
 Sign in as `maya.chen@example.test` in a private window, using the password you
 set with `RESOURCES_DEMO_PASSWORD`. Never forge a session cookie.
 
+If you can't sign in as Maya, photograph from a browser that is already
+signed in, with the seed's `RESOURCES_DEMO_VIEWER` set to that account, and
+remove your own name, avatar, other boards and their counts from the page
+first, as
+[the Resources guide images README](../resources/guides/README.md), section 2,
+describes. Pages that add up every board you can see (the `/boards` header,
+the review queue's header, targets) must be cropped out or hidden, and
+`/agents` and `/metrics` filtered to Storefront Search with their own board
+selector. That selector's label still counts every board you can see ("1 of 11
+boards"), so hide the selector (`[data-metrics-board-selector]` on `/metrics`)
+before capturing.
+
 In the dev database Maya is also a member of the Northwind Studio
 Organization. Unless a shot is about Organizations, hide its board (Mobile App
 Launch) and the workspace switcher (`#workspace-switcher`) in the page before
@@ -100,13 +104,16 @@ One row per planned image. Board ids differ between databases, so routes name th
 
 | File | Page / section | Route | Demo user | UI state | Crop | Theme |
 |---|---|---|---|---|---|---|
-| `product-boards.png` | `/product`, "Organization wide real-time activity" | `/boards` | Maya Chen | The demo boards' cards with their stats; Mobile App Launch hidden | The header and the board cards, no sidebar | Light |
-| `product-board.png` | `/product`, "Five-column flow, AI-optimized" | `/boards/<Search>` | Maya Chen | All five columns with cards, Claude Opus 5.5's card in Doing, page zoomed to 80% | Full board width | Light |
-| `product-task-detail.png` | `/product`, "Structured schema, not free-text" | `/boards/<Checkout>`, "Add a delivery estimate to the order summary" open | Maya Chen | The Field visibility toggles on, as in the guides' `reading-a-tasks-details` rows, and off again afterwards | The modal | Light |
-| `product-goal.png` | `/product`, "Plan at the level you think at" | `/boards/<Checkout>/goals/<Saved payment methods>` | Maya Chen | Hierarchy, progress and the three children | From the header to the children | Light |
-| `product-review-queue.png` | `/product`, "Approve at the speed of keystrokes" | `/review` | Maya Chen | Click "Rank exact title matches above partial ones" (the queue opens on the Checkout task); the report, 3/3 · 1 issue and the diff showing. Don't click **Approve** | The queue and the review pane | Light |
-| `product-agent-activity.png` | `/product`, "AI ops as a first-class surface" | `/agents`, filtered to Storefront Search | Maya Chen | Claude Opus 5.5 working (seed run just before), the feed on **All** | The roster and the feed | Light |
-| `product-metrics.png` | `/product`, "Cycle time, split by agent vs human on all levels" | `/metrics` | Maya Chen | 30-day window, the KPI strip, the cycle-time series and the leaderboard with agents and people | From the KPI strip to the leaderboard, no sidebar | Light |
+| `product-hero.png` | `/product`, hero | `/boards/<Search>` | Maya Chen | All five columns with cards, Claude Opus 5.5's card in Doing, page zoomed to 80% | The board header and columns, no sidebar, about 700 px high | Light |
+| `product-boards.png` | `/product`, Plan / "All your boards at a glance" | `/boards` | Maya Chen | The demo boards' cards with their stats and the Checkout launch target; Mobile App Launch hidden | The header and the board cards, no sidebar | Light |
+| `product-board.png` | `/product`, Plan / "A fixed flow for agents, or columns of your own" | `/boards/<Search>` | Maya Chen | Zoom at 100% | The Ready, Doing and Review columns | Light |
+| `product-goal.png` | `/product`, Plan / "Goals that track their own progress" | `/boards/<Checkout>/goals/<Saved payment methods>` | Maya Chen | Hierarchy, progress and the three children | From the header to the children, no sidebar | Light |
+| `product-task-detail.png` | `/product`, Build / "Everything an agent needs, in one task" | `/boards/<Checkout>`, "Add a delivery estimate to the order summary" open | Maya Chen | The Field visibility toggles on, as in the guides' `reading-a-tasks-details` rows, and off again after the two Build shots | The modal, from its header to **Key files** | Light |
+| `product-task-schema.png` | `/product`, Build / "Tests, security and pitfalls, spelled out" | same task | Maya Chen | Scrolled to **Verification steps** | From **Verification steps** to **Security considerations**, main column only | Light |
+| `product-review-queue.png` | `/product`, Review / "Review queue" | `/review` | Maya Chen | Click "Rank exact title matches above partial ones" (the queue opens on the Checkout task); the report and 3/3 · 1 issue showing. Don't click **Approve** | The queue and the review pane, below the page header | Light |
+| `product-review-diff.png` | `/product`, Review / "The checks and the diff, file by file" | `/review`, same task | Maya Chen | `lib/storefront/search/ranking.ex` clicked so its diff is open, pane scrolled to the end | The review pane from the acceptance criteria to the changed files | Light |
+| `product-agent-activity.png` | `/product`, Operate / "See what every agent is doing" | `/agents`, filtered to Storefront Search | Maya Chen | Claude Opus 5.5 working (seed run just before), the feed on **All** | The header, the roster and the feed, no sidebar | Light |
+| `product-metrics.png` | `/product`, Measure / "Know where work waits" | `/metrics`, Storefront Search only in the board selector | Maya Chen | 30-day window, page zoomed to 80% | From the KPI strip to the leaderboard, no sidebar | Light |
 | `workflows-ready.png` | `/workflows`, "Getting ready for development" | `/boards/<Search>` | Maya Chen | The Backlog and Ready columns | The two columns | Light |
 | `workflows-claim.png` | `/workflows`, "The AI development lifecycle" | `/boards/<Search>` | Maya Chen | The Doing column with Claude Opus 5.5's card | The Doing column | Light |
 | `workflows-compliance.png` | `/workflows`, "The AI development lifecycle" (hooks and subagents) | `/boards/<Checkout>/metrics/compliance` | Maya Chen | Step dispatch rates and skip reasons | The two charts | Light |
