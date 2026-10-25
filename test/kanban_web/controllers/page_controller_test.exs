@@ -1042,6 +1042,240 @@ defmodule KanbanWeb.PageControllerTest do
     |> Enum.flat_map(&LazyHTML.attribute(&1, "alt"))
   end
 
+  # The setup sections (W2461): the runtimes with a published Stride plugin,
+  # the .stride.md hook example and the quality gates. The runtime list is the
+  # onboarding registry's, each checked against a public plugin repository.
+  @workflows_runtimes [
+    "Claude Code",
+    "GitHub Copilot CLI",
+    "Gemini CLI",
+    "Codex CLI",
+    "OpenCode",
+    "Pi"
+  ]
+  @workflows_hooks ~w(before_doing after_doing before_review after_review after_goal)
+
+  defp workflows_main(conn) do
+    conn
+    |> get(~p"/workflows")
+    |> html_response(200)
+    |> LazyHTML.from_document()
+    |> LazyHTML.query("main")
+  end
+
+  defp texts(node, selector) do
+    node |> LazyHTML.query(selector) |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+  end
+
+  test "GET /workflows shows supported runtimes and the quality gates", %{conn: conn} do
+    main = workflows_main(conn)
+
+    # Exactly the six runtimes with a Stride plugin, each linking to its
+    # public repository in a new tab, and no rule-file-only tool.
+    assert texts(main, "#runtimes [data-runtime] h3 a") == @workflows_runtimes
+
+    links = LazyHTML.query(main, "#runtimes [data-runtime] h3 a")
+
+    assert Enum.flat_map(links, &LazyHTML.attribute(&1, "href")) ==
+             Enum.map(KanbanWeb.OnboardingPlugins.agents(), & &1.workflow_url)
+
+    for link <- links do
+      [href] = LazyHTML.attribute(link, "href")
+      assert String.starts_with?(href, "https://github.com/cheezy/")
+      assert LazyHTML.attribute(link, "target") == ["_blank"]
+      [rel] = LazyHTML.attribute(link, "rel")
+      assert rel =~ "noopener"
+    end
+
+    runtimes_text = main |> LazyHTML.query("#runtimes") |> LazyHTML.text()
+
+    for tool <- ["Cursor", "Windsurf", "Continue"] do
+      refute runtimes_text =~ tool
+    end
+
+    # MCP is the route for any other client, with its guide.
+    mcp = LazyHTML.query(main, ~s(#runtimes [data-runtime="mcp"]))
+    assert LazyHTML.text(mcp) =~ "Any MCP client"
+    assert LazyHTML.text(mcp) =~ "paid plans"
+
+    assert mcp
+           |> LazyHTML.query(~s(a[href="/resources/connecting-an-mcp-client"]))
+           |> Enum.count() == 1
+
+    # The gates are described in lifecycle order, then how work unblocks.
+    gates = LazyHTML.query(main, "#quality-gates li[data-gate]")
+
+    assert Enum.flat_map(gates, &LazyHTML.attribute(&1, "data-gate")) ==
+             ~w(explore review security-review exploratory-testing dependencies)
+
+    assert texts(main, "#quality-gates li[data-gate] h3 code") ==
+             ~w(task-explorer planner task-reviewer stride-security-review stride-exploratory-testing after_goal)
+
+    gates_text = main |> LazyHTML.query("#quality-gates [data-gate]") |> LazyHTML.text()
+
+    positions =
+      for term <-
+            ~w(task-explorer task-reviewer stride-security-review stride-exploratory-testing after_goal) do
+        {index, _length} = :binary.match(gates_text, term)
+        index
+      end
+
+    assert positions == Enum.sort(positions)
+    assert gates_text =~ "every task it depends on is Done"
+
+    # The diagram draws the same order, from claim to Done.
+    chain = texts(main, "#quality-gates > ol > li")
+    assert List.first(chain) == "before_doing"
+    assert List.last(chain) == "Done"
+
+    assert Enum.filter(chain, &(&1 in ~w(task-explorer task-reviewer after_doing))) ==
+             ~w(task-explorer task-reviewer after_doing)
+
+    # The new sections add no disclosure and no screenshot.
+    assert main |> LazyHTML.query("#runtimes img, #hooks img, #quality-gates img") |> Enum.count() ==
+             0
+  end
+
+  test "GET /workflows lists all five hooks in the .stride.md example", %{conn: conn} do
+    main = workflows_main(conn)
+
+    [pre] = main |> LazyHTML.query("#hooks pre") |> Enum.to_list()
+
+    # Long lines scroll inside the box on a 375px screen, and the box can take
+    # keyboard focus to scroll.
+    [class] = LazyHTML.attribute(pre, "class")
+    assert "overflow-x-auto" in String.split(class)
+    assert LazyHTML.attribute(pre, "tabindex") == ["0"]
+
+    code = pre |> LazyHTML.query("code") |> LazyHTML.text()
+    assert code == KanbanWeb.PageHTML.stride_md_snippet()
+
+    # Every hook appears as its own section, once, in firing order — so a
+    # dropped or renamed hook fails here.
+    assert Regex.scan(~r/^## (\w+)$/m, code, capture: :all_but_first) |> List.flatten() ==
+             @workflows_hooks
+
+    # Each hook name renders as code beside what it is for.
+    assert texts(main, "#hooks dt code") == @workflows_hooks
+    assert main |> LazyHTML.query("#hooks dd") |> Enum.count() == 5
+
+    for dd <- texts(main, "#hooks dd"), do: assert(dd != "")
+  end
+
+  test "GET /workflows renders translated copy under each locale" do
+    setup_translations = %{
+      "de" => ["Funktioniert mit deinem Agenten", "Die Qualitätsprüfungen rund um den Code"],
+      "es" => ["Funciona con tu agente", "Los controles de calidad en torno al código"],
+      "fr" => ["Fonctionne avec votre agent", "Les contrôles qualité autour du code"],
+      "ja" => ["あなたのエージェントで動く", "コードを囲む品質ゲート"],
+      "pt" => ["Funciona com o seu agente", "Os controles de qualidade em torno do código"],
+      "zh" => ["适用于你的代理", "围绕代码的质量关卡"]
+    }
+
+    for {locale, expected} <- setup_translations do
+      body =
+        build_conn()
+        |> Plug.Test.init_test_session(%{"locale" => locale})
+        |> get(~p"/workflows")
+        |> html_response(200)
+
+      for phrase <- expected do
+        assert body =~ phrase, "expected #{locale} translation #{inspect(phrase)} on /workflows"
+      end
+
+      refute body =~ "Works with your agent"
+      refute body =~ "The quality gates around the code"
+
+      main = body |> LazyHTML.from_document() |> LazyHTML.query("main")
+
+      # Product names and the .stride.md example are not translated.
+      assert texts(main, "#runtimes [data-runtime] h3 a") == @workflows_runtimes
+      assert texts(main, "#hooks dt code") == @workflows_hooks
+
+      assert main |> LazyHTML.query("#hooks pre code") |> LazyHTML.text() ==
+               KanbanWeb.PageHTML.stride_md_snippet()
+    end
+  end
+
+  test "PageHTML.stride_md_snippet/0 is a generic example with no host or token" do
+    snippet = KanbanWeb.PageHTML.stride_md_snippet()
+
+    assert String.starts_with?(snippet, "# Stride Configuration\n")
+
+    assert Regex.scan(~r/^## (\w+)$/m, snippet, capture: :all_but_first) |> List.flatten() ==
+             @workflows_hooks
+
+    # One bash block per hook.
+    assert length(Regex.scan(~r/^```bash$/m, snippet)) == 5
+    refute snippet =~ "://"
+    refute snippet =~ ~r/stride_(dev|test|prod|live)_/
+    refute snippet =~ "Bearer"
+    refute snippet =~ "release"
+  end
+
+  test "PageHTML.workflow_runtimes/0 follows the onboarding registry" do
+    runtimes = KanbanWeb.PageHTML.workflow_runtimes()
+
+    assert Enum.map(runtimes, & &1.name) == @workflows_runtimes
+
+    assert Enum.map(runtimes, &{&1.key, &1.url}) ==
+             Enum.map(KanbanWeb.OnboardingPlugins.agents(), &{&1.key, &1.workflow_url})
+
+    for runtime <- runtimes, do: assert(runtime.install =~ ~r/\S/)
+  end
+
+  test "PageHTML.workflow_gate_chain/0 marks only the last step as last" do
+    chain = KanbanWeb.PageHTML.workflow_gate_chain()
+
+    assert Enum.map(chain, &elem(&1, 2)) == List.duplicate(false, length(chain) - 1) ++ [true]
+
+    assert Enum.map(chain, &elem(&1, 1)) |> Enum.uniq() |> Enum.sort() ==
+             [:hook, :optional, :step, :subagent]
+
+    assert [{"before_doing", :hook, false} | _] = chain
+  end
+
+  test "PageHTML.workflow_hooks/0 and workflow_quality_gates/0 cover every hook and gate" do
+    assert Enum.map(KanbanWeb.PageHTML.workflow_hooks(), &elem(&1, 0)) == @workflows_hooks
+
+    gates = KanbanWeb.PageHTML.workflow_quality_gates()
+
+    assert Enum.map(gates, &elem(&1, 0)) ==
+             ~w(explore review security-review exploratory-testing dependencies)
+
+    # Only the two plugin-gated reviews are optional, and their pills say so.
+    for {gate, pills, _title, optional?, _body} <- gates do
+      assert optional? == gate in ~w(security-review exploratory-testing)
+      assert optional? == Enum.any?(pills, &match?({_, :optional}, &1))
+    end
+  end
+
+  test "PageHTML.workflow_pill/1 colours each kind of pill" do
+    import Phoenix.Component, only: [sigil_H: 2]
+    import Phoenix.LiveViewTest, only: [rendered_to_string: 1]
+
+    assigns = %{}
+
+    hook =
+      rendered_to_string(~H"""
+      <KanbanWeb.PageHTML.workflow_pill kind={:hook}>after_goal</KanbanWeb.PageHTML.workflow_pill>
+      """)
+
+    assert hook =~ "var(--st-doing)"
+    assert hook =~ "after_goal"
+    refute hook =~ "border-dashed"
+
+    optional =
+      rendered_to_string(~H"""
+      <KanbanWeb.PageHTML.workflow_pill kind={:optional}>
+        stride-security-review
+      </KanbanWeb.PageHTML.workflow_pill>
+      """)
+
+    assert optional =~ "border-dashed"
+    assert optional =~ "var(--stride-violet-ink)"
+  end
+
   test "GET /tango", %{conn: conn} do
     conn = get(conn, ~p"/tango")
     assert html_response(conn, 200)

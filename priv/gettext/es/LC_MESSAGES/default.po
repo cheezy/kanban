@@ -55,6 +55,7 @@ msgstr " · Gestión de Tareas"
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:92
 #: lib/kanban_web/components/target_progress_header.ex:211
+#: lib/kanban_web/controllers/page_html.ex:202
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:613
 #: lib/kanban_web/emails/digest_email.ex:135
 #: lib/kanban_web/emails/digest_email.ex:195
@@ -5996,7 +5997,7 @@ msgstr "Vista de objetivo de Stride con la barra de progreso segmentada y las ta
 msgid "Stride boards view"
 msgstr "Vista de tableros de Stride"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:674
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:852
 #, elixir-autogen, elixir-format
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "Coloca un .stride.md en la carpeta de tu proyecto, obtén un token de API para tu agente y observa cómo el ciclo se ejecuta en tu propia máquina."
@@ -6006,12 +6007,12 @@ msgstr "Coloca un .stride.md en la carpeta de tu proyecto, obtén un token de AP
 msgid "Free for you and your teams."
 msgstr "Gratis para ti y tu equipo."
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:689
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:867
 #, elixir-autogen, elixir-format
 msgid "Read more details"
 msgstr "Leer más detalles"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:671
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:849
 #, elixir-autogen, elixir-format
 msgid "Wire your project to Stride"
 msgstr "Conecta tu proyecto con Stride"
@@ -6361,16 +6362,19 @@ msgid "Explore"
 msgstr "Explorar"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:192
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:797
 #, elixir-autogen, elixir-format
 msgid "Hook"
 msgstr "Hook"
 
+#: lib/kanban_web/controllers/page_html.ex:195
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:365
 #, elixir-autogen, elixir-format
 msgid "Implement"
 msgstr "Implementar"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:196
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:801
 #, elixir-autogen, elixir-format
 msgid "Subagent"
 msgstr "Subagente"
@@ -6476,7 +6480,7 @@ msgstr "Revisión humana y finalización"
 #: lib/kanban_web/components/marketing_components.ex:125
 #: lib/kanban_web/components/marketing_components.ex:432
 #: lib/kanban_web/controllers/page_html/product.html.heex:888
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:683
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:861
 #, elixir-autogen, elixir-format
 msgid "Start now"
 msgstr "Empieza ahora"
@@ -13091,6 +13095,7 @@ msgid "Plan toward a date across boards"
 msgstr "Planifica hacia una fecha entre tableros"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex:488
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:716
 #, elixir-autogen, elixir-format
 msgid "Read the guide: Connecting an MCP client"
 msgstr "Lee la guía: Conectar un cliente MCP"
@@ -13450,3 +13455,169 @@ msgstr "Cuando se completa la tarea, los pasos que ejecutó el agente, entre ell
 #, elixir-autogen, elixir-format
 msgid "The task's details show the task-reviewer's report and, when the board's field visibility settings turn it on, the task's behaviour test matrix: each behaviour, the test that covers it, and its status."
 msgstr "Los detalles de la tarea muestran el informe del task-reviewer y, cuando la visibilidad de campos del tablero la activa, la matriz de comportamiento/pruebas de la tarea: cada comportamiento, la prueba que lo cubre y su estado."
+
+#: lib/kanban_web/controllers/page_html.ex:241
+#, elixir-autogen, elixir-format
+msgid "A task can be claimed only when every task it depends on is Done, so finishing one task is what unblocks the next. Goals are never claimed themselves: when a goal's last task is done, the after_goal hook runs and the goal moves to Done."
+msgstr "Una tarea solo se puede reclamar cuando todas las tareas de las que depende están en Hecho, así que terminar una tarea es lo que desbloquea la siguiente. Los objetivos nunca se reclaman: cuando termina la última tarea de un objetivo, se ejecuta el hook after_goal y el objetivo pasa a Hecho."
+
+#: lib/kanban_web/controllers/page_html.ex:102
+#, elixir-autogen, elixir-format
+msgid "Add the plugin to your opencode.json."
+msgstr "Añade el plugin a tu opencode.json."
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:738
+#, elixir-autogen, elixir-format
+msgid "An example .stride.md with all five hooks"
+msgstr "Un ejemplo de .stride.md con los cinco hooks"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:704
+#, elixir-autogen, elixir-format
+msgid "Any MCP client"
+msgstr "Cualquier cliente MCP"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:768
+#, elixir-autogen, elixir-format
+msgid "Around the code the agent writes, the plugin adds gates in a fixed order. Small tasks can skip exploring and review, and the optional gates run only when their plugin is installed and the task asks for them."
+msgstr "Alrededor del código que escribe el agente, el plugin añade controles en un orden fijo. Las tareas pequeñas pueden saltarse la exploración y la revisión, y los controles opcionales solo se ejecutan cuando su plugin está instalado y la tarea los pide."
+
+#: lib/kanban_web/controllers/page_html.ex:223
+#, elixir-autogen, elixir-format
+msgid "Before any code is written, a read-only subagent maps the files, tests and patterns the task touches. For medium and larger tasks, a planner turns that map into a step-by-step plan."
+msgstr "Antes de escribir código, un subagente de solo lectura traza el mapa de los archivos, las pruebas y los patrones que toca la tarea. En tareas medianas y grandes, un planificador convierte ese mapa en un plan paso a paso."
+
+#: lib/kanban_web/controllers/page_html.ex:240
+#, elixir-autogen, elixir-format
+msgid "Dependencies and goals"
+msgstr "Dependencias y objetivos"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:743
+#, elixir-autogen, elixir-format
+msgid "Each section is a heading and a bash block. The commands are yours: use whatever your project already runs."
+msgstr "Cada sección es un encabezado y un bloque bash. Los comandos son tuyos: usa lo que tu proyecto ya ejecuta."
+
+#: lib/kanban_web/controllers/page_html.ex:236
+#, elixir-autogen, elixir-format
+msgid "Exploratory testing"
+msgstr "Pruebas exploratorias"
+
+#: lib/kanban_web/controllers/page_html.ex:222
+#, elixir-autogen, elixir-format
+msgid "Explore and plan"
+msgstr "Explorar y planificar"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
+#, elixir-autogen, elixir-format
+msgid "Hooks are shell commands you keep in a .stride.md file at the root of your project. The agent runs each one on your own machine at a fixed point in the loop. When a command fails, the agent stops there and fixes the problem before it carries on."
+msgstr "Los hooks son comandos de shell que guardas en un archivo .stride.md en la raíz de tu proyecto. El agente ejecuta cada uno en tu propia máquina en un punto fijo del ciclo. Cuando un comando falla, el agente se detiene ahí y corrige el problema antes de continuar."
+
+#: lib/kanban_web/controllers/page_html.ex:100
+#, elixir-autogen, elixir-format
+msgid "Install as a Gemini CLI extension."
+msgstr "Se instala como extensión de Gemini CLI."
+
+#: lib/kanban_web/controllers/page_html.ex:98
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride plugin marketplace."
+msgstr "Se instala desde el marketplace de plugins de Stride."
+
+#: lib/kanban_web/controllers/page_html.ex:99
+#, elixir-autogen, elixir-format
+msgid "Install straight from the plugin's repository."
+msgstr "Se instala directamente desde el repositorio del plugin."
+
+#: lib/kanban_web/controllers/page_html.ex:101
+#: lib/kanban_web/controllers/page_html.ex:103
+#, elixir-autogen, elixir-format
+msgid "Install with the setup script in the plugin's repository."
+msgstr "Se instala con el script de instalación del repositorio del plugin."
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:706
+#, elixir-autogen, elixir-format
+msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as six tools, using the same API token as the REST API. MCP is part of the paid plans."
+msgstr "¿No hay plugin para tu herramienta? El servidor MCP de Stride ofrece a cualquier cliente MCP el mismo ciclo de tareas como seis herramientas, con el mismo token de API que la API REST. MCP forma parte de los planes de pago."
+
+#: lib/kanban_web/controllers/page_html.ex:227
+#, elixir-autogen, elixir-format
+msgid "Once the code is written, a reviewer subagent checks the diff against the task's acceptance criteria, pitfalls, patterns and testing strategy. The agent fixes what it finds before the validation hook runs."
+msgstr "Una vez escrito el código, un subagente revisor comprueba el diff frente a los criterios de aceptación, los errores comunes, los patrones y la estrategia de pruebas de la tarea. El agente corrige lo que encuentra antes de que se ejecute el hook de validación."
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:837
+#, elixir-autogen, elixir-format
+msgid "Optional"
+msgstr "Opcional"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:808
+#, elixir-autogen, elixir-format
+msgid "Optional plugin"
+msgstr "Plugin opcional"
+
+#: lib/kanban_web/controllers/page_html.ex:226
+#, elixir-autogen, elixir-format
+msgid "Review the diff"
+msgstr "Revisar el diff"
+
+#: lib/kanban_web/controllers/page_html.ex:170
+#, elixir-autogen, elixir-format
+msgid "Runs as the task is completed. Open a pull request or post the diff."
+msgstr "Se ejecuta al completarse la tarea. Abre una pull request o publica el diff."
+
+#: lib/kanban_web/controllers/page_html.ex:172
+#, elixir-autogen, elixir-format
+msgid "Runs once a human approves the task, or straight away when it needs no review. Merge, deploy or notify."
+msgstr "Se ejecuta cuando una persona aprueba la tarea, o de inmediato si no necesita revisión. Fusiona, despliega o notifica."
+
+#: lib/kanban_web/controllers/page_html.ex:176
+#, elixir-autogen, elixir-format
+msgid "Runs once, when the last task of a goal is done. Push the goal's work or cut a release, and the goal moves to Done."
+msgstr "Se ejecuta una vez, cuando termina la última tarea de un objetivo. Sube el trabajo del objetivo o publica una versión, y el objetivo pasa a Hecho."
+
+#: lib/kanban_web/controllers/page_html.ex:162
+#, elixir-autogen, elixir-format
+msgid "Runs when the agent claims a task. Pull the latest code and set up the workspace."
+msgstr "Se ejecuta cuando el agente reclama una tarea. Descarga el código más reciente y prepara el espacio de trabajo."
+
+#: lib/kanban_web/controllers/page_html.ex:166
+#, elixir-autogen, elixir-format
+msgid "Runs when the code is written. Run the tests, linters and build; the task cannot complete until they pass."
+msgstr "Se ejecuta cuando el código está escrito. Ejecuta las pruebas, los linters y la compilación; la tarea no puede completarse hasta que pasen."
+
+#: lib/kanban_web/controllers/page_html.ex:230
+#, elixir-autogen, elixir-format
+msgid "Security review"
+msgstr "Revisión de seguridad"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:678
+#, elixir-autogen, elixir-format
+msgid "Stride has a plugin for six agent runtimes. Each one teaches the agent the same loop: claim a task, run the hooks in your .stride.md and complete the work."
+msgstr "Stride tiene un plugin para seis entornos de agentes. Cada uno enseña al agente el mismo ciclo: reclamar una tarea, ejecutar los hooks de tu .stride.md y completar el trabajo."
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:764
+#, elixir-autogen, elixir-format
+msgid "The quality gates around the code"
+msgstr "Los controles de calidad en torno al código"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:774
+#, elixir-autogen, elixir-format
+msgid "The quality gates in the order they run"
+msgstr "Los controles de calidad en el orden en que se ejecutan"
+
+#: lib/kanban_web/controllers/page_html.ex:237
+#, elixir-autogen, elixir-format
+msgid "When the stride-exploratory-testing plugin is installed and the task lists manual tests, an explorer runs a time-boxed session against a running app you have confirmed is safe to test and is not production, then reports what it found. Skipping it never blocks the task."
+msgstr "Cuando el plugin stride-exploratory-testing está instalado y la tarea enumera pruebas manuales, un explorador ejecuta una sesión con tiempo limitado contra una aplicación en marcha que has confirmado que se puede probar y que no es producción, y luego informa de lo que encontró. Omitirla nunca bloquea la tarea."
+
+#: lib/kanban_web/controllers/page_html.ex:232
+#, elixir-autogen, elixir-format
+msgid "When the stride-security-review plugin is installed and the task lists security considerations, a security reviewer checks the same diff alongside the task reviewer. A consideration it finds unmitigated is escalated rather than waved through."
+msgstr "Cuando el plugin stride-security-review está instalado y la tarea enumera consideraciones de seguridad, un revisor de seguridad comprueba el mismo diff junto al revisor de la tarea. Una consideración que encuentre sin mitigar se escala en lugar de dejarse pasar."
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:674
+#, elixir-autogen, elixir-format
+msgid "Works with your agent"
+msgstr "Funciona con tu agente"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:725
+#, elixir-autogen, elixir-format
+msgid "Your hooks, in one file"
+msgstr "Tus hooks, en un solo archivo"

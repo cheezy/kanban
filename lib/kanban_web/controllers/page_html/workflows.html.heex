@@ -666,6 +666,184 @@
       </p>
     </section>
 
+    <%!-- Setup (W2461): the runtimes with a Stride plugin, the .stride.md hook
+    file and the quality gates. Copy is plain gettext with no raw/1: hook and
+    agent names sit in their own <code> elements. --%>
+    <section id="runtimes" class="mb-16" aria-labelledby="runtimes-heading">
+      <h2 id="runtimes-heading" class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Works with your agent")}
+      </h2>
+
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-8" style="color: var(--ink-2);">
+        {gettext(
+          "Stride has a plugin for six agent runtimes. Each one teaches the agent the same loop: claim a task, run the hooks in your .stride.md and complete the work."
+        )}
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          :for={runtime <- workflow_runtimes()}
+          data-runtime={runtime.key}
+          class="min-w-0 bg-base-100 rounded-2xl border border-base-300 p-5"
+        >
+          <h3 class="font-semibold">
+            <a
+              href={runtime.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >{runtime.name}</a>
+          </h3>
+          <p class="text-sm mt-1" style="color: var(--ink-2);">{runtime.install}</p>
+        </div>
+        <div
+          data-runtime="mcp"
+          class="min-w-0 sm:col-span-2 lg:col-span-3 bg-base-100 rounded-2xl border border-dashed border-base-300 p-5"
+        >
+          <h3 class="font-semibold text-base-content">{gettext("Any MCP client")}</h3>
+          <p class="text-sm mt-1" style="color: var(--ink-2);">
+            {gettext(
+              "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as six tools, using the same API token as the REST API. MCP is part of the paid plans."
+            )}
+          </p>
+          <p class="mt-3 text-sm">
+            <.link
+              href={~p"/resources/connecting-an-mcp-client"}
+              class="font-medium underline"
+              style="color: var(--stride-orange-ink); text-underline-offset: 2px;"
+            >
+              {gettext("Read the guide: Connecting an MCP client")}
+            </.link>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="hooks" class="mb-16" aria-labelledby="hooks-heading">
+      <h2 id="hooks-heading" class="text-2xl font-bold text-base-content mb-6 text-center">
+        {gettext("Your hooks, in one file")}
+      </h2>
+
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-8" style="color: var(--ink-2);">
+        {gettext(
+          "Hooks are shell commands you keep in a .stride.md file at the root of your project. The agent runs each one on your own machine at a fixed point in the loop. When a command fails, the agent stops there and fixes the problem before it carries on."
+        )}
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div class="min-w-0">
+          <pre
+            tabindex="0"
+            aria-label={gettext("An example .stride.md with all five hooks")}
+            class="max-w-full overflow-x-auto rounded-2xl p-5 text-left text-sm leading-relaxed"
+            style="background: var(--surface-sunken); border: 1px solid var(--line); color: var(--ink);"
+          ><code class="font-mono">{stride_md_snippet()}</code></pre>
+          <p class="mt-2 text-xs leading-relaxed" style="color: var(--ink-2);">
+            {gettext(
+              "Each section is a heading and a bash block. The commands are yours: use whatever your project already runs."
+            )}
+          </p>
+        </div>
+        <dl class="min-w-0 space-y-4">
+          <div :for={{hook, purpose} <- workflow_hooks()}>
+            <dt>
+              <.workflow_pill kind={:hook}>{hook}</.workflow_pill>
+            </dt>
+            <dd class="text-sm leading-relaxed mt-1" style="color: var(--ink-2);">{purpose}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="quality-gates" class="mb-16" aria-labelledby="quality-gates-heading">
+      <h2
+        id="quality-gates-heading"
+        class="text-2xl font-bold text-base-content mb-6 text-center"
+      >
+        {gettext("The quality gates around the code")}
+      </h2>
+
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-6" style="color: var(--ink-2);">
+        {gettext(
+          "Around the code the agent writes, the plugin adds gates in a fixed order. Small tasks can skip exploring and review, and the optional gates run only when their plugin is installed and the task asks for them."
+        )}
+      </p>
+
+      <ol
+        aria-label={gettext("The quality gates in the order they run")}
+        class="flex flex-wrap items-center justify-center gap-2 mb-4"
+      >
+        <li
+          :for={{label, kind, last?} <- workflow_gate_chain()}
+          class="flex items-center gap-2"
+        >
+          <.workflow_pill :if={kind != :step} kind={kind}>{label}</.workflow_pill>
+          <span
+            :if={kind == :step}
+            class="px-2 py-0.5 rounded text-[11px] font-semibold bg-base-200 text-base-content"
+          >
+            {label}
+          </span>
+          <span :if={!last?} aria-hidden="true" class="inline-flex" style="color: var(--ink-3);">
+            <.icon name="hero-arrow-right" class="h-3.5 w-3.5 shrink-0" />
+          </span>
+        </li>
+      </ol>
+
+      <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-6 text-xs">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full" style="background: var(--st-doing);"></span>
+          <span style="color: var(--ink-2);">{gettext("Hook")}</span>
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full" style="background: var(--stride-violet);"></span>
+          <span style="color: var(--ink-2);">{gettext("Subagent")}</span>
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span
+            class="w-2.5 h-2.5 rounded-full border border-dashed"
+            style="border-color: var(--stride-violet-ink);"
+          ></span>
+          <span style="color: var(--ink-2);">{gettext("Optional plugin")}</span>
+        </span>
+      </div>
+
+      <div class="bg-base-100 rounded-2xl border border-base-300 p-6 md:p-8">
+        <ol class="space-y-5">
+          <li
+            :for={
+              {{gate, pills, title, optional?, body}, index} <-
+                Enum.with_index(workflow_quality_gates(), 1)
+            }
+            data-gate={gate}
+            class="flex gap-4"
+          >
+            <div
+              class="text-xs font-mono uppercase tracking-wide pt-0.5 w-6 shrink-0"
+              style="color: var(--ink-2);"
+            >
+              {String.pad_leading(Integer.to_string(index), 2, "0")}
+            </div>
+            <div class="min-w-0">
+              <h3 class="font-semibold text-base-content flex flex-wrap items-center gap-2">
+                <span>{title}</span>
+                <.workflow_pill :for={{pill, kind} <- pills} kind={kind}>{pill}</.workflow_pill>
+                <span
+                  :if={optional?}
+                  class="text-[11px] uppercase tracking-wide font-medium"
+                  style="color: var(--ink-3);"
+                >
+                  {gettext("Optional")}
+                </span>
+              </h3>
+              <p class="text-sm leading-relaxed mt-1" style="color: var(--ink-2);">{body}</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
     <section class="bg-base-100 rounded-2xl border border-base-300 p-8 md:p-12 text-center">
       <h2 class="text-2xl md:text-3xl font-bold text-base-content mb-4">
         {gettext("Wire your project to Stride")}
