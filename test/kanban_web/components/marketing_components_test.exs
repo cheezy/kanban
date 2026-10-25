@@ -746,6 +746,28 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "border: 1px solid var(--line);"
       assert html =~ "min-height: 154px;"
     end
+
+    test "each card is a keyboard-focusable link into its showcase section" do
+      assigns = %{}
+
+      cards =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_feature_grid />
+        """)
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("a")
+
+      assert Enum.flat_map(cards, &LazyHTML.attribute(&1, "href")) ==
+               ~w(/workflows#lifecycle /workflows#hooks /product#build /product#review /product#plan /product#measure)
+
+      for card <- cards do
+        [label_id] = LazyHTML.attribute(card, "aria-labelledby")
+        assert card |> LazyHTML.query(~s(h3[id="#{label_id}"])) |> Enum.count() == 1
+
+        [class] = LazyHTML.attribute(card, "class")
+        assert "focus-visible:outline" in String.split(class)
+      end
+    end
   end
 
   describe "marketing_cta_section/1" do

@@ -22,6 +22,51 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "W193"
   end
 
+  # W2462: each feature-grid card leads into the closest showcase section.
+  # Capability matching has no section of its own yet, so it lands on the claim
+  # stage of the lifecycle. The hrefs are pinned in card order because other pages and
+  # outside links rely on these section ids staying stable, and every anchor
+  # must land on a real section of the page it names.
+  @feature_grid_hrefs ~w(
+    /workflows#lifecycle
+    /workflows#hooks
+    /product#build
+    /product#review
+    /product#plan
+    /product#measure
+  )
+
+  test "GET / links the feature grid into the showcase sections", %{conn: conn} do
+    cards =
+      conn
+      |> get(~p"/")
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query(~s(main a[aria-labelledby^="feature-card-"]))
+
+    assert Enum.flat_map(cards, &LazyHTML.attribute(&1, "href")) == @feature_grid_hrefs
+
+    # Each card's accessible name is its own visible title.
+    for card <- cards do
+      [label_id] = LazyHTML.attribute(card, "aria-labelledby")
+      title = LazyHTML.query(card, ~s(h3[id="#{label_id}"]))
+      assert Enum.count(title) == 1, "#{label_id} does not name a title inside its card"
+      assert title |> LazyHTML.text() |> String.trim() != ""
+    end
+
+    @feature_grid_hrefs
+    |> Enum.map(&String.split(&1, "#"))
+    |> Enum.group_by(&hd/1, &List.last/1)
+    |> Enum.each(fn {path, ids} ->
+      page = build_conn() |> get(path) |> html_response(200) |> LazyHTML.from_document()
+
+      for id <- ids do
+        sections = LazyHTML.query(page, ~s(main section[id="#{id}"]))
+        assert Enum.count(sections) == 1, "#{path}##{id} does not resolve to a section"
+      end
+    end)
+  end
+
   test "GET /about", %{conn: conn} do
     conn = get(conn, ~p"/about")
     assert html_response(conn, 200)
@@ -937,6 +982,8 @@ defmodule KanbanWeb.PageControllerTest do
     workflows-cleared-to-ship.png
   )
 
+  @workflows_sections ~w(requirements getting-ready lifecycle human-review runtimes hooks quality-gates)
+
   test "GET /workflows", %{conn: conn} do
     conn = get(conn, ~p"/workflows")
     body = html_response(conn, 200)
@@ -975,6 +1022,19 @@ defmodule KanbanWeb.PageControllerTest do
     assert main |> LazyHTML.query("details > summary") |> Enum.count() == 5
     assert main |> LazyHTML.query("details img") |> Enum.count() == 6
 
+    # Every content section (all but the closing call to action) carries a
+    # stable id, in page order, labelled by its own heading (W2462): the home
+    # feature grid and outside links point at them.
+    positions =
+      for id <- @workflows_sections do
+        section = LazyHTML.query(main, ~s(section[id="#{id}"][aria-labelledby="#{id}-heading"]))
+        assert Enum.count(section) == 1, "expected the #{id} section"
+        assert section |> LazyHTML.query(~s(h2[id="#{id}-heading"])) |> Enum.count() == 1
+        body |> :binary.match(~s(id="#{id}")) |> elem(0)
+      end
+
+    assert positions == Enum.sort(positions)
+
     # Copy that the code contradicted (W2460): new tasks land in the Backlog,
     # the claim itself moves the card to Doing, and the review queue offers
     # only Approve and Request changes.
@@ -982,6 +1042,66 @@ defmodule KanbanWeb.PageControllerTest do
     refute body =~ "land in Ready"
     refute body =~ "prior to the task moving to the Doing column"
     refute body =~ "sends it back"
+  end
+
+  # Two edge cases from the W2462 polish pass, for both showcase pages: on a very
+  # wide screen the copy stays in a bounded, centred column instead of running
+  # edge to edge, and every light-theme screenshot keeps a --line frame and
+  # rounded corners so it does not bleed into the dark theme's background.
+  for path <- ~w(/product /workflows) do
+    test "GET #{path} bounds its column on wide screens and frames every screenshot",
+         %{conn: conn} do
+      main =
+        conn
+        |> get(unquote(path))
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("main")
+
+      assert main |> LazyHTML.query("main > div.max-w-5xl.mx-auto") |> Enum.count() == 1
+
+      images = LazyHTML.query(main, "img")
+      refute Enum.empty?(images)
+
+      for img <- images do
+        [src] = LazyHTML.attribute(img, "src")
+        [style] = LazyHTML.attribute(img, "style")
+        [class] = LazyHTML.attribute(img, "class")
+        assert style =~ "border: 1px solid var(--line)", "#{src} has no frame"
+        assert "rounded-2xl" in String.split(class), "#{src} has square corners"
+      end
+    end
+  end
+
+  # The 320-375px edge case (W2462): "Der KI-Entwicklungslebenszyklus" overflowed
+  # its heading box at 320px under German, so the page title and every section
+  # heading may break and hyphenate a long word, as on /product.
+  for locale <- ~w(en de ja) do
+    test "GET /workflows keeps screenshots and headings inside a narrow screen under #{locale}",
+         %{conn: conn} do
+      main =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/workflows")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("main")
+
+      for img <- LazyHTML.query(main, "img") do
+        [class] = LazyHTML.attribute(img, "class")
+        classes = String.split(class)
+        assert "max-w-full" in classes and "h-auto" in classes, "#{class} can overflow"
+      end
+
+      headings = LazyHTML.query(main, "h1, h2[id$=\"-heading\"]")
+      assert Enum.count(headings) == length(@workflows_sections) + 1
+
+      for heading <- headings do
+        [style] = LazyHTML.attribute(heading, "style")
+        assert style =~ "overflow-wrap: break-word", "#{LazyHTML.text(heading)} cannot wrap"
+        assert style =~ "hyphens: auto", "#{LazyHTML.text(heading)} cannot hyphenate"
+      end
+    end
   end
 
   # D210 was filed reporting empty msgstr entries for this page in all six

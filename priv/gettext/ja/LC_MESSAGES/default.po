@@ -2587,7 +2587,7 @@ msgstr "キューと待ち時間の分析"
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:91
 #: lib/kanban_web/components/target_progress_header.ex:210
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:423
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:438
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
 #: lib/kanban_web/emails/digest_email.ex:134
 #: lib/kanban_web/emails/digest_email.ex:195
@@ -3246,42 +3246,42 @@ msgstr "AIエージェントは一級のチームメイト。"
 msgid "API · Docs · Changelog"
 msgstr "API · ドキュメント · 変更履歴"
 
-#: lib/kanban_web/components/marketing_components.ex:647
+#: lib/kanban_web/components/marketing_components.ex:658
 #, elixir-autogen, elixir-format
 msgid "Agents declare what they can do. They only see — and can only claim — work that matches."
 msgstr "エージェントは自分にできることを宣言します。マッチしたタスクだけが見え、その仕事だけを引き受けられる。"
 
-#: lib/kanban_web/components/marketing_components.ex:718
+#: lib/kanban_web/components/marketing_components.ex:739
 #, elixir-autogen, elixir-format
 msgid "An agent claims it"
 msgstr "エージェントが引き受ける"
 
-#: lib/kanban_web/components/marketing_components.ex:720
+#: lib/kanban_web/components/marketing_components.ex:741
 #, elixir-autogen, elixir-format
 msgid "Atomic. SKIP LOCKED. Only one agent gets it. They pull latest, set up, then implement."
 msgstr "アトミック。SKIP LOCKED。1つのタスクを取れるのは1エージェントだけ。最新を pull し、セットアップして、実装に入る。"
 
-#: lib/kanban_web/components/marketing_components.ex:645
+#: lib/kanban_web/components/marketing_components.ex:655
 #, elixir-autogen, elixir-format
 msgid "Capability matching"
 msgstr "能力マッチング"
 
-#: lib/kanban_web/components/marketing_components.ex:654
+#: lib/kanban_web/components/marketing_components.ex:665
 #, elixir-autogen, elixir-format
 msgid "Client-side hooks"
 msgstr "クライアントサイド・フック"
 
-#: lib/kanban_web/components/marketing_components.ex:663
+#: lib/kanban_web/components/marketing_components.ex:675
 #, elixir-autogen, elixir-format
 msgid "Conflict prevention"
 msgstr "コンフリクト防止"
 
-#: lib/kanban_web/components/marketing_components.ex:692
+#: lib/kanban_web/components/marketing_components.ex:713
 #, elixir-autogen, elixir-format
 msgid "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."
 msgstr "サイクルタイムをエージェントと人で分解。スループット。人がボトルネックになっている箇所が見える。"
 
-#: lib/kanban_web/components/marketing_components.ex:674
+#: lib/kanban_web/components/marketing_components.ex:693
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
 msgstr "差分、テスト、受け入れ条件、フックのテレメトリ、すべてをひとつのペインに。キー1つで承認。"
@@ -3302,20 +3302,20 @@ msgstr "差分、テスト、受け入れ条件、フックのテレメトリ、
 msgid "Doing"
 msgstr "進行中"
 
-#: lib/kanban_web/components/marketing_components.ex:644
-#: lib/kanban_web/components/marketing_components.ex:653
-#: lib/kanban_web/components/marketing_components.ex:662
+#: lib/kanban_web/components/marketing_components.ex:654
+#: lib/kanban_web/components/marketing_components.ex:664
+#: lib/kanban_web/components/marketing_components.ex:674
 #, elixir-autogen, elixir-format
 msgid "For agents"
 msgstr "エージェント向け"
 
-#: lib/kanban_web/components/marketing_components.ex:671
-#: lib/kanban_web/components/marketing_components.ex:680
+#: lib/kanban_web/components/marketing_components.ex:689
+#: lib/kanban_web/components/marketing_components.ex:699
 #, elixir-autogen, elixir-format
 msgid "For humans"
 msgstr "人間向け"
 
-#: lib/kanban_web/components/marketing_components.ex:689
+#: lib/kanban_web/components/marketing_components.ex:709
 #, elixir-autogen, elixir-format
 msgid "For teams"
 msgstr "チーム向け"
@@ -3336,12 +3336,12 @@ msgstr "マイボードへ"
 msgid "Go to my boards"
 msgstr "マイボードへ"
 
-#: lib/kanban_web/components/marketing_components.ex:681
+#: lib/kanban_web/components/marketing_components.ex:700
 #, elixir-autogen, elixir-format
 msgid "Goals → tasks → outcomes"
 msgstr "ゴール → タスク → アウトカム"
 
-#: lib/kanban_web/components/marketing_components.ex:728
+#: lib/kanban_web/components/marketing_components.ex:749
 #, elixir-autogen, elixir-format
 msgid "Hooks run on their machine"
 msgstr "フックはエージェント側のマシンで実行"
@@ -3393,12 +3393,12 @@ msgstr "プロダクト"
 msgid "Ready"
 msgstr "Ready"
 
-#: lib/kanban_web/components/marketing_components.ex:690
+#: lib/kanban_web/components/marketing_components.ex:710
 #, elixir-autogen, elixir-format
 msgid "Real metrics that include AI"
 msgstr "AIを含めた本物のメトリクス"
 
-#: lib/kanban_web/components/marketing_components.ex:672
+#: lib/kanban_web/components/marketing_components.ex:690
 #, elixir-autogen, elixir-format
 msgid "Review at the speed of approval"
 msgstr "承認するスピードでレビュー"
@@ -3449,19 +3449,19 @@ msgstr "Stride"
 msgid "Tasks are conversations."
 msgstr "タスクは会話である。"
 
-#: lib/kanban_web/components/marketing_components.ex:665
+#: lib/kanban_web/components/marketing_components.ex:678
 #, elixir-autogen, elixir-format
 msgid "Tasks declare key_files. Two agents can't touch the same code at the same time."
 msgstr "タスクは key_files を宣言します。2つのエージェントが同じコードに同時に触れることはありません。"
 
 #: lib/kanban_web/components/marketing_components.ex:70
 #: lib/kanban_web/components/marketing_components.ex:278
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:5
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Workflows"
 msgstr "ワークフロー"
 
-#: lib/kanban_web/components/marketing_components.ex:738
+#: lib/kanban_web/components/marketing_components.ex:759
 #, elixir-autogen, elixir-format
 msgid "You approve or send back"
 msgstr "あなたが承認するか、差し戻す"
@@ -3471,7 +3471,7 @@ msgstr "あなたが承認するか、差し戻す"
 msgid "approving them."
 msgstr "承認する仕事だけが残ります。"
 
-#: lib/kanban_web/components/marketing_components.ex:656
+#: lib/kanban_web/components/marketing_components.ex:668
 #, elixir-autogen, elixir-format
 msgid "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
 msgstr "before_doing、after_doing、before_review、after_review。フックはあなたのマシンではなく、エージェント自身のマシンで実行されます。"
@@ -3635,33 +3635,33 @@ msgstr "。Strideのデータ取り扱いに関するセキュリティ以外の
 msgid ". For sensitive reports, request our PGP key in the first message and we will reply with it."
 msgstr "。機密性の高い報告については、最初のメッセージで当社のPGP鍵を要求してください。鍵を添えて返信します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:39
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:108
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:209
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:46
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:119
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "01"
 msgstr "01"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:53
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:122
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:270
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:60
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:133
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:285
 #, elixir-autogen, elixir-format
 msgid "02"
 msgstr "02"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:67
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:138
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:361
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:74
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:149
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:376
 #, elixir-autogen, elixir-format
 msgid "03"
 msgstr "03"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:419
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:434
 #, elixir-autogen, elixir-format
 msgid "04"
 msgstr "04"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:507
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:522
 #, elixir-autogen, elixir-format
 msgid "05"
 msgstr "05"
@@ -5905,7 +5905,7 @@ msgstr "チームメンバーの追加について学ぶ"
 msgid "Learn about creating a board"
 msgstr "ボードの作成について学ぶ"
 
-#: lib/kanban_web/components/marketing_components.ex:740
+#: lib/kanban_web/components/marketing_components.ex:761
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
 msgstr "差分、テスト、受け入れ条件をひとつのペインに集約。⌘Agent があなたのレビューに応答。完了。"
@@ -5915,17 +5915,17 @@ msgstr "差分、テスト、受け入れ条件をひとつのペインに集約
 msgid "Humans get a fast, calm board they can use to plan and review. Agents get an API rich enough to complete their work without asking. The same board feels native to both."
 msgstr "人間には、計画とレビューに集中できる速く静かなボードを。エージェントには、いちいち確認せずに出荷できる十分にリッチなAPIを。同じボードが、どちらにとっても自然に感じられる。"
 
-#: lib/kanban_web/components/marketing_components.ex:683
+#: lib/kanban_web/components/marketing_components.ex:703
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
 msgstr "考えている粒度のままで計画する。Stride が、エージェントが実際に引き受けられる単位まで——正確に動くために必要なディテール込みで——ブレイクダウンします。"
 
-#: lib/kanban_web/components/marketing_components.ex:708
+#: lib/kanban_web/components/marketing_components.ex:729
 #, elixir-autogen, elixir-format
 msgid "You write or review the task"
 msgstr "あなたがタスクを書く、またはレビューする"
 
-#: lib/kanban_web/components/marketing_components.ex:730
+#: lib/kanban_web/components/marketing_components.ex:751
 #, elixir-autogen, elixir-format
 msgid "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
 msgstr "テストを実行する、PR を作成する、何であれ .stride.md に書いたものが動きます。鍵を握るのはあなた、ループを回すのはエージェント。"
@@ -5945,12 +5945,12 @@ msgstr "Stride は AI ネイティブな作業管理システムです。人間�
 msgid "Two roles."
 msgstr "2つの役割。"
 
-#: lib/kanban_web/components/marketing_components.ex:710
+#: lib/kanban_web/components/marketing_components.ex:731
 #, elixir-autogen, elixir-format
 msgid "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
 msgstr "なぜ、何を、どこで、受け入れ条件、テスト戦略、セキュリティ上の懸念など。スキーマそのものが会話になる。"
 
-#: lib/kanban_web/components/marketing_components.ex:611
+#: lib/kanban_web/components/marketing_components.ex:614
 #, elixir-autogen, elixir-format
 msgid "A few features"
 msgstr "いくつかの機能"
@@ -5985,7 +5985,7 @@ msgstr "セグメント分けされた進捗バーと、その下に並ぶ子タ
 msgid "Stride boards view"
 msgstr "Stride のボードビュー"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:852
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:880
 #, elixir-autogen, elixir-format
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "プロジェクトフォルダに .stride.md を置き、エージェント用の API トークンを取得すれば、自分のマシン上でループが動く様子を見られます。"
@@ -5995,12 +5995,12 @@ msgstr "プロジェクトフォルダに .stride.md を置き、エージェン
 msgid "Free for you and your teams."
 msgstr "あなたとチームに無料。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:867
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:895
 #, elixir-autogen, elixir-format
 msgid "Read more details"
 msgstr "詳細をもっと読む"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:849
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:877
 #, elixir-autogen, elixir-format
 msgid "Wire your project to Stride"
 msgstr "プロジェクトを Stride に接続する"
@@ -6222,132 +6222,132 @@ msgstr "達成"
 msgid "Project check"
 msgstr "プロジェクトチェック"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:43
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "An interactive Q&A turns a fuzzy idea into a committed requirements doc — Goal, Problem, Outcome, Assumptions, Constraints, Non-goals, Success Metrics."
 msgstr "対話形式のQ&Aによって、曖昧なアイデアをコミット済みの要件ドキュメントへとまとめ上げます — Goal、Problem、Outcome、Assumptions、Constraints、Non-goals、Success Metrics。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:69
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "On the board"
 msgstr "ボード上で"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:16
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:23
 #, elixir-autogen, elixir-format
 msgid "Requirements"
 msgstr "要件"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:22
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Before a single task hits the board, stride-ideation turns a fuzzy idea into a structured plan. An interactive session writes a committed requirements document, then decomposes it into a goal with dependency-ordered tasks — so agents start from a real specification, not a one-line prompt."
 msgstr "最初のタスクがボードに並ぶ前に、stride-ideation は曖昧なアイデアを構造化された計画へと変換します。対話形式のセッションがコミット済みの要件ドキュメントを作成し、それを依存関係順に並んだタスクを持つゴールへと分解します — これによりエージェントは一行のプロンプトではなく、本物の仕様から作業を開始できます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:172
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "Backlog is the human staging area; Ready is the contract. Curating the board up front is what lets agents run autonomously once the lifecycle below kicks in."
 msgstr "Backlog は人間のためのステージング領域であり、Ready は契約です。あらかじめボードを整えておくことで、以下のライフサイクルが始まればエージェントが自律的に動けるようになります。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:125
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "Decide what needs review"
 msgstr "レビューが必要なものを決める"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:142
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:153
 #, elixir-autogen, elixir-format
 msgid "Drag the prepared tasks into Ready. That move is the go signal — agents claim only from Ready, so nothing starts until a human says so."
 msgstr "準備の整ったタスクを Ready にドラッグします。その移動が開始の合図です — エージェントは Ready からのみタスクを取得するため、人間がそう指示するまで何も始まりません。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:128
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Flag the tasks whose finished work should pause for human approval. Those stop in Review when complete; the rest advance straight to Done."
 msgstr "完了した作業を人間の承認のために一旦止めるべきタスクに印を付けます。それらは完了すると Review で止まり、残りはそのまま Done へ進みます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:92
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Getting ready for development"
 msgstr "開発の準備を整える"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:112
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "Humans read through the captured tasks, sharpen scope, and confirm each one has a clear reason and acceptance criteria before any agent sees it."
 msgstr "人間が記録されたタスクに目を通し、スコープを明確にし、エージェントが目にする前に各タスクに明確な理由と受け入れ基準があることを確認します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:96
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Ideation fills the Backlog, but agents never touch it directly. A human curates first: review what was captured, decide which tasks need a human sign-off, and promote the ready work into the Ready column."
 msgstr "アイデア出しは Backlog を埋めますが、エージェントが直接それに触れることはありません。まず人間が整理します。記録された内容をレビューし、どのタスクに人間の承認が必要かを決め、準備の整った作業を Ready 列へと昇格させます。"
 
 #: lib/kanban_web/components/task_card.ex:424
 #: lib/kanban_web/components/task_card.ex:425
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:140
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "Move to Ready"
 msgstr "Ready へ移動する"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:110
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Review the Backlog"
 msgstr "Backlog をレビューする"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:57
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Decomposes that document into a goal with dependency-ordered tasks, each sized to roughly 5 to 15 minutes of work."
 msgstr "そのドキュメントを、依存関係順に並んだタスクを持つゴールへと分解します。各タスクはおよそ5〜15分の作業量に調整されます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:180
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "The AI development lifecycle"
 msgstr "AI 開発ライフサイクル"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:436
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:451
 #, elixir-autogen, elixir-format
 msgid "A subagent checks the diff against the task's acceptance criteria and pitfalls."
 msgstr "サブエージェントが、タスクの受け入れ基準と落とし穴に照らして差分をチェックします。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:287
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:302
 #, elixir-autogen, elixir-format
 msgid "A subagent maps the key files, related tests, and existing patterns before any code is written."
 msgstr "コードを書く前に、サブエージェントが主要なファイル、関連するテスト、既存のパターンを把握します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:213
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:228
 #, elixir-autogen, elixir-format
 msgid "Claim"
 msgstr "タスクの取得"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:274
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:289
 #, elixir-autogen, elixir-format
 msgid "Explore"
 msgstr "調査"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:192
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:797
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:207
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:825
 #, elixir-autogen, elixir-format
 msgid "Hook"
 msgstr "フック"
 
 #: lib/kanban_web/controllers/page_html.ex:195
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:365
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:380
 #, elixir-autogen, elixir-format
 msgid "Implement"
 msgstr "実装"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:196
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:801
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:211
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:829
 #, elixir-autogen, elixir-format
 msgid "Subagent"
 msgstr "サブエージェント"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:226
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:241
 #, elixir-autogen, elixir-format
 msgid "The agent claims a task from Ready; the card moves to Doing."
 msgstr "エージェントが Ready からタスクを取得すると、カードが Doing に移動します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:511
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:526
 #, elixir-autogen, elixir-format
 msgid "Validate"
 msgstr "検証"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:184
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:199
 #, elixir-autogen, elixir-format
 msgid "When an agent claims a task from Ready, the card moves to Doing and the agent runs the Stride workflow — a fixed loop where hooks, subagents, and skills carry the work from claim to completion."
 msgstr ""
@@ -6355,16 +6355,16 @@ msgstr ""
 "ントが Stride ワークフローを実行します。これは、フック、サブエージェント、スキ"
 "ルが取得から完了まで作業を進める、決められたループです。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:378
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:393
 #, elixir-autogen, elixir-format
 msgid "The agent writes the code to complete the task."
 msgstr "エージェントがタスクを完了するためのコードを書きます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:218
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:279
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:370
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:428
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:516
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:233
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:294
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:385
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:443
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:531
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:76
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
@@ -6375,7 +6375,7 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 msgid "Details"
 msgstr "詳細"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:326
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "For medium and larger tasks, a planner subagent then turns that map into a plan. Using the explorer's findings alongside the task's acceptance criteria, testing strategy, and known pitfalls, it outlines the implementation step by step, calls out which files will change, and weighs any architectural trade-offs before a single line of code is written."
 msgstr ""
@@ -6385,7 +6385,7 @@ msgstr ""
 "そして一行のコードを書き始める前にあらゆるアーキテクチャ上のトレードオフを検討し"
 "ます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:314
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:329
 #, elixir-autogen, elixir-format
 msgid "The task-explorer subagent goes first. It reads the files the task flags as relevant, finds the tests that cover them, and searches the codebase for the existing patterns and surrounding context the work should follow. It hands back a structured summary — what already exists, which conventions to mirror, and what can be reused — so the implementing agent starts with a map of the codebase rather than a blank page."
 msgstr ""
@@ -6396,7 +6396,7 @@ msgstr ""
 "担当するエージェントは白紙の状態ではなく、コードベースのマップを手にして作業を開"
 "始できます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:628
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:647
 #, elixir-autogen, elixir-format
 msgid "A task without that flag never pauses. It moves straight to Done, the after_review hook fires immediately — the same merge-and-deploy step, with no human in the loop — and the change is shipped on the spot."
 msgstr ""
@@ -6404,7 +6404,7 @@ msgstr ""
 "after_review フックが即座に実行され — 同じマージとデプロイのステップで、人が介在す"
 "ることなく — 変更はその場で出荷されます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:663
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:682
 #, elixir-autogen, elixir-format
 msgid "And the agent doesn't wait around. As soon as an un-flagged task reaches Done, it claims the next task from the Ready column and runs the whole loop again — working straight through the board until Ready is empty. Only a task that needs human review pauses the run, holding in the Review column until someone signs off."
 msgstr ""
@@ -6413,22 +6413,22 @@ msgstr ""
 "になるまでボードをまっすぐ進めながら作業します。人によるレビューが必要なタスクだけ"
 "が実行を一時停止させ、誰かが承認するまで Review カラムにとどまります。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:625
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:644
 #, elixir-autogen, elixir-format
 msgid "Cleared to ship"
 msgstr "出荷許可済み"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:524
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:539
 #, elixir-autogen, elixir-format
 msgid "Developer defined validations that must pass before completion."
 msgstr "完了前に通過しなければならない、開発者が定義した検証。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:600
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:619
 #, elixir-autogen, elixir-format
 msgid "Flagged for review"
 msgstr "レビュー対象としてフラグ付け"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:577
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:596
 #, elixir-autogen, elixir-format
 msgid "Human review and completion"
 msgstr "人によるレビューと完了"
@@ -6437,12 +6437,12 @@ msgstr "人によるレビューと完了"
 #: lib/kanban_web/components/marketing_components.ex:125
 #: lib/kanban_web/components/marketing_components.ex:432
 #: lib/kanban_web/controllers/page_html/product.html.heex:888
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:861
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:889
 #, elixir-autogen, elixir-format
 msgid "Start now"
 msgstr "今すぐ始める"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:384
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:399
 #, elixir-autogen, elixir-format
 msgid "The implementing agent now writes the code, drawing on everything gathered so far: the task specification carried in the Stride claim — its acceptance criteria, pitfalls, and the human-reviewed details — the task-explorer's map of the existing files, tests, and patterns, and, on medium and larger tasks, the planner's step-by-step plan. It writes both the implementation and the tests that exercise it, mirroring the conventions the explorer surfaced so the change fits cleanly into the codebase it lands in."
 msgstr ""
@@ -6453,7 +6453,7 @@ msgstr ""
 "両方を書き、explorer が明らかにした規約に倣うことで、変更が組み込まれるコードベース"
 "にきれいに収まるようにします。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:452
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:467
 #, elixir-autogen, elixir-format
 msgid "The task-reviewer subagent checks the finished diff against the task's own contract — its acceptance criteria, pitfalls, patterns to follow, and testing strategy — catching the task-specific problems that automated tests can't. It also enforces the project's standing rules: when a CODE-REVIEW.md file is present, each bullet in it becomes a review check — a CRITICAL: prefix raising its severity — and any unmet check is treated just like a task-specific finding. When the review comes back clean, the work moves straight on to validation. When it surfaces critical or important issues, the implementing agent fixes them and the diff is reviewed again; only once those are resolved does the task advance, while minor suggestions are noted but never block."
 msgstr ""
@@ -6467,7 +6467,7 @@ msgstr ""
 "それらを修正し、差分が再びレビューされます。それらが解決されて初めてタスクは前進"
 "し、軽微な提案は記録されますが決してブロックにはなりません。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:538
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:553
 #, elixir-autogen, elixir-format
 msgid "Validation runs the after_doing hook — a blocking quality gate whose commands the developer defines. They typically run the full test suite, check formatting, run static code analysis, and run a security scan, and often build the project and auto-commit the change. Because the hook blocks completion, any failure stops the task cold: the agent fixes what broke and re-runs the hook until everything passes, so nothing reaches Done in a broken state."
 msgstr ""
@@ -6478,7 +6478,7 @@ msgstr ""
 "スクは即座に止まります。エージェントは壊れた箇所を修正し、すべてが通過するまでフッ"
 "クを再実行するので、壊れた状態のまま Done に到達するものは何もありません。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:582
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:601
 #, elixir-autogen, elixir-format
 msgid "When the agent marks a task complete, the before_review hook fires — the moment to open a pull request, post the diff for reviewers, or ping a channel. What happens next turns on a single flag a human set back in the Backlog: needs_review."
 msgstr ""
@@ -6487,7 +6487,7 @@ msgstr ""
 "す。次に何が起こるかは、Backlog の段階で人が設定した一つのフラグ、needs_review に"
 "よって決まります。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:8
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
 msgstr "Stride は各タスクを4段階のライフサイクルで包みます。関与するタイミングと、エージェントに自律的に作業させるタイミングを人間が選択します。このボードは雰囲気ではなく、実際のコードベースを動かします。"
@@ -13028,7 +13028,7 @@ msgid "Plan toward a date across boards"
 msgstr "ボードをまたいで期日に向けて計画する"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex:488
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:716
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:739
 #, elixir-autogen, elixir-format
 msgid "Read the guide: Connecting an MCP client"
 msgstr "ガイドを読む:MCP クライアントを接続する"
@@ -13304,87 +13304,87 @@ msgstr "すべてのボードの傾向"
 msgid "Verify your email domains with a DNS TXT record, then connect an OpenID Connect or SAML 2.0 identity provider. People on those domains sign in through it and join as members, never as org-admins. Members who have a password can still use it."
 msgstr "DNS の TXT レコードでメールドメインを検証し、OpenID Connect または SAML 2.0 の ID プロバイダーを接続します。それらのドメインのユーザーはプロバイダー経由でサインインし、組織管理者ではなく必ずメンバーとして参加します。パスワードを持つメンバーは引き続きそれを使えます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:402
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:417
 #, elixir-autogen, elixir-format
 msgid "A finished task's changed files with one file's diff open"
 msgstr "完了したタスクの変更されたファイルと、開いた 1 ファイルの差分"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:81
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:88
 #, elixir-autogen, elixir-format
 msgid "A goal with its three child tasks and the column each one is in"
 msgstr "3 つの子タスクと、それぞれが置かれているカラムを示したゴール"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:603
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:622
 #, elixir-autogen, elixir-format
 msgid "A task with needs_review set to true lands in the Review column and stops. It surfaces in the review queue — the shared list of finished tasks awaiting a human — which shows a full diff of every changed file alongside the task-reviewer's report. The reviewer reads through it and then approves the task or requests changes. On approval the after_review hook fires — merge, deploy, notify — and the task moves to Done."
 msgstr "needs_review が true に設定されたタスクは Review カラムに入って停止します。そのタスクはレビューキュー — 人によるレビューを待つ完了済みタスクの共有リスト — に現れ、変更されたすべてのファイルの完全な差分を task-reviewer のレポートとともに表示します。レビュー担当者はそれに目を通したうえで、タスクを承認するか、変更を要求します。承認されると after_review フックが実行され — マージ、デプロイ、通知 — タスクは Done へ移動します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:481
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:496
 #, elixir-autogen, elixir-format
 msgid "A task's behaviour test matrix with a test and a status for each behaviour"
 msgstr "各動作のテストとステータスを示した、タスクの動作/テストマトリクス"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:153
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "The Backlog and Ready columns of a Stride board"
 msgstr "Stride ボードの Backlog カラムと Ready カラム"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:253
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:268
 #, elixir-autogen, elixir-format
 msgid "The Doing column with two tasks in progress"
 msgstr "進行中の 2 つのタスクがある Doing カラム"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:162
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "The Needs Review checkbox on a task's form"
 msgstr "タスクのフォームにある「レビューが必要」チェックボックス"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:653
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:672
 #, elixir-autogen, elixir-format
 msgid "The Review and Done columns of a Stride board"
 msgstr "Stride ボードの Review カラムと Done カラム"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:339
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:354
 #, elixir-autogen, elixir-format
 msgid "The explorer's result in a task's details"
 msgstr "タスクの詳細に表示されたエクスプローラーの結果"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:71
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:78
 #, elixir-autogen, elixir-format
 msgid "The goal and its tasks land in the Backlog. Once a human moves them to Ready, agents claim them and the lifecycle below takes over."
 msgstr "ゴールとそのタスクは Backlog に配置されます。人がそれらを Ready に移すと、エージェントがクレームし、以下のライフサイクルが引き継ぎます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:644
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:663
 #, elixir-autogen, elixir-format
 msgid "The review queue with a waiting task's diff"
 msgstr "待機中のタスクの差分を表示したレビューキュー"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:347
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:362
 #, elixir-autogen, elixir-format
 msgid "The task's details record the explorer's result: whether it ran, how long it took, and its summary."
 msgstr "タスクの詳細には、エクスプローラーの結果 — 実行されたかどうか、かかった時間、その要約 — が記録されます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:471
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:486
 #, elixir-autogen, elixir-format
 msgid "The task-reviewer's report with one minor issue"
 msgstr "軽微な問題が 1 件ある task-reviewer のレポート"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:556
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:571
 #, elixir-autogen, elixir-format
 msgid "The workflow steps a task recorded, including After Doing"
 msgstr "After Doing を含む、タスクが記録したワークフロー手順"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:241
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:256
 #, elixir-autogen, elixir-format
 msgid "When the agent claims the task, the card moves to the Doing column and the developer-defined before_doing hook runs on the developer's workstation. This developer hook is typically used to make sure the local checkout is up to date with the latest code, fetch the latest dependencies, apply any necessary database migrations, and run the tests — so the agent starts from a known state."
 msgstr "エージェントがタスクをクレームすると、カードが Doing カラムに移動し、開発者が定義した before_doing フックが開発者のワークステーション上で実行されます。この開発者フックは通常、ローカルのチェックアウトが最新のコードに更新されていることの確認、最新の依存関係の取得、必要なデータベースマイグレーションの適用、およびテストの実行に使用されます — これにより、エージェントは既知の状態から作業を開始できます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:564
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:579
 #, elixir-autogen, elixir-format
 msgid "When the task is completed, the steps the agent ran, the after_doing hook among them, are recorded under Workflow steps in the task's details."
 msgstr "タスクが完了すると、after_doing フックを含め、エージェントが実行した手順がタスクの詳細の「ワークフロー手順」に記録されます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:493
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:508
 #, elixir-autogen, elixir-format
 msgid "The task's details show the task-reviewer's report and, when the board's field visibility settings turn it on, the task's behaviour test matrix: each behaviour, the test that covers it, and its status."
 msgstr "タスクの詳細には、task-reviewer のレポートと、ボードのフィールドの表示設定で有効にした場合はタスクの動作/テストマトリクス — 各動作、それをカバーするテスト、そのステータス — が表示されます。"
@@ -13399,17 +13399,17 @@ msgstr "タスクを取得できるのは、依存するすべてのタスクが
 msgid "Add the plugin to your opencode.json."
 msgstr "opencode.json にプラグインを追加します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:738
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:765
 #, elixir-autogen, elixir-format
 msgid "An example .stride.md with all five hooks"
 msgstr "5 つのフックすべてを含む .stride.md の例"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:704
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:727
 #, elixir-autogen, elixir-format
 msgid "Any MCP client"
 msgstr "任意の MCP クライアント"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:768
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:796
 #, elixir-autogen, elixir-format
 msgid "Around the code the agent writes, the plugin adds gates in a fixed order. Small tasks can skip exploring and review, and the optional gates run only when their plugin is installed and the task asks for them."
 msgstr "エージェントが書くコードの前後に、プラグインは決まった順序でゲートを追加します。小さなタスクは探索とレビューを省略でき、オプションのゲートは、そのプラグインがインストールされていてタスクが求めるときだけ実行されます。"
@@ -13424,7 +13424,7 @@ msgstr "コードを書く前に、読み取り専用のサブエージェント
 msgid "Dependencies and goals"
 msgstr "依存関係とゴール"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:743
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:770
 #, elixir-autogen, elixir-format
 msgid "Each section is a heading and a bash block. The commands are yours: use whatever your project already runs."
 msgstr "各セクションは見出しと bash ブロックです。コマンドはあなたのものです。プロジェクトですでに使っているものをそのまま使えます。"
@@ -13439,7 +13439,7 @@ msgstr "探索的テスト"
 msgid "Explore and plan"
 msgstr "探索と計画"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:756
 #, elixir-autogen, elixir-format
 msgid "Hooks are shell commands you keep in a .stride.md file at the root of your project. The agent runs each one on your own machine at a fixed point in the loop. When a command fails, the agent stops there and fixes the problem before it carries on."
 msgstr "フックは、プロジェクトのルートにある .stride.md ファイルに書いておくシェルコマンドです。エージェントはそれぞれを、ループの決まった時点にあなた自身のマシンで実行します。コマンドが失敗すると、エージェントはそこで止まり、問題を直してから先に進みます。"
@@ -13465,7 +13465,7 @@ msgstr "プラグインのリポジトリから直接インストールします
 msgid "Install with the setup script in the plugin's repository."
 msgstr "プラグインのリポジトリにあるセットアップスクリプトでインストールします。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:706
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
 #, elixir-autogen, elixir-format
 msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as six tools, using the same API token as the REST API. MCP is part of the paid plans."
 msgstr "お使いのツール向けのプラグインがない場合は、Stride の MCP サーバーが、任意の MCP クライアントに同じタスクループを 6 つのツールとして提供します。REST API と同じ API トークンを使います。MCP は有料プランに含まれます。"
@@ -13475,12 +13475,12 @@ msgstr "お使いのツール向けのプラグインがない場合は、Stride
 msgid "Once the code is written, a reviewer subagent checks the diff against the task's acceptance criteria, pitfalls, patterns and testing strategy. The agent fixes what it finds before the validation hook runs."
 msgstr "コードを書き終えると、レビュー担当のサブエージェントが、タスクの受け入れ基準、落とし穴、パターン、テスト戦略に照らして差分を確認します。エージェントは、検証フックが実行される前に、見つかった問題を修正します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:837
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:865
 #, elixir-autogen, elixir-format
 msgid "Optional"
 msgstr "オプション"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:808
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:836
 #, elixir-autogen, elixir-format
 msgid "Optional plugin"
 msgstr "オプションのプラグイン"
@@ -13520,17 +13520,17 @@ msgstr "コードを書き終えたときに実行されます。テスト、リ
 msgid "Security review"
 msgstr "セキュリティレビュー"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:678
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:701
 #, elixir-autogen, elixir-format
 msgid "Stride has a plugin for six agent runtimes. Each one teaches the agent the same loop: claim a task, run the hooks in your .stride.md and complete the work."
 msgstr "Stride には 6 つのエージェントランタイム向けのプラグインがあります。どれもエージェントに同じループを教えます:タスクを取得し、.stride.md のフックを実行し、作業を完了します。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:764
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:792
 #, elixir-autogen, elixir-format
 msgid "The quality gates around the code"
 msgstr "コードを囲む品質ゲート"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:774
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:802
 #, elixir-autogen, elixir-format
 msgid "The quality gates in the order they run"
 msgstr "実行順に並べた品質ゲート"
@@ -13545,12 +13545,12 @@ msgstr "stride-exploratory-testing プラグインがインストールされ、
 msgid "When the stride-security-review plugin is installed and the task lists security considerations, a security reviewer checks the same diff alongside the task reviewer. A consideration it finds unmitigated is escalated rather than waved through."
 msgstr "stride-security-review プラグインがインストールされ、タスクにセキュリティ上の考慮事項が挙げられている場合は、セキュリティレビュー担当がタスクのレビュー担当と並行して同じ差分を確認します。対策されていないと判断された考慮事項は、見逃されずにエスカレーションされます。"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:674
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:697
 #, elixir-autogen, elixir-format
 msgid "Works with your agent"
 msgstr "あなたのエージェントで動く"
 
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:725
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:752
 #, elixir-autogen, elixir-format
 msgid "Your hooks, in one file"
 msgstr "フックは 1 つのファイルに"

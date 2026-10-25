@@ -597,7 +597,10 @@ defmodule KanbanWeb.MarketingComponents do
   Renders the 6-card audience-tagged feature grid.
 
   Three audiences: agents (`--stride-orange-ink` tag), humans (`--stride-violet-ink`
-  tag), teams (`--ink-3` tag). Mirrors lines ~285-324 of `landing.jsx`.
+  tag), teams (`--ink-3` tag). Mirrors lines ~285-324 of `landing.jsx`. Each card
+  links to the closest `/product` or `/workflows` section; Capability matching
+  lands on the lifecycle's claim stage until a dedicated section exists. The
+  section ids are pinned by the page controller tests.
 
   ## Examples
 
@@ -610,16 +613,19 @@ defmodule KanbanWeb.MarketingComponents do
     <section class="px-5 pt-6 pb-10 md:px-16 md:pt-8 md:pb-16">
       <span class="ucase block mb-7 md:mb-9">{gettext("A few features")}</span>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <div
-          :for={feature <- @features}
-          class="flex flex-col gap-2"
+        <.link
+          :for={{feature, index} <- Enum.with_index(@features)}
+          href={feature.href}
+          aria-labelledby={"feature-card-#{index}"}
+          class="group flex flex-col gap-2 transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 16px; min-height: 154px;"
         >
           <span class="ucase" style={"font-size: 9.5px; color: #{tag_color(feature.audience)};"}>
             {feature.tag}
           </span>
           <h3
-            class="font-semibold"
+            id={"feature-card-#{index}"}
+            class="font-semibold group-hover:underline underline-offset-2"
             style="margin: 0; font-size: 15.5px; letter-spacing: -0.015em;"
           >
             {feature.title}
@@ -627,7 +633,7 @@ defmodule KanbanWeb.MarketingComponents do
           <p style="margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); text-wrap: pretty;">
             {feature.body}
           </p>
-        </div>
+        </.link>
       </div>
     </section>
     """
@@ -637,12 +643,17 @@ defmodule KanbanWeb.MarketingComponents do
   defp tag_color(:humans), do: "var(--stride-violet-ink)"
   defp tag_color(:teams), do: "var(--ink-3)"
 
-  defp feature_grid_cards do
+  # Split by audience to keep each list under Credo's ABC-size limit; each card
+  # keeps its own showcase href beside it.
+  defp feature_grid_cards, do: agent_feature_cards() ++ human_and_team_feature_cards()
+
+  defp agent_feature_cards do
     [
       %{
         audience: :agents,
         tag: gettext("For agents"),
         title: gettext("Capability matching"),
+        href: ~p"/workflows#lifecycle",
         body:
           gettext(
             "Agents declare what they can do. They only see — and can only claim — work that matches."
@@ -652,6 +663,7 @@ defmodule KanbanWeb.MarketingComponents do
         audience: :agents,
         tag: gettext("For agents"),
         title: gettext("Client-side hooks"),
+        href: ~p"/workflows#hooks",
         body:
           gettext(
             "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
@@ -661,15 +673,22 @@ defmodule KanbanWeb.MarketingComponents do
         audience: :agents,
         tag: gettext("For agents"),
         title: gettext("Conflict prevention"),
+        href: ~p"/product#build",
         body:
           gettext(
             "Tasks declare key_files. Two agents can't touch the same code at the same time."
           )
-      },
+      }
+    ]
+  end
+
+  defp human_and_team_feature_cards do
+    [
       %{
         audience: :humans,
         tag: gettext("For humans"),
         title: gettext("Review at the speed of approval"),
+        href: ~p"/product#review",
         body:
           gettext(
             "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
@@ -679,6 +698,7 @@ defmodule KanbanWeb.MarketingComponents do
         audience: :humans,
         tag: gettext("For humans"),
         title: gettext("Goals → tasks → outcomes"),
+        href: ~p"/product#plan",
         body:
           gettext(
             "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
@@ -688,6 +708,7 @@ defmodule KanbanWeb.MarketingComponents do
         audience: :teams,
         tag: gettext("For teams"),
         title: gettext("Real metrics that include AI"),
+        href: ~p"/product#measure",
         body:
           gettext(
             "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."

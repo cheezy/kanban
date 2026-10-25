@@ -13,7 +13,10 @@ in each page's `<main>` and fails when an image:
 - has no `width` and `height`, or declares a size the PNG doesn't have;
 - is in this directory but neither page uses it.
 
-`/product` shows only images from this directory. When you retake one, keep
+On `/product` it also fails when a subsection shows neither an image nor a code
+snippet (see the end of this file).
+
+Both pages show only images from this directory. When you retake one, keep
 its file name, declare its new size in the page's `width` and `height`, and
 update its row in the checklist below in the same change.
 
