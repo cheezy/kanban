@@ -96,10 +96,6 @@ And these responses changed:
 - **Background jobs left running when a server stops are retried** after an hour instead of being stuck.
 - Task history entries with the same time are always shown in the same order.
 
-### Dependencies
-
-- Phoenix 1.8.16, Phoenix LiveView 1.2.13, Bandit 1.13.1, plug_crypto 2.2.1, and updates to castore, Oban, esbuild, tailwind and mdex.
-
 ## [2.21.0] - 2026-10-14
 
 Boards can now tell other systems what happens to their tasks: board owners send task events to a signed webhook, a Slack channel or a Discord channel from a new **Integrations** tab. Stride also sends a monitoring event for most things people and agents do, charts every one of them on the admin Metrics page, documents them in a new reference, and keeps stored metrics for 90 days.
