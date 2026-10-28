@@ -136,6 +136,20 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
       assert done_task.completed_at
     end
 
+    test "keeps an existing completed_at rather than overwriting it", ctx do
+      past = ~U[2026-01-02 03:04:05Z]
+
+      task =
+        ctx.in_review_task
+        |> Ecto.Changeset.change(completed_at: past)
+        |> Repo.update!()
+
+      assert {:ok, done_task} = AgentWorkflow.mark_done(task, ctx.user)
+
+      assert done_task.completed_at == past
+      assert Repo.get!(Kanban.Tasks.Task, task.id).completed_at == past
+    end
+
     test "returns :invalid_column when the task is not in Review", ctx do
       task = create_open_task(ctx.ready, ctx.user)
 

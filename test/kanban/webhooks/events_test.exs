@@ -249,6 +249,23 @@ defmodule Kanban.Webhooks.EventsTest do
       assert queued("task.moved") == [{ctx.all.id, "task.moved"}]
     end
 
+    test "sending a changes_requested task back to Doing with webhook: false queues nothing",
+         ctx do
+      task = pending_review_task(ctx)
+
+      {:ok, reviewed} =
+        ctx.owner
+        |> Scope.for_user()
+        |> Reviews.request_changes_review(task, review_notes: "Fix it")
+
+      Repo.delete_all(Oban.Job)
+
+      {:ok, doing_task} = Tasks.mark_reviewed(reviewed, ctx.owner, webhook: false)
+
+      assert doing_task.status == :in_progress
+      assert queued() == []
+    end
+
     test "deleting a task queues task.deleted with a snapshot of the task", ctx do
       task = task_fixture(ctx.cols["Backlog"], %{title: "Gone soon"})
       Repo.delete_all(Oban.Job)
