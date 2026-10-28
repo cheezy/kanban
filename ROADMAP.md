@@ -10,7 +10,7 @@ This roadmap describes what we are considering for Stride next. What has already
 
 Bring a team's existing work into Stride instead of starting from an empty board.
 
-- **Import from Linear and Jira**
+- **Import from Jira**
 
   Bring boards and tasks across with their titles, descriptions, comments, labels and status, so a team can move without losing its history.
 
