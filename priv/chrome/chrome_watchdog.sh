@@ -66,13 +66,15 @@ chrome_pid=$!
 # the pipe close as soon as Chrome exits.
 exec 0</dev/null 1>/dev/null 3<&- 4>&-
 
+# The watcher writes nothing, so it gets no stderr: if it ever outlived this
+# script it must not hold the caller's output pipe open.
 (
   trap - TERM HUP INT
   while kill -0 "$watch_pid" 2>/dev/null; do
     sleep 1
   done
   stop_chrome "$chrome_pid"
-) &
+) 2>/dev/null &
 watcher_pid=$!
 
 # A trapped signal interrupts wait with status 128+signal before Chrome has
@@ -90,5 +92,8 @@ while :; do
   [ -n "$stopping" ] || break
 done
 
-kill "$watcher_pid" 2>/dev/null
+# SIGKILL, not SIGTERM: the watcher is forked with this script's TERM trap and
+# only resets it once it runs. A SIGTERM that lands before then is caught and
+# then dropped by the reset, which leaves the watcher polling the VM forever.
+kill -KILL "$watcher_pid" 2>/dev/null
 exit "$status"
