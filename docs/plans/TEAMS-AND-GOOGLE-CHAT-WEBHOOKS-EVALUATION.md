@@ -1,8 +1,10 @@
 # Microsoft Teams and Google Chat webhooks: evaluation
 
 Status: research only (W2370). No code was changed and no tasks were created.
-Vendor documentation was checked on 2026-10-14. The human reading this decides
-what to build.
+Vendor documentation was checked on 2026-10-14. The statements about Stride's
+own Slack and Discord code were checked against the implementation again on
+2026-10-28; the vendor claims were not re-checked. The human reading this
+decides what to build.
 
 ## Context
 
@@ -15,19 +17,29 @@ tool, copies its URL, and pastes it into the board's **Integrations** tab (see
 That pattern relies on four properties of the chat service:
 
 1. **A fixed host to pin the URL to.** Each chat kind accepts only its vendor's
-   webhook address (`Endpoint.slack_url?/1` pins `hooks.slack.com`;
-   `Endpoint.discord_url?/1` pins four Discord hosts and the
-   `/api/webhooks/<id>/<token>` path, in `lib/kanban/webhooks/endpoint.ex`).
-   `Kanban.Webhooks.UrlGuard` on its own only requires `https` and a public
-   address, so it accepts any public host and port. Without a per-kind pin, a
-   chat kind would be a general outbound-request path (SSRF).
+   webhook address, in `lib/kanban/webhooks/endpoint.ex`.
+   `Endpoint.slack_url?/1` pins the exact host `hooks.slack.com` and accepts
+   any path on it. `Endpoint.discord_url?/1` pins four exact Discord hosts
+   (`discord.com`, `discordapp.com`, `ptb.discord.com`, `canary.discord.com`,
+   compared whole, never as a suffix) and the path `/api/webhooks/<id>/<token>`
+   or `/api/v<n>/webhooks/<id>/<token>`, with an optional trailing slash and
+   any query string. Both require `https`, port 443 and no userinfo. The pin is
+   checked when the endpoint is saved and again before every delivery attempt.
+   `Kanban.Webhooks.UrlGuard` on its own only checks the URL's shape
+   (`https`, no userinfo, a valid host name) and that every address the host
+   resolves to is public, so it accepts any public host and port. Without a
+   per-kind pin, a chat kind would be a general outbound-request path (SSRF).
 2. **The secret is carried in the URL.** The pasted URL is the whole
    credential. Stride stores it encrypted (`EncryptedString`, `redact: true`),
-   never shows it again, and never puts it in a delivery error.
+   shows only its host afterwards (the edit form leaves the URL blank to keep
+   it), and never puts it in a delivery error or the log.
 3. **A simple JSON message format** that a small formatter can build, with a
    way to stop task titles and board names from pinging people or becoming
-   links (the Discord formatter sets `allowed_mentions` and escapes markdown;
-   see [What the Discord messages look like](../webhooks.md#what-the-discord-messages-look-like)).
+   links. The Discord formatter sets `"allowed_mentions": {"parse": []}` and
+   backslash-escapes markdown, link and mention characters; the Slack
+   formatter turns `&`, `<` and `>` into HTML entities and leaves Slack's
+   `*bold*`-style formatting as typed, because Slack has no escape for it (see
+   [What the Discord messages look like](../webhooks.md#what-the-discord-messages-look-like)).
 4. **Clear permanent-failure responses.** The delivery worker treats any `2xx`
    (including `202`) as success, cancels on any `4xx` other than `408` and
    `429`, and retries everything else (`5xx`, `408`, `429`, redirects, timeouts,
@@ -38,8 +50,17 @@ That pattern relies on four properties of the chat service:
 
 Other fixed constraints on any new kind: the URL is at most 2048 bytes, the
 guard re-resolves the host and re-checks every address on every attempt
-(anti-rebinding), requests time out after 10 seconds, and the query string is
-sent as pasted.
+(anti-rebinding), the request goes to the address the guard approved with the
+original host kept for TLS, requests time out after 10 seconds (5 to
+connect), and the query string is sent as pasted.
+
+A new kind also inherits, with no extra work, the delivery gates added after
+Discord shipped: its endpoints are paused on a board outside an Organization's
+workspace while paid plans are enforced (W2408), disabled when the person who
+added them loses access to the board, and held while that person's account is
+disabled (see
+[When the person who added an endpoint leaves](../webhooks.md#when-the-person-who-added-an-endpoint-leaves)).
+An endpoint's kind cannot be changed after it is created.
 
 ## How each service was evaluated
 
@@ -240,8 +261,11 @@ checked 2026-10-14).
 
 A `TeamsFormatter` would build one Adaptive Card per event (a `TextBlock` with
 the task identifier and title linked to Stride, and a `FactSet` with event,
-column and board), and fit the whole body under 28 KB on grapheme boundaries,
-like the Discord formatter. The card shape is a little more involved than
+column and board), and cap each value so the whole body stays under 28 KB,
+cutting only on grapheme boundaries as the Discord formatter does. The Discord
+formatter's caps count code points, against Discord's character limits; 28 KB
+is a byte limit, so these caps would have to count bytes. The card shape is a
+little more involved than
 Discord's embed, so the formatter is about one and a half times the
 `DiscordFormatter` work. What the workflow actually posts also depends on how
 the user's template handles the body, which we cannot see (T-Q7).
@@ -258,7 +282,8 @@ the user's template handles the body, which we cannot see (T-Q7).
   confirmed, the safe choice is to replace the Markdown characters in titles,
   board names and column names with plain look-alikes or strip them, and to
   build every link ourselves from Stride URLs (reusing the Discord formatter's
-  `safe_url/1` check).
+  `safe_url/1` check, which is private today and would move somewhere both
+  formatters can call).
 - **Mentions.** A mention in an Adaptive Card needs both `<at>name</at>` in the
   text and a matching `mention` entry in `msteams.entities` with the user's ID
   ([Format text in cards](https://learn.microsoft.com/en-us/microsoftteams/platform/task-modules-and-cards/cards/cards-format),
@@ -311,15 +336,23 @@ updates when Microsoft changes the URL again.
 Expected to fit: the URL is `https` on a Microsoft-operated domain, which
 should resolve to public addresses, and is expected to be under 2048 bytes,
 though its maximum length is not stated (T-Q4). The port in the URL is the
-explicit default `:443`, which our default-port check must accept as 443 (the Slack and Discord pins already
-compare the parsed port, so this should hold, but a test should cover it).
+explicit default `:443`. `URI.new/1` parses an explicit `:443` as port 443,
+which is what the Slack and Discord pins match, and `Transport` leaves the
+default port out of the `host` header; a test for the Teams pin should still
+cover it.
 
 ### Effort against Discord
 
 Discord took four tasks after the per-kind lookup refactor (W2365): formatter
 (W2366), kind with validation and delivery (W2367), Integrations tab (W2368)
 and docs (W2369), with 22 to 26 minutes between one completion and the
-next. Teams would need those four plus a first task done by a human in a
+next, plus one follow-up commit (6705dfd9) that fixed the Integrations copy
+and the URL hint and error, translated in all seven locales. Because of
+W2365, a kind's label, badge colours, URL placeholder and hint live in
+`KanbanWeb.BoardLive.WebhookKinds`, one clause per function; the kind menu is
+built from `Endpoint.kinds/0`, and `signed?/1` already hides the secret
+controls for every kind except `:generic`. Teams would need those four plus a
+first task done by a human in a
 Microsoft 365 tenant: create an "Anyone" Workflows webhook, record the real URL shape (without keeping the
 URL), the status codes for an accepted post, a deleted workflow and a disabled
 one, delete the workflow, and answer T-Q1 to T-Q10. The formatter and the pin
@@ -380,8 +413,10 @@ checked 2026-10-14). There is one host family.
 
 ### Host pinning
 
-The host is fixed, so this is as strong as the Slack pin. The proposed
-`google_chat_url?/1`:
+The host is fixed, as Slack's is, so the host pin is as strong as Slack's.
+Unlike `slack_url?/1`, which accepts any path on `hooks.slack.com`, this pin
+must also fix the path and the query, because the Chat API serves more than
+webhooks from the same host. The proposed `google_chat_url?/1`:
 
 - `https`, default port 443, no userinfo.
 - Host exactly `chat.googleapis.com` (lower-cased, as for Slack).
@@ -415,9 +450,12 @@ checked 2026-10-14). Whether webhooks can also send `cardsV2` is not stated on
 the webhook page (G-Q3).
 
 A `GoogleChatFormatter` sending `text` only is close to the Slack formatter in
-size, with Discord-style escaping and a byte-based, grapheme-safe cut at 32,000
-bytes. A per-task `threadKey` (for example the task identifier) would group a
-task's events into one thread at no extra cost. This is about the same work as
+size. It needs the character replacement described below rather than the
+Discord formatter's backslash escapes, which Chat does not document, and a
+grapheme-safe cut like Discord's but counted in bytes against 32,000 (the
+Discord formatter counts code points). A per-task `threadKey` (for example
+the task identifier) would group a task's events into one thread at no extra
+cost. This is about the same work as
 the `DiscordFormatter`.
 
 ### Injection risks and neutralisation
@@ -437,11 +475,14 @@ Chat kind must:
   (for example with the look-alikes U+2039 and U+203A), so that no mention or
   link markup can survive. Whether an HTML entity or a zero-width character
   also defeats the parser is not stated (G-Q4); replacing the angle brackets
-  does not depend on that answer.
+  does not depend on that answer. So `SlackFormatter.escape/1`, which writes
+  `&lt;` and `&gt;`, cannot be reused unless G-Q4 shows that Chat decodes
+  entities as Slack does.
 - Replace or strip `*`, `_`, `~` and backquotes, since there is no documented
-  escape.
+  escape. This is stricter than the Slack formatter, which leaves that
+  formatting as typed.
 - Build every link itself from Stride URLs, reusing the Discord formatter's
-  `safe_url/1` check.
+  `safe_url/1` check (private today; see the Teams section).
 
 ### Rate limits and failure statuses
 
