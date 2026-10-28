@@ -26,7 +26,7 @@ defmodule Kanban.DocsIndexTest do
 
   @root Path.expand("../..", __DIR__)
   @index "docs/README.md"
-  @unindexed_docs ["docs/plans/TIMELINE-VIEW-DESIGN.md"]
+  @unindexed_docs ["docs/plans/LIVE-AGENT-VIEW-DESIGN.md", "docs/plans/TIMELINE-VIEW-DESIGN.md"]
 
   describe "the docs index" do
     test "every markdown file under docs/ is linked from docs/README.md" do

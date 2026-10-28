@@ -81,6 +81,17 @@ defmodule Kanban.Tasks.AgentWorkflow.ClaimingTest do
       diff = DateTime.diff(claimed.claim_expires_at, claimed.claimed_at, :second)
       assert_in_delta diff, 3600, 5
     end
+
+    test "arity 2 fills the capabilities, identifier and agent name defaults", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+
+      assert {:ok, claimed, hook} = AgentWorkflow.claim_next_task(ctx.user, ctx.board.id)
+
+      assert claimed.id == task.id
+      assert claimed.assigned_to_id == ctx.user.id
+      assert hook.name == "before_doing"
+      assert hook.env["AGENT_NAME"] == "Unknown"
+    end
   end
 
   describe "claim_next_task/5 — by identifier" do
@@ -391,6 +402,17 @@ defmodule Kanban.Tasks.AgentWorkflow.ClaimingTest do
       assert_receive {:telemetry_event, [:kanban, :task, :unclaimed], _, metadata}
       assert metadata.has_reason == true
       refute inspect(metadata) =~ "vendor quirk"
+    end
+
+    test "unclaim with a whitespace-only reason sends has_reason false", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      attach_telemetry([:kanban, :task, :unclaimed])
+
+      {:ok, _} = AgentWorkflow.unclaim_task(claimed, ctx.user, "   ")
+
+      assert_receive {:telemetry_event, [:kanban, :task, :unclaimed], _, metadata}
+      assert metadata.has_reason == false
     end
 
     test "a refused unclaim emits nothing", ctx do

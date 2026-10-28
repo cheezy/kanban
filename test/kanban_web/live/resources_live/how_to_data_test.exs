@@ -785,7 +785,10 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       monitoring = working_with_tasks_content(["monitoring-task-progress"])
       assert monitoring =~ "A claim lasts 60 minutes"
       assert monitoring =~ "the task stays in **Doing**"
-      assert File.read!("lib/kanban/tasks/agent_workflow.ex") =~ "DateTime.add(60 * 60, :second)"
+
+      assert File.read!("lib/kanban/tasks/agent_workflow/claiming.ex") =~
+               "DateTime.add(60 * 60, :second)"
+
       assert File.read!("lib/kanban/notifications/claim_expiry_worker.ex") =~ "never unclaims"
 
       assert monitoring =~ "no status filter"
@@ -896,7 +899,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert metadata =~ "[after_doing, before_review, after_review]"
       assert hooks =~ "plus `after_review` when `needs_review` is false"
 
-      assert File.read!("lib/kanban/tasks/agent_workflow.ex") =~
+      assert File.read!("lib/kanban/tasks/agent_workflow/claiming.ex") =~
                ~s|Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)|
 
       assert hooks =~
@@ -915,11 +918,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     test "the claim and complete facts match the server" do
       workflow = developer_content(["claim-complete-workflow"])
       agent_workflow = File.read!("lib/kanban/tasks/agent_workflow.ex")
+      claiming = File.read!("lib/kanban/tasks/agent_workflow/claiming.ex")
 
       assert workflow =~ "A claim lasts 60 minutes"
-      assert agent_workflow =~ "DateTime.add(60 * 60, :second)"
+      assert claiming =~ "DateTime.add(60 * 60, :second)"
       assert workflow =~ "moves it to **Doing**"
-      assert agent_workflow =~ ~s{get_column_by_name(board_id, "Doing")}
+      assert claiming =~ ~s{get_column_by_name(board_id, "Doing")}
       assert File.read!("lib/kanban/notifications/claim_expiry_worker.ex") =~ "never unclaims"
 
       assert File.read!("lib/kanban/tasks/agent_queries.ex") =~
