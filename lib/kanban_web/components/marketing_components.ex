@@ -188,7 +188,8 @@ defmodule KanbanWeb.MarketingComponents do
       {gettext("Dashboard"), ~p"/admin/dashboard"},
       {gettext("Error Tracker"), ~p"/admin/errors"},
       {gettext("User Admin"), ~p"/admin/users"},
-      {gettext("Audit Log"), ~p"/admin/audit-log"}
+      {gettext("Audit Log"), ~p"/admin/audit-log"},
+      {gettext("Organizations"), ~p"/admin/organizations"}
     ]
   end
 
@@ -319,6 +320,12 @@ defmodule KanbanWeb.MarketingComponents do
           class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         >
           {gettext("Audit Log")}
+        </.link>
+        <.link
+          href={~p"/admin/organizations"}
+          class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        >
+          {gettext("Organizations")}
         </.link>
       <% end %>
       <.link

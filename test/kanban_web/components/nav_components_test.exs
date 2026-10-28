@@ -149,6 +149,32 @@ defmodule KanbanWeb.NavComponentsTest do
       refute html =~ ~s|href="/admin/audit-log"|
     end
 
+    test "places the Organizations link after Audit Log for admins only" do
+      admin = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+      member = %{current_scope: %{user: %{email: "member@example.com", type: :member}}}
+
+      assigns = admin
+
+      html =
+        rendered_to_string(~H"""
+        <NavComponents.mobile_menu current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Organizations"
+
+      assert :binary.match(html, ~s|href="/admin/organizations"|) >
+               :binary.match(html, ~s|href="/admin/audit-log"|)
+
+      assigns = member
+
+      html =
+        rendered_to_string(~H"""
+        <NavComponents.mobile_menu current_scope={@current_scope} />
+        """)
+
+      refute html =~ ~s|href="/admin/organizations"|
+    end
+
     test "menu links use theme-aware tokens, not hardcoded colors" do
       assigns = %{current_scope: nil}
 

@@ -65,7 +65,7 @@ msgstr " · Gestion des Tâches"
 msgid "Done"
 msgstr "Terminé"
 
-#: lib/kanban_web/components/nav_components.ex:147
+#: lib/kanban_web/components/nav_components.ex:150
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr "Commencer"
@@ -75,12 +75,12 @@ msgstr "Commencer"
 msgid "In Progress"
 msgstr "En Cours"
 
-#: lib/kanban_web/components/nav_components.ex:145
+#: lib/kanban_web/components/nav_components.ex:148
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "Se Connecter"
 
-#: lib/kanban_web/components/nav_components.ex:140
+#: lib/kanban_web/components/nav_components.ex:143
 #: lib/kanban_web/components/side_nav.ex:140
 #: lib/kanban_web/live/workspace_live/invitation_accept.ex:140
 #, elixir-autogen, elixir-format
@@ -88,7 +88,7 @@ msgid "Log out"
 msgstr "Se Déconnecter"
 
 #: lib/kanban_web/components/board_tabs.ex:152
-#: lib/kanban_web/components/nav_components.ex:135
+#: lib/kanban_web/components/nav_components.ex:138
 #: lib/kanban_web/components/side_nav.ex:115
 #: lib/kanban_web/components/side_nav.ex:116
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
@@ -497,7 +497,7 @@ msgstr "Moyen"
 msgid "Moved"
 msgstr "Déplacé"
 
-#: lib/kanban_web/components/nav_components.ex:134
+#: lib/kanban_web/components/nav_components.ex:137
 #, elixir-autogen, elixir-format
 msgid "My Boards"
 msgstr "Mes Tableaux"
@@ -811,7 +811,7 @@ msgid "Confirmation link is invalid or has expired."
 msgstr "Le lien de confirmation est invalide ou a expiré."
 
 #: lib/kanban_web/components/marketing_components.ex:188
-#: lib/kanban_web/components/marketing_components.ex:303
+#: lib/kanban_web/components/marketing_components.ex:304
 #: lib/kanban_web/components/nav_components.ex:122
 #, elixir-autogen, elixir-format
 msgid "Dashboard"
@@ -823,9 +823,9 @@ msgid "This account has already been confirmed. You can log in."
 msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
 
 #: lib/kanban_web/components/marketing_components.ex:84
-#: lib/kanban_web/components/marketing_components.ex:292
-#: lib/kanban_web/components/nav_components.ex:137
-#: lib/kanban_web/components/nav_components.ex:144
+#: lib/kanban_web/components/marketing_components.ex:293
+#: lib/kanban_web/components/nav_components.ex:140
+#: lib/kanban_web/components/nav_components.ex:147
 #: lib/kanban_web/components/side_nav.ex:281
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
@@ -947,7 +947,7 @@ msgid "Add with Edit Access"
 msgstr "Ajouter avec Accès en Modification"
 
 #: lib/kanban_web/components/marketing_components.ex:189
-#: lib/kanban_web/components/marketing_components.ex:309
+#: lib/kanban_web/components/marketing_components.ex:310
 #: lib/kanban_web/components/nav_components.ex:125
 #, elixir-autogen, elixir-format
 msgid "Error Tracker"
@@ -2185,9 +2185,9 @@ msgid "Read more"
 msgstr "Lire la suite"
 
 #: lib/kanban_web/components/marketing_components.ex:80
-#: lib/kanban_web/components/marketing_components.ex:286
-#: lib/kanban_web/components/nav_components.ex:136
-#: lib/kanban_web/components/nav_components.ex:143
+#: lib/kanban_web/components/marketing_components.ex:287
+#: lib/kanban_web/components/nav_components.ex:139
+#: lib/kanban_web/components/nav_components.ex:146
 #: lib/kanban_web/components/side_nav.ex:274
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
@@ -3234,12 +3234,12 @@ msgstr "doit comporter au plus %{n} caractères"
 msgid "must be one of the listed options"
 msgstr "doit être l'une des options listées"
 
-#: lib/kanban_web/components/marketing_components.ex:491
+#: lib/kanban_web/components/marketing_components.ex:498
 #, elixir-autogen, elixir-format
 msgid "A new contract"
 msgstr "Un nouveau contrat"
 
-#: lib/kanban_web/components/marketing_components.ex:496
+#: lib/kanban_web/components/marketing_components.ex:503
 #, elixir-autogen, elixir-format
 msgid "AI agents are first-class teammates,"
 msgstr "les agents IA sont des coéquipiers à part entière,"
@@ -3249,42 +3249,42 @@ msgstr "les agents IA sont des coéquipiers à part entière,"
 msgid "API · Docs · Changelog"
 msgstr "API · Docs · Changelog"
 
-#: lib/kanban_web/components/marketing_components.ex:653
+#: lib/kanban_web/components/marketing_components.ex:660
 #, elixir-autogen, elixir-format
 msgid "Agents declare what they can do. They only see — and can only claim — work that matches."
 msgstr "Les agents déclarent ce qu'ils savent faire. Ils ne voient — et ne peuvent réclamer — que le travail qui correspond."
 
-#: lib/kanban_web/components/marketing_components.ex:734
+#: lib/kanban_web/components/marketing_components.ex:741
 #, elixir-autogen, elixir-format
 msgid "An agent claims it"
 msgstr "Un agent la réclame"
 
-#: lib/kanban_web/components/marketing_components.ex:736
+#: lib/kanban_web/components/marketing_components.ex:743
 #, elixir-autogen, elixir-format
 msgid "Atomic. SKIP LOCKED. Only one agent gets it. They pull latest, set up, then implement."
 msgstr "Atomique. SKIP LOCKED. Un seul agent l'obtient. Il récupère la dernière version, configure, puis implémente."
 
-#: lib/kanban_web/components/marketing_components.ex:650
+#: lib/kanban_web/components/marketing_components.ex:657
 #, elixir-autogen, elixir-format
 msgid "Capability matching"
 msgstr "Correspondance des capacités"
 
-#: lib/kanban_web/components/marketing_components.ex:660
+#: lib/kanban_web/components/marketing_components.ex:667
 #, elixir-autogen, elixir-format
 msgid "Client-side hooks"
 msgstr "Hooks côté client"
 
-#: lib/kanban_web/components/marketing_components.ex:670
+#: lib/kanban_web/components/marketing_components.ex:677
 #, elixir-autogen, elixir-format
 msgid "Conflict prevention"
 msgstr "Prévention des conflits"
 
-#: lib/kanban_web/components/marketing_components.ex:708
+#: lib/kanban_web/components/marketing_components.ex:715
 #, elixir-autogen, elixir-format
 msgid "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."
 msgstr "Temps de cycle ventilé entre agent et humain. Débit. Là où vos humains sont le goulot d'étranglement."
 
-#: lib/kanban_web/components/marketing_components.ex:688
+#: lib/kanban_web/components/marketing_components.ex:695
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
 msgstr "Diff, tests, acceptation, télémétrie des hooks — un seul volet. Approuvez d'une seule touche."
@@ -3305,20 +3305,20 @@ msgstr "Diff, tests, acceptation, télémétrie des hooks — un seul volet. App
 msgid "Doing"
 msgstr "En cours"
 
-#: lib/kanban_web/components/marketing_components.ex:649
-#: lib/kanban_web/components/marketing_components.ex:659
-#: lib/kanban_web/components/marketing_components.ex:669
+#: lib/kanban_web/components/marketing_components.ex:656
+#: lib/kanban_web/components/marketing_components.ex:666
+#: lib/kanban_web/components/marketing_components.ex:676
 #, elixir-autogen, elixir-format
 msgid "For agents"
 msgstr "Pour les agents"
 
-#: lib/kanban_web/components/marketing_components.ex:684
-#: lib/kanban_web/components/marketing_components.ex:694
+#: lib/kanban_web/components/marketing_components.ex:691
+#: lib/kanban_web/components/marketing_components.ex:701
 #, elixir-autogen, elixir-format
 msgid "For humans"
 msgstr "Pour les humains"
 
-#: lib/kanban_web/components/marketing_components.ex:704
+#: lib/kanban_web/components/marketing_components.ex:711
 #, elixir-autogen, elixir-format
 msgid "For teams"
 msgstr "Pour les équipes"
@@ -3334,27 +3334,27 @@ msgid "Go to boards"
 msgstr "Aller à Mes Tableaux"
 
 #: lib/kanban_web/components/marketing_closing.ex:57
-#: lib/kanban_web/components/marketing_components.ex:418
+#: lib/kanban_web/components/marketing_components.ex:425
 #, elixir-autogen, elixir-format
 msgid "Go to my boards"
 msgstr "Aller à Mes Tableaux"
 
-#: lib/kanban_web/components/marketing_components.ex:695
+#: lib/kanban_web/components/marketing_components.ex:702
 #, elixir-autogen, elixir-format
 msgid "Goals → tasks → outcomes"
 msgstr "Objectifs → tâches → résultats"
 
-#: lib/kanban_web/components/marketing_components.ex:744
+#: lib/kanban_web/components/marketing_components.ex:751
 #, elixir-autogen, elixir-format
 msgid "Hooks run on their machine"
 msgstr "Les hooks s'exécutent sur leur machine"
 
-#: lib/kanban_web/components/marketing_components.ex:543
+#: lib/kanban_web/components/marketing_components.ex:550
 #, elixir-autogen, elixir-format
 msgid "How it works"
 msgstr "Comment ça marche"
 
-#: lib/kanban_web/components/marketing_components.ex:508
+#: lib/kanban_web/components/marketing_components.ex:515
 #, elixir-autogen, elixir-format
 msgid "Most tools bolt AI on as a sidebar. Stride was built around the protocol agents need: atomic claims, capability matching, structured task context, and client-side hooks they fully control."
 msgstr "La plupart des outils greffent l'IA en barre latérale. Stride a été conçu autour du protocole dont les agents ont besoin : réclamations atomiques, correspondance des capacités, contexte de tâche structuré et hooks côté client qu'ils contrôlent entièrement."
@@ -3365,7 +3365,7 @@ msgid "Persist field_visibility on board edit"
 msgstr "Persister field_visibility lors de l'édition d'un tableau"
 
 #: lib/kanban_web/components/marketing_components.ex:73
-#: lib/kanban_web/components/marketing_components.ex:280
+#: lib/kanban_web/components/marketing_components.ex:281
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
 #: lib/kanban_web/emails/announcement_email.ex:149
 #, elixir-autogen, elixir-format
@@ -3378,7 +3378,7 @@ msgid "Privacy"
 msgstr "Confidentialité"
 
 #: lib/kanban_web/components/marketing_components.ex:67
-#: lib/kanban_web/components/marketing_components.ex:268
+#: lib/kanban_web/components/marketing_components.ex:269
 #: lib/kanban_web/controllers/page_html/product.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Product"
@@ -3396,12 +3396,12 @@ msgstr "Produit"
 msgid "Ready"
 msgstr "Prêt"
 
-#: lib/kanban_web/components/marketing_components.ex:705
+#: lib/kanban_web/components/marketing_components.ex:712
 #, elixir-autogen, elixir-format
 msgid "Real metrics that include AI"
 msgstr "De vraies métriques qui incluent l'IA"
 
-#: lib/kanban_web/components/marketing_components.ex:685
+#: lib/kanban_web/components/marketing_components.ex:692
 #, elixir-autogen, elixir-format
 msgid "Review at the speed of approval"
 msgstr "Révisez à la vitesse de l'approbation"
@@ -3417,7 +3417,7 @@ msgid "Security"
 msgstr "Sécurité"
 
 #: lib/kanban_web/components/marketing_components.ex:114
-#: lib/kanban_web/components/marketing_components.ex:336
+#: lib/kanban_web/components/marketing_components.ex:343
 #: lib/kanban_web/live/user_live/confirmation.ex:153
 #: lib/kanban_web/live/user_live/login.ex:24
 #: lib/kanban_web/live/user_live/login.ex:93
@@ -3447,24 +3447,24 @@ msgstr "Diffuser task_moved via PubSub"
 msgid "Stride core"
 msgstr "Stride"
 
-#: lib/kanban_web/components/marketing_components.ex:396
+#: lib/kanban_web/components/marketing_components.ex:403
 #, elixir-autogen, elixir-format
 msgid "Tasks are conversations."
 msgstr "Les tâches sont des conversations."
 
-#: lib/kanban_web/components/marketing_components.ex:673
+#: lib/kanban_web/components/marketing_components.ex:680
 #, elixir-autogen, elixir-format
 msgid "Tasks declare key_files. Two agents can't touch the same code at the same time."
 msgstr "Les tâches déclarent key_files. Deux agents ne peuvent pas toucher au même code en même temps."
 
 #: lib/kanban_web/components/marketing_components.ex:70
-#: lib/kanban_web/components/marketing_components.ex:274
+#: lib/kanban_web/components/marketing_components.ex:275
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Workflows"
 msgstr "Workflows"
 
-#: lib/kanban_web/components/marketing_components.ex:754
+#: lib/kanban_web/components/marketing_components.ex:761
 #, elixir-autogen, elixir-format
 msgid "You approve or send back"
 msgstr "Vous approuvez ou renvoyez"
@@ -3474,28 +3474,28 @@ msgstr "Vous approuvez ou renvoyez"
 msgid "approving them."
 msgstr "à les approuver."
 
-#: lib/kanban_web/components/marketing_components.ex:663
+#: lib/kanban_web/components/marketing_components.ex:670
 #, elixir-autogen, elixir-format
 msgid "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
 msgstr "before_doing, after_doing, before_review, after_review. Ils s'exécutent sur la machine de l'agent, pas la vôtre."
 
-#: lib/kanban_web/components/marketing_components.ex:499
+#: lib/kanban_web/components/marketing_components.ex:506
 #, elixir-autogen, elixir-format
 msgid "not bots you babysit."
 msgstr "pas des bots à surveiller."
 
-#: lib/kanban_web/components/marketing_components.ex:209
+#: lib/kanban_web/components/marketing_components.ex:210
 #, elixir-autogen, elixir-format
 msgid "Change language"
 msgstr "Changer de langue"
 
 #: lib/kanban_web/components/marketing_components.ex:98
-#: lib/kanban_web/components/marketing_components.ex:329
+#: lib/kanban_web/components/marketing_components.ex:336
 #, elixir-autogen, elixir-format
 msgid "Sign out"
 msgstr "Se déconnecter"
 
-#: lib/kanban_web/components/marketing_components.ex:399
+#: lib/kanban_web/components/marketing_components.ex:406
 #, elixir-autogen, elixir-format
 msgid "Stride can speak both ways."
 msgstr "Stride parle les deux langues."
@@ -3506,7 +3506,7 @@ msgstr "Stride parle les deux langues."
 msgid "Stride logo"
 msgstr "Logo Stride"
 
-#: lib/kanban_web/components/marketing_components.ex:387
+#: lib/kanban_web/components/marketing_components.ex:394
 #, elixir-autogen, elixir-format
 msgid "Now in release →"
 msgstr "Actuellement en version →"
@@ -5869,67 +5869,67 @@ msgstr "et mises à jour à un rythme régulier. L'arbre complet des dépendance
 msgid "on every completed task. Outdated dependencies are surfaced with"
 msgstr "à chaque tâche terminée. Les dépendances obsolètes sont identifiées avec"
 
-#: lib/kanban_web/components/marketing_components.ex:439
+#: lib/kanban_web/components/marketing_components.ex:446
 #, elixir-autogen, elixir-format
 msgid "Learn about adding team members"
 msgstr "Découvrez comment ajouter des membres à l'équipe"
 
-#: lib/kanban_web/components/marketing_components.ex:448
+#: lib/kanban_web/components/marketing_components.ex:455
 #, elixir-autogen, elixir-format
 msgid "Learn about creating a board"
 msgstr "Découvrez comment créer un tableau"
 
-#: lib/kanban_web/components/marketing_components.ex:756
+#: lib/kanban_web/components/marketing_components.ex:763
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
 msgstr "Diff, tests, acceptation — tout dans un seul volet. ⌘Agent répond à votre revue. Terminé."
 
-#: lib/kanban_web/components/marketing_components.ex:513
+#: lib/kanban_web/components/marketing_components.ex:520
 #, elixir-autogen, elixir-format
 msgid "Humans get a fast, calm board they can use to plan and review. Agents get an API rich enough to complete their work without asking. The same board feels native to both."
 msgstr "Les humains disposent d'un tableau rapide et apaisé pour planifier et réviser. Les agents disposent d'une API assez riche pour livrer sans demander. Le même tableau paraît natif aux deux."
 
-#: lib/kanban_web/components/marketing_components.ex:698
+#: lib/kanban_web/components/marketing_components.ex:705
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
 msgstr "Planifiez au niveau où vous pensez. Stride décompose en travail que les agents peuvent réellement réserver — avec les détails dont ils ont besoin pour être précis."
 
-#: lib/kanban_web/components/marketing_components.ex:724
+#: lib/kanban_web/components/marketing_components.ex:731
 #, elixir-autogen, elixir-format
 msgid "You write or review the task"
 msgstr "Vous écrivez ou révisez la tâche"
 
-#: lib/kanban_web/components/marketing_components.ex:746
+#: lib/kanban_web/components/marketing_components.ex:753
 #, elixir-autogen, elixir-format
 msgid "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
 msgstr "exécuter les tests, créer des PRs, tout ce que vous mettez dans .stride.md. Vous tenez les clés ; les agents gèrent la boucle."
 
-#: lib/kanban_web/components/marketing_components.ex:548
+#: lib/kanban_web/components/marketing_components.ex:555
 #, elixir-autogen, elixir-format
 msgid "One loop."
 msgstr "Une boucle."
 
-#: lib/kanban_web/components/marketing_components.ex:406
+#: lib/kanban_web/components/marketing_components.ex:413
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
 msgstr "Stride est un système de gestion du travail nativement conçu pour l'IA. Les humains planifient, révisent et approuvent. Les agents réservent, construisent et livrent. Le même tableau. Un seul workflow. Sans code de liaison."
 
-#: lib/kanban_web/components/marketing_components.ex:550
+#: lib/kanban_web/components/marketing_components.ex:557
 #, elixir-autogen, elixir-format
 msgid "Two roles."
 msgstr "Deux rôles."
 
-#: lib/kanban_web/components/marketing_components.ex:726
+#: lib/kanban_web/components/marketing_components.ex:733
 #, elixir-autogen, elixir-format
 msgid "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
 msgstr "Pourquoi, quoi, où, critères d'acceptation, stratégie de tests, considérations de sécurité, etc. Le schéma est la conversation."
 
-#: lib/kanban_web/components/marketing_components.ex:609
+#: lib/kanban_web/components/marketing_components.ex:616
 #, elixir-autogen, elixir-format
 msgid "A few features"
 msgstr "Quelques fonctionnalités"
 
-#: lib/kanban_web/components/marketing_components.ex:457
+#: lib/kanban_web/components/marketing_components.ex:464
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams · self-hosting options available"
 msgstr "Gratuit pour vous et votre équipe · options d'auto-hébergement disponibles"
@@ -6426,7 +6426,7 @@ msgstr "Revue humaine et complétion"
 
 #: lib/kanban_web/components/marketing_closing.ex:66
 #: lib/kanban_web/components/marketing_components.ex:121
-#: lib/kanban_web/components/marketing_components.ex:427
+#: lib/kanban_web/components/marketing_components.ex:434
 #: lib/kanban_web/controllers/page_html/product.html.heex:888
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:889
 #, elixir-autogen, elixir-format
@@ -7873,7 +7873,7 @@ msgid "You cannot remove the last admin."
 msgstr "Vous ne pouvez pas supprimer le dernier administrateur."
 
 #: lib/kanban_web/components/marketing_components.ex:190
-#: lib/kanban_web/components/marketing_components.ex:315
+#: lib/kanban_web/components/marketing_components.ex:316
 #: lib/kanban_web/components/nav_components.ex:128
 #, elixir-autogen, elixir-format
 msgid "User Admin"
@@ -9227,7 +9227,7 @@ msgid "All actions"
 msgstr "Toutes les actions"
 
 #: lib/kanban_web/components/marketing_components.ex:191
-#: lib/kanban_web/components/marketing_components.ex:321
+#: lib/kanban_web/components/marketing_components.ex:322
 #: lib/kanban_web/components/nav_components.ex:131
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:34
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:4
@@ -10405,6 +10405,9 @@ msgstr "Organisation introuvable."
 msgid "Organization updated."
 msgstr "Organisation mise à jour."
 
+#: lib/kanban_web/components/marketing_components.ex:192
+#: lib/kanban_web/components/marketing_components.ex:328
+#: lib/kanban_web/components/nav_components.ex:134
 #: lib/kanban_web/live/admin/organization_live/index.ex:22
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:4
 #, elixir-autogen, elixir-format
