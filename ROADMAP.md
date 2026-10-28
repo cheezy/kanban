@@ -6,6 +6,12 @@ This roadmap describes what we are considering for Stride next. What has already
 
 ---
 
+## 🔜 Planned
+
+- **Attachments**
+
+  Add files such as screenshots, logs and designs to tasks and comments. Drag a file onto a task, or paste a screenshot straight into a comment, and images show a preview inline. Agents will be able to attach files through the API too, such as test output or a screenshot of the change, so reviewers see the evidence next to the work. Attachments follow the board's existing access rules, so only people who can see a task can open its files.
+
 ## 💡 Import from other tools
 
 Bring a team's existing work into Stride instead of starting from an empty board.
@@ -61,10 +67,6 @@ Give people firm control over what agents may do.
 ## 💡 Everyday task management
 
 Make day-to-day work on a board easier.
-
-- **Attachments**
-
-  Add files such as screenshots, logs and designs to tasks and comments.
 
 - **Templates**
 
