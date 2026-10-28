@@ -147,6 +147,7 @@ Stride plugin for the tool instead, as Multi-Agent Instructions describes.
 
 ### Plans
 
+- [Task Attachments: Implementation Design](plans/ATTACHMENTS-DESIGN.md) — Design for task and comment attachments across storage, the board UI, the agent API and the plugins, drawn from goals G488 to G491 on 2026-10-28.
 - [Import from Jira: Implementation Design](plans/IMPORT-FROM-JIRA-DESIGN.md) — Design for bringing a team's existing Jira work into Stride, written 2026-10-28.
 - [Teams and Google Chat Webhooks Evaluation](plans/TEAMS-AND-GOOGLE-CHAT-WEBHOOKS-EVALUATION.md) — Research into Microsoft Teams and Google Chat webhook support.
 
