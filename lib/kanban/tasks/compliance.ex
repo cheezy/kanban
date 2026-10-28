@@ -31,7 +31,7 @@ defmodule Kanban.Tasks.Compliance do
   #
   # The workflow_steps schema has no `skipped` key. A skipped step is recorded
   # as `dispatched: false` with a `reason` — that is what the documented schema
-  # says, what `AgentWorkflow.validate_workflow_steps_shape/2` enforces, and
+  # says, what `AgentWorkflow.Completion.validate_workflow_steps_shape/2` enforces, and
   # what every emitting agent writes. Filtering on `skipped` therefore matched
   # nothing in real data, so this panel was silently empty rather than visibly
   # wrong. Confirmed against production: sampled task payloads carry only

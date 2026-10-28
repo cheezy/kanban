@@ -917,7 +917,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
     test "the claim and complete facts match the server" do
       workflow = developer_content(["claim-complete-workflow"])
-      agent_workflow = File.read!("lib/kanban/tasks/agent_workflow.ex")
+      completion = File.read!("lib/kanban/tasks/agent_workflow/completion.ex")
       claiming = File.read!("lib/kanban/tasks/agent_workflow/claiming.ex")
 
       assert workflow =~ "A claim lasts 60 minutes"
@@ -936,7 +936,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       for field <-
             ~w(completion_summary actual_complexity actual_files_changed time_spent_minutes) do
-        assert agent_workflow =~ ~r/validate_required\(\[[^\]]*:#{field}/,
+        assert completion =~ ~r/validate_required\(\[[^\]]*:#{field}/,
                "complete no longer requires #{field}"
 
         assert workflow =~ "`#{field}`"

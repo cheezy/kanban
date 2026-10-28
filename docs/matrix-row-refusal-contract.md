@@ -112,7 +112,7 @@ introduced by it. D188 closed the gap by mirroring `completion_summary` end to e
 | | `completion_notes` | `completion_summary` |
 |---|---|---|
 | Field on `Kanban.Tasks.Task` | yes (D188) | yes |
-| Cast in `AgentWorkflow.completion_changeset/5` | yes (D188) | yes |
+| Cast in `AgentWorkflow.Completion.completion_changeset/5` | yes (D188) | yes |
 | Classified in the API param deny-lists | yes (D188) | yes |
 | Returned by `task_json.ex` | yes (D188) | yes |
 | Rendered on the Review queue | yes (D188) | yes |

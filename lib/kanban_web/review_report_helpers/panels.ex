@@ -77,7 +77,7 @@ defmodule KanbanWeb.ReviewReportHelpers.Panels do
   The gate is deliberately NOT keyed off the column name or `needs_review`.
   Note `status` and `review_status` are independent, so an `:in_progress`
   task IS review-or-done once `review_status` is set — which is the intended
-  behaviour, not an oversight: `AgentWorkflow.move_to_doing/3` returns a
+  behaviour, not an oversight: `AgentWorkflow.Review.move_to_doing/4` returns a
   `changes_requested` or `rejected` task to Doing without clearing
   `review_status`, and its review record stays relevant across that round
   trip.

@@ -184,6 +184,34 @@ defmodule Kanban.Tasks.AgentWorkflow.CompletionTest do
     end
   end
 
+  # The facade owns the agent_name default and delegates to
+  # `AgentWorkflow.Completion` (W2360); these pin both through the public API.
+  describe "complete_task/3 — facade default and blocked status" do
+    setup :setup_board
+
+    test "arity 3 fills the agent name default", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:ok, _completed, hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params())
+
+      assert hooks != []
+      assert Enum.all?(hooks, &(&1.env["AGENT_NAME"] == "Unknown"))
+    end
+
+    test "completes a blocked task", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+      {:ok, blocked} = claimed |> Ecto.Changeset.change(status: :blocked) |> Repo.update()
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(blocked, ctx.user, valid_complete_params(), "Claude")
+
+      assert completed.column_id == ctx.review.id
+    end
+  end
+
   describe "complete_task/4 — re-completion after changes requested" do
     setup :setup_board
 

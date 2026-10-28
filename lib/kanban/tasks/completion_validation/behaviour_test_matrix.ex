@@ -12,7 +12,7 @@ defmodule Kanban.Tasks.CompletionValidation.BehaviourTestMatrix do
 
   ## Why the row rules are exactly this strict and no stricter
 
-  These failures are NOT soft. `AgentWorkflow.validate_reviewer_result_payload/2`
+  These failures are NOT soft. `AgentWorkflow.Completion.validate_reviewer_result_payload/2`
   folds every `{field, message}` into the `/complete` changeset unconditionally
   (W398), so anything flagged here is a hard completion failure in every mode.
   The required row keys therefore mirror
@@ -78,7 +78,7 @@ defmodule Kanban.Tasks.CompletionValidation.BehaviourTestMatrix do
   # untouched, matching the `security_considerations.considerations[]` precedent.
   #
   # Emitting no error is the only way to let a verdict through: these failures
-  # are NOT soft. `AgentWorkflow.validate_reviewer_result_payload/2` folds every
+  # are NOT soft. `AgentWorkflow.Completion.validate_reviewer_result_payload/2` folds every
   # `{field, message}` into the `/complete` changeset unconditionally (W398), so
   # anything flagged here is a hard completion failure in every mode — which is
   # why the required row keys mirror `BehaviourTestRow.changeset/2` exactly

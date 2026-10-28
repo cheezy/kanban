@@ -141,7 +141,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
   # `assigned_to_id` sits with the claim fields because the claim endpoint
   # writes it alongside `claimed_at`/`claim_expires_at`. `review_report` sits
   # with the completion fields because the COMPLETION changeset casts it
-  # (`AgentWorkflow.completion_changeset/5`) — despite the name, `mark_reviewed`
+  # (`AgentWorkflow.Completion.completion_changeset/5`) — despite the name, `mark_reviewed`
   # does not write it. `review_requested_at` is stamped by the completion
   # changeset too (and by a board drag into Review), never by a caller.
   @claim_and_completion_update_fields ~w(
@@ -157,8 +157,9 @@ defmodule KanbanWeb.API.TaskParamFilter do
   # verdict in the board UI review form.
   @review_verdict_update_fields ~w(review_status review_notes)
 
-  # Attribution, unlike the verdict, IS stamped by the workflow — `move_to_done`
-  # and `move_to_doing` write `reviewed_by_id`, and the board UI form writes both.
+  # Attribution, unlike the verdict, IS stamped by the workflow —
+  # `AgentWorkflow.Review`'s `move_to_done` and `move_to_doing` write
+  # `reviewed_by_id`, and the board UI form writes both.
   @review_attribution_update_fields ~w(reviewed_at reviewed_by_id)
 
   # Fields with a dedicated write endpoint of their own. Named individually
