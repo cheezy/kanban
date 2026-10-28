@@ -401,8 +401,8 @@ rolled-back change emits nothing. Every event measures `count: 1`;
 | `[:kanban, :task, :moved]` | `task_id`, `board_id`, `from_column_id`, `to_column_id` | `Kanban.Tasks.move_task/3`, to another column |
 | `[:kanban, :task, :reordered]` | `task_id`, `column_id`, `board_id` | `Kanban.Tasks.move_task/3` within one column, and `reorder_tasks/2` (no `task_id`) |
 | `[:kanban, :task, :deleted]` | `task_id`, `board_id` | `Kanban.Tasks.delete_task/1` |
-| `[:kanban, :task, :claimed]` | `task_id`, `board_id`, `user_id` | `Kanban.Tasks.AgentWorkflow.claim_next_task/5` |
-| `[:kanban, :task, :unclaimed]` | `task_id`, `board_id`, `user_id`, `has_reason` | `Kanban.Tasks.AgentWorkflow.unclaim_task/3` |
+| `[:kanban, :task, :claimed]` | `task_id`, `board_id`, `user_id` | `Kanban.Tasks.AgentWorkflow.Claiming.claim_next_task/5` |
+| `[:kanban, :task, :unclaimed]` | `task_id`, `board_id`, `user_id`, `has_reason` | `Kanban.Tasks.AgentWorkflow.Claiming.unclaim_task/3` |
 | `[:kanban, :task, :claim_expired]` | `task_id`, `board_id`, `user_id` | `Kanban.Notifications.ClaimExpiryWorker` |
 | `[:kanban, :task, :review_approved]` | `task_id`, `board_id`, `reviewer_user_id` | `Kanban.Reviews.approve_review/3` |
 | `[:kanban, :task, :review_changes_requested]` | `task_id`, `board_id`, `reviewer_user_id` | `Kanban.Reviews.request_changes_review/3` |
@@ -624,7 +624,7 @@ nothing. Every event measures `count: 1`.
 | Event | Metadata | Emitted by |
 |---|---|---|
 | `[:kanban, :task, :unblocked]` | `task_id`, `board_id` | `Kanban.Tasks.Dependencies.unblock_dependent_tasks/2`, once per dependent that is no longer blocked |
-| `[:kanban, :goal, :completed]` | `goal_id`, `board_id` | `Kanban.Tasks.AgentWorkflow` (API completion, `mark_reviewed` and approvals in the review queue), from the id `Kanban.Tasks.GoalCompletion.finalize_child/2` returns |
+| `[:kanban, :goal, :completed]` | `goal_id`, `board_id` | `Kanban.Tasks.AgentWorkflow.Completion` (API completion) and `Kanban.Tasks.AgentWorkflow.Review` (`mark_reviewed` and approvals in the review queue), from the id `Kanban.Tasks.GoalCompletion.finalize_child/2` returns |
 | `[:kanban, :goal, :promoted_to_ready]` | `goal_id`, `board_id` | `Kanban.Tasks.Goals.promote_goal_to_ready/2`; also measures `task_count` |
 | `[:kanban, :goal, :after_goal_succeeded]` | `goal_id`, `board_id`, `source` | `Kanban.Tasks.Goals.mark_after_goal_succeeded_and_promote/2`; also measures `duration_ms` for an agent report |
 | `[:kanban, :goal, :after_goal_failed]` | `goal_id`, `board_id`, `exit_code` | `Kanban.Tasks.Goals.record_after_goal_failure/2`; also measures `duration_ms` |

@@ -57,8 +57,10 @@ defmodule Kanban.Tasks.Broadcaster do
   @doc """
   Emits the webhook event for a task change (`Kanban.Webhooks.Events`)
   unless `opts[:webhook]` is `false`. Besides `broadcast_task_change/3`, the
-  callers are the direct broadcasts in `Kanban.Tasks.AgentWorkflow`, review
-  decisions in `Kanban.Reviews` and `Kanban.Tasks.BulkActions`; the changes
+  callers are the direct broadcasts in `Kanban.Tasks.AgentWorkflow.Claiming`,
+  `Kanban.Tasks.AgentWorkflow.Completion`, `Kanban.Tasks.AgentWorkflow.Review`
+  and `Kanban.Tasks.AgentWorkflow.Support`, review decisions in
+  `Kanban.Reviews` and `Kanban.Tasks.BulkActions`; the changes
   that emit nothing are listed in the `Kanban.Webhooks.Events` moduledoc.
   Call it after the change has committed. Never raises.
   """

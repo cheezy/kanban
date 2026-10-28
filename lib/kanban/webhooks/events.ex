@@ -25,12 +25,16 @@ defmodule Kanban.Webhooks.Events do
   Any other atom emits nothing.
 
   It is called only through `Kanban.Tasks.Broadcaster.emit_webhook/4`: from
-  `broadcast_task_change/3`, from the direct broadcasts in
-  `Kanban.Tasks.AgentWorkflow` (claim, unclaim, move to review, completion,
-  return to Doing), from `Kanban.Reviews` (review decisions, plus the
-  completion an approval causes) and from `Kanban.Tasks.BulkActions` (one
-  event per changed task). Each change is emitted from one of them only, so
-  it yields one event, and always after the change has committed.
+  `broadcast_task_change/3`, from the direct broadcasts in the
+  `Kanban.Tasks.AgentWorkflow` submodules (claim and unclaim in
+  `Kanban.Tasks.AgentWorkflow.Claiming`, move to review in
+  `Kanban.Tasks.AgentWorkflow.Completion`, completion in
+  `Kanban.Tasks.AgentWorkflow.Support`, return to Doing in
+  `Kanban.Tasks.AgentWorkflow.Review`), from `Kanban.Reviews` (review
+  decisions, plus the completion an approval causes) and from
+  `Kanban.Tasks.BulkActions` (one event per changed task). Each change is
+  emitted from one of them only, so it yields one event, and always after the
+  change has committed.
 
   These changes emit nothing: rows removed by a database cascade,
   dependency status flips, label changes (labels are not in the payload),

@@ -5,6 +5,12 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Internal
+
+- **Internal: `Kanban.Tasks.AgentWorkflow` split along its seams.** Claiming, completion, review and the helpers they share moved into `Kanban.Tasks.AgentWorkflow.Claiming`, `Kanban.Tasks.AgentWorkflow.Completion`, `Kanban.Tasks.AgentWorkflow.Review` and `Kanban.Tasks.AgentWorkflow.Support`, leaving `Kanban.Tasks.AgentWorkflow` as a thin facade with the same public functions. No behaviour or API change.
+
 ## [3.0.0] - 2026-10-25
 
 Stride now has **Organizations**: a paid plan for teams, with shared workspaces, org-admins, an Organization audit log, single sign-on, SCIM provisioning and security policies. Boards outside an Organization are on the new **Free** plan. This is a major version because the Free plan's limits change what a board can do once they are switched on, and because several API requests that used to succeed are now refused (see [Changed](#changed)).

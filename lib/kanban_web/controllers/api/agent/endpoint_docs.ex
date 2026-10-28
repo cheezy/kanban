@@ -14,7 +14,7 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
 
   # What PATCH /api/tasks/:id/complete rejects without (D389): the two blocking
   # hook results (TaskActions), the four fields the completion changeset
-  # requires (AgentWorkflow), and explorer_result and reviewer_result, which
+  # requires (AgentWorkflow.Completion), and explorer_result and reviewer_result, which
   # strict mode — the production default — rejects when absent.
   @complete_required_parameters [
     "after_doing_result",

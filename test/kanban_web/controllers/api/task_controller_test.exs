@@ -6114,7 +6114,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
     # W1940: the two categories the reviewer prompts have always documented but
     # the server rejected. These two tests pin BOTH enforcement paths, because
     # they are independent: CompletionResultGate is grace-flag-gated at the HTTP
-    # boundary, while AgentWorkflow.validate_reviewer_result_payload runs the
+    # boundary, while AgentWorkflow.Completion.validate_reviewer_result_payload runs the
     # same validator from the changeset with no strict opt. A test that only
     # exercised the gate would prove nothing about dev-environment behaviour.
     test "strict mode: accepts a security-category issue through /complete (W1940)",
