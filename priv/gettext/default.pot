@@ -992,7 +992,7 @@ msgid "About Tango"
 msgstr ""
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:22
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:194
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:64
 #: lib/kanban_web/controllers/page_html/tango.html.heex:22
 #: lib/kanban_web/controllers/page_html/tango.html.heex:190
 #, elixir-autogen, elixir-format
@@ -4005,7 +4005,6 @@ msgstr ""
 msgid "Structured schema, not free-text"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:176
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:148
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:169
 #, elixir-autogen, elixir-format
@@ -4225,7 +4224,6 @@ msgstr ""
 
 #: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:232
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:146
 #: lib/kanban_web/controllers/page_html/product.html.heex:221
 #: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
@@ -8843,7 +8841,6 @@ msgstr ""
 
 #: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:93
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:102
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:99
 #: lib/kanban_web/emails/announcement_email.ex:101
 #: lib/kanban_web/live/notification_live/index.ex:38
@@ -9830,7 +9827,6 @@ msgstr[1] ""
 
 #: lib/kanban_web/components/notifications_locked.ex:41
 #: lib/kanban_web/components/side_nav.ex:218
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:154
 #: lib/kanban_web/emails/announcement_email.ex:158
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
@@ -9883,7 +9879,6 @@ msgstr ""
 
 #: lib/kanban_web/components/bulk_action_bar.ex:148
 #: lib/kanban_web/components/locked_feature.ex:140
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:103
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:115
 #: lib/kanban_web/emails/announcement_email.ex:102
 #, elixir-autogen, elixir-format
@@ -10875,7 +10870,6 @@ msgid "Notifications (available to organizations)"
 msgstr ""
 
 #: lib/kanban_web/components/notifications_locked.ex:22
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:137
 #: lib/kanban_web/emails/announcement_email.ex:128
 #, elixir-autogen, elixir-format
 msgid "Tasks waiting for you are always listed in the Review queue and My Work."
@@ -12446,21 +12440,18 @@ msgstr ""
 msgid "Get Stride for your organization"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:105
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:119
 #: lib/kanban_web/emails/announcement_email.ex:103
 #, elixir-autogen, elixir-format
 msgid "Integrations (webhooks)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:110
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:127
 #: lib/kanban_web/emails/announcement_email.ex:109
 #, elixir-autogen, elixir-format
 msgid "MCP access"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:125
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:47
 #: lib/kanban_web/emails/announcement_email.ex:119
 #, elixir-autogen, elixir-format
@@ -12472,28 +12463,24 @@ msgstr ""
 msgid "Single sign-on (SSO)"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:109
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:123
 #: lib/kanban_web/emails/announcement_email.ex:108
 #, elixir-autogen, elixir-format
 msgid "Task telemetry fields"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:124
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:43
 #: lib/kanban_web/emails/announcement_email.ex:118
 #, elixir-autogen, elixir-format
 msgid "The full REST API and client-side hooks"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:123
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:31
 #: lib/kanban_web/emails/announcement_email.ex:117
 #, elixir-autogen, elixir-format
 msgid "Unlimited boards, tasks and goals"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:84
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:35
 #: lib/kanban_web/emails/announcement_email.ex:90
 #, elixir-autogen, elixir-format
@@ -12505,78 +12492,61 @@ msgstr ""
 msgid "Who counts toward the 3-person limit on a free board?"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:57
 #: lib/kanban_web/emails/announcement_email.ex:62
 #, elixir-autogen, elixir-format
 msgid "Announcing Organizations and the Free plan"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:96
 #: lib/kanban_web/emails/announcement_email.ex:98
 #, elixir-autogen, elixir-format
 msgid "Becoming Organization-only"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:86
 #: lib/kanban_web/emails/announcement_email.ex:91
 #, elixir-autogen, elixir-format
 msgid "Existing boards keep every member they already have. A board over the limit cannot add anyone until it has fewer than 3 people."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:136
 #: lib/kanban_web/emails/announcement_email.ex:127
 #, elixir-autogen, elixir-format
 msgid "Free accounts stop receiving notification emails on launch day."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:78
 #: lib/kanban_web/emails/announcement_email.ex:87
 #, elixir-autogen, elixir-format
 msgid "Free boards: up to 3 people"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:132
 #: lib/kanban_web/emails/announcement_email.ex:124
 #, elixir-autogen, elixir-format
 msgid "If you review tasks on a free board"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:69
-#, elixir-autogen, elixir-format
-msgid "Launch date: to be announced on this page."
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:163
 #: lib/kanban_web/emails/announcement_email.ex:133
 #, elixir-autogen, elixir-format
 msgid "Questions"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:117
 #: lib/kanban_web/emails/announcement_email.ex:114
 #, elixir-autogen, elixir-format
 msgid "Staying free"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:64
 #: lib/kanban_web/emails/announcement_email.ex:64
 #, elixir-autogen, elixir-format
 msgid "Stride is adding a paid Organization plan. Stride stays free for individuals and small teams, and a few features become available to organizations only."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:69
 #: lib/kanban_web/emails/announcement_email.ex:69
 #, elixir-autogen, elixir-format
 msgid "The changes below take effect on launch day."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:166
 #: lib/kanban_web/emails/announcement_email.ex:135
 #, elixir-autogen, elixir-format
 msgid "To move your team into an organization, or to ask about pricing, contact Stride."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:105
 #: lib/kanban_web/emails/announcement_email.ex:105
 #, elixir-autogen, elixir-format
 msgid "webhooks on free boards are paused, not deleted, and resume when the board moves into an organization. Events that happen while paused are not delivered later."
