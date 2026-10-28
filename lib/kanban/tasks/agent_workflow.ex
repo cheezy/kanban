@@ -4,24 +4,39 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   Handles the workflow for AI agents interacting with tasks, including
   moving tasks between columns and integrating with the hook system.
+
+  ## Module organization (W2355)
+
+  This module is the single public entry point for the agent task lifecycle.
+  It is being split into focused siblings under `Kanban.Tasks.AgentWorkflow.*`,
+  which it calls internally; callers outside the agent workflow keep calling
+  this module, never a sibling.
+
+    * `Kanban.Tasks.AgentWorkflow.Support` — the helpers shared by more than one
+      lifecycle path: `board_write_access?/2` (the live board-write check on
+      claim, unclaim, complete and review), `get_column_by_name/2` (every column
+      move), `finalize_completion/5` (the post-Done side effects shared by the
+      auto-done and approved-review paths) and `maybe_schedule_after_goal_grace/2`
+      (the after_goal grace-window scheduling on a goal's last child). One copy
+      of each, so the after_goal logic is never forked between paths (W491).
+
+  What stays here is the public API — claim, complete, review, unclaim, mark
+  done and `authorized_reviewer?/2` — and the concerns not yet extracted.
   """
 
   import Ecto.Query, warn: false
 
-  alias Kanban.AfterGoal
-  alias Kanban.Boards
   alias Kanban.ChangesetText
-  alias Kanban.Columns.Column
   alias Kanban.Hooks
   alias Kanban.Hooks.Metadata
   alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Tasks.AgentQueries
+  alias Kanban.Tasks.AgentWorkflow.Support
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ChangedFilesAudit
   alias Kanban.Tasks.CompletionNotesScan
   alias Kanban.Tasks.CompletionValidation
-  alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.GoalTelemetry
@@ -51,7 +66,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
         task_identifier \\ nil,
         agent_name \\ "Unknown"
       ) do
-    if board_write_access?(board_id, user) do
+    if Support.board_write_access?(board_id, user) do
       do_claim_next_task(agent_capabilities, user, board_id, task_identifier, agent_name)
     else
       {:error, :not_authorized}
@@ -119,7 +134,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
     case unclaim_refusal(task, user, reason) do
       nil ->
-        ready_column = get_column_by_name(task.column.board_id, "Ready")
+        ready_column = Support.get_column_by_name(task.column.board_id, "Ready")
         result = perform_unclaim_transaction(task, ready_column)
         handle_unclaim_result(result, task, user, reason)
 
@@ -139,7 +154,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       # D109: live board-write re-check (W1430 in-depth), matching claim/complete.
       # An assignee who lost :owner/:modify access (and whose token escaped
       # revocation) can no longer unclaim.
-      not board_write_access?(task.column.board_id, user) ->
+      not Support.board_write_access?(task.column.board_id, user) ->
         {:error, :not_authorized}
 
       not ChangesetText.storable?(reason) ->
@@ -215,7 +230,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       task.status not in [:in_progress, :blocked] ->
         {:error, :invalid_status}
 
-      not board_write_access?(board_id, user) ->
+      not Support.board_write_access?(board_id, user) ->
         # Catches the stale-permission case: the user is still the assignee but
         # has since been downgraded to :read_only or removed from the board.
         {:error, :not_authorized}
@@ -252,7 +267,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   end
 
   defp do_complete_task(task, user, params, board, board_id, agent_name) do
-    review_column = get_column_by_name(board_id, "Review")
+    review_column = Support.get_column_by_name(board_id, "Review")
 
     case move_to_review(task, user, params, review_column) do
       {:ok, updated_task} ->
@@ -336,7 +351,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   end
 
   defp do_mark_done(task, user, board_id) do
-    done_column = get_column_by_name(board_id, "Done")
+    done_column = Support.get_column_by_name(board_id, "Done")
 
     result =
       Repo.transaction(fn ->
@@ -360,7 +375,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
     case result do
       {:ok, :ok} ->
-        {:ok, finalize_completion(task, user, board_id, done_column)}
+        {:ok, Support.finalize_completion(task, user, board_id, done_column)}
 
       {:error, changeset} ->
         {:error, changeset}
@@ -376,55 +391,13 @@ defmodule Kanban.Tasks.AgentWorkflow do
   request-changes path, which does not route through `mark_reviewed/2` and
   would otherwise let a read-only member write review fields (D138).
   """
-  def authorized_reviewer?(board_id, user), do: board_write_access?(board_id, user)
-
-  # Live board-write authorization: the user must currently be a member of the
-  # board with at least :modify access (owners included). Read-only members and
-  # non-members cannot claim, complete, or advance tasks. This is re-checked on
-  # every claim/complete/review so a member who was downgraded to :read_only or
-  # removed from the board cannot keep progressing work with a still-valid
-  # board-bound API token (W1430).
-  defp board_write_access?(board_id, %{id: user_id}) do
-    Boards.get_user_access(board_id, user_id) in [:owner, :modify]
-  end
+  def authorized_reviewer?(board_id, user), do: Support.board_write_access?(board_id, user)
 
   # Private functions
 
-  defp get_column_by_name(board_id, name) do
-    from(c in Column, where: c.board_id == ^board_id and c.name == ^name)
-    |> Repo.one()
-  end
-
-  defp finalize_completion(task, user, board_id, _done_column, opts \\ []) do
-    updated_task = Queries.get_task_for_view!(task.id)
-
-    Goals.update_parent_goal_position_locked(updated_task)
-
-    Logger.info("Task #{task.id} completed and moved to Done by user #{user.id}")
-
-    TaskTelemetry.completed(updated_task, user.id)
-
-    Phoenix.PubSub.broadcast(
-      Kanban.PubSub,
-      "board:#{board_id}",
-      {:task_completed, updated_task}
-    )
-
-    # Also notify the board-scoped "agents:#{board_id}" topic so AgentsLive
-    # (/agents) refreshes live on completion for viewers of this board. The
-    # board-topic broadcast above stays untouched so the board LiveView contract
-    # is unchanged and the feed is not double-fired.
-    Broadcaster.broadcast_agent_event(updated_task, :task_completed, board_id)
-    Broadcaster.emit_webhook(updated_task, :task_completed, board_id, opts)
-
-    Dependencies.unblock_dependent_tasks(updated_task.identifier, board_id)
-
-    updated_task
-  end
-
   defp perform_claim(task, user, board_id, agent_name) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
-    doing_column = get_column_by_name(board_id, "Doing")
+    doing_column = Support.get_column_by_name(board_id, "Doing")
     now = DateTime.utc_now()
     expires_at = now |> DateTime.add(60 * 60, :second)
 
@@ -568,12 +541,12 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   defp auto_move_to_done(updated_task, user, board, agent_name) do
     board_id = board.id
-    done_column = get_column_by_name(board_id, "Done")
+    done_column = Support.get_column_by_name(board_id, "Done")
 
     case run_auto_done_transaction(updated_task, done_column) do
       {:ok, {last_child_tag, completed_goal_id}} ->
-        maybe_schedule_after_goal_grace(updated_task, last_child_tag)
-        final_task = finalize_completion(updated_task, user, board_id, done_column)
+        Support.maybe_schedule_after_goal_grace(updated_task, last_child_tag)
+        final_task = Support.finalize_completion(updated_task, user, board_id, done_column)
         GoalTelemetry.completed(completed_goal_id, board_id)
 
         hooks =
@@ -746,12 +719,12 @@ defmodule Kanban.Tasks.AgentWorkflow do
   defp move_to_done(task, user, board_id, opts) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
-    done_column = get_column_by_name(board_id, "Done")
+    done_column = Support.get_column_by_name(board_id, "Done")
 
     case run_move_to_done_transaction(task, user, done_column) do
       {:ok, {last_child_tag, completed_goal_id}} ->
-        maybe_schedule_after_goal_grace(task, last_child_tag)
-        updated_task = finalize_completion(task, user, board_id, done_column, opts)
+        Support.maybe_schedule_after_goal_grace(task, last_child_tag)
+        updated_task = Support.finalize_completion(task, user, board_id, done_column, opts)
         # Held back until commit when Kanban.Reviews runs this in its transaction.
         GoalTelemetry.completed(completed_goal_id, board_id)
 
@@ -764,31 +737,6 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
       {:error, changeset} ->
         {:error, changeset}
-    end
-  end
-
-  # Schedules the back-compat Oban grace job whenever this completion
-  # was the final child of its parent goal. The job's role is to
-  # promote the goal to Done after a grace window if the agent never
-  # reports after_goal (e.g., older plugin versions that don't speak
-  # the protocol). A faster agent report (via PATCH
-  # /api/tasks/:goal_id/after_goal) makes the grace job a no-op.
-  defp maybe_schedule_after_goal_grace(%Task{parent_id: nil}, _tag), do: :ok
-  defp maybe_schedule_after_goal_grace(_task, :not_last_child), do: :ok
-
-  defp maybe_schedule_after_goal_grace(%Task{parent_id: parent_id}, :last_child) do
-    case Repo.get(Task, parent_id) do
-      %Task{type: :goal} = goal ->
-        # Best-effort — a scheduling failure should not break the
-        # child completion response. The error_tracker integration will
-        # surface persistent Oban failures.
-        case AfterGoal.schedule_grace_window(goal) do
-          {:ok, _job} -> :ok
-          {:error, _reason} -> :ok
-        end
-
-      _ ->
-        :ok
     end
   end
 
@@ -818,7 +766,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   end
 
   defp move_to_doing(task, user, board_id, opts) do
-    doing_column = get_column_by_name(board_id, "Doing")
+    doing_column = Support.get_column_by_name(board_id, "Doing")
 
     result =
       Repo.transaction(fn ->
