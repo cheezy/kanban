@@ -4,9 +4,8 @@ This runbook is for operators running Stride: the site admin with shell
 access to the production release (see [Before you start](#before-you-start)).
 It takes Stride from "every goal merged with plans off" to "plans
 enforced", in order, and back again if needed. It is the operator's copy of
-the launch plan in
-[Paying Organizations design § 12](plans/PAYING-ORGANIZATIONS-DESIGN.md#12-launch-plan)
-(decision D12). Run the steps in the order written: the internal Organization
+the launch plan from the Paying Organizations design (decision D12), which
+has since been retired. Run the steps in the order written: the internal Organization
 and the board move come before the flag, so Stride's own boards never lose a
 feature.
 

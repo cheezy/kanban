@@ -14,6 +14,11 @@ defmodule Kanban.DocsIndexTest do
   `docs/` (today `docs/blog/`, local drafts) are not required: a link to a file
   that is never committed would be dead on GitHub and in CI. Links in the index
   follow `docs/doc-link-contract.md`, which the relative-link test enforces.
+
+  `@unindexed_docs` names committed docs that are deliberately left out of the
+  index for now, such as a design still under discussion. Each entry must exist
+  and must not be linked, so the list cannot go stale: delete an entry when its
+  doc is added to the index or removed.
   """
   use ExUnit.Case, async: true
 
@@ -21,6 +26,7 @@ defmodule Kanban.DocsIndexTest do
 
   @root Path.expand("../..", __DIR__)
   @index "docs/README.md"
+  @unindexed_docs ["docs/plans/TIMELINE-VIEW-DESIGN.md"]
 
   describe "the docs index" do
     test "every markdown file under docs/ is linked from docs/README.md" do
@@ -39,6 +45,18 @@ defmodule Kanban.DocsIndexTest do
       refute "README.md" in required
 
       assert_indexed(required, read(@index), @root)
+    end
+
+    test "each deliberately unindexed doc exists and is not linked" do
+      linked = DocLinks.linked_paths(@index, read(@index), @root)
+
+      for doc <- @unindexed_docs do
+        assert @root |> Path.join(doc) |> File.regular?(),
+               "#{doc} is in @unindexed_docs but does not exist; remove the entry"
+
+        refute doc in linked,
+               "#{doc} is now linked from docs/README.md; remove it from @unindexed_docs"
+      end
     end
 
     test "each doc is listed once" do
@@ -180,7 +198,7 @@ defmodule Kanban.DocsIndexTest do
     root
     |> DocLinks.markdown_files()
     |> Enum.filter(&String.starts_with?(&1, "docs/"))
-    |> Enum.reject(&(&1 == @index or ignored?(&1, prefixes)))
+    |> Enum.reject(&(&1 == @index or &1 in @unindexed_docs or ignored?(&1, prefixes)))
   end
 
   defp assert_indexed(required, markdown, root) do

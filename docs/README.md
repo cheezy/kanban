@@ -147,9 +147,7 @@ Stride plugin for the tool instead, as Multi-Agent Instructions describes.
 
 ### Plans
 
-- [Paying Organizations: Design](plans/PAYING-ORGANIZATIONS-DESIGN.md) — Design for paying Organizations and free-tier limits, written 2026-10-17.
-- [G472 Tidewave Test Script](plans/G472-TIDEWAVE-TEST-SCRIPT.md) — Manual test script for the G472 paid-feature locks on free boards.
-- [Jira Integration Plan](plans/JIRA-INTEGRATION-PLAN.md) — Architecture options for using Jira as a backend for Stride.
+- [Import from Jira: Implementation Design](plans/IMPORT-FROM-JIRA-DESIGN.md) — Design for bringing a team's existing Jira work into Stride, written 2026-10-28.
 - [Teams and Google Chat Webhooks Evaluation](plans/TEAMS-AND-GOOGLE-CHAT-WEBHOOKS-EVALUATION.md) — Research into Microsoft Teams and Google Chat webhook support.
 
 ### Ideation requirements
