@@ -48,6 +48,7 @@ nothing else.
 24. [Decisions needed](#24-decisions-needed)
 25. [Appendix A: Jira API reference](#appendix-a-jira-api-reference)
 26. [Appendix B: rich text conversion rules](#appendix-b-rich-text-conversion-rules)
+27. [Appendix C: AI-assisted rewrite of work not yet started](#appendix-c-ai-assisted-rewrite-of-work-not-yet-started)
 
 ---
 
@@ -1234,6 +1235,7 @@ recommendation.
 | 8 | Should Stride ever write to Jira? | **Only** the opt-in "moved to Stride" marker at finish, Phase 3 ([§13.6](#136-cutover-and-the-optional-moved-to-stride-marker)) |
 | 9 | How long is closed work imported by default? | **Last 90 days** to Done ([§6.2](#62-completed-and-cancelled-work)) |
 | 10 | Should the roadmap item be renamed now that Linear is out of scope? | **Yes**: *Import from Jira*, so the roadmap does not promise Linear |
+| 11 | Must in-progress and done work survive the move, or is the backlog enough? | **It must**, so the deterministic import is the base and the AI rewrite is an optional layer for not-started epics, shipped after Phase 1 ([Appendix C](#appendix-c-ai-assisted-rewrite-of-work-not-yet-started)) |
 
 ---
 
@@ -1293,3 +1295,136 @@ because that is how Stride shows it today.
 
 NUL bytes and invalid UTF-8 are removed from all converted text, because the
 database columns cannot hold them.
+
+---
+
+## Appendix C: AI-assisted rewrite of work not yet started
+
+This appendix describes a second approach, raised after the design above was
+written, and says where it fits. The concern behind it is the quality of the
+Jira issues themselves. Issues are often thin, out of date, duplicated, or
+written for people who already know the context. A faithful import carries all
+of that across, and [§9.3](#93-stride-fields-jira-does-not-fill) leaves the
+agent-facing fields empty.
+
+The second approach: export each epic's stories, tasks and sub-tasks as JSON,
+create one Stride goal per epic, and have an agent use the JSON as context with
+the `create-goals` skill to write new Stride tasks that cover all of it. A
+second pass then checks that everything in the JSON made it into a task.
+
+The recommendation is to use **both**, split by the state of the work, with the
+rewrite built on top of the import rather than in place of it.
+
+### C.1 Where each approach fits
+
+| Jira state | Approach | Why |
+|---|---|---|
+| In progress, in review | Deterministic import only | The column, the person on it and the review state must survive the move ([§13.2](#132-what-happens-to-each-kind-of-item)). A rewrite would turn work someone is doing into new, unowned tasks |
+| Done, cancelled, won't do | Deterministic import only | It is history and metrics ([§6.2](#62-completed-and-cancelled-work), [§14.4](#144-history)). There is nothing to rewrite |
+| Not started, in an epic | Import, then the AI rewrite per epic | This is where issue quality matters most, and there is no state to lose |
+| Not started, with no epic | Import, then either enrichment per task ([§9.3](#93-stride-fields-jira-does-not-fill)) or the rewrite with one goal per project or component | The rewrite needs a container to turn into a goal |
+
+The rewrite is chosen **per epic**. A team can rewrite the three epics it is
+about to start and leave the rest as imported until it reaches them.
+
+### C.2 The rewrite builds on the import
+
+1. **The import runs as designed.** Raw tasks land in Backlog with their import
+   links, unmapped data, comments and history ([§12](#12-data-that-does-not-map)).
+   Undo still works ([§13.7](#137-undo)).
+2. **The importer picks epics to rewrite** on the run page. For each epic,
+   Stride builds an **epic bundle**: one JSON document with the epic and every
+   issue under it, as normalised `Kanban.Imports.Item` values (mapped fields
+   from the task, everything else from the import link). It is the same data as
+   each task's **Download Jira data**, gathered per epic. Because the bundle is
+   built from the import links, which are permanent, it does not depend on
+   staging, which is purged after 14 days.
+3. **An agent rewrites the epic** with `create-goals`, the bundle as its
+   context, into the same board. It creates a **new** goal for the epic,
+   because tasks cannot be added to an existing goal through the API, and the
+   new tasks land in Backlog.
+4. **Every generated task records what it covers.** The agent emits a
+   coverage map with the batch: for each generated task, the Jira keys and the
+   source lines (acceptance-criteria lines, checklist items, sub-tasks) it
+   covers. Each task carries its keys in `technical_details.source_issues`, a
+   short list, not the Jira metadata [§12](#12-data-that-does-not-map) keeps out
+   of `technical_details`. As stride-ideation does with `source_spec` and
+   `source_spec_sha256`, the rewrite records the SHA-256 of the bundle it was
+   written from, so a later change in Jira can be detected.
+5. **The second pass runs** ([C.3](#c3-the-second-pass-a-coverage-report-someone-signs)).
+6. **A person signs off the epic.** Only then are the raw tasks it covers
+   archived: as `:duplicate` of the generated task when one task covers the
+   issue, else `:wontdo` with the note *Rewritten as W210, W211*. The import
+   links stay, so the **Imported from** panel and the Jira data remain one click
+   away. The original epic goal is archived the same way. Moving the new tasks
+   to Ready stays a separate human step.
+
+Building on the import keeps everything the import promises: nothing is dropped
+silently, the Jira data stays reachable, undo and re-sync keep working, and a
+rewrite can be thrown away and run again for one epic without importing again.
+For the epics a team chooses, the rewrite takes the place of [§9.3](#93-stride-fields-jira-does-not-fill)'s
+**Enrich these tasks**.
+
+### C.3 The second pass: a coverage report someone signs
+
+The second pass is not a second agent saying "looks complete". It produces a
+report per epic, and part of it is computed by code.
+
+| Check | Done by | Finds |
+|---|---|---|
+| **Every key is accounted for** | Code, from the coverage map | Jira keys in the bundle that no generated task cites, and keys the agent marked *dropped* (each needs a reason) |
+| **Every source line is accounted for** | Code, from the coverage map | Acceptance-criteria lines, checklist items and sub-tasks no task cites |
+| **Citations are real** | A reviewer agent that did not write the tasks, given the bundle and the batch | A task that cites PAY-88 but does not cover what PAY-88 asks for |
+| **Nothing is invented** | The same reviewer | Requirements, limits or behaviour in a generated task that no source issue or comment supports |
+| **Later comments are honoured** | The same reviewer | A task written from an issue's description when a later comment changed the scope |
+| **Merges and splits are visible** | Code, from the coverage map | Where several issues became one task, or one issue became several, so the reviewer sees the change in shape |
+
+The report has five lists: **Covered**, **Uncovered**, **Dropped with a
+reason**, **Unsupported claims** and **Merges and splits**. An epic cannot be
+signed off while anything is uncovered, unless the person signing marks it
+dropped. Nothing generated reaches Ready, and no raw task is archived, before
+sign-off. This is [§13.1](#131-the-principles)'s second principle applied to
+generated work.
+
+The reviewer follows the pattern of stride-ideation's requirements-reviewer:
+it reports and never edits.
+
+### C.4 Constraints and risks
+
+| Risk | Rule |
+|---|---|
+| **Restricted issues reach the agent** | The bundle is built from imported tasks only, so issues skipped under [§20](#20-security-and-privacy) are never in it. If the importer opted in to restricted issues, the rewrite page repeats the warning, because the text now also goes to the agent's model provider |
+| **Jira text goes to a model provider** | The rewrite runs in the customer's own agent against their checked-out repository, not on Stride's servers. Whatever provider that agent uses receives the bundle. The rewrite page says so, and an Organization can turn the rewrite off |
+| **Imported text tries to steer the agent** | The bundle is untrusted data, not instructions: the existing agent rule applies, and the reviewer flags any generated task that carries instructions aimed at agents |
+| **Imported text carries secrets** | The bundle export runs the same `Kanban.Tasks.CredentialShapes` scan as the preview and refuses to export an epic with a match until the issue is fixed in Jira or the field is excluded |
+| **A bad generation is hard to remove** | The API has no delete and no reparenting. The agent writes the batch JSON to a file first, as `/stridify` does, so it can be read before it is posted. A rewrite that is posted and then rejected is archived by a person in the board UI, with the goal archived as a whole |
+| **Two runs give different tasks** | The rewrite is not deterministic. The coverage report is what makes a result checkable; the bundle hash, the batch JSON and the report are kept with the run so the rewrite can be audited later |
+| **The epic is too large for one context** | The bundle is split by story into chunks. Coverage is computed across all chunks, and the result is still one goal per epic. Dependencies between epics cannot be set in one batch, so they are added afterwards, or kept from the import |
+| **Jira changes after the rewrite** | Re-sync ([§13.5](#135-re-sync-when-the-team-keeps-working-in-jira)) never edits generated tasks. A change to an issue whose raw task was archived by a rewrite is listed under **Changed after rewrite**, naming the generated tasks, and the bundle hash shows which epics' sources have moved |
+| **Two levels only** | Goals never contain goals ([§10.2](#102-hierarchy)). An epic's stories and sub-tasks all become tasks under the one goal |
+| **Cost and time** | Each epic costs a model run and a review. The rewrite is offered per epic, never as one step across the whole import |
+
+### C.5 What has to be built
+
+- **Epic bundle export** on the run page: JSON per epic, built from the import
+  links, with the credential scan.
+- **A rewrite command in the Stride plugin** that takes a bundle, runs
+  `create-goals` with it, writes the batch JSON and the coverage map, and posts
+  the batch. It is modelled on stride-ideation's `/stridify`.
+- **The coverage checker and the reviewer agent** that produce the report in
+  [C.3](#c3-the-second-pass-a-coverage-report-someone-signs).
+- **Sign-off on the run page**: the report per epic, **Sign off**, and the bulk
+  archive of the raw tasks it covers.
+
+It needs Phase 1 (the import links and the **Imported from** data) and nothing
+from Phases 2 to 4, so it can ship directly after Phase 1 ([§23](#23-phased-delivery)).
+
+### C.6 The decision this hinges on
+
+**Must in-progress and done work survive the move?** If it must, with its
+people, review state and history, the deterministic import stays the base and
+the rewrite is a layer for not-started epics, as described above. If a team
+only wants its backlog and is content to leave history in Jira, the rewrite on
+its own (export, `create-goals`, coverage report) would be enough, and Phase 1
+would shrink to the adapter, the export and the coverage report. This is
+decision 11 in [§24](#24-decisions-needed).
