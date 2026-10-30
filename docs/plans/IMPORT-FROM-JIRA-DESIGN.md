@@ -1,7 +1,7 @@
 # Import from Jira — Implementation Design
 
 **Roadmap item:** Import from other tools → *Import from Linear and Jira* ([ROADMAP](../../ROADMAP.md)). This design covers **Jira only**; Linear is out of scope.
-**Status:** Proposed design, not yet decomposed into tasks
+**Status:** Proposed design, not yet decomposed into tasks. Every decision in [§24](#24-decisions-needed) was settled on 2026-10-30
 **Date:** 2026-10-28, revised 2026-10-30 to make the epic rewrite part of the core import, and again on 2026-10-30 to move the agent side into a new plugin, `stride-import`, with a variant for every agent runtime
 
 This document describes how a team brings its existing work from Jira into
@@ -11,6 +11,10 @@ what happens to data Stride has no place for, and how work that is already in
 progress survives the move. It ends with the architecture, the database
 changes, the screens, the security rules, the tests and a phased delivery
 plan.
+
+**Import is an Organization plan feature**, and so is the rewrite. When paid
+plans are enforced, only a workspace that belongs to an Organization can start
+an import ([§19](#19-permissions-and-plans)).
 
 Every epic comes across one of two ways, chosen epic by epic. A **direct
 import** copies the issues into Stride tasks field by field. A **rewrite**
@@ -107,7 +111,7 @@ nothing else.
 - **File types Stride does not store.** The import copies Jira attachments into
   Stride's own attachments, built before this work ([Task Attachments](ATTACHMENTS-DESIGN.md)).
   A file Stride cannot store (a type outside its allow-list, over its size
-  limit, or on a free board) stays a link to Jira; see [§14.3](#143-attachments).
+  limit) stays a link to Jira; see [§14.3](#143-attachments).
 - **Creating Stride accounts.** People are matched to existing accounts or
   invited; the import never creates a user.
 - **Running a model on Stride's servers.** The rewrite runs in the team's own
@@ -157,7 +161,7 @@ the app. Each new module below names the one it follows.
 | AI-optimized boards | `Kanban.Boards.create_ai_optimized_board/3` (`ai_optimized_board: true`, the fixed Backlog, Ready, Doing, Review, Done columns) | Every board the import writes to is AI-optimized ([§7.2](#72-ai-optimized-board-or-custom-board)) |
 | Labels | `Kanban.Labels`, `Kanban.Labels.Label` (nine colour tokens, 40-character names) | Jira labels and components become board labels ([§10.6](#106-labels-and-colours)) |
 | Archiving with a reason | `Kanban.Tasks.Archiving` (`:completed`, `:duplicate`, `:wontdo`, `:deferred`, `:cancelled`) | Won't-do, cancelled and duplicate issues ([§13.2](#132-what-happens-to-each-kind-of-item)) |
-| Feature gating | `Kanban.Plans` | Member caps on free boards ([§19](#19-permissions-and-plans)) |
+| Feature gating | `Kanban.Plans`, the only module that decides paid versus free | A new `:imports` feature makes the import and the rewrite Organization-only ([§19](#19-permissions-and-plans)) |
 | Files on tasks and comments | `Kanban.Attachments`, its storage behaviour, limits, plan gate and blob tombstones ([Task Attachments](ATTACHMENTS-DESIGN.md)) | Jira attachments are copied through it ([§14.3](#143-attachments)); the rewrite's source files use the same storage and tombstones ([§6A.5](#6a5-how-a-rewrite-runs)) |
 | Agents downloading task files | The plugins' attachment download contract (`stride/docs/porting-attachments.md`: `.stride/attachments/<STEM>/`, a manifest, sha256 checks) | The import plugin downloads an epic's files the same way ([§6A.5](#6a5-how-a-rewrite-runs), [§16A.5](#16a5-the-rewrite-epic-procedure)) |
 | One plugin family across every runtime | The ideation and security-review families: a Claude Code source plugin (`stride-ideation`, `stride-security-review`) and a port per runtime, each with its own manifest, contract scripts and release | The import plugin is built the same way, as a new family with six variants ([§16A](#16a-the-agent-side-plugin-stride-import)) |
@@ -359,8 +363,8 @@ fields are empty on a direct import whatever the issue's quality. The page has
 **Rewrite all recommended** and **Import all directly** at the top.
 
 **The rewrite is always offered and always recommended.** It is preselected on
-every epic with not-started work, on every plan. No Organization, workspace,
-plan or config setting turns it off, hides this page, or changes the
+every epic with not-started work, in every import. No Organization,
+workspace, plan or config setting turns it off, hides this page, or changes the
 recommendation. A team that wants a direct import chooses it here, epic by
 epic or with **Import all directly**, and the run report records that choice.
 
@@ -460,7 +464,7 @@ names.
 - When the bundle is built, Stride copies each rewritten issue's attachments
   from Jira into attachment storage, as [§14.3](#143-attachments) does for
   directly imported tasks, with the same allow-list, magic-byte check, size
-  limit and plan gate. They are held by the rewrite (`import_rewrite_files`),
+  limit. They are held by the rewrite (`import_rewrite_files`),
   not by a task, because the task they belong to does not exist yet. A file
   that cannot be copied is listed in the bundle as a Jira link with its
   reason.
@@ -913,10 +917,10 @@ tell them apart.
 | Delivery target (goals only) | version, date | A version with a release date, or a date field on the epic, becomes a target named after it |
 | Do not import | anything | Not copied to the task, still kept as unmapped data ([§12](#12-data-that-does-not-map)) |
 
-Some fields are paid-only on a paid plan (`telemetry_event`,
-`metrics_to_track`, per `Kanban.Plans.locked_task_fields/0`). They are offered
-as targets only when the destination board will be in an Organization
-workspace.
+Some task fields are locked on free boards (`telemetry_event`,
+`metrics_to_track`, per `Kanban.Plans.locked_task_fields/0`). An import's
+destination is always in an Organization workspace when plans are enforced
+([§19](#19-permissions-and-plans)), so they are always offered as targets.
 
 ### 11.3 Section extraction
 
@@ -1161,7 +1165,7 @@ otherwise kept as a link on the import link, with the reason:
 
 | Rule | From | When it fails |
 |---|---|---|
-| The destination board can hold attachments | The attachments plan gate (`:attachments` in `Kanban.Plans`) | Every file on the board stays a link. The preview says so, with the LockedFeature prompt, before the import starts |
+| The destination board can hold attachments | The attachments plan gate (`:attachments` in `Kanban.Plans`) | Always true when plans are enforced, because an import's boards are always Organization boards ([§19](#19-permissions-and-plans)). It can fail only if the workspace leaves its Organization while files are still being copied; the rest then stay links |
 | The type is on the allow-list (PNG, JPEG, GIF, WebP, PDF, plain text, Markdown, CSV, JSON) and the first bytes agree with it | `TaskAttachment.create_changeset/3` | Link, reason *type not stored* (a `.zip`, `.docx`, `.svg`, `.mp4` and the like) or *type mismatch* |
 | At most 25 MiB | The per-file limit | Link, reason *too large* |
 | At most 20 files on the task | The per-task limit | The oldest 20 are copied; the rest stay links, reason *too many files* |
@@ -1291,11 +1295,12 @@ history should not claim the importer wrote work they did not write.
 
 ### 15.3 Free-board member cap
 
-On a free board, with plans enforced, a board holds at most three human
-members (`Kanban.Plans.free_board_member_cap/0`). The preview shows how many
-people would be added; beyond the cap the rest are left as unassigned
-references, listed in the report, and the preview explains that an
-Organization workspace has no cap ([§19](#19-permissions-and-plans)).
+Does not apply to imports. On a free board, with plans enforced, a board holds
+at most three human members (`Kanban.Plans.free_board_member_cap/0`), but an
+import's boards are always in an Organization workspace when plans are
+enforced, and an Organization workspace has no cap ([§19](#19-permissions-and-plans)).
+While plans are not enforced there is no cap either. The preview still shows
+how many people each board will gain.
 
 ---
 
@@ -1493,10 +1498,14 @@ list until the last chunk commits. That fallback is listed under
 
 ### 16.6 The rewrite API
 
-Three endpoints, for the agent running the rewrite. Both take the usual Bearer
-token, which must reach the destination board (a board token for that board,
-or a workspace token for its workspace), and both refuse a rewrite whose run
-is not `imported`.
+Three endpoints, for the agent running the rewrite. All three take the usual
+Bearer token, which must reach the destination board (a board token for that
+board, or a workspace token for its workspace), and all three refuse a rewrite
+whose run is not `imported`. With plans enforced, all three first check the
+destination board against the `:imports` plan feature and return
+`403 plan_required` when it is not in an Organization workspace
+([§19](#19-permissions-and-plans)), before any lookup, as the attachment
+download does.
 
 | Endpoint | What it does |
 |---|---|
@@ -1655,7 +1664,8 @@ Arguments: one or more rewrite ids, as the run page lists them. Options:
 2. **Fetch the bundle** (`GET /api/import_rewrites/:id/bundle`). Hash the
    bundle body and compare it with the returned SHA-256; stop on a mismatch.
    A `404` or a run that is not `imported` stops this id and moves to the
-   next. A send-back note in the response goes to the drafter.
+   next. A `403 plan_required` stops this id with one line saying the
+   destination workspace is no longer in an Organization. A send-back note in the response goes to the drafter.
 3. **Download the source files** into `.stride/attachments/rewrite-<id>/`,
    under the attachment download contract: a manifest, the same caps, a
    sha256 check on every file, uniform handling of `404`s, and `Retry-After`
@@ -1919,7 +1929,7 @@ through gettext in all locales. Every page follows the
 
 | Page | What is on it |
 |---|---|
-| **Imports** `/imports` | Runs in this workspace: Jira site, scope summary, status, boards, who ran it, when. **New import** |
+| **Imports** `/imports` | Runs in this workspace: Jira site, scope summary, status, boards, who ran it, when. **New import**. In a workspace outside an Organization, with plans enforced, the LockedFeature prompt for *Import* instead, and the sidebar entry shows the lock |
 | **Connect** `/imports/new` | Site URL, email, API token, a short "where to create an API token" help with a link to Atlassian's page, **Test connection**, the result. Or pick a connection already saved in this workspace |
 | **Scope** `/imports/:id/scope` | [§6](#6-choosing-what-to-import): projects or boards with counts, epics with counts, filters, the JQL box, closed-work choice, running total, limit warnings, restricted-issue count and opt-in. **Fetch** |
 | **Fetching** (on `/imports/:id`) | Progress bar by phase (issues, comments, changelog), live; **Cancel** |
@@ -1936,8 +1946,8 @@ through gettext in all locales. Every page follows the
 
 | Action | Who |
 |---|---|
-| Start an import into a personal workspace | The workspace's owner |
 | Start an import into an Organization workspace | Org-admins, and workspace owners of that workspace |
+| Start an import into a personal workspace | Nobody when plans are enforced. While they are not, the workspace's owner, as for every paid feature |
 | See a run, its report and its unmapped data | The run's creator, the Organization's org-admins, and owners of the boards it created |
 | Use a stored connection | Its creator and the Organization's org-admins |
 | Re-sync, finish, undo | The run's creator and the Organization's org-admins |
@@ -1949,15 +1959,40 @@ Org-admins and workspace owners are the roles that can decide who gets access
 to boards. An import adds people to boards and attributes work to them, so
 plain workspace members cannot start one.
 
-**Plans.** Import is available on every plan: it is how a team arrives, and
-gating it would block the move before the team has seen Stride. The existing
-plan rules still apply to what the import creates: the free-board member cap
-([§15.3](#153-free-board-member-cap)) and paid-only task fields
-([§11.2](#112-what-a-field-can-be-mapped-to)). Attachments are an Organization
-plan feature, so on a free board, with plans enforced, files are not copied and
-stay links to Jira ([§14.3](#143-attachments)); a rewrite on such a board gets
-no source files. Whether re-sync and mapping presets should be
-Organization-only is listed under [§24](#24-decisions-needed).
+**Plans.** Import, and with it the rewrite, re-sync, mapping presets and
+everything else in this design, is an **Organization plan feature**
+([§24](#24-decisions-needed), decisions 3 and 13).
+
+- **The feature.** `:imports` is added to `Kanban.Plans` `@features`, with a
+  `parse_feature("imports")` clause, a translated *Import* label in
+  `KanbanWeb.LockedFeature`, and a row in the "What a free board cannot do"
+  table in [Organizations and Workspaces](../organizations.md#what-a-free-board-cannot-do).
+- **What is checked.** An import has no board until it writes one, so the
+  check is on the **destination workspace**: it is paid when it belongs to an
+  Organization (`workspaces.organization_id` is set), the same rule
+  `Kanban.Plans` uses for boards. This needs a `Kanban.Plans.check_workspace/3`
+  beside `check_board/3`, so `Kanban.Plans` stays the only place that decides
+  paid versus free. Who is asking does not matter: an Organization member's
+  personal workspace is free.
+- **Where it is checked.** Every `Kanban.Imports` function that starts or
+  advances a run (create, fetch, import, re-sync, choosing paths, sign-off),
+  every LiveView event on the import pages, and all three rewrite API endpoints
+  ([§16.6](#166-the-rewrite-api)), which check the destination board with
+  `check_board/3` and surface `:rest`. A refusal is `{:error, {:plan_required, :imports}}`
+  and emits the existing `[:kanban, :plan, :feature_refused]` event.
+- **While plans are not enforced**, the check passes everywhere, as for every
+  other paid feature, so imports work in any workspace until launch.
+- **A workspace that leaves its Organization** during a run: the run's boards
+  become free boards. Re-sync, rewrites and sign-off are refused with the
+  LockedFeature prompt; **Finish migration**, **Undo import** and
+  **Delete stored credential** stay available, so the team can close or
+  remove what it brought.
+
+Because every destination is an Organization board when plans are enforced,
+the free-board rules never reach an import: no member cap
+([§15.3](#153-free-board-member-cap)), no locked task fields
+([§11.2](#112-what-a-field-can-be-mapped-to)), and attachments are always
+copied where their own limits allow ([§14.3](#143-attachments)).
 
 ---
 
@@ -2044,13 +2079,14 @@ Kept as `import_runs.report` and downloadable as JSON and CSV:
 | Undo | Boards created by the run deleted; nothing else touched; copied attachments' blobs queued for deletion | DataCase |
 | Attachments | Each rule of [§14.3](#143-attachments): plan gate, allow-list, magic bytes, size, the 20-file limit, quota; a body larger than Jira reported; `redirect=false` and `UrlGuard` on every download; uploader from people matching; comment matching by file name; a retried job copies nothing twice; a failed file leaves a link | DataCase with `Req.Test` Jira stubs and the local storage adapter in `tmp/test_attachments` |
 | Rewrite files | Copied into `import_rewrite_files` with the same rules; the eight-key bundle entries; the file download endpoint's headers, 404s and rate limit; copied onto every task the draft names at sign-off; blobs tombstoned after copy, at finish and on undo | DataCase, ConnCase |
-| Rewrite recommendation | Each row of [§6A.2](#6a2-the-choice-and-the-recommendation) and [§6A.3](#6a3-epics-already-in-progress), each quality signal, the rewrite preselected for every epic with not-started work on every plan | Unit tests on `Rewrite.Recommend` with hand-built items |
+| Rewrite recommendation | Each row of [§6A.2](#6a2-the-choice-and-the-recommendation) and [§6A.3](#6a3-epics-already-in-progress), each quality signal, the rewrite preselected for every epic with not-started work | Unit tests on `Rewrite.Recommend` with hand-built items |
 | Bundle | Rewritten and context-only items, restricted and credential-shaped issues held out, the 64 KB cap, a stable hash | Unit tests on `Rewrite.Bundle` |
 | Draft and coverage | A valid draft, an invalid task, an uncovered key, an uncovered line, a dropped key without a reason, a merge and a split, a stale hash, a draft after sign-off | Unit tests on `Rewrite.Draft` and `Rewrite.Coverage`; controller tests for the `409`s |
 | Sign-off writer | One transaction; tasks under a new goal, and under the existing goal of a split epic; dependencies from the draft and from Jira links; source links; no broadcast or notification; a double sign-off writes once; sign-off refused while anything is uncovered | DataCase, `refute_enqueued` |
 | Rewrite API | Token reach (board, workspace, another board), run state, size cap | `KanbanWeb.ConnCase` |
 | People | Email match, case, hidden email, disabled user, user outside the Organization, app accounts, member cap | Mirrors the workspace importer's user tests |
 | Security | URL guard on every Jira request, token never in logs or job args or the report, restricted issues and comments skipped | `ExUnit.CaptureLog` scans, Oban job arg assertions |
+| Plan gate | `:imports` refused in a workspace outside an Organization with plans enforced, allowed with them off; refused on every run-advancing function, LiveView event and rewrite endpoint; `feature_refused` emitted; a workspace that leaves its Organization mid-run keeps Finish, Undo and credential deletion | DataCase and ConnCase with `:plans_enforced` set per test |
 | LiveViews | Each wizard page, permissions per role, translations rendered | `Phoenix.LiveViewTest`; locale tests with the session set |
 | Dark mode | Every new page and the task panel | `mix dark_mode.scan` and the contrast check (run by `mix precommit`) |
 | End to end | A real Jira Cloud site made for the purpose, with epics, sub-tasks, custom fields, a security level and restricted comments, imported into the dev app, with one epic rewritten, one split epic and one imported directly | Manual / exploratory, Phase 1 and Phase 2 exit |
@@ -2076,14 +2112,15 @@ Each phase ships on its own and is useful on its own.
 
 ## 24. Decisions needed
 
-These are choices this design does not make on its own. Each has a
-recommendation.
+These were the choices the design could not make on its own. All of them were
+settled on 2026-10-30: decisions 3 and 13 were changed to Organization-only,
+and every other recommendation was accepted as written.
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 |---|---|---|
 | 1 | Where should To Do work land: Backlog or Ready? | **Backlog**, with an opt-in for Ready ([§10.3](#103-status-to-column)). It is the only default that cannot hand an agent a context-free task |
 | 2 | Should the import offer custom boards as well as AI-optimized ones? | **No**: AI-optimized boards only ([§7.2](#72-ai-optimized-board-or-custom-board)). The fixed five columns are what agents and the rewrite rely on, and they remove the column-stage guessing a custom layout would need. An explicit stage per column is no longer needed for imports |
-| 3 | Is import available on every plan? | **Yes**, with existing caps. Re-sync and presets could be Organization-only; recommend deciding after Phase 1 usage data |
+| 3 | Is import available on every plan? | **No: Organization only.** Import, re-sync and mapping presets are the `:imports` plan feature; when plans are enforced only a workspace in an Organization can start an import ([§19](#19-permissions-and-plans)) |
 | 4 | Where does unmapped data live? | **On the import link**, shown in a collapsed panel ([§12](#12-data-that-does-not-map)), not in the description or `technical_details` |
 | 5 | Should stories with sub-tasks become goals? | **No by default** (flatten under the epic), with the option on the mapping page ([§10.2](#102-hierarchy)) |
 | 6 | One transaction per board, or chunked writes with a hidden board? | **One transaction**, measured in Phase 1; chunked only if measurement demands it ([§16.5](#165-long-transactions)) |
@@ -2093,7 +2130,7 @@ recommendation.
 | 10 | Should the roadmap item be renamed now that Linear is out of scope? | **Yes**: *Import from Jira*, so the roadmap does not promise Linear |
 | 11 | Should Stride recommend the rewrite for not-started work, or the direct import? | **The rewrite**, always, for every epic with not-started work, including the not-started part of an epic in progress ([§6A.2](#6a2-the-choice-and-the-recommendation)). There is no setting to turn it off. The direct import stays a per-epic choice on the page and is always used for started and done work |
 | 12 | Where does the rewrite's model run: in the team's agent, or on Stride's servers? | **In the team's agent** ([§6A.5](#6a5-how-a-rewrite-runs)). It has the repository the agent-facing fields need, and Stride never holds a model provider's credentials or decides where Jira text is sent |
-| 13 | Should the rewrite be on every plan? | **Yes**, like the import. It costs Stride nothing to run, since the model runs in the team's agent |
+| 13 | Should the rewrite be on every plan? | **No: Organization only**, under the same `:imports` feature as the import ([§19](#19-permissions-and-plans)). The rewrite API endpoints check it too, so a board that has left its Organization cannot be rewritten into |
 | 14 | Should rewritten tasks inherit assignees from Jira? | **No**: written unassigned, with the Jira assignees on the sign-off page to assign by hand ([§6A.7](#6a7-sign-off)). One task often covers issues held by different people |
 | 15 | Should attachments be copied, or only linked? | **Copied** by default, where the board's plan allows it ([§14.3](#143-attachments)), with **Link to Jira only** as the choice. A link needs a Jira login, and stops working when the team leaves Jira |
 | 16 | Should files Stride cannot store (archives, office documents, video) be converted or bundled? | **No**: they stay links, listed by reason. Widening the allow-list is a change to [Task Attachments](ATTACHMENTS-DESIGN.md), not to the import |
