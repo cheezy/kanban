@@ -2,7 +2,7 @@
 
 **Roadmap item:** Import from other tools → *Import from Linear and Jira* ([ROADMAP](../../ROADMAP.md)). This design covers **Jira only**; Linear is out of scope.
 **Status:** Proposed design, not yet decomposed into tasks
-**Date:** 2026-10-28, revised 2026-10-30 to make the epic rewrite part of the core import
+**Date:** 2026-10-28, revised 2026-10-30 to make the epic rewrite part of the core import, and again on 2026-10-30 to move the agent side into a new plugin, `stride-import`, with a variant for every agent runtime
 
 This document describes how a team brings its existing work from Jira into
 Stride: how Stride connects to Jira, how the team chooses what to bring
@@ -21,6 +21,11 @@ or written for people who already know the context, so Stride recommends the
 rewrite for all work that has not started. Work that has started, and work
 that is done, is always imported directly. [§6A](#6a-rewrite-or-import-epic-by-epic)
 describes the choice and the rewrite.
+
+The agent side of the rewrite is a new plugin, **`stride-import`**, separate
+from the Stride workflow plugin. It ships in a variant for every agent runtime
+Stride supports: Claude Code, Codex CLI, GitHub Copilot CLI, Gemini CLI,
+OpenCode and Pi. [§16A](#16a-the-agent-side-plugin-stride-import) describes it.
 
 It is a one-way import. Keeping Stride and Jira in step afterwards is a
 different feature, covered by the earlier *Jira as a Backend for Stride* plan.
@@ -49,6 +54,7 @@ nothing else.
 14. [Text, comments, attachments, history and dates](#14-text-comments-attachments-history-and-dates)
 15. [People and board membership](#15-people-and-board-membership)
 16. [Architecture](#16-architecture)
+   - [16A. The agent-side plugin: stride-import](#16a-the-agent-side-plugin-stride-import)
 17. [Database changes](#17-database-changes)
 18. [Screens](#18-screens)
 19. [Permissions and plans](#19-permissions-and-plans)
@@ -128,6 +134,8 @@ nothing else.
 | **Draft** | The tasks an agent proposes for one epic, with its coverage map. Stored on the run, not on the board, until it is signed off |
 | **Coverage map** | For each task in a draft, the Jira keys and the source lines it covers |
 | **Source link** | The permanent record joining a rewritten task to the Jira issues it was written from |
+| **Import plugin** | `stride-import` and its runtime variants: the agent-side plugin that fetches a bundle, drafts the tasks, reviews them and submits the draft ([§16A](#16a-the-agent-side-plugin-stride-import)) |
+| **Variant** | One build of the import plugin for one agent runtime, such as `stride-copilot-import` for GitHub Copilot CLI |
 
 ---
 
@@ -151,11 +159,12 @@ the app. Each new module below names the one it follows.
 | Archiving with a reason | `Kanban.Tasks.Archiving` (`:completed`, `:duplicate`, `:wontdo`, `:deferred`, `:cancelled`) | Won't-do, cancelled and duplicate issues ([§13.2](#132-what-happens-to-each-kind-of-item)) |
 | Feature gating | `Kanban.Plans` | Member caps on free boards ([§19](#19-permissions-and-plans)) |
 | Files on tasks and comments | `Kanban.Attachments`, its storage behaviour, limits, plan gate and blob tombstones ([Task Attachments](ATTACHMENTS-DESIGN.md)) | Jira attachments are copied through it ([§14.3](#143-attachments)); the rewrite's source files use the same storage and tombstones ([§6A.5](#6a5-how-a-rewrite-runs)) |
-| Agents downloading task files | The plugins' attachment download contract (`stride/docs/porting-attachments.md`: `.stride/attachments/<STEM>/`, a manifest, sha256 checks) | The rewrite command downloads an epic's files the same way ([§6A.5](#6a5-how-a-rewrite-runs)) |
+| Agents downloading task files | The plugins' attachment download contract (`stride/docs/porting-attachments.md`: `.stride/attachments/<STEM>/`, a manifest, sha256 checks) | The import plugin downloads an epic's files the same way ([§6A.5](#6a5-how-a-rewrite-runs), [§16A.5](#16a5-the-rewrite-epic-procedure)) |
+| One plugin family across every runtime | The ideation and security-review families: a Claude Code source plugin (`stride-ideation`, `stride-security-review`) and a port per runtime, each with its own manifest, contract scripts and release | The import plugin is built the same way, as a new family with six variants ([§16A](#16a-the-agent-side-plugin-stride-import)) |
 | Credential detection | `Kanban.Tasks.CredentialShapes` | Warns when imported text looks like it carries a secret ([§20](#20-security-and-privacy)) |
 | Telemetry | `Kanban.Telemetry.emit/3`, `Kanban.Telemetry.Catalog` ([Telemetry](../telemetry.md)) | New `import` events ([§21](#21-telemetry-audit-log-and-the-import-report)) |
-| Agents writing goals and tasks | The batch shape of [`POST /api/tasks/batch`](../api/post_tasks_batch.md) and the Stride plugin's `create-goals` skill | A rewrite draft uses the same goal and task shape, so the agent writes it with the skill it already has ([§6A.5](#6a5-how-a-rewrite-runs)) |
-| Writing tasks from a source document, with a review pass | stride-ideation's `/stridify` (stamps `source_spec` and `source_spec_sha256`) and its requirements-reviewer agent | The rewrite records the hash of the bundle it was written from, and its reviewer reports without editing ([§6A.6](#6a6-the-second-pass-a-coverage-report)) |
+| Agents writing goals and tasks | The batch shape of [`POST /api/tasks/batch`](../api/post_tasks_batch.md) and the field rules of the Stride plugin's `create-goals` skill | A rewrite draft uses the same goal and task shape. The import plugin carries a pinned copy of those field rules, so it does not depend on which Stride plugin, full or lite, is installed ([§16A.4](#16a4-what-each-variant-contains)) |
+| Writing tasks from a source document, with a review pass | stride-ideation's `/stridify` (stamps `source_spec` and `source_spec_sha256`) and its requirements-decomposer and requirements-reviewer agents | The rewrite records the hash of the bundle it was written from. The import plugin's drafter and coverage-reviewer agents follow the decomposer and reviewer: the reviewer reports without editing ([§6A.6](#6a6-the-second-pass-a-coverage-report), [§16A.6](#16a6-the-agents)) |
 
 ---
 
@@ -402,27 +411,34 @@ code. Stride prepares the input, checks the output and writes the tasks.
    epic and every issue being rewritten as normalised `Kanban.Imports.Item`
    values ([§8](#8-the-common-item-model)), with the mapped values (priority,
    labels, complexity) alongside as hints, and the context-only issues of a
-   split epic. Restricted issues and comments skipped under
+   split epic. Each acceptance-criteria line, checklist item and sub-task in
+   it gets a short id (`ac:2`, `checklist:1`, `subtask:PAY-93`), which the
+   coverage map cites ([§16A.4](#16a4-what-each-variant-contains)).
+   Restricted issues and comments skipped under
    [§20](#20-security-and-privacy) are never in it. The bundle is stored on
    `import_rewrites` with its SHA-256, so it does not depend on staging, which
    is purged after 14 days. The bundle lists each issue's attachments as
    metadata, and the files themselves are copied into Stride as **source
    files** (below).
 2. **The importer starts the rewrite** from the run page. The page shows the
-   command to run in the agent, for example `/stride:rewrite-epic <rewrite id>`,
-   for one epic or for every pending one. The agent needs a token that can
-   reach the destination board.
+   command to run in the agent, for one epic or for every pending one, in the
+   form the importer's runtime uses: `/stride-import:rewrite-epic 41 42` in
+   Claude Code, for example, or the `stride-import-rewrite-epic` skill in Codex
+   CLI ([§16A.3](#16a3-the-variants)). The agent needs the import plugin
+   installed and a token that can reach the destination board.
 3. **The agent fetches the bundle**
-   (`GET /api/import_rewrites/:id/bundle`) and writes the epic's goal and tasks
-   with the `create-goals` skill, using the bundle and its source files as its
-   context. The output is the same goal-and-tasks shape as
-   [`POST /api/tasks/batch`](../api/post_tasks_batch.md), so every field rule
-   that skill enforces applies. Beside it, the agent writes
-   a **coverage map**: for each task, the Jira keys and the source lines
-   (acceptance-criteria lines, checklist items, sub-tasks) and the source files
-   it covers; for each key or file it chose not to cover, a reason.
-4. **An independent reviewer agent** reads the bundle and the draft and
-   reports, without editing, what it finds ([§6A.6](#6a6-the-second-pass-a-coverage-report)).
+   (`GET /api/import_rewrites/:id/bundle`) and the import plugin's drafter
+   agent writes the epic's goal and tasks, using the bundle and its source
+   files as its context and the team's repository for the agent-facing fields.
+   The output is the same goal-and-tasks shape as
+   [`POST /api/tasks/batch`](../api/post_tasks_batch.md), and the plugin
+   applies the same field rules as the `create-goals` skill. Beside it, the
+   agent writes a **coverage map**: for each task, the Jira keys and the source
+   lines (acceptance-criteria lines, checklist items, sub-tasks) and the source
+   files it covers; for each key or file it chose not to cover, a reason.
+4. **The plugin's coverage-reviewer agent**, which did not write the draft,
+   reads the bundle and the draft and reports, without editing, what it finds
+   ([§6A.6](#6a6-the-second-pass-a-coverage-report)).
 5. **The agent submits the draft** (`POST /api/import_rewrites/:id/draft`),
    with the coverage map, the reviewer's findings and the bundle hash it worked
    from. The draft is written to the batch file first, as `/stridify` does, so
@@ -454,7 +470,7 @@ names.
   Stride comment exists yet), plus the Jira key it came from. The
   `download_url` is `/api/import_rewrites/<id>/files/<file id>`
   ([§16.6](#166-the-rewrite-api)).
-- The `rewrite-epic` command downloads them exactly as the plugins download a
+- The import plugin downloads them exactly as the Stride plugins download a
   claimed task's files (`stride/docs/porting-attachments.md`): into
   `.stride/attachments/rewrite-<id>/`, with a manifest, the same caps, a sha256
   check on every file, and the token never on a command line. It hands the
@@ -1342,10 +1358,15 @@ lib/kanban_web/components/import_components.ex
 lib/kanban_web/live/task_live/imported_from_component.ex   The "Imported from" and "Written from" panels (§12)
 ```
 
-The agent side lives in the Stride plugin, not in this repository: a
-`rewrite-epic` command that fetches the bundle, writes the draft with the
-`create-goals` skill, dispatches the reviewer agent and submits the result
-([§6A.5](#6a5-how-a-rewrite-runs)).
+One more module, `lib/kanban/imports/agent_commands.ex`, holds the command
+text the run page shows for each runtime ([§16A.3](#16a3-the-variants)), so
+the page and the plugins' READMEs are kept in step in one place.
+
+The agent side is not in this repository. It is the `stride-import` plugin
+family, with a variant for every agent runtime: a `rewrite-epic` entry point
+that fetches the bundle, downloads the source files, dispatches the drafter
+and coverage-reviewer agents and submits the result
+([§16A](#16a-the-agent-side-plugin-stride-import)).
 
 `Kanban.Imports` is the only module LiveViews call (project rule: no queries in
 LiveViews). Every public function takes `current_scope` first.
@@ -1481,11 +1502,245 @@ is not `imported`.
 |---|---|
 | `GET /api/import_rewrites/:id/bundle` | Returns the bundle, its SHA-256, the destination board, the goal of a split epic and any note from **Send back** |
 | `GET /api/import_rewrites/:id/files/:file_id` | Streams one source file, with the same headers, uniform 404s, plan check and per-token rate limit as the task attachment download (`GET /api/tasks/:id/attachments/:attachment_id`), so the plugins' download code works unchanged |
-| `POST /api/import_rewrites/:id/draft` | Takes the goal and tasks in the [`POST /api/tasks/batch`](../api/post_tasks_batch.md) shape, the coverage map, the reviewer's findings, the bundle hash and the agent name. Validates without writing, returns the coverage report, and moves the rewrite to `drafted`. Refused with `409` if the hash is not the current bundle's, or the rewrite is signed off |
+| `POST /api/import_rewrites/:id/draft` | Takes the goal and tasks in the [`POST /api/tasks/batch`](../api/post_tasks_batch.md) shape, the coverage map, the reviewer's findings, the bundle hash, the agent name and the plugin variant and version that drafted it (`stride-copilot-import 0.1.0`). Validates without writing, returns the coverage report, and moves the rewrite to `drafted`. Refused with `409` if the hash is not the current bundle's, or the rewrite is signed off |
 
 Sign-off is a person's action in the app and has no API endpoint, so an agent
 can draft but never write a rewrite to the board. Each endpoint gets an API
 reference page under `docs/api/` when they are built.
+
+---
+
+## 16A. The agent-side plugin: stride-import
+
+### 16A.1 Why a new plugin
+
+The rewrite needs an agent-side procedure: fetch a bundle, download its files,
+draft a goal and tasks against the team's repository, review the draft, and
+submit it. That procedure goes in a new plugin family, `stride-import`, and
+not in the Stride workflow plugin, for five reasons:
+
+- **A team uses it once.** The rewrite runs while a team moves off Jira and
+  then is never needed again. The Stride workflow plugin is loaded in every
+  session, and its size is measured and kept down because every task pays
+  for it. An import procedure, two agents and a field-rule reference would
+  cost every session for a feature most sessions never use.
+- **It reads untrusted input that the workflow plugin never sees.** Jira text
+  and files written by people outside the team reach the agent. Keeping that
+  procedure in its own plugin keeps its rules, tests and security review in
+  one place, and a team that does not import never installs it.
+- **It does not claim tasks.** The rewrite has no claim, no hooks, no
+  `after_doing` gate and no completion. It must not set off the workflow
+  plugin's orchestrator marker, its Stop gate or its sub-skill gate, and in
+  its own plugin it cannot.
+- **It works next to any Stride plugin.** A team may run the full workflow
+  plugin, a lite one (`stride-lite`, `stride-copilot-lite`,
+  `stride-opencode-lite`) or neither. The import plugin needs only the API URL
+  and token in `.stride_auth.md`.
+- **It is released on its own.** The drafter and reviewer rules will change
+  as Phase 1's hand checks find missed requirements ([§22](#22-testing-strategy)).
+  Those changes ship without a workflow plugin release.
+
+### 16A.2 What it does and does not do
+
+| It does | It does not |
+|---|---|
+| Fetch a bundle and check its SHA-256 | Call Jira. Every Jira call is Stride's, on the server |
+| Download source files under the attachment download contract | Run, unpack or follow a link in any file |
+| Draft one goal and its tasks per epic, with a coverage map | Write anything to a board. There is no sign-off endpoint ([§16.6](#166-the-rewrite-api)) |
+| Dispatch an independent coverage review | Edit the draft from the review. The findings go to the person signing |
+| Submit the draft, and print the coverage report Stride returns | Claim, complete or enrich tasks, or run Stride hooks |
+| Write the draft to a local file first | Commit the draft file, or anything else, to the team's repository |
+
+### 16A.3 The variants
+
+**Every agent runtime Stride supports gets a variant, and all six are part of
+Phase 1** ([§23](#23-phased-delivery)). A team cannot pick its agent around
+the import, and the run page offers the rewrite to every team, so a runtime
+without a variant would leave its teams only the direct import that Stride
+advises against for not-started work.
+
+`stride-import` (Claude Code) is the source. The other five are ports of it,
+built the way the ideation and security-review families are: each follows the
+source's procedure and agent rules, uses its runtime's own file layout,
+manifest and tool names, and carries a contract script that fails when it
+drifts from the source.
+
+| Variant | Runtime | Manifest | Entry point | Agents | Distribution |
+|---|---|---|---|---|---|
+| `stride-import` | Claude Code | `.claude-plugin/plugin.json` | `/stride-import:rewrite-epic` command | `agents/*.md` | `stride-marketplace` catalog |
+| `stride-codex-import` | Codex CLI | `.codex-plugin/plugin.json`, with `AGENTS.md` | `stride-import-rewrite-epic` skill | `agents/*.md` | `stride-codex-marketplace`, vendored |
+| `stride-copilot-import` | GitHub Copilot CLI | `plugin.json` at the repository root | `stride-import-rewrite-epic` skill | `agents/*.agent.md` | `stride-copilot-marketplace`, vendored |
+| `stride-gemini-import` | Gemini CLI | `gemini-extension.json`, with `GEMINI.md` | `/rewrite-epic` command (`commands/rewrite-epic.toml`) | `agents/*.md` | `stride-gemini-marketplace` catalog |
+| `stride-opencode-import` | OpenCode | None: the version is in the CHANGELOG, with `AGENTS.md` | `/rewrite-epic` command | `agents/*.md` | Its own repository, through `install.sh` and `install.ps1` |
+| `stride-pi-import` | Pi | `package.json` | `stride-import-rewrite-epic` skill | Agent files that the `stride-pi` subagent-dispatch extension loads, with an inline fallback ([§16A.6](#16a6-the-agents)) | Its own repository, through `install.sh` |
+
+**The lite variants do not get their own.** `stride-lite`,
+`stride-copilot-lite` and `stride-opencode-lite` are lighter builds of the
+workflow plugin. The import plugin does not depend on the workflow plugin, so
+each runtime's one import variant works next to its full or its lite workflow
+plugin.
+
+The run page shows the command for each runtime, with a runtime picker that is
+remembered per user. Its text comes from `Kanban.Imports.AgentCommands`
+([§16.1](#161-modules)); a test compares that table with each variant's
+README, so a renamed entry point fails in this repository's tests.
+
+### 16A.4 What each variant contains
+
+The Claude Code source's layout. Each port has the same parts in its
+runtime's layout (the table above).
+
+```text
+stride-import/
+  .claude-plugin/plugin.json
+  commands/rewrite-epic.md            Entry point: arguments, then hands off to the skill
+  skills/rewrite-epic/SKILL.md        The procedure (§16A.5)
+  skills/rewrite-epic/draft-contract.md
+                                      The goal and task field rules, pinned from the
+                                      create-goals skill, and the coverage map schema
+  agents/rewrite-drafter.md           Writes the goal, tasks and coverage map for one chunk
+  agents/coverage-reviewer.md         Reports on a draft; read-only, never edits
+  lib/download-files.sh               Source file download (attachment contract)
+  lib/download-files.ps1              The same, for Windows
+  lib/check-draft.sh                  Local shape check of a draft before it is sent
+  fixtures/                           Bundles and expected coverage, for the checks below
+  scripts/check_contract.sh           Pins the procedure's rules (as the security-review
+                                      ports' check_agent_contract.sh does)
+  scripts/check_draft_contract.sh     Fails when draft-contract.md drifts from create-goals
+  scripts/test-all.sh                 Runs every check
+  README.md  CHANGELOG.md  SECURITY.md  LICENSE
+```
+
+**The field rules are pinned, not borrowed.** The drafter needs the
+`create-goals` field rules: the `"goals"` root key, index dependencies, the
+five fields the review queue scores, `verification_steps` as objects, and the
+seven-category `behaviour_test_matrix`. It cannot rely on the workflow
+plugin's skill. A lite plugin may not carry it, the skill's gate refuses a
+call from outside the workflow orchestrator, and its name differs by runtime.
+So each variant carries `draft-contract.md`, a copy of those rules with the
+source commit it was taken from. `check_draft_contract.sh` fails when the
+source has moved on. The server applies the same rules again when the draft
+arrives ([§6A.5](#6a5-how-a-rewrite-runs)), so a stale copy can produce a
+refused draft but never a bad task.
+
+**The coverage map schema** lives in `draft-contract.md` and matches what
+`Rewrite.Coverage` reads:
+
+```json
+{
+  "tasks": [
+    {"task_index": 0, "covers": [{"key": "PAY-88", "lines": ["ac:2", "checklist:1"]}], "files": [17]}
+  ],
+  "dropped": [{"key": "PAY-90", "reason": "Duplicate of PAY-88, closed in a comment on 3 Oct"}],
+  "files_not_needed": [{"file_id": 19, "reason": "Earlier version of the design in file 17"}]
+}
+```
+
+Line references (`ac:2`, `checklist:1`, `subtask:PAY-93`) are the ids the
+bundle gives each acceptance-criteria line, checklist item and sub-task, so
+the coverage check compares ids, not text.
+
+### 16A.5 The rewrite-epic procedure
+
+Arguments: one or more rewrite ids, as the run page lists them. Options:
+`--no-files`, which skips the download even when the run allows files, and
+`--dry-run`, which stops after writing the local draft file.
+
+1. **Preflight.** Read `STRIDE_API_URL` and `STRIDE_API_TOKEN` from
+   `.stride_auth.md`. Stop if the file is missing. The token is never echoed,
+   put on a command line or written to a file: requests send it from an
+   environment variable or a header file, as the attachment contract does.
+   Say once if `.stride/` is not in `.gitignore`, because draft files quote
+   Jira text.
+2. **Fetch the bundle** (`GET /api/import_rewrites/:id/bundle`). Hash the
+   bundle body and compare it with the returned SHA-256; stop on a mismatch.
+   A `404` or a run that is not `imported` stops this id and moves to the
+   next. A send-back note in the response goes to the drafter.
+3. **Download the source files** into `.stride/attachments/rewrite-<id>/`,
+   under the attachment download contract: a manifest, the same caps, a
+   sha256 check on every file, uniform handling of `404`s, and `Retry-After`
+   on `429`. Skipped when the run chose **Rewrite without files** or
+   `--no-files` is set; the manifest still lists every file, so the coverage
+   map accounts for each one.
+4. **Chunk.** If the bundle is too large for one drafter run, split it by
+   story, keeping each story with its sub-tasks, its comments and the files
+   it cites. The context-only issues of a split epic go to every chunk.
+5. **Draft.** Dispatch `rewrite-drafter` once per chunk, each with a fresh
+   context, the chunk, the file directory and read access to the repository.
+   Merge the chunks' tasks into one goal, renumber the index dependencies,
+   and join the coverage maps.
+6. **Review.** Dispatch `coverage-reviewer` with the whole bundle and the
+   merged draft, in a fresh context that has not seen the drafting. It
+   returns findings, never edits.
+7. **Write the draft file**: `.stride/rewrites/<id>-<timestamp>.json`, with the
+   draft, the coverage map, the findings, the bundle hash and the variant and
+   version. Run `check-draft.sh` on it. Print a summary: tasks, keys covered,
+   anything uncovered, the reviewer's findings. With `--dry-run`, stop here.
+8. **Submit** (`POST /api/import_rewrites/:id/draft`). Print the coverage
+   report from the response and the link to the rewrite's sign-off page. A
+   `409` for a stale hash means the bundle was rebuilt: fetch it again and go
+   back to step 2, once. A `409` for a signed-off rewrite stops this id.
+9. **Clean up.** Remove `.stride/attachments/rewrite-<id>/`. The draft file
+   stays, as the record of what was sent, until the team deletes it.
+
+The procedure never asks the user anything between steps: sign-off in the app
+is the human gate, and submitting only stores a draft. Each id is handled on
+its own, so one failed epic does not stop the rest, and the run ends with one
+line per id.
+
+### 16A.6 The agents
+
+| Agent | Tools | Reads | Writes |
+|---|---|---|---|
+| `rewrite-drafter` | Read, search and list files only: no shell, no network, no file writes | One chunk of the bundle, the downloaded files and the repository | One JSON document: the goal, its tasks and the coverage map, returned to the procedure |
+| `coverage-reviewer` | Read and search only | The whole bundle, the merged draft and the files | One JSON document of findings, each with the task index, the Jira key and one of four kinds: *citation not covered*, *unsupported claim*, *later comment not honoured*, *instruction aimed at an agent* ([§6A.6](#6a6-the-second-pass-a-coverage-report)) |
+
+Neither agent calls the Stride API. The procedure makes every request, so the
+token reaches no agent.
+
+Both agents treat the bundle and every file as **data, not instructions**.
+Text in an issue, a comment or a file that tells the agent to do something is
+never followed. The drafter leaves it out of the tasks and the reviewer
+reports it.
+
+The drafter fills `key_files`, `patterns_to_follow` and `testing_strategy`
+from the repository it can read. Where there is no repository, it leaves
+`key_files` empty for enrichment, as [§6A.8](#6a8-constraints-and-risks)
+allows, and says so in the summary.
+
+**Where a runtime cannot dispatch the agents**, as with Pi without its
+subagent-dispatch extension, the procedure runs the drafter's instructions
+inline. It then runs the reviewer's instructions on the saved draft file and
+the bundle only. The findings carry `"independent": false`, and the sign-off
+page shows that the review was not done in a separate context.
+
+**Copilot CLI** limits an agent prompt to 30,000 characters, so both agent
+bodies are kept under that limit in every variant, and the contract script
+checks it in `stride-copilot-import`.
+
+### 16A.7 Testing and release
+
+Each variant's `scripts/test-all.sh` runs offline and without a model:
+
+- the contract pins for the procedure's rules (SHA-256 check, token handling,
+  no Stride API call from an agent, data-not-instructions, the `409` retry);
+- `check-draft.sh` against fixture drafts that are valid, missing a field,
+  using the wrong root key, or carrying an uncovered key;
+- the download script against fixture manifests, with a size cap, a bad
+  sha256 and a `404`;
+- `check_draft_contract.sh` against the pinned source.
+
+Each runtime also needs one live check that cannot run in CI: rewriting the
+fixture epic with the runtime's own agent, and comparing the coverage with the
+expected file. That is a manual Phase 1 exit step for each of the six
+([§22](#22-testing-strategy)).
+
+Each variant is versioned and released on its own, through its runtime's
+catalog as the table in [§16A.3](#16a3-the-variants) shows. A change to the
+draft API ([§16.6](#166-the-rewrite-api)) is released in the source first and
+then in every port before the server starts relying on it. The draft endpoint
+records `drafted_with`, so the server can see which versions are still in use
+before it drops support for an older draft shape.
 
 ---
 
@@ -1577,6 +1832,7 @@ Index: unique `(board_id, source, source_site, external_id)`; index on
 | `coverage` | jsonb | Coverage map, computed report, reviewer findings, and the keys and lines marked dropped by the person signing |
 | `send_back_note` | string | Shown to the agent on the next bundle fetch |
 | `drafted_by_agent` | string | The agent name sent with the draft |
+| `drafted_with` | string | The import plugin variant and version that drafted it ([§16A](#16a-the-agent-side-plugin-stride-import)), so an audit can tell which drafter and reviewer rules applied |
 | `signed_off_by_id` | references `users`, on delete nilify | |
 | `drafted_at`, `signed_off_at` | utc_datetime | |
 | timestamps | | |
@@ -1670,7 +1926,7 @@ through gettext in all locales. Every page follows the
 | **Rewrite or import** `/imports/:id/paths` | [§6A.2](#6a2-the-choice-and-the-recommendation): one row per epic and per no-epic group, with not-started / started / done counts, file counts, the quality signals, the recommended path and the choice; **Rewrite all recommended**, **Import all directly**, **Rewrite without files**; the note that rewritten text and files go to the team's agent and its model provider |
 | **Mapping** `/imports/:id/mapping` | Tabs: *Boards* (one or many, names; every board is AI-optimized), *Status* (each Jira status to one of the five columns), *Issue types and hierarchy*, *Priority*, *Size*, *People*, *Labels*, *Fields* ([§11](#11-mapping-additional-fields)), *Sections*. Every tab shows only values that occur, with counts. **Save as preset** |
 | **Preview** `/imports/:id/preview` | Per destination board: task counts by column and type, goals, comments, labels, people added, attachments to copy and to leave as links (with the reasons and the quota they use), and the epics and issue counts that will be rewritten; **sample cards** (ten issues chosen to cover each type and status) rendered with the real task card component; warnings grouped by kind with the issues they affect; blocking errors that must be fixed before **Import** is enabled |
-| **Run** `/imports/:id` | During import: progress per board, then file-copy progress, with **Retry failed files**. After: the rewrites, each with its state and the command to run in the agent; the report ([§21](#21-telemetry-audit-log-and-the-import-report)), **Open board**, **Re-sync changes**, conflicts, **Changed after rewrite**, **Finish migration**, **Undo import**, **Delete stored credential** |
+| **Run** `/imports/:id` | During import: progress per board, then file-copy progress, with **Retry failed files**. After: the rewrites, each with its state, and the command to run them in the importer's agent, for the runtime chosen in a picker remembered per user, with a link to that runtime's import plugin ([§16A.3](#16a3-the-variants)); the report ([§21](#21-telemetry-audit-log-and-the-import-report)), **Open board**, **Re-sync changes**, conflicts, **Changed after rewrite**, **Finish migration**, **Undo import**, **Delete stored credential** |
 | **Rewrite** `/imports/:id/rewrites/:rewrite_id` | [§6A.7](#6a7-sign-off): the draft as task cards, the coverage report, each Jira issue with the tasks covering it, each source file with the tasks it goes to, the people assigned in Jira; **Sign off**, **Send back**, **Leave out**, **Mark dropped**, **Import directly instead** |
 | **Task view** | The **Imported from PAY-88** or **Written from PAY-88, PAY-91** line under the title, and the collapsed panel of the same name ([§12](#12-data-that-does-not-map)) |
 
@@ -1798,7 +2054,10 @@ Kept as `import_runs.report` and downloadable as JSON and CSV:
 | LiveViews | Each wizard page, permissions per role, translations rendered | `Phoenix.LiveViewTest`; locale tests with the session set |
 | Dark mode | Every new page and the task panel | `mix dark_mode.scan` and the contrast check (run by `mix precommit`) |
 | End to end | A real Jira Cloud site made for the purpose, with epics, sub-tasks, custom fields, a security level and restricted comments, imported into the dev app, with one epic rewritten, one split epic and one imported directly | Manual / exploratory, Phase 1 and Phase 2 exit |
-| Rewrite quality | A set of real, messy epics rewritten by the plugin command, checked by hand for missed requirements the coverage report did not flag | Manual, Phase 1 exit; the misses found become reviewer rules |
+| Rewrite quality | A set of real, messy epics rewritten by the import plugin, checked by hand for missed requirements the coverage report did not flag | Manual, Phase 1 exit; the misses found become reviewer rules |
+| Agent commands | `Kanban.Imports.AgentCommands` has an entry for each of the six variants, and each entry matches the entry point in that variant's README | Unit test against the READMEs' recorded entry points |
+| Import plugin, offline | In each of the six variants: contract pins, the draft shape check, the download script, and the pinned field rules against the source ([§16A.7](#16a7-testing-and-release)) | Each variant's `scripts/test-all.sh`, in its own CI |
+| Import plugin, live | The fixture epic rewritten through each of the six variants with that runtime's own agent; the coverage matches the expected file, and the draft is accepted by a dev server | Manual, Phase 1 exit, once per runtime |
 
 ---
 
@@ -1808,7 +2067,7 @@ Each phase ships on its own and is useful on its own.
 
 | Phase | Scope | Exit criteria |
 |---|---|---|
-| **1. Core Jira Cloud import** | Needs Task Attachments (G488–G491) shipped. Connections (API token), runs, staging, the adapter behaviour, the Jira Cloud adapter, document-format conversion, epics and sub-task flattening, default mapping, status/type/priority/complexity/people/label mapping tables, restricted issues and comments, preview, writer, attachment copying, report, **Imported from** panel, undo, telemetry, audit. **The rewrite** ([§6A](#6a-rewrite-or-import-epic-by-epic)): the **Rewrite or import** page and its recommendation, split epics, bundles and source files, the rewrite API, drafts, the coverage report, sign-off, the **Written from** panel, and the `rewrite-epic` command and reviewer agent in the Stride plugin | A Jira project of ~2,000 issues with epics, sub-tasks and comments imports with no silent loss; the report accounts for every issue and every file. Every not-started epic in it can be rewritten and signed off, and a hand check of the rewritten epics finds no requirement missing that the coverage report did not flag |
+| **1. Core Jira Cloud import** | Needs Task Attachments (G488–G491) shipped. Connections (API token), runs, staging, the adapter behaviour, the Jira Cloud adapter, document-format conversion, epics and sub-task flattening, default mapping, status/type/priority/complexity/people/label mapping tables, restricted issues and comments, preview, writer, attachment copying, report, **Imported from** panel, undo, telemetry, audit. **The rewrite** ([§6A](#6a-rewrite-or-import-epic-by-epic)): the **Rewrite or import** page and its recommendation, split epics, bundles and source files, the rewrite API, drafts, the coverage report, sign-off, the **Written from** panel, and the new `stride-import` plugin in all six variants: Claude Code, Codex CLI, GitHub Copilot CLI, Gemini CLI, OpenCode and Pi ([§16A](#16a-the-agent-side-plugin-stride-import)) | A Jira project of ~2,000 issues with epics, sub-tasks and comments imports with no silent loss; the report accounts for every issue and every file. Every not-started epic in it can be rewritten and signed off, and a hand check of the rewritten epics finds no requirement missing that the coverage report did not flag. The fixture epic rewrites and is accepted through every one of the six variants, each released through its runtime's catalog |
 | **2. Custom fields and polish** | Custom field discovery and mapping ([§11](#11-mapping-additional-fields)), section extraction, mapping presets, Jira-key search, *Exclude imported history* on metrics | A project whose acceptance criteria and team data live in custom fields imports them into Stride fields |
 | **3. Moving while working** | Re-sync and conflicts (including stale drafts and **Changed after rewrite**), Finish migration, the optional "moved to Stride" marker, import into an existing board, OAuth 2.0 (3LO) | A team can import, keep working in Jira for two weeks, re-sync, and finish with no lost changes |
 | **4. Jira Data Center** | `jira_dc` adapter, PAT auth, REST v2, wiki markup, self-hosted private-address switch | A Data Center instance imports through the same pipeline |
@@ -1838,6 +2097,8 @@ recommendation.
 | 14 | Should rewritten tasks inherit assignees from Jira? | **No**: written unassigned, with the Jira assignees on the sign-off page to assign by hand ([§6A.7](#6a7-sign-off)). One task often covers issues held by different people |
 | 15 | Should attachments be copied, or only linked? | **Copied** by default, where the board's plan allows it ([§14.3](#143-attachments)), with **Link to Jira only** as the choice. A link needs a Jira login, and stops working when the team leaves Jira |
 | 16 | Should files Stride cannot store (archives, office documents, video) be converted or bundled? | **No**: they stay links, listed by reason. Widening the allow-list is a change to [Task Attachments](ATTACHMENTS-DESIGN.md), not to the import |
+| 17 | Should the rewrite's agent side go in the Stride workflow plugin or in a plugin of its own? | **Its own plugin, `stride-import`** ([§16A.1](#16a1-why-a-new-plugin)). A team uses it once; the workflow plugin is paid for by every session; the rewrite reads untrusted Jira input and claims no tasks; and it must work next to the lite plugins too |
+| 18 | Which runtimes get a variant, and when? | **All six** (Claude Code, Codex CLI, GitHub Copilot CLI, Gemini CLI, OpenCode and Pi), **in Phase 1** ([§16A.3](#16a3-the-variants)). The lite plugins share their runtime's variant. Shipping some runtimes later would leave their teams with only the direct import that Stride advises against |
 
 ---
 
