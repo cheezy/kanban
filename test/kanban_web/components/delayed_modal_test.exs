@@ -86,6 +86,7 @@ defmodule KanbanWeb.DelayedModalTest do
       assert html =~ "focus_first"
       assert html =~ "pop_focus"
       assert html =~ "overflow-hidden"
+      assert html =~ "stride:release-focus"
     end
 
     test "renders with a custom non-default max_width that md_max_width passes through" do

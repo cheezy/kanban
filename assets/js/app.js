@@ -37,6 +37,7 @@ import SnapIndicator from "./hooks/snap_indicator"
 import topbar from "../vendor/topbar"
 import {install as installFocusAfterMove} from "./focus_after_move"
 import {install as installCopyToClipboard} from "./copy_to_clipboard"
+import {install as installReleaseModalFocus} from "./release_modal_focus"
 
 const MyHooks = {
   AutoDismissFlash,
@@ -83,6 +84,11 @@ installCopyToClipboard(window, document, (el, visible) =>
 
 // Return keyboard focus after a card's Move to Ready arrow leaves with its card.
 installFocusAfterMove(window, document)
+
+// Blur a closing modal's field before it is removed, so Safari does not scroll
+// the page to the caret it leaves behind. hide_modal/2 dispatches
+// "stride:release-focus" on the modal as its first command.
+installReleaseModalFocus(window, document)
 
 // Close any open <details class="js-mobile-menu"> when the user presses Escape,
 // and return focus to its summary. Used by the marketing nav disclosure.

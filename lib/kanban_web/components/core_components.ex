@@ -695,9 +695,15 @@ defmodule KanbanWeb.CoreComponents do
   Builds the JS commands that dismiss a modal revealed by `show_modal/2`
   (backdrop fade-out, container transition, scroll-lock release, and focus
   restoration).
+
+  It first dispatches `stride:release-focus` on the modal, which
+  `assets/js/release_modal_focus.js` answers by blurring the focused field and
+  clearing the selection. Without it, Safari leaves the caret where the removed
+  field was, at the end of the page, and scrolls down to it.
   """
   def hide_modal(js \\ %JS{}, id) do
     js
+    |> JS.dispatch("stride:release-focus", to: "##{id}")
     |> JS.hide(
       to: "##{id}-bg",
       transition: {"transition-all ease-in duration-200", "opacity-100", "opacity-0"}

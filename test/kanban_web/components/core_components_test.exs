@@ -108,6 +108,21 @@ defmodule KanbanWeb.CoreComponentsTest do
       assert encoded =~ "overflow-hidden"
       assert encoded =~ "pop_focus"
     end
+
+    test "hide_modal releases focus inside the modal before hiding anything" do
+      [first | rest] = CoreComponents.hide_modal("my-modal").ops
+
+      assert first == ["dispatch", %{event: "stride:release-focus", to: "#my-modal"}]
+      refute Enum.any?(rest, &match?(["dispatch", _], &1))
+    end
+
+    test "hide_modal keeps a caller's commands ahead of the focus release" do
+      [first, second | _] =
+        Phoenix.LiveView.JS.push("closed") |> CoreComponents.hide_modal("my-modal") |> Map.get(:ops)
+
+      assert match?(["push", _], first)
+      assert second == ["dispatch", %{event: "stride:release-focus", to: "#my-modal"}]
+    end
   end
 
   describe "header/1" do
