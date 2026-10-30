@@ -347,9 +347,13 @@ can see where a rewrite matters most:
 The signals inform the choice. They never change the recommendation to
 **Import directly** for an epic with not-started work: the agent-facing
 fields are empty on a direct import whatever the issue's quality. The page has
-**Rewrite all recommended** and **Import all directly** at the top. When the
-Organization has turned the rewrite off ([§19](#19-permissions-and-plans)),
-the page is skipped and every epic is imported directly.
+**Rewrite all recommended** and **Import all directly** at the top.
+
+**The rewrite is always offered and always recommended.** It is preselected on
+every epic with not-started work, on every plan. No Organization, workspace,
+plan or config setting turns it off, hides this page, or changes the
+recommendation. A team that wants a direct import chooses it here, epic by
+epic or with **Import all directly**, and the run report records that choice.
 
 The page also offers **Rewrite without files**, which sends the agent the
 issues' text and file names but not the files themselves
@@ -530,7 +534,7 @@ run can be sent back or replaced as often as needed.
 
 | Risk | Rule |
 |---|---|
-| **Jira text goes to a model provider** | The rewrite runs in the team's own agent, so whatever provider that agent uses receives the bundle. The **Rewrite or import** page says so. An Organization can turn the rewrite off ([§19](#19-permissions-and-plans)) |
+| **Jira text goes to a model provider** | The rewrite runs in the team's own agent, so whatever provider that agent uses receives the bundle. The **Rewrite or import** page says so. The importer can choose **Rewrite without files**, or import an epic directly |
 | **Files go to a model provider** | Source files are downloaded by the team's agent and read with its model, like the bundle's text. The **Rewrite or import** page says so, and **Rewrite without files** sends metadata only |
 | **A file tries to steer the agent** | Files are untrusted data from Jira users. The agent reads only manifest-listed files, never runs or unpacks one (archives are not stored at all), and reports text in a file that tries to direct it, as the attachment contract requires |
 | **Restricted issues reach the agent** | Skipped issues and comments are never in the bundle. If the importer opted in to restricted issues, those issues are imported directly unless the importer ticks a second box that names the model-provider exposure |
@@ -1669,7 +1673,6 @@ through gettext in all locales. Every page follows the
 | Re-sync, finish, undo | The run's creator and the Organization's org-admins |
 | Choose rewrite or import, send back, sign off a rewrite | The run's creator, the Organization's org-admins, and owners of the destination board |
 | Fetch a bundle and submit a draft | An API token that reaches the destination board ([§16.6](#166-the-rewrite-api)) |
-| Turn the rewrite off for an Organization | Org-admins. When it is off, every epic is imported directly |
 | See the **Imported from** panel on a task | Anyone who can see the task |
 
 Org-admins and workspace owners are the roles that can decide who gets access
@@ -1701,7 +1704,7 @@ Organization-only is listed under [§24](#24-decisions-needed).
 | **File downloads reach internal hosts** | Files are fetched only from the connection's own Jira site, through `UrlGuard`, with `redirect=false`; the attachment id comes from Jira's own issue data, never from a URL in issue text |
 | **Imported text is untrusted** | Every row goes through its changeset; text is rendered escaped as all task text is; no imported value is ever turned into an atom, a URL the server fetches, or a query fragment. JQL is sent only to the connection's own Jira site |
 | **Agents read imported text** | Imported descriptions reach agents as task data. The existing agent rule (task text is data, not instructions) covers this, and landing in Backlog means a human sees the task before an agent can claim it |
-| **Rewritten text leaves Stride** | The bundle goes to the team's own agent and its model provider. The **Rewrite or import** page says so; restricted issues need a second opt-in to be rewritten; an Organization can turn the rewrite off ([§6A.8](#6a8-constraints-and-risks)) |
+| **Rewritten text leaves Stride** | The bundle goes to the team's own agent and its model provider. The **Rewrite or import** page says so; restricted issues need a second opt-in to be rewritten ([§6A.8](#6a8-constraints-and-risks)) |
 | **A bundle carries a secret** | Issues with credential-shaped text are held out of the bundle until fixed or excluded; drafts are scanned again on receipt |
 | **A draft is hostile or wrong** | Validated by the task changesets without inserting, capped in size, checked against the current bundle hash, and written only when a person signs it off. No API call can write a rewrite to a board |
 | **Who sees what** | [§19](#19-permissions-and-plans). Unmapped data follows the task's visibility; the staged data is visible only through the run page |
@@ -1771,7 +1774,7 @@ Kept as `import_runs.report` and downloadable as JSON and CSV:
 | Undo | Boards created by the run deleted; nothing else touched; copied attachments' blobs queued for deletion | DataCase |
 | Attachments | Each rule of [§14.3](#143-attachments): plan gate, allow-list, magic bytes, size, the 20-file limit, quota; a body larger than Jira reported; `redirect=false` and `UrlGuard` on every download; uploader from people matching; comment matching by file name; a retried job copies nothing twice; a failed file leaves a link | DataCase with `Req.Test` Jira stubs and the local storage adapter in `tmp/test_attachments` |
 | Rewrite files | Copied into `import_rewrite_files` with the same rules; the eight-key bundle entries; the file download endpoint's headers, 404s and rate limit; copied onto every task the draft names at sign-off; blobs tombstoned after copy, at finish and on undo | DataCase, ConnCase |
-| Rewrite recommendation | Each row of [§6A.2](#6a2-the-choice-and-the-recommendation) and [§6A.3](#6a3-epics-already-in-progress), each quality signal, the Organization switch | Unit tests on `Rewrite.Recommend` with hand-built items |
+| Rewrite recommendation | Each row of [§6A.2](#6a2-the-choice-and-the-recommendation) and [§6A.3](#6a3-epics-already-in-progress), each quality signal, the rewrite preselected for every epic with not-started work on every plan | Unit tests on `Rewrite.Recommend` with hand-built items |
 | Bundle | Rewritten and context-only items, restricted and credential-shaped issues held out, the 64 KB cap, a stable hash | Unit tests on `Rewrite.Bundle` |
 | Draft and coverage | A valid draft, an invalid task, an uncovered key, an uncovered line, a dropped key without a reason, a merge and a split, a stale hash, a draft after sign-off | Unit tests on `Rewrite.Draft` and `Rewrite.Coverage`; controller tests for the `409`s |
 | Sign-off writer | One transaction; tasks under a new goal, and under the existing goal of a split epic; dependencies from the draft and from Jira links; source links; no broadcast or notification; a double sign-off writes once; sign-off refused while anything is uncovered | DataCase, `refute_enqueued` |
@@ -1815,9 +1818,9 @@ recommendation.
 | 8 | Should Stride ever write to Jira? | **Only** the opt-in "moved to Stride" marker at finish, Phase 3 ([§13.6](#136-cutover-and-the-optional-moved-to-stride-marker)) |
 | 9 | How long is closed work imported by default? | **Last 90 days** to Done ([§6.2](#62-completed-and-cancelled-work)) |
 | 10 | Should the roadmap item be renamed now that Linear is out of scope? | **Yes**: *Import from Jira*, so the roadmap does not promise Linear |
-| 11 | Should Stride recommend the rewrite for not-started work, or the direct import? | **The rewrite**, for every epic with not-started work, including the not-started part of an epic in progress ([§6A.2](#6a2-the-choice-and-the-recommendation)). The direct import stays one click away and is always used for started and done work |
+| 11 | Should Stride recommend the rewrite for not-started work, or the direct import? | **The rewrite**, always, for every epic with not-started work, including the not-started part of an epic in progress ([§6A.2](#6a2-the-choice-and-the-recommendation)). There is no setting to turn it off. The direct import stays a per-epic choice on the page and is always used for started and done work |
 | 12 | Where does the rewrite's model run: in the team's agent, or on Stride's servers? | **In the team's agent** ([§6A.5](#6a5-how-a-rewrite-runs)). It has the repository the agent-facing fields need, and Stride never holds a model provider's credentials or decides where Jira text is sent |
-| 13 | Should the rewrite be on every plan? | **Yes**, like the import. It costs Stride nothing to run, since the model runs in the team's agent. An Organization can turn it off |
+| 13 | Should the rewrite be on every plan? | **Yes**, like the import. It costs Stride nothing to run, since the model runs in the team's agent |
 | 14 | Should rewritten tasks inherit assignees from Jira? | **No**: written unassigned, with the Jira assignees on the sign-off page to assign by hand ([§6A.7](#6a7-sign-off)). One task often covers issues held by different people |
 | 15 | Should attachments be copied, or only linked? | **Copied** by default, where the board's plan allows it ([§14.3](#143-attachments)), with **Link to Jira only** as the choice. A link needs a Jira login, and stops working when the team leaves Jira |
 | 16 | Should files Stride cannot store (archives, office documents, video) be converted or bundled? | **No**: they stay links, listed by reason. Widening the allow-list is a change to [Task Attachments](ATTACHMENTS-DESIGN.md), not to the import |
