@@ -146,7 +146,7 @@ the app. Each new module below names the one it follows.
 | HTTP | `Req` (project rule), injectable client as in `Kanban.GitHub` | The Jira client uses `Req` and `Req.Test` stubs |
 | Task identifiers | `Kanban.Tasks.Identifiers.pregenerate_task_identifiers/2` | Identifiers are generated per board under the board's advisory lock |
 | Two-level hierarchy | `Kanban.Tasks.Task.HierarchyValidations` | Goals contain only work and defect tasks; Jira sub-tasks are flattened ([§10.2](#102-hierarchy)) |
-| Column stage | `Kanban.Columns.Stage` | Decides whether a custom column means not started, in progress or done ([§7.2](#72-ai-optimized-board-or-custom-board)) |
+| AI-optimized boards | `Kanban.Boards.create_ai_optimized_board/3` (`ai_optimized_board: true`, the fixed Backlog, Ready, Doing, Review, Done columns) | Every board the import writes to is AI-optimized ([§7.2](#72-ai-optimized-board-or-custom-board)) |
 | Labels | `Kanban.Labels`, `Kanban.Labels.Label` (nine colour tokens, 40-character names) | Jira labels and components become board labels ([§10.6](#106-labels-and-colours)) |
 | Archiving with a reason | `Kanban.Tasks.Archiving` (`:completed`, `:duplicate`, `:wontdo`, `:deferred`, `:cancelled`) | Won't-do, cancelled and duplicate issues ([§13.2](#132-what-happens-to-each-kind-of-item)) |
 | Feature gating | `Kanban.Plans` | Member caps on free boards ([§19](#19-permissions-and-plans)) |
@@ -263,7 +263,7 @@ because the recommendation needs the issues' statuses and text.
 
 | Layer | Choices | Notes |
 |---|---|---|
-| Projects or boards | Either **projects** (everything in them) or **boards** (everything matching the board's saved filter), each with its issue count | Choosing a board also offers its column layout as the Stride column layout ([§7.2](#72-ai-optimized-board-or-custom-board)). A board whose filter reaches into several projects shows which ones |
+| Projects or boards | Either **projects** (everything in them) or **boards** (everything matching the board's saved filter), each with its issue count | A Jira board's column layout is not copied: every destination is an AI-optimized board ([§7.2](#72-ai-optimized-board-or-custom-board)), and its statuses map to the five fixed columns. A board whose filter reaches into several projects shows which ones |
 | Epics | Every epic in scope, with child count, status and assignee. Plus a row **Issues with no epic** | Unticking an epic leaves out the epic and its children |
 | Filters | Issue types; status categories (To Do, In Progress, Done); **Updated since**; labels to include or exclude; components; fix versions; sprints | |
 | Advanced | A JQL box, combined with the choices above using `AND` | For teams who already have the query they want. Shown, but collapsed. The JQL is sent only to the Jira site the connection names. A JQL syntax error from Jira is shown under the box |
@@ -553,43 +553,60 @@ run can be sent back or replaced as often as needed.
 
 ### 7.1 New boards, by default
 
-Each run creates **new boards** in the current workspace. The importer chooses
-one of:
+Each run creates **new AI-optimized boards** in the current workspace
+([§7.2](#72-ai-optimized-board-or-custom-board)). The importer chooses one of:
 
 - **One board per container** (default): one Stride board per Jira project or
   board, named after it ("Payments (from Jira)"), editable.
 - **One board for everything**: all chosen containers on one board, with a
   label per project so they can be told apart.
 
-Importing **into an existing board** comes in Phase 3. It needs collision rules
-(existing labels, existing columns, identifier ranges) that new boards do not,
-and new boards make undo trivial.
+Importing **into an existing board** comes in Phase 3, and only into an
+existing AI-optimized board. It needs collision rules (existing labels,
+identifier ranges) that new boards do not, and new boards make undo trivial.
 
 ### 7.2 AI-optimized board or custom board
 
-| | AI-optimized board (default) | Custom board |
-|---|---|---|
-| Columns | The fixed five: Backlog, Ready, Doing, Review, Done | One column per Jira board column, in the board's order (or one per status category when projects were chosen) |
-| Agents | Agents can claim from Ready once a human moves work there | Agents only claim from a column named exactly "Ready" |
-| Status mapping | Every Jira status maps to one of the five ([§10.3](#103-status-to-column)) | Each Jira status maps to the column the Jira board puts it in, editable |
-| Good for | Teams moving to Stride to work with agents | Teams that want their board to look the way it did |
+**The import writes only to AI-optimized boards.** Every board a run creates
+is made with `Kanban.Boards.create_ai_optimized_board/3`, and a custom board
+is not offered. The Phase 3 import into an existing board accepts only a
+board with `ai_optimized_board: true`.
 
-**Custom boards need a stage check.** `Kanban.Columns.Stage` decides from
-column names whether a column means *not started*, *in progress* or *done*.
-Names it does not know are classified by position: before the first
-Doing/Review column they are not started, after it they are in progress, and
-on a board with neither only the first column is not started. A Jira layout
-of `Backlog | Selected for Development | In Progress | Done` would therefore
-treat *Selected for Development* as **in progress**, and a task dropped there
-would be marked started.
+| | AI-optimized board |
+|---|---|
+| Columns | The fixed five: Backlog, Ready, Doing, Review, Done |
+| Agents | Agents claim from Ready once a human moves work there |
+| Status mapping | Every Jira status maps to one of the five ([§10.3](#103-status-to-column)) |
 
-The mapping page runs `Stage.classify/1` over the proposed columns and shows the
-stage each one will get next to the Jira status category of the statuses it
-holds. Where they disagree, the page shows a warning and offers one fix:
-rename the column to a known name (`Ready`, `Doing`), or reorder it. A
-schema change that stores an explicit stage on each column would remove this
-problem for good. It is listed under [§24](#24-decisions-needed) rather than
-assumed here.
+**Why only AI-optimized boards.** The import exists to bring a team's work to
+where agents can do it, and the rewrite ([§6A](#6a-rewrite-or-import-epic-by-epic))
+writes tasks for agents to claim. An AI-optimized board is the board Stride's
+agent workflow is built around: a fixed Ready column agents claim from, a
+Review column for the review gate, and column names whose meaning never has to
+be guessed. A custom board copied from a Jira layout would bring four
+problems with it:
+
+- **Column meaning is guessed.** `Kanban.Columns.Stage` decides from column
+  names whether a column means *not started*, *in progress* or *done*, and
+  classifies unknown names by position. A Jira layout of
+  `Backlog | Selected for Development | In Progress | Done` would make
+  *Selected for Development* an **in progress** column, and every task in it
+  would be marked started.
+- **Agents may find nothing to claim.** Agents claim only from a column named
+  exactly "Ready", which most Jira layouts do not have.
+- **Agents cannot reach it.** Board API tokens are available only on
+  AI-optimized boards (`KanbanWeb.BoardLive.ApiTokens`), and the rewrite's
+  agent needs a token that reaches the destination board ([§16.6](#166-the-rewrite-api)).
+- **Each layout needs its own mapping.** Status-to-column mapping, the stage
+  warnings and goal placement would all have to handle arbitrary columns.
+
+Fixing the five columns removes all four, so the mapping page has no board
+layout to design and every imported status lands in a column whose meaning is
+known. The columns of an AI-optimized board cannot be added to or edited
+afterwards, so a Jira workflow with more steps than the five columns is
+carried by labels instead: a status that is not the column's own name (for
+example *QA* in Review) keeps its name as a `jira-status:` label, which the
+importer can switch off on the mapping page ([§10.6](#106-labels-and-colours)).
 
 ### 7.3 Identifiers
 
@@ -749,7 +766,8 @@ goals.
 
 ### 10.3 Status to column
 
-Default for an **AI-optimized board**:
+Every destination is an AI-optimized board ([§7.2](#72-ai-optimized-board-or-custom-board)),
+so every Jira status maps to one of its five columns. The defaults:
 
 | Jira status | Stride column | Stride `status` | Notes |
 |---|---|---|---|
@@ -772,10 +790,6 @@ Goal columns are not mapped. A goal's column follows its children
 (`Kanban.Tasks.GoalTargetColumn`), so after the children are written the
 import asks the existing goal-placement code where each goal belongs. An epic
 with no imported children is placed by its own status, using the table above.
-
-For a **custom board** the default is the column the Jira board configuration
-puts the status in, when a board was chosen, or the column for the status's
-category otherwise.
 
 ### 10.4 Priority
 
@@ -820,7 +834,7 @@ thresholds are wrong.
   `sprint:` teal, `component:` purple), so they are easy to tell apart. The
   importer can change any colour on the mapping page.
 - Labels added by mapping rules (`release:`, `sprint:`, `component:`,
-  `initiative:`, `blocked`, the per-project label) are listed on the mapping
+  `initiative:`, `jira-status:`, `blocked`, the per-project label) are listed on the mapping
   page with a checkbox each, so a team that does not want them can switch
   them off.
 
@@ -1508,7 +1522,7 @@ All tables are new. No existing table changes in Phases 1 and 2.
 | `status` | string | [§4](#4-the-import-at-a-glance) states |
 | `scope` | jsonb | Projects or boards, epics, filters, JQL, closed-work choice |
 | `mapping` | jsonb | `Kanban.Imports.Mapping`, versioned |
-| `options` | jsonb | Board layout, one-board-or-many, Ready opt-in, the path chosen per epic ([§6A.2](#6a2-the-choice-and-the-recommendation)) |
+| `options` | jsonb | One-board-or-many, Ready opt-in, the path chosen per epic ([§6A.2](#6a2-the-choice-and-the-recommendation)) |
 | `cursor` | jsonb | Fetch resume point (`nextPageToken`) |
 | `progress` | jsonb | `%{phase, done, total}` |
 | `counts` | jsonb | Final counts by category |
@@ -1654,7 +1668,7 @@ through gettext in all locales. Every page follows the
 | **Scope** `/imports/:id/scope` | [§6](#6-choosing-what-to-import): projects or boards with counts, epics with counts, filters, the JQL box, closed-work choice, running total, limit warnings, restricted-issue count and opt-in. **Fetch** |
 | **Fetching** (on `/imports/:id`) | Progress bar by phase (issues, comments, changelog), live; **Cancel** |
 | **Rewrite or import** `/imports/:id/paths` | [§6A.2](#6a2-the-choice-and-the-recommendation): one row per epic and per no-epic group, with not-started / started / done counts, file counts, the quality signals, the recommended path and the choice; **Rewrite all recommended**, **Import all directly**, **Rewrite without files**; the note that rewritten text and files go to the team's agent and its model provider |
-| **Mapping** `/imports/:id/mapping` | Tabs: *Board layout* (one or many, AI-optimized or custom, column stages with warnings), *Status*, *Issue types and hierarchy*, *Priority*, *Size*, *People*, *Labels*, *Fields* ([§11](#11-mapping-additional-fields)), *Sections*. Every tab shows only values that occur, with counts. **Save as preset** |
+| **Mapping** `/imports/:id/mapping` | Tabs: *Boards* (one or many, names; every board is AI-optimized), *Status* (each Jira status to one of the five columns), *Issue types and hierarchy*, *Priority*, *Size*, *People*, *Labels*, *Fields* ([§11](#11-mapping-additional-fields)), *Sections*. Every tab shows only values that occur, with counts. **Save as preset** |
 | **Preview** `/imports/:id/preview` | Per destination board: task counts by column and type, goals, comments, labels, people added, attachments to copy and to leave as links (with the reasons and the quota they use), and the epics and issue counts that will be rewritten; **sample cards** (ten issues chosen to cover each type and status) rendered with the real task card component; warnings grouped by kind with the issues they affect; blocking errors that must be fixed before **Import** is enabled |
 | **Run** `/imports/:id` | During import: progress per board, then file-copy progress, with **Retry failed files**. After: the rewrites, each with its state and the command to run in the agent; the report ([§21](#21-telemetry-audit-log-and-the-import-report)), **Open board**, **Re-sync changes**, conflicts, **Changed after rewrite**, **Finish migration**, **Undo import**, **Delete stored credential** |
 | **Rewrite** `/imports/:id/rewrites/:rewrite_id` | [§6A.7](#6a7-sign-off): the draft as task cards, the coverage report, each Jira issue with the tasks covering it, each source file with the tasks it goes to, the people assigned in Jira; **Sign off**, **Send back**, **Leave out**, **Mark dropped**, **Import directly instead** |
@@ -1809,7 +1823,7 @@ recommendation.
 | # | Question | Recommendation |
 |---|---|---|
 | 1 | Where should To Do work land: Backlog or Ready? | **Backlog**, with an opt-in for Ready ([§10.3](#103-status-to-column)). It is the only default that cannot hand an agent a context-free task |
-| 2 | Should columns get an explicit stage, so custom boards do not depend on column names? | **Yes, but as its own task**, before Phase 2. It fixes the same problem for hand-made custom boards. Until then, the mapping page's stage warnings cover imports |
+| 2 | Should the import offer custom boards as well as AI-optimized ones? | **No**: AI-optimized boards only ([§7.2](#72-ai-optimized-board-or-custom-board)). The fixed five columns are what agents and the rewrite rely on, and they remove the column-stage guessing a custom layout would need. An explicit stage per column is no longer needed for imports |
 | 3 | Is import available on every plan? | **Yes**, with existing caps. Re-sync and presets could be Organization-only; recommend deciding after Phase 1 usage data |
 | 4 | Where does unmapped data live? | **On the import link**, shown in a collapsed panel ([§12](#12-data-that-does-not-map)), not in the description or `technical_details` |
 | 5 | Should stories with sub-tasks become goals? | **No by default** (flatten under the epic), with the option on the mapping page ([§10.2](#102-hierarchy)) |
