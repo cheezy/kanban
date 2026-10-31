@@ -85,5 +85,8 @@ defmodule KanbanWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  # Before the router: no route matches a miscased /hitme, so a router
+  # pipeline would never see it.
+  plug KanbanWeb.Plugs.CanonicalHitMePath
   plug KanbanWeb.Router
 end
