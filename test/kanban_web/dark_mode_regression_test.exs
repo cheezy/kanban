@@ -96,7 +96,7 @@ defmodule KanbanWeb.DarkModeRegressionTest do
     "color: oklch(18% 0.005 270)",
     # Auth-frame editorial gradient (auth_frame.ex) — locked-light brand
     # entry surface per the .stride-screen[data-stride-auth-frame] override
-    # in assets/css/app.css:898+; the gradient is part of the brand identity.
+    # in the auth-frame styles; the gradient is part of the brand identity.
     "oklch(96% 0.025 60)",
     "oklch(94% 0.035 280)",
     # Auth-frame primary_full_button gradient (orange→violet) and any other

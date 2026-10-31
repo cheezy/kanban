@@ -61,21 +61,21 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # style-src 'unsafe-inline' is intentionally deferred (the LiveView inline-style
   # migration above); the residual risk is CSS-only defacement.
   #
-  # W2534: app.css @imports Geist and Geist Mono (the faces of the marketing
-  # pages and the signed-in .stride-screen app screens) and Silkscreen (the
-  # /HitMe pixel face) from Google Fonts. The stylesheet comes from
-  # fonts.googleapis.com and the font files from fonts.gstatic.com, so style-src
-  # names the first and font-src the second; without them the browser blocked
-  # both and those pages fell back to system fonts. Neither host can serve
-  # script, so script-src is unchanged. D402 replaces them with self-hosted
-  # files and removes both hosts.
+  # D402: Geist, Geist Mono and Silkscreen are self-hosted under /fonts
+  # (priv/static/fonts) and declared with @font-face in app.css, so no
+  # stylesheet or font file comes from a third-party host: style-src is 'self'
+  # plus the 'unsafe-inline' explained above, and font-src is 'self'. font-src
+  # is stated even though default-src 'self' covers it, so the font policy stays
+  # explicit and a test pins it. W2534 had allowed the two Google Fonts hosts;
+  # D402 removed them so no page sends a visitor's IP address or User-Agent to
+  # a font CDN. script-src is unchanged.
   defp build_policy(nonce) do
     """
     default-src 'self'; \
     script-src 'self' 'nonce-#{nonce}'; \
     img-src 'self' data:; \
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
-    font-src 'self' https://fonts.gstatic.com; \
+    style-src 'self' 'unsafe-inline'; \
+    font-src 'self'; \
     base-uri 'self'; \
     form-action 'self'; \
     object-src 'none'\

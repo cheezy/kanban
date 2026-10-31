@@ -1,20 +1,51 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-/* Geist + Geist Mono fonts — the --font-sans / --font-mono faces of the
-   .stride-marketing (marketing pages) and .stride-screen (signed-in app
-   screens) scopes. Silkscreen is the pixel face of the printed handout, used
-   only by the /HitMe page (--font-pixel). Routes outside both scopes keep the
-   daisyUI / system font stack. This is the global stylesheet, so every page
-   requests the Google Fonts stylesheet; the font files load only where a page
-   uses one of these faces. The CSP allows the two Google hosts (CspNonce,
-   W2534); self-hosting them is D402. */
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap');
-
 @import "tailwindcss" source(none);
 @source "../css";
 @source "../js";
 @source "../../lib/kanban_web";
+
+/* Geist and Geist Mono are the --font-sans / --font-mono faces of the
+   .stride-marketing (marketing pages) and .stride-screen (signed-in app
+   screens) scopes; Silkscreen is the pixel face of the printed handout, used
+   only by the /HitMe page (--font-pixel). Routes outside both scopes keep the
+   daisyUI / system font stack. The files are self-hosted under
+   priv/static/fonts (sources, versions and OFL licences in its README.md), so
+   no page requests a third-party font host and the CSP allows fonts only from
+   'self' (CspNonce, D402). Geist and Geist Mono are variable fonts, one file
+   per family; a browser downloads a file only when a page renders that face. */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/Geist-Variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Silkscreen';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Silkscreen-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Silkscreen';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Silkscreen-Bold.woff2') format('woff2');
+}
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */

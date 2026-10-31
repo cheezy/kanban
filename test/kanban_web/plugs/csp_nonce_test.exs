@@ -42,10 +42,9 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
       assert policy =~ "default-src 'self'"
       assert policy =~ "script-src 'self' 'nonce-#{nonce}'"
       assert policy =~ "img-src 'self' data:"
-      assert policy =~ "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
-      # W2534: the Google Fonts files app.css @imports for the marketing pages and the
-      # signed-in .stride-screen app screens (self-hosted instead by D402).
-      assert policy =~ "font-src 'self' https://fonts.gstatic.com"
+      # D402: fonts are self-hosted, so both end at 'self' (the ; makes it exact).
+      assert policy =~ "style-src 'self' 'unsafe-inline';"
+      assert policy =~ "font-src 'self';"
       # D113: hardening directives — base-uri does not fall back to default-src.
       assert policy =~ "base-uri 'self'"
       assert policy =~ "form-action 'self'"
@@ -68,26 +67,28 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
       refute script_directive =~ "unsafe-inline"
     end
 
-    test "allows Google Fonts only for stylesheets and font files, never for scripts" do
-      conn = conn(:get, "/") |> CspNonce.call([])
+    test "CspNonce policy names no fonts.googleapis.com or fonts.gstatic.com host in any directive" do
+      [policy] =
+        conn(:get, "/") |> CspNonce.call([]) |> get_resp_header("content-security-policy")
 
-      [policy] = get_resp_header(conn, "content-security-policy")
-
-      directives =
-        policy
-        |> String.split(";")
-        |> Map.new(fn directive ->
-          [name | sources] = directive |> String.trim() |> String.split(" ")
-          {name, sources}
-        end)
-
-      assert "https://fonts.googleapis.com" in directives["style-src"]
-      assert directives["font-src"] == ["'self'", "https://fonts.gstatic.com"]
-
-      for {name, sources} <- directives, name not in ["style-src", "font-src"] do
-        refute Enum.any?(sources, &String.contains?(&1, "fonts.")),
+      for {name, sources} <- directives(policy), source <- sources do
+        refute source =~ ~r/fonts\.googleapis\.com|fonts\.gstatic\.com/,
                "#{name} must not name a Google Fonts host"
       end
+
+      refute policy =~ "fonts.googleapis.com"
+      refute policy =~ "fonts.gstatic.com"
+    end
+
+    test "CspNonce style-src is 'self' 'unsafe-inline' and fonts are allowed only from 'self'" do
+      [policy] =
+        conn(:get, "/") |> CspNonce.call([]) |> get_resp_header("content-security-policy")
+
+      directives = directives(policy)
+
+      assert directives["style-src"] == ["'self'", "'unsafe-inline'"]
+      assert directives["font-src"] == ["'self'"]
+      assert directives["default-src"] == ["'self'"]
     end
 
     test "two requests get two different nonces (no caching)" do
@@ -116,5 +117,14 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
       assert policy =~ "'nonce-#{conn.assigns.csp_nonce}'"
       refute policy == "default-src 'self'"
     end
+  end
+
+  defp directives(policy) do
+    policy
+    |> String.split(";", trim: true)
+    |> Map.new(fn directive ->
+      [name | sources] = String.split(directive)
+      {name, sources}
+    end)
   end
 end
