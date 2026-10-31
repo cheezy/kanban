@@ -1379,14 +1379,6 @@
   color: var(--hitme-caption);
 }
 
-.stride-marketing .hitme-cta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 18px;
-  margin-top: 32px;
-}
-
 .stride-marketing .hitme-button {
   display: inline-flex;
   align-items: center;
@@ -1415,16 +1407,6 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   user-select: all;
-}
-
-.stride-marketing .hitme-address {
-  margin-top: 36px;
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: -0.01em;
-  color: var(--hitme-white);
-  overflow-wrap: anywhere;
 }
 
 @media (min-width: 768px) {
@@ -1459,7 +1441,7 @@
 .stride-marketing .hitme-stack {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 16px;
 }
 
 .stride-marketing .hitme-back {
@@ -1535,7 +1517,7 @@
 
 .stride-marketing .hitme-leave-label {
   font-family: var(--font-pixel);
-  font-size: 15px;
+  font-size: 18px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hitme-on-cyan);
@@ -1545,30 +1527,10 @@
 .stride-marketing .hitme-leave-items {
   list-style: none;
   padding: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
-  line-height: 1.6;
-}
-
-.stride-marketing .hitme-leave-address {
-  margin-top: 18px;
-  font-weight: 700;
-  font-size: 16px;
+  line-height: 1.7;
   overflow-wrap: anywhere;
-}
-
-.stride-marketing .hitme-leave-email {
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--hitme-on-cyan);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  overflow-wrap: anywhere;
-}
-
-.stride-marketing .hitme-leave-email:focus-visible {
-  outline: 2px solid var(--hitme-on-cyan);
-  outline-offset: 3px;
 }
 
 .stride-marketing .hitme-panel {
@@ -1590,22 +1552,12 @@
   overflow-wrap: anywhere;
 }
 
-.stride-marketing .hitme-checklist {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 22px 36px;
-  list-style: none;
-  padding: 0;
-}
-
-.stride-marketing .hitme-checklist li,
 .stride-marketing .hitme-why li {
   display: flex;
   align-items: flex-start;
   gap: 14px;
 }
 
-.stride-marketing .hitme-checklist-icon,
 .stride-marketing .hitme-why-icon {
   flex: none;
   width: 24px;
@@ -1613,14 +1565,6 @@
   color: var(--hitme-cyan);
 }
 
-.stride-marketing .hitme-checklist-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--hitme-white);
-  overflow-wrap: anywhere;
-}
-
-.stride-marketing .hitme-checklist-detail,
 .stride-marketing .hitme-why p {
   margin-top: 4px;
   font-size: 16px;
@@ -1656,6 +1600,53 @@
   margin-top: 28px;
 }
 
+/* The booking bar above the hero: the closing section's offer, compact.
+   Stacked on narrow screens; copy left and buttons right from 768px. */
+.stride-marketing .hitme-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: var(--hitme-navy);
+  color: var(--hitme-white);
+  box-shadow: var(--shadow-lg);
+}
+
+.stride-marketing .hitme-top-heading {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--hitme-white);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-top-lead {
+  margin-top: 4px;
+  max-width: 40rem;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--hitme-lead);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.stride-marketing .hitme-top .hitme-button {
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.stride-marketing .hitme-top .hitme-email { font-size: 13px; }
+
 @media (min-width: 768px) {
   .stride-marketing .hitme-back {
     grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);
@@ -1667,9 +1658,20 @@
 
   .stride-marketing .hitme-panel { padding: 48px 56px; }
 
-  .stride-marketing .hitme-checklist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
   .stride-marketing .hitme-why { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .stride-marketing .hitme-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 22px 32px;
+  }
+
+  .stride-marketing .hitme-top-actions {
+    flex: none;
+    justify-content: flex-end;
+  }
 }
 
 /* ============================================================

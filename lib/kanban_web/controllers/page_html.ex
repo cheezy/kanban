@@ -109,41 +109,6 @@ defmodule KanbanWeb.PageHTML do
   end
 
   @doc """
-  Returns the `/HitMe` "Before your session" checklist, in order, as
-  `{title, explanation}` pairs translated for the request's locale.
-
-  It tells a team what to have ready on their own machines and accounts; it
-  never asks them to send credentials or repository access to anyone.
-  """
-  def hit_me_checklist do
-    [
-      {gettext("Your people"),
-       gettext(
-         "The person who owns the proof of concept, plus the developers who will build it, free for the whole half day."
-       )},
-      {gettext("Your idea"),
-       gettext(
-         "A short write-up of the proof of concept: the problem, who it is for, and what a first version must do."
-       )},
-      {gettext("Your code"),
-       gettext(
-         "A Git repository (new or existing) the team can push to, with a branch set aside for the session."
-       )},
-      {gettext("Your checks"),
-       gettext(
-         "A test runner and a linter that each run with one command, even if there is only one test so far."
-       )},
-      {gettext("Your agents"),
-       gettext(
-         "A coding agent such as Claude Code installed and signed in on each developer's machine, with your company's approval to use it on this code."
-       )},
-      {gettext("Your Stride accounts"),
-       gettext("Everyone signed up at stridelikeaboss.com before the day.")},
-      {gettext("Your machines"), gettext("Laptops that can build and run the project locally.")}
-    ]
-  end
-
-  @doc """
   Returns the agent runtimes the `/workflows` page lists as having a Stride
   plugin, in the order of `KanbanWeb.OnboardingPlugins.agents/0`.
 

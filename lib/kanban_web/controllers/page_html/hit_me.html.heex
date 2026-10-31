@@ -1,5 +1,29 @@
 <main class="min-h-screen">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-16 hitme-stack">
+    <%!-- A compact copy of the closing booking section. Its heading is a <p> so
+         the hero's <h1> stays the page's first heading. --%>
+    <section id="hitme-top" class="hitme-top" aria-labelledby="hitme-top-heading">
+      <div class="hitme-top-copy">
+        <p id="hitme-top-heading" class="hitme-top-heading">
+          {gettext("Book a half-day session")}
+        </p>
+        <p class="hitme-top-lead">
+          {gettext(
+            "Tell us about your team and your proof of concept, and we will reply with next steps."
+          )}
+        </p>
+      </div>
+      <div class="hitme-top-actions">
+        <a id="hitme-top-button" href={hit_me_mailto()} class="hitme-button">
+          <.icon name="hero-envelope" class="w-4 h-4" />
+          {gettext("Email us to book a session")}
+        </a>
+        <a id="hitme-top-email" href={"mailto:" <> hit_me_address()} class="hitme-email">
+          {hit_me_address()}
+        </a>
+      </div>
+    </section>
+
     <section id="hitme-hero" class="hitme-card" aria-labelledby="hitme-heading">
       <div class="hitme-sticker-wrap">
         <img
@@ -47,20 +71,6 @@
             <span class="hitme-chip-caption">{gettext("together")}</span>
           </li>
         </ol>
-
-        <div class="hitme-cta">
-          <a id="hitme-email-button" href={hit_me_mailto()} class="hitme-button">
-            <.icon name="hero-envelope" class="w-5 h-5" />
-            {gettext("Email us to book a session")}
-          </a>
-          <a id="hitme-email-address" href={"mailto:" <> hit_me_address()} class="hitme-email">
-            {hit_me_address()}
-          </a>
-        </div>
-
-        <p id="hitme-address" class="hitme-address" translate="no">
-          <span class="hitme-accent">Stride</span>LikeABoss.com/HitMe
-        </p>
       </div>
     </section>
 
@@ -133,29 +143,7 @@
           <li>{gettext("Part of your POC")}</li>
           <li>{gettext("A team ready to run it")}</li>
         </ul>
-        <p id="hitme-leave-address" class="hitme-leave-address" translate="no">
-          StrideLikeABoss.com/HitMe
-        </p>
-        <a id="hitme-leave-email" href={hit_me_mailto()} class="hitme-leave-email">
-          {hit_me_address()}
-        </a>
       </div>
-    </section>
-
-    <section id="hitme-checklist" class="hitme-panel" aria-labelledby="hitme-checklist-heading">
-      <p class="hitme-kicker">{gettext("Before your session")}</p>
-      <h2 id="hitme-checklist-heading" class="hitme-panel-heading">
-        {gettext("Have these in place before the day")}
-      </h2>
-      <ul id="hitme-checklist-items" class="hitme-checklist">
-        <li :for={{title, detail} <- hit_me_checklist()}>
-          <.icon name="hero-check-circle" class="hitme-checklist-icon" />
-          <div>
-            <h3 class="hitme-checklist-title">{title}</h3>
-            <p class="hitme-checklist-detail">{detail}</p>
-          </div>
-        </li>
-      </ul>
     </section>
 
     <section id="hitme-why" class="hitme-panel" aria-labelledby="hitme-why-heading">
