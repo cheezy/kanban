@@ -40,13 +40,47 @@ defmodule KanbanWeb.I18nTest do
     end
   end
 
-  defp empty_msgstrs(locale, domain) do
+  describe "priv/gettext brace placeholders" do
+    # W2535: KanbanWeb.HitMeComponents.hitme_highlight/1 fills `{name}`
+    # placeholders after Gettext returns, so a translation that drops or renames
+    # one shows the raw `{name}` text, or loses the highlighted words.
+    test "every {name} placeholder in a msgid survives in each locale's msgstr" do
+      mismatches =
+        for locale <- @locales,
+            %Message.Singular{msgid: msgid, msgstr: msgstr} <- messages(locale, "default"),
+            expected = brace_placeholders(msgid),
+            MapSet.size(expected) > 0,
+            brace_placeholders(msgstr) != expected do
+          "  #{locale}: #{inspect(joined_text(msgid))} -> #{inspect(joined_text(msgstr))}"
+        end
+
+      assert mismatches == [], """
+      These translations do not keep every {name} placeholder of their msgid:
+
+      #{Enum.join(mismatches, "\n")}
+      """
+    end
+  end
+
+  defp messages(locale, domain) do
     path = Path.join([:code.priv_dir(:kanban), "gettext", locale, "LC_MESSAGES", "#{domain}.po"])
 
     %Messages{messages: messages} = PO.parse_file!(path)
 
-    messages
-    |> Enum.reject(&Message.has_flag?(&1, "obsolete"))
+    Enum.reject(messages, &Message.has_flag?(&1, "obsolete"))
+  end
+
+  # `{name}` but not Gettext's own `%{name}` interpolation.
+  defp brace_placeholders(parts) do
+    ~r/(?<!%)\{([a-z_]+)\}/
+    |> Regex.scan(Enum.join(parts, ""), capture: :all_but_first)
+    |> List.flatten()
+    |> MapSet.new()
+  end
+
+  defp empty_msgstrs(locale, domain) do
+    locale
+    |> messages(domain)
     |> Enum.flat_map(&empty_for_message(&1, locale, domain))
   end
 

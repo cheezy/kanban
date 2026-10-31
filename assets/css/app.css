@@ -1327,7 +1327,7 @@
   min-width: 84px;
   padding: 7px 12px;
   border: 2px solid var(--hitme-cyan);
-  border-radius: 6px;
+  border-radius: 2px;
   font-family: var(--font-pixel);
   font-size: 13px;
   letter-spacing: 0.08em;
@@ -1416,6 +1416,229 @@
     max-width: none;
     transform: translateX(14%) rotate(8deg);
   }
+}
+
+/* ============================================================
+   /HitMe — the back of the printed handout and the sections
+   below it (W2535). The back card is a navy part beside a cyan
+   "You leave with" panel, about 70:30 on desktop and stacked,
+   navy first, on narrow screens. The other sections reuse the
+   flyer's navy cards, cyan accents and pixel-face labels.
+   ============================================================ */
+.stride-marketing .hitme-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.stride-marketing .hitme-back {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--hitme-navy);
+  color: var(--hitme-white);
+  box-shadow: var(--shadow-lg);
+}
+
+.stride-marketing .hitme-back-main {
+  padding: 36px 24px;
+}
+
+.stride-marketing .hitme-back-heading {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--hitme-white);
+  margin-bottom: 30px;
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-label { margin-bottom: 22px; }
+
+.stride-marketing .hitme-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  list-style: none;
+  padding: 0;
+}
+
+.stride-marketing .hitme-steps li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: baseline;
+}
+
+.stride-marketing .hitme-step-number {
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  color: var(--hitme-cyan);
+}
+
+.stride-marketing .hitme-step-text {
+  font-size: 19px;
+  line-height: 1.4;
+  color: var(--hitme-lead);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-step-strong {
+  font-weight: 700;
+  color: var(--hitme-white);
+}
+
+.stride-marketing .hitme-leave {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px 24px;
+  text-align: center;
+  background: var(--hitme-cyan);
+  color: var(--hitme-on-cyan);
+}
+
+.stride-marketing .hitme-leave-label {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hitme-on-cyan);
+  margin-bottom: 4px;
+}
+
+.stride-marketing .hitme-leave-items {
+  list-style: none;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.stride-marketing .hitme-leave-address {
+  margin-top: 18px;
+  font-weight: 700;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-leave-email {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--hitme-on-cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-leave-email:focus-visible {
+  outline: 2px solid var(--hitme-on-cyan);
+  outline-offset: 3px;
+}
+
+.stride-marketing .hitme-panel {
+  padding: 36px 24px;
+  border-radius: 28px;
+  background: var(--hitme-navy);
+  color: var(--hitme-white);
+  box-shadow: var(--shadow-lg);
+}
+
+.stride-marketing .hitme-panel-heading {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--hitme-white);
+  margin-bottom: 26px;
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-checklist {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px 36px;
+  list-style: none;
+  padding: 0;
+}
+
+.stride-marketing .hitme-checklist li,
+.stride-marketing .hitme-why li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.stride-marketing .hitme-checklist-icon,
+.stride-marketing .hitme-why-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--hitme-cyan);
+}
+
+.stride-marketing .hitme-checklist-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--hitme-white);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-checklist-detail,
+.stride-marketing .hitme-why p {
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--hitme-lead);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-why {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px 32px;
+  list-style: none;
+  padding: 0;
+}
+
+.stride-marketing .hitme-why p { margin-top: 0; }
+
+.stride-marketing .hitme-closing {
+  text-align: center;
+}
+
+.stride-marketing .hitme-closing-lead {
+  margin: 0 auto;
+}
+
+.stride-marketing .hitme-closing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 18px;
+  margin-top: 28px;
+}
+
+@media (min-width: 768px) {
+  .stride-marketing .hitme-back {
+    grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);
+  }
+
+  .stride-marketing .hitme-back-main { padding: 64px 56px; }
+
+  .stride-marketing .hitme-leave { padding: 48px 32px; }
+
+  .stride-marketing .hitme-panel { padding: 48px 56px; }
+
+  .stride-marketing .hitme-checklist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .stride-marketing .hitme-why { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* ============================================================

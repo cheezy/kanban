@@ -1,5 +1,5 @@
 <main class="min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-16 hitme-stack">
     <section id="hitme-hero" class="hitme-card" aria-labelledby="hitme-heading">
       <div class="hitme-sticker-wrap">
         <img
@@ -61,6 +61,148 @@
         <p id="hitme-address" class="hitme-address" translate="no">
           <span class="hitme-accent">Stride</span>LikeABoss.com/HitMe
         </p>
+      </div>
+    </section>
+
+    <section id="hitme-back" class="hitme-back" aria-labelledby="hitme-back-heading">
+      <div class="hitme-back-main">
+        <h2 id="hitme-back-heading" class="hitme-back-heading">
+          <.hitme_highlight
+            text={gettext("Start with {desire}, leave with {knowledge}")}
+            values={%{"desire" => gettext("desire"), "knowledge" => gettext("knowledge")}}
+          />
+        </h2>
+
+        <p class="hitme-kicker hitme-label">{gettext("How people and AI work together")}</p>
+
+        <ol id="hitme-steps" class="hitme-steps">
+          <li>
+            <span class="hitme-step-number">01</span>
+            <span class="hitme-step-text">
+              <.hitme_highlight
+                text={gettext("{lead} to create the Backlog.")}
+                values={%{"lead" => gettext("You ideate with an agent")}}
+                highlight_class="hitme-step-strong"
+              />
+            </span>
+          </li>
+          <li>
+            <span class="hitme-step-number">02</span>
+            <span class="hitme-step-text">
+              <.hitme_highlight
+                text={gettext("{lead} and builds it.")}
+                values={%{"lead" => gettext("An agent claims it")}}
+                highlight_class="hitme-step-strong"
+              />
+            </span>
+          </li>
+          <li>
+            <span class="hitme-step-number">03</span>
+            <span class="hitme-step-text">
+              <.hitme_highlight
+                text={gettext("{lead} before it reaches Review.")}
+                values={%{"lead" => gettext("Your tests run")}}
+                highlight_class="hitme-step-strong"
+              />
+            </span>
+          </li>
+          <li>
+            <span class="hitme-step-number">04</span>
+            <span class="hitme-step-text">
+              <.hitme_highlight
+                text={gettext("{lead} into Done.")}
+                values={%{"lead" => gettext("A person approves it")}}
+                highlight_class="hitme-step-strong"
+              />
+            </span>
+          </li>
+          <li>
+            <span class="hitme-step-number">05</span>
+            <span class="hitme-step-text">
+              <span class="hitme-step-strong">{gettext("Everybody celebrates.")}</span>
+            </span>
+          </li>
+        </ol>
+      </div>
+
+      <div id="hitme-leave-with" class="hitme-leave">
+        <h3 class="hitme-leave-label">{gettext("You leave with")}</h3>
+        <ul id="hitme-leave-items" class="hitme-leave-items">
+          <li>{gettext("A working backlog")}</li>
+          <li>{gettext("Agents connected to it")}</li>
+          <li>{gettext("Part of your POC")}</li>
+          <li>{gettext("A team ready to run it")}</li>
+        </ul>
+        <p id="hitme-leave-address" class="hitme-leave-address" translate="no">
+          StrideLikeABoss.com/HitMe
+        </p>
+        <a id="hitme-leave-email" href={hit_me_mailto()} class="hitme-leave-email">
+          {hit_me_address()}
+        </a>
+      </div>
+    </section>
+
+    <section id="hitme-checklist" class="hitme-panel" aria-labelledby="hitme-checklist-heading">
+      <p class="hitme-kicker">{gettext("Before your session")}</p>
+      <h2 id="hitme-checklist-heading" class="hitme-panel-heading">
+        {gettext("Have these in place before the day")}
+      </h2>
+      <ul id="hitme-checklist-items" class="hitme-checklist">
+        <li :for={{title, detail} <- hit_me_checklist()}>
+          <.icon name="hero-check-circle" class="hitme-checklist-icon" />
+          <div>
+            <h3 class="hitme-checklist-title">{title}</h3>
+            <p class="hitme-checklist-detail">{detail}</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section id="hitme-why" class="hitme-panel" aria-labelledby="hitme-why-heading">
+      <h2 id="hitme-why-heading" class="hitme-kicker">{gettext("Why Stride")}</h2>
+      <ul id="hitme-why-points" class="hitme-why">
+        <li>
+          <.icon name="hero-rectangle-stack" class="hitme-why-icon" />
+          <p>
+            {gettext(
+              "Agents work from tasks your team has written and prioritized, not from a chat window."
+            )}
+          </p>
+        </li>
+        <li>
+          <.icon name="hero-check-badge" class="hitme-why-icon" />
+          <p>{gettext("Your tests must pass before an agent can finish a task.")}</p>
+        </li>
+        <li>
+          <.icon name="hero-hand-raised" class="hitme-why-icon" />
+          <p>
+            {gettext("You decide which tasks wait for a person's sign-off before they are Done.")}
+          </p>
+        </li>
+      </ul>
+    </section>
+
+    <section
+      id="hitme-closing"
+      class="hitme-panel hitme-closing"
+      aria-labelledby="hitme-closing-heading"
+    >
+      <h2 id="hitme-closing-heading" class="hitme-panel-heading">
+        {gettext("Book a half-day session")}
+      </h2>
+      <p class="hitme-lead hitme-closing-lead">
+        {gettext(
+          "Tell us about your team and your proof of concept, and we will reply with next steps."
+        )}
+      </p>
+      <div class="hitme-closing-actions">
+        <a id="hitme-closing-button" href={hit_me_mailto()} class="hitme-button">
+          <.icon name="hero-envelope" class="w-5 h-5" />
+          {gettext("Email us to book a session")}
+        </a>
+        <a id="hitme-closing-email" href={"mailto:" <> hit_me_address()} class="hitme-email">
+          {hit_me_address()}
+        </a>
       </div>
     </section>
   </div>

@@ -153,6 +153,197 @@ defmodule KanbanWeb.PageControllerHitMeTest do
     end
   end
 
+  describe "GET /HitMe below the hero (W2535)" do
+    defp texts(html, selector) do
+      html |> LazyHTML.query(selector) |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+    end
+
+    defp main_in(conn, locale) do
+      conn
+      |> Plug.Test.init_test_session(%{"locale" => locale})
+      |> get(~p"/HitMe")
+      |> html_response(200)
+      |> main()
+    end
+
+    test "renders 'desire' and 'knowledge' as highlighted words in the back heading",
+         %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      # Exact text pins that the highlights add no whitespace around them.
+      assert text_of(main, "#hitme-back-heading") == "Start with desire, leave with knowledge"
+      assert texts(main, "#hitme-back-heading .hitme-accent") == ["desire", "knowledge"]
+    end
+
+    test "lists the five how-it-works steps in order, ending with Everybody celebrates",
+         %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      assert texts(main, "#hitme-steps .hitme-step-number") == ~w(01 02 03 04 05)
+
+      assert texts(main, "#hitme-steps .hitme-step-text") == [
+               "You ideate with an agent to create the Backlog.",
+               "An agent claims it and builds it.",
+               "Your tests run before it reaches Review.",
+               "A person approves it into Done.",
+               "Everybody celebrates."
+             ]
+
+      assert texts(main, "#hitme-steps .hitme-step-strong") == [
+               "You ideate with an agent",
+               "An agent claims it",
+               "Your tests run",
+               "A person approves it",
+               "Everybody celebrates."
+             ]
+
+      # The visible numbers are the only numbering a screen reader gets once
+      # list-style is none, so they must not be hidden from it.
+      assert main |> LazyHTML.query("#hitme-steps [aria-hidden]") |> Enum.count() == 0
+    end
+
+    test "renders the You leave with panel with its four items, the address and the mailto",
+         %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      assert text_of(main, "#hitme-leave-with h3") == "You leave with"
+
+      assert texts(main, "#hitme-leave-items li") == [
+               "A working backlog",
+               "Agents connected to it",
+               "Part of your POC",
+               "A team ready to run it"
+             ]
+
+      assert text_of(main, "#hitme-leave-address") == "StrideLikeABoss.com/HitMe"
+
+      assert main |> LazyHTML.query("#hitme-leave-address") |> LazyHTML.attribute("translate") ==
+               ["no"]
+
+      assert main |> LazyHTML.query("#hitme-leave-email") |> LazyHTML.attribute("href") ==
+               [PageHTML.hit_me_mailto()]
+
+      assert text_of(main, "#hitme-leave-email") == "enterprise@letstango.ca"
+
+      # The navy steps come before the cyan panel, so they stack first on mobile.
+      assert main
+             |> LazyHTML.query("#hitme-back > div")
+             |> Enum.flat_map(&LazyHTML.attribute(&1, "class")) ==
+               ["hitme-back-main", "hitme-leave"]
+    end
+
+    test "renders no QR code: the sticker is the only image on the page", %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      assert main |> LazyHTML.query("img") |> Enum.flat_map(&LazyHTML.attribute(&1, "id")) ==
+               ["hitme-sticker"]
+
+      assert main |> LazyHTML.query("svg, canvas, picture, object, iframe") |> Enum.count() == 0
+      refute LazyHTML.to_html(main) =~ ~r/qr[-_ ]?code|\bqr\b/i
+    end
+
+    test "renders every Before your session item with a title and an explanation",
+         %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      assert text_of(main, "#hitme-checklist .hitme-kicker") == "Before your session"
+      assert text_of(main, "#hitme-checklist-heading") == "Have these in place before the day"
+
+      assert texts(main, "#hitme-checklist-items .hitme-checklist-title") == [
+               "Your people",
+               "Your idea",
+               "Your code",
+               "Your checks",
+               "Your agents",
+               "Your Stride accounts",
+               "Your machines"
+             ]
+
+      details = texts(main, "#hitme-checklist-items .hitme-checklist-detail")
+
+      assert length(details) == 7
+      assert Enum.all?(details, &String.ends_with?(&1, "."))
+    end
+
+    test "renders the three Why Stride points", %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      assert text_of(main, "#hitme-why-heading") == "Why Stride"
+
+      assert texts(main, "#hitme-why-points li") == [
+               "Agents work from tasks your team has written and prioritized, not from a chat window.",
+               "Your tests must pass before an agent can finish a task.",
+               "You decide which tasks wait for a person's sign-off before they are Done."
+             ]
+    end
+
+    test "the closing email button has the same mailto href as the hero's", %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      [hero_href] = main |> LazyHTML.query("#hitme-email-button") |> LazyHTML.attribute("href")
+
+      assert main |> LazyHTML.query("#hitme-closing-button") |> LazyHTML.attribute("href") ==
+               [hero_href]
+
+      assert text_of(main, "#hitme-closing-heading") == "Book a half-day session"
+      assert text_of(main, "#hitme-closing-button") == "Email us to book a session"
+      assert text_of(main, "#hitme-closing-email") == "enterprise@letstango.ca"
+
+      assert main |> LazyHTML.query("#hitme-closing-email") |> LazyHTML.attribute("href") ==
+               ["mailto:enterprise@letstango.ca"]
+    end
+
+    test "renders the sections in order below the hero, with unique ids", %{conn: conn} do
+      main = conn |> get(~p"/HitMe") |> html_response(200) |> main()
+
+      assert main |> LazyHTML.query("section[id]") |> Enum.flat_map(&LazyHTML.attribute(&1, "id")) ==
+               ~w(hitme-hero hitme-back hitme-checklist hitme-why hitme-closing)
+
+      ids = main |> LazyHTML.query("[id]") |> Enum.flat_map(&LazyHTML.attribute(&1, "id"))
+      assert ids == Enum.uniq(ids)
+    end
+
+    test "the closing section does not reuse the hero's .hitme-cta button-row class" do
+      # .hitme-cta is the hero's flex row of buttons; on the closing section it
+      # would lay the heading, lead and buttons out side by side.
+      [class] =
+        @template
+        |> File.read!()
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("#hitme-closing")
+        |> LazyHTML.attribute("class")
+
+      refute "hitme-cta" in String.split(class)
+    end
+
+    test "with the de locale renders the translated checklist heading and keeps the highlights",
+         %{conn: conn} do
+      main = main_in(conn, "de")
+
+      assert text_of(main, "#hitme-checklist .hitme-kicker") == "Vor Ihrer Session"
+      refute LazyHTML.text(main) =~ "Before your session"
+
+      assert texts(main, "#hitme-back-heading .hitme-accent") == ["Tatendrang", "Wissen"]
+      assert length(texts(main, "#hitme-steps .hitme-step-strong")) == 5
+      refute LazyHTML.text(main) =~ ~r/\{[a-z_]+\}/
+    end
+
+    test "with the ja locale renders a highlight the translation moved mid-sentence",
+         %{conn: conn} do
+      main = main_in(conn, "ja")
+
+      step_03 = main |> LazyHTML.query("#hitme-steps .hitme-step-text") |> Enum.at(2)
+
+      assert step_03 |> LazyHTML.text() |> String.trim() ==
+               "レビューに進む前にあなたのテストが実行されます。"
+
+      assert step_03 |> LazyHTML.query(".hitme-step-strong") |> LazyHTML.text() ==
+               "あなたのテストが実行されます"
+
+      refute LazyHTML.text(main) =~ ~r/\{[a-z_]+\}/
+    end
+  end
+
   describe "the /HitMe layout rules in app.css" do
     # A browser check covers how these render; these pin the rules that keep the
     # tilted sticker and long translated lines from overflowing the card.
@@ -192,6 +383,34 @@ defmodule KanbanWeb.PageControllerHitMeTest do
       assert rule(css, ".stride-marketing .hitme-address") =~ "overflow-wrap: anywhere"
     end
 
+    test "the back card clips its corners and splits about 70/30 from 768px", %{css: css} do
+      back = rule(css, ".stride-marketing .hitme-back")
+
+      assert back =~ "overflow: hidden"
+      # Text that sets no colour of its own must not inherit the page's dark ink.
+      assert back =~ "color: var(--hitme-white);"
+      assert back =~ "grid-template-columns: minmax(0, 1fr);"
+      # rule/2 finds the base rule first, so match the desktop split directly.
+      assert css =~ "grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);"
+    end
+
+    test "long translated step, checklist and panel text wraps inside its card", %{css: css} do
+      for selector <- ~w(.hitme-back-heading .hitme-step-text .hitme-leave-address
+                         .hitme-leave-email .hitme-panel-heading .hitme-checklist-title) do
+        assert rule(css, ".stride-marketing #{selector}") =~ "overflow-wrap: anywhere",
+               "#{selector} must wrap long words"
+      end
+    end
+
+    test "the cyan panel's text is the on-cyan token, the pair the contrast gate checks",
+         %{css: css} do
+      leave = rule(css, ".stride-marketing .hitme-leave")
+
+      assert leave =~ "background: var(--hitme-cyan);"
+      assert leave =~ "color: var(--hitme-on-cyan);"
+      assert rule(css, ".stride-marketing .hitme-leave-email") =~ "color: var(--hitme-on-cyan);"
+    end
+
     test "on narrow screens the sticker is capped below the card's width", %{css: css} do
       sticker = rule(css, ".stride-marketing .hitme-sticker")
 
@@ -200,7 +419,7 @@ defmodule KanbanWeb.PageControllerHitMeTest do
     end
   end
 
-  describe "PageHTML.hit_me_mailto/1" do
+  describe "PageHTML /HitMe helpers" do
     test "percent-encodes spaces as %20, not +" do
       assert PageHTML.hit_me_mailto("Book a session") ==
                "mailto:enterprise@letstango.ca?subject=Book%20a%20session"
@@ -228,6 +447,30 @@ defmodule KanbanWeb.PageControllerHitMeTest do
     test "with no argument uses the translated booking subject" do
       assert PageHTML.hit_me_mailto() ==
                "mailto:enterprise@letstango.ca?subject=Stride%20half-day%20proof-of-concept%20session"
+    end
+
+    test "hit_me_checklist/0 returns the seven {title, explanation} pairs in order" do
+      checklist = PageHTML.hit_me_checklist()
+
+      assert Enum.map(checklist, &elem(&1, 0)) == [
+               "Your people",
+               "Your idea",
+               "Your code",
+               "Your checks",
+               "Your agents",
+               "Your Stride accounts",
+               "Your machines"
+             ]
+
+      for {_title, explanation} <- checklist do
+        assert is_binary(explanation) and String.ends_with?(explanation, ".")
+      end
+    end
+
+    test "hit_me_checklist/0 follows the current Gettext locale" do
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert [{"Ihre Leute", _} | _] = PageHTML.hit_me_checklist()
+      end)
     end
 
     test "hit_me_address/0 is the address the button mails" do
