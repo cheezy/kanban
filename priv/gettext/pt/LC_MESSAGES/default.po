@@ -13583,7 +13583,7 @@ msgid "Agents build."
 msgstr "Os agentes constroem."
 
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex:54
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:195
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Email us to book a session"
 msgstr "Envie um e-mail para agendar uma sessão"
@@ -13684,17 +13684,17 @@ msgstr "Uma lista de pendências funcionando"
 msgid "Agents connected to it"
 msgstr "Agentes conectados a ela"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:165
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Agents work from tasks your team has written and prioritized, not from a chat window."
 msgstr "Os agentes trabalham a partir de tarefas que sua equipe escreveu e priorizou, não de uma janela de chat."
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:144
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Before your session"
 msgstr "Antes da sua sessão"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:185
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Book a half-day session"
 msgstr "Agende uma sessão de meio período"
@@ -13709,7 +13709,7 @@ msgstr "Todos comemoram."
 msgid "Everyone signed up at stridelikeaboss.com before the day."
 msgstr "Todos os participantes cadastrados em stridelikeaboss.com antes do dia."
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:146
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Have these in place before the day"
 msgstr "Tenha isto pronto antes do dia"
@@ -13734,7 +13734,7 @@ msgstr "Parte da sua prova de conceito"
 msgid "Start with {desire}, leave with {knowledge}"
 msgstr "Chegue com {desire}, saia com {knowledge}"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:188
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Tell us about your team and your proof of concept, and we will reply with next steps."
 msgstr "Conte-nos sobre sua equipe e sua prova de conceito, e responderemos com os próximos passos."
@@ -13744,12 +13744,12 @@ msgstr "Conte-nos sobre sua equipe e sua prova de conceito, e responderemos com 
 msgid "The person who owns the proof of concept, plus the developers who will build it, free for the whole half day."
 msgstr "A pessoa responsável pela prova de conceito e os desenvolvedores que vão construí-la, disponíveis durante todo o meio período."
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:160
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Why Stride"
 msgstr "Por que Stride"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:177
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "You decide which tasks wait for a person's sign-off before they are Done."
 msgstr "Você decide quais tarefas aguardam a aprovação de uma pessoa antes de serem concluídas."
@@ -13799,7 +13799,7 @@ msgstr "Suas máquinas"
 msgid "Your people"
 msgstr "Sua equipe"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:172
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Your tests must pass before an agent can finish a task."
 msgstr "Seus testes precisam passar antes que um agente possa concluir uma tarefa."

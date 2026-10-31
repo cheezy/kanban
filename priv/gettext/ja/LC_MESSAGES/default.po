@@ -13538,7 +13538,7 @@ msgid "Agents build."
 msgstr "エージェントが作る。"
 
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex:54
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:195
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Email us to book a session"
 msgstr "メールでセッションを予約"
@@ -13639,17 +13639,17 @@ msgstr "動くバックログ"
 msgid "Agents connected to it"
 msgstr "それにつながったエージェント"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:165
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Agents work from tasks your team has written and prioritized, not from a chat window."
 msgstr "エージェントはチャット画面ではなく、チームが書いて優先順位を付けたタスクに基づいて作業します。"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:144
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Before your session"
 msgstr "セッションの前に"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:185
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Book a half-day session"
 msgstr "半日セッションを予約する"
@@ -13664,7 +13664,7 @@ msgstr "みんなでお祝い。"
 msgid "Everyone signed up at stridelikeaboss.com before the day."
 msgstr "参加者全員が当日までに stridelikeaboss.com に登録していること。"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:146
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Have these in place before the day"
 msgstr "当日までに準備しておくもの"
@@ -13689,7 +13689,7 @@ msgstr "POC の一部"
 msgid "Start with {desire}, leave with {knowledge}"
 msgstr "{desire}を持って来て、{knowledge}を持ち帰る"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:188
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Tell us about your team and your proof of concept, and we will reply with next steps."
 msgstr "チームと POC について教えてください。次のステップをご返信します。"
@@ -13699,12 +13699,12 @@ msgstr "チームと POC について教えてください。次のステップ�
 msgid "The person who owns the proof of concept, plus the developers who will build it, free for the whole half day."
 msgstr "POC の責任者と、それを構築する開発者。半日のあいだずっと参加できること。"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:160
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Why Stride"
 msgstr "Stride を選ぶ理由"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:177
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "You decide which tasks wait for a person's sign-off before they are Done."
 msgstr "どのタスクを完了前に人の承認待ちにするかは、あなたが決めます。"
@@ -13754,7 +13754,7 @@ msgstr "マシン"
 msgid "Your people"
 msgstr "メンバー"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:172
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Your tests must pass before an agent can finish a task."
 msgstr "エージェントがタスクを完了するには、テストに合格する必要があります。"

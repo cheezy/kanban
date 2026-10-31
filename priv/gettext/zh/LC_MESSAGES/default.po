@@ -13541,7 +13541,7 @@ msgid "Agents build."
 msgstr "代理构建。"
 
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex:54
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:195
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Email us to book a session"
 msgstr "发邮件预约一次会话"
@@ -13642,17 +13642,17 @@ msgstr "可运行的待办"
 msgid "Agents connected to it"
 msgstr "与之连接的代理"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:165
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Agents work from tasks your team has written and prioritized, not from a chat window."
 msgstr "代理根据团队编写并排好优先级的任务工作，而不是在聊天窗口中工作。"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:144
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Before your session"
 msgstr "会前准备"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:185
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Book a half-day session"
 msgstr "预约半天工作坊"
@@ -13667,7 +13667,7 @@ msgstr "大家一起庆祝。"
 msgid "Everyone signed up at stridelikeaboss.com before the day."
 msgstr "所有参与者在当天之前注册 stridelikeaboss.com。"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:146
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Have these in place before the day"
 msgstr "请在当天之前准备好这些"
@@ -13692,7 +13692,7 @@ msgstr "你的 POC 的一部分"
 msgid "Start with {desire}, leave with {knowledge}"
 msgstr "带着{desire}而来，带着{knowledge}离开"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:188
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Tell us about your team and your proof of concept, and we will reply with next steps."
 msgstr "告诉我们你的团队和概念验证，我们会回复后续步骤。"
@@ -13702,12 +13702,12 @@ msgstr "告诉我们你的团队和概念验证，我们会回复后续步骤。
 msgid "The person who owns the proof of concept, plus the developers who will build it, free for the whole half day."
 msgstr "负责这个概念验证的人，以及将要构建它的开发者，整个半天都能参与。"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:160
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Why Stride"
 msgstr "为什么选择 Stride"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:177
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "You decide which tasks wait for a person's sign-off before they are Done."
 msgstr "由你决定哪些任务在完成前需要等待人工批准。"
@@ -13757,7 +13757,7 @@ msgstr "你的电脑"
 msgid "Your people"
 msgstr "你的人员"
 
-#: lib/kanban_web/controllers/page_html/hit_me.html.heex:172
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Your tests must pass before an agent can finish a task."
 msgstr "代理必须先通过你的测试，才能完成任务。"
