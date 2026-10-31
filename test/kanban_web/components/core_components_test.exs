@@ -118,7 +118,9 @@ defmodule KanbanWeb.CoreComponentsTest do
 
     test "hide_modal keeps a caller's commands ahead of the focus release" do
       [first, second | _] =
-        Phoenix.LiveView.JS.push("closed") |> CoreComponents.hide_modal("my-modal") |> Map.get(:ops)
+        Phoenix.LiveView.JS.push("closed")
+        |> CoreComponents.hide_modal("my-modal")
+        |> Map.get(:ops)
 
       assert match?(["push", _], first)
       assert second == ["dispatch", %{event: "stride:release-focus", to: "#my-modal"}]

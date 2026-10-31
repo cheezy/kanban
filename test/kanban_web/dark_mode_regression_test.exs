@@ -23,6 +23,7 @@ defmodule KanbanWeb.DarkModeRegressionTest do
   @public_routes [
     "/",
     "/about",
+    "/HitMe",
     "/pricing",
     "/privacy",
     "/product",

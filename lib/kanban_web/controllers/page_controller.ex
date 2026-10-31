@@ -11,6 +11,7 @@ defmodule KanbanWeb.PageController do
        [html: {KanbanWeb.Layouts, :marketing}]
        when action in [
               :acceptable_use,
+              :hit_me,
               :home,
               :pricing,
               :privacy,
@@ -39,6 +40,10 @@ defmodule KanbanWeb.PageController do
 
   def about(conn, _params) do
     render(conn, :about)
+  end
+
+  def hit_me(conn, _params) do
+    render(conn, :hit_me, page_title: gettext("Half-day AI proof-of-concept sessions"))
   end
 
   def pricing(conn, _params) do

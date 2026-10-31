@@ -1,7 +1,7 @@
 defmodule KanbanWeb.MarketingImagesTest do
   @moduledoc """
-  Guards the screenshots on the showcase pages, /product and /workflows: each
-  image a page shows must exist under priv/static, be a PNG under
+  Guards the screenshots on the showcase pages, /product and /workflows, and
+  the sticker on /HitMe: each image a page shows must exist under priv/static, be a PNG under
   images/marketing, and declare the size it really is. The page reserves the
   declared size before the image loads, so a wrong or missing size makes the
   page jump. Every PNG in images/marketing must also be used by one of the
@@ -13,7 +13,7 @@ defmodule KanbanWeb.MarketingImagesTest do
 
   @static_root Path.expand("../../../priv/static", __DIR__)
   @marketing_dir "/images/marketing/"
-  @pages ["/product", "/workflows"]
+  @pages ["/product", "/workflows", "/HitMe"]
 
   # Real PNGs for the size checks' own tests: 560x160 and 560x225.
   @fixture_png "/images/resources/guides/adding-task-step-1.png"

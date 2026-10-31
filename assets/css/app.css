@@ -1,10 +1,15 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-/* Geist + Geist Mono fonts — used by the .stride-marketing scope only.
-   Loaded for the marketing surfaces (landing page, etc.); other routes
-   continue to use the daisyUI / system font stack. */
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+/* Geist + Geist Mono fonts — the --font-sans / --font-mono faces of the
+   .stride-marketing (marketing pages) and .stride-screen (signed-in app
+   screens) scopes. Silkscreen is the pixel face of the printed handout, used
+   only by the /HitMe page (--font-pixel). Routes outside both scopes keep the
+   daisyUI / system font stack. This is the global stylesheet, so every page
+   requests the Google Fonts stylesheet; the font files load only where a page
+   uses one of these faces. The CSP allows the two Google hosts (CspNonce,
+   W2534); self-hosting them is D402. */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Silkscreen:wght@400;700&display=swap');
 
 @import "tailwindcss" source(none);
 @source "../css";
@@ -1007,6 +1012,18 @@
   /* Type */
   --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-pixel: 'Silkscreen', 'Geist Mono', ui-monospace, monospace;
+
+  /* /HitMe flyer palette (W2534), sampled from the printed handout. The
+     flyer card stays navy in both themes, so the dark block repeats these
+     values: the contrast gate layers dark over light. */
+  --hitme-navy: #0f1a2b;
+  --hitme-cyan: #06b6d4;
+  --hitme-yellow: #f6c21c;
+  --hitme-lead: #c9d3df;
+  --hitme-caption: #9fb0c4;
+  --hitme-white: #ffffff;
+  --hitme-on-cyan: #0f1a2b;
 
   /* Radii */
   --r-sm: 4px;
@@ -1152,6 +1169,15 @@
   --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 1px 0 rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5), 0 24px 48px rgba(0, 0, 0, 0.6);
+
+  /* /HitMe flyer palette — the printed card is navy in both themes */
+  --hitme-navy: #0f1a2b;
+  --hitme-cyan: #06b6d4;
+  --hitme-yellow: #f6c21c;
+  --hitme-lead: #c9d3df;
+  --hitme-caption: #9fb0c4;
+  --hitme-white: #ffffff;
+  --hitme-on-cyan: #0f1a2b;
 }
 
 .stride-marketing *,
@@ -1217,6 +1243,180 @@
 /* Linear-ish row hover */
 .stride-marketing .row-hover:hover,
 .stride-screen .row-hover:hover { background: var(--surface-sunken); }
+
+/* ============================================================
+   /HitMe — the front of the printed handout (W2534).
+   A navy card with the copy on the left and the tilted sticker
+   running off its right edge on desktop. On narrow screens the
+   sticker sits above the copy, smaller and whole. The card clips
+   the sticker, so the tilt never causes horizontal scrolling.
+   ============================================================ */
+.stride-marketing .hitme-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+  padding: 32px 24px;
+  border-radius: 28px;
+  background: var(--hitme-navy);
+  color: var(--hitme-white);
+  box-shadow: var(--shadow-lg);
+}
+
+.stride-marketing .hitme-sticker-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.stride-marketing .hitme-sticker {
+  display: block;
+  width: 220px;
+  max-width: 70%;
+  height: auto;
+  transform: rotate(8deg);
+}
+
+.stride-marketing .hitme-kicker {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hitme-yellow);
+  margin-bottom: 18px;
+}
+
+.stride-marketing .hitme-heading {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 7vw, 4.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--hitme-white);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-accent { color: var(--hitme-cyan); }
+
+.stride-marketing .hitme-lead {
+  margin-top: 22px;
+  max-width: 34rem;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--hitme-lead);
+}
+
+.stride-marketing .hitme-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 12px;
+  margin-top: 30px;
+  list-style: none;
+  padding: 0;
+}
+
+.stride-marketing .hitme-chips li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.stride-marketing .hitme-chip {
+  display: inline-block;
+  min-width: 84px;
+  padding: 7px 12px;
+  border: 2px solid var(--hitme-cyan);
+  border-radius: 6px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--hitme-white);
+}
+
+.stride-marketing .hitme-chip-done {
+  border-color: var(--hitme-white);
+  background: var(--hitme-white);
+  color: var(--hitme-navy);
+}
+
+.stride-marketing .hitme-chip-caption {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--hitme-caption);
+}
+
+.stride-marketing .hitme-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  margin-top: 32px;
+}
+
+.stride-marketing .hitme-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--hitme-cyan);
+  color: var(--hitme-on-cyan);
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.stride-marketing .hitme-button:hover { opacity: 0.92; transform: translateY(-1px); }
+
+.stride-marketing .hitme-button:focus-visible,
+.stride-marketing .hitme-email:focus-visible {
+  outline: 2px solid var(--hitme-yellow);
+  outline-offset: 3px;
+}
+
+.stride-marketing .hitme-email {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--hitme-lead);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  user-select: all;
+}
+
+.stride-marketing .hitme-address {
+  margin-top: 36px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: var(--hitme-white);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .stride-marketing .hitme-card {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: center;
+    padding: 56px 0 56px 56px;
+  }
+
+  .stride-marketing .hitme-copy { order: 1; }
+
+  .stride-marketing .hitme-sticker-wrap {
+    order: 2;
+    justify-content: flex-end;
+  }
+
+  /* Runs off the card's right edge, as on the flyer; the card clips it. */
+  .stride-marketing .hitme-sticker {
+    width: 118%;
+    max-width: none;
+    transform: translateX(14%) rotate(8deg);
+  }
+}
 
 /* ============================================================
    Board kanban — mobile responsive density at <=768px.

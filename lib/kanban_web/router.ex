@@ -111,6 +111,7 @@ defmodule KanbanWeb.Router do
     get "/", PageController, :home
     get "/about", PageController, :about
     get "/acceptable-use", PageController, :acceptable_use
+    get "/HitMe", PageController, :hit_me
     get "/pricing", PageController, :pricing
     get "/privacy", PageController, :privacy
     get "/product", PageController, :product

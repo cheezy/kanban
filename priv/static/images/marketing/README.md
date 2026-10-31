@@ -2,8 +2,16 @@
 
 This directory holds the screenshots on the two showcase pages, `/product`
 (`lib/kanban_web/controllers/page_html/product.html.heex`) and `/workflows`
-(`lib/kanban_web/controllers/page_html/workflows.html.heex`). Every image
+(`lib/kanban_web/controllers/page_html/workflows.html.heex`). Every screenshot
 comes from demo data, so it can be taken again whenever the UI changes.
+
+It also holds the "LEVEL: BOSS" Stride sticker on `/HitMe`
+(`lib/kanban_web/controllers/page_html/hit_me.html.heex`), the page the printed
+handout points to. The sticker is supplied artwork, not a screenshot: it is the
+handout's sticker with a transparent background outside its white border, so
+it sits on the page's navy card without a grey box. Replace it only with a new
+export of the same artwork, keep the file name, and declare its size in the
+page's `width` and `height`.
 
 `test/kanban_web/controllers/marketing_images_test.exs` reads the `<img>` tags
 in each page's `<main>` and fails when an image:
@@ -11,7 +19,7 @@ in each page's `<main>` and fails when an image:
 - points at a file that isn't under `priv/static`;
 - isn't a PNG in this directory (`/images/marketing/`);
 - has no `width` and `height`, or declares a size the PNG doesn't have;
-- is in this directory but neither page uses it.
+- is in this directory but no page uses it.
 
 On `/product` it also fails when a subsection shows neither an image nor a code
 snippet (see the end of this file).
@@ -141,6 +149,7 @@ One row per planned image. Board ids differ between databases, so routes name th
 | `workflows-validate.png` | `/workflows`, "The AI development lifecycle" / Validate | same task | Maya Chen | Page zoomed to 150%, scrolled to **Workflow steps** | The **Workflow steps** section, main column only | Light |
 | `workflows-flagged-for-review.png` | `/workflows`, "Human review and completion" / "Flagged for review" | `/review` | Maya Chen | "Rank exact title matches above partial ones" clicked, then `lib/storefront/search/ranking.ex`; the review pane scrolled to its end. Don't click **Approve** or **Request changes** | The queue and the review pane, below the page header (its subtitle counts every board you can see) | Light |
 | `workflows-cleared-to-ship.png` | `/workflows`, "Human review and completion" / "Cleared to ship" | `/boards/<Search>` | Maya Chen | Board scrolled sideways, page zoomed to 150% | The Review column and the top of the Done column | Light |
+| `hitme-sticker.png` | `/HitMe`, hero | None: supplied artwork | None | The handout's "LEVEL: BOSS" sticker, 504x504, transparent outside its white border | Whole sticker; the page tilts and clips it | Both |
 
 Four Operate rows and the seven Govern rows reuse Resources guide
 screenshots, which were taken from the same demo data under the guide README's

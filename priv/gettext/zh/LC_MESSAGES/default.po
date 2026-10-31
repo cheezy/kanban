@@ -55,7 +55,8 @@ msgstr " · 任务管理"
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:92
 #: lib/kanban_web/components/target_progress_header.ex:211
-#: lib/kanban_web/controllers/page_html.ex:227
+#: lib/kanban_web/controllers/page_html.ex:251
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:46
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:613
 #: lib/kanban_web/emails/digest_email.ex:135
 #: lib/kanban_web/emails/digest_email.ex:195
@@ -2587,6 +2588,7 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:91
 #: lib/kanban_web/components/target_progress_header.ex:210
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:42
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:438
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
 #: lib/kanban_web/emails/digest_email.ex:134
@@ -3293,6 +3295,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:90
 #: lib/kanban_web/components/target_progress_header.ex:209
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:38
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
 #: lib/kanban_web/emails/digest_email.ex:133
 #: lib/kanban_web/emails/digest_email.ex:194
@@ -3386,6 +3389,7 @@ msgstr "产品"
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:89
 #: lib/kanban_web/components/target_progress_header.ex:208
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:34
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:610
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
@@ -6305,7 +6309,7 @@ msgstr "探索"
 msgid "Hook"
 msgstr "钩子"
 
-#: lib/kanban_web/controllers/page_html.ex:220
+#: lib/kanban_web/controllers/page_html.ex:244
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:380
 #, elixir-autogen, elixir-format
 msgid "Implement"
@@ -13314,12 +13318,12 @@ msgstr "任务完成后，代理运行过的步骤（包括 after_doing 钩子�
 msgid "The task's details show the task-reviewer's report and, when the board's field visibility settings turn it on, the task's behaviour test matrix: each behaviour, the test that covers it, and its status."
 msgstr "任务详情会显示 task-reviewer 的报告，以及在看板的字段可见性设置中开启后显示的任务行为/测试矩阵：每个行为、覆盖它的测试及其状态。"
 
-#: lib/kanban_web/controllers/page_html.ex:266
+#: lib/kanban_web/controllers/page_html.ex:290
 #, elixir-autogen, elixir-format
 msgid "A task can be claimed only when every task it depends on is Done, so finishing one task is what unblocks the next. Goals are never claimed themselves: when a goal's last task is done, the after_goal hook runs and the goal moves to Done."
 msgstr "只有当任务依赖的所有任务都处于完成状态时，它才能被认领，因此完成一个任务就会解锁下一个。目标本身从不被认领：当目标的最后一个任务完成时，after_goal 钩子运行，目标移入完成。"
 
-#: lib/kanban_web/controllers/page_html.ex:102
+#: lib/kanban_web/controllers/page_html.ex:126
 #, elixir-autogen, elixir-format
 msgid "Add the plugin to your opencode.json."
 msgstr "将插件添加到你的 opencode.json。"
@@ -13339,12 +13343,12 @@ msgstr "任意 MCP 客户端"
 msgid "Around the code the agent writes, the plugin adds gates in a fixed order. Small tasks can skip exploring and review, and the optional gates run only when their plugin is installed and the task asks for them."
 msgstr "围绕代理编写的代码，插件按固定顺序添加关卡。小任务可以跳过探索和审查；可选关卡只有在其插件已安装且任务要求时才会运行。"
 
-#: lib/kanban_web/controllers/page_html.ex:248
+#: lib/kanban_web/controllers/page_html.ex:272
 #, elixir-autogen, elixir-format
 msgid "Before any code is written, a read-only subagent maps the files, tests and patterns the task touches. For medium and larger tasks, a planner turns that map into a step-by-step plan."
 msgstr "在编写任何代码之前，一个只读子代理会梳理任务涉及的文件、测试和模式。对于中等及更大的任务，规划器会把这些结果整理成分步计划。"
 
-#: lib/kanban_web/controllers/page_html.ex:265
+#: lib/kanban_web/controllers/page_html.ex:289
 #, elixir-autogen, elixir-format
 msgid "Dependencies and goals"
 msgstr "依赖与目标"
@@ -13354,12 +13358,12 @@ msgstr "依赖与目标"
 msgid "Each section is a heading and a bash block. The commands are yours: use whatever your project already runs."
 msgstr "每个部分都是一个标题加一个 bash 代码块。命令由你决定：直接使用项目里已经在运行的命令即可。"
 
-#: lib/kanban_web/controllers/page_html.ex:261
+#: lib/kanban_web/controllers/page_html.ex:285
 #, elixir-autogen, elixir-format
 msgid "Exploratory testing"
 msgstr "探索性测试"
 
-#: lib/kanban_web/controllers/page_html.ex:247
+#: lib/kanban_web/controllers/page_html.ex:271
 #, elixir-autogen, elixir-format
 msgid "Explore and plan"
 msgstr "探索与规划"
@@ -13369,23 +13373,23 @@ msgstr "探索与规划"
 msgid "Hooks are shell commands you keep in a .stride.md file at the root of your project. The agent runs each one on your own machine at a fixed point in the loop. When a command fails, the agent stops there and fixes the problem before it carries on."
 msgstr "钩子是你放在项目根目录 .stride.md 文件中的 shell 命令。代理会在循环中的固定节点，在你自己的机器上运行每一个钩子。命令失败时，代理会停在那里，先修复问题再继续。"
 
-#: lib/kanban_web/controllers/page_html.ex:100
+#: lib/kanban_web/controllers/page_html.ex:124
 #, elixir-autogen, elixir-format
 msgid "Install as a Gemini CLI extension."
 msgstr "作为 Gemini CLI 扩展安装。"
 
-#: lib/kanban_web/controllers/page_html.ex:98
+#: lib/kanban_web/controllers/page_html.ex:122
 #, elixir-autogen, elixir-format
 msgid "Install from the Stride plugin marketplace."
 msgstr "从 Stride 插件市场安装。"
 
-#: lib/kanban_web/controllers/page_html.ex:99
+#: lib/kanban_web/controllers/page_html.ex:123
 #, elixir-autogen, elixir-format
 msgid "Install straight from the plugin's repository."
 msgstr "直接从插件的代码仓库安装。"
 
-#: lib/kanban_web/controllers/page_html.ex:101
-#: lib/kanban_web/controllers/page_html.ex:103
+#: lib/kanban_web/controllers/page_html.ex:125
+#: lib/kanban_web/controllers/page_html.ex:127
 #, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr "使用插件代码仓库中的安装脚本安装。"
@@ -13395,7 +13399,7 @@ msgstr "使用插件代码仓库中的安装脚本安装。"
 msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as six tools, using the same API token as the REST API. MCP is part of the paid plans."
 msgstr "你的工具没有插件？Stride 的 MCP 服务器以六个工具的形式，为任意 MCP 客户端提供同样的任务循环，使用与 REST API 相同的 API 令牌。MCP 属于付费方案。"
 
-#: lib/kanban_web/controllers/page_html.ex:252
+#: lib/kanban_web/controllers/page_html.ex:276
 #, elixir-autogen, elixir-format
 msgid "Once the code is written, a reviewer subagent checks the diff against the task's acceptance criteria, pitfalls, patterns and testing strategy. The agent fixes what it finds before the validation hook runs."
 msgstr "代码写完后，一个审查子代理会对照任务的验收标准、陷阱、模式和测试策略检查差异。代理会在验证钩子运行之前修复发现的问题。"
@@ -13410,37 +13414,37 @@ msgstr "可选"
 msgid "Optional plugin"
 msgstr "可选插件"
 
-#: lib/kanban_web/controllers/page_html.ex:251
+#: lib/kanban_web/controllers/page_html.ex:275
 #, elixir-autogen, elixir-format
 msgid "Review the diff"
 msgstr "审查差异"
 
-#: lib/kanban_web/controllers/page_html.ex:195
+#: lib/kanban_web/controllers/page_html.ex:219
 #, elixir-autogen, elixir-format
 msgid "Runs as the task is completed. Open a pull request or post the diff."
 msgstr "任务完成时运行。创建拉取请求或发布差异。"
 
-#: lib/kanban_web/controllers/page_html.ex:197
+#: lib/kanban_web/controllers/page_html.ex:221
 #, elixir-autogen, elixir-format
 msgid "Runs once a human approves the task, or straight away when it needs no review. Merge, deploy or notify."
 msgstr "在人工批准任务后运行；若任务无需审查，则立即运行。用于合并、部署或通知。"
 
-#: lib/kanban_web/controllers/page_html.ex:201
+#: lib/kanban_web/controllers/page_html.ex:225
 #, elixir-autogen, elixir-format
 msgid "Runs once, when the last task of a goal is done. Push the goal's work or cut a release, and the goal moves to Done."
 msgstr "在目标的最后一个任务完成时运行一次。推送该目标的工作或发布版本，随后目标移入完成。"
 
-#: lib/kanban_web/controllers/page_html.ex:187
+#: lib/kanban_web/controllers/page_html.ex:211
 #, elixir-autogen, elixir-format
 msgid "Runs when the agent claims a task. Pull the latest code and set up the workspace."
 msgstr "代理认领任务时运行。拉取最新代码并准备工作区。"
 
-#: lib/kanban_web/controllers/page_html.ex:191
+#: lib/kanban_web/controllers/page_html.ex:215
 #, elixir-autogen, elixir-format
 msgid "Runs when the code is written. Run the tests, linters and build; the task cannot complete until they pass."
 msgstr "代码写完后运行。运行测试、代码检查和构建；全部通过之前，任务无法完成。"
 
-#: lib/kanban_web/controllers/page_html.ex:255
+#: lib/kanban_web/controllers/page_html.ex:279
 #, elixir-autogen, elixir-format
 msgid "Security review"
 msgstr "安全审查"
@@ -13460,12 +13464,12 @@ msgstr "围绕代码的质量关卡"
 msgid "The quality gates in the order they run"
 msgstr "按运行顺序排列的质量关卡"
 
-#: lib/kanban_web/controllers/page_html.ex:262
+#: lib/kanban_web/controllers/page_html.ex:286
 #, elixir-autogen, elixir-format
 msgid "When the stride-exploratory-testing plugin is installed and the task lists manual tests, an explorer runs a time-boxed session against a running app you have confirmed is safe to test and is not production, then reports what it found. Skipping it never blocks the task."
 msgstr "当安装了 stride-exploratory-testing 插件且任务列出了手动测试时，探索代理会针对一个正在运行、且你已确认可以测试并且不是生产环境的应用，进行一次限时会话，然后报告发现。跳过这一步永远不会阻塞任务。"
 
-#: lib/kanban_web/controllers/page_html.ex:257
+#: lib/kanban_web/controllers/page_html.ex:281
 #, elixir-autogen, elixir-format
 msgid "When the stride-security-review plugin is installed and the task lists security considerations, a security reviewer checks the same diff alongside the task reviewer. A consideration it finds unmitigated is escalated rather than waved through."
 msgstr "当安装了 stride-security-review 插件且任务列出了安全考量时，安全审查者会与任务审查者一起检查同一份差异。它认定未缓解的考量会被升级处理，而不是被放行。"
@@ -13529,3 +13533,69 @@ msgstr "专属于您组织的 Slack 支持频道，只有您的组织可以看�
 #, elixir-autogen, elixir-format
 msgid "For every 100 users, or part of 100, add 2 people to the channel. For example, 60 users get 2 people and 110 users get 4."
 msgstr "每 100 名用户（不足 100 名按 100 名计）可添加 2 人加入该频道。例如，60 名用户可添加 2 人，110 名用户可添加 4 人。"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Agents build."
+msgstr "代理构建。"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Email us to book a session"
+msgstr "发邮件预约一次会话"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:22
+#, elixir-autogen, elixir-format
+msgid "Everyone ships."
+msgstr "人人交付。"
+
+#: lib/kanban_web/controllers/page_controller.ex:46
+#, elixir-autogen, elixir-format
+msgid "Half-day AI proof-of-concept sessions"
+msgstr "半天 AI 概念验证会话"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "How a task moves"
+msgstr "任务如何流转"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Humans decide."
+msgstr "人类决策。"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "In half a day: your backlog and agents set up, part of your proof of concept delivered, and your team is ready."
+msgstr "半天之内:设置好你的待办和代理,交付部分概念验证,让团队做好准备。"
+
+#: lib/kanban_web/controllers/page_html.ex:103
+#, elixir-autogen, elixir-format
+msgid "Stride half-day proof-of-concept session"
+msgstr "Stride 半天概念验证会话"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Stride sticker: Level Boss"
+msgstr "Stride 贴纸:Level Boss"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "Stride with us"
+msgstr "与 Stride 同行"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "agent"
+msgstr "代理"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "together"
+msgstr "一起"
+
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:35
+#: lib/kanban_web/controllers/page_html/hit_me.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "you"
+msgstr "你"

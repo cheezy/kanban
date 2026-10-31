@@ -60,12 +60,22 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # form-action 'self' close the plugin and form-hijack sinks. Removing
   # style-src 'unsafe-inline' is intentionally deferred (the LiveView inline-style
   # migration above); the residual risk is CSS-only defacement.
+  #
+  # W2534: app.css @imports Geist and Geist Mono (the faces of the marketing
+  # pages and the signed-in .stride-screen app screens) and Silkscreen (the
+  # /HitMe pixel face) from Google Fonts. The stylesheet comes from
+  # fonts.googleapis.com and the font files from fonts.gstatic.com, so style-src
+  # names the first and font-src the second; without them the browser blocked
+  # both and those pages fell back to system fonts. Neither host can serve
+  # script, so script-src is unchanged. D402 replaces them with self-hosted
+  # files and removes both hosts.
   defp build_policy(nonce) do
     """
     default-src 'self'; \
     script-src 'self' 'nonce-#{nonce}'; \
     img-src 'self' data:; \
-    style-src 'self' 'unsafe-inline'; \
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
+    font-src 'self' https://fonts.gstatic.com; \
     base-uri 'self'; \
     form-action 'self'; \
     object-src 'none'\

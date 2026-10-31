@@ -83,6 +83,30 @@ defmodule KanbanWeb.PageHTML do
   """
   def stride_md_snippet, do: @stride_md_snippet
 
+  @hit_me_address "enterprise@letstango.ca"
+
+  @doc """
+  Returns the address the `/HitMe` page asks visitors to email.
+  """
+  def hit_me_address, do: @hit_me_address
+
+  @doc """
+  Returns the `mailto:` link for the `/HitMe` email button, with `subject`
+  percent-encoded so a translated subject containing a space, `&`, `?` or `=`
+  cannot break the link or add `cc=`, `bcc=` or `body=` fields. Spaces become
+  `%20` rather than `+`, which mail clients would show literally.
+
+  With no argument it uses the translated booking subject for the request's
+  locale.
+  """
+  def hit_me_mailto do
+    hit_me_mailto(gettext("Stride half-day proof-of-concept session"))
+  end
+
+  def hit_me_mailto(subject) when is_binary(subject) do
+    "mailto:" <> @hit_me_address <> "?subject=" <> URI.encode(subject, &URI.char_unreserved?/1)
+  end
+
   @doc """
   Returns the agent runtimes the `/workflows` page lists as having a Stride
   plugin, in the order of `KanbanWeb.OnboardingPlugins.agents/0`.

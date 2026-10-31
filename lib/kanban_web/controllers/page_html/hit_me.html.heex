@@ -1,0 +1,67 @@
+<main class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 md:py-16">
+    <section id="hitme-hero" class="hitme-card" aria-labelledby="hitme-heading">
+      <div class="hitme-sticker-wrap">
+        <img
+          id="hitme-sticker"
+          src={~p"/images/marketing/hitme-sticker.png"}
+          alt={gettext("Stride sticker: Level Boss")}
+          width="504"
+          height="504"
+          class="hitme-sticker"
+        />
+      </div>
+
+      <div class="hitme-copy">
+        <p id="hitme-kicker" class="hitme-kicker">{gettext("Stride with us")}</p>
+
+        <h1 id="hitme-heading" class="hitme-heading">
+          <span class="block">{gettext("Humans decide.")}</span>
+          <span class="block">{gettext("Agents build.")}</span>
+          <span id="hitme-heading-accent" class="block hitme-accent">
+            {gettext("Everyone ships.")}
+          </span>
+        </h1>
+
+        <p id="hitme-lead" class="hitme-lead">
+          {gettext(
+            "In half a day: your backlog and agents set up, part of your proof of concept delivered, and your team is ready."
+          )}
+        </p>
+
+        <ol id="hitme-chips" class="hitme-chips" aria-label={gettext("How a task moves")}>
+          <li>
+            <span class="hitme-chip">{gettext("Ready")}</span>
+            <span class="hitme-chip-caption">{gettext("you")}</span>
+          </li>
+          <li>
+            <span class="hitme-chip">{gettext("Doing")}</span>
+            <span class="hitme-chip-caption">{gettext("agent")}</span>
+          </li>
+          <li>
+            <span class="hitme-chip">{gettext("Review")}</span>
+            <span class="hitme-chip-caption">{gettext("you")}</span>
+          </li>
+          <li>
+            <span class="hitme-chip hitme-chip-done">{gettext("Done")}</span>
+            <span class="hitme-chip-caption">{gettext("together")}</span>
+          </li>
+        </ol>
+
+        <div class="hitme-cta">
+          <a id="hitme-email-button" href={hit_me_mailto()} class="hitme-button">
+            <.icon name="hero-envelope" class="w-5 h-5" />
+            {gettext("Email us to book a session")}
+          </a>
+          <a id="hitme-email-address" href={"mailto:" <> hit_me_address()} class="hitme-email">
+            {hit_me_address()}
+          </a>
+        </div>
+
+        <p id="hitme-address" class="hitme-address" translate="no">
+          <span class="hitme-accent">Stride</span>LikeABoss.com/HitMe
+        </p>
+      </div>
+    </section>
+  </div>
+</main>

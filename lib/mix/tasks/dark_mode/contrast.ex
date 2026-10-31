@@ -225,6 +225,7 @@ defmodule Mix.Tasks.DarkMode.Contrast do
       chip_border_specs(),
       label_specs(),
       brand_specs(),
+      hitme_specs(),
       daisy_specs()
     ])
   end
@@ -314,6 +315,22 @@ defmodule Mix.Tasks.DarkMode.Contrast do
       spec("brand-accent", "--stride-orange", "--bg", @aa_graphical),
       spec("brand-accent", "--stride-violet", "--bg", @aa_graphical)
     ]
+  end
+
+  # The /HitMe flyer card (W2534) stays navy in both themes, so every piece of
+  # its text is gated against --hitme-navy, and the cyan button and white DONE
+  # chip carry navy text on their own fills.
+  defp hitme_specs do
+    on_navy =
+      for fg <- ~w(--hitme-white --hitme-lead --hitme-caption --hitme-cyan --hitme-yellow) do
+        spec("hitme-text", fg, "--hitme-navy", @aa_text)
+      end
+
+    on_navy ++
+      [
+        spec("hitme-text", "--hitme-on-cyan", "--hitme-cyan", @aa_text),
+        spec("hitme-text", "--hitme-navy", "--hitme-white", @aa_text)
+      ]
   end
 
   # .btn-error draws its label in --color-error-content on --color-error-fill,
