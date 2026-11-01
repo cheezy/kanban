@@ -82,6 +82,64 @@ Each must be a positive whole number; `0`, a negative number or a value such
 as `2.5` stops the boot. They are stored as
 `config :kanban, Kanban.Attachments.Limits` with the keys `max_file_bytes`,
 `max_files_per_task` and `organization_quota_bytes`.
+`Kanban.Attachments.Limits` reads them each time a limit is checked, and
+falls back to the defaults above for any key that is not set.
+
+## Which files can be attached
+
+An attachment must be one of these types:
+
+| Type | Extensions |
+|---|---|
+| PNG, JPEG, GIF and WebP images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp` |
+| PDF | `.pdf` |
+| Plain text | `.txt`, `.log` |
+| Markdown | `.md`, `.markdown` |
+| CSV | `.csv` |
+| JSON | `.json` |
+
+SVG and HTML are refused because a browser runs scripts inside them, and zip
+archives are refused because their contents cannot be checked and an agent
+that unpacks one risks a zip bomb. When an upload declares no type, or
+declares `application/octet-stream`, Stride takes the type from the file's
+extension. A file name's extension must agree with the file's type, so
+`report.html` or `logo.svg` declared as plain text is refused rather than
+stored under a name that would open it as HTML or SVG. A name with no
+extension is accepted; a name that starts with a dot, such as `.html`, counts
+that as its extension. Plain text also accepts the extension of any other text
+type (`.md`, `.csv`, `.json`, `.log`).
+
+Stride also checks the first bytes of every file against its type
+(`Kanban.Attachments.ContentType`). An image or PDF must begin with that
+format's signature, so a PDF renamed to `.png` is refused. A text file is
+refused when it starts with another format's signature or when any byte of
+the whole file is a NUL byte, so a zip archive or an executable hidden
+behind a text prefix is refused too. Text does not have to be UTF-8, so
+Latin-1 CSV exports are accepted. UTF-16 text contains NUL bytes and is
+refused.
+
+File names are cleaned before they are stored
+(`Kanban.Attachments.Filename`): any directory part is dropped (`../../x.png`
+becomes `x.png`), control characters and right-to-left override characters
+are removed, and the name is shortened to 255 characters, keeping its
+extension.
+
+## When attachment files are deleted
+
+Attachment rows live in the `task_attachments` table. A database trigger on
+that table records the storage key of every deleted row in
+`attachment_blob_deletions`, whichever path deleted it: deleting the file
+itself, its comment, its task or its board, the archived-task retention
+purge, or deleting an account. That queue is the list of stored files to
+remove from the storage adapter, so a cascaded delete cannot lose track of a
+file. Deleting the user who uploaded a file does not by itself remove the
+file: its row stays, without an uploader, unless its task or board is
+deleted too (account deletion also deletes boards that only that user uses,
+and their files with them).
+
+The trigger fires for `DELETE` statements only. Never empty
+`task_attachments` with `TRUNCATE`, which skips row triggers and would leave
+every stored file in place.
 
 ## Fly with Tigris
 

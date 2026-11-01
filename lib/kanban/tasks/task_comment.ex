@@ -22,6 +22,7 @@ defmodule Kanban.Tasks.TaskComment do
 
     belongs_to :task, Kanban.Tasks.Task
     belongs_to :author, Kanban.Accounts.User, foreign_key: :author_user_id
+    has_many :attachments, Kanban.Attachments.TaskAttachment, foreign_key: :comment_id
 
     timestamps()
   end

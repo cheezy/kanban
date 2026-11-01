@@ -420,6 +420,7 @@ defmodule Kanban.Tasks.Task do
     belongs_to :duplicate_of, __MODULE__, foreign_key: :duplicate_of_id
     has_many :task_histories, Kanban.Tasks.TaskHistory
     has_many :comments, Kanban.Tasks.TaskComment
+    has_many :attachments, Kanban.Attachments.TaskAttachment
     # Board-scoped labels; written only through Kanban.Labels.set_task_labels/3.
     many_to_many :labels, Kanban.Labels.Label,
       join_through: Kanban.Labels.TaskLabel,
