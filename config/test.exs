@@ -116,6 +116,22 @@ config :kanban, Oban, testing: :manual
 config :kanban, :export_dir, Path.expand("../tmp/test_exports", __DIR__)
 config :kanban, Kanban.Workspaces.Export.Writer, snapshot_isolation: false
 
+# Attachment storage (W2505): the local adapter writes under tmp/, which is
+# gitignored, and every S3 request goes to a Req.Test stub, so no test
+# touches the network. The S3 values are fixed fakes. Retries keep the
+# adapter's own policy but wait 0 ms, so a stubbed 500 answers at once.
+config :kanban, Kanban.Attachments.Storage.Local,
+  root: Path.expand("../tmp/test_attachments", __DIR__)
+
+config :kanban, Kanban.Attachments.Storage.S3,
+  bucket: "test-bucket",
+  endpoint: "https://storage.test",
+  region: "test-region",
+  access_key_id: "test-access-key-id",
+  secret_access_key: "test-secret-access-key",
+  path_style: false,
+  req_options: [plug: {Req.Test, Kanban.Attachments.Storage.S3}, retry_delay: 0]
+
 # Webhook deliveries (W2227): route every request to a Req.Test stub and
 # resolve webhook hosts from a fixed table, so no test touches the network
 # or DNS. Both are static, so tests stay async.

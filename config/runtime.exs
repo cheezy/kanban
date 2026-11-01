@@ -92,6 +92,105 @@ case System.get_env("EXPORT_DIR") do
   _unset -> :ok
 end
 
+# Attachment storage and limits (W2505), documented in docs/attachments.md.
+# Every setting is applied only when its variable is set, so config/test.exs
+# keeps its own values and an unset variable leaves the default in place.
+# This block runs in every environment, not only prod, so a missing S3
+# variable fails the boot wherever ATTACHMENTS_STORAGE=s3 is set. Errors name
+# the variable and never print its value.
+attachments_env = fn names ->
+  Enum.find_value(names, fn name ->
+    case System.get_env(name) do
+      value when is_binary(value) and value != "" -> value
+      _unset -> nil
+    end
+  end)
+end
+
+case System.get_env("ATTACHMENTS_DIR") do
+  dir when is_binary(dir) and dir != "" ->
+    config :kanban, Kanban.Attachments.Storage.Local, root: dir
+
+  _unset ->
+    :ok
+end
+
+case System.get_env("ATTACHMENTS_STORAGE") do
+  storage when storage in [nil, ""] ->
+    :ok
+
+  "local" ->
+    config :kanban, Kanban.Attachments.Storage, adapter: Kanban.Attachments.Storage.Local
+
+  "s3" ->
+    # Each setting reads the ATTACHMENTS_S3_* name first, then the name Fly's
+    # Tigris integration (fly storage create) sets as an app secret.
+    s3_vars = [
+      bucket: ["ATTACHMENTS_S3_BUCKET", "BUCKET_NAME"],
+      access_key_id: ["ATTACHMENTS_S3_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"],
+      secret_access_key: ["ATTACHMENTS_S3_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"],
+      endpoint: ["ATTACHMENTS_S3_ENDPOINT", "AWS_ENDPOINT_URL_S3"],
+      region: ["ATTACHMENTS_S3_REGION", "AWS_REGION"]
+    ]
+
+    s3 = for {key, names} <- s3_vars, do: {key, attachments_env.(names)}
+
+    missing =
+      for key <- [:bucket, :access_key_id, :secret_access_key], is_nil(s3[key]) do
+        Enum.join(s3_vars[key], " (or ") <> ")"
+      end
+
+    if missing != [] do
+      raise """
+      ATTACHMENTS_STORAGE is s3 but these environment variables are missing:
+      #{Enum.join(missing, "\n")}
+      See docs/attachments.md.
+      """
+    end
+
+    endpoint = s3[:endpoint] && URI.parse(s3[:endpoint])
+
+    if endpoint && (endpoint.scheme not in ["http", "https"] or endpoint.host in [nil, ""]) do
+      raise "ATTACHMENTS_S3_ENDPOINT (or AWS_ENDPOINT_URL_S3) must be an http:// or https:// URL. " <>
+              "See docs/attachments.md."
+    end
+
+    config :kanban, Kanban.Attachments.Storage, adapter: Kanban.Attachments.Storage.S3
+
+    config :kanban,
+           Kanban.Attachments.Storage.S3,
+           Enum.reject(s3, fn {_key, value} -> is_nil(value) end) ++
+             [path_style: System.get_env("ATTACHMENTS_S3_PATH_STYLE") == "true"]
+
+  _other ->
+    raise "ATTACHMENTS_STORAGE must be local or s3. See docs/attachments.md."
+end
+
+# Megabytes and gigabytes here are binary (MiB, GiB): 25 means 26_214_400 bytes.
+attachment_limits = [
+  max_file_bytes: {"ATTACHMENTS_MAX_FILE_MB", 1024 * 1024},
+  max_files_per_task: {"ATTACHMENTS_MAX_FILES_PER_TASK", 1},
+  organization_quota_bytes: {"ATTACHMENTS_ORG_QUOTA_GB", 1024 * 1024 * 1024}
+]
+
+attachment_limits =
+  Enum.flat_map(attachment_limits, fn {key, {name, unit}} ->
+    case attachments_env.([name]) do
+      nil ->
+        []
+
+      value ->
+        case Integer.parse(value) do
+          {count, ""} when count > 0 -> [{key, count * unit}]
+          _invalid -> raise "#{name} must be a positive integer. See docs/attachments.md."
+        end
+    end
+  end)
+
+if attachment_limits != [] do
+  config :kanban, Kanban.Attachments.Limits, attachment_limits
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

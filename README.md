@@ -453,6 +453,7 @@ the documentation index; use each tool's Stride plugin instead.
 - [SCIM Provisioning](docs/scim-provisioning.md) - Manage an Organization's members from your identity provider
 - [Organization Security Policies](docs/organization-security-policies.md) - Require two-factor authentication and set how long audit events are kept
 - [Workspace Export](docs/workspace-export.md) - Download an Organization workspace as a zip archive, and import one into a self-hosted instance
+- [Attachments](docs/attachments.md) - Where attachment files are stored, the storage and limit environment variables, Fly with Tigris, and the local-disk caveats for self-hosting
 
 ### Plugin Contracts
 

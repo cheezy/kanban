@@ -105,6 +105,8 @@ plugins" in Multi-Agent Instructions, under Guides above).
 
 ## Self-hosting operators
 
+- [Attachments](attachments.md) — Where attachment files are stored, the storage and limit environment variables, and the local-disk caveats for self-hosting.
+- [Fly Attachment Storage Runbook](attachments-fly-setup.md) — The commands that set up, verify and roll back Tigris attachment storage for the kanban-prod and kanban-review Fly apps.
 - [Audit Log Database Roles](audit-log-database-roles.md) — Which database roles the audit log needs and the one-time step that hardens production.
 - [Audit Log Ownership Hardening](audit-log-hardening.md) — Why the audit log's table owner matters and how ownership keeps it append-only.
 - [Error Pages and Error Responses](error-pages.md) — What a browser, API or SCIM client gets when a request fails, and which module renders it.
