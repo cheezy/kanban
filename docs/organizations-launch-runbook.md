@@ -1,5 +1,10 @@
 # Organizations launch runbook
 
+> **Status:** the hosted service at stridelikeaboss.com turned enforcement
+> on on 1 November 2026 (`STRIDE_PLANS_ENFORCED=true`). The steps below stay
+> as the record of that launch, and as the checklist for a self-hosted
+> operator who turns enforcement on. [Rollback](#rollback) still applies.
+
 This runbook is for operators running Stride: the site admin with shell
 access to the production release (see [Before you start](#before-you-start)).
 It takes Stride from "every goal merged with plans off" to "plans

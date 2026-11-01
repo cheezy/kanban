@@ -484,7 +484,8 @@ names.
   - the manifest names the rewrite and its bundle hash instead of a task;
   - files are fetched only after the bundle hash matched, and only from
     `/api/import_rewrites/<id>/files/`;
-  - the curl guard exemption covers that path;
+  - the plugin downloads through its own script, so the agent's curl guard
+    never sees the request and needs no exemption;
   - the caps are 25 MiB per file, 20 files per Jira issue, and 500 MiB per
     rewrite within 600 s.
 - The agent reads images and PDFs with its runtime's own tools and treats
@@ -1995,8 +1996,10 @@ everything else in this design, is an **Organization plan feature**
   ([§16.6](#166-the-rewrite-api)), which check the destination board with
   `check_board/3` and surface `:rest`. A refusal is `{:error, {:plan_required, :imports}}`
   and emits the existing `[:kanban, :plan, :feature_refused]` event.
-- **While plans are not enforced**, the check passes everywhere, as for every
-  other paid feature, so imports work in any workspace until launch.
+- **While plans are not enforced** (the self-hosted default), the check
+  passes everywhere, as for every other paid feature, so imports work in any
+  workspace. The hosted service at stridelikeaboss.com has enforced plans
+  since 1 November 2026, so there an import always needs an Organization.
 - **A workspace that leaves its Organization** during a run: the run's boards
   become free boards. Re-sync, rewrites and sign-off are refused with the
   LockedFeature prompt; **Finish migration**, **Undo import** and

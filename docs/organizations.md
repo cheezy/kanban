@@ -15,7 +15,9 @@ Organization's security policies have their own guides, linked from
 
 > **Plan limits apply only when plans are enforced.** A Stride instance
 > enforces plans only when its operator sets the environment variable
-> `STRIDE_PLANS_ENFORCED` to exactly `true` and restarts it. A self-hosted
+> `STRIDE_PLANS_ENFORCED` to exactly `true` and restarts it. The hosted
+> service at stridelikeaboss.com has enforced plans since 1 November 2026,
+> so everything below applies there. A self-hosted
 > instance does not enforce them unless you set it, so every board has every
 > feature and no member limit. Workspaces, single sign-on and the
 > Organization audit log are the exceptions: each belongs to an Organization,

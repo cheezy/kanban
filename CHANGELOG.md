@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Stride now has **Organizations**: a paid plan for teams, with shared workspaces, org-admins, an Organization audit log, single sign-on, SCIM provisioning and security policies. Boards outside an Organization are on the new **Free** plan. This is a major version because the Free plan's limits change what a board can do once they are switched on, and because several API requests that used to succeed are now refused (see [Changed](#changed)).
 
-> **The Free plan's limits are off until launch day.** Plans are enforced only when the operator sets `STRIDE_PLANS_ENFORCED` to exactly `true` and restarts Stride. Until then, and on any self-hosted instance that does not set it, every board keeps every feature and has no member limit. Organizations, workspaces, roles, invitations, board moves, the audit log and account deletion work the same either way. The [Organizations launch runbook](docs/organizations-launch-runbook.md) is the operator's checklist for turning enforcement on.
+> **The Free plan's limits are off until launch day.** Plans are enforced only when the operator sets `STRIDE_PLANS_ENFORCED` to exactly `true` and restarts Stride. Until then, and on any self-hosted instance that does not set it, every board keeps every feature and has no member limit. Organizations, workspaces, roles, invitations, board moves, the audit log and account deletion work the same either way. The [Organizations launch runbook](docs/organizations-launch-runbook.md) is the operator's checklist for turning enforcement on. Launch day was 1 November 2026: the hosted service at stridelikeaboss.com enforces plans from then on.
 
 ### Added
 

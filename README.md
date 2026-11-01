@@ -214,7 +214,9 @@ and the MCP server. Workspaces, single sign-on and the audit log always
 need an Organization, because they belong to one. The others are
 open to everyone until a deployment sets `STRIDE_PLANS_ENFORCED=true`;
 from then on they need an Organization, and a board gets them only when
-it is in an Organization workspace.
+it is in an Organization workspace. The hosted service at
+stridelikeaboss.com has enforced plans since 1 November 2026; a
+self-hosted instance enforces them only if its operator sets the variable.
 [What a free board cannot do](docs/organizations.md#what-a-free-board-cannot-do)
 says what each lock does.
 
