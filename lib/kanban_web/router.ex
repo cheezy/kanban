@@ -449,6 +449,11 @@ defmodule KanbanWeb.Router do
     # controller re-checks org-admin of the export's own workspace on every
     # request, which the org-wide /org gate below could not express.
     get "/workspace/exports/:id/download", WorkspaceExportController, :download
+    # An attachment's bytes (W2510). Signed-in users only; Kanban.Attachments
+    # re-checks board access and the plan on every request, and the
+    # controller hardens the response so a hostile file never runs here.
+    get "/attachments/:id/download", AttachmentController, :download
+    get "/attachments/:id/preview", AttachmentController, :preview
     # Counts a locked feature's Available to organizations click (signed-in
     # users only, so anonymous traffic cannot inflate the stored metric).
     get "/locked/:feature", LockedFeatureController, :show
