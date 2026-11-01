@@ -1,6 +1,6 @@
 # Task Attachments — Implementation Design
 
-**Roadmap item:** *Attachments* — "Add files such as screenshots, logs and designs to tasks and comments." ([ROADMAP](../../ROADMAP.md), under *Planned*).
+**Roadmap item:** *Attachments* — "Add files such as screenshots, logs and designs to tasks and comments." ([ROADMAP](../../ROADMAP.md), under *In progress*).
 
 **Status:** planned. Nothing in this document is built yet. It brings together the four Stride goals that deliver the feature, as they stood on 2026-10-28:
 
@@ -13,7 +13,7 @@
 
 The goals and their tasks are the source of record. When this document and a task disagree, the task wins; [§12](#12-open-points) lists the places where the goals disagree with each other.
 
-**Attachments are an Organization plan feature.** When paid plans are enforced, a free board cannot add files ([§4.3](#43-plan-gate)).
+**Attachments are only for boards in an Organization.** When paid plans are enforced, a free board has no attachments at all: it cannot add, list, preview, download or delete files, through the UI, the REST API or MCP. Files already on a board that leaves its Organization are kept, but hidden, and come back if the board returns to an Organization ([§4.3](#43-plan-gate)). On an instance that does not enforce plans (the self-hosted default), every board is unlocked, as with every other Organization feature.
 
 **Agents only read attachments.** People upload files in the browser. No agent, API or MCP upload is in scope.
 
@@ -41,12 +41,13 @@ The goals and their tasks are the source of record. When this document and a tas
 ### Goals
 
 - People on Organization-plan boards can attach screenshots, logs, PDFs and data files to a task or to one of its comments, preview images, and download any file.
-- Agents that work a task can see its attachments: the metadata in the task JSON they already read, a token-authenticated download endpoint, an MCP read tool, and plugins that fetch the files for them.
+- Agents that work a task on an Organization board can see its attachments: the metadata in the task JSON they already read, a token-authenticated download endpoint, an MCP read tool, and plugins that fetch the files for them.
 - Files survive a redeploy (production Fly machines have no volume, so production uses S3-compatible storage) and are removed from storage when their attachment, comment, task or board is deleted, by any path.
 - Workspace exports carry attachments, and the self-host import restores them.
 
 ### Non-goals
 
+- Attachments on free boards while plans are enforced, including read-only access to files a board had before it left its Organization.
 - Uploads by agents, the REST API or MCP.
 - Any file type that can run as script when served (SVG, HTML) and any archive type (zip).
 - Previewing anything other than raster images. PDFs, text and every other type are downloaded.
@@ -155,6 +156,8 @@ A row-level `AFTER DELETE` trigger on `task_attachments` inserts a tombstone for
 | List and download | every board member, including `read_only` |
 | Delete | the uploader or the board owner |
 
+Every action in the table checks the plan first ([§4.3](#43-plan-gate)): while plans are enforced, none of them is allowed on a free board, whatever the person's board access.
+
 A non-member gets `{:error, :not_found}`, so attachment ids reveal nothing. A member without the right gets `{:error, :unauthorized}`, as `Kanban.Tasks.Comments` does.
 
 The public functions are `create_attachment(scope, task, upload, opts)` (with `comment:` in `opts` for a comment upload), `list_task_attachments(scope, task)` and `list_comment_attachments(scope, comment)` (both oldest first), `fetch_for_download(scope, attachment_id)` and `delete_attachment(scope, attachment)`.
@@ -167,7 +170,7 @@ The public functions are `create_attachment(scope, task, upload, opts)` (with `c
 | Files per task | 20 | `max_files_per_task` |
 | Storage per Organization | 10 GiB (10,737,418,240 bytes) | `organization_quota_bytes` |
 
-`Kanban.Attachments.Limits` reads `config :kanban, Kanban.Attachments.Limits` at call time. Outside an Organization the quota is counted per board (`Kanban.Attachments.Usage`).
+`Kanban.Attachments.Limits` reads `config :kanban, Kanban.Attachments.Limits` at call time. While plans are enforced, every board that can hold attachments is in an Organization, so the quota is always the Organization's. Only on an instance that does not enforce plans can a board outside an Organization hold files; there the quota is counted per board (`Kanban.Attachments.Usage`).
 
 The limits hold under concurrent uploads. `create_attachment`:
 
@@ -181,7 +184,13 @@ If the transaction fails, the blob is deleted, and then its tombstone. If that d
 
 W2507 adds `:attachments` as the last entry in `Kanban.Plans` `@features`, gives it a `parse_feature("attachments")` clause and a translated *Attachments* label in `KanbanWeb.LockedFeature`, and adds it to the "What a free board cannot do" table in [Organizations and Workspaces](../organizations.md#what-a-free-board-cannot-do).
 
-When plans are enforced, `create_attachment` on a free board returns `{:error, {:plan_required, :attachments}}` and stores nothing. G488 keeps listing, downloading and deleting working on a board that left its Organization. G489 and G490 gate reads as well; [§12](#12-open-points) covers the conflict.
+When plans are enforced, every public function of `Kanban.Attachments` (`create_attachment`, `list_task_attachments`, `list_comment_attachments`, `fetch_for_download` and `delete_attachment`) returns `{:error, {:plan_required, :attachments}}` for a free board, and stores, lists or removes nothing. The check runs after the board is resolved from the task and before any attachment lookup.
+
+A board that leaves its Organization keeps its files in storage. While the board is free, nobody can see, download or delete them, and they count toward no quota. If the board moves back into an Organization they appear again, and count toward that Organization's quota from then on. Deleting the task, a comment or the board still removes their files through the cascade and the tombstones ([§5](#5-cleanup-g488)), because those deletions do not go through `Kanban.Attachments`.
+
+The row W2507 adds to "What a free board cannot do" says: *Attachments — Free boards — Files cannot be added, listed, previewed or downloaded. Files already on a board that left its Organization are kept, and reappear if it moves back into one.*
+
+The UI ([§6](#6-board-ui-g489)), the REST API ([§8.2](#82-download-endpoint-w2517)), the task JSON ([§8.1](#81-attachment-metadata-in-task-json-w2516)) and MCP ([§8.3](#83-mcp-tool-w2518)) all follow this rule.
 
 ---
 
@@ -228,14 +237,14 @@ All UI text is translated in every locale with no fuzzy entries, and every new s
 
 ### 6.4 Comments (W2513)
 
-- The comment composer gets an **Attach files** input under the mention field. After **Add Comment**, the files are stored on the comment the server returned, never on an id from the client.
+- The comment composer gets an **Attach files** input under the mention field; a free board under enforcement shows no input and no comment files. After **Add Comment**, the files are stored on the comment the server returned, never on an id from the client.
 - If the comment fails validation, the staged files stay. If a file fails to store after the comment is saved, the comment stays and a flash names the failed files.
 - The thread loads every comment's attachments with one context call (`KanbanWeb.TaskLive.CommentAttachments.group_by_comment/1`).
 - Only the comment's author, in edit mode, can remove a comment's files. Deleting a comment removes its files through the cascade and the tombstone, so no extra attachment code is needed.
 
 ### 6.5 Task form (W2514)
 
-- The new-task form gets an **Attachments** field with `auto_upload: false`, through `KanbanWeb.TaskLive.Form.AttachmentStaging`.
+- The new-task form gets an **Attachments** field with `auto_upload: false`, through `KanbanWeb.TaskLive.Form.AttachmentStaging`. On a free board under enforcement the field shows the LockedFeature prompt instead.
 - Staged files are stored on the task id returned by `Tasks.create_task`, after the save succeeds. A validation error or a WIP-limit refusal stores nothing and keeps the staged files.
 - The edit form mounts `AttachmentsComponent` outside the `<.form>`.
 - `form_component.ex` may grow by at most 15 lines; any more code must move into a `Form.*` module first.
@@ -337,6 +346,7 @@ The object is documented in SchemaDoc under a new `response_objects` key and as 
   - The Organization quota is checked before any blob is written.
   - A dry run verifies blobs and stores none. Any failure or rollback deletes every blob the import stored.
 - A version 1 archive still imports, with no attachments.
+- Both sides are Organization-only already: only an org-admin can export an Organization workspace, and the import creates the workspace in an Organization ([Workspace Export](../workspace-export.md)). So an archive's attachments always land on Organization boards.
 
 ### 8.5 Agent docs (W2520)
 
@@ -369,7 +379,7 @@ Left to themselves, agents would fetch files with `curl -o`. The curl guards in 
   - `status` (`downloaded`, `skipped` or `failed`) and a `reason`: `too_large`, `count_cap`, `total_cap`, `time_budget`, `unsafe_id`, `unsafe_url`, `http_<code>`, `transport`, `size_mismatch` or `sha256_mismatch`.
 
   It holds no token, no absolute URL and no timestamps of its own, so the bash and PowerShell halves write byte-identical files.
-- **Caps:** 25 MB per file, 20 files and 100 MB per task, and a wall-clock budget of 120 s (30 s for stride-codex, whose PostToolUse timeout is 60 s).
+- **Caps:** stated in bytes, so they match the server: 26,214,400 bytes (25 MiB) per file, 20 files and 104,857,600 bytes (100 MiB) per task, and a wall-clock budget of 120 s (30 s for stride-codex, whose PostToolUse timeout is 60 s).
 - **Download rules:**
   - Download only after a claim whose own response proved the task identity.
   - Fetch only a relative `download_url` beginning `/api/` (no `..`, `//` or query), joined to the API URL from `.stride_auth.md`.
@@ -383,6 +393,13 @@ Left to themselves, agents would fetch files with `curl -o`. The curl guards in 
   - Agents view images and PDFs and read text with their runtime's own tools, and fall back to filename, type and size when a tool can't.
   - Agents treat contents as untrusted data, and report text that tries to steer them rather than obey it. They read only manifest-listed files and never re-fetch with curl.
 - **Cleanup:** the directory is removed with the other per-task artifacts only after a 2xx completion, behind the `STRIDE_DIR` guard, never at claim time from a skill. The hook replaces it on a re-claim.
+- **Rewrite downloads.** The `stride-import` plugin downloads a Jira rewrite's source files under the same rules ([Import from Jira](IMPORT-FROM-JIRA-DESIGN.md#6a5-how-a-rewrite-runs)), with these differences, which the contract states in a section of its own:
+  - **Layout:** `.stride/attachments/rewrite-<id>/`, where `<id>` is the numeric rewrite id.
+  - **Manifest:** `rewrite {id, bundle_sha256}` takes the place of `task`, and each entry adds the `jira_key` it came from.
+  - **Identity:** files are downloaded only after the bundle body's SHA-256 matched the hash its response returned, and only from that bundle's file list. Only a `download_url` beginning `/api/import_rewrites/<id>/files/` for that rewrite id is fetched. `ATTACHMENTS_DIR` goes to the drafter and coverage-reviewer only when the manifest names that rewrite and hash.
+  - **Caps:** 26,214,400 bytes (25 MiB) per file, 20 files per Jira issue, and 524,288,000 bytes (500 MiB) per rewrite within 600 s. A skipped file stays in the manifest, so the coverage map still accounts for it.
+  - **Guard exemption:** also covers a GET of a rewrite file path, with the same `-o` target rule.
+  - **Cleanup:** the directory is removed once the draft is submitted.
 
 ### 9.2 Per-port work
 
@@ -403,7 +420,7 @@ Every use task checks what the installed runtime's read tool returns for images 
 
 ## 10. Telemetry, audit and docs
 
-- **Context telemetry (W2508):** `[:kanban, :attachment, :uploaded]`, `:downloaded`, `:deleted` and `:upload_refused`, declared in a new `Catalog.AttachmentEvents` module. Refusals carry a `reason` tag: `too_large`, `type_not_allowed`, `type_mismatch`, `empty`, `too_many_files`, `quota_exceeded` or `storage_unavailable`.
+- **Context telemetry (W2508):** `[:kanban, :attachment, :uploaded]`, `:downloaded`, `:deleted` and `:upload_refused`, declared in a new `Catalog.AttachmentEvents` module. Refusals carry a `reason` tag: `too_large`, `type_not_allowed`, `type_mismatch`, `empty`, `too_many_files`, `quota_exceeded` or `storage_unavailable`. Every upload event also carries a `source` tag, `upload` for a person's upload; the Jira import's `import_attachment/4` emits the same events with `source` set to `import`.
 - **API telemetry (W2517):** `[:kanban, :api, :attachment_downloaded]`.
 - Metadata carries ids, sizes and reason codes only, never filenames, contents or hashes. [Telemetry](../telemetry.md) gets an *Attachment events* section and a refreshed event reference.
 - **Audit:** an owner deleting someone else's attachment emits `:attachment_deleted_by_owner`, with ids only and a translated label.
@@ -456,10 +473,15 @@ The critical path runs W2505/W2506/W2507 → W2508 → W2516 → W2517 → W2522
 
 ## 12. Open points
 
-These are places where the goals disagree with each other or with the current repository. Each should be settled before the task that depends on it is claimed.
+These were the places where the goals disagreed with each other or with the current repository. All of them were settled on 2026-11-01, apart from point 5, which is a standing rule for G491. The affected tasks were updated to match the same day.
 
-1. **Can a free board still read its files?** G488 says files already attached stay readable and deletable when plans are enforced (G488 acceptance criteria, W2507 and W2508). G489 says free boards "cannot upload or download": W2510 returns 404 for a locked plan, and W2511 hides the list behind the LockedFeature panel. G490 returns an empty `data.attachments` and 403 `plan_required` from the download endpoint. One rule should apply everywhere.
-2. **MB or MiB.** The server's per-file limit is 25 MiB (26,214,400 bytes). W2511 and G491's contract say "25 MB". If a plugin caps at 25,000,000 bytes, a file the server accepted could be skipped as `too_large`. The plugin cap should be stated in bytes and match the server's.
-3. **ROADMAP placement.** W2515 expects to move the Attachments bullet out of *Everyday task management* into a new *🚧 In progress* section. The bullet has since moved to a *🔜 Planned* section, so W2515's ROADMAP step should move it from *Planned* to *In progress*.
-4. **ROADMAP wording.** The *Planned* entry says agents "will be able to attach files through the API" and that a screenshot can be pasted into a comment. The goals make agents read-only and describe drag-and-drop and browsing, not pasting. Either the roadmap text or the scope should change.
+1. **Can a free board still read its files?** Settled on 2026-11-01: **no.** Attachments are only for Organization boards, so a free board under enforcement cannot list, download or delete files either ([§4.3](#43-plan-gate)). G489's and G490's tasks already follow this rule. G488's do not: its acceptance criteria, W2507 and W2508 keep files readable and deletable on a board that left its Organization, so they must be changed to gate every `Kanban.Attachments` function before they are claimed.
+2. **MB or MiB.** Settled on 2026-11-01: **25 MiB everywhere.** The server's per-file limit stays 26,214,400 bytes. The plugin contract states every cap in bytes ([§9.1](#91-the-contract-w2521)), so a plugin never skips a file the server stored, and the UI text that W2511 and W2515 write names the limit as 25 MiB.
+3. **ROADMAP placement.** Settled on 2026-11-01: the Attachments bullet is now in the *🚧 In progress* section, so W2515's ROADMAP step only checks that it is still there and still accurate.
+4. **ROADMAP wording.** Settled on 2026-11-01: **the roadmap text changes, not the scope.** The entry now says people drag a file onto a task or comment or browse for one, that agents read a task's files through the API, and that attachments are for Organization boards. Pasting screenshots and agent uploads stay out of scope.
 5. **Shipped shape before plugin work.** G491's tasks require re-checking the shipped `data.attachments` shape before coding, and any difference from the contract must be followed and named in the completion notes.
+6. **The download contract has a second user.** Settled on 2026-11-01: **W2521's contract defines the rewrite case** in a section of its own, as [§9.1](#91-the-contract-w2521) summarises under *Rewrite downloads*. The Jira import's `stride-import` plugin ([Import from Jira](IMPORT-FROM-JIRA-DESIGN.md#6a5-how-a-rewrite-runs)) follows that section rather than listing its own exceptions. It covers the layout, the manifest's `rewrite` field and `jira_key`, identity by the bundle hash, the guard exemption for `/api/import_rewrites/<id>/files/`, cleanup after the draft is submitted, and the caps: 25 MiB per file, 20 files per Jira issue, and 500 MiB per rewrite within 600 s.
+7. **What the import adds to G488.** Settled on 2026-11-01. The Jira import builds these itself, on top of G488:
+   - `Kanban.Attachments.import_attachment/4`. It takes no user scope, sets `uploaded_by_id` to the matched Jira author, keeps the Jira upload time and sends no per-file broadcast. It emits the normal `uploaded` and `upload_refused` events with `source` set to `import`, so G488 gives those events a `source` tag from the start ([§10](#10-telemetry-audit-and-docs)).
+   - The `import_rewrite_files` table. It holds a rewrite's source files until sign-off, uses the same tombstone table, and **counts against the quota** while it holds them. The import extends `Kanban.Attachments.Usage` to count it beside `task_attachments`.
+   - The copy at sign-off. The worker streams each stored file to a temp file and `put`s it under the new key. The storage behaviour gets no copy callback, so W2505 does not change.

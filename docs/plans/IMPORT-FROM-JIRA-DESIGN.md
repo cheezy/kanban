@@ -1,6 +1,6 @@
 # Import from Jira — Implementation Design
 
-**Roadmap item:** Import from other tools → *Import from Linear and Jira* ([ROADMAP](../../ROADMAP.md)). This design covers **Jira only**; Linear is out of scope.
+**Roadmap item:** *Import from Jira*, under *Planned* ([ROADMAP](../../ROADMAP.md)). This design covers **Jira only**; Linear is out of scope.
 **Status:** Proposed design, not yet decomposed into tasks. Every decision in [§24](#24-decisions-needed) was settled on 2026-10-30
 **Date:** 2026-10-28, revised 2026-10-30 to make the epic rewrite part of the core import, and again on 2026-10-30 to move the agent side into a new plugin, `stride-import`, with a variant for every agent runtime
 
@@ -476,9 +476,17 @@ names.
   ([§16.6](#166-the-rewrite-api)).
 - The import plugin downloads them exactly as the Stride plugins download a
   claimed task's files (`stride/docs/porting-attachments.md`): into
-  `.stride/attachments/rewrite-<id>/`, with a manifest, the same caps, a sha256
-  check on every file, and the token never on a command line. It hands the
-  directory to the agents and removes it once the draft is submitted.
+  `.stride/attachments/rewrite-<id>/`, with a manifest, a sha256 check on
+  every file, and the token never on a command line. It hands the directory
+  to the agents and removes it once the draft is submitted. The contract has
+  a section of its own for rewrite downloads ([Task Attachments](ATTACHMENTS-DESIGN.md#91-the-contract-w2521),
+  *Rewrite downloads*):
+  - the manifest names the rewrite and its bundle hash instead of a task;
+  - files are fetched only after the bundle hash matched, and only from
+    `/api/import_rewrites/<id>/files/`;
+  - the curl guard exemption covers that path;
+  - the caps are 25 MiB per file, 20 files per Jira issue, and 500 MiB per
+    rewrite within 600 s.
 - The agent reads images and PDFs with its runtime's own tools and treats
   every file as untrusted data. A file the caps skipped is still listed in
   the manifest, so the agent knows it exists and the coverage map must still
@@ -540,7 +548,8 @@ to, so the person signing can move one. Files are copied from the rewrite's
 storage onto the tasks by `AttachmentWorker` after the transaction commits,
 through `Kanban.Attachments.import_attachment/4`, with the per-task limit and
 the quota checked again; a file attached to two tasks counts twice against the
-quota. A file that cannot be copied is listed on the rewrite page with
+quota. The storage behaviour has no copy callback, so the worker streams each
+stored file to a temp file and stores that under the new key. A file that cannot be copied is listed on the rewrite page with
 **Retry**. Once every file is copied, the rewrite's source files are deleted
 through the blob tombstones. The **Written from** panel still lists every
 source file with its Jira link.
@@ -1167,6 +1176,7 @@ otherwise kept as a link on the import link, with the reason:
 |---|---|---|
 | The destination board can hold attachments | The attachments plan gate (`:attachments` in `Kanban.Plans`) | Always true when plans are enforced, because an import's boards are always Organization boards ([§19](#19-permissions-and-plans)). It can fail only if the workspace leaves its Organization while files are still being copied; the rest then stay links |
 | The type is on the allow-list (PNG, JPEG, GIF, WebP, PDF, plain text, Markdown, CSV, JSON) and the first bytes agree with it | `TaskAttachment.create_changeset/3` | Link, reason *type not stored* (a `.zip`, `.docx`, `.svg`, `.mp4` and the like) or *type mismatch* |
+| At least 1 byte, and a file name that is still usable after sanitising (not empty, `.` or `..`) | `TaskAttachment.create_changeset/3` | Link, reason *empty* or *bad name* |
 | At most 25 MiB | The per-file limit | Link, reason *too large* |
 | At most 20 files on the task | The per-task limit | The oldest 20 are copied; the rest stay links, reason *too many files* |
 | The Organization's storage quota (10 GiB) has room | The quota | Copying stops at the quota; the rest stay links, reason *quota* |
@@ -1189,7 +1199,9 @@ allows it) or **Link to Jira only**.
   limits, quota lock and pending-tombstone protocol as `create_attachment/4`,
   but sets `uploaded_by_id` to the matched Jira author ([§15](#15-people-and-board-membership))
   instead of the importer, keeps the Jira upload time, and sends no per-file
-  broadcast. One board reload is sent when a board's files are done.
+  broadcast. One board reload is sent when a board's files are done. It emits
+  the attachments context's own `uploaded` and `upload_refused` events with
+  `source` set to `import`, so attachment metrics count every stored file.
 - Each copied file gets a row in `import_attachment_links`, keyed by the Jira
   attachment id, so a retried job or a re-sync never copies a file twice.
 - A file that fails (Jira error, storage error) is retried by the job, then
@@ -1667,8 +1679,9 @@ Arguments: one or more rewrite ids, as the run page lists them. Options:
    next. A `403 plan_required` stops this id with one line saying the
    destination workspace is no longer in an Organization. A send-back note in the response goes to the drafter.
 3. **Download the source files** into `.stride/attachments/rewrite-<id>/`,
-   under the attachment download contract: a manifest, the same caps, a
-   sha256 check on every file, uniform handling of `404`s, and `Retry-After`
+   under the attachment download contract's rewrite section: a manifest, the
+   rewrite caps (25 MiB per file, 20 files per Jira issue, 500 MiB per
+   rewrite within 600 s), a sha256 check on every file, uniform handling of `404`s, and `Retry-After`
    on `429`. Skipped when the run chose **Rewrite without files** or
    `--no-files` is set; the manifest still lists every file, so the coverage
    map accounts for each one.
@@ -1894,7 +1907,9 @@ finish, or with the run)
 An `AFTER DELETE` trigger queues each row's blob in `attachment_blob_deletions`,
 exactly as the `task_attachments` trigger does, so every path that removes a
 rewrite file (sign-off, finish, undo, deleting the board) removes its blob.
-Source files count against the Organization's quota while they are held.
+Source files count against the Organization's quota while they are held,
+which means `Kanban.Attachments.Usage` must count this table as well as
+`task_attachments` (open point 7 in [Task Attachments](ATTACHMENTS-DESIGN.md#12-open-points)).
 
 **`import_mapping_presets`**
 
@@ -2055,7 +2070,7 @@ Kept as `import_runs.report` and downloadable as JSON and CSV:
 
 - **Created:** boards, goals, tasks by type and column, comments, labels, history entries, people added to boards.
 - **Rewritten:** per epic, its state, the issues it covers, the tasks written, and the keys and lines dropped with their reasons. An epic that is not yet signed off is listed as *pending*.
-- **Attachments:** files copied, bytes used against the quota, and every file left as a link to Jira with its reason (*plan*, *type not stored*, *type mismatch*, *too large*, *too many files*, *quota*, *failed*), by Jira key.
+- **Attachments:** files copied, bytes used against the quota, and every file left as a link to Jira with its reason (*plan*, *type not stored*, *type mismatch*, *empty*, *bad name*, *too large*, *too many files*, *quota*, *failed*), by Jira key.
 - **Repaired:** shortened label names and comments; merged labels; unknown document nodes.
 - **People:** matched (by email or by hand), invited, left unassigned, not added because of the member cap.
 - **Needs attention:** in-progress work with nobody on it; dependencies dropped (cycles, cross-board); children separated from their goal; credential-shaped text found.
