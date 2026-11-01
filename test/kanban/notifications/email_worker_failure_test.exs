@@ -103,7 +103,11 @@ defmodule Kanban.Notifications.EmailWorkerFailureTest do
     assert_receive {:telemetry_event, [:kanban, :notification, :email_failed], %{count: 1},
                     %{error: :permanent_failure} = metadata}
 
+    # Match the reply's own text, not a bare "550", which an id in the
+    # metadata (a notification or user id) can contain by chance.
     refute inspect(metadata) =~ user.email
-    refute inspect(metadata) =~ "550"
+    refute inspect(metadata) =~ "5.1.1"
+    refute inspect(metadata) =~ "Recipient address rejected"
+    refute inspect(metadata) =~ "smtp.example.com"
   end
 end

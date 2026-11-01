@@ -137,9 +137,9 @@ A row-level `AFTER DELETE` trigger on `task_attachments` inserts a tombstone for
 `TaskAttachment.create_changeset(attachment, attrs, sniff_head)` casts only `filename`, `content_type`, `byte_size` and `sha256`. The caller sets `task_id`, `comment_id`, `board_id`, `uploaded_by_id` and `storage_key` on the struct; they are never cast from input.
 
 - **Allowed types:** png, jpeg, gif, webp, pdf, plain text, markdown, csv and json. An empty or `application/octet-stream` declared type is inferred from the extension.
-- **Magic bytes:** a declared type that the first 8 KiB of the file contradict is refused, so a PDF labelled as a PNG, or a binary labelled as text, is never stored.
+- **Magic bytes:** a declared type that the file's bytes contradict is refused, so a PDF labelled as a PNG, or a binary labelled as text, is never stored. An image or PDF type is checked against the first 512 bytes; a text type is checked over the whole file, since only the whole file can show it holds no NUL byte.
 - **Size:** `byte_size` must be between 1 and the per-file limit, inclusive. The context computes it with `File.stat`, never from a client value.
-- **Filename:** directory parts, control characters and bidi override characters are stripped, the name is capped at 255 codepoints keeping the extension, and an empty name or one equal to `.` or `..` is refused.
+- **Filename:** directory parts, control characters and format characters (bidi overrides included) are stripped, except the zero-width joiner and non-joiner that emoji and scripts such as Persian need; the name is capped at 255 codepoints keeping the extension, and an empty name or one equal to `.` or `..` is refused.
 
 ---
 
@@ -174,9 +174,9 @@ The public functions are `create_attachment(scope, task, upload, opts)` (with `c
 
 The limits hold under concurrent uploads. `create_attachment`:
 
-1. checks access, the plan and the limits, then streams the temp file once to compute `byte_size`, `sha256` and the 8 KiB sniff head, and builds the changeset before storing anything;
+1. checks access, the plan and the limits, then reads the temp file exactly once, into a private snapshot capped one byte past the per-file limit. `byte_size`, `sha256`, the sniff and the stored bytes all come from that snapshot, so a temp file that changes afterwards can never store bytes that differ from what was checked. It builds the changeset before storing anything;
 2. records a pending tombstone for the new key, due one hour later, then puts the blob;
-3. in one transaction, locks the task row, takes a transaction-scoped advisory lock keyed by the Organization id (or the board id), checks the count and quota again, inserts the row and removes the pending tombstone.
+3. in one transaction, takes `FOR KEY SHARE` locks on the uploader, board and comment rows the new row references, locks the task row, takes a transaction-scoped advisory lock keyed by the Organization id (or the board id), checks the count and quota again, inserts the row and removes the pending tombstone. The key-share locks come first because a board, comment or account deletion locks those rows before its cascade reaches the task; taking them only through the insert's foreign-key checks, after the task row, deadlocked an upload with a concurrent board deletion (found in the G488 exploratory session, 2026-11-01).
 
 If the transaction fails, the blob is deleted, and then its tombstone. If that delete fails, the tombstone stays and the cleanup worker removes the blob later. A refused or failed upload never leaves an attachment row.
 
@@ -198,7 +198,7 @@ The UI ([§6](#6-board-ui-g489)), the REST API ([§8.2](#82-download-endpoint-w2
 
 `Kanban.Attachments.BlobCleanupWorker` (W2509) is an Oban cron job on a new `:attachments` queue (concurrency 1). It runs every 15 minutes, with `max_attempts: 3`, and a `unique` option over the available, scheduled, executing and retryable states so runs never overlap.
 
-Each run takes up to `batch_size` (default 200) tombstones whose `delete_after` has passed, oldest first, and calls `Storage.delete/1` on each:
+Each run takes up to `batch_size` (default 200) tombstones whose `delete_after` has passed, oldest first. A tombstone whose key a `task_attachments` row still names is stale (a pending upload whose grace period ran out before its row committed, for example), so it is deleted without touching the blob; the row's own deletion queues the key again through the trigger. Without that check the worker removed the file of a live attachment (found in the G488 exploratory session, 2026-11-01). Every other tombstone gets `Storage.delete/1`:
 
 | Result | Action |
 | --- | --- |

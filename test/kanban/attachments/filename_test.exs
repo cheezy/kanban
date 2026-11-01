@@ -23,6 +23,14 @@ defmodule Kanban.Attachments.FilenameTest do
       assert Filename.sanitize("zero\u200Bwidth.txt") == {:ok, "zerowidth.txt"}
     end
 
+    test "keeps the zero-width joiner and non-joiner that emoji and some scripts need" do
+      assert Filename.sanitize("\u{1F468}\u200D\u{1F469}\u200D\u{1F467}.txt") ==
+               {:ok, "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}.txt"}
+
+      assert Filename.sanitize("\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645.txt") ==
+               {:ok, "\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645.txt"}
+    end
+
     test "trims surrounding whitespace" do
       assert Filename.sanitize("  spaced.txt  ") == {:ok, "spaced.txt"}
     end

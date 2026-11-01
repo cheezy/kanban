@@ -13,19 +13,22 @@ defmodule Kanban.Attachments.Usage do
       files on a board that left its Organization stop counting there and
       count again once it moves back.
     * `check_limits/3` — both limits for one more file of a given size.
-    * `lock_for_upload/1` — locks the task row, then takes a
+    * `lock_for_upload/2` — key-share locks the uploader, board and comment
+      rows the insert will reference, then locks the task row, then takes a
       transaction-scoped advisory lock on the quota scope, always in that
       order, so two uploads cannot both pass the re-check inside the insert
-      transaction.
+      transaction and an upload never deadlocks with a deletion.
   """
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Accounts.User
   alias Kanban.Attachments.Limits
   alias Kanban.Attachments.TaskAttachment
   alias Kanban.Boards.Board
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskComment
 
   # The two-key advisory lock form (int4, int4) lives in a different key
   # space from the single-key bigint locks taken on column and board ids
@@ -103,17 +106,57 @@ defmodule Kanban.Attachments.Usage do
   end
 
   @doc """
-  Inside a transaction: locks the task row `FOR UPDATE`, then takes the
-  advisory lock of the task's quota scope, and returns `{:ok, quota_scope}`.
-  Returns `{:error, :not_found}` when the task, or its column, is gone.
+  Inside a transaction: takes `FOR KEY SHARE` locks on the rows the new
+  attachment will reference, then locks the task row `FOR UPDATE`, then takes
+  the advisory lock of the task's quota scope, and returns
+  `{:ok, quota_scope}`. Returns `{:error, :not_found}` when the task, its
+  column, or any referenced row is gone.
+
+  `refs` names the rows the insert references besides the task:
+  `:uploaded_by_id`, `:board_id` and `:comment_id` (each optional; `nil` is
+  skipped). They are key-share locked first, in that order (uploader, board,
+  comment), which is the order a deletion reaches them: account deletion
+  locks the user before deleting their boards, and a board deletion locks the
+  board before its cascade reaches the task. Without these locks the insert
+  would only take them through its foreign-key checks, after it holds the
+  task row, so a board, account or comment deletion that started in between
+  deadlocked with the upload (Postgres error 40P01). With them, a deletion
+  either finishes first (and this returns `:not_found`) or waits for the
+  upload to commit, then cascades to the new row, whose blob the trigger
+  queues.
 
   The task row lock serializes uploads to one task, so the count re-check
   holds; the advisory lock serializes uploads across the scope, so the quota
   re-check holds. A key taken modulo 2^31 can make two scopes share a lock,
   which only serializes them more than needed.
   """
-  @spec lock_for_upload(integer()) :: {:ok, quota_scope()} | {:error, :not_found}
-  def lock_for_upload(task_id) do
+  @spec lock_for_upload(integer(), keyword()) :: {:ok, quota_scope()} | {:error, :not_found}
+  def lock_for_upload(task_id, refs \\ []) do
+    with :ok <- key_share(User, refs[:uploaded_by_id]),
+         :ok <- key_share(Board, refs[:board_id]),
+         :ok <- key_share(TaskComment, refs[:comment_id]),
+         {:ok, board_id} <- lock_task(task_id) do
+      scope = quota_scope(board_id)
+      advisory_lock(scope)
+      {:ok, scope}
+    end
+  end
+
+  defp key_share(_schema, nil), do: :ok
+
+  defp key_share(schema, id) when is_integer(id) do
+    schema
+    |> where([r], r.id == ^id)
+    |> lock("FOR KEY SHARE")
+    |> select([r], r.id)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :not_found}
+      _id -> :ok
+    end
+  end
+
+  defp lock_task(task_id) do
     Task
     |> join(:inner, [t], c in assoc(t, :column))
     |> where([t], t.id == ^task_id)
@@ -121,13 +164,8 @@ defmodule Kanban.Attachments.Usage do
     |> select([_t, c], c.board_id)
     |> Repo.one()
     |> case do
-      nil ->
-        {:error, :not_found}
-
-      board_id ->
-        scope = quota_scope(board_id)
-        advisory_lock(scope)
-        {:ok, scope}
+      nil -> {:error, :not_found}
+      board_id -> {:ok, board_id}
     end
   end
 

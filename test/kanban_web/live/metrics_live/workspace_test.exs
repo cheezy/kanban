@@ -281,8 +281,10 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "Lead time · daily median (min)"
       # The cycle title is unchanged alongside it.
       assert html =~ "Cycle time · daily median (min)"
-      # The statistic is the median, never p75.
-      refute html =~ "p75"
+      # The statistic is the median, never p75. Scoped to the chart titles:
+      # the page also carries random base64 tokens (CSRF, session, nonces)
+      # that contain "p75" by chance in about one run in a hundred.
+      refute html =~ ~r/time · [^<]*p75/
     end
 
     test "passes the accent as a brand token, not a hardcoded color", %{conn: conn} do

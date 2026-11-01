@@ -919,10 +919,15 @@ defmodule Kanban.PlansTest do
       :ok
     end
 
+    # A prod read also prints the attachments local-storage warning, which
+    # is captured to keep the test output clean.
     defp runtime_flag(env) do
-      @runtime
-      |> Config.Reader.read!(env: env, target: :host)
-      |> get_in([:kanban, :plans_enforced])
+      {config, _stderr} =
+        ExUnit.CaptureIO.with_io(:stderr, fn ->
+          Config.Reader.read!(@runtime, env: env, target: :host)
+        end)
+
+      get_in(config, [:kanban, :plans_enforced])
     end
 
     test "config/config.exs defaults it to false in every environment" do

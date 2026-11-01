@@ -10,7 +10,16 @@ defmodule Kanban.Attachments.RuntimeConfigTest do
     ATTACHMENTS_S3_ACCESS_KEY_ID ATTACHMENTS_S3_SECRET_ACCESS_KEY ATTACHMENTS_S3_PATH_STYLE
     BUCKET_NAME AWS_ENDPOINT_URL_S3 AWS_REGION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
     ATTACHMENTS_MAX_FILE_MB ATTACHMENTS_MAX_FILES_PER_TASK ATTACHMENTS_ORG_QUOTA_GB
+    DATABASE_URL SECRET_KEY_BASE ENCRYPTION_KEY DATABASE_SSL PHX_SERVER
   )
+
+  # What the prod block needs besides attachments; a Fly-internal database
+  # host passes its plaintext-database guard.
+  @prod_env %{
+    "DATABASE_URL" => "ecto://user:pass@db.internal/kanban",
+    "SECRET_KEY_BASE" => String.duplicate("s", 64),
+    "ENCRYPTION_KEY" => "k" |> String.duplicate(32) |> Base.encode64()
+  }
 
   @sentinel "sentinel-value-never-printed"
 
@@ -31,6 +40,49 @@ defmodule Kanban.Attachments.RuntimeConfigTest do
     Enum.each(@vars, &System.delete_env/1)
     System.put_env(env)
     @runtime |> Config.Reader.read!(env: :test) |> Keyword.get(:kanban, [])
+  end
+
+  # A prod read of `env` on top of @prod_env, returning what it printed to
+  # stderr.
+  defp read_prod_stderr(env) do
+    Enum.each(@vars, &System.delete_env/1)
+    @prod_env |> Map.merge(env) |> System.put_env()
+
+    {_config, stderr} =
+      ExUnit.CaptureIO.with_io(:stderr, fn ->
+        Config.Reader.read!(@runtime, env: :prod, target: :host)
+      end)
+
+    stderr
+  end
+
+  describe "the prod local-storage warning" do
+    test "warns when neither ATTACHMENTS_STORAGE nor ATTACHMENTS_DIR is set" do
+      stderr = read_prod_stderr(%{})
+
+      assert stderr =~ "Attachments use local storage under the system temp directory"
+      assert stderr =~ "docs/attachments-fly-setup.md"
+    end
+
+    test "is silent when ATTACHMENTS_DIR names a persistent directory" do
+      refute read_prod_stderr(%{"ATTACHMENTS_DIR" => "/data/attachments"}) =~ "temp directory"
+    end
+
+    test "is silent when ATTACHMENTS_STORAGE selects S3" do
+      env = %{
+        "ATTACHMENTS_STORAGE" => "s3",
+        "ATTACHMENTS_S3_BUCKET" => "b",
+        "ATTACHMENTS_S3_ACCESS_KEY_ID" => "id",
+        "ATTACHMENTS_S3_SECRET_ACCESS_KEY" => @sentinel
+      }
+
+      refute read_prod_stderr(env) =~ "temp directory"
+    end
+
+    test "never warns outside prod" do
+      {_config, stderr} = ExUnit.CaptureIO.with_io(:stderr, fn -> read(%{}) end)
+      refute stderr =~ "temp directory"
+    end
   end
 
   defp read_error(env) do
@@ -78,7 +130,7 @@ defmodule Kanban.Attachments.RuntimeConfigTest do
     assert s3[:path_style] == true
   end
 
-  test "path style is on only for the exact string true" do
+  test "path style reads true or 1 as on and false, 0 or unset as off, in any case" do
     base = %{
       "ATTACHMENTS_STORAGE" => "s3",
       "ATTACHMENTS_S3_BUCKET" => "b",
@@ -86,11 +138,50 @@ defmodule Kanban.Attachments.RuntimeConfigTest do
       "ATTACHMENTS_S3_SECRET_ACCESS_KEY" => @sentinel
     }
 
-    assert read(base)[Kanban.Attachments.Storage.S3][:path_style] == false
+    path_style = fn value ->
+      env = if value, do: Map.put(base, "ATTACHMENTS_S3_PATH_STYLE", value), else: base
+      read(env)[Kanban.Attachments.Storage.S3][:path_style]
+    end
 
-    assert read(Map.put(base, "ATTACHMENTS_S3_PATH_STYLE", "TRUE"))[Kanban.Attachments.Storage.S3][
-             :path_style
-           ] == false
+    assert path_style.(nil) == false
+
+    for value <- ["true", "TRUE", " True ", "1"], do: assert(path_style.(value) == true)
+    for value <- ["false", "FALSE", "0"], do: assert(path_style.(value) == false)
+  end
+
+  test "raises on a path style that is neither true nor false, without echoing it" do
+    message =
+      read_error(%{
+        "ATTACHMENTS_STORAGE" => "s3",
+        "ATTACHMENTS_S3_BUCKET" => "b",
+        "ATTACHMENTS_S3_ACCESS_KEY_ID" => "id",
+        "ATTACHMENTS_S3_SECRET_ACCESS_KEY" => @sentinel,
+        "ATTACHMENTS_S3_PATH_STYLE" => "yes-please"
+      })
+
+    assert message =~ "ATTACHMENTS_S3_PATH_STYLE must be true or false"
+    refute message =~ "yes-please"
+  end
+
+  test "raises on an endpoint that carries a user name or password, without echoing it" do
+    message =
+      read_error(%{
+        "ATTACHMENTS_STORAGE" => "s3",
+        "ATTACHMENTS_S3_BUCKET" => "b",
+        "ATTACHMENTS_S3_ACCESS_KEY_ID" => "id",
+        "ATTACHMENTS_S3_SECRET_ACCESS_KEY" => @sentinel,
+        "ATTACHMENTS_S3_ENDPOINT" => "https://user:#{@sentinel}@storage.test"
+      })
+
+    assert message =~ "no user name or password"
+    refute message =~ @sentinel
+  end
+
+  test "raises on a relative ATTACHMENTS_DIR without echoing it" do
+    message = read_error(%{"ATTACHMENTS_DIR" => "relative/files"})
+
+    assert message =~ "ATTACHMENTS_DIR must be an absolute path"
+    refute message =~ "relative/files"
   end
 
   test "raises naming each missing S3 variable without printing any value" do

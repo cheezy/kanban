@@ -97,6 +97,26 @@ defmodule Kanban.Attachments.Storage.S3Test do
                "http://localhost:9000/files/a/b"
     end
 
+    test "keeps a path on the endpoint as a prefix in both styles" do
+      config = [bucket: "files", endpoint: "https://proxy.test/s3/"]
+
+      assert S3.object_url(config, "a/b") == "https://files.proxy.test/s3/a/b"
+
+      assert S3.object_url([path_style: true] ++ config, "a/b") ==
+               "https://proxy.test/s3/files/a/b"
+    end
+
+    test "uses path style for an IP address endpoint and for a dotted bucket" do
+      assert S3.object_url([bucket: "files", endpoint: "http://127.0.0.1:9000"], "k") ==
+               "http://127.0.0.1:9000/files/k"
+
+      assert S3.object_url([bucket: "files", endpoint: "http://[::1]:9000"], "k") ==
+               "http://[::1]:9000/files/k"
+
+      assert S3.object_url([bucket: "my.files", region: "eu-west-1"], "k") ==
+               "https://s3.eu-west-1.amazonaws.com/my.files/k"
+    end
+
     test "defaults the endpoint to the AWS endpoint of the region" do
       assert S3.object_url([bucket: "files", region: "eu-west-1"], "k") ==
                "https://files.s3.eu-west-1.amazonaws.com/k"

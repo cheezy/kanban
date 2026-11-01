@@ -319,6 +319,29 @@ defmodule Kanban.AttachmentsTest do
       assert row_count(ctx.task) == 1
     end
 
+    test "create_attachment stores exactly the bytes it checked when the temp file grows later",
+         ctx do
+      upload = text_upload(ctx, "hello")
+      parent = self()
+
+      Process.put(:on_put, fn key, {:file, source} = from, opts ->
+        File.write!(upload.path, String.duplicate("x", 100), [:append])
+        send(parent, {:put_source, source})
+        Storage.Local.put(key, from, opts)
+      end)
+
+      assert {:ok, attachment} =
+               ctx.modifier |> scope() |> Attachments.create_attachment(ctx.task, upload)
+
+      assert_received {:put_source, source}
+      refute source == upload.path
+      refute File.exists?(source)
+
+      {:ok, stream} = Storage.stream(attachment.storage_key)
+      assert Enum.join(stream) == "hello"
+      assert attachment.byte_size == 5
+    end
+
     test "create_attachment deletes the stored blob when the insert fails", ctx do
       comment = comment_by(ctx.modifier, ctx.task)
 

@@ -28,7 +28,17 @@ defmodule Kanban.RuntimeEncryptionKeyTest do
     :ok
   end
 
-  defp read_prod_config, do: Config.Reader.read!(@runtime, env: :prod, target: :host)
+  # The prod read also prints the attachments local-storage warning, since
+  # these tests set no ATTACHMENTS_* variable; it is captured to keep the
+  # test output clean.
+  defp read_prod_config do
+    {config, _stderr} =
+      ExUnit.CaptureIO.with_io(:stderr, fn ->
+        Config.Reader.read!(@runtime, env: :prod, target: :host)
+      end)
+
+    config
+  end
 
   test "reads a base64 32-byte ENCRYPTION_KEY into Kanban.Encryption's key" do
     key = :crypto.strong_rand_bytes(32)

@@ -24,6 +24,8 @@ defmodule Kanban.Attachments.Storage.S3 do
   `"us-east-1"`. With `path_style: false` (the default) an object is
   addressed as `https://<bucket>.<endpoint host>/<key>`; with `true` as
   `https://<endpoint host>/<bucket>/<key>`, which MinIO usually needs.
+  Path-style is used anyway for an IP-address endpoint or a dotted bucket
+  name, and a path on the endpoint is kept as a prefix (see `object_url/2`).
   `req_options` are merged last, so tests can route requests to a
   `Req.Test` stub.
 
@@ -115,19 +117,36 @@ defmodule Kanban.Attachments.Storage.S3 do
   The URL of the object stored under `key`: virtual-hosted by default,
   path-style when `path_style: true`. Pure, so URL building can be tested
   without a request.
+
+  A path on the endpoint (`https://proxy.example/s3`) is kept as a prefix.
+  Path-style is also used, whatever `path_style` says, when the endpoint host
+  is an IP address or the bucket name contains a dot: a virtual-hosted URL
+  cannot put a bucket in front of an IP address, and a dotted bucket breaks
+  the store's wildcard TLS certificate, which is what the AWS SDKs do too.
   """
   @spec object_url(keyword(), String.t()) :: String.t()
   def object_url(config, key) when is_list(config) and is_binary(key) do
     bucket = Keyword.fetch!(config, :bucket)
     uri = config |> endpoint() |> URI.parse()
+    prefix = (uri.path || "") |> String.trim_trailing("/")
 
     uri =
-      if Keyword.get(config, :path_style, false),
-        do: %URI{uri | path: "/#{bucket}/#{key}"},
-        else: %URI{uri | host: "#{bucket}.#{uri.host}", path: "/#{key}"}
+      if path_style?(config, uri.host, bucket),
+        do: %URI{uri | path: "#{prefix}/#{bucket}/#{key}"},
+        else: %URI{uri | host: "#{bucket}.#{uri.host}", path: "#{prefix}/#{key}"}
 
     URI.to_string(%URI{uri | query: nil, fragment: nil})
   end
+
+  defp path_style?(config, host, bucket) do
+    Keyword.get(config, :path_style, false) == true or String.contains?(bucket, ".") or
+      ip_address?(host)
+  end
+
+  defp ip_address?(host) when is_binary(host),
+    do: match?({:ok, _ip}, host |> to_charlist() |> :inet.parse_address())
+
+  defp ip_address?(_host), do: false
 
   defp upload(key, body, headers, opts) do
     headers = [{"content-type", content_type(opts)} | headers]

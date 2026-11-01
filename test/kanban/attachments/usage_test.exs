@@ -102,4 +102,26 @@ defmodule Kanban.Attachments.UsageTest do
     assert id == organization.id
     assert Repo.transact(fn -> Usage.lock_for_upload(-1) end) == {:error, :not_found}
   end
+
+  test "lock_for_upload returns not_found when a referenced uploader, board or comment is gone" do
+    organization = organization_fixture()
+    owner = user_fixture()
+    board = owner |> board_fixture() |> move_board_to_organization(organization)
+    task = board_task(board)
+
+    lock = fn refs -> Repo.transact(fn -> Usage.lock_for_upload(task.id, refs) end) end
+
+    assert {:ok, {:organization, _id}} =
+             Repo.transact(fn ->
+               {:ok, scope} =
+                 Usage.lock_for_upload(task.id, uploaded_by_id: owner.id, board_id: board.id)
+
+               {:ok, scope}
+             end)
+
+    assert lock.(uploaded_by_id: -1) == {:error, :not_found}
+    assert lock.(board_id: -1) == {:error, :not_found}
+    assert lock.(comment_id: -1) == {:error, :not_found}
+    assert {:ok, _scope} = lock.(uploaded_by_id: nil, board_id: nil, comment_id: nil)
+  end
 end

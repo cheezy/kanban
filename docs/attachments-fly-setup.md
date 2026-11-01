@@ -68,6 +68,12 @@ deploy.
    fly deploy --remote-only --config fly.review.toml --dockerfile Dockerfile.review
    ```
 
+   The CI workflow (`.github/workflows/elixir.yml`) runs this same command
+   after every push to `main`, and the production one after a push to
+   `release`, so a push also picks up the staged secrets. Until
+   `ATTACHMENTS_STORAGE` is set, every boot logs a warning that attachments
+   use local storage under the temp directory; after this step it is gone.
+
    If the boot fails, read the log. A missing variable is named there, without
    its value:
 
@@ -108,7 +114,8 @@ deploy.
    cannot be reached with virtual-hosted addressing; set
    `ATTACHMENTS_S3_PATH_STYLE=true` with
    `fly secrets set ATTACHMENTS_S3_PATH_STYLE=true -a kanban-review`, which
-   restarts the machines, and repeat this step.
+   restarts the machines, and repeat this step. The value must be `true` or
+   `false` (`1` and `0` work too); anything else stops the boot.
 
 ## Set up the production app (`kanban-prod`)
 
@@ -138,7 +145,8 @@ untouched, and become reachable again once you re-enable S3.
    Use `-a kanban-prod` for production. Without `ATTACHMENTS_STORAGE` the
    other `ATTACHMENTS_S3_*` secrets are ignored, so they can stay.
 2. **Check the adapter** from a remote console as in step 5:
-   `Storage.adapter()` must return `Kanban.Attachments.Storage.Local`.
+   `Storage.adapter()` must return `Kanban.Attachments.Storage.Local`. The
+   boot log shows the local-storage warning again, as expected.
 3. **Only if you are abandoning the bucket for good**, destroy it and remove
    its secrets. Destroying a bucket deletes every file in it and cannot be
    undone:

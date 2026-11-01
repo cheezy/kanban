@@ -109,10 +109,28 @@ end
 
 case System.get_env("ATTACHMENTS_DIR") do
   dir when is_binary(dir) and dir != "" ->
+    if Path.type(dir) != :absolute do
+      raise "ATTACHMENTS_DIR must be an absolute path. See docs/attachments.md."
+    end
+
     config :kanban, Kanban.Attachments.Storage.Local, root: dir
 
   _unset ->
     :ok
+end
+
+# A production app that sets neither variable keeps its files under the
+# system temp directory, which many hosts clear on reboot and a Fly machine
+# without a volume loses on every deploy. Warn loudly rather than fail, so an
+# instance that does not offer attachments yet still boots.
+if config_env() == :prod and System.get_env("ATTACHMENTS_STORAGE") in [nil, ""] and
+     System.get_env("ATTACHMENTS_DIR") in [nil, ""] do
+  IO.warn(
+    "Attachments use local storage under the system temp directory, which does not survive " <>
+      "a reboot or a redeploy. Set ATTACHMENTS_STORAGE=s3 (see docs/attachments-fly-setup.md) " <>
+      "or ATTACHMENTS_DIR to a persistent directory (see docs/attachments.md).",
+    []
+  )
 end
 
 case System.get_env("ATTACHMENTS_STORAGE") do
@@ -150,17 +168,33 @@ case System.get_env("ATTACHMENTS_STORAGE") do
 
     endpoint = s3[:endpoint] && URI.parse(s3[:endpoint])
 
-    if endpoint && (endpoint.scheme not in ["http", "https"] or endpoint.host in [nil, ""]) do
-      raise "ATTACHMENTS_S3_ENDPOINT (or AWS_ENDPOINT_URL_S3) must be an http:// or https:// URL. " <>
-              "See docs/attachments.md."
+    if endpoint &&
+         (endpoint.scheme not in ["http", "https"] or endpoint.host in [nil, ""] or
+            endpoint.userinfo != nil) do
+      raise "ATTACHMENTS_S3_ENDPOINT (or AWS_ENDPOINT_URL_S3) must be an http:// or https:// URL " <>
+              "with no user name or password in it. See docs/attachments.md."
     end
+
+    path_style =
+      case System.get_env("ATTACHMENTS_S3_PATH_STYLE", "")
+           |> String.trim()
+           |> String.downcase() do
+        value when value in ["true", "1"] ->
+          true
+
+        value when value in ["false", "0", ""] ->
+          false
+
+        _other ->
+          raise "ATTACHMENTS_S3_PATH_STYLE must be true or false. See docs/attachments.md."
+      end
 
     config :kanban, Kanban.Attachments.Storage, adapter: Kanban.Attachments.Storage.S3
 
     config :kanban,
            Kanban.Attachments.Storage.S3,
            Enum.reject(s3, fn {_key, value} -> is_nil(value) end) ++
-             [path_style: System.get_env("ATTACHMENTS_S3_PATH_STYLE") == "true"]
+             [path_style: path_style]
 
   _other ->
     raise "ATTACHMENTS_STORAGE must be local or s3. See docs/attachments.md."

@@ -17,6 +17,12 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
       minutes, capped at one day, so a store outage is retried without being
       hammered.
 
+  A tombstone whose key a `task_attachments` row still names is deleted
+  without touching the blob, so a stale tombstone (a pending upload whose
+  grace period ran out before its row committed, say) can never remove a
+  file a live attachment points at; when that row is deleted, the trigger
+  queues the key again.
+
   A tombstone whose `delete_after` is still in the future belongs to an upload
   in flight and is left alone. No database transaction is held across a
   storage call: the batch is read first and each tombstone is then updated or
@@ -45,6 +51,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   alias Kanban.Attachments.BlobDeletion
   alias Kanban.Attachments.Storage
+  alias Kanban.Attachments.TaskAttachment
   alias Kanban.Repo
 
   require Logger
@@ -63,20 +70,37 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     batch_size =
       settings |> Keyword.get(:batch_size, @default_batch_size) |> positive_or_default()
 
+    tombstones = due_tombstones(now, batch_size)
+    in_use = keys_in_use(tombstones)
+
     counts =
-      now
-      |> due_tombstones(batch_size)
-      |> Enum.reduce(%{deleted: 0, invalid: 0, failed: 0}, fn tombstone, acc ->
-        outcome = process(tombstone, now)
+      Enum.reduce(tombstones, %{deleted: 0, in_use: 0, invalid: 0, failed: 0}, fn tombstone,
+                                                                                  acc ->
+        outcome = process(tombstone, in_use, now)
         Map.update!(acc, outcome, &(&1 + 1))
       end)
 
     Logger.info(
-      "attachment blob cleanup: #{counts.deleted} deleted, #{counts.invalid} invalid, " <>
-        "#{counts.failed} failed"
+      "attachment blob cleanup: #{counts.deleted} deleted, #{counts.in_use} still in use, " <>
+        "#{counts.invalid} invalid, #{counts.failed} failed"
     )
 
     :ok
+  end
+
+  # The storage keys among `tombstones` that a task_attachments row still
+  # names. Such a blob is never deleted: the tombstone is stale (a pending
+  # upload whose grace period ran out before its row committed, for
+  # example), and the row's own deletion queues the key again through the
+  # trigger.
+  defp keys_in_use([]), do: MapSet.new()
+
+  defp keys_in_use(tombstones) do
+    keys = Enum.map(tombstones, & &1.storage_key)
+
+    from(a in TaskAttachment, where: a.storage_key in ^keys, select: a.storage_key)
+    |> Repo.all()
+    |> MapSet.new()
   end
 
   @doc """
@@ -98,7 +122,16 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     |> Repo.all()
   end
 
-  defp process(tombstone, now) do
+  defp process(tombstone, in_use, now) do
+    if MapSet.member?(in_use, tombstone.storage_key) do
+      delete_tombstone(tombstone)
+      :in_use
+    else
+      delete_blob(tombstone, now)
+    end
+  end
+
+  defp delete_blob(tombstone, now) do
     case Storage.delete(tombstone.storage_key) do
       :ok ->
         delete_tombstone(tombstone)

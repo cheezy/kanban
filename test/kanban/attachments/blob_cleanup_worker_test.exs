@@ -110,6 +110,19 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       assert reload(row) == nil
     end
 
+    test "never deletes a blob a live attachment still names, and drops the stale tombstone" do
+      task = user_fixture() |> board_fixture() |> column_fixture() |> task_fixture()
+      key = stored_blob()
+      attachment_fixture(task, storage_key: key)
+      row = tombstone(key, minutes(-1))
+
+      assert :ok = run()
+
+      refute_received {:storage_deleted, ^key}
+      assert blob_exists?(key)
+      assert reload(row) == nil
+    end
+
     test "leaves a row whose delete_after is in the future" do
       key = stored_blob()
       row = tombstone(key, minutes(1))

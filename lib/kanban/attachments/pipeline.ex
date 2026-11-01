@@ -9,16 +9,19 @@ defmodule Kanban.Attachments.Pipeline do
   # The steps, in order (docs/plans/ATTACHMENTS-DESIGN.md §4.2):
   #
   #   1. Pre-check the per-task count, which needs no file IO.
-  #   2. Take byte_size from File.stat of the temp file (never a client
-  #      value), refusing an empty or too large file before reading it.
-  #   3. Stream the file once for its sha256.
+  #   2. Refuse an empty or too large temp file from File.stat (never a
+  #      client value) before reading it, then read it exactly once into a
+  #      private snapshot capped one byte past the limit. byte_size is the
+  #      snapshot's size, and every later step reads the snapshot, which is
+  #      removed when the call ends.
+  #   3. Hash the snapshot for its sha256.
   #   4. Build the changeset, which sniffs the contents against the type, and
   #      pre-check the quota, all before anything is stored.
   #   5. Park a pending tombstone for the new key, due one hour later, then
-  #      put the blob.
-  #   6. In one transaction: lock the task row, then the quota scope's
-  #      advisory lock, re-check count and quota, insert, and remove the
-  #      pending tombstone.
+  #      put the snapshot.
+  #   6. In one transaction: key-share lock the uploader, board and comment
+  #      rows, lock the task row, then the quota scope's advisory lock,
+  #      re-check count and quota, insert, and remove the pending tombstone.
   #   7. If the put or the transaction fails, delete the blob and, only when
   #      that succeeds, its tombstone; otherwise the tombstone stays for the
   #      cleanup worker.
@@ -72,20 +75,79 @@ defmodule Kanban.Attachments.Pipeline do
     |> report(base, source)
   end
 
-  defp run(%TaskAttachment{task_id: task_id} = base, upload) do
-    with {:ok, file, attrs} <- read_upload(upload, task_id),
-         {:ok, changeset, key} <- prepare(base, attrs, file) do
+  defp run(base, upload) do
+    with {:ok, file, attrs} <- read_upload(upload, base.task_id) do
+      try do
+        prepare_and_store(base, attrs, file)
+      after
+        File.rm(file.path)
+      end
+    end
+  end
+
+  defp prepare_and_store(base, attrs, file) do
+    with {:ok, changeset, key} <- prepare(base, attrs, file) do
       store(changeset, key, file)
     end
   end
 
-  # Size from File.stat and the sha256 from one read of the file.
+  # The caller's file is read exactly once, into a private snapshot capped one
+  # byte past the size limit. Its size, sha256, sniff and the stored bytes all
+  # come from the snapshot, so a file that grows or is rewritten after the
+  # size check can never store bytes that differ from what was checked and
+  # counted against the quota.
   defp inspect_file(path) do
-    with {:ok, size} <- file_size(path),
-         {:ok, sha256} <- sha256(path) do
-      {:ok, %{path: path, size: size, sha256: sha256}}
+    with {:ok, _size} <- file_size(path),
+         {:ok, snapshot, size} <- snapshot(path) do
+      hash_snapshot(snapshot, size)
     end
   end
+
+  defp hash_snapshot(snapshot, size) do
+    case sha256(snapshot) do
+      {:ok, sha256} -> {:ok, %{path: snapshot, size: size, sha256: sha256}}
+      {:error, reason} -> discard_snapshot(snapshot, reason)
+    end
+  end
+
+  defp snapshot(source) do
+    target = Path.join(System.tmp_dir!(), "stride-upload-" <> random_name())
+
+    case File.open(target, [:write, :exclusive, :binary]) do
+      {:ok, device} ->
+        copied = copy_capped(source, device, target)
+        _ = File.close(device)
+        settle_snapshot(copied, target)
+
+      {:error, _reason} ->
+        {:error, :unreadable}
+    end
+  end
+
+  defp copy_capped(source, device, target) do
+    with :ok <- File.chmod(target, 0o600) do
+      :file.copy(source, device, Limits.max_file_bytes() + 1)
+    end
+  end
+
+  # A refused or failed snapshot is removed here, so the caller only ever
+  # holds a snapshot path that it must clean up itself.
+  defp settle_snapshot({:ok, 0}, target), do: discard_snapshot(target, :empty)
+
+  defp settle_snapshot({:ok, size}, target) do
+    if size > Limits.max_file_bytes(),
+      do: discard_snapshot(target, :too_large),
+      else: {:ok, target, size}
+  end
+
+  defp settle_snapshot(_error, target), do: discard_snapshot(target, :unreadable)
+
+  defp discard_snapshot(snapshot, reason) do
+    _ = File.rm(snapshot)
+    {:error, reason}
+  end
+
+  defp random_name, do: 16 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
 
   # Everything that can refuse the file before it is stored: the changeset,
   # then the quota.
@@ -217,13 +279,20 @@ defmodule Kanban.Attachments.Pipeline do
     task_id = Changeset.get_field(changeset, :task_id)
 
     Repo.transact(fn ->
-      with {:ok, scope} <- Usage.lock_for_upload(task_id),
+      with {:ok, scope} <- Usage.lock_for_upload(task_id, upload_refs(changeset)),
            :ok <- Usage.check_limits(task_id, scope, size),
            {:ok, attachment} <- changeset |> Repo.insert() |> map_insert_error() do
         delete_tombstone(key)
         {:ok, attachment}
       end
     end)
+  end
+
+  # The rows the insert references besides the task, in the order
+  # Usage.lock_for_upload/2 key-share locks them.
+  defp upload_refs(changeset) do
+    for field <- [:uploaded_by_id, :board_id, :comment_id],
+        do: {field, Changeset.get_field(changeset, field)}
   end
 
   # A task, comment or uploader deleted between the checks and the insert

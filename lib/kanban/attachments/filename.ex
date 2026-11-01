@@ -8,7 +8,10 @@ defmodule Kanban.Attachments.Filename do
     2. Removes control characters (`\\p{Cc}`, such as NUL, tab and newline)
        and format characters (`\\p{Cf}`, which include the bidi overrides
        U+202A–U+202E and U+2066–U+2069). A bidi override could otherwise make
-       `photo\\u202Egnp.exe` display as `photoexe.png`.
+       `photo\\u202Egnp.exe` display as `photoexe.png`. The zero-width
+       non-joiner and joiner (U+200C, U+200D) are kept, because they reorder
+       nothing and emoji sequences (`👨‍👩‍👧`) and scripts such as Persian need
+       them; a name made only of them is refused by the changeset as blank.
     3. Keeps only the part after the last `/` or `\\`, so a name can never
        carry a directory, absolute or relative (`../../etc/passwd` becomes
        `passwd`, `C:\\Users\\x\\evil.png` becomes `evil.png`).
@@ -22,7 +25,10 @@ defmodule Kanban.Attachments.Filename do
   """
 
   @max_codepoints 255
-  @unsafe ~r/[\p{Cc}\p{Cf}]/u
+  # Every control and format character except the zero-width non-joiner and
+  # joiner (U+200C, U+200D), which neither reorder nor hide text: emoji
+  # sequences and scripts such as Persian need them.
+  @unsafe ~r/(?![\x{200C}\x{200D}])[\p{Cc}\p{Cf}]/u
   @separators ~r{[/\\]}
 
   @type reason :: :invalid | :empty

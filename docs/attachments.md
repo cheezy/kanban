@@ -35,7 +35,7 @@ Stride already uses, so no AWS SDK is installed.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ATTACHMENTS_DIR` | a `stride_attachments` directory in the system temp directory | The directory files are written under. Created if missing. |
+| `ATTACHMENTS_DIR` | a `stride_attachments` directory in the system temp directory | The directory files are written under. Created if missing. It must be an absolute path, or the boot stops. |
 
 ### S3-compatible storage
 
@@ -51,9 +51,15 @@ variables are missing.
 | `ATTACHMENTS_S3_BUCKET` | `BUCKET_NAME` | none, required | The bucket that holds every attachment. |
 | `ATTACHMENTS_S3_ACCESS_KEY_ID` | `AWS_ACCESS_KEY_ID` | none, required | The access key id requests are signed with. |
 | `ATTACHMENTS_S3_SECRET_ACCESS_KEY` | `AWS_SECRET_ACCESS_KEY` | none, required | The secret access key. Never logged. |
-| `ATTACHMENTS_S3_ENDPOINT` | `AWS_ENDPOINT_URL_S3` | `https://s3.<region>.amazonaws.com` | The store's base URL, for example `https://fly.storage.tigris.dev` for Tigris or `http://localhost:9000` for a local MinIO. It must start with `http://` or `https://`, or the boot stops. |
+| `ATTACHMENTS_S3_ENDPOINT` | `AWS_ENDPOINT_URL_S3` | `https://s3.<region>.amazonaws.com` | The store's base URL, for example `https://fly.storage.tigris.dev` for Tigris or `http://localhost:9000` for a local MinIO. It must start with `http://` or `https://` and carry no user name or password, or the boot stops. A path on it, such as `https://proxy.example/s3`, is kept in front of every object's path. |
 | `ATTACHMENTS_S3_REGION` | `AWS_REGION` | `us-east-1` | The region requests are signed for. Use `auto` for Tigris. |
-| `ATTACHMENTS_S3_PATH_STYLE` | none | `false` | `true` addresses objects as `<endpoint>/<bucket>/<key>` instead of `<bucket>.<endpoint host>/<key>`. Only the exact string `true` turns it on. MinIO usually needs it. |
+| `ATTACHMENTS_S3_PATH_STYLE` | none | `false` | `true` (or `1`) addresses objects as `<endpoint>/<bucket>/<key>` instead of `<bucket>.<endpoint host>/<key>`; `false` (or `0`) turns it off. Case is ignored, and any other value stops the boot. MinIO usually needs it. Path style is used anyway when the endpoint is an IP address or the bucket name contains a dot, since neither works with a virtual-hosted address. |
+
+In production, when neither `ATTACHMENTS_STORAGE` nor `ATTACHMENTS_DIR` is
+set, the boot prints a warning: files would be kept under the system temp
+directory, which does not survive a reboot or, on Fly, a redeploy. The app
+still starts, so an instance that does not offer attachments yet is not
+blocked.
 
 For AWS S3, set the bucket, the region and the two keys, and leave the
 endpoint unset. For MinIO, set the endpoint (for example
@@ -122,7 +128,12 @@ File names are cleaned before they are stored
 (`Kanban.Attachments.Filename`): any directory part is dropped (`../../x.png`
 becomes `x.png`), control characters and right-to-left override characters
 are removed, and the name is shortened to 255 characters, keeping its
-extension.
+extension. The zero-width joiner and non-joiner are kept, because emoji such
+as 👨‍👩‍👧 and scripts such as Persian need them.
+
+Stride reads an uploaded file once, into a private copy, and checks and
+stores that copy, so the stored bytes are always the bytes whose size, type
+and checksum were checked.
 
 ## When attachment files are deleted
 
@@ -136,6 +147,13 @@ file. Deleting the user who uploaded a file does not by itself remove the
 file: its row stays, without an uploader, unless its task or board is
 deleted too (account deletion also deletes boards that only that user uses,
 and their files with them).
+
+The `Kanban.Attachments.BlobCleanupWorker` job drains that queue every 15
+minutes on the `:attachments` Oban queue, deleting each stored file and then
+its queue entry. An entry whose key an attachment row still names is dropped
+without touching the file, so the job can never remove a file that a live
+attachment points to. A file the store cannot delete is retried with a
+growing delay, up to one day apart.
 
 The trigger fires for `DELETE` statements only. Never empty
 `task_attachments` with `TRUNCATE`, which skips row triggers and would leave
