@@ -218,7 +218,7 @@ msgstr "Tablero actualizado exitosamente"
 #: lib/kanban_web/live/org_live/console.html.heex:280
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:149
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:330
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
 #: lib/kanban_web/live/user_live/danger_zone_component.ex:243
 #: lib/kanban_web/live/user_live/two_factor_component.ex:141
@@ -1571,7 +1571,7 @@ msgstr "Tiempo invertido (minutos)"
 #: lib/kanban_web/components/task_activity_log.ex:194
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:189
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:370
 #: lib/kanban_web/live/task_live/components/comment_row.ex:213
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
@@ -2027,7 +2027,7 @@ msgstr "Tablero:"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:911
 #: lib/kanban_web/live/board_live/webhook_views.ex:286
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:94
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:115
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4593,6 +4593,7 @@ msgid "Open goal %{id}"
 msgstr "Abrir objetivo %{id}"
 
 #: lib/kanban_web/live/board_live/members_form_component.ex:319
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:192
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "Cerrar"
@@ -11759,7 +11760,8 @@ msgstr "Ya hay una exportación de este espacio de trabajo en curso."
 msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
 msgstr "Por %{requester} · solicitada %{requested} · %{size} · caduca %{expires}"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:82
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:103
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:206
 #: lib/kanban_web/live/workspace_live/export_card.ex:107
 #, elixir-autogen, elixir-format
 msgid "Download"
@@ -13804,7 +13806,7 @@ msgstr "Adjunto eliminado por el propietario del tablero"
 msgid "A task can hold at most %{count} files."
 msgstr "Una tarea puede contener como máximo %{count} archivos."
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:91
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this attachment?"
 msgstr "¿Seguro que desea eliminar este adjunto?"
@@ -13819,7 +13821,7 @@ msgstr "Adjunto eliminado"
 msgid "Attachments need a paid plan."
 msgstr "Los adjuntos requieren un plan de pago."
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:146
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:327
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
 msgstr "Cancelar la subida de %{name}"
@@ -13844,7 +13846,7 @@ msgstr "Suelte los archivos aquí o explore"
 msgid "File storage is unavailable. Please try again later."
 msgstr "El almacenamiento de archivos no está disponible. Inténtelo de nuevo más tarde."
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:45
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:60
 #, elixir-autogen, elixir-format
 msgid "No attachments yet"
 msgstr "Aún no hay adjuntos"
@@ -13900,7 +13902,7 @@ msgstr "Este tipo de archivo no está permitido."
 msgid "Upload files"
 msgstr "Subir archivos"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:155
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:336
 #, elixir-autogen, elixir-format
 msgid "Upload progress for %{name}"
 msgstr "Progreso de subida de %{name}"
@@ -13926,3 +13928,13 @@ msgstr "No tiene permiso para cambiar los adjuntos de esta tarea."
 #, elixir-autogen, elixir-format
 msgid "Your organization has used all of its attachment storage."
 msgstr "Su organización ha agotado todo su almacenamiento de adjuntos."
+
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:140
+#, elixir-autogen, elixir-format
+msgid "Open preview of %{name}"
+msgstr "Abrir la vista previa de %{name}"
+
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:165
+#, elixir-autogen, elixir-format
+msgid "Preview of %{name}"
+msgstr "Vista previa de %{name}"

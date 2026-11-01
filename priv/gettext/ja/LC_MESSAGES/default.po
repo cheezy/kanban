@@ -218,7 +218,7 @@ msgstr "ボードが正常に更新されました"
 #: lib/kanban_web/live/org_live/console.html.heex:280
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:149
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:330
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
 #: lib/kanban_web/live/user_live/danger_zone_component.ex:243
 #: lib/kanban_web/live/user_live/two_factor_component.ex:141
@@ -1571,7 +1571,7 @@ msgstr "経過時間 (分)"
 #: lib/kanban_web/components/task_activity_log.ex:194
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:189
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:370
 #: lib/kanban_web/live/task_live/components/comment_row.ex:213
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
@@ -2027,7 +2027,7 @@ msgstr "ボード:"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:911
 #: lib/kanban_web/live/board_live/webhook_views.ex:286
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:94
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:115
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4585,6 +4585,7 @@ msgid "Open goal %{id}"
 msgstr "ゴール %{id} を開く"
 
 #: lib/kanban_web/live/board_live/members_form_component.ex:319
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:192
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "閉じる"
@@ -11693,7 +11694,8 @@ msgstr "このワークスペースのエクスポートはすでに進行中で
 msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
 msgstr "%{requester} · リクエスト日時 %{requested} · %{size} · 有効期限 %{expires}"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:82
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:103
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:206
 #: lib/kanban_web/live/workspace_live/export_card.ex:107
 #, elixir-autogen, elixir-format
 msgid "Download"
@@ -13737,7 +13739,7 @@ msgstr "ボード所有者による添付ファイル削除"
 msgid "A task can hold at most %{count} files."
 msgstr "1つのタスクに添付できるファイルは最大%{count}件です。"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:91
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this attachment?"
 msgstr "この添付ファイルを削除してもよろしいですか？"
@@ -13752,7 +13754,7 @@ msgstr "添付ファイルを削除しました"
 msgid "Attachments need a paid plan."
 msgstr "添付ファイルには有料プランが必要です。"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:146
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:327
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
 msgstr "%{name} のアップロードをキャンセル"
@@ -13777,7 +13779,7 @@ msgstr "ここにファイルをドロップするか参照"
 msgid "File storage is unavailable. Please try again later."
 msgstr "ファイルストレージを利用できません。後でもう一度お試しください。"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:45
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:60
 #, elixir-autogen, elixir-format
 msgid "No attachments yet"
 msgstr "添付ファイルはまだありません"
@@ -13833,7 +13835,7 @@ msgstr "この種類のファイルは許可されていません。"
 msgid "Upload files"
 msgstr "ファイルをアップロード"
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:155
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:336
 #, elixir-autogen, elixir-format
 msgid "Upload progress for %{name}"
 msgstr "%{name} のアップロード進行状況"
@@ -13858,3 +13860,13 @@ msgstr "このタスクの添付ファイルを変更する権限がありませ
 #, elixir-autogen, elixir-format
 msgid "Your organization has used all of its attachment storage."
 msgstr "組織の添付ファイル用ストレージをすべて使い切りました。"
+
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:140
+#, elixir-autogen, elixir-format
+msgid "Open preview of %{name}"
+msgstr "%{name} のプレビューを開く"
+
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:165
+#, elixir-autogen, elixir-format
+msgid "Preview of %{name}"
+msgstr "%{name} のプレビュー"

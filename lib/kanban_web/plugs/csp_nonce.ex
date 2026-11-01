@@ -69,11 +69,17 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # explicit and a test pins it. W2534 had allowed the two Google Fonts hosts;
   # D402 removed them so no page sends a visitor's IP address or User-Agent to
   # a font CDN. script-src is unchanged.
+  #
+  # W2512: img-src adds blob: because Phoenix.Component.live_img_preview/1 draws
+  # a staged upload's thumbnail from a blob: object URL that LiveView's own
+  # (nonce-gated) script creates from the user's local file. blob: only admits
+  # object URLs the page itself minted, never a remote image; it is added to
+  # img-src alone, so script-src and default-src are unchanged.
   defp build_policy(nonce) do
     """
     default-src 'self'; \
     script-src 'self' 'nonce-#{nonce}'; \
-    img-src 'self' data:; \
+    img-src 'self' data: blob:; \
     style-src 'self' 'unsafe-inline'; \
     font-src 'self'; \
     base-uri 'self'; \

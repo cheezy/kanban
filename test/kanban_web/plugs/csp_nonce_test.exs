@@ -41,7 +41,8 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
 
       assert policy =~ "default-src 'self'"
       assert policy =~ "script-src 'self' 'nonce-#{nonce}'"
-      assert policy =~ "img-src 'self' data:"
+      # W2512: blob: for live_img_preview (the ; makes it exact).
+      assert policy =~ "img-src 'self' data: blob:;"
       # D402: fonts are self-hosted, so both end at 'self' (the ; makes it exact).
       assert policy =~ "style-src 'self' 'unsafe-inline';"
       assert policy =~ "font-src 'self';"
@@ -89,6 +90,31 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
       assert directives["style-src"] == ["'self'", "'unsafe-inline'"]
       assert directives["font-src"] == ["'self'"]
       assert directives["default-src"] == ["'self'"]
+    end
+
+    test "img-src allows self, data: and blob: and nothing else" do
+      [policy] =
+        conn(:get, "/") |> CspNonce.call([]) |> get_resp_header("content-security-policy")
+
+      directives = directives(policy)
+      nonce_source = Enum.find(directives["script-src"], &String.starts_with?(&1, "'nonce-"))
+
+      assert directives["img-src"] == ["'self'", "data:", "blob:"]
+
+      # Every other directive is exactly what it was before blob: was added.
+      assert Map.delete(directives, "img-src") == %{
+               "default-src" => ["'self'"],
+               "script-src" => ["'self'", nonce_source],
+               "style-src" => ["'self'", "'unsafe-inline'"],
+               "font-src" => ["'self'"],
+               "base-uri" => ["'self'"],
+               "form-action" => ["'self'"],
+               "object-src" => ["'none'"]
+             }
+
+      for {name, sources} <- Map.delete(directives, "img-src") do
+        refute "blob:" in sources, "#{name} must not allow blob:"
+      end
     end
 
     test "two requests get two different nonces (no caching)" do

@@ -508,6 +508,28 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       refute html =~ "on-comment.txt"
       assert has_element?(view, "#{section(task)}-attachment-#{on_task.id}")
     end
+
+    test "the task view shows a thumbnail whose src is the preview route",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      image = attachment_fixture(task, %{filename: "shot.png", content_type: "image/png"})
+      pdf = attachment_fixture(task, %{filename: "spec.pdf", content_type: "application/pdf"})
+      view = open_task_view(conn, board, task)
+
+      lightbox = "#{section(task)}-attachment-#{image.id}-lightbox"
+
+      assert has_element?(
+               view,
+               ~s(#{lightbox}-open img[src="/attachments/#{image.id}/preview"][loading="lazy"])
+             )
+
+      assert has_element?(view, ~s(#{lightbox}[role="dialog"]))
+      assert has_element?(view, ~s(#{lightbox} a[href="/attachments/#{image.id}/download"]))
+
+      refute view
+             |> element("#{section(task)}-attachment-#{pdf.id}")
+             |> render() =~ "/preview"
+    end
   end
 
   defp upload_entry_refs(view, task) do
