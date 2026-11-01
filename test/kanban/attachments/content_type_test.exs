@@ -28,6 +28,19 @@ defmodule Kanban.Attachments.ContentTypeTest do
     end
   end
 
+  describe "extensions/0" do
+    test "lists every allowed extension, lower case with its dot, sorted" do
+      assert ContentType.extensions() ==
+               ~w(.csv .gif .jpeg .jpg .json .log .markdown .md .pdf .png .txt .webp)
+    end
+
+    test "maps every extension it lists to an allowed type" do
+      for extension <- ContentType.extensions() do
+        assert ("file" <> extension) |> ContentType.from_extension() |> ContentType.allowed?()
+      end
+    end
+  end
+
   describe "normalize/2" do
     test "normalises a declared type with a charset parameter and an alias" do
       assert ContentType.normalize("text/plain; charset=utf-8", "a.txt") == "text/plain"

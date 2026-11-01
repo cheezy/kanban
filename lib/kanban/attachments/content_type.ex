@@ -101,6 +101,15 @@ defmodule Kanban.Attachments.ContentType do
   @spec allowed() :: [String.t()]
   def allowed, do: @allowed
 
+  @doc """
+  Every file extension an attachment may have, each with its leading dot and
+  in lower case, sorted. Upload forms use it as their accept hint; the type
+  itself is still checked by `normalize/2`, `matches?/2` and
+  `extension_matches?/2` when the file is stored.
+  """
+  @spec extensions() :: [String.t()]
+  def extensions, do: @extensions |> Map.keys() |> Enum.sort()
+
   @doc "Whether `type` is on the allow-list. `type` must already be normalised."
   @spec allowed?(term()) :: boolean()
   def allowed?(type), do: type in @allowed

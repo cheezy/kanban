@@ -378,6 +378,11 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, put_flash(socket, kind, message)}
   end
 
+  # The Attachments section is a live component too, for the same reason.
+  def handle_info({KanbanWeb.TaskLive.AttachmentsComponent, {:flash, kind, message}}, socket) do
+    {:noreply, put_flash(socket, kind, message)}
+  end
+
   def handle_info({component, msg}, socket) when component in @parent_message_components,
     do: {:noreply, component.apply_parent_message(socket, msg)}
 

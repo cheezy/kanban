@@ -109,26 +109,40 @@ defmodule Kanban.Attachments do
 
   @doc """
   Lists every attachment on `task`, task-level and comment-level together,
-  oldest first. Each carries its `comment_id` (`nil` for a task-level file).
+  oldest first. Each carries its `comment_id` (`nil` for a task-level file)
+  and has `:uploaded_by` preloaded, which is `nil` once the uploader's account
+  is deleted.
   """
   @spec list_task_attachments(term(), Task.t()) :: {:ok, [TaskAttachment.t()]} | {:error, error()}
   def list_task_attachments(scope, %Task{id: task_id}) when is_integer(task_id) do
     with {:ok, board_id} <- board_id_for_task(task_id),
          {:ok, _viewer} <- gate(scope, board_id, :read) do
-      {:ok, TaskAttachment |> where([a], a.task_id == ^task_id) |> oldest_first() |> Repo.all()}
+      {:ok,
+       TaskAttachment
+       |> where([a], a.task_id == ^task_id)
+       |> oldest_first()
+       |> preload(:uploaded_by)
+       |> Repo.all()}
     end
   end
 
   def list_task_attachments(_scope, _task), do: {:error, :not_found}
 
-  @doc "Lists the attachments on `comment` only, oldest first."
+  @doc """
+  Lists the attachments on `comment` only, oldest first, with `:uploaded_by`
+  preloaded as `list_task_attachments/2` does.
+  """
   @spec list_comment_attachments(term(), TaskComment.t()) ::
           {:ok, [TaskAttachment.t()]} | {:error, error()}
   def list_comment_attachments(scope, %TaskComment{id: comment_id}) when is_integer(comment_id) do
     with {:ok, board_id} <- board_id_for_comment(comment_id),
          {:ok, _viewer} <- gate(scope, board_id, :read) do
       {:ok,
-       TaskAttachment |> where([a], a.comment_id == ^comment_id) |> oldest_first() |> Repo.all()}
+       TaskAttachment
+       |> where([a], a.comment_id == ^comment_id)
+       |> oldest_first()
+       |> preload(:uploaded_by)
+       |> Repo.all()}
     end
   end
 

@@ -30,6 +30,7 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   alias KanbanWeb.BoardLive.FilterActions
   alias KanbanWeb.BoardLive.MembersFormComponent
   alias KanbanWeb.BoardLive.Params
+  alias KanbanWeb.TaskLive.AttachmentsComponent
   alias KanbanWeb.TaskLive.CommentThreadComponent
   alias KanbanWeb.TaskLive.FormComponent
 
@@ -90,10 +91,12 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   end
 
   # Kanban.Attachments broadcasts every create and delete. The board columns
-  # render no attachments yet, so the message is a no-op here until the task
-  # view lists files.
-  def handle({Kanban.Attachments, :attachment_changed, _payload}, socket),
-    do: {:noreply, socket}
+  # render no attachments; the Attachments section inside the task view
+  # does, so forward the change to it the same way as a comment change.
+  def handle({Kanban.Attachments, :attachment_changed, payload}, socket) do
+    AttachmentsComponent.refresh(payload)
+    {:noreply, socket}
+  end
 
   def handle({:field_visibility_updated, new_visibility}, socket),
     do: {:noreply, assign(socket, :field_visibility, new_visibility)}

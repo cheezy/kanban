@@ -35,6 +35,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.SectionHead
   alias KanbanWeb.TaskActivityLog
+  alias KanbanWeb.TaskLive.AttachmentsComponent
   alias KanbanWeb.TaskLive.CommentThreadComponent
 
   @impl true
@@ -425,6 +426,14 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               />
               <.child_tasks_section children={@task.children} />
             <% end %>
+
+            <.live_component
+              module={AttachmentsComponent}
+              id={AttachmentsComponent.dom_id(:view, @task.id)}
+              task_id={@task.id}
+              board_id={@task.column.board_id}
+              current_scope={@current_scope}
+            />
 
             <SectionHead.section_head title={gettext("History")} />
             <%!-- The section head above is this block's heading; the log's own

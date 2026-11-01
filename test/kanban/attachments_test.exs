@@ -463,6 +463,22 @@ defmodule Kanban.AttachmentsTest do
                ctx.owner |> scope() |> Attachments.list_task_attachments(%Task{})
     end
 
+    test "both lists preload the uploader, nil once the uploader's account is deleted", ctx do
+      comment = comment_by(ctx.modifier, ctx.task)
+      by_modifier = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier, comment: comment})
+      orphan = attachment_fixture(ctx.task)
+
+      assert {:ok, listed} = ctx.reader |> scope() |> Attachments.list_task_attachments(ctx.task)
+      by_id = Map.new(listed, &{&1.id, &1})
+      assert by_id[by_modifier.id].uploaded_by.id == ctx.modifier.id
+      assert by_id[orphan.id].uploaded_by == nil
+
+      assert {:ok, [on_comment]} =
+               ctx.reader |> scope() |> Attachments.list_comment_attachments(comment)
+
+      assert on_comment.uploaded_by.id == ctx.modifier.id
+    end
+
     test "list_task_attachments returns an empty list for a task with no attachments", ctx do
       attachment_fixture(ctx.board |> column_fixture() |> task_fixture())
       assert ctx.reader |> scope() |> Attachments.list_task_attachments(ctx.task) == {:ok, []}
