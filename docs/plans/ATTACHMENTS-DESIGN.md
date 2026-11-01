@@ -196,7 +196,7 @@ The UI ([§6](#6-board-ui-g489)), the REST API ([§8.2](#82-download-endpoint-w2
 
 ## 5. Cleanup (G488)
 
-`Kanban.Attachments.BlobCleanupWorker` (W2509) is an Oban cron job on a new `:attachments` queue (concurrency 1). It runs every 15 minutes, with `max_attempts: 3`, and a `unique` option over the available, scheduled and executing states so runs never overlap.
+`Kanban.Attachments.BlobCleanupWorker` (W2509) is an Oban cron job on a new `:attachments` queue (concurrency 1). It runs every 15 minutes, with `max_attempts: 3`, and a `unique` option over the available, scheduled, executing and retryable states so runs never overlap.
 
 Each run takes up to `batch_size` (default 200) tombstones whose `delete_after` has passed, oldest first, and calls `Storage.delete/1` on each:
 

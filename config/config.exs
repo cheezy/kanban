@@ -123,14 +123,16 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # `:maintenance` runs housekeeping jobs one at a time, so a long cleanup
 # never competes with itself for table locks. `:workspace_exports` writes one
 # workspace export archive at a time (W2222), bounding the disk and database
-# load a burst of export requests can cause.
+# load a burst of export requests can cause. `:attachments` runs the
+# attachment blob cleanup one batch at a time (W2509).
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
 # delivery-target status sweeper hourly at minute 17 (W2291), the
 # metrics retention cleanup daily at 03:23 UTC (W2345), the workspace
 # export cleanup hourly at minute 41 (W2222), the audit and archived-task
-# retention purge daily at 03:47 UTC (W2244) and the verified-domain re-check
-# daily at 04:11 UTC.
+# retention purge daily at 03:47 UTC (W2244), the verified-domain re-check
+# daily at 04:11 UTC and the attachment blob cleanup every 15 minutes
+# (Kanban.Attachments.BlobCleanupWorker, W2509).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
@@ -139,7 +141,8 @@ config :kanban, Oban,
     notifications: 10,
     webhooks: 10,
     maintenance: 1,
-    workspace_exports: 1
+    workspace_exports: 1,
+    attachments: 1
   ],
   # Lifeline moves a job left in `executing` for an hour, such as one whose
   # node was killed mid-run, back to `available`, or to `discarded` once its
@@ -158,7 +161,8 @@ config :kanban, Oban,
        {"23 3 * * *", Kanban.Metrics.RetentionWorker},
        {"47 3 * * *", Kanban.Retention.PurgeWorker},
        {"11 4 * * *", Kanban.SSO.DomainRecheckWorker},
-       {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker}
+       {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker},
+       {"*/15 * * * *", Kanban.Attachments.BlobCleanupWorker}
      ]}
   ]
 
@@ -169,6 +173,10 @@ config :kanban, Oban,
 # fails exports left pending or running for `stale_after_hours` and deletes
 # failed and expired export rows after `keep_days`.
 config :kanban, Kanban.Workspaces.Export.CleanupWorker, stale_after_hours: 6, keep_days: 30
+
+# Attachment blob cleanup (W2509). Each run removes the blobs of at most
+# `batch_size` due tombstones in attachment_blob_deletions, oldest first.
+config :kanban, Kanban.Attachments.BlobCleanupWorker, batch_size: 200
 
 # How far back the claim-expiry sweeper looks for expired claims, so the
 # first run after a deploy does not notify about historical claims.
