@@ -13718,3 +13718,8 @@ msgstr "{lead}，将其移入完成。"
 #, elixir-autogen, elixir-format
 msgid "{lead} to create the Backlog."
 msgstr "{lead}，创建待办。"
+
+#: lib/kanban_web/components/locked_feature.ex:144
+#, elixir-autogen, elixir-format
+msgid "Attachments"
+msgstr "附件"

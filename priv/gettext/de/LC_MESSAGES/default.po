@@ -13787,3 +13787,8 @@ msgstr "{lead} und verschiebt sie nach Fertig."
 #, elixir-autogen, elixir-format
 msgid "{lead} to create the Backlog."
 msgstr "{lead} und erstellen so das Backlog."
+
+#: lib/kanban_web/components/locked_feature.ex:144
+#, elixir-autogen, elixir-format
+msgid "Attachments"
+msgstr "Anhänge"

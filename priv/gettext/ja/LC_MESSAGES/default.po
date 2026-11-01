@@ -13715,3 +13715,8 @@ msgstr "{lead}、完了に移します。"
 #, elixir-autogen, elixir-format
 msgid "{lead} to create the Backlog."
 msgstr "{lead}、バックログを作成します。"
+
+#: lib/kanban_web/components/locked_feature.ex:144
+#, elixir-autogen, elixir-format
+msgid "Attachments"
+msgstr "添付ファイル"

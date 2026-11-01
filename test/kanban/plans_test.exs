@@ -342,12 +342,13 @@ defmodule Kanban.PlansTest do
     :bulk_actions,
     :integrations,
     :telemetry,
-    :mcp
+    :mcp,
+    :attachments
   ]
   @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
 
   describe "features/0 and surfaces/0" do
-    test "features/0 returns exactly the eight paid features in a stable order" do
+    test "features/0 returns exactly the nine paid features in a stable order" do
       assert Plans.features() == @features
       assert Plans.features() == Plans.features()
     end
@@ -379,6 +380,14 @@ defmodule Kanban.PlansTest do
     test "returns :error for input that is not a string" do
       for input <- [nil, :notifications, 1, ~c"sso", %{}] do
         assert Plans.parse_feature(input) == :error
+      end
+    end
+
+    test "parse_feature/1 returns :error for other spellings and non-strings" do
+      assert Plans.parse_feature("attachments") == :attachments
+
+      for input <- ["Attachments", " attachments", "attachments ", "attachment", "", nil] do
+        assert Plans.parse_feature(input) == :error, "expected #{inspect(input)} to be :error"
       end
     end
 
@@ -444,6 +453,43 @@ defmodule Kanban.PlansTest do
 
       assert_received {:telemetry_event, @refused, %{count: 1},
                        %{feature: :sso, surface: :context}}
+    end
+
+    test "check_board refuses :attachments on a free board when enforced and emits feature_refused",
+         ctx do
+      enforce_plans()
+
+      assert Plans.check_board(ctx.free_board, :attachments, surface: :context) ==
+               {:error, {:plan_required, :attachments}}
+
+      assert_received {:telemetry_event, @refused, %{count: 1}, metadata}
+      assert metadata == %{feature: :attachments, surface: :context}
+
+      assert Plans.check_board(%Board{workspace: nil}, :attachments, surface: :context) ==
+               {:error, {:plan_required, :attachments}}
+
+      assert_received {:telemetry_event, @refused, %{count: 1},
+                       %{feature: :attachments, surface: :context}}
+    end
+
+    test "check_board allows :attachments on an organization board", ctx do
+      enforce_plans()
+
+      assert Plans.check_board(ctx.paid_board, :attachments, surface: :context) == :ok
+      assert Plans.check_board(ctx.paid_board.id, :attachments, surface: :context) == :ok
+
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
+    end
+
+    test "check_board allows :attachments on a free board when enforcement is off", ctx do
+      for flag <- [false, nil, "true", :true_ish, 1] do
+        Application.put_env(:kanban, :plans_enforced, flag)
+
+        assert Plans.check_board(ctx.free_board, :attachments, surface: :context) == :ok,
+               "expected #{inspect(flag)} to leave enforcement off"
+      end
+
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
     end
 
     test "accepts every feature and every surface", ctx do

@@ -13760,3 +13760,8 @@ msgstr "{lead} e a passa para Concluído."
 #, elixir-autogen, elixir-format
 msgid "{lead} to create the Backlog."
 msgstr "{lead} para criar as Pendências."
+
+#: lib/kanban_web/components/locked_feature.ex:144
+#, elixir-autogen, elixir-format
+msgid "Attachments"
+msgstr "Anexos"

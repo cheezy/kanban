@@ -13698,3 +13698,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "{lead} to create the Backlog."
 msgstr ""
+
+#: lib/kanban_web/components/locked_feature.ex:144
+#, elixir-autogen, elixir-format
+msgid "Attachments"
+msgstr ""

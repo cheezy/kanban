@@ -19,7 +19,8 @@ defmodule KanbanWeb.LockedFeatureTest do
     bulk_actions: "Bulk actions",
     integrations: "Integrations",
     telemetry: "Telemetry",
-    mcp: "MCP"
+    mcp: "MCP",
+    attachments: "Attachments"
   }
 
   defp render_locked(feature, variant) do
@@ -33,6 +34,13 @@ defmodule KanbanWeb.LockedFeatureTest do
   describe "locked_feature/1 for every feature" do
     test "has a label for each of Kanban.Plans.features/0" do
       assert @labels |> Map.keys() |> Enum.sort() == Enum.sort(Plans.features())
+
+      for feature <- Plans.features() do
+        html = render_locked(feature, :inline)
+
+        assert html =~ Map.fetch!(@labels, feature)
+        assert html =~ ~s(href="/locked/#{feature}")
+      end
     end
 
     for variant <- [:inline, :panel] do

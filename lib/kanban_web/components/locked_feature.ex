@@ -141,4 +141,5 @@ defmodule KanbanWeb.LockedFeature do
   defp label(:integrations), do: gettext("Integrations")
   defp label(:telemetry), do: gettext("Telemetry")
   defp label(:mcp), do: gettext("MCP")
+  defp label(:attachments), do: gettext("Attachments")
 end

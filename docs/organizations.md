@@ -95,6 +95,7 @@ selecting it leads to the pricing page.
 | Integrations | Free boards | Webhook, Slack and Discord endpoints are paused. See [Webhooks on a free board](#webhooks-on-a-free-board). |
 | Telemetry | Free boards | The task fields `telemetry_event` and `metrics_to_track` are accepted but not stored. The task form shows the lock in their place, and an API response that dropped them carries a `warnings` list saying so. |
 | MCP | Free boards | A request to the MCP server for a free board gets a JSON-RPC `-32001` error whose `error.data.feature` is `"mcp"`, and no tool runs. The REST API is not affected. See [Stride MCP Server](MCP.md#errors). |
+| Attachments | Free boards | Files cannot be added, listed, previewed or downloaded. Files already on a board that left its Organization are kept, and reappear if it moves back into one. |
 
 The Organization audit log is also a paid feature, but there is no locked
 prompt for it: it exists only for an Organization's org-admins (see
