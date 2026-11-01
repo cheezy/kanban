@@ -66,7 +66,8 @@ defmodule Kanban.TelemetryTest do
   # non-personal metadata keys may be used as one. Never an id. A reason is
   # allowed only as a fixed atom set, such as github.issue_created's four, and
   # so is a feature, such as plan.feature_refused's Kanban.Plans.features/0,
-  # and a via, such as board.member_cap_reached's two addition paths.
+  # and a via, such as board.member_cap_reached's two addition paths, and a
+  # source, such as attachment.uploaded's :upload and :import.
   @tag_keys [
     :endpoint,
     :method,
@@ -77,7 +78,8 @@ defmodule Kanban.TelemetryTest do
     :surface,
     :reason,
     :feature,
-    :via
+    :via,
+    :source
   ]
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
   @particles ~w(out in up off down)

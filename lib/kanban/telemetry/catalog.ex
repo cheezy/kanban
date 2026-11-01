@@ -85,14 +85,16 @@ defmodule Kanban.Telemetry.Catalog do
   audit action is a new tuple in `@api_actions` or `@audit_actions` in
   `Kanban.Telemetry.Catalog.Families`. Board, membership and column, task
   activity, account and user administration, notification, delivery target,
-  broadcast message, goal, dependency or after_goal, Organization, and paid
-  plan events go in `BoardEvents`, `TaskEvents`, `UserEvents`,
+  broadcast message, goal, dependency or after_goal, Organization, paid
+  plan and attachment events go in `BoardEvents`, `TaskEvents`, `UserEvents`,
   `NotificationEvents`, `TargetEvents`, `MessageEvents`, `GoalEvents`,
-  `OrganizationEvents` and `PlanEvents` under `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a key the
+  `OrganizationEvents`, `PlanEvents` and `AttachmentEvents` under
+  `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a key the
   entry does not declare raises there, and it fails if an entry's metrics,
   persist flag or tags are invalid.
   """
 
+  alias Kanban.Telemetry.Catalog.AttachmentEvents
   alias Kanban.Telemetry.Catalog.BoardEvents
   alias Kanban.Telemetry.Catalog.Families
   alias Kanban.Telemetry.Catalog.GoalEvents
@@ -351,7 +353,7 @@ defmodule Kanban.Telemetry.Catalog do
       domain: :pubsub,
       measurements: [:count],
       metadata: [:event, :task_id, :board_id],
-      description: "A task or comment change was broadcast over PubSub.",
+      description: "A task, comment or attachment change was broadcast over PubSub.",
       legacy: true,
       metrics: [counter: :count],
       persist: false
@@ -476,7 +478,8 @@ defmodule Kanban.Telemetry.Catalog do
             MessageEvents.events() ++
             GoalEvents.events() ++
             OrganizationEvents.events() ++
-            PlanEvents.events()
+            PlanEvents.events() ++
+            AttachmentEvents.events()
 
   @by_name Map.new(@events, fn entry -> {entry.name, entry} end)
 

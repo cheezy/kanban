@@ -17,7 +17,8 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   membership change also refreshes an open members screen, whose free-board cap
   line depends on the board's plan (a board move changes it). A column
   change re-renders every column. Comment changes go straight to the open
-  comment thread.
+  comment thread. Attachment changes are acknowledged and ignored until the
+  board UI shows attachments.
 
   There is deliberately no catch-all clause: an unknown message is a bug in a
   broadcaster, not something to swallow.
@@ -87,6 +88,12 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
     CommentThreadComponent.refresh(payload)
     {:noreply, socket}
   end
+
+  # Kanban.Attachments broadcasts every create and delete. The board columns
+  # render no attachments yet, so the message is a no-op here until the task
+  # view lists files.
+  def handle({Kanban.Attachments, :attachment_changed, _payload}, socket),
+    do: {:noreply, socket}
 
   def handle({:field_visibility_updated, new_visibility}, socket),
     do: {:noreply, assign(socket, :field_visibility, new_visibility)}

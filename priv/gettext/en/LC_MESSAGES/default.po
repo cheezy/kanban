@@ -10688,19 +10688,19 @@ msgctxt "audit action"
 msgid "API token revoked"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:98
+#: lib/kanban_web/components/audit_log_actions.ex:101
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account deleted"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:101
+#: lib/kanban_web/components/audit_log_actions.ex:104
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account deletion refused"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:68
+#: lib/kanban_web/components/audit_log_actions.ex:71
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Audit log exported"
@@ -10712,49 +10712,49 @@ msgctxt "audit action"
 msgid "Comment deleted by board owner"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:75
+#: lib/kanban_web/components/audit_log_actions.ex:78
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Org-admin appointed"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:76
+#: lib/kanban_web/components/audit_log_actions.ex:79
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Org-admin removed"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:71
+#: lib/kanban_web/components/audit_log_actions.ex:74
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization audit log exported"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:73
+#: lib/kanban_web/components/audit_log_actions.ex:76
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization created"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:74
+#: lib/kanban_web/components/audit_log_actions.ex:77
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization updated"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:91
+#: lib/kanban_web/components/audit_log_actions.ex:94
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization workspace archived"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:85
+#: lib/kanban_web/components/audit_log_actions.ex:88
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization workspace created"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:88
+#: lib/kanban_web/components/audit_log_actions.ex:91
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization workspace renamed"
@@ -10766,25 +10766,25 @@ msgctxt "audit action"
 msgid "Password reset requested"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:66
+#: lib/kanban_web/components/audit_log_actions.ex:69
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Permission denied"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:43
+#: lib/kanban_web/components/audit_log_actions.ex:46
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Possible credential in completion notes"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:46
+#: lib/kanban_web/components/audit_log_actions.ex:49
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Possible credential in security considerations"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:55
+#: lib/kanban_web/components/audit_log_actions.ex:58
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Recovery codes regenerated"
@@ -10796,37 +10796,37 @@ msgctxt "audit action"
 msgid "Sign-in failed"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:58
+#: lib/kanban_web/components/audit_log_actions.ex:61
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Signed in with a recovery code"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:67
+#: lib/kanban_web/components/audit_log_actions.ex:70
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Sudo mode entered"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:52
+#: lib/kanban_web/components/audit_log_actions.ex:55
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Two-factor authentication disabled"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:49
+#: lib/kanban_web/components/audit_log_actions.ex:52
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Two-factor authentication enabled"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:64
+#: lib/kanban_web/components/audit_log_actions.ex:67
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Two-factor challenge failed"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:61
+#: lib/kanban_web/components/audit_log_actions.ex:64
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Two-factor sign-in succeeded"
@@ -11147,7 +11147,7 @@ msgstr ""
 msgid "roles · removal"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:79
+#: lib/kanban_web/components/audit_log_actions.ex:82
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization member removed"
@@ -11392,7 +11392,7 @@ msgstr ""
 msgid "invite · resend · revoke"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:82
+#: lib/kanban_web/components/audit_log_actions.ex:85
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization member added"
@@ -11635,7 +11635,7 @@ msgstr ""
 msgid "danger zone"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:104
+#: lib/kanban_web/components/audit_log_actions.ex:107
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account deleted by its owner"
@@ -11813,7 +11813,7 @@ msgstr ""
 msgid "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:107
+#: lib/kanban_web/components/audit_log_actions.ex:110
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Board given to a site admin"
@@ -11904,13 +11904,13 @@ msgstr ""
 msgid "Your Organization requires two-factor authentication. Turn it on to keep using Stride."
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:94
+#: lib/kanban_web/components/audit_log_actions.ex:97
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization security policy changed"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:96
+#: lib/kanban_web/components/audit_log_actions.ex:99
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Retention purge ran"
@@ -12143,37 +12143,37 @@ msgstr ""
 msgid "or"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:115
+#: lib/kanban_web/components/audit_log_actions.ex:118
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account created by single sign-on"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:118
+#: lib/kanban_web/components/audit_log_actions.ex:121
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account linked to single sign-on"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:121
+#: lib/kanban_web/components/audit_log_actions.ex:124
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization domain verified"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:127
+#: lib/kanban_web/components/audit_log_actions.ex:130
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Single sign-on connection changed"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:109
+#: lib/kanban_web/components/audit_log_actions.ex:112
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Single sign-on login"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:112
+#: lib/kanban_web/components/audit_log_actions.ex:115
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Single sign-on login refused"
@@ -12294,7 +12294,7 @@ msgstr ""
 msgid "must not contain spaces"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:130
+#: lib/kanban_web/components/audit_log_actions.ex:133
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Replayed SAML sign-in refused"
@@ -12367,43 +12367,43 @@ msgstr ""
 msgid "Your new SCIM token"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:145
+#: lib/kanban_web/components/audit_log_actions.ex:148
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Group members changed by SCIM"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:132
+#: lib/kanban_web/components/audit_log_actions.ex:135
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "SCIM token created"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:134
+#: lib/kanban_web/components/audit_log_actions.ex:137
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "SCIM token rejected"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:133
+#: lib/kanban_web/components/audit_log_actions.ex:136
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "SCIM token revoked"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:139
+#: lib/kanban_web/components/audit_log_actions.ex:142
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "User changed by SCIM"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:142
+#: lib/kanban_web/components/audit_log_actions.ex:145
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "User deprovisioned by SCIM"
 msgstr ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:137
+#: lib/kanban_web/components/audit_log_actions.ex:140
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "User provisioned by SCIM"
@@ -12426,7 +12426,7 @@ msgid_plural "Stride's daily check has not found this domain's TXT record since 
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/audit_log_actions.ex:124
+#: lib/kanban_web/components/audit_log_actions.ex:127
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Organization domain no longer verified"
@@ -13702,4 +13702,10 @@ msgstr ""
 #: lib/kanban_web/components/locked_feature.ex:144
 #, elixir-autogen, elixir-format
 msgid "Attachments"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:43
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Attachment deleted by board owner"
 msgstr ""

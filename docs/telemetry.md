@@ -773,10 +773,10 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
   allowed check emits nothing.
 - **What it carries.** `feature` is one of `Kanban.Plans.features/0`
   (`:notifications`, `:audit`, `:sso`, `:workspaces`, `:bulk_actions`,
-  `:integrations`, `:telemetry` or `:mcp`) and `surface` is the entry point
-  that refused it: `:live_view`, `:controller`, `:rest`, `:mcp`, `:oban` or
-  `:context`. Both are tags. The board, the user and the request are never
-  sent.
+  `:integrations`, `:telemetry`, `:mcp` or `:attachments`) and `surface` is
+  the entry point that refused it: `:live_view`, `:controller`, `:rest`,
+  `:mcp`, `:oban` or `:context`. Both are tags. The board, the user and the
+  request are never sent.
 - **A bad label raises instead.** A feature or surface outside those sets
   raises `ArgumentError` in `Kanban.Plans` before anything is emitted, with
   enforcement on or off, so an unknown value never reaches a handler.
@@ -809,6 +809,50 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
   GROUP BY 1, 2
   ORDER BY 1, 2;
   ```
+
+### Attachment events
+
+W2508 added these. They are declared in
+`Kanban.Telemetry.Catalog.AttachmentEvents`
+(`lib/kanban/telemetry/catalog/attachment_events.ex`) and emitted by the
+attachments context, `Kanban.Attachments`. The board UI, the REST API and MCP
+are not wired to it yet; once they call it, each will produce one event per
+change. Every event measures `count: 1`;
+`uploaded`, `downloaded` and `deleted` also measure the file's `byte_size`.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :attachment, :uploaded]` | `attachment_id`, `task_id`, `board_id`, `comment_id`, `user_id`, `source` | `Kanban.Attachments.create_attachment/4`, after the row is inserted |
+| `[:kanban, :attachment, :upload_refused]` | `reason`, `source`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.create_attachment/4`, when a limit, the file or storage refuses the upload |
+| `[:kanban, :attachment, :downloaded]` | `attachment_id`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.fetch_for_download/2`, once the download is authorized |
+| `[:kanban, :attachment, :deleted]` | `attachment_id`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.delete_attachment/2`, after the row is deleted |
+
+- **Ids, sizes and reason codes only.** The filename, the file's contents and
+  its sha256 are never sent, in telemetry or in the audit event below.
+- **`reason` is a closed set.** `upload_refused` carries one of `:too_large`,
+  `:type_not_allowed`, `:type_mismatch`, `:empty`, `:too_many_files`,
+  `:quota_exceeded` or `:storage_unavailable`. It is a tag. An upload refused
+  because the caller is not a member or lacks the right, or because the temp
+  file cannot be read, emits nothing.
+- **Plan refusals are not upload refusals.** While plans are enforced, every
+  `Kanban.Attachments` function refuses a free board through
+  `Kanban.Plans.check_board/3`, which emits `[:kanban, :plan, :feature_refused]`
+  with `feature: :attachments` and `surface: :context`; `upload_refused` is not
+  emitted for it.
+- **`source` says where the file came from.** It is `:upload` for a person's
+  upload. `:import` is reserved for the Jira import's `import_attachment/4`,
+  which is not built yet and will emit the same two events. It is a tag on
+  `uploaded` and `upload_refused`.
+- **`user_id` is the actor.** On `uploaded` and `upload_refused` it is the
+  uploader, on `downloaded` the member who downloads, and on `deleted` the
+  person who deleted the file. `comment_id` is `nil` for a task-level file.
+- **None of them is persisted.** They are charted live only.
+- **Other side effects.** A create or delete also broadcasts
+  `{Kanban.Attachments, :attachment_changed, %{task_id: _, board_id: _}}` on
+  `"board:<board_id>"`, counted by `[:kanban, :pubsub, :broadcast]` with
+  `event: :attachment_changed`. A board owner deleting someone else's file
+  records the `:attachment_deleted_by_owner` [audit event](#audit-events), with
+  ids only.
 
 ## Emitting an event
 
@@ -886,8 +930,9 @@ raise.
    message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`, a
    new goal, dependency or after_goal event is an entry in
    `Kanban.Telemetry.Catalog.GoalEvents`, a new Organization event is an
-   entry in `Kanban.Telemetry.Catalog.OrganizationEvents`, and a new paid
-   plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`.
+   entry in `Kanban.Telemetry.Catalog.OrganizationEvents`, a new paid
+   plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`, and a new
+   attachment event is an entry in `Kanban.Telemetry.Catalog.AttachmentEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -1030,8 +1075,8 @@ delivery that returns an error still ends in `:stop`; `:exception` is a raise.
 
 A tag becomes a LiveDashboard label, so it must be a metadata key with a small,
 fixed set of values that says nothing about a person: `endpoint`, `method`,
-`status`, `kind`, `format`, `outcome`, `surface`, `reason`, `feature` or
-`via`. Never tag by `user_id`, `board_id`, `task_id` or any other id.
+`status`, `kind`, `format`, `outcome`, `surface`, `reason`, `feature`, `via`
+or `source`. Never tag by `user_id`, `board_id`, `task_id` or any other id.
 `test/kanban/telemetry_test.exs` fails if an entry tags any other key.
 
 ## Metrics retention
@@ -1182,6 +1227,15 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :api, :after_goal_status_fetched]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent fetched a goal's after_goal status. |
 | `[:kanban, :api, :mcp_tool_called]` | event, legacy | `count` | `tool`, `is_error`, `board_id`, `user_id`, `path`, `method` | An agent called an MCP tool. |
 
+### Domain `attachment`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :attachment, :uploaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `comment_id`, `user_id`, `source` | A file was attached to a task or comment. source is :upload or :import; comment_id is set for a comment-level file. The filename, contents and hash are never sent. |
+| `[:kanban, :attachment, :downloaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id` | A board member was authorized to download an attachment. The filename, contents and hash are never sent. |
+| `[:kanban, :attachment, :deleted]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id` | An attachment was deleted through Kanban.Attachments; its blob is queued for removal. user_id is the person who deleted it. The filename is never sent. |
+| `[:kanban, :attachment, :upload_refused]` | event | `count` | `reason`, `source`, `task_id`, `board_id`, `user_id` | An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, and source is :upload or :import. A plan refusal is plan.feature_refused instead. |
+
 ### Domain `audit`
 
 | Event | Kind | Measurements | Metadata | Description |
@@ -1192,6 +1246,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :api_token_created]` | event, legacy | `count` | `user_id`, `board_id`, `workspace_id`, `organization_id`, `token_id` | An API token was created. |
 | `[:kanban, :audit, :api_token_revoked]` | event, legacy | `count` | `user_id`, `token_id`, `organization_id` | An API token was revoked. |
 | `[:kanban, :audit, :comment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `author_user_id` | A board owner deleted someone else's comment. |
+| `[:kanban, :audit, :attachment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `attachment_id`, `uploaded_by_id` | A board owner deleted someone else's attachment. |
 | `[:kanban, :audit, :completion_notes_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | Completion notes looked like they contained a credential. |
 | `[:kanban, :audit, :security_considerations_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | A security consideration in a reviewer result looked like it contained a credential. |
 | `[:kanban, :audit, :two_factor_enabled]` | event, legacy | `count` | `user_id` | A user turned on two-factor authentication. |
@@ -1352,7 +1407,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :pubsub, :broadcast]` | event, legacy | `count` | `event`, `task_id`, `board_id` | A task or comment change was broadcast over PubSub. |
+| `[:kanban, :pubsub, :broadcast]` | event, legacy | `count` | `event`, `task_id`, `board_id` | A task, comment or attachment change was broadcast over PubSub. |
 
 ### Domain `rate_limit`
 

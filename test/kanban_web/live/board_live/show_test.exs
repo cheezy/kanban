@@ -2623,6 +2623,26 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "PubSub :attachment_changed event" do
+    setup [:register_and_log_in_user]
+
+    test "the broadcast is acknowledged without crashing the board", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Task with a file"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(
+        view.pid,
+        {Kanban.Attachments, :attachment_changed, %{task_id: task.id, board_id: board.id}}
+      )
+
+      assert render(view) =~ "Task with a file"
+      assert Process.alive?(view.pid)
+    end
+  end
+
   describe "PubSub :task_deleted event with skip_next_reload" do
     setup [:register_and_log_in_user]
 

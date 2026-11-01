@@ -39,6 +39,9 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("comment_deleted_by_owner"),
     do: pgettext("audit action", "Comment deleted by board owner")
 
+  def action_label("attachment_deleted_by_owner"),
+    do: pgettext("audit action", "Attachment deleted by board owner")
+
   def action_label("completion_notes_credential_suspected"),
     do: pgettext("audit action", "Possible credential in completion notes")
 
