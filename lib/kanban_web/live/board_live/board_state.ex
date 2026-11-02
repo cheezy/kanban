@@ -98,7 +98,6 @@ defmodule KanbanWeb.BoardLive.BoardState do
   def page_title(:new_goal), do: "Stride"
   def page_title(:api_tokens), do: "Stride"
   def page_title(:edit_task), do: "Edit Task"
-  def page_title(:edit_task_in_column), do: "Edit Task"
   def page_title(:manage_members), do: "Manage Members"
   def page_title(:board_settings), do: "Board Settings"
   def page_title(:integrations), do: gettext("Integrations")

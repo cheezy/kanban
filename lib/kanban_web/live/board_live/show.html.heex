@@ -437,7 +437,7 @@
   </KanbanWeb.DelayedModal.delayed_modal>
 
   <KanbanWeb.DelayedModal.delayed_modal
-    :if={@live_action in [:new_task, :new_goal, :edit_task, :edit_task_in_column]}
+    :if={@live_action in [:new_task, :new_goal, :edit_task]}
     id="task-modal"
     label={
       cond do
@@ -469,7 +469,7 @@
       board={@board}
       task={
         cond do
-          @live_action in [:edit_task, :edit_task_in_column] -> @task
+          @live_action == :edit_task -> @task
           @live_action == :new_goal -> %Kanban.Tasks.Task{type: :goal}
           true -> %Kanban.Tasks.Task{}
         end

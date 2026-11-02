@@ -71,8 +71,8 @@ defmodule KanbanWeb.BoardLive.Authorization do
   def check_new_column_authorization(_live_action, _user_access, _board), do: :ok
 
   @doc """
-  Gates the task create/edit form live_actions (`:new_task`, `:edit_task`,
-  `:edit_task_in_column`) on modify access (D110). Returns `:ok` or
+  Gates the task create/edit form live_actions (`:new_task`, `:new_goal`,
+  `:edit_task`) on modify access (D110). Returns `:ok` or
   `{:error, flash}` so read-only viewers are redirected before the form renders,
   as defense-in-depth for the authoritative server-side gate in the FormComponent
   save handler.

@@ -130,7 +130,7 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
        do: send_update(FormComponent, [id: :new] ++ update)
 
   defp update_open_task_form(%{live_action: action, task: %{id: id}}, update)
-       when action in [:edit_task, :edit_task_in_column],
+       when action == :edit_task,
        do: send_update(FormComponent, [id: "edit-#{id}"] ++ update)
 
   defp update_open_task_form(_assigns, _update), do: :ok
@@ -153,7 +153,7 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   defp open_task_ids(assigns) do
     edited =
-      if assigns[:live_action] in [:edit_task, :edit_task_in_column],
+      if assigns[:live_action] == :edit_task,
         do: assigns[:task] && assigns.task.id
 
     Enum.uniq(for id <- [assigns[:viewing_task_id], edited], is_integer(id), do: id)
@@ -178,7 +178,7 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   defp open_on(%{viewing_task_id: id}, id), do: :view
 
   defp open_on(%{live_action: action, task: %{id: id}}, id)
-       when action in [:edit_task, :edit_task_in_column],
+       when action == :edit_task,
        do: :form
 
   defp open_on(_assigns, _id), do: nil

@@ -355,7 +355,7 @@ msgstr "Criar uma nova tarefa"
 
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
-#: lib/kanban_web/live/board_live/show.ex:196
+#: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
@@ -452,8 +452,8 @@ msgstr "Crítico"
 msgid "Defect"
 msgstr "Defeito"
 
-#: lib/kanban_web/live/board_live/show.ex:232
-#: lib/kanban_web/live/board_live/show.ex:454
+#: lib/kanban_web/live/board_live/show.ex:226
+#: lib/kanban_web/live/board_live/show.ex:448
 #: lib/kanban_web/live/board_live/task_actions.ex:95
 #: lib/kanban_web/live/board_live/task_actions.ex:161
 #, elixir-autogen, elixir-format
@@ -753,7 +753,7 @@ msgstr "Os usuários devem estar registrados no sistema para serem adicionados a
 msgid "You cannot add yourself to the board"
 msgstr "Você não pode se adicionar ao quadro"
 
-#: lib/kanban_web/live/board_live/show.ex:128
+#: lib/kanban_web/live/board_live/show.ex:122
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "Apenas o proprietário do quadro pode excluir colunas"
@@ -769,7 +769,7 @@ msgstr "Apenas o proprietário do quadro pode gerenciar colunas"
 msgid "Only the board owner can create columns"
 msgstr "Apenas o proprietário do quadro pode criar colunas"
 
-#: lib/kanban_web/live/board_live/show.ex:260
+#: lib/kanban_web/live/board_live/show.ex:254
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "Apenas o proprietário do quadro pode reordenar colunas"
@@ -1179,7 +1179,7 @@ msgstr "Bloqueado"
 msgid "Cannot add columns to AI optimized boards"
 msgstr "Não é possível adicionar colunas a quadros otimizados para IA"
 
-#: lib/kanban_web/live/board_live/show.ex:133
+#: lib/kanban_web/live/board_live/show.ex:127
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr "Não é possível excluir colunas em quadros otimizados para IA"
@@ -1189,7 +1189,7 @@ msgstr "Não é possível excluir colunas em quadros otimizados para IA"
 msgid "Cannot edit columns on AI optimized boards"
 msgstr "Não é possível editar colunas em quadros otimizados para IA"
 
-#: lib/kanban_web/live/board_live/show.ex:265
+#: lib/kanban_web/live/board_live/show.ex:259
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr "Não é possível reordenar colunas em quadros otimizados para IA"
@@ -1405,7 +1405,7 @@ msgstr "Em caso de falha (o que acontece)"
 
 #: lib/kanban_web/live/board_live/column_actions.ex:66
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
-#: lib/kanban_web/live/board_live/show.ex:279
+#: lib/kanban_web/live/board_live/show.ex:273
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "Apenas os donos do quadro podem alterar a visibilidade dos campos"
@@ -2033,7 +2033,7 @@ msgstr "Quadro:"
 msgid "Delete"
 msgstr "Excluir"
 
-#: lib/kanban_web/live/board_live/show.ex:178
+#: lib/kanban_web/live/board_live/show.ex:172
 #: lib/kanban_web/live/board_live/task_actions.ex:296
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
@@ -2765,7 +2765,7 @@ msgstr "Quadro não encontrado"
 msgid "Check this box if this task is for human workers only and should not be claimed by AI agents"
 msgstr "Marque esta caixa se esta tarefa é apenas para humanos e não deve ser reservada por agentes de IA"
 
-#: lib/kanban_web/live/board_live/show.ex:214
+#: lib/kanban_web/live/board_live/show.ex:208
 #: lib/kanban_web/live/board_live/task_actions.ex:255
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
@@ -2974,7 +2974,7 @@ msgstr "Mensagem não encontrada."
 msgid "No messages yet."
 msgstr "Ainda não há mensagens."
 
-#: lib/kanban_web/live/board_live/show.ex:407
+#: lib/kanban_web/live/board_live/show.ex:401
 #, elixir-autogen, elixir-format
 msgid "Could not dismiss message."
 msgstr "Não foi possível dispensar a mensagem."
@@ -3080,32 +3080,32 @@ msgid "While many large organizations attempt to improve outcomes by measuring p
 msgstr "Enquanto muitas grandes organizações tentam melhorar resultados medindo produtividade, nossa experiência mostra que os ganhos reais vêm de"
 
 #: lib/kanban_web/live/archive_live/index.ex:164
-#: lib/kanban_web/live/board_live/show.ex:174
+#: lib/kanban_web/live/board_live/show.ex:168
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "Você não tem permissão para arquivar tarefas neste quadro"
 
 #: lib/kanban_web/live/archive_live/index.ex:490
-#: lib/kanban_web/live/board_live/show.ex:192
+#: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
 msgstr "Você não tem permissão para excluir tarefas neste quadro"
 
 #: lib/kanban_web/live/board_live/api_tokens.ex:58
-#: lib/kanban_web/live/board_live/show.ex:299
-#: lib/kanban_web/live/board_live/show.ex:316
-#: lib/kanban_web/live/board_live/show.ex:327
+#: lib/kanban_web/live/board_live/show.ex:293
+#: lib/kanban_web/live/board_live/show.ex:310
+#: lib/kanban_web/live/board_live/show.ex:321
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to manage API tokens"
 msgstr "Você não tem permissão para gerenciar tokens de API"
 
-#: lib/kanban_web/live/board_live/show.ex:228
-#: lib/kanban_web/live/board_live/show.ex:450
+#: lib/kanban_web/live/board_live/show.ex:222
+#: lib/kanban_web/live/board_live/show.ex:444
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to move tasks on this board"
 msgstr "Você não tem permissão para mover tarefas neste quadro"
 
-#: lib/kanban_web/live/board_live/show.ex:210
+#: lib/kanban_web/live/board_live/show.ex:204
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to promote goals on this board"
 msgstr "Você não tem permissão para promover metas neste quadro"
@@ -3164,18 +3164,13 @@ msgstr "Tarefas em espera no Backlog"
 msgid "Column not found on this board"
 msgstr "Coluna não encontrada neste quadro"
 
-#: lib/kanban_web/live/board_live/params.ex:220
-#, elixir-autogen, elixir-format
-msgid "Column or task not found on this board"
-msgstr "Coluna ou tarefa não encontrada neste quadro"
-
 #: lib/kanban_web/live/issue_live/form_component.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to submit the issue. Please try again later."
 msgstr "Falha ao enviar o problema. Tente novamente mais tarde."
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:30
-#: lib/kanban_web/live/board_live/show.ex:284
+#: lib/kanban_web/live/board_live/show.ex:278
 #, elixir-autogen, elixir-format
 msgid "Invalid field name"
 msgstr "Nome de campo inválido"
@@ -3210,7 +3205,7 @@ msgstr "Erro de segurança: responsável inválido"
 msgid "Security error: Invalid parent goal"
 msgstr "Erro de segurança: meta principal inválida"
 
-#: lib/kanban_web/live/board_live/params.ex:246
+#: lib/kanban_web/live/board_live/params.ex:201
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "Tarefa não encontrada neste quadro"
@@ -10164,7 +10159,7 @@ msgstr "Webhook genérico"
 
 #: lib/kanban_web/components/board_tabs.ex:158
 #: lib/kanban_web/components/locked_feature.ex:141
-#: lib/kanban_web/live/board_live/board_state.ex:104
+#: lib/kanban_web/live/board_live/board_state.ex:103
 #: lib/kanban_web/live/board_live/show.html.heex:542
 #: lib/kanban_web/live/board_live/show.html.heex:550
 #, elixir-autogen, elixir-format

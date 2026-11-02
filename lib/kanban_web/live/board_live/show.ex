@@ -53,12 +53,6 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id, "column_id" => column_id, "task_id" => task_id}, _, socket) do
-    Params.with_board(socket, id, fn board, user_access ->
-      Params.resolve_column_and_task(socket, board, user_access, column_id, task_id)
-    end)
-  end
-
   def handle_params(%{"id" => id, "column_id" => column_id}, _, socket) do
     Params.with_board(socket, id, fn board, user_access ->
       Params.resolve_column_action(socket, board, user_access, column_id)

@@ -138,25 +138,6 @@ defmodule KanbanWeb.BoardLive.Params do
     end
   end
 
-  defp assign_column_and_task(socket, board, user_access, column, task) do
-    columns = Columns.list_columns(board)
-    task = Kanban.Repo.preload(task, :assigned_to)
-
-    {:noreply,
-     socket
-     |> assign(:page_title, BoardState.page_title(socket.assigns.live_action))
-     |> assign(:board, board)
-     |> assign(:user_access, user_access)
-     |> assign(:can_modify, user_access in [:owner, :modify])
-     |> assign(:is_owner, user_access == :owner)
-     |> assign(:field_visibility, board.field_visibility || %{})
-     |> assign(:column, column)
-     |> assign(:task, task)
-     |> assign(:has_columns, not Enum.empty?(columns))
-     |> stream(:columns, columns, reset: true)
-     |> BoardState.load_tasks_for_columns(columns)}
-  end
-
   defp assign_task_only(socket, board, user_access, task) do
     columns = Columns.list_columns(board)
     task = Kanban.Repo.preload(task, :assigned_to)
@@ -205,32 +186,6 @@ defmodule KanbanWeb.BoardLive.Params do
          socket
          |> put_flash(:error, message)
          |> push_patch(to: ~p"/boards/#{board}")}
-    end
-  end
-
-  def resolve_column_and_task(socket, board, user_access, column_id, task_id) do
-    gate_task_form(socket, board, user_access, fn ->
-      case fetch_column_and_task(board, column_id, task_id) do
-        {:ok, column, task} ->
-          assign_column_and_task(socket, board, user_access, column, task)
-
-        :error ->
-          {:noreply,
-           socket
-           |> put_flash(:error, gettext("Column or task not found on this board"))
-           |> push_patch(to: ~p"/boards/#{board}")}
-      end
-    end)
-  end
-
-  defp fetch_column_and_task(board, column_id, task_id) do
-    with {:ok, column_id_int} <- Show.parse_task_id(column_id),
-         {:ok, task_id_int} <- Show.parse_task_id(task_id),
-         %Columns.Column{} = column <- Columns.get_column_for_board(column_id_int, board.id),
-         %Tasks.Task{} = task <- Tasks.get_task_for_board(task_id_int, board.id) do
-      {:ok, column, task}
-    else
-      _ -> :error
     end
   end
 

@@ -432,10 +432,6 @@ defmodule KanbanWeb.Router do
       live "/boards/:id/columns/:column_id/edit", BoardLive.Show, :edit_column
       live "/boards/:id/columns/:column_id/tasks/new", BoardLive.Show, :new_task
 
-      live "/boards/:id/columns/:column_id/tasks/:task_id/edit",
-           BoardLive.Show,
-           :edit_task_in_column
-
       live "/boards/:id/tasks/:task_id/edit", BoardLive.Show, :edit_task
 
       # /goals/new must precede /goals/:goal_id or "new" is captured as a goal_id

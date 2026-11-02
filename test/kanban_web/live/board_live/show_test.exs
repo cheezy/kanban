@@ -330,173 +330,6 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
-  describe "Show with task edit in column context" do
-    setup [:register_and_log_in_user]
-
-    test "navigating to edit task in column displays edit modal", %{conn: conn, user: user} do
-      board = board_fixture(user)
-      column = column_fixture(board)
-      task = task_fixture(column)
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      # Should show the edit modal
-      assert html =~ "Edit Task"
-      assert html =~ task.title
-    end
-
-    test "navigating to edit task in column loads all columns", %{conn: conn, user: user} do
-      board = board_fixture(user)
-      column1 = column_fixture(board, %{name: "Column 1"})
-      column_fixture(board, %{name: "Column 2"})
-      task = task_fixture(column1)
-
-      {:ok, show_live, _html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column1}/tasks/#{task}/edit")
-
-      # Verify columns are displayed
-      html = render(show_live)
-      assert html =~ "Column 1"
-      assert html =~ "Column 2"
-    end
-
-    test "navigating to edit task in column displays task form with current values", %{
-      conn: conn,
-      user: user
-    } do
-      board = board_fixture(user)
-      column = column_fixture(board)
-
-      task =
-        task_fixture(column, %{
-          title: "Test Task Title",
-          description: "Test Description"
-        })
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      # Should display task details in the form
-      assert html =~ "Test Task Title"
-      assert html =~ "Test Description"
-    end
-
-    test "navigating to edit task in column shows board name", %{conn: conn, user: user} do
-      board = board_fixture(user, %{name: "My Test Board"})
-      column = column_fixture(board)
-      task = task_fixture(column)
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      # Board name should be visible
-      assert html =~ "My Test Board"
-    end
-
-    test "editing task in column from board with multiple columns shows all columns", %{
-      conn: conn,
-      user: user
-    } do
-      board = board_fixture(user)
-      column1 = column_fixture(board, %{name: "To Do"})
-      column_fixture(board, %{name: "In Progress"})
-      column_fixture(board, %{name: "Done"})
-      task = task_fixture(column1)
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column1}/tasks/#{task}/edit")
-
-      # All columns should be visible
-      assert html =~ "To Do"
-      assert html =~ "In Progress"
-      assert html =~ "Done"
-    end
-
-    test "editing task in column preserves other tasks in columns", %{conn: conn, user: user} do
-      board = board_fixture(user)
-      column = column_fixture(board)
-      task1 = task_fixture(column, %{title: "Task 1"})
-      _task2 = task_fixture(column, %{title: "Task 2"})
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task1}/edit")
-
-      # Both tasks should be visible in the column
-      assert html =~ "Task 1"
-      assert html =~ "Task 2"
-    end
-
-    test "owner can access edit task in column", %{conn: conn, user: user} do
-      board = board_fixture(user)
-      column = column_fixture(board)
-      task = task_fixture(column)
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      # Should successfully load
-      assert html =~ "Edit Task"
-    end
-
-    test "user with modify access can access edit task in column", %{conn: conn, user: _user} do
-      owner = user_fixture()
-      board = board_fixture(owner)
-      column = column_fixture(board)
-      task = task_fixture(column)
-
-      # Add current user with modify access
-      modify_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
-
-      conn = log_in_user(conn, modify_user)
-
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      # Should successfully load
-      assert html =~ "Edit Task"
-    end
-
-    test "redirects a read-only user away from the edit task in column page (D110)", %{
-      conn: conn,
-      user: _user
-    } do
-      owner = user_fixture()
-      board = board_fixture(owner)
-      column = column_fixture(board)
-      task = task_fixture(column)
-
-      # Add current user with read-only access
-      readonly_user = user_fixture()
-      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
-
-      conn = log_in_user(conn, readonly_user)
-
-      # D110: read-only members cannot open the task form (write escalation guard).
-      assert {:error, {redirect_kind, %{flash: flash, to: to}}} =
-               live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      assert redirect_kind in [:live_redirect, :live_patch]
-      assert flash["error"] =~ "permission to modify"
-      assert to == ~p"/boards/#{board}"
-    end
-
-    test "assigns both column and task from URL parameters", %{conn: conn, user: user} do
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "Target Column"})
-      task = task_fixture(column, %{title: "Target Task"})
-
-      {:ok, show_live, _html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
-
-      # Both column and task should be assigned
-      html = render(show_live)
-      assert html =~ "Target Column"
-      assert html =~ "Target Task"
-    end
-  end
-
   describe "Show with task edit" do
     setup [:register_and_log_in_user]
 
@@ -2406,26 +2239,24 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert flash["error"] == "Task not found on this board"
     end
 
-    test "GET /boards/A/columns/<col-from-B>/tasks/<task-from-B>/edit redirects with error",
-         %{conn: conn} do
-      owner = user_fixture()
-      own_board = board_fixture(owner)
+    # The column-scoped edit URL was removed: nothing linked to it, and its
+    # form had no Attachments or Comments section. Editing goes through
+    # /boards/:id/tasks/:task_id/edit only.
+    test "the column-scoped task edit URL no longer exists" do
+      assert Phoenix.Router.route_info(
+               KanbanWeb.Router,
+               "GET",
+               "/boards/1/columns/2/tasks/3/edit",
+               "localhost"
+             ) == :error
 
-      other_owner = user_fixture()
-      other_board = board_fixture(other_owner)
-      other_column = column_fixture(other_board)
-      other_task = task_fixture(other_column, %{title: "Cross-Board Task Secret 2"})
-
-      conn = log_in_user(conn, owner)
-
-      assert {:error, {:live_redirect, %{to: redirect_path, flash: flash}}} =
-               live(
-                 conn,
-                 ~p"/boards/#{own_board}/columns/#{other_column}/tasks/#{other_task}/edit"
+      assert %{plug_opts: :edit_task} =
+               Phoenix.Router.route_info(
+                 KanbanWeb.Router,
+                 "GET",
+                 "/boards/1/tasks/3/edit",
+                 "localhost"
                )
-
-      assert redirect_path == "/boards/#{own_board.id}"
-      assert flash["error"] == "Column or task not found on this board"
     end
   end
 

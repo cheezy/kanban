@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Attachments](docs/attachments.md) covers using attachments and, for operators, storage, configuration and limits. The Resources section has a new guide, *Attaching Files to Tasks and Comments*.
 
+### Removed
+
+- **The column-scoped task edit URL.** `/boards/:id/columns/:column_id/tasks/:task_id/edit` is gone. Nothing in Stride linked to it, and its form lacked the Attachments and Comments sections. A task is edited at `/boards/:id/tasks/:task_id/edit`.
+
 ### Internal
 
 - **Internal: `Kanban.Tasks.AgentWorkflow` split along its seams.** Claiming, completion, review and the helpers they share moved into `Kanban.Tasks.AgentWorkflow.Claiming`, `Kanban.Tasks.AgentWorkflow.Completion`, `Kanban.Tasks.AgentWorkflow.Review` and `Kanban.Tasks.AgentWorkflow.Support`, leaving `Kanban.Tasks.AgentWorkflow` as a thin facade with the same public functions. No behaviour or API change.

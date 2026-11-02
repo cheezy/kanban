@@ -355,7 +355,7 @@ msgstr "创建新任务"
 
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
-#: lib/kanban_web/live/board_live/show.ex:196
+#: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
@@ -452,8 +452,8 @@ msgstr "紧急"
 msgid "Defect"
 msgstr "缺陷"
 
-#: lib/kanban_web/live/board_live/show.ex:232
-#: lib/kanban_web/live/board_live/show.ex:454
+#: lib/kanban_web/live/board_live/show.ex:226
+#: lib/kanban_web/live/board_live/show.ex:448
 #: lib/kanban_web/live/board_live/task_actions.ex:95
 #: lib/kanban_web/live/board_live/task_actions.ex:161
 #, elixir-autogen, elixir-format
@@ -753,7 +753,7 @@ msgstr "用户必须已在系统中注册才能添加到看板"
 msgid "You cannot add yourself to the board"
 msgstr "您不能将自己添加到看板"
 
-#: lib/kanban_web/live/board_live/show.ex:128
+#: lib/kanban_web/live/board_live/show.ex:122
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "只有看板所有者可以删除列"
@@ -769,7 +769,7 @@ msgstr "只有看板所有者可以管理列"
 msgid "Only the board owner can create columns"
 msgstr "只有看板所有者可以创建列"
 
-#: lib/kanban_web/live/board_live/show.ex:260
+#: lib/kanban_web/live/board_live/show.ex:254
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "只有看板所有者可以重新排序列"
@@ -1179,7 +1179,7 @@ msgstr "已阻塞"
 msgid "Cannot add columns to AI optimized boards"
 msgstr "无法向 AI 优化看板添加列"
 
-#: lib/kanban_web/live/board_live/show.ex:133
+#: lib/kanban_web/live/board_live/show.ex:127
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr "无法删除 AI 优化看板上的列"
@@ -1189,7 +1189,7 @@ msgstr "无法删除 AI 优化看板上的列"
 msgid "Cannot edit columns on AI optimized boards"
 msgstr "无法编辑 AI 优化看板上的列"
 
-#: lib/kanban_web/live/board_live/show.ex:265
+#: lib/kanban_web/live/board_live/show.ex:259
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr "无法重新排序 AI 优化看板上的列"
@@ -1405,7 +1405,7 @@ msgstr "失败时(将发生什么)"
 
 #: lib/kanban_web/live/board_live/column_actions.ex:66
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
-#: lib/kanban_web/live/board_live/show.ex:279
+#: lib/kanban_web/live/board_live/show.ex:273
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
@@ -2033,7 +2033,7 @@ msgstr "看板:"
 msgid "Delete"
 msgstr "删除"
 
-#: lib/kanban_web/live/board_live/show.ex:178
+#: lib/kanban_web/live/board_live/show.ex:172
 #: lib/kanban_web/live/board_live/task_actions.ex:296
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
@@ -2763,7 +2763,7 @@ msgstr "未找到看板"
 msgid "Check this box if this task is for human workers only and should not be claimed by AI agents"
 msgstr "如果此任务仅由人工执行,不应被 AI 代理认领,请勾选此复选框"
 
-#: lib/kanban_web/live/board_live/show.ex:214
+#: lib/kanban_web/live/board_live/show.ex:208
 #: lib/kanban_web/live/board_live/task_actions.ex:255
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
@@ -2972,7 +2972,7 @@ msgstr "未找到消息。"
 msgid "No messages yet."
 msgstr "暂无消息。"
 
-#: lib/kanban_web/live/board_live/show.ex:407
+#: lib/kanban_web/live/board_live/show.ex:401
 #, elixir-autogen, elixir-format
 msgid "Could not dismiss message."
 msgstr "无法关闭消息。"
@@ -3077,32 +3077,32 @@ msgid "While many large organizations attempt to improve outcomes by measuring p
 msgstr "尽管许多大型组织试图通过衡量生产力来改进成果,但我们的经验显示,真正的收益来自:"
 
 #: lib/kanban_web/live/archive_live/index.ex:164
-#: lib/kanban_web/live/board_live/show.ex:174
+#: lib/kanban_web/live/board_live/show.ex:168
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "您没有权限在此看板归档任务"
 
 #: lib/kanban_web/live/archive_live/index.ex:490
-#: lib/kanban_web/live/board_live/show.ex:192
+#: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
 msgstr "您没有权限在此看板删除任务"
 
 #: lib/kanban_web/live/board_live/api_tokens.ex:58
-#: lib/kanban_web/live/board_live/show.ex:299
-#: lib/kanban_web/live/board_live/show.ex:316
-#: lib/kanban_web/live/board_live/show.ex:327
+#: lib/kanban_web/live/board_live/show.ex:293
+#: lib/kanban_web/live/board_live/show.ex:310
+#: lib/kanban_web/live/board_live/show.ex:321
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to manage API tokens"
 msgstr "您没有权限管理API令牌"
 
-#: lib/kanban_web/live/board_live/show.ex:228
-#: lib/kanban_web/live/board_live/show.ex:450
+#: lib/kanban_web/live/board_live/show.ex:222
+#: lib/kanban_web/live/board_live/show.ex:444
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to move tasks on this board"
 msgstr "您没有权限在此看板移动任务"
 
-#: lib/kanban_web/live/board_live/show.ex:210
+#: lib/kanban_web/live/board_live/show.ex:204
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to promote goals on this board"
 msgstr "您没有权限在此看板提升目标"
@@ -3161,18 +3161,13 @@ msgstr "Backlog 中等待的任务"
 msgid "Column not found on this board"
 msgstr "在此看板中未找到列"
 
-#: lib/kanban_web/live/board_live/params.ex:220
-#, elixir-autogen, elixir-format
-msgid "Column or task not found on this board"
-msgstr "在此看板中未找到列或任务"
-
 #: lib/kanban_web/live/issue_live/form_component.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to submit the issue. Please try again later."
 msgstr "提交问题失败。请稍后再试。"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:30
-#: lib/kanban_web/live/board_live/show.ex:284
+#: lib/kanban_web/live/board_live/show.ex:278
 #, elixir-autogen, elixir-format
 msgid "Invalid field name"
 msgstr "无效的字段名"
@@ -3207,7 +3202,7 @@ msgstr "安全错误:无效的被指派人"
 msgid "Security error: Invalid parent goal"
 msgstr "安全错误:无效的父目标"
 
-#: lib/kanban_web/live/board_live/params.ex:246
+#: lib/kanban_web/live/board_live/params.ex:201
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "在此看板中未找到任务"
@@ -10124,7 +10119,7 @@ msgstr "通用 Webhook"
 
 #: lib/kanban_web/components/board_tabs.ex:158
 #: lib/kanban_web/components/locked_feature.ex:141
-#: lib/kanban_web/live/board_live/board_state.ex:104
+#: lib/kanban_web/live/board_live/board_state.ex:103
 #: lib/kanban_web/live/board_live/show.html.heex:542
 #: lib/kanban_web/live/board_live/show.html.heex:550
 #, elixir-autogen, elixir-format
