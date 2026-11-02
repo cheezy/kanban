@@ -69,7 +69,11 @@ region at its default.
 Storage calls run inside user requests, so a transient failure (a timeout, a
 refused or closed connection, or a 408, 429, 500, 502, 503 or 504 from the
 store) is retried twice, 250 and then 500 milliseconds apart, before the
-upload or download fails. Redirects are never followed, so a misconfigured
+upload or download fails. Each try waits at most 5 seconds to connect and
+30 seconds for each read, and an upload, a delete or an existence check also
+gives up after 60 seconds in all, so a store that sends its reply a byte at a
+time cannot hold the request. A download has no overall limit, since a large
+file on a slow link takes as long as it takes. Redirects are never followed, so a misconfigured
 endpoint cannot send a signed request to another host. When the store
 refuses a request, the app log shows only the operation and the HTTP
 status, such as
@@ -156,7 +160,13 @@ minutes on the `:attachments` Oban queue, deleting each stored file and then
 its queue entry. An entry whose key an attachment row still names is dropped
 without touching the file, so the job can never remove a file that a live
 attachment points to. A file the store cannot delete is retried with a
-growing delay, up to one day apart.
+growing delay, up to one day apart, counted from the moment it was tried.
+
+Each run takes at most 200 entries and stops taking new ones after 10
+minutes, leaving the rest for the next run, and Oban ends a run outright at
+30 minutes. That keeps a run against a store that hangs well inside Oban's
+one-hour Lifeline rescue, which would otherwise start a second run beside
+it.
 
 The trigger fires for `DELETE` statements only. Never empty
 `task_attachments` with `TRUNCATE`, which skips row triggers and would leave

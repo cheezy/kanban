@@ -198,7 +198,10 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       log = capture_log(fn -> assert :ok = run() end)
 
       assert log =~ "attachment storage delete failed: :unexpected_reason"
-      assert %BlobDeletion{attempts: 1, last_error: "storage_unavailable"} = updated = reload(first)
+
+      assert %BlobDeletion{attempts: 1, last_error: "storage_unavailable"} =
+               updated = reload(first)
+
       assert DateTime.compare(updated.delete_after, minutes(2)) == :eq
 
       second = tombstone(key(), minutes(-2))
@@ -443,6 +446,96 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       refute Enum.any?(keys, &blob_exists?/1)
       assert blob_exists?(survivor.storage_key)
       assert BlobDeletion |> where([d], d.storage_key in ^keys) |> Repo.all() == []
+    end
+  end
+
+  describe "a long run" do
+    # The run's summary line is info, below the test level. The module is
+    # not async, so lowering the global level here is safe.
+    setup do
+      original = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: original) end)
+    end
+
+    # A slow first delete stands in for a store that hangs: the hook sleeps
+    # past the budget (or past a whole second) before that delete returns.
+    defp slow_first_delete(first_key, sleep_ms) do
+      Process.put(:before_delete, fn
+        ^first_key -> Process.sleep(sleep_ms)
+        _key -> :ok
+      end)
+    end
+
+    test "stops taking tombstones once max_run_seconds have passed and leaves the rest untouched" do
+      Application.put_env(:kanban, BlobCleanupWorker, max_run_seconds: 1)
+
+      first = tombstone(stored_blob(), minutes(-30))
+      second = tombstone(stored_blob(), minutes(-20))
+      third = tombstone(stored_blob(), minutes(-10))
+      slow_first_delete(first.storage_key, 1_100)
+
+      log = capture_log([level: :info], fn -> assert :ok = run() end)
+
+      assert reload(first) == nil
+      assert_received {:storage_deleted, first_key} when first_key == first.storage_key
+      refute_received {:storage_deleted, _key}
+
+      for row <- [second, third] do
+        assert %BlobDeletion{attempts: 0} = kept = reload(row)
+        assert kept.delete_after == row.delete_after
+        assert blob_exists?(row.storage_key)
+      end
+
+      assert log =~ "1 deleted"
+      assert log =~ "2 left for the next run"
+
+      # The next run takes them.
+      assert :ok = run()
+      assert reload(second) == nil
+      assert reload(third) == nil
+    end
+
+    test "a run inside its budget takes the whole batch" do
+      rows = for minutes <- [-3, -2, -1], do: tombstone(stored_blob(), minutes(minutes))
+
+      log = capture_log([level: :info], fn -> assert :ok = run() end)
+
+      assert Enum.all?(rows, &(reload(&1) == nil))
+      assert log =~ "0 left for the next run"
+    end
+
+    test "falls back to the default budget when max_run_seconds is not a positive integer" do
+      for setting <- [0, -5, "600", nil] do
+        Application.put_env(:kanban, BlobCleanupWorker, max_run_seconds: setting)
+        row = tombstone(stored_blob(), minutes(-1))
+
+        assert :ok = run()
+        assert reload(row) == nil
+      end
+    end
+
+    test "counts each failure's backoff from the moment of its try, not from the run's start" do
+      Process.put(:delete_result, {:error, :storage_unavailable})
+      first = tombstone(key(), minutes(-30))
+      second = tombstone(key(), minutes(-20))
+      slow_first_delete(first.storage_key, 1_100)
+
+      capture_log(fn -> assert :ok = run() end)
+
+      # attempts 1 backs off 2 minutes. The first key was tried at the run's
+      # start; the second at least a second later.
+      assert %BlobDeletion{attempts: 1, delete_after: first_retry} = reload(first)
+      assert %BlobDeletion{attempts: 1, delete_after: second_retry} = reload(second)
+      assert first_retry == minutes(2)
+      assert DateTime.compare(second_retry, DateTime.add(minutes(2), 1, :second)) != :lt
+    end
+
+    test "is timed out by Oban well before Lifeline would rescue it" do
+      assert BlobCleanupWorker.timeout(%Oban.Job{}) == :timer.minutes(30)
+
+      {amount, :minutes} = Application.fetch_env!(:kanban, Oban)[:lifeline][:rescue_after]
+      assert BlobCleanupWorker.timeout(%Oban.Job{}) < :timer.minutes(amount)
     end
   end
 

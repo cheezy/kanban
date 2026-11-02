@@ -4,7 +4,8 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   run by the Oban Cron plugin every 15 minutes on the `:attachments` queue.
 
   Each run takes up to `:batch_size` (default 200) tombstones whose
-  `delete_after` has passed, oldest first, and for each one asks
+  `delete_after` has passed, oldest first, stops taking new ones once
+  `:max_run_seconds` (default 600) have passed, and for each one asks
   `Kanban.Attachments.Storage.delete/1` to remove its blob:
 
     * `:ok` (which includes a blob that is already gone) deletes the
@@ -14,8 +15,8 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
       such a key can never be removed;
     * any other result keeps the tombstone, increments `attempts`, stores the
       reason as `last_error` and moves `delete_after` out by 2^attempts
-      minutes, capped at one day, so a store outage is retried without being
-      hammered.
+      minutes from the moment of that try, capped at one day, so a store
+      outage is retried without being hammered.
 
   A tombstone whose key a `task_attachments` row still names is deleted
   without touching the blob, so a stale tombstone (a pending upload whose
@@ -59,6 +60,15 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   # next tick. While a run is waiting, running or waiting to retry, the
   # unique states stop the cron plugin from queueing a second one, so two
   # runs never overlap, even across nodes.
+  #
+  # Those states hold only while a run ends inside Lifeline's one-hour rescue
+  # (config/config.exs): a job still executing after that is made available
+  # again and runs a second time beside the first. So a run stops taking new
+  # tombstones once :max_run_seconds (default 10 minutes) have passed and
+  # leaves the rest to the next tick, and timeout/1 ends it outright at 30
+  # minutes. Against a store that hangs, one S3 delete can take about 90
+  # seconds with its retries, so a 200-tombstone batch would otherwise run
+  # for five hours (G488 exploratory campaign, 2026-11-02).
   use Oban.Worker,
     queue: :attachments,
     max_attempts: 3,
@@ -81,30 +91,61 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   # Leftovers of unfinished writes (a Local temp file whose process died
   # mid-write) are swept once they are as old as an upload's grace period.
   @sweep_after_seconds 3_600
+  @default_max_run_seconds 600
+  @timeout_minutes 30
+  @outcomes %{deleted: 0, in_use: 0, invalid: 0, failed: 0, skipped: 0, deferred: 0}
+
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.minutes(@timeout_minutes)
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
-    now = run_time(args)
     settings = Application.get_env(:kanban, __MODULE__, [])
-
-    batch_size =
-      settings |> Keyword.get(:batch_size, @default_batch_size) |> positive_or_default()
+    clock = %{now: run_time(args), started: System.monotonic_time(:millisecond)}
+    budget_ms = budget_ms(settings)
 
     counts =
-      now
-      |> due_tombstones(batch_size)
-      |> Enum.reduce(%{deleted: 0, in_use: 0, invalid: 0, failed: 0, skipped: 0}, fn tombstone,
-                                                                                     acc ->
-        Map.update!(acc, process(tombstone, now), &(&1 + 1))
+      clock.now
+      |> due_tombstones(batch_size(settings))
+      |> Enum.reduce(@outcomes, fn tombstone, acc ->
+        Map.update!(acc, outcome(tombstone, clock, budget_ms), &(&1 + 1))
       end)
 
-    Logger.info(
-      "attachment blob cleanup: #{counts.deleted} deleted, #{counts.in_use} still in use, " <>
-        "#{counts.invalid} invalid, #{counts.failed} failed, #{counts.skipped} already handled"
-    )
-
+    log_counts(counts)
     Storage.sweep(@sweep_after_seconds)
   end
+
+  defp batch_size(settings),
+    do: settings |> Keyword.get(:batch_size, @default_batch_size) |> positive_or_default()
+
+  defp budget_ms(settings) do
+    settings
+    |> Keyword.get(:max_run_seconds, @default_max_run_seconds)
+    |> positive_or(@default_max_run_seconds)
+    |> Kernel.*(1000)
+  end
+
+  # Once the budget is spent the rest of the batch is left as it is.
+  defp outcome(tombstone, clock, budget_ms) do
+    if elapsed_ms(clock) >= budget_ms, do: :deferred, else: process(tombstone, clock)
+  end
+
+  defp log_counts(counts) do
+    Logger.info(
+      "attachment blob cleanup: #{counts.deleted} deleted, #{counts.in_use} still in use, " <>
+        "#{counts.invalid} invalid, #{counts.failed} failed, #{counts.skipped} already handled, " <>
+        "#{counts.deferred} left for the next run"
+    )
+  end
+
+  defp elapsed_ms(%{started: started}), do: System.monotonic_time(:millisecond) - started
+
+  # The moment of this claim: the run's time plus the whole seconds the run
+  # has taken so far. A backoff counted from the run's start was already in
+  # the past for a key claimed late in a long run, so the next run tried
+  # every such key again at once.
+  defp claim_time(%{now: now} = clock),
+    do: DateTime.add(now, div(elapsed_ms(clock), 1000), :second)
 
   @doc """
   The backoff, in minutes, after a tombstone's `attempts`-th failed delete:
@@ -125,8 +166,8 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     |> Repo.all()
   end
 
-  defp process(tombstone, now) do
-    case claim(tombstone.storage_key, now) do
+  defp process(tombstone, clock) do
+    case claim(tombstone.storage_key, clock.now, claim_time(clock)) do
       {:ok, :handled} -> :skipped
       {:ok, :in_use} -> :in_use
       {:ok, {:claimed, ids, attempts}} -> delete_blob(tombstone, {ids, attempts})
@@ -138,7 +179,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   # commit, handled it), records this try on all of them before the blob is
   # touched. The pending tombstone of an upload still in flight gets its
   # attempts raised too, which is what refuses that upload's commit.
-  defp claim(key, now) do
+  defp claim(key, now, claimed_at) do
     Repo.transact(fn ->
       tombstones =
         from(d in BlobDeletion,
@@ -153,7 +194,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
       cond do
         due_ids == [] -> {:ok, :handled}
         key_in_use?(key) -> drop_stale(due_ids)
-        true -> record_try(tombstones, due_ids, now)
+        true -> record_try(tombstones, due_ids, claimed_at)
       end
     end)
   end
@@ -166,9 +207,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     {:ok, :in_use}
   end
 
-  defp record_try(tombstones, due_ids, now) do
+  defp record_try(tombstones, due_ids, claimed_at) do
     attempts = (tombstones |> Enum.map(& &1.attempts) |> Enum.max()) + 1
-    retry_at = DateTime.add(now, backoff_minutes(attempts), :minute)
+    retry_at = DateTime.add(claimed_at, backoff_minutes(attempts), :minute)
 
     for t <- tombstones do
       delete_after = if t.id in due_ids, do: retry_at, else: t.delete_after
@@ -231,8 +272,10 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   defp reason_code(reason),
     do: reason |> Atom.to_string() |> String.slice(0, @last_error_max_length)
 
-  defp positive_or_default(size) when is_integer(size) and size > 0, do: size
-  defp positive_or_default(_size), do: @default_batch_size
+  defp positive_or_default(size), do: positive_or(size, @default_batch_size)
+
+  defp positive_or(value, _default) when is_integer(value) and value > 0, do: value
+  defp positive_or(_value, default), do: default
 
   # delete_after is a microsecond column, so the run time keeps microsecond
   # precision.

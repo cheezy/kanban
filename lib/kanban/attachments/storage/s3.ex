@@ -18,6 +18,7 @@ defmodule Kanban.Attachments.Storage.S3 do
         access_key_id: "...",
         secret_access_key: "...",
         path_style: false,
+        request_timeout: 60_000,
         req_options: []
 
   `endpoint` defaults to the AWS endpoint of `region`, and `region` to
@@ -42,6 +43,10 @@ defmodule Kanban.Attachments.Storage.S3 do
       object is `{:error, :not_found}` rather than a stream that fails later.
     * Redirects are not followed, so a misconfigured endpoint cannot bounce a
       signed request to another host.
+    * Each attempt waits at most 5 seconds to connect and 30 seconds for each
+      read. A put, a delete and a HEAD also have an overall deadline,
+      `request_timeout` (60 seconds), so a store that trickles its reply
+      cannot hold the call; a download has none, since its body is the file.
     * The enumerable is single-pass: enumerate it once, in the process
       that called `stream/1`. Halting early cancels the download.
     * Transient failures (a 408, 429, 500, 502, 503 or 504, a timeout, a
@@ -62,6 +67,7 @@ defmodule Kanban.Attachments.Storage.S3 do
   require Logger
 
   @default_region "us-east-1"
+  @default_request_timeout 60_000
   @default_content_type "application/octet-stream"
   @chunk_bytes 65_536
 
@@ -165,6 +171,7 @@ defmodule Kanban.Attachments.Storage.S3 do
       {:ok, config} ->
         [method: method, url: object_url(config, key), aws_sigv4: sigv4(config)]
         |> Keyword.merge(base_options())
+        |> Keyword.merge(deadline(method, config))
         |> Keyword.merge(extra)
         |> Keyword.merge(Keyword.get(config, :req_options, []))
         |> Req.request()
@@ -173,6 +180,17 @@ defmodule Kanban.Attachments.Storage.S3 do
         {:error, :not_configured}
     end
   end
+
+  # receive_timeout bounds each socket read, not the whole response, so a
+  # store that trickles its reply a byte at a time held a request (and the
+  # cleanup worker's single queue slot) for as long as it kept trickling.
+  # A put, a delete and a HEAD get only a short reply, so each attempt also
+  # has an overall deadline. A download is left unbounded: its body is the
+  # file, and a large one on a slow link takes as long as it takes.
+  defp deadline(:get, _config), do: []
+
+  defp deadline(_method, config),
+    do: [request_timeout: Keyword.get(config, :request_timeout, @default_request_timeout)]
 
   defp sigv4(config) do
     [

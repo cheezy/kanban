@@ -313,6 +313,69 @@ defmodule Kanban.Attachments.Storage.S3Test do
     refute_received {:request, _conn, _body}
   end
 
+  describe "a store that trickles its reply" do
+    # A real socket, not the Req.Test plug: receive_timeout bounds each read,
+    # so only a reply that keeps arriving shows whether the whole call is
+    # bounded. The stub sends one byte every 20 ms for about 2 seconds.
+    defmodule TrickleStub do
+      @behaviour Plug
+
+      @impl true
+      def init(opts), do: opts
+
+      @impl true
+      def call(conn, _opts) do
+        conn = Plug.Conn.send_chunked(conn, 200)
+
+        Enum.reduce_while(1..100, conn, fn _i, conn ->
+          Process.sleep(20)
+
+          case Plug.Conn.chunk(conn, "x") do
+            {:ok, conn} -> {:cont, conn}
+            {:error, _closed} -> {:halt, conn}
+          end
+        end)
+      end
+    end
+
+    setup do
+      {:ok, server} =
+        Bandit.start_link(plug: TrickleStub, ip: {127, 0, 0, 1}, port: 0, startup_log: false)
+
+      {:ok, {_ip, port}} = ThousandIsland.listener_info(server)
+      on_exit(fn -> stop_server(server) end)
+
+      put_config(
+        endpoint: "http://127.0.0.1:#{port}",
+        path_style: true,
+        request_timeout: 300,
+        req_options: [retry: false]
+      )
+
+      :ok
+    end
+
+    test "a delete gives up at request_timeout instead of waiting out the trickle" do
+      {elapsed_us, {result, log}} =
+        :timer.tc(fn -> with_log(fn -> S3.delete(@key) end) end)
+
+      assert result == {:error, :storage_unavailable}
+      assert elapsed_us < 1_500_000
+      assert log =~ "attachment storage delete failed"
+    end
+
+    test "a download is not cut off by request_timeout" do
+      assert {:ok, chunks} = S3.stream(@key)
+      assert byte_size(read_all(chunks)) == 100
+    end
+  end
+
+  defp stop_server(server) do
+    if Process.alive?(server), do: Supervisor.stop(server)
+  catch
+    :exit, _reason -> :ok
+  end
+
   defp restore(module, nil), do: Application.delete_env(:kanban, module)
   defp restore(module, previous), do: Application.put_env(:kanban, module, previous)
 end
