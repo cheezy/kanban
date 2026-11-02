@@ -33,6 +33,10 @@ defmodule Kanban.Attachments.Storage.LocalTest do
 
   defp entries(dir), do: dir |> File.ls!() |> Enum.sort()
 
+  defp present?(root, relative), do: root |> Path.join(relative) |> File.exists?()
+
+  defp private_dir!(root, relative), do: root |> Path.join(relative) |> File.chmod!(0o700)
+
   describe "root/0" do
     test "uses the configured root, expanded, and a temp-dir default when unset", %{root: root} do
       assert Local.root() == root
@@ -119,6 +123,78 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     assert :ok = Local.delete(@key)
   end
 
+  describe "directories left after a delete" do
+    @sibling "boards/12/7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f"
+
+    test "removing a board's last file removes its now-empty directories, never the root",
+         %{root: root} do
+      :ok = Local.put(@key, {:binary, "only file"}, [])
+
+      assert :ok = Local.delete(@key)
+
+      refute present?(root, "boards/12")
+      refute present?(root, "boards")
+      assert File.dir?(root)
+      assert entries(root) == [".staging"]
+    end
+
+    test "a directory that still holds another file is kept", %{root: root} do
+      :ok = Local.put(@key, {:binary, "one"}, [])
+      :ok = Local.put(@sibling, {:binary, "two"}, [])
+
+      assert :ok = Local.delete(@key)
+
+      assert root |> Path.join("boards/12") |> entries() == [Path.basename(@sibling)]
+      assert {:ok, stream} = Local.stream(@sibling)
+      assert read_all(stream) == "two"
+    end
+
+    test "a missing file's empty directories are removed too", %{root: root} do
+      root |> Path.join("boards/12") |> File.mkdir_p!()
+      File.chmod!(root, 0o700)
+      private_dir!(root, "boards")
+      private_dir!(root, "boards/12")
+
+      assert :ok = Local.delete(@key)
+
+      refute present?(root, "boards")
+    end
+
+    test "a put after the directories were removed creates them again" do
+      :ok = Local.put(@key, {:binary, "first"}, [])
+      :ok = Local.delete(@key)
+
+      assert :ok = Local.put(@key, {:binary, "second"}, [])
+      assert {:ok, stream} = Local.stream(@key)
+      assert read_all(stream) == "second"
+    end
+
+    test "puts racing deletes in the same directory never fail and never lose a file" do
+      deleter =
+        Task.async(fn ->
+          for _ <- 1..300 do
+            :ok = Local.put(@key, {:binary, "churn"}, [])
+            :ok = Local.delete(@key)
+          end
+        end)
+
+      results =
+        for n <- 1..300 do
+          key = "boards/12/" <> Ecto.UUID.generate()
+          {Local.put(key, {:binary, "kept #{n}"}, []), key, n}
+        end
+
+      Task.await(deleter, 30_000)
+
+      assert Enum.all?(results, fn {result, _key, _n} -> result == :ok end)
+
+      for {:ok, key, n} <- results do
+        assert {:ok, stream} = Local.stream(key)
+        assert read_all(stream) == "kept #{n}"
+      end
+    end
+  end
+
   test "exists returns false for a key never written" do
     assert {:ok, false} = Local.exists("boards/1/never-written")
     assert {:error, :not_found} = Local.stream("boards/1/never-written")
@@ -134,8 +210,9 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     assert log =~ "attachment storage put failed"
     refute log =~ base
 
-    dir = Path.join(root, Path.dirname(@key))
-    assert entries(dir) == []
+    # The key's directories are created only once there is a file to rename
+    # into them, so a failed write leaves none behind.
+    refute present?(root, Path.dirname(@key))
     assert entries(Path.join(root, ".staging")) == []
     assert {:ok, false} = Local.exists(@key)
   end

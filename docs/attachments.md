@@ -182,7 +182,7 @@ has every command, the verification and the rollback.
 ## Self-hosting on local disk
 
 With `ATTACHMENTS_STORAGE` unset or `local`, files are written under
-`ATTACHMENTS_DIR`. This is single-machine storage, and it has three caveats:
+`ATTACHMENTS_DIR`. This is single-machine storage, and it has four caveats:
 
 - **Use a persistent directory.** The default lives in the system temp
   directory, which many hosts clear on reboot. Set `ATTACHMENTS_DIR` to a
@@ -204,7 +204,10 @@ With `ATTACHMENTS_STORAGE` unset or `local`, files are written under
   such as the default one under a shared `/tmp`.
 
 Stride creates the directories it writes as `0o700` and its files as
-`0o600`, so only the user the app runs as can read them. A file is written
+`0o600`, so only the user the app runs as can read them. Files are kept
+under `boards/<board id>/`, and when a board's last file is removed the
+emptied directory goes too, so a deleted board leaves no directory named
+after it. A file is written
 to a temporary name in a private `.staging` directory under
 `ATTACHMENTS_DIR`, synced to disk and then renamed into place, so a crash
 never leaves a half-written file behind. `.staging` must stay `0o700`: if

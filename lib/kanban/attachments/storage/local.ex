@@ -28,7 +28,9 @@ defmodule Kanban.Attachments.Storage.Local do
       `0o600`. A failed write removes its temp file; a VM that dies
       mid-write can leave a `.tmp-` file in `.staging`, which no valid key
       can name, so it is never served and can be deleted.
-    * Directories it creates are `0o700` and files `0o600`.
+    * Directories it creates are `0o700` and files `0o600`. A delete removes
+      the key's directories again once they are empty, so a board whose last
+      file is gone leaves no directory named after it.
     * The root and every directory on the way to a key must be owned by the
       app's own user and writable by no one else (no group or other write
       bit), or the call fails with `:storage_unavailable` and a logged
@@ -88,10 +90,10 @@ defmodule Kanban.Attachments.Storage.Local do
     root = root()
     path = Path.join(root, key)
 
-    with :ok <- ensure_key_dir(root, key),
+    with :ok <- ensure_root(root),
          {:ok, staging} <- ensure_staging(root),
          {:ok, tmp} <- write_tmp(staging, source),
-         :ok <- commit(tmp, path) do
+         :ok <- place(tmp, path, root, key) do
       :ok
     else
       {:error, reason} -> unavailable(:put, reason)
@@ -162,7 +164,7 @@ defmodule Kanban.Attachments.Storage.Local do
     case trusted_tree(root, key) do
       :ok ->
         if confined?(Path.dirname(path), root, :dir),
-          do: remove(path),
+          do: remove(path, root, key),
           else: unavailable(:delete, :outside_root)
 
       # Nothing can be stored beneath a missing directory or a plain file.
@@ -175,12 +177,32 @@ defmodule Kanban.Attachments.Storage.Local do
   end
 
   # File.rm/1 unlinks a symlink itself and never follows it.
-  defp remove(path) do
+  defp remove(path, root, key) do
     case File.rm(path) do
-      :ok -> :ok
-      {:error, reason} when reason in [:enoent, :enotdir] -> :ok
+      :ok -> prune_dirs(root, key)
+      {:error, reason} when reason in [:enoent, :enotdir] -> prune_dirs(root, key)
       {:error, reason} -> unavailable(:delete, reason)
     end
+  end
+
+  # The key's directories, deepest first, are removed while they are empty,
+  # so a board whose last file is gone leaves no `boards/<id>/` directory
+  # naming it. rmdir removes only an empty real directory (never a link or
+  # anything it points at) and the root itself is never a candidate. A put
+  # that loses its directory to this before its rename creates it again
+  # (see place/5).
+  defp prune_dirs(root, key) do
+    key
+    |> Path.dirname()
+    |> Path.split()
+    |> Enum.scan(&Path.join(&2, &1))
+    |> Enum.reverse()
+    |> Enum.reduce_while(:ok, fn dir, :ok ->
+      case root |> Path.join(dir) |> File.rmdir() do
+        :ok -> {:cont, :ok}
+        {:error, _not_empty_or_gone} -> {:halt, :ok}
+      end
+    end)
   end
 
   # A missing root is created, then checked like an existing one, so a root
@@ -360,9 +382,15 @@ defmodule Kanban.Attachments.Storage.Local do
     end
   end
 
-  defp commit(tmp, path) do
-    case File.rename(tmp, path) do
+  # The key's directories are created or checked, then the temp file is
+  # renamed over the key. A delete of a directory's last other file removes
+  # the emptied directories (prune_dirs/2), which can happen between those
+  # two steps or between two of the directories, so a missing directory is
+  # created and checked again, a bounded number of times.
+  defp place(tmp, path, root, key, retries \\ 3) do
+    case with(:ok <- ensure_key_dir(root, key), do: File.rename(tmp, path)) do
       :ok -> :ok
+      {:error, :enoent} when retries > 0 -> place(tmp, path, root, key, retries - 1)
       {:error, _reason} = error -> discard(tmp, error)
     end
   end
