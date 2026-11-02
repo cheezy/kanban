@@ -29,7 +29,7 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
 
   use KanbanWeb, :html
 
-  import Phoenix.LiveView, only: [cancel_upload: 3, put_flash: 3, uploaded_entries: 2]
+  import Phoenix.LiveView, only: [cancel_upload: 3, put_flash: 3]
 
   alias Kanban.Attachments.Policy
   alias Kanban.Plans
@@ -105,16 +105,25 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
   `[{filename, reason}]`.
 
   The board's plan is checked again first; when it no longer includes
-  attachments every finished file is cancelled and reported as failed. With
-  nothing staged it does nothing.
+  attachments every finished file is cancelled and reported as failed.
+  Files are stored in the order they were chosen, and a staged file that
+  never finished uploading is reported as failed with its LiveView error.
+  With nothing staged it does nothing.
   """
   @spec store_staged(Phoenix.LiveView.Socket.t(), term(), Task.t()) ::
           {Phoenix.LiveView.Socket.t(), [{String.t(), term()}]}
   def store_staged(socket, scope, %Task{id: task_id} = task) when is_integer(task_id) do
-    case finished_entries(socket) do
-      [] -> {socket, []}
-      done -> store_finished(socket, scope, task, done)
-    end
+    # Read before storing: the modal closes after the save, so an entry that
+    # never finished (refused by LiveView, or still uploading) would vanish.
+    unfinished = unfinished_failures(socket)
+
+    {socket, failed} =
+      case finished_entries(socket) do
+        [] -> {socket, []}
+        done -> store_finished(socket, scope, task, done)
+      end
+
+    {socket, failed ++ unfinished}
   end
 
   defp store_finished(socket, scope, task, done) do
@@ -130,12 +139,15 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
   end
 
   defp finished_entries(socket) do
-    if upload_allowed?(socket) do
-      {done, _in_progress} = uploaded_entries(socket, @upload)
-      done
-    else
-      []
-    end
+    if upload_allowed?(socket),
+      do: AttachmentUploads.finished_entries(socket, @upload),
+      else: []
+  end
+
+  defp unfinished_failures(socket) do
+    if upload_allowed?(socket),
+      do: AttachmentUploads.unfinished_failures(socket, @upload),
+      else: []
   end
 
   @doc """

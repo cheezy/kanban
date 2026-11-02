@@ -13747,7 +13747,7 @@ msgstr "{lead} pour créer l'Arriéré."
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:305
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:175
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "Pièces jointes"
@@ -13757,11 +13757,6 @@ msgstr "Pièces jointes"
 msgctxt "audit action"
 msgid "Attachment deleted by board owner"
 msgstr "Pièce jointe supprimée par le propriétaire du tableau"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:188
-#, elixir-autogen, elixir-format
-msgid "A task can hold at most %{count} files."
-msgstr "Une tâche peut contenir au maximum %{count} fichiers."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
@@ -13774,7 +13769,7 @@ msgstr "Voulez-vous vraiment supprimer cette pièce jointe ?"
 msgid "Attachment deleted"
 msgstr "Pièce jointe supprimée"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:205
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "Les pièces jointes nécessitent un forfait payant."
@@ -13799,7 +13794,7 @@ msgstr "Impossible d’envoyer %{filename} : %{reason}"
 msgid "Drop files here or browse"
 msgstr "Déposez des fichiers ici ou parcourez"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:199
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:255
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "Le stockage des fichiers est indisponible. Veuillez réessayer plus tard."
@@ -13809,13 +13804,13 @@ msgstr "Le stockage des fichiers est indisponible. Veuillez réessayer plus tard
 msgid "No attachments yet"
 msgstr "Aucune pièce jointe pour l’instant"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:185
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "Le contenu du fichier ne correspond pas à son type."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:202
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:215
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:258
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "L’envoi a échoué. Veuillez réessayer."
@@ -13826,32 +13821,32 @@ msgstr "L’envoi a échoué. Veuillez réessayer."
 msgid "This attachment no longer exists."
 msgstr "Cette pièce jointe n’existe plus."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:193
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "Impossible de lire ce fichier. Veuillez réessayer."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:213
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:269
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "Impossible d’enregistrer ce fichier. Vérifiez son nom et réessayez."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:191
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "Ce fichier est vide."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:177
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:223
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "Ce fichier dépasse la limite de %{size}."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:210
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "Ce fichier ou cette tâche n’existe plus."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:183
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:229
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "Ce type de fichier n’est pas autorisé."
@@ -13871,15 +13866,10 @@ msgstr "Progression de l’envoi de %{name}"
 msgid "Uploading..."
 msgstr "Envoi en cours..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:208
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:264
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "Vous n’êtes pas autorisé à modifier les pièces jointes de cette tâche."
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:196
-#, elixir-autogen, elixir-format
-msgid "Your organization has used all of its attachment storage."
-msgstr "Votre organisation a utilisé tout son espace de stockage pour les pièces jointes."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:140
 #, elixir-autogen, elixir-format
@@ -13892,7 +13882,7 @@ msgid "Preview of %{name}"
 msgstr "Aperçu de %{name}"
 
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:184
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "Joindre des fichiers"
@@ -13913,3 +13903,20 @@ msgstr "fichier sans nom"
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "Cette tâche a été supprimée."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:236
+#, elixir-autogen, elixir-format
+msgid "A task can hold at most %{count} file."
+msgid_plural "A task can hold at most %{count} files."
+msgstr[0] "Une tâche peut contenir au maximum %{count} fichier."
+msgstr[1] "Une tâche peut contenir au maximum %{count} fichiers."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
+#, elixir-autogen, elixir-format
+msgid "There is not enough attachment storage left for this file."
+msgstr "Il ne reste pas assez d’espace de stockage des pièces jointes pour ce fichier."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#, elixir-autogen, elixir-format
+msgid "This file did not finish uploading."
+msgstr "L’envoi de ce fichier ne s’est pas terminé."

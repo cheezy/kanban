@@ -13770,7 +13770,7 @@ msgstr "{lead} para criar as Pendências."
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:305
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:175
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "Anexos"
@@ -13780,11 +13780,6 @@ msgstr "Anexos"
 msgctxt "audit action"
 msgid "Attachment deleted by board owner"
 msgstr "Anexo excluído pelo proprietário do quadro"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:188
-#, elixir-autogen, elixir-format
-msgid "A task can hold at most %{count} files."
-msgstr "Uma tarefa pode ter no máximo %{count} arquivos."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
@@ -13797,7 +13792,7 @@ msgstr "Tem certeza de que deseja excluir este anexo?"
 msgid "Attachment deleted"
 msgstr "Anexo excluído"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:205
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "Anexos exigem um plano pago."
@@ -13822,7 +13817,7 @@ msgstr "Não foi possível enviar %{filename}: %{reason}"
 msgid "Drop files here or browse"
 msgstr "Solte arquivos aqui ou procure"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:199
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:255
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "O armazenamento de arquivos está indisponível. Tente novamente mais tarde."
@@ -13832,13 +13827,13 @@ msgstr "O armazenamento de arquivos está indisponível. Tente novamente mais ta
 msgid "No attachments yet"
 msgstr "Ainda não há anexos"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:185
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "O conteúdo do arquivo não corresponde ao seu tipo."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:202
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:215
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:258
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "O envio falhou. Tente novamente."
@@ -13849,32 +13844,32 @@ msgstr "O envio falhou. Tente novamente."
 msgid "This attachment no longer exists."
 msgstr "Este anexo não existe mais."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:193
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "Não foi possível ler este arquivo. Tente novamente."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:213
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:269
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "Não foi possível salvar este arquivo. Verifique o nome e tente novamente."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:191
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "Este arquivo está vazio."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:177
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:223
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "Este arquivo excede o limite de %{size}."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:210
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "Este arquivo ou tarefa não existe mais."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:183
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:229
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "Este tipo de arquivo não é permitido."
@@ -13894,15 +13889,10 @@ msgstr "Progresso do envio de %{name}"
 msgid "Uploading..."
 msgstr "Enviando..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:208
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:264
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "Você não tem permissão para alterar os anexos desta tarefa."
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:196
-#, elixir-autogen, elixir-format
-msgid "Your organization has used all of its attachment storage."
-msgstr "Sua organização usou todo o armazenamento de anexos."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:140
 #, elixir-autogen, elixir-format
@@ -13915,7 +13905,7 @@ msgid "Preview of %{name}"
 msgstr "Prévia de %{name}"
 
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:184
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "Anexar arquivos"
@@ -13936,3 +13926,20 @@ msgstr "arquivo sem nome"
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "Esta tarefa foi excluída."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:236
+#, elixir-autogen, elixir-format
+msgid "A task can hold at most %{count} file."
+msgid_plural "A task can hold at most %{count} files."
+msgstr[0] "Uma tarefa pode ter no máximo %{count} arquivo."
+msgstr[1] "Uma tarefa pode ter no máximo %{count} arquivos."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
+#, elixir-autogen, elixir-format
+msgid "There is not enough attachment storage left for this file."
+msgstr "Não há espaço de armazenamento de anexos suficiente para este arquivo."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#, elixir-autogen, elixir-format
+msgid "This file did not finish uploading."
+msgstr "O envio deste arquivo não foi concluído."

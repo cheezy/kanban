@@ -174,6 +174,25 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
                AttachmentUploads.error_message(:type_not_allowed)
     end
 
+    test "the file-count sentence is pluralised" do
+      put_limits(max_files_per_task: 1)
+      assert AttachmentUploads.error_message(:too_many_files) == "A task can hold at most 1 file."
+
+      put_limits(max_files_per_task: 3)
+
+      assert AttachmentUploads.error_message(:too_many_files) ==
+               "A task can hold at most 3 files."
+    end
+
+    test "the quota sentence says the file does not fit, not that storage is used up" do
+      assert AttachmentUploads.error_message(:quota_exceeded) ==
+               "There is not enough attachment storage left for this file."
+    end
+
+    test "an unfinished upload has its own sentence" do
+      assert AttachmentUploads.error_message(:incomplete) == "This file did not finish uploading."
+    end
+
     test "error_message is translated into the current locale" do
       Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
         refute AttachmentUploads.error_message(:not_accepted) == "This file type is not allowed."

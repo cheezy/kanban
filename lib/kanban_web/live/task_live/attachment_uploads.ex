@@ -21,8 +21,8 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
 
   use Gettext, backend: KanbanWeb.Gettext
 
-  import Phoenix.LiveView,
-    only: [allow_upload: 3, consume_uploaded_entry: 3, uploaded_entries: 2]
+  import Phoenix.Component, only: [upload_errors: 1, upload_errors: 2]
+  import Phoenix.LiveView, only: [allow_upload: 3, consume_uploaded_entry: 3]
 
   alias Kanban.Attachments
   alias Kanban.Attachments.ContentType
@@ -117,8 +117,9 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   `attrs` carries the `:task` and, for a comment-level file, a `:comment_id`.
   Each entry is passed to `Kanban.Attachments.create_attachment/4` inside the
   consume callback, because LiveView deletes the temporary file once the
-  callback returns. Entries still uploading, or refused by LiveView, are left
-  in place.
+  callback returns. Entries are stored in the order the user chose them.
+  Entries still uploading, or refused by LiveView, are left in place;
+  `unfinished_failures/2` names them.
 
   Returns `%{stored: [attachment], failed: [{client_name, reason}]}`.
   """
@@ -127,10 +128,10 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
           failed: [{String.t(), term()}]
         }
   def store_entries(socket, name, scope, %{task: %Task{}} = attrs) do
-    {done, _in_progress} = uploaded_entries(socket, name)
-
     results =
-      Enum.map(done, fn entry ->
+      socket
+      |> finished_entries(name)
+      |> Enum.map(fn entry ->
         result =
           consume_uploaded_entry(socket, entry, fn %{path: path} ->
             {:ok, store_file(scope, path, entry, attrs)}
@@ -143,6 +144,53 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
       stored: for({_name, {:ok, attachment}} <- results, do: attachment),
       failed: for({name, {:error, reason}} <- results, do: {name, reason})
     }
+  end
+
+  @doc """
+  The finished entries of the upload `name`, in the order the user chose
+  them, or `[]` when it is not registered.
+
+  `Phoenix.LiveView.uploaded_entries/2` lists them newest first, so storing
+  from it reversed the user's order on the task, and under a file-count or
+  quota limit kept the last files chosen instead of the first.
+  """
+  @spec finished_entries(Phoenix.LiveView.Socket.t(), atom()) :: [
+          Phoenix.LiveView.UploadEntry.t()
+        ]
+  def finished_entries(socket, name), do: entries(socket, name, & &1.done?)
+
+  @doc """
+  `[{client_name, reason}]` for every entry of the upload `name` that never
+  finished: the entry's own LiveView error (`:too_large`, `:not_accepted`),
+  else the upload's (`:too_many_files`), else `:incomplete`.
+
+  A form that closes once it saves (the new-task form) reports these, or
+  the files would vanish while the save reports success.
+  """
+  @spec unfinished_failures(Phoenix.LiveView.Socket.t(), atom()) :: [{String.t(), term()}]
+  def unfinished_failures(socket, name) do
+    case socket.assigns[:uploads][name] do
+      nil ->
+        []
+
+      conf ->
+        for entry <- entries(socket, name, &(not &1.done?)),
+            do: {entry.client_name, unfinished_reason(conf, entry)}
+    end
+  end
+
+  defp unfinished_reason(conf, entry) do
+    case upload_errors(conf, entry) ++ upload_errors(conf) do
+      [reason | _rest] -> reason
+      [] -> :incomplete
+    end
+  end
+
+  defp entries(socket, name, keep?) do
+    case socket.assigns[:uploads][name] do
+      %{entries: entries} -> Enum.filter(entries, keep?)
+      _unregistered -> []
+    end
   end
 
   @doc """
@@ -185,15 +233,25 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   def error_message(:type_mismatch), do: gettext("The file contents do not match its type.")
 
   def error_message(:too_many_files) do
-    gettext("A task can hold at most %{count} files.", count: Limits.max_files_per_task())
+    count = Limits.max_files_per_task()
+
+    ngettext(
+      "A task can hold at most %{count} file.",
+      "A task can hold at most %{count} files.",
+      count
+    )
   end
 
   def error_message(:empty), do: gettext("This file is empty.")
 
   def error_message(:unreadable), do: gettext("This file could not be read. Please try again.")
 
+  # The file does not fit in what is left, which can be more than nothing;
+  # a board outside an Organization has a quota too.
   def error_message(:quota_exceeded),
-    do: gettext("Your organization has used all of its attachment storage.")
+    do: gettext("There is not enough attachment storage left for this file.")
+
+  def error_message(:incomplete), do: gettext("This file did not finish uploading.")
 
   def error_message(:storage_unavailable),
     do: gettext("File storage is unavailable. Please try again later.")

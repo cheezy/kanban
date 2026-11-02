@@ -149,6 +149,78 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStagingTest do
     end
   end
 
+  describe "store_staged/3 order and unfinished files" do
+    setup do
+      previous = Application.get_env(:kanban, Kanban.Attachments.Limits)
+
+      on_exit(fn ->
+        if previous,
+          do: Application.put_env(:kanban, Kanban.Attachments.Limits, previous),
+          else: Application.delete_env(:kanban, Kanban.Attachments.Limits)
+      end)
+
+      :ok
+    end
+
+    defp open_new_task(conn) do
+      %{conn: conn, user: user} = register_and_log_in_user(%{conn: conn})
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+      {view, column}
+    end
+
+    defp stage(view, files) do
+      input = file_input(view, "#task-form", AttachmentStaging.upload_name(), files)
+      for %{name: name} <- files, do: render_upload(input, name)
+      view
+    end
+
+    defp text_file(name, content \\ "x"), do: %{name: name, content: content, type: "text/plain"}
+
+    test "stores the staged files in the order they were chosen", %{conn: conn} do
+      {view, column} = open_new_task(conn)
+
+      view
+      |> stage(Enum.map(~w(first.txt second.txt third.txt), &text_file/1))
+      |> submit("Ordered", column)
+
+      names = TaskAttachment |> Repo.all() |> Enum.sort_by(& &1.id) |> Enum.map(& &1.filename)
+      assert names == ~w(first.txt second.txt third.txt)
+    end
+
+    test "keeps the first chosen files when the task's file limit is reached", %{conn: conn} do
+      {view, column} = open_new_task(conn)
+      view = stage(view, Enum.map(~w(one.txt two.txt three.txt), &text_file/1))
+      Application.put_env(:kanban, Kanban.Attachments.Limits, max_files_per_task: 1)
+      submit(view, "Capped", column)
+
+      assert [%{filename: "one.txt"}] = Repo.all(TaskAttachment)
+      html = render(view)
+      assert html =~ "Could not upload two.txt: A task can hold at most 1 file."
+      assert html =~ "Could not upload three.txt:"
+    end
+
+    test "names a staged file that never finished uploading instead of dropping it",
+         %{conn: conn} do
+      Application.put_env(:kanban, Kanban.Attachments.Limits, max_file_bytes: 16)
+      {view, column} = open_new_task(conn)
+
+      view
+      |> stage([
+        text_file("fine.txt", "hello"),
+        text_file("large.txt", String.duplicate("x", 64))
+      ])
+      |> submit("With a refused file", column)
+
+      assert Repo.get_by(Task, title: "With a refused file")
+      assert Repo.all(TaskAttachment) == []
+      html = render(view)
+      assert html =~ "Could not upload large.txt: " <> AttachmentUploads.error_message(:too_large)
+      assert html =~ "Could not upload fine.txt: " <> AttachmentUploads.error_message(:incomplete)
+    end
+  end
+
   describe "failure_message/1 and put_failure_flash/2" do
     test "names every failed file with its translated reason" do
       message =

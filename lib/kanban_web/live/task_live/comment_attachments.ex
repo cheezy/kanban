@@ -21,7 +21,7 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   hint that the context re-checks. Nothing here touches the Repo.
   """
 
-  import Phoenix.LiveView, only: [cancel_upload: 3, disallow_upload: 2, uploaded_entries: 2]
+  import Phoenix.LiveView, only: [cancel_upload: 3, disallow_upload: 2]
 
   alias Kanban.Attachments
   alias Kanban.Attachments.Policy
@@ -157,12 +157,9 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   end
 
   defp finished_entries(socket) do
-    if upload_allowed?(socket) do
-      {done, _in_progress} = uploaded_entries(socket, @upload)
-      done
-    else
-      []
-    end
+    if upload_allowed?(socket),
+      do: AttachmentUploads.finished_entries(socket, @upload),
+      else: []
   end
 
   @doc "Cancels the staged entry `ref`; an unknown ref changes nothing."

@@ -13725,7 +13725,7 @@ msgstr "{lead}、バックログを作成します。"
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:305
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:175
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "添付ファイル"
@@ -13735,11 +13735,6 @@ msgstr "添付ファイル"
 msgctxt "audit action"
 msgid "Attachment deleted by board owner"
 msgstr "ボード所有者による添付ファイル削除"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:188
-#, elixir-autogen, elixir-format
-msgid "A task can hold at most %{count} files."
-msgstr "1つのタスクに添付できるファイルは最大%{count}件です。"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
@@ -13752,7 +13747,7 @@ msgstr "この添付ファイルを削除してもよろしいですか？"
 msgid "Attachment deleted"
 msgstr "添付ファイルを削除しました"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:205
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "添付ファイルには有料プランが必要です。"
@@ -13777,7 +13772,7 @@ msgstr "%{filename} をアップロードできませんでした: %{reason}"
 msgid "Drop files here or browse"
 msgstr "ここにファイルをドロップするか参照"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:199
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:255
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "ファイルストレージを利用できません。後でもう一度お試しください。"
@@ -13787,13 +13782,13 @@ msgstr "ファイルストレージを利用できません。後でもう一度
 msgid "No attachments yet"
 msgstr "添付ファイルはまだありません"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:185
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "ファイルの内容が種類と一致しません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:202
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:215
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:258
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "アップロードに失敗しました。もう一度お試しください。"
@@ -13804,32 +13799,32 @@ msgstr "アップロードに失敗しました。もう一度お試しくださ
 msgid "This attachment no longer exists."
 msgstr "この添付ファイルはもう存在しません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:193
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "このファイルを読み取れませんでした。もう一度お試しください。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:213
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:269
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "このファイルを保存できませんでした。ファイル名を確認してもう一度お試しください。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:191
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "このファイルは空です。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:177
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:223
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "このファイルは上限の %{size} を超えています。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:210
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "このファイルまたはタスクはもう存在しません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:183
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:229
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "この種類のファイルは許可されていません。"
@@ -13849,15 +13844,10 @@ msgstr "%{name} のアップロード進行状況"
 msgid "Uploading..."
 msgstr "アップロード中..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:208
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:264
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "このタスクの添付ファイルを変更する権限がありません。"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:196
-#, elixir-autogen, elixir-format
-msgid "Your organization has used all of its attachment storage."
-msgstr "組織の添付ファイル用ストレージをすべて使い切りました。"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:140
 #, elixir-autogen, elixir-format
@@ -13870,7 +13860,7 @@ msgid "Preview of %{name}"
 msgstr "%{name} のプレビュー"
 
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:184
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "ファイルを添付"
@@ -13890,3 +13880,19 @@ msgstr "名前のないファイル"
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "このタスクは削除されました。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:236
+#, elixir-autogen, elixir-format
+msgid "A task can hold at most %{count} file."
+msgid_plural "A task can hold at most %{count} files."
+msgstr[0] "1つのタスクに添付できるファイルは最大%{count}件です。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
+#, elixir-autogen, elixir-format
+msgid "There is not enough attachment storage left for this file."
+msgstr "このファイルを保存できるだけの添付ファイルの容量が残っていません。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#, elixir-autogen, elixir-format
+msgid "This file did not finish uploading."
+msgstr "このファイルのアップロードは完了していません。"

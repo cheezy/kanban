@@ -13792,7 +13792,7 @@ msgstr "{lead} para crear los Pendientes."
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:305
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:175
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "Archivos adjuntos"
@@ -13802,11 +13802,6 @@ msgstr "Archivos adjuntos"
 msgctxt "audit action"
 msgid "Attachment deleted by board owner"
 msgstr "Adjunto eliminado por el propietario del tablero"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:188
-#, elixir-autogen, elixir-format
-msgid "A task can hold at most %{count} files."
-msgstr "Una tarea puede contener como máximo %{count} archivos."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
@@ -13819,7 +13814,7 @@ msgstr "¿Seguro que desea eliminar este adjunto?"
 msgid "Attachment deleted"
 msgstr "Adjunto eliminado"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:205
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "Los adjuntos requieren un plan de pago."
@@ -13844,7 +13839,7 @@ msgstr "No se pudo subir %{filename}: %{reason}"
 msgid "Drop files here or browse"
 msgstr "Suelte los archivos aquí o explore"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:199
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:255
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "El almacenamiento de archivos no está disponible. Inténtelo de nuevo más tarde."
@@ -13854,13 +13849,13 @@ msgstr "El almacenamiento de archivos no está disponible. Inténtelo de nuevo m
 msgid "No attachments yet"
 msgstr "Aún no hay adjuntos"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:185
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "El contenido del archivo no coincide con su tipo."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:202
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:215
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:258
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "La subida falló. Inténtelo de nuevo."
@@ -13871,32 +13866,32 @@ msgstr "La subida falló. Inténtelo de nuevo."
 msgid "This attachment no longer exists."
 msgstr "Este adjunto ya no existe."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:193
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "No se pudo leer este archivo. Inténtelo de nuevo."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:213
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:269
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "No se pudo guardar este archivo. Revise su nombre e inténtelo de nuevo."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:191
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "Este archivo está vacío."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:177
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:223
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "Este archivo supera el límite de %{size}."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:210
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "Este archivo o tarea ya no existe."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:183
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:229
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "Este tipo de archivo no está permitido."
@@ -13916,15 +13911,10 @@ msgstr "Progreso de subida de %{name}"
 msgid "Uploading..."
 msgstr "Subiendo..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:208
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:264
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "No tiene permiso para cambiar los adjuntos de esta tarea."
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:196
-#, elixir-autogen, elixir-format
-msgid "Your organization has used all of its attachment storage."
-msgstr "Su organización ha agotado todo su almacenamiento de adjuntos."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:140
 #, elixir-autogen, elixir-format
@@ -13937,7 +13927,7 @@ msgid "Preview of %{name}"
 msgstr "Vista previa de %{name}"
 
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:184
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "Adjuntar archivos"
@@ -13958,3 +13948,20 @@ msgstr "archivo sin nombre"
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "Esta tarea se eliminó."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:236
+#, elixir-autogen, elixir-format
+msgid "A task can hold at most %{count} file."
+msgid_plural "A task can hold at most %{count} files."
+msgstr[0] "Una tarea puede contener como máximo %{count} archivo."
+msgstr[1] "Una tarea puede contener como máximo %{count} archivos."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
+#, elixir-autogen, elixir-format
+msgid "There is not enough attachment storage left for this file."
+msgstr "No queda suficiente espacio de almacenamiento de adjuntos para este archivo."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#, elixir-autogen, elixir-format
+msgid "This file did not finish uploading."
+msgstr "Este archivo no terminó de subirse."

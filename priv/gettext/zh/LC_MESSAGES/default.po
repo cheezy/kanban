@@ -13728,7 +13728,7 @@ msgstr "{lead}，创建待办。"
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:305
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:175
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "附件"
@@ -13738,11 +13738,6 @@ msgstr "附件"
 msgctxt "audit action"
 msgid "Attachment deleted by board owner"
 msgstr "看板所有者删除了附件"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:188
-#, elixir-autogen, elixir-format
-msgid "A task can hold at most %{count} files."
-msgstr "一个任务最多可包含 %{count} 个文件。"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:112
 #, elixir-autogen, elixir-format
@@ -13755,7 +13750,7 @@ msgstr "确定要删除此附件吗？"
 msgid "Attachment deleted"
 msgstr "附件已删除"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:205
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "附件需要付费套餐。"
@@ -13780,7 +13775,7 @@ msgstr "无法上传 %{filename}：%{reason}"
 msgid "Drop files here or browse"
 msgstr "将文件拖放到此处或浏览"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:199
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:255
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "文件存储不可用。请稍后重试。"
@@ -13790,13 +13785,13 @@ msgstr "文件存储不可用。请稍后重试。"
 msgid "No attachments yet"
 msgstr "暂无附件"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:185
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "文件内容与其类型不符。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:202
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:215
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:258
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "上传失败。请重试。"
@@ -13807,32 +13802,32 @@ msgstr "上传失败。请重试。"
 msgid "This attachment no longer exists."
 msgstr "此附件已不存在。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:193
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "无法读取此文件。请重试。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:213
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:269
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "无法保存此文件。请检查文件名后重试。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:191
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "此文件为空。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:177
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:223
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "此文件超过了 %{size} 的上限。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:210
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "此文件或任务已不存在。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:183
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:229
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "不允许此文件类型。"
@@ -13852,15 +13847,10 @@ msgstr "%{name} 的上传进度"
 msgid "Uploading..."
 msgstr "正在上传..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:208
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:264
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "您无权更改此任务的附件。"
-
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:196
-#, elixir-autogen, elixir-format
-msgid "Your organization has used all of its attachment storage."
-msgstr "您的组织已用完全部附件存储空间。"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:140
 #, elixir-autogen, elixir-format
@@ -13873,7 +13863,7 @@ msgid "Preview of %{name}"
 msgstr "%{name} 的预览"
 
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:184
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "添加附件"
@@ -13893,3 +13883,19 @@ msgstr "未命名文件"
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "此任务已被删除。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:236
+#, elixir-autogen, elixir-format
+msgid "A task can hold at most %{count} file."
+msgid_plural "A task can hold at most %{count} files."
+msgstr[0] "一个任务最多可包含 %{count} 个文件。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
+#, elixir-autogen, elixir-format
+msgid "There is not enough attachment storage left for this file."
+msgstr "剩余的附件存储空间不足以保存此文件。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#, elixir-autogen, elixir-format
+msgid "This file did not finish uploading."
+msgstr "此文件未完成上传。"
