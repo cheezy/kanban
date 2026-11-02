@@ -32,6 +32,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
   use KanbanWeb, :html
 
   alias Kanban.Accounts.User
+  alias Kanban.Attachments.ContentType
   alias KanbanWeb.AttachmentResponse
   alias KanbanWeb.TaskLive.AttachmentUploads
   alias KanbanWeb.TimeAgo
@@ -259,15 +260,22 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
 
   @doc """
   True when a staged upload entry gets a `live_img_preview/1` thumbnail: it
-  is valid and its client type is png, jpeg, gif or webp. The preview is drawn
-  in the browser from the user's own file, so the client type only decides
-  whether to try; what is stored is still checked on the server.
+  is valid and its type is png, jpeg, gif or webp. The type is read the way
+  the server stores it (`Kanban.Attachments.ContentType.normalize/2`:
+  aliases such as `image/jpg`, parameters dropped, and the extension when
+  the browser sent no type or `application/octet-stream`), so a file that
+  will be stored as an image previews as one. The preview is drawn in the
+  browser from the user's own file, so this only decides whether to try;
+  what is stored is still checked on the server.
   """
   @spec staged_preview?(term()) :: boolean()
-  def staged_preview?(%{valid?: true, client_type: client_type}) when is_binary(client_type),
-    do: client_type |> String.downcase() |> AttachmentResponse.inline_image?()
+  def staged_preview?(%{valid?: true} = entry),
+    do: entry |> staged_type() |> AttachmentResponse.inline_image?()
 
   def staged_preview?(_entry), do: false
+
+  defp staged_type(%{client_type: client_type} = entry),
+    do: ContentType.normalize(client_type, Map.get(entry, :client_name))
 
   # Each staged entry with the name it would be stored under, so the row, its
   # preview's alt text and its aria-labels never show the raw client name.
@@ -313,7 +321,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           />
           <.icon
             :if={!staged_preview?(entry)}
-            name={icon_for(entry.client_type && String.downcase(entry.client_type))}
+            name={icon_for(staged_type(entry))}
             class="w-5 h-5 shrink-0"
           />
           <span

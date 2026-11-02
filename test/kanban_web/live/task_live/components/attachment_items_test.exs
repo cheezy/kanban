@@ -243,8 +243,25 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
       assert preview?.(%{client_type: "image/JPEG"})
       refute preview?.(%{client_type: "image/svg+xml"})
       refute preview?.(%{client_type: "application/pdf"})
-      refute preview?.(%{client_type: nil})
+      refute preview?.(%{client_type: nil, client_name: "notes"})
       refute preview?.(%{valid?: false})
+    end
+
+    # The server stores these as raster images, so the staged row previews
+    # them too, rather than showing an icon that turns into a thumbnail.
+    test "staged_preview?/1 reads the client type the way the server stores it" do
+      preview? = fn attrs -> attrs |> entry() |> AttachmentItems.staged_preview?() end
+
+      assert preview?.(%{client_type: "", client_name: "x.webp"})
+      assert preview?.(%{client_type: "application/octet-stream", client_name: "x.webp"})
+      assert preview?.(%{client_type: nil, client_name: "x.gif"})
+      assert preview?.(%{client_type: "image/jpg", client_name: "x.jpeg"})
+      assert preview?.(%{client_type: "image/pjpeg", client_name: "x.jpg"})
+      assert preview?.(%{client_type: "image/png; charset=binary", client_name: "x.png"})
+
+      refute preview?.(%{client_type: "", client_name: "x.pdf"})
+      refute preview?.(%{client_type: "application/octet-stream", client_name: "x"})
+      refute preview?.(%{client_type: "image/svg+xml", client_name: "x.png"})
     end
   end
 
