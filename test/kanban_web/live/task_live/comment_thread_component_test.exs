@@ -733,6 +733,27 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       assert render(view) =~ "Comment added successfully"
     end
 
+    test "a member downgraded and then restored mid-session can attach again",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      view = conn |> log_in_user(member) |> open_task_view(board, task)
+
+      {:ok, _} = Boards.update_user_access(board, member, :read_only, owner)
+      :timer.sleep(100)
+      refute has_element?(view, composer(task) <> ~s( input[type="file"]))
+
+      {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
+      :timer.sleep(100)
+      assert has_element?(view, composer(task) <> ~s( input[type="file"]))
+
+      stage(view, composer(task), [notes()])
+      post_comment(view, composer(task), "Back again")
+
+      assert [%{filename: "notes.txt"}] = Repo.all(TaskAttachment)
+    end
+
     test "the composer refuses a file over the size limit with a translated error",
          %{conn: conn, user: user} do
       put_limits(max_file_bytes: 16)

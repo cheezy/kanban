@@ -82,9 +82,9 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
 
   defp maybe_allow_upload(socket, _state), do: socket
 
-  @doc "`true` when the form's upload is registered on `socket`."
+  @doc "`true` when the form's upload is registered on `socket` and not disallowed."
   @spec upload_allowed?(Phoenix.LiveView.Socket.t()) :: boolean()
-  def upload_allowed?(socket), do: Map.has_key?(socket.assigns[:uploads] || %{}, @upload)
+  def upload_allowed?(socket), do: AttachmentUploads.upload_allowed?(socket, @upload)
 
   @doc "Cancels the staged entry `ref`; an unknown ref changes nothing."
   @spec cancel(Phoenix.LiveView.Socket.t(), term()) :: Phoenix.LiveView.Socket.t()

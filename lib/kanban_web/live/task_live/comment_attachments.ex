@@ -119,9 +119,9 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
       else: socket
   end
 
-  @doc "`true` when the composer upload is registered on `socket`."
+  @doc "`true` when the composer upload is registered on `socket` and not disallowed."
   @spec upload_allowed?(Phoenix.LiveView.Socket.t()) :: boolean()
-  def upload_allowed?(socket), do: Map.has_key?(socket.assigns[:uploads] || %{}, @upload)
+  def upload_allowed?(socket), do: AttachmentUploads.upload_allowed?(socket, @upload)
 
   @doc """
   Stores the composer's finished files on `comment`, the comment the server

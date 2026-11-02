@@ -2,6 +2,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
   # Not async: tests change the Limits env and switch plan enforcement on.
   use KanbanWeb.ConnCase, async: false
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.AttachmentsFixtures
@@ -71,6 +72,22 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
   end
 
   defp put_limits(limits), do: Application.put_env(:kanban, Limits, limits)
+
+  # Whether the view host's component still has a usable :files upload,
+  # read from the LiveView's component state. A disallowed upload keeps its
+  # key with allowed?: false.
+  defp files_upload_registered?(view, task) do
+    %{components: {components, _ids, _uuids}} = :sys.get_state(view.pid)
+    dom_id = AttachmentsComponent.dom_id(:view, task.id)
+
+    Enum.any?(components, fn
+      {_cid, {AttachmentsComponent, ^dom_id, assigns, _private, _prints}} ->
+        match?(%{allowed?: true}, (assigns[:uploads] || %{})[:files])
+
+      _other ->
+        false
+    end)
+  end
 
   describe "dom_id/2 and refresh/1" do
     test "dom_id/2 keeps each host's id distinct" do
@@ -361,6 +378,52 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       assert has_element?(view, section(task))
     end
 
+    test "an upload refused after a silent downgrade drops the upload registration",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      view = conn |> log_in_user(member) |> open_task_view(board, task)
+
+      upload(view, task, [%{name: "late.txt", content: "late", type: "text/plain"}])
+      assert files_upload_registered?(view, task)
+
+      # A downgrade whose broadcast has not reached this view yet: the
+      # component still holds its load-time rights when the submit arrives.
+      from(bu in Kanban.Boards.BoardUser,
+        where: bu.board_id == ^board.id and bu.user_id == ^member.id
+      )
+      |> Repo.update_all(set: [access: :read_only])
+
+      submit_upload(view, task)
+
+      assert render(view) =~ AttachmentUploads.error_message(:unauthorized)
+      assert listed(task, owner) == []
+      refute has_element?(view, upload_form(task))
+      refute files_upload_registered?(view, task)
+    end
+
+    test "a member downgraded and then restored mid-session can upload again",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      view = conn |> log_in_user(member) |> open_task_view(board, task)
+
+      {:ok, _} = Boards.update_user_access(board, member, :read_only, owner)
+      :timer.sleep(100)
+      refute has_element?(view, upload_form(task))
+
+      {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
+      :timer.sleep(100)
+      assert has_element?(view, upload_form(task))
+
+      upload(view, task, [%{name: "back.txt", content: "back", type: "text/plain"}])
+      submit_upload(view, task)
+
+      assert [%{filename: "back.txt"}] = listed(task, owner)
+    end
+
     test "cancelling a staged entry removes it", %{conn: conn, user: owner} do
       {board, task} = board_with_task(owner)
       view = open_task_view(conn, board, task)
@@ -399,8 +462,8 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       submit_upload(view, task)
 
       html = render(view)
-      assert html =~ "Uploaded 1 file"
-      assert html =~ "Could not upload"
+      # Two sentences: the count ends with a full stop before the refusal.
+      assert html =~ ~r/Uploaded 1 file\. Could not upload (fits|extra)\.txt:/
       assert length(listed(task, owner)) == 2
     end
 

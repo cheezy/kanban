@@ -61,7 +61,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   def refresh(_payload), do: :ok
 
   @impl true
-  def update(%{refresh: true}, socket), do: {:ok, socket |> load() |> sync_upload()}
+  def update(%{refresh: true}, socket), do: {:ok, load(socket)}
 
   # The id carries the task id, so one instance only ever shows one task: a
   # re-render refreshes the list and the rights and keeps staged uploads.
@@ -73,8 +73,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
      |> assign(:task_id, task_id)
      |> assign(:board_id, board_id)
      |> assign(:current_scope, Map.get(assigns, :current_scope))
-     |> load()
-     |> sync_upload()}
+     |> load()}
   end
 
   @impl true
@@ -89,6 +88,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
         task: task_ref(socket)
       })
       |> handle_store_result(socket)
+      |> resync_after_store()
     else
       {:error, reason} -> {:noreply, refuse(socket, reason)}
     end
@@ -140,10 +140,22 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
     {:noreply, socket |> load() |> notify_flash(:error, message)}
   end
 
+  # LiveView drops consumed entries only after this event returns, so the
+  # reload inside handle_store_result still sees them and keeps the upload.
+  # When the store left the viewer unable to upload (rights or plan lost
+  # mid-session), a refresh queued now runs after the entries are gone and
+  # drops the upload registration.
+  defp resync_after_store({:noreply, socket} = reply) do
+    if not socket.assigns.can_upload?,
+      do: send_update(__MODULE__, id: socket.assigns.id, refresh: true)
+
+    reply
+  end
+
   defp uploaded_message([]), do: nil
 
   defp uploaded_message(stored),
-    do: ngettext("Uploaded %{count} file", "Uploaded %{count} files", length(stored))
+    do: ngettext("Uploaded %{count} file.", "Uploaded %{count} files.", length(stored))
 
   defp failure_message({filename, reason}) do
     gettext("Could not upload %{filename}: %{reason}",
@@ -172,7 +184,6 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   defp refuse(socket, reason) do
     socket
     |> load()
-    |> sync_upload()
     |> notify_flash(:error, AttachmentUploads.error_message(reason))
   end
 
@@ -211,6 +222,10 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
 
   # ── Loading ─────────────────────────────────────────────────────────
 
+  # Every reload re-reads the plan and the rights and then syncs the upload,
+  # so an upload that can no longer be used is dropped on every path (a
+  # refused or partly failed store, a delete, a broadcast refresh), not only
+  # on an outright refusal.
   defp load(socket) do
     %{board_id: board_id, current_scope: scope} = socket.assigns
     locked? = not Plans.board_unlocked?(board_id)
@@ -221,6 +236,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
     |> assign(:viewer, viewer)
     |> assign(:can_upload?, not locked? and Policy.allowed?(viewer, :upload))
     |> assign(:attachments, list_attachments(socket, locked?))
+    |> sync_upload()
   end
 
   defp list_attachments(_socket, true), do: []
@@ -249,7 +265,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
       else: socket
   end
 
-  defp upload_allowed?(socket), do: Map.has_key?(socket.assigns[:uploads] || %{}, @upload)
+  defp upload_allowed?(socket), do: AttachmentUploads.upload_allowed?(socket, @upload)
 
   defp task_ref(socket), do: %Task{id: socket.assigns.task_id}
 

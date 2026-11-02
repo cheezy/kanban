@@ -68,6 +68,37 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
     end
   end
 
+  describe "upload_allowed?/2" do
+    test "is false before the upload is allowed" do
+      refute AttachmentUploads.upload_allowed?(bare_socket(), :files)
+    end
+
+    test "is true once allowed and false again after disallow_upload/2" do
+      socket = AttachmentUploads.allow(bare_socket(), :files)
+      assert AttachmentUploads.upload_allowed?(socket, :files)
+
+      socket = Phoenix.LiveView.disallow_upload(socket, :files)
+      # The config keeps its key, marked allowed?: false.
+      assert Map.has_key?(socket.assigns.uploads, :files)
+      refute AttachmentUploads.upload_allowed?(socket, :files)
+    end
+
+    test "is true again after a disallowed upload is allowed anew" do
+      socket =
+        bare_socket()
+        |> AttachmentUploads.allow(:files)
+        |> Phoenix.LiveView.disallow_upload(:files)
+        |> AttachmentUploads.allow(:files)
+
+      assert AttachmentUploads.upload_allowed?(socket, :files)
+    end
+
+    test "reads only the named upload" do
+      socket = AttachmentUploads.allow(bare_socket(), :files)
+      refute AttachmentUploads.upload_allowed?(socket, :comment_attachments)
+    end
+  end
+
   describe "accept/0" do
     test "lists every allowed type and every extension with a known MIME type" do
       accept = AttachmentUploads.accept()

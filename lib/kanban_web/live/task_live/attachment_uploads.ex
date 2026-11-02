@@ -12,6 +12,7 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
       LiveView limits are only a hint for the browser.
     * `error_message/1` turns a LiveView upload error or a context refusal
       into a translated sentence.
+    * `upload_allowed?/2` says whether an upload is usable right now.
 
   Nothing here touches the Repo or decides who may upload.
   """
@@ -27,6 +28,21 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.WorkspaceLive.Exports
+
+  @doc """
+  `true` when the upload `name` is registered on `socket` and not disallowed.
+
+  `Phoenix.LiveView.disallow_upload/2` keeps the config under its name and
+  only marks it `allowed?: false`, so the key alone cannot tell a usable
+  upload from a revoked one. A host that read the key would never allow the
+  upload again after a revocation, and the file input it then rendered would
+  carry a ref the LiveView no longer knows, which crashes the view when the
+  browser sends a file.
+  """
+  @spec upload_allowed?(Phoenix.LiveView.Socket.t(), atom()) :: boolean()
+  def upload_allowed?(socket, name) when is_atom(name) do
+    match?(%{allowed?: true}, Map.get(socket.assigns[:uploads] || %{}, name))
+  end
 
   @doc """
   The `:accept` list for `allow_upload/3`: every allowed content type, plus
