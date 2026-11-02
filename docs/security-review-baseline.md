@@ -74,7 +74,7 @@ each route sits behind, are the single most important fact for the authz reviews
 
 | Pipeline | Plugs (security-relevant) | Trust level |
 |----------|---------------------------|-------------|
-| `:browser` | `fetch_session`, `protect_from_forgery` (CSRF), `put_secure_browser_headers` (with placeholder `default-src 'self'` CSP), `CspNonce`, `fetch_current_scope_for_user`, `Locale` | Session-cookie auth; CSRF-protected |
+| `:browser` | `fetch_session`, `protect_from_forgery` (CSRF), `put_secure_browser_headers` (with placeholder `default-src 'self'; frame-ancestors 'self'` CSP), `CspNonce` (its policy also ends in `frame-ancestors 'self'`: Phoenix 1.8 sends no X-Frame-Options, so the replaced default's anti-framing rule is restated), `fetch_current_scope_for_user`, `Locale` | Session-cookie auth; CSRF-protected |
 | `:api_json` | `put_format "json"` only (D351) | Piped through first by both `/api` scopes, ahead of `:api` / `:api_public`. It pins the response format so a rejected `Accept` header renders a 406 through `ErrorJSON` (fixed `error` + `message`, no echo) instead of crashing in `ErrorHTML`. It must be its own pipeline: the router re-raises with the conn as it entered the failing pipeline, so a pin inside `:api` would be lost. Never on `:browser` |
 | `:api` | `accepts ["json"]`, `ApiTelemetry`, **`AuthenticateApiToken`** | Bearer-token auth (the agent surface). The 406 from `accepts` fires before `AuthenticateApiToken`, so it reveals nothing about token validity, and before `ApiTelemetry`, so 406s are not counted in API telemetry |
 | `:api_public` | `accepts ["json"]`, `ApiTelemetry` | **Unauthenticated** — only `/api/agent/onboarding` and `/api/openapi.json` |

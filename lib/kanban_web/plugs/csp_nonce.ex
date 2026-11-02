@@ -17,8 +17,10 @@ defmodule KanbanWeb.Plugs.CspNonce do
 
   This plug intentionally sets only the `content-security-policy` header.
   Pair it with `put_secure_browser_headers/2` to retain the framework's
-  other default security headers (X-Frame-Options, X-Content-Type-Options,
-  etc.).
+  other default security headers (X-Content-Type-Options, Referrer-Policy,
+  etc.). Phoenix 1.8 sends no X-Frame-Options: it guards against framing
+  only through `frame-ancestors` in its default policy, which this header
+  replaces, so the policy states `frame-ancestors 'self'` itself.
   """
   @behaviour Plug
 
@@ -75,6 +77,13 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # (nonce-gated) script creates from the user's local file. blob: only admits
   # object URLs the page itself minted, never a remote image; it is added to
   # img-src alone, so script-src and default-src are unchanged.
+  #
+  # frame-ancestors 'self' (G489 exploratory session, 2026-11-02): this
+  # policy replaces Phoenix's default "base-uri 'self'; frame-ancestors
+  # 'self';" and Phoenix 1.8 sends no X-Frame-Options, so without it every
+  # page, log-in and settings included, could be framed by another origin
+  # (clickjacking). frame-ancestors does not fall back to default-src. In dev
+  # the Tidewave plug removes it again so its own UI can frame the app.
   defp build_policy(nonce) do
     """
     default-src 'self'; \
@@ -84,7 +93,8 @@ defmodule KanbanWeb.Plugs.CspNonce do
     font-src 'self'; \
     base-uri 'self'; \
     form-action 'self'; \
-    object-src 'none'\
+    object-src 'none'; \
+    frame-ancestors 'self'\
     """
   end
 end

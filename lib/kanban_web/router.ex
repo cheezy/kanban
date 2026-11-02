@@ -16,17 +16,18 @@ defmodule KanbanWeb.Router do
     plug :put_root_layout, html: {KanbanWeb.Layouts, :root}
     plug :protect_from_forgery
 
-    # Framework-default security headers (X-Frame-Options,
-    # X-Content-Type-Options, etc.) plus a placeholder Content-Security-Policy
-    # so static analyzers (Sobelow Config.CSP) see a policy declared here.
-    # The placeholder is intentionally restrictive — `default-src 'self'` and
-    # nothing else — so even if CspNonce somehow fails to fire later in the
-    # pipeline, the response still ships a defense-grade CSP rather than no
-    # policy at all. CspNonce overwrites this header with the per-request
+    # Framework-default security headers (X-Content-Type-Options,
+    # Referrer-Policy, etc.; Phoenix 1.8 sends no X-Frame-Options) plus a
+    # placeholder Content-Security-Policy so static analyzers (Sobelow
+    # Config.CSP) see a policy declared here. The placeholder is
+    # intentionally restrictive — `default-src 'self'` plus the
+    # `frame-ancestors 'self'` it replaces from Phoenix's default — so even if
+    # CspNonce somehow fails to fire later in the pipeline, the response still
+    # ships a defense-grade CSP rather than no policy at all. CspNonce overwrites this header with the per-request
     # nonce'd policy via Plug.Conn.put_resp_header (single-value semantics:
     # last write wins).
     plug :put_secure_browser_headers, %{
-      "content-security-policy" => "default-src 'self'"
+      "content-security-policy" => "default-src 'self'; frame-ancestors 'self'"
     }
 
     plug KanbanWeb.Plugs.CspNonce

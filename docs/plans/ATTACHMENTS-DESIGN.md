@@ -271,7 +271,7 @@ User-uploaded bytes must never run as part of the Stride origin. There are two s
 | `Content-Disposition` | `attachment` (or `inline` for a raster preview), with a sanitised ASCII `filename` and an RFC 5987 `filename*` |
 | `Content-Type` | the stored type when it is on the allow-list, else `application/octet-stream` |
 | `X-Content-Type-Options` | `nosniff` |
-| `Content-Security-Policy` | `default-src 'none'; sandbox` (it replaces the page policy) |
+| `Content-Security-Policy` | `default-src 'none'; frame-ancestors 'none'; sandbox` (it replaces the page policy; no page frames an attachment, since thumbnails and the lightbox use `<img>`) |
 | `Cache-Control` | `private, no-store`, so no cache keeps a file after access is revoked |
 | `Cross-Origin-Resource-Policy` | `same-origin` (browser routes) |
 

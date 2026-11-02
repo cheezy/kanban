@@ -175,7 +175,7 @@ defmodule KanbanWeb.AttachmentResponseTest do
 
       assert AttachmentResponse.security_headers() == [
                {"x-content-type-options", "nosniff"},
-               {"content-security-policy", "default-src 'none'; sandbox"},
+               {"content-security-policy", "default-src 'none'; frame-ancestors 'none'; sandbox"},
                {"cache-control", "private, no-store"},
                {"cross-origin-resource-policy", "same-origin"}
              ]

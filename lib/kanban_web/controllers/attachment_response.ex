@@ -24,9 +24,11 @@ defmodule KanbanWeb.AttachmentResponse do
       an emoji sequence or a Persian name is saved under the name it was
       stored with. A name that is only an extension (`.txt`) keeps it after
       the base name `attachment`.
-    * `security_headers/0` adds `nosniff`, a `default-src 'none'; sandbox`
-      policy that replaces the page CSP for this response, `private,
-      no-store` caching and a `same-origin` resource policy.
+    * `security_headers/0` adds `nosniff`, a `default-src 'none';
+      frame-ancestors 'none'; sandbox` policy that replaces the page CSP for
+      this response (no page frames an attachment: thumbnails and the
+      lightbox use `<img>`, which `frame-ancestors` does not govern),
+      `private, no-store` caching and a `same-origin` resource policy.
   """
 
   alias Kanban.Attachments.ContentType
@@ -55,7 +57,7 @@ defmodule KanbanWeb.AttachmentResponse do
 
   @security_headers [
     {"x-content-type-options", "nosniff"},
-    {"content-security-policy", "default-src 'none'; sandbox"},
+    {"content-security-policy", "default-src 'none'; frame-ancestors 'none'; sandbox"},
     {"cache-control", "private, no-store"},
     {"cross-origin-resource-policy", "same-origin"}
   ]

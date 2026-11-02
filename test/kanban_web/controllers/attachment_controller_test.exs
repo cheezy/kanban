@@ -168,7 +168,11 @@ defmodule KanbanWeb.AttachmentControllerTest do
     for served <- [download(conn, ctx.reader, pdf.id), preview(build_conn(), ctx.reader, png.id)] do
       assert served.status == 200
       assert header(served, "x-content-type-options") == ["nosniff"]
-      assert header(served, "content-security-policy") == ["default-src 'none'; sandbox"]
+
+      assert header(served, "content-security-policy") == [
+               "default-src 'none'; frame-ancestors 'none'; sandbox"
+             ]
+
       assert header(served, "cache-control") == ["private, no-store"]
       assert header(served, "cross-origin-resource-policy") == ["same-origin"]
     end

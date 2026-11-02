@@ -50,6 +50,10 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
       assert policy =~ "base-uri 'self'"
       assert policy =~ "form-action 'self'"
       assert policy =~ "object-src 'none'"
+      # Phoenix 1.8 protects against framing only through frame-ancestors in
+      # its default policy, which this one replaces, and sends no
+      # X-Frame-Options; without it every page could be framed cross-site.
+      assert policy =~ "frame-ancestors 'self'"
     end
 
     test "script-src does NOT include 'unsafe-inline'" do
@@ -101,7 +105,8 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
 
       assert directives["img-src"] == ["'self'", "data:", "blob:"]
 
-      # Every other directive is exactly what it was before blob: was added.
+      # Every other directive is pinned exactly; frame-ancestors was added
+      # after blob: (G489 exploratory session).
       assert Map.delete(directives, "img-src") == %{
                "default-src" => ["'self'"],
                "script-src" => ["'self'", nonce_source],
@@ -109,7 +114,8 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
                "font-src" => ["'self'"],
                "base-uri" => ["'self'"],
                "form-action" => ["'self'"],
-               "object-src" => ["'none'"]
+               "object-src" => ["'none'"],
+               "frame-ancestors" => ["'self'"]
              }
 
       for {name, sources} <- Map.delete(directives, "img-src") do
