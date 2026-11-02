@@ -24,6 +24,7 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   import Phoenix.LiveView, only: [cancel_upload: 3, disallow_upload: 2]
 
   alias Kanban.Attachments
+  alias Kanban.Attachments.Limits
   alias Kanban.Attachments.Policy
   alias Kanban.Plans
   alias Kanban.Tasks.Task
@@ -68,26 +69,35 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
     * `can_attach?` — the composer may take files.
     * `attach_locked?` — the viewer could attach, but the board's plan does
       not include attachments, so the composer shows the locked notice.
+    * `attach_room` — how many more files the task can hold, counting every
+      file on it, its own and its comments', as the per-task limit does.
   """
   @spec load(term(), Task.t(), integer() | nil) :: map()
   def load(_scope, _task, nil),
-    do: %{comment_attachments: %{}, can_attach?: false, attach_locked?: false}
+    do: %{comment_attachments: %{}, can_attach?: false, attach_locked?: false, attach_room: 0}
 
   def load(scope, %Task{} = task, board_id) when is_integer(board_id) do
     may_attach? = can_attach?(scope, board_id)
     locked? = not Plans.board_unlocked?(board_id)
 
+    attachments = list_all(scope, task, locked?)
+
     %{
-      comment_attachments: list_grouped(scope, task, locked?),
+      comment_attachments: group_by_comment(attachments),
       can_attach?: may_attach? and not locked?,
-      attach_locked?: may_attach? and locked?
+      attach_locked?: may_attach? and locked?,
+      attach_room: max(Limits.max_files_per_task() - length(attachments), 0)
     }
   end
 
-  defp list_grouped(_scope, _task, true), do: %{}
+  defp list_all(_scope, _task, true), do: []
 
-  defp list_grouped(scope, task, false),
-    do: scope |> Attachments.list_task_attachments(task) |> group_by_comment()
+  defp list_all(scope, task, false) do
+    case Attachments.list_task_attachments(scope, task) do
+      {:ok, attachments} -> attachments
+      {:error, _reason} -> []
+    end
+  end
 
   @doc """
   Re-checks the plan for the board before anything is stored or removed.

@@ -201,6 +201,45 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStagingTest do
       assert html =~ "Could not upload three.txt:"
     end
 
+    # LiveView's client drops a submit while the file input carries error
+    # refs, so an enabled Save Task would do nothing at all when clicked.
+    test "Save Task waits while a staged file has an error, and says why", %{conn: conn} do
+      Application.put_env(:kanban, Kanban.Attachments.Limits, max_file_bytes: 16)
+      {view, _column} = open_new_task(conn)
+      save = "#task-form button[phx-disable-with]"
+
+      refute has_element?(view, save <> "[disabled]")
+
+      stage(view, [
+        text_file("fine.txt", "hello"),
+        text_file("large.txt", String.duplicate("x", 64))
+      ])
+
+      assert has_element?(view, save <> "[disabled]")
+
+      assert view |> element("#task-attachments-blocked") |> render() =~
+               "Cancel the files marked with an error to upload the others."
+
+      large =
+        view
+        |> render()
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query(~s(li[id^="upload-entry-"]))
+        |> Enum.find(&(LazyHTML.text(&1) =~ "large.txt"))
+        |> LazyHTML.attribute("id")
+        |> hd()
+        |> String.replace_prefix("upload-entry-", "")
+
+      view
+      |> element(~s(#task-form button[phx-click="cancel-attachment"][phx-value-ref="#{large}"]))
+      |> render_click()
+
+      refute has_element?(view, save <> "[disabled]")
+      refute has_element?(view, "#task-attachments-blocked")
+    end
+
+    # A browser never sends this submit (see the test above); the server
+    # still names every file it did not store if one arrives.
     test "names a staged file that never finished uploading instead of dropping it",
          %{conn: conn} do
       Application.put_env(:kanban, Kanban.Attachments.Limits, max_file_bytes: 16)
@@ -249,6 +288,28 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStagingTest do
 
       flashed = AttachmentStaging.put_failure_flash(socket, [{"a.txt", :quota_exceeded}])
       assert flashed.assigns.flash["error"] =~ "a.txt"
+    end
+  end
+
+  describe "blocker/2" do
+    defp conf(entries, errors \\ []),
+      do: %Phoenix.LiveView.UploadConfig{
+        name: :task_attachments,
+        ref: "u",
+        entries: entries,
+        errors: errors
+      }
+
+    test "is nil unless the field is open with an upload" do
+      assert AttachmentStaging.blocker(:hidden, nil) == nil
+      assert AttachmentStaging.blocker(:locked, conf([], [{"u", :too_many_files}])) == nil
+      assert AttachmentStaging.blocker(:open, false) == nil
+      assert AttachmentStaging.blocker(:open, conf([])) == nil
+    end
+
+    test "is :errors while a staged file or the upload has an error" do
+      entry = %Phoenix.LiveView.UploadEntry{ref: "1", valid?: false}
+      assert AttachmentStaging.blocker(:open, conf([entry], [{"1", :too_large}])) == :errors
     end
   end
 

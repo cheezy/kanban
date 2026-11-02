@@ -774,6 +774,67 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       assert Repo.aggregate(TaskAttachment, :count) == 0
     end
 
+    # LiveView's client drops a submit while the file input carries error
+    # refs, so an enabled Add Comment would do nothing at all when clicked.
+    test "Add Comment waits while a staged file has an error, and says why",
+         %{conn: conn, user: user} do
+      put_limits(max_file_bytes: 16)
+      {board, task} = board_with_task(user)
+      view = open_task_view(conn, board, task)
+      button = composer(task) <> " button[type='submit']"
+
+      refute has_element?(view, button <> "[disabled]")
+
+      file_input(view, composer(task), :comment_attachments, [
+        %{name: "big.log", content: String.duplicate("a", 17), type: "text/plain"}
+      ])
+      |> render_upload("big.log")
+
+      assert has_element?(view, button <> "[disabled]")
+
+      assert view |> element(thread(task) <> "-attach-blocked") |> render() =~
+               "Cancel the files marked with an error to upload the others."
+
+      view |> element(composer(task) <> ~s( button[phx-click="cancel-upload"])) |> render_click()
+
+      refute has_element?(view, button <> "[disabled]")
+      refute has_element?(view, thread(task) <> "-attach-blocked")
+    end
+
+    # The per-task limit counts every file on the task, the task's own included.
+    test "Add Comment waits while more files are staged than the task has room for",
+         %{conn: conn, user: user} do
+      put_limits(max_files_per_task: 2)
+      {board, task} = board_with_task(user)
+      attachment_fixture(task, %{uploaded_by: user})
+      view = open_task_view(conn, board, task)
+      button = composer(task) <> " button[type='submit']"
+
+      stage(view, composer(task), [notes(), %{notes() | name: "more.txt"}])
+
+      assert has_element?(view, button <> "[disabled]")
+
+      assert view |> element(thread(task) <> "-attach-blocked") |> render() =~
+               "This task has room for 1 more file. Cancel some files to upload the rest."
+    end
+
+    test "a full task offers no file drop zone but still takes a comment",
+         %{conn: conn, user: user} do
+      put_limits(max_files_per_task: 1)
+      {board, task} = board_with_task(user)
+      attachment_fixture(task, %{uploaded_by: user})
+      view = open_task_view(conn, board, task)
+
+      refute has_element?(view, composer(task) <> " label[phx-drop-target]")
+
+      assert view |> element(thread(task) <> "-attach-full") |> render() =~
+               "A task can hold at most 1 file. Delete a file to upload another."
+
+      refute has_element?(view, composer(task) <> " button[type='submit'][disabled]")
+      post_comment(view, composer(task), "No file needed")
+      assert [%TaskComment{content: "No file needed"}] = Repo.all(TaskComment)
+    end
+
     test "cancelling a staged file in the composer stores nothing for it",
          %{conn: conn, user: user} do
       {board, task} = board_with_task(user)
@@ -818,10 +879,11 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       put_limits(max_files_per_task: 2)
       {board, task} = board_with_task(user)
       attachment_fixture(task, %{uploaded_by: user})
-      attachment_fixture(task, %{uploaded_by: user})
       view = open_task_view(conn, board, task)
 
       stage(view, composer(task), [%{name: "third.txt", content: "three", type: "text/plain"}])
+      # The last slot fills behind the open view, with no broadcast.
+      attachment_fixture(task, %{uploaded_by: user})
       post_comment(view, composer(task), "Here is the third file")
 
       assert [%TaskComment{content: "Here is the third file"}] = Repo.all(TaskComment)

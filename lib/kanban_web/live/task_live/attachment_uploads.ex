@@ -216,6 +216,47 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   defp comment_opts(_attrs), do: []
 
   @doc """
+  What stops an upload's staged files from being stored as they are, given
+  the `room` the task has left (counting every file on it, a comment's
+  included): `:errors` when any entry or the upload has an error, which makes
+  LiveView's client drop the form's submit without a word; `{:over_room,
+  room}` when more valid files are staged than fit, which the server would
+  refuse after they had uploaded; else `nil`.
+  """
+  @spec store_blocker(Phoenix.LiveView.UploadConfig.t(), non_neg_integer()) ::
+          nil | :errors | {:over_room, non_neg_integer()}
+  def store_blocker(%{errors: [_ | _]}, _room), do: :errors
+
+  def store_blocker(%{entries: entries}, room) when is_integer(room) do
+    if Enum.count(entries, &(&1.valid? and not &1.cancelled?)) > room,
+      do: {:over_room, room}
+  end
+
+  @doc "The translated line that says what to do about a `store_blocker/2` result."
+  @spec blocked_message(nil | :errors | {:over_room, non_neg_integer()}) :: String.t() | nil
+  def blocked_message(nil), do: nil
+
+  def blocked_message(:errors),
+    do: gettext("Cancel the files marked with an error to upload the others.")
+
+  def blocked_message({:over_room, 0}),
+    do: gettext("This task has no room for more files. Delete a file or cancel the staged ones.")
+
+  def blocked_message({:over_room, room}) do
+    ngettext(
+      "This task has room for %{count} more file.",
+      "This task has room for %{count} more files.",
+      room
+    ) <> " " <> gettext("Cancel some files to upload the rest.")
+  end
+
+  @doc "The line shown in place of the drop zone on a task that holds its limit."
+  @spec full_message() :: String.t()
+  def full_message do
+    error_message(:too_many_files) <> " " <> gettext("Delete a file to upload another.")
+  end
+
+  @doc """
   A translated message for a LiveView upload error (`:too_large`,
   `:not_accepted`, `:too_many_files`, `:external_client_failure`) or a
   `Kanban.Attachments` refusal.

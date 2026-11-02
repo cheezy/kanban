@@ -129,8 +129,24 @@ defmodule KanbanWeb.TaskLive.CommentAttachmentsTest do
       assert owner |> Scope.for_user() |> CommentAttachments.load(task, nil) == %{
                comment_attachments: %{},
                can_attach?: false,
-               attach_locked?: false
+               attach_locked?: false,
+               attach_room: 0
              }
+    end
+
+    # Async: reads the configured limit rather than changing it.
+    test "counts the room left on the task, its own files and its comments' alike",
+         %{owner: owner, task: task, board: board} do
+      scope = Scope.for_user(owner)
+      limit = Kanban.Attachments.Limits.max_files_per_task()
+      assert %{attach_room: ^limit} = CommentAttachments.load(scope, task, board.id)
+
+      attachment_fixture(task, %{uploaded_by: owner})
+      {:ok, comment} = Kanban.Tasks.Comments.create_comment(scope, task, %{"content" => "c"})
+      attachment_fixture(task, %{comment: comment})
+
+      room = limit - 2
+      assert %{attach_room: ^room} = CommentAttachments.load(scope, task, board.id)
     end
   end
 

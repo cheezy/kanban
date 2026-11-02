@@ -409,7 +409,15 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
           placeholder={gettext("Write your comment here...")}
         />
         <div :if={@can_attach? && @uploads[:comment_attachments]} style="margin-top: 8px;">
+          <p
+            :if={@attach_room == 0}
+            id={"#{@id}-attach-full"}
+            style="margin: 0; padding: 10px 12px; border: 1px dashed var(--line-input); border-radius: 8px; font-size: 12.5px; color: var(--ink-2);"
+          >
+            {AttachmentUploads.full_message()}
+          </p>
           <label
+            :if={@attach_room > 0}
             for={@uploads.comment_attachments.ref}
             phx-drop-target={@uploads.comment_attachments.ref}
             class="bg-base-100"
@@ -420,6 +428,15 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
             <.live_file_input upload={@uploads.comment_attachments} class="sr-only" />
           </label>
           <AttachmentItems.upload_entries upload={@uploads.comment_attachments} target={@myself} />
+          <p
+            :if={message = AttachmentUploads.blocked_message(attach_blocker(assigns))}
+            id={"#{@id}-attach-blocked"}
+            class="upload-error"
+            role="status"
+            style="margin: 8px 0 0; font-size: 12px; color: var(--st-blocked);"
+          >
+            {message}
+          </p>
         </div>
         <div :if={@attach_locked?} style="margin-top: 8px;">
           <KanbanWeb.LockedFeature.locked_feature
@@ -429,7 +446,11 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
           />
         </div>
         <div style="margin-top: 8px;">
-          <.button type="submit" phx-disable-with={gettext("Adding...")}>
+          <.button
+            type="submit"
+            disabled={not is_nil(attach_blocker(assigns))}
+            phx-disable-with={gettext("Adding...")}
+          >
             {gettext("Add Comment")}
           </.button>
         </div>
@@ -437,6 +458,15 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
     </section>
     """
   end
+
+  # LiveView's client drops the post while a staged file has an error, and
+  # files past the task's room would be refused after the comment exists, so
+  # Add Comment waits and the composer says why (see
+  # AttachmentUploads.store_blocker/2). A thread without the upload has none.
+  defp attach_blocker(%{can_attach?: true, uploads: %{comment_attachments: upload}} = assigns),
+    do: AttachmentUploads.store_blocker(upload, assigns.attach_room)
+
+  defp attach_blocker(_assigns), do: nil
 
   defp count_label([]), do: nil
   defp count_label(entries), do: entries |> length() |> Integer.to_string()

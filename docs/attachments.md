@@ -247,10 +247,13 @@ the error message.
 - **Comments.** Drag files onto **Attach files** under the comment box, or
   click it, before you post. The files are stored once the comment is saved.
   The comment's author can remove a file while editing the comment, and
-  deleting a comment deletes its files.
+  deleting a comment deletes its files. Like **Upload files**, **Add
+  Comment** waits while a staged file shows an error or more files are
+  staged than the task has room for, and says what to cancel.
 - **New tasks.** The new-task form has its own **Attachments** field. Its files
   are stored after the task is saved; if one cannot be stored, the task is
-  still created and Stride names the file. On the edit form, uploads and
+  still created and Stride names the file. **Save Task** waits while a staged
+  file shows an error, and says to cancel it. On the edit form, uploads and
   deletes happen at once.
 - **Deleting.** **Delete** asks you to confirm, and a deleted file cannot be
   brought back. Deleting a task deletes its files.

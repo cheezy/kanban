@@ -253,4 +253,63 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
                %{stored: [], failed: []}
     end
   end
+
+  describe "store_blocker/2 and blocked_message/1" do
+    defp staged(attrs),
+      do: struct(%Phoenix.LiveView.UploadEntry{ref: "0", valid?: true, done?: true}, attrs)
+
+    defp config(entries, errors \\ []),
+      do: %Phoenix.LiveView.UploadConfig{name: :files, ref: "u", entries: entries, errors: errors}
+
+    test "nothing blocks valid files that fit, or nothing staged" do
+      assert [] |> config() |> AttachmentUploads.store_blocker(0) == nil
+      assert [staged(%{ref: "1"})] |> config() |> AttachmentUploads.store_blocker(1) == nil
+    end
+
+    # LiveView's client drops a submit while the input carries error refs.
+    test "an upload error blocks, whatever the room" do
+      upload =
+        config([staged(%{ref: "1"}), staged(%{ref: "2", valid?: false})], [{"2", :too_large}])
+
+      assert AttachmentUploads.store_blocker(upload, 20) == :errors
+      full = config([], [{"u", :too_many_files}])
+      assert AttachmentUploads.store_blocker(full, 20) == :errors
+    end
+
+    test "more valid, uncancelled files than the room blocks" do
+      two = config([staged(%{ref: "1"}), staged(%{ref: "2"})])
+      assert AttachmentUploads.store_blocker(two, 1) == {:over_room, 1}
+      assert AttachmentUploads.store_blocker(two, 0) == {:over_room, 0}
+
+      one_cancelled = config([staged(%{ref: "1"}), staged(%{ref: "2", cancelled?: true})])
+      assert AttachmentUploads.store_blocker(one_cancelled, 1) == nil
+    end
+
+    test "each blocker says what to do" do
+      assert AttachmentUploads.blocked_message(nil) == nil
+
+      assert AttachmentUploads.blocked_message(:errors) ==
+               "Cancel the files marked with an error to upload the others."
+
+      assert AttachmentUploads.blocked_message({:over_room, 0}) ==
+               "This task has no room for more files. Delete a file or cancel the staged ones."
+
+      assert AttachmentUploads.blocked_message({:over_room, 2}) ==
+               "This task has room for 2 more files. Cancel some files to upload the rest."
+    end
+
+    test "full_message/0 names the limit and how to make room" do
+      put_limits = Application.get_env(:kanban, Limits)
+      Application.put_env(:kanban, Limits, max_files_per_task: 1)
+
+      try do
+        assert AttachmentUploads.full_message() ==
+                 "A task can hold at most 1 file. Delete a file to upload another."
+      after
+        if put_limits,
+          do: Application.put_env(:kanban, Limits, put_limits),
+          else: Application.delete_env(:kanban, Limits)
+      end
+    end
+  end
 end

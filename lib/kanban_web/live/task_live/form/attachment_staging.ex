@@ -31,6 +31,7 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
 
   import Phoenix.LiveView, only: [cancel_upload: 3, put_flash: 3]
 
+  alias Kanban.Attachments.Limits
   alias Kanban.Attachments.Policy
   alias Kanban.Plans
   alias Kanban.Tasks.Task
@@ -168,6 +169,18 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
   end
 
   @doc """
+  What holds the new-task form's save while files are staged, as
+  `KanbanWeb.TaskLive.AttachmentUploads.store_blocker/2` decides it. A new
+  task holds no files yet, so its room is the whole per-task limit; `nil`
+  unless the field is `:open` with an upload.
+  """
+  @spec blocker(atom(), term()) :: nil | :errors | {:over_room, non_neg_integer()}
+  def blocker(:open, %Phoenix.LiveView.UploadConfig{} = upload),
+    do: AttachmentUploads.store_blocker(upload, Limits.max_files_per_task())
+
+  def blocker(_state, _upload), do: nil
+
+  @doc """
   The new-task form's Attachments field: a drop zone with a file input and
   the staged files, or the inline locked prompt. `upload` is the form's
   upload config and is only read when `state` is `:open`.
@@ -201,6 +214,15 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
           target={@target}
           cancel_event="cancel-attachment"
         />
+        <p
+          :if={message = AttachmentUploads.blocked_message(blocker(@state, @upload))}
+          id="task-attachments-blocked"
+          class="upload-error"
+          role="status"
+          style="margin: 8px 0 0; font-size: 12px; color: var(--st-blocked);"
+        >
+          {message}
+        </p>
       </div>
       <KanbanWeb.LockedFeature.locked_feature
         :if={@state == :locked}

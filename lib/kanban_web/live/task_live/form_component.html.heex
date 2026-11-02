@@ -426,7 +426,21 @@
     />
 
     <div class="mt-6 flex items-center gap-4">
-      <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
+      <%!-- Waits while a staged file would make LiveView's client drop the
+           save without a word; the field says why. --%>
+      <.button
+        disabled={
+          not is_nil(
+            KanbanWeb.TaskLive.Form.AttachmentStaging.blocker(
+              @attachment_staging,
+              @attachment_staging == :open && @uploads[:task_attachments]
+            )
+          )
+        }
+        phx-disable-with={gettext("Saving...")}
+      >
+        {gettext("Save Task")}
+      </.button>
     </div>
   </.form>
 

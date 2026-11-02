@@ -172,7 +172,7 @@ msgstr "パスワード"
 #: lib/kanban_web/live/org_live/sso.html.heex:334
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:146
-#: lib/kanban_web/live/task_live/form_component.html.heex:429
+#: lib/kanban_web/live/task_live/form_component.html.heex:440
 #: lib/kanban_web/live/user_live/settings.ex:66
 #: lib/kanban_web/live/user_live/settings.ex:147
 #, elixir-autogen, elixir-format
@@ -361,7 +361,7 @@ msgstr "新しいタスクを作成"
 msgid "Failed to delete task"
 msgstr "タスクの削除に失敗しました"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:429
+#: lib/kanban_web/live/task_live/form_component.html.heex:442
 #, elixir-autogen, elixir-format
 msgid "Save Task"
 msgstr "タスクを保存"
@@ -428,7 +428,7 @@ msgstr "タスクを移動できません：列がWIP制限に達しています
 #: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:127
-#: lib/kanban_web/live/task_live/form_component.html.heex:477
+#: lib/kanban_web/live/task_live/form_component.html.heex:491
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "作成日"
@@ -494,7 +494,7 @@ msgstr "中"
 
 #: lib/kanban_web/components/task_activity_log.ex:106
 #: lib/kanban_web/live/task_live/components/history_section.ex:43
-#: lib/kanban_web/live/task_live/form_component.html.heex:518
+#: lib/kanban_web/live/task_live/form_component.html.heex:532
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr "移動済み"
@@ -512,7 +512,7 @@ msgstr "マイボード"
 msgid "Priority"
 msgstr "優先度"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:448
+#: lib/kanban_web/live/task_live/form_component.html.heex:462
 #, elixir-autogen, elixir-format
 msgid "Task History"
 msgstr "タスク履歴"
@@ -548,9 +548,9 @@ msgstr "作業"
 #: lib/kanban_web/live/task_live/components/history_section.ex:44
 #: lib/kanban_web/live/task_live/components/history_section.ex:49
 #: lib/kanban_web/live/task_live/components/history_section.ex:66
-#: lib/kanban_web/live/task_live/form_component.html.heex:482
-#: lib/kanban_web/live/task_live/form_component.html.heex:506
-#: lib/kanban_web/live/task_live/form_component.html.heex:519
+#: lib/kanban_web/live/task_live/form_component.html.heex:496
+#: lib/kanban_web/live/task_live/form_component.html.heex:520
+#: lib/kanban_web/live/task_live/form_component.html.heex:533
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "から"
@@ -561,14 +561,14 @@ msgstr "から"
 #: lib/kanban_web/live/task_live/components/history_section.ex:45
 #: lib/kanban_web/live/task_live/components/history_section.ex:50
 #: lib/kanban_web/live/task_live/components/history_section.ex:70
-#: lib/kanban_web/live/task_live/form_component.html.heex:486
-#: lib/kanban_web/live/task_live/form_component.html.heex:510
-#: lib/kanban_web/live/task_live/form_component.html.heex:523
+#: lib/kanban_web/live/task_live/form_component.html.heex:500
+#: lib/kanban_web/live/task_live/form_component.html.heex:524
+#: lib/kanban_web/live/task_live/form_component.html.heex:537
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "へ"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:433
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:454
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "コメントを追加"
@@ -579,7 +579,7 @@ msgid "Add a comment"
 msgstr "コメントを追加"
 
 #: lib/kanban_web/live/org_live/sso.html.heex:151
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:432
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:452
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "追加中..."
@@ -957,28 +957,28 @@ msgstr "エラートラッカー"
 
 #: lib/kanban_web/components/task_activity_log.ex:116
 #: lib/kanban_web/live/task_live/components/history_section.ex:48
-#: lib/kanban_web/live/task_live/form_component.html.heex:481
+#: lib/kanban_web/live/task_live/form_component.html.heex:495
 #, elixir-autogen, elixir-format
 msgid "Priority changed"
 msgstr "優先度変更"
 
 #: lib/kanban_web/components/task_activity_log.ex:142
 #: lib/kanban_web/live/task_live/components/history_section.ex:55
-#: lib/kanban_web/live/task_live/form_component.html.heex:495
+#: lib/kanban_web/live/task_live/form_component.html.heex:509
 #, elixir-autogen, elixir-format
 msgid "Assigned to"
 msgstr "担当者"
 
 #: lib/kanban_web/components/task_activity_log.ex:160
 #: lib/kanban_web/live/task_live/components/history_section.ex:65
-#: lib/kanban_web/live/task_live/form_component.html.heex:505
+#: lib/kanban_web/live/task_live/form_component.html.heex:519
 #, elixir-autogen, elixir-format
 msgid "Reassigned"
 msgstr "再割り当て済み"
 
 #: lib/kanban_web/components/task_activity_log.ex:151
 #: lib/kanban_web/live/task_live/components/history_section.ex:60
-#: lib/kanban_web/live/task_live/form_component.html.heex:500
+#: lib/kanban_web/live/task_live/form_component.html.heex:514
 #, elixir-autogen, elixir-format
 msgid "Unassigned from"
 msgstr "から割り当て解除"
@@ -4815,7 +4815,7 @@ msgstr "従うべきパターン"
 msgid "Progress"
 msgstr "進捗"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:439
+#: lib/kanban_web/live/task_live/form_component.html.heex:453
 #: lib/kanban_web/live/task_live/view_component.ex:393
 #, elixir-autogen, elixir-format
 msgid "Review report"
@@ -13725,7 +13725,7 @@ msgstr "{lead}、バックログを作成します。"
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:315
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:200
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "添付ファイル"
@@ -13747,7 +13747,7 @@ msgstr "この添付ファイルを削除してもよろしいですか？"
 msgid "Attachment deleted"
 msgstr "添付ファイルを削除しました"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:263
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:304
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "添付ファイルには有料プランが必要です。"
@@ -13772,7 +13772,7 @@ msgstr "%{filename} をアップロードできませんでした: %{reason}"
 msgid "Drop files here or browse"
 msgstr "ここにファイルをドロップするか参照"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:257
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:298
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "ファイルストレージを利用できません。後でもう一度お試しください。"
@@ -13782,13 +13782,13 @@ msgstr "ファイルストレージを利用できません。後でもう一度
 msgid "No attachments yet"
 msgstr "添付ファイルはまだありません"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:233
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:274
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "ファイルの内容が種類と一致しません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:260
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:273
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:301
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:314
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "アップロードに失敗しました。もう一度お試しください。"
@@ -13799,37 +13799,37 @@ msgstr "アップロードに失敗しました。もう一度お試しくださ
 msgid "This attachment no longer exists."
 msgstr "この添付ファイルはもう存在しません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:247
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:288
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "このファイルを読み取れませんでした。もう一度お試しください。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:312
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "このファイルを保存できませんでした。ファイル名を確認してもう一度お試しください。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:286
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "このファイルは空です。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:225
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "このファイルは上限の %{size} を超えています。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:268
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:309
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "このファイルまたはタスクはもう存在しません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:272
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "この種類のファイルは許可されていません。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:380
+#: lib/kanban_web/live/task_live/attachments_component.ex:385
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr "ファイルをアップロード"
@@ -13839,12 +13839,12 @@ msgstr "ファイルをアップロード"
 msgid "Upload progress for %{name}"
 msgstr "%{name} のアップロード進行状況"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:378
+#: lib/kanban_web/live/task_live/attachments_component.ex:383
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr "アップロード中..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:307
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "このタスクの添付ファイルを変更する権限がありません。"
@@ -13859,8 +13859,8 @@ msgstr "%{name} のプレビューを開く"
 msgid "Preview of %{name}"
 msgstr "%{name} のプレビュー"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:427
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:209
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "ファイルを添付"
@@ -13881,43 +13881,43 @@ msgstr "名前のないファイル"
 msgid "This task was deleted."
 msgstr "このタスクは削除されました。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:238
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:279
 #, elixir-autogen, elixir-format
 msgid "A task can hold at most %{count} file."
 msgid_plural "A task can hold at most %{count} files."
 msgstr[0] "1つのタスクに添付できるファイルは最大%{count}件です。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:293
 #, elixir-autogen, elixir-format
 msgid "There is not enough attachment storage left for this file."
 msgstr "このファイルを保存できるだけの添付ファイルの容量が残っていません。"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:254
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:295
 #, elixir-autogen, elixir-format
 msgid "This file did not finish uploading."
 msgstr "このファイルのアップロードは完了していません。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:419
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
 #, elixir-autogen, elixir-format
 msgid "Cancel some files to upload the rest."
 msgstr "残りをアップロードするには、いくつかのファイルを取り消してください。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:409
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:240
 #, elixir-autogen, elixir-format
 msgid "Cancel the files marked with an error to upload the others."
 msgstr "ほかのファイルをアップロードするには、エラーが表示されたファイルを取り消してください。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:424
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:256
 #, elixir-autogen, elixir-format
 msgid "Delete a file to upload another."
 msgstr "別のファイルをアップロードするには、ファイルを1つ削除してください。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:412
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This task has no room for more files. Delete a file or cancel the staged ones."
 msgstr "このタスクにはこれ以上ファイルを追加できません。ファイルを削除するか、準備中のファイルを取り消してください。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:415
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:246
 #, elixir-autogen, elixir-format
 msgid "This task has room for %{count} more file."
 msgid_plural "This task has room for %{count} more files."

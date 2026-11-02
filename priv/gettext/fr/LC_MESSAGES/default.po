@@ -172,7 +172,7 @@ msgstr "Mot de passe"
 #: lib/kanban_web/live/org_live/sso.html.heex:334
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:146
-#: lib/kanban_web/live/task_live/form_component.html.heex:429
+#: lib/kanban_web/live/task_live/form_component.html.heex:440
 #: lib/kanban_web/live/user_live/settings.ex:66
 #: lib/kanban_web/live/user_live/settings.ex:147
 #, elixir-autogen, elixir-format
@@ -361,7 +361,7 @@ msgstr "Créer une nouvelle tâche"
 msgid "Failed to delete task"
 msgstr "Échec de la suppression de la tâche"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:429
+#: lib/kanban_web/live/task_live/form_component.html.heex:442
 #, elixir-autogen, elixir-format
 msgid "Save Task"
 msgstr "Enregistrer la tâche"
@@ -428,7 +428,7 @@ msgstr "Impossible de déplacer la tâche : la colonne a atteint sa limite WIP"
 #: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:127
-#: lib/kanban_web/live/task_live/form_component.html.heex:477
+#: lib/kanban_web/live/task_live/form_component.html.heex:491
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "Créé"
@@ -494,7 +494,7 @@ msgstr "Moyen"
 
 #: lib/kanban_web/components/task_activity_log.ex:106
 #: lib/kanban_web/live/task_live/components/history_section.ex:43
-#: lib/kanban_web/live/task_live/form_component.html.heex:518
+#: lib/kanban_web/live/task_live/form_component.html.heex:532
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr "Déplacé"
@@ -512,7 +512,7 @@ msgstr "Mes Tableaux"
 msgid "Priority"
 msgstr "Priorité"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:448
+#: lib/kanban_web/live/task_live/form_component.html.heex:462
 #, elixir-autogen, elixir-format
 msgid "Task History"
 msgstr "Historique de la tâche"
@@ -548,9 +548,9 @@ msgstr "Travail"
 #: lib/kanban_web/live/task_live/components/history_section.ex:44
 #: lib/kanban_web/live/task_live/components/history_section.ex:49
 #: lib/kanban_web/live/task_live/components/history_section.ex:66
-#: lib/kanban_web/live/task_live/form_component.html.heex:482
-#: lib/kanban_web/live/task_live/form_component.html.heex:506
-#: lib/kanban_web/live/task_live/form_component.html.heex:519
+#: lib/kanban_web/live/task_live/form_component.html.heex:496
+#: lib/kanban_web/live/task_live/form_component.html.heex:520
+#: lib/kanban_web/live/task_live/form_component.html.heex:533
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "de"
@@ -561,14 +561,14 @@ msgstr "de"
 #: lib/kanban_web/live/task_live/components/history_section.ex:45
 #: lib/kanban_web/live/task_live/components/history_section.ex:50
 #: lib/kanban_web/live/task_live/components/history_section.ex:70
-#: lib/kanban_web/live/task_live/form_component.html.heex:486
-#: lib/kanban_web/live/task_live/form_component.html.heex:510
-#: lib/kanban_web/live/task_live/form_component.html.heex:523
+#: lib/kanban_web/live/task_live/form_component.html.heex:500
+#: lib/kanban_web/live/task_live/form_component.html.heex:524
+#: lib/kanban_web/live/task_live/form_component.html.heex:537
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "à"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:433
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:454
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "Ajouter un commentaire"
@@ -579,7 +579,7 @@ msgid "Add a comment"
 msgstr "Ajouter un commentaire"
 
 #: lib/kanban_web/live/org_live/sso.html.heex:151
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:432
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:452
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "Ajout en cours..."
@@ -957,28 +957,28 @@ msgstr "Suivi des erreurs"
 
 #: lib/kanban_web/components/task_activity_log.ex:116
 #: lib/kanban_web/live/task_live/components/history_section.ex:48
-#: lib/kanban_web/live/task_live/form_component.html.heex:481
+#: lib/kanban_web/live/task_live/form_component.html.heex:495
 #, elixir-autogen, elixir-format
 msgid "Priority changed"
 msgstr "Priorité modifiée"
 
 #: lib/kanban_web/components/task_activity_log.ex:142
 #: lib/kanban_web/live/task_live/components/history_section.ex:55
-#: lib/kanban_web/live/task_live/form_component.html.heex:495
+#: lib/kanban_web/live/task_live/form_component.html.heex:509
 #, elixir-autogen, elixir-format
 msgid "Assigned to"
 msgstr "Assigné à"
 
 #: lib/kanban_web/components/task_activity_log.ex:160
 #: lib/kanban_web/live/task_live/components/history_section.ex:65
-#: lib/kanban_web/live/task_live/form_component.html.heex:505
+#: lib/kanban_web/live/task_live/form_component.html.heex:519
 #, elixir-autogen, elixir-format
 msgid "Reassigned"
 msgstr "Réaffecté"
 
 #: lib/kanban_web/components/task_activity_log.ex:151
 #: lib/kanban_web/live/task_live/components/history_section.ex:60
-#: lib/kanban_web/live/task_live/form_component.html.heex:500
+#: lib/kanban_web/live/task_live/form_component.html.heex:514
 #, elixir-autogen, elixir-format
 msgid "Unassigned from"
 msgstr "Désaffecté de"
@@ -4823,7 +4823,7 @@ msgstr "Patrons à suivre"
 msgid "Progress"
 msgstr "Progression"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:439
+#: lib/kanban_web/live/task_live/form_component.html.heex:453
 #: lib/kanban_web/live/task_live/view_component.ex:393
 #, elixir-autogen, elixir-format
 msgid "Review report"
@@ -13747,7 +13747,7 @@ msgstr "{lead} pour créer l'Arriéré."
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:315
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:187
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:200
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "Pièces jointes"
@@ -13769,7 +13769,7 @@ msgstr "Voulez-vous vraiment supprimer cette pièce jointe ?"
 msgid "Attachment deleted"
 msgstr "Pièce jointe supprimée"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:263
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:304
 #, elixir-autogen, elixir-format
 msgid "Attachments need a paid plan."
 msgstr "Les pièces jointes nécessitent un forfait payant."
@@ -13794,7 +13794,7 @@ msgstr "Impossible d’envoyer %{filename} : %{reason}"
 msgid "Drop files here or browse"
 msgstr "Déposez des fichiers ici ou parcourez"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:257
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:298
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
 msgstr "Le stockage des fichiers est indisponible. Veuillez réessayer plus tard."
@@ -13804,13 +13804,13 @@ msgstr "Le stockage des fichiers est indisponible. Veuillez réessayer plus tard
 msgid "No attachments yet"
 msgstr "Aucune pièce jointe pour l’instant"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:233
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:274
 #, elixir-autogen, elixir-format
 msgid "The file contents do not match its type."
 msgstr "Le contenu du fichier ne correspond pas à son type."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:260
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:273
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:301
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:314
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
 msgstr "L’envoi a échoué. Veuillez réessayer."
@@ -13821,37 +13821,37 @@ msgstr "L’envoi a échoué. Veuillez réessayer."
 msgid "This attachment no longer exists."
 msgstr "Cette pièce jointe n’existe plus."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:247
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:288
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
 msgstr "Impossible de lire ce fichier. Veuillez réessayer."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:271
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:312
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
 msgstr "Impossible d’enregistrer ce fichier. Vérifiez son nom et réessayez."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:245
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:286
 #, elixir-autogen, elixir-format
 msgid "This file is empty."
 msgstr "Ce fichier est vide."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:225
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
 #, elixir-autogen, elixir-format
 msgid "This file is larger than the %{size} limit."
 msgstr "Ce fichier dépasse la limite de %{size}."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:268
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:309
 #, elixir-autogen, elixir-format
 msgid "This file or task no longer exists."
 msgstr "Ce fichier ou cette tâche n’existe plus."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:231
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:272
 #, elixir-autogen, elixir-format
 msgid "This file type is not allowed."
 msgstr "Ce type de fichier n’est pas autorisé."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:380
+#: lib/kanban_web/live/task_live/attachments_component.ex:385
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr "Envoyer les fichiers"
@@ -13861,12 +13861,12 @@ msgstr "Envoyer les fichiers"
 msgid "Upload progress for %{name}"
 msgstr "Progression de l’envoi de %{name}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:378
+#: lib/kanban_web/live/task_live/attachments_component.ex:383
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr "Envoi en cours..."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:266
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:307
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
 msgstr "Vous n’êtes pas autorisé à modifier les pièces jointes de cette tâche."
@@ -13881,8 +13881,8 @@ msgstr "Ouvrir l'aperçu de %{name}"
 msgid "Preview of %{name}"
 msgstr "Aperçu de %{name}"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:419
-#: lib/kanban_web/live/task_live/form/attachment_staging.ex:196
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:427
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:209
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "Joindre des fichiers"
@@ -13904,44 +13904,44 @@ msgstr "fichier sans nom"
 msgid "This task was deleted."
 msgstr "Cette tâche a été supprimée."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:238
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:279
 #, elixir-autogen, elixir-format
 msgid "A task can hold at most %{count} file."
 msgid_plural "A task can hold at most %{count} files."
 msgstr[0] "Une tâche peut contenir au maximum %{count} fichier."
 msgstr[1] "Une tâche peut contenir au maximum %{count} fichiers."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:252
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:293
 #, elixir-autogen, elixir-format
 msgid "There is not enough attachment storage left for this file."
 msgstr "Il ne reste pas assez d’espace de stockage des pièces jointes pour ce fichier."
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:254
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:295
 #, elixir-autogen, elixir-format
 msgid "This file did not finish uploading."
 msgstr "L’envoi de ce fichier ne s’est pas terminé."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:419
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:250
 #, elixir-autogen, elixir-format
 msgid "Cancel some files to upload the rest."
 msgstr "Annulez certains fichiers pour téléverser les autres."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:409
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:240
 #, elixir-autogen, elixir-format
 msgid "Cancel the files marked with an error to upload the others."
 msgstr "Annulez les fichiers signalés par une erreur pour téléverser les autres."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:424
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:256
 #, elixir-autogen, elixir-format
 msgid "Delete a file to upload another."
 msgstr "Supprimez un fichier pour en téléverser un autre."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:412
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:243
 #, elixir-autogen, elixir-format
 msgid "This task has no room for more files. Delete a file or cancel the staged ones."
 msgstr "Cette tâche n’a plus de place pour d’autres fichiers. Supprimez un fichier ou annulez ceux en attente."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:415
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:246
 #, elixir-autogen, elixir-format
 msgid "This task has room for %{count} more file."
 msgid_plural "This task has room for %{count} more files."

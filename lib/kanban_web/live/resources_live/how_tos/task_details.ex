@@ -189,13 +189,13 @@ defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
           %{
             title: "Attaching Files to a Comment",
             content:
-              "Below **Add a comment**, drag files onto **Attach files** or click it to browse, then click **Add Comment**. The files are stored once the comment is saved, and they show under the comment rather than in **Attachments**.\n\nWhile you're editing your own comment, you can remove one of its files with **Delete**. Deleting a comment deletes its files too. [Commenting and Mentioning](/resources/commenting-and-mentioning) covers the rest of comments.",
+              "Below **Add a comment**, drag files onto **Attach files** or click it to browse, then click **Add Comment**. The files are stored once the comment is saved, and they show under the comment rather than in **Attachments**. Like **Upload files**, **Add Comment** waits while a file shows an error or more files are waiting than the task has room for, and says what to cancel.\n\nWhile you're editing your own comment, you can remove one of its files with **Delete**. Deleting a comment deletes its files too. [Commenting and Mentioning](/resources/commenting-and-mentioning) covers the rest of comments.",
             image: nil
           },
           %{
             title: "Attaching Files While Creating a Task",
             content:
-              "The new-task form has an **Attachments** field. Drag files onto **Attach files** or click it to browse. The files are stored once the task is saved, so closing the form without saving stores nothing.\n\nIf a file can't be stored after the save, the task is still created and Stride names the file that failed. On the edit form, the **Attachments** section uploads and deletes straight away, without waiting for **Save**.",
+              "The new-task form has an **Attachments** field. Drag files onto **Attach files** or click it to browse. The files are stored once the task is saved, so closing the form without saving stores nothing. **Save Task** waits while a file shows an error, and says to cancel it.\n\nIf a file can't be stored after the save, the task is still created and Stride names the file that failed. On the edit form, the **Attachments** section uploads and deletes straight away, without waiting for **Save**.",
             image: nil
           },
           %{

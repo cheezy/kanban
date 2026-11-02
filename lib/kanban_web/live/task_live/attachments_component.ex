@@ -345,7 +345,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
             id={"#{@id}-full"}
             style="margin: 0; padding: 12px 16px; border: 1px dashed var(--line-input); border-radius: 8px; font-size: 13px; color: var(--ink-2);"
           >
-            {full_message()}
+            {AttachmentUploads.full_message()}
           </p>
           <label
             :if={@room > 0}
@@ -362,7 +362,12 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
           <AttachmentItems.upload_entries upload={@uploads.files} target={@myself} />
 
           <p
-            :if={message = blocked_message(store_blocker(@uploads.files, @room))}
+            :if={
+              message =
+                AttachmentUploads.blocked_message(
+                  AttachmentUploads.store_blocker(@uploads.files, @room)
+                )
+            }
             id={"#{@id}-store-blocked"}
             class="upload-error"
             role="status"
@@ -387,41 +392,10 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   end
 
   # The button only stores finished, valid entries, so it waits for one, and
-  # for nothing to block the store (see store_blocker/2).
+  # for nothing to block the store (see AttachmentUploads.store_blocker/2).
   defp ready_to_store?(upload, room) do
-    is_nil(store_blocker(upload, room)) and Enum.any?(upload.entries, &(&1.done? and &1.valid?))
-  end
-
-  # What stops the staged files from being stored as they are: an upload
-  # error, which makes LiveView's client drop the submit without a word, or
-  # more files than the task has room for, which the server would refuse
-  # after they had uploaded.
-  defp store_blocker(%{errors: [_ | _]}, _room), do: :errors
-
-  defp store_blocker(upload, room) do
-    if Enum.count(upload.entries, &(&1.valid? and not &1.cancelled?)) > room,
-      do: {:over_room, room}
-  end
-
-  defp blocked_message(nil), do: nil
-
-  defp blocked_message(:errors),
-    do: gettext("Cancel the files marked with an error to upload the others.")
-
-  defp blocked_message({:over_room, 0}),
-    do: gettext("This task has no room for more files. Delete a file or cancel the staged ones.")
-
-  defp blocked_message({:over_room, room}) do
-    ngettext(
-      "This task has room for %{count} more file.",
-      "This task has room for %{count} more files.",
-      room
-    ) <> " " <> gettext("Cancel some files to upload the rest.")
-  end
-
-  defp full_message do
-    AttachmentUploads.error_message(:too_many_files) <>
-      " " <> gettext("Delete a file to upload another.")
+    is_nil(AttachmentUploads.store_blocker(upload, room)) and
+      Enum.any?(upload.entries, &(&1.done? and &1.valid?))
   end
 
   defp count_label(true, _attachments), do: nil
