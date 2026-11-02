@@ -1,8 +1,8 @@
 defmodule KanbanWeb.TaskLive.Components.CommentRow do
   @moduledoc """
   Renders one comment of a task's comment thread: avatar, author, relative
-  time, edited marker, body (with `@mention` chips) and — when allowed — the
-  edit and delete controls or the inline edit form.
+  time, edited marker, body (with `@mention` chips), its attachments and —
+  when allowed — the edit and delete controls or the inline edit form.
 
   Extracted from `KanbanWeb.TaskLive.CommentThreadComponent`, which owns the
   thread's state and events; this module is markup only. The controls it
@@ -15,6 +15,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.TaskLive.Components.AttachmentItems
   alias KanbanWeb.TaskLive.Components.MentionField
   alias KanbanWeb.TimeAgo
 
@@ -32,12 +33,18 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
   Content is split into text and mention segments by
   `Kanban.Tasks.Mentions.segments/2`, using the entry's `mentions` map, and
   every segment is rendered through HEEx and therefore always escaped.
+
+  `attachments` are the comment's files, listed under the body through
+  `KanbanWeb.TaskLive.Components.AttachmentItems.attachment_list/1`. Each gets
+  a remove control, sending `remove_comment_attachment` to `target`, only
+  while the row is being edited and the entry is editable (the author).
   """
   attr :entry, :map, required: true
   attr :editing, :boolean, default: false
   attr :edit_form, :any, default: nil
   attr :target, :any, default: nil
   attr :dom_prefix, :string, default: "comment-thread"
+  attr :attachments, :list, default: []
 
   def comment_row(assigns) do
     comment = assigns.entry.comment
@@ -156,6 +163,16 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
           phx-no-format
           style="margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;"
         ><.comment_segment :for={segment <- @segments} segment={segment} /></p>
+
+        <div :if={@attachments != []} data-comment-attachments style="margin-top: 8px;">
+          <AttachmentItems.attachment_list
+            attachments={@attachments}
+            dom_prefix={comment_dom_id(@dom_prefix, @comment) <> "-attachments"}
+            target={@target}
+            can_delete={remove_control(@editing, @entry)}
+            delete_event="remove_comment_attachment"
+          />
+        </div>
       </div>
     </article>
     """
@@ -185,6 +202,11 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
     ><Avatar.avatar kind={:human} name={@name} palette={@palette} size={14} />@{@name}</span>
     """
   end
+
+  # The remove control is a hint for the author while editing; the thread
+  # re-checks the same rule before Kanban.Attachments decides.
+  defp remove_control(true, %{can_edit: true}), do: fn _attachment -> true end
+  defp remove_control(_editing, _entry), do: nil
 
   # An agent comment is attributed to the agent and to the human whose token
   # it ran under; anything else to its human author, or "Unknown" when the

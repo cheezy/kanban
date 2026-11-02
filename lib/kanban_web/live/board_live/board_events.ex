@@ -92,9 +92,11 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   # Kanban.Attachments broadcasts every create and delete. The board columns
   # render no attachments; the Attachments section inside the task view
-  # does, so forward the change to it the same way as a comment change.
+  # does, and so does the comment thread, which lists each comment's files,
+  # so forward the change to both the same way as a comment change.
   def handle({Kanban.Attachments, :attachment_changed, payload}, socket) do
     AttachmentsComponent.refresh(payload)
+    CommentThreadComponent.refresh(payload)
     {:noreply, socket}
   end
 

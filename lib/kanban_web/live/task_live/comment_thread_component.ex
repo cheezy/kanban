@@ -25,6 +25,15 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   only: every event calls the authorizing `Kanban.Tasks` comment functions,
   so a forged event for a control that was never rendered is still refused.
 
+  ## Attachments
+
+  Files staged in the composer are stored on the comment the server creates,
+  only once it is saved. Each comment lists its files, and its author may
+  remove one while editing it; a deleted comment's files go with it through
+  the foreign key cascade. A locked board shows the inline
+  `KanbanWeb.LockedFeature`. The helpers live in
+  `KanbanWeb.TaskLive.CommentAttachments`.
+
   ## Assigns
 
     * `id` — use `dom_id/2`, which keeps the two hosts' ids distinct.
@@ -40,10 +49,14 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   """
   use KanbanWeb, :live_component
 
+  alias Kanban.Attachments
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.SectionHead
+  alias KanbanWeb.TaskLive.AttachmentUploads
+  alias KanbanWeb.TaskLive.CommentAttachments
+  alias KanbanWeb.TaskLive.Components.AttachmentItems
   alias KanbanWeb.TaskLive.Components.CommentRow
   alias KanbanWeb.TaskLive.Components.MentionField
 
@@ -134,6 +147,29 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   @impl true
   def handle_event("cancel_edit", _params, socket), do: {:noreply, clear_editing(socket)}
 
+  # The file input needs a phx-change; the draft stays in the browser.
+  @impl true
+  def handle_event("validate", _params, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) when is_binary(ref),
+    do: {:noreply, CommentAttachments.cancel_entry(socket, ref)}
+
+  # The attachment must be on the comment the viewer is editing, which only
+  # its author can (CommentAttachments.find_removable/2); the plan and
+  # Kanban.Attachments.delete_attachment/2 then decide again.
+  @impl true
+  def handle_event("remove_comment_attachment", %{"id" => raw_id}, socket) do
+    with :ok <- CommentAttachments.check_plan(socket.assigns.board_id),
+         {:ok, attachment} <- CommentAttachments.find_removable(socket.assigns, raw_id),
+         {:ok, _deleted} <-
+           Attachments.delete_attachment(socket.assigns.current_scope, attachment) do
+      {:noreply, socket |> load_thread() |> notify_flash(:info, gettext("Attachment deleted"))}
+    else
+      {:error, reason} -> {:noreply, removal_refused(socket, reason)}
+    end
+  end
+
   # The target is the server-held editing_id, never an id from the client.
   @impl true
   def handle_event("save_comment", %{"task_comment" => params}, socket) when is_map(params) do
@@ -190,15 +226,20 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   defp mention_query(%{"query" => query}) when is_binary(query), do: query
   defp mention_query(_params), do: ""
 
+  # Staged files are stored on the server-returned comment before the reload
+  # lists them; one that fails is named in a flash and the comment stays.
   # The thread scrolls on its own, so the new comment can land below the
   # visible rows; the browser is told to bring it into view (see app.js).
   defp handle_create_result({:ok, comment}, socket) do
+    {socket, failed} = CommentAttachments.store(socket, comment)
+
     {:noreply,
      socket
      |> assign(:comment_form, new_comment_form(socket.assigns.id))
      |> load_thread()
      |> push_event("comment-thread:scroll-to", %{id: comment_dom_id(socket.assigns.id, comment)})
-     |> notify_flash(:info, gettext("Comment added successfully"))}
+     |> notify_flash(:info, gettext("Comment added successfully"))
+     |> notify_failed_files(CommentAttachments.failure_message(failed))}
   end
 
   defp handle_create_result({:error, %Ecto.Changeset{} = changeset}, socket),
@@ -228,6 +269,27 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   defp handle_delete_result({:error, :not_found}, socket), do: {:noreply, comment_gone(socket)}
   defp handle_delete_result({:error, :unauthorized}, socket), do: {:noreply, not_allowed(socket)}
 
+  defp notify_failed_files(socket, nil), do: socket
+  defp notify_failed_files(socket, message), do: notify_flash(socket, :error, message)
+
+  defp removal_refused(socket, :unauthorized), do: not_allowed(socket)
+
+  # A vanished comment closes the edit form on reload; a gone file does not.
+  defp removal_refused(socket, :not_found) do
+    was_editing? = not is_nil(socket.assigns.editing_id)
+    socket = load_thread(socket)
+
+    message =
+      if was_editing? and is_nil(socket.assigns.editing_id),
+        do: gettext("This comment no longer exists"),
+        else: gettext("This attachment no longer exists.")
+
+    notify_flash(socket, :error, message)
+  end
+
+  defp removal_refused(socket, reason),
+    do: socket |> load_thread() |> notify_flash(:error, AttachmentUploads.error_message(reason))
+
   defp comment_gone(socket) do
     socket
     |> clear_editing()
@@ -251,20 +313,23 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   end
 
   defp load_thread(socket) do
-    case Tasks.list_comment_thread(socket.assigns.current_scope, task_ref(socket)) do
-      {:ok, %{can_comment: can_comment, entries: entries}} ->
-        socket
-        |> assign(:can_comment, can_comment)
-        |> assign(:entries, entries)
-        |> keep_editing_if_still_editable()
-
-      {:error, :not_found} ->
-        socket
-        |> assign(:can_comment, false)
-        |> assign(:entries, [])
-        |> clear_editing()
-    end
+    socket
+    |> assign_thread(Tasks.list_comment_thread(socket.assigns.current_scope, task_ref(socket)))
+    |> assign_attachments()
+    |> CommentAttachments.sync_upload()
   end
+
+  defp assign_thread(socket, {:ok, %{board_id: board_id, can_comment: can, entries: entries}}) do
+    socket
+    |> assign(board_id: board_id, can_comment: can, entries: entries)
+    |> keep_editing_if_still_editable()
+  end
+
+  defp assign_thread(socket, {:error, :not_found}),
+    do: socket |> assign(board_id: nil, can_comment: false, entries: []) |> clear_editing()
+
+  defp assign_attachments(%{assigns: %{current_scope: scope, board_id: board_id}} = socket),
+    do: assign(socket, CommentAttachments.load(scope, task_ref(socket), board_id))
 
   defp keep_editing_if_still_editable(%{assigns: %{editing_id: nil}} = socket), do: socket
 
@@ -324,6 +389,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
           edit_form={@edit_form}
           target={@myself}
           dom_prefix={@id}
+          attachments={Map.get(@comment_attachments, entry.comment.id, [])}
         />
       </div>
 
@@ -333,6 +399,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
         for={@comment_form}
         id={"#{@id}-composer"}
         phx-target={@myself}
+        phx-change={@can_attach? && "validate"}
         phx-submit="add_comment"
         style="margin-top: 16px;"
       >
@@ -341,6 +408,26 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
           label={gettext("Add a comment")}
           placeholder={gettext("Write your comment here...")}
         />
+        <div :if={@can_attach? && @uploads[:comment_attachments]} style="margin-top: 8px;">
+          <label
+            for={@uploads.comment_attachments.ref}
+            phx-drop-target={@uploads.comment_attachments.ref}
+            class="bg-base-100"
+            style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px dashed var(--line-input); border-radius: 8px; cursor: pointer; font-size: 12.5px; color: var(--ink-2);"
+          >
+            <.icon name="hero-paper-clip" class="w-4 h-4" />
+            <span>{gettext("Attach files")}</span>
+            <.live_file_input upload={@uploads.comment_attachments} class="sr-only" />
+          </label>
+          <AttachmentItems.upload_entries upload={@uploads.comment_attachments} target={@myself} />
+        </div>
+        <div :if={@attach_locked?} style="margin-top: 8px;">
+          <KanbanWeb.LockedFeature.locked_feature
+            feature={:attachments}
+            variant={:inline}
+            id={"#{@id}-attach-lock"}
+          />
+        </div>
         <div style="margin-top: 8px;">
           <.button type="submit" phx-disable-with={gettext("Adding...")}>
             {gettext("Add Comment")}

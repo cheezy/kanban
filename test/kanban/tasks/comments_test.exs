@@ -492,6 +492,15 @@ defmodule Kanban.Tasks.CommentsTest do
                reader |> scope() |> Comments.list_comment_thread(task)
     end
 
+    test "returns the board the task is on, for every viewer",
+         %{user: owner, board: board, task: task} do
+      board_id = board.id
+
+      for viewer_scope <- [scope(owner), scope(user_fixture()), nil] do
+        assert {:ok, %{board_id: ^board_id}} = Comments.list_comment_thread(viewer_scope, task)
+      end
+    end
+
     test "grants nothing to a non-member or a nil scope", %{user: user, task: task} do
       {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => "Members only"})
       stranger = user_fixture()

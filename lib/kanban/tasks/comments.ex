@@ -156,6 +156,10 @@ defmodule Kanban.Tasks.Comments do
   The flags are a rendering hint only: create, update and delete re-authorize
   on every call.
 
+  The result also carries `board_id`, the board the task is on now, so a
+  caller that needs board-level rights (such as attachments) asks no second
+  query for it.
+
   Each entry also carries `mentions`, a map of user id to the display name to
   show (current name, else email) for the comment's stored mentions whose user
   is still a board member. A mention of anyone else is absent, so the renderer
@@ -181,7 +185,12 @@ defmodule Kanban.Tasks.Comments do
           }
         end)
 
-      {:ok, %{can_comment: CommentPolicy.allowed?(viewer, :comment), entries: entries}}
+      {:ok,
+       %{
+         board_id: board_id,
+         can_comment: CommentPolicy.allowed?(viewer, :comment),
+         entries: entries
+       }}
     end
   end
 

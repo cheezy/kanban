@@ -1,18 +1,37 @@
 defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
-  use KanbanWeb.ConnCase
+  # Not async: the attachment tests change the Limits env and switch plan
+  # enforcement on.
+  use KanbanWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
+  import Kanban.AttachmentsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.PlansHelpers
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Attachments.Limits
+  alias Kanban.Attachments.TaskAttachment
   alias Kanban.Boards
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.TaskComment
+  alias KanbanWeb.TaskLive.AttachmentUploads
   alias KanbanWeb.TaskLive.CommentThreadComponent
+
+  setup do
+    previous = Application.get_env(:kanban, Limits)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:kanban, Limits, previous),
+        else: Application.delete_env(:kanban, Limits)
+    end)
+
+    :ok
+  end
 
   describe "update/2 and handle_event/3" do
     setup do
@@ -640,4 +659,372 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
              )
     end
   end
+
+  describe "comment attachments" do
+    setup [:register_and_log_in_user]
+
+    defp composer(task), do: thread(task) <> "-composer"
+
+    defp board_with_task(user) do
+      board = board_fixture(user)
+      {board, board |> column_fixture() |> task_fixture()}
+    end
+
+    defp stage(view, selector, files) do
+      input = file_input(view, selector, :comment_attachments, files)
+      for %{name: name} <- files, do: render_upload(input, name)
+      input
+    end
+
+    defp post_comment(view, selector, content) do
+      view
+      |> element(selector)
+      |> render_submit(%{"task_comment" => %{"content" => content}})
+    end
+
+    defp notes, do: %{name: "notes.txt", content: "hello", type: "text/plain"}
+
+    defp row(task, comment) do
+      thread_id = CommentThreadComponent.dom_id(:view, task.id)
+      "#" <> CommentThreadComponent.comment_dom_id(thread_id, comment)
+    end
+
+    defp file_row(task, comment, attachment),
+      do: row(task, comment) <> "-attachments-attachment-#{attachment.id}"
+
+    defp remove_button, do: ~s(button[phx-click="remove_comment_attachment"])
+
+    defp comment_with_file(board, owner, task) do
+      author = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, author, :modify, owner)
+
+      {:ok, comment} =
+        author |> Scope.for_user() |> Tasks.create_comment(task, %{"content" => "See log"})
+
+      attachment = attachment_fixture(task, %{comment: comment, uploaded_by: author})
+      {author, comment, attachment}
+    end
+
+    test "adds a comment with an attached file and lists it under the comment",
+         %{conn: conn, user: user} do
+      {:ok, user} = Kanban.Accounts.update_user_name(user, %{name: "Ada Lovelace"})
+      {board, task} = board_with_task(user)
+      view = open_task_view(conn, board, task)
+
+      assert has_element?(view, composer(task) <> ~s([phx-change="validate"]))
+      assert has_element?(view, composer(task) <> ~s( input[type="file"]))
+      assert has_element?(view, composer(task) <> " label[phx-drop-target]", "Attach files")
+
+      stage(view, composer(task), [notes()])
+      assert has_element?(view, composer(task) <> " progress")
+      post_comment(view, composer(task), "See the notes")
+
+      assert [comment] = Repo.all(TaskComment)
+      assert [attachment] = Repo.all(TaskAttachment)
+      assert attachment.comment_id == comment.id
+      assert attachment.uploaded_by_id == user.id
+
+      html = view |> element(file_row(task, comment, attachment)) |> render()
+      assert html =~ "notes.txt"
+      assert html =~ "5 B"
+      assert html =~ "Ada Lovelace"
+      assert html =~ ~s(href="/attachments/#{attachment.id}/download")
+      refute has_element?(view, composer(task) <> " progress")
+      assert render(view) =~ "Comment added successfully"
+    end
+
+    test "the composer refuses a file over the size limit with a translated error",
+         %{conn: conn, user: user} do
+      put_limits(max_file_bytes: 16)
+      {board, task} = board_with_task(user)
+      view = open_task_view(conn, board, task)
+
+      input =
+        file_input(view, composer(task), :comment_attachments, [
+          %{name: "big.log", content: String.duplicate("a", 17), type: "text/plain"}
+        ])
+
+      assert {:error, [[_ref, :too_large]]} = render_upload(input, "big.log")
+
+      assert view |> element(composer(task)) |> render() =~
+               AttachmentUploads.error_message(:too_large)
+
+      post_comment(view, composer(task), "Too big")
+      assert Repo.aggregate(TaskAttachment, :count) == 0
+    end
+
+    test "cancelling a staged file in the composer stores nothing for it",
+         %{conn: conn, user: user} do
+      {board, task} = board_with_task(user)
+      view = open_task_view(conn, board, task)
+
+      stage(view, composer(task), [notes()])
+      assert view |> element(composer(task)) |> render() =~ "notes.txt"
+
+      view |> element(composer(task) <> ~s( button[phx-click="cancel-upload"])) |> render_click()
+      refute view |> element(composer(task)) |> render() =~ "notes.txt"
+
+      post_comment(view, composer(task), "No file after all")
+
+      assert [%TaskComment{}] = Repo.all(TaskComment)
+      assert Repo.aggregate(TaskAttachment, :count) == 0
+    end
+
+    test "a rejected comment keeps the staged files and stores nothing",
+         %{conn: conn, user: user} do
+      {board, task} = board_with_task(user)
+      view = open_task_view(conn, board, task)
+
+      stage(view, composer(task), [notes()])
+      post_comment(view, composer(task), "")
+
+      assert Repo.aggregate(TaskComment, :count) == 0
+      assert Repo.aggregate(TaskAttachment, :count) == 0
+      assert view |> element(composer(task)) |> render() =~ "notes.txt"
+
+      post_comment(view, composer(task), "Now with text")
+
+      assert [comment] = Repo.all(TaskComment)
+
+      assert [%TaskAttachment{filename: "notes.txt", comment_id: comment_id}] =
+               Repo.all(TaskAttachment)
+
+      assert comment_id == comment.id
+    end
+
+    test "keeps the comment and flashes the failed file names when storing an attachment fails",
+         %{conn: conn, user: user} do
+      put_limits(max_files_per_task: 2)
+      {board, task} = board_with_task(user)
+      attachment_fixture(task, %{uploaded_by: user})
+      attachment_fixture(task, %{uploaded_by: user})
+      view = open_task_view(conn, board, task)
+
+      stage(view, composer(task), [%{name: "third.txt", content: "three", type: "text/plain"}])
+      post_comment(view, composer(task), "Here is the third file")
+
+      assert [%TaskComment{content: "Here is the third file"}] = Repo.all(TaskComment)
+      assert Repo.aggregate(TaskAttachment, :count) == 2
+
+      html = render(view)
+      assert html =~ "Comment added successfully"
+      assert html =~ "Could not upload third.txt"
+      assert html =~ AttachmentUploads.error_message(:too_many_files)
+    end
+
+    test "stores the files that fit and names the one that does not",
+         %{conn: conn, user: user} do
+      put_limits(max_files_per_task: 2)
+      {board, task} = board_with_task(user)
+      attachment_fixture(task, %{uploaded_by: user})
+      view = open_task_view(conn, board, task)
+
+      stage(view, composer(task), [
+        %{name: "a.txt", content: "one", type: "text/plain"},
+        %{name: "b.txt", content: "two", type: "text/plain"}
+      ])
+
+      post_comment(view, composer(task), "Two files")
+
+      assert [comment] = Repo.all(TaskComment)
+      assert [stored] = TaskAttachment |> Repo.all() |> Enum.reject(&is_nil(&1.comment_id))
+      assert stored.comment_id == comment.id
+
+      [refused] = ["a.txt", "b.txt"] -- [stored.filename]
+      assert render(view) =~ "Could not upload #{refused}"
+    end
+
+    test "only the author can remove an attachment while editing; the board owner cannot",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      {author, comment, attachment} = comment_with_file(board, owner, task)
+
+      owner_view = open_task_view(conn, board, task)
+      assert has_element?(owner_view, file_row(task, comment, attachment))
+      refute has_element?(owner_view, remove_button())
+
+      owner_view
+      |> with_target(thread(task))
+      |> render_click("remove_comment_attachment", %{"id" => to_string(attachment.id)})
+
+      assert render(owner_view) =~ "You are not allowed to change this comment"
+      assert Repo.get(TaskAttachment, attachment.id)
+
+      author_view = conn |> log_in_user(author) |> open_task_view(board, task)
+      refute has_element?(author_view, remove_button())
+
+      author_view
+      |> element(row(task, comment) <> ~s( button[phx-click="edit_comment"]))
+      |> render_click()
+
+      assert has_element?(
+               author_view,
+               file_row(task, comment, attachment) <> " " <> remove_button()
+             )
+
+      author_view
+      |> element(file_row(task, comment, attachment) <> " " <> remove_button())
+      |> render_click()
+
+      refute Repo.get(TaskAttachment, attachment.id)
+      refute has_element?(author_view, file_row(task, comment, attachment))
+      assert render(author_view) =~ "Attachment deleted"
+      assert Repo.get(TaskComment, comment.id)
+    end
+
+    test "removing an attachment from a comment deleted in another session shows the comment-gone flash",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      {author, comment, attachment} = comment_with_file(board, owner, task)
+      view = conn |> log_in_user(author) |> open_task_view(board, task)
+
+      view
+      |> element(row(task, comment) <> ~s( button[phx-click="edit_comment"]))
+      |> render_click()
+
+      # Deleted behind the thread's back, as by another session whose
+      # broadcast has not arrived yet.
+      Repo.delete!(comment)
+
+      view
+      |> element(file_row(task, comment, attachment) <> " " <> remove_button())
+      |> render_click()
+
+      assert render(view) =~ "This comment no longer exists"
+      refute has_element?(view, row(task, comment))
+    end
+
+    test "deleting a comment removes its attachments from the thread and their downloads 404",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      {author, comment, attachment} = comment_with_file(board, owner, task)
+      view = open_task_view(conn, board, task)
+
+      assert has_element?(view, file_row(task, comment, attachment))
+
+      view
+      |> element(row(task, comment) <> ~s( button[phx-click="delete_comment"]))
+      |> render_click()
+
+      refute has_element?(view, file_row(task, comment, attachment))
+      refute Repo.get(TaskAttachment, attachment.id)
+
+      for user <- [owner, author] do
+        conn =
+          build_conn() |> log_in_user(user) |> get(~p"/attachments/#{attachment.id}/download")
+
+        assert conn.status == 404
+      end
+    end
+
+    test "the composer shows the inline LockedFeature and no file input on a free board",
+         %{conn: conn, user: owner} do
+      enforce_plans()
+      {board, task} = board_with_task(owner)
+      {_author, _comment, attachment} = comment_with_file(board, owner, task)
+      view = open_task_view(conn, board, task)
+
+      lock = thread(task) <> ~s(-attach-lock[data-locked-feature="attachments"])
+      assert has_element?(view, lock)
+      assert has_element?(view, composer(task))
+      refute has_element?(view, composer(task) <> ~s( input[type="file"]))
+      refute view |> element(thread(task)) |> render() =~ attachment.filename
+
+      view
+      |> with_target(thread(task))
+      |> render_click("remove_comment_attachment", %{"id" => to_string(attachment.id)})
+
+      assert render(view) =~ AttachmentUploads.error_message({:plan_required, :attachments})
+      assert Repo.get(TaskAttachment, attachment.id)
+    end
+
+    test "a read-only member gets no file input and no locked notice",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+      view = conn |> log_in_user(reader) |> open_task_view(board, task)
+
+      assert has_element?(view, composer(task))
+      refute has_element?(view, composer(task) <> ~s( input[type="file"]))
+      refute has_element?(view, thread(task) <> "-attach-lock")
+    end
+
+    test "another session's comment attachment appears on its attachment broadcast",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      author = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, author, :modify, owner)
+
+      {:ok, comment} =
+        author |> Scope.for_user() |> Tasks.create_comment(task, %{"content" => "See log"})
+
+      view = open_task_view(conn, board, task)
+      assert has_element?(view, row(task, comment))
+
+      # The fixture broadcasts nothing, so only the attachment broadcast below
+      # can make the thread list the file.
+      attachment = attachment_fixture(task, %{comment: comment, uploaded_by: author})
+      _ = render(view)
+      refute has_element?(view, file_row(task, comment, attachment))
+
+      send(
+        view.pid,
+        {Kanban.Attachments, :attachment_changed, %{task_id: task.id, board_id: board.id}}
+      )
+
+      # The handle_info's send_update is processed after it; the first render
+      # drains the queue.
+      _ = render(view)
+      assert has_element?(view, file_row(task, comment, attachment))
+    end
+
+    test "the view and form hosts keep their uploads and ids apart for the same task",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      view = open_task_view(conn, board, task)
+      {:ok, form, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+      form_thread = "#" <> CommentThreadComponent.dom_id(:form, task.id)
+
+      stage(form, form_thread <> "-composer", [notes()])
+      refute view |> element(composer(task)) |> render() =~ "notes.txt"
+
+      post_comment(form, form_thread <> "-composer", "Posted from the form")
+
+      assert [comment] = Repo.all(TaskComment)
+      assert [attachment] = Repo.all(TaskAttachment)
+      assert attachment.comment_id == comment.id
+
+      # The form host lists it under its own ids; the view host picks it up
+      # from the broadcasts under the view host's ids.
+      form_file = form_thread <> "-comment-#{comment.id}-attachments-attachment-#{attachment.id}"
+      assert has_element?(form, form_file)
+      _ = render(view)
+      _ = render(view)
+      assert has_element?(view, file_row(task, comment, attachment))
+      refute has_element?(view, form_file)
+    end
+
+    test "the edit-form host thread also accepts comment attachments",
+         %{conn: conn, user: user} do
+      {board, task} = board_with_task(user)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+      form_thread = "#" <> CommentThreadComponent.dom_id(:form, task.id)
+
+      stage(view, form_thread <> "-composer", [notes()])
+      post_comment(view, form_thread <> "-composer", "From the form")
+
+      assert [comment] = Repo.all(TaskComment)
+      assert [attachment] = Repo.all(TaskAttachment)
+      assert attachment.comment_id == comment.id
+
+      file =
+        form_thread <>
+          "-comment-#{comment.id}-attachments-attachment-#{attachment.id}"
+
+      assert view |> element(file) |> render() =~ "notes.txt"
+    end
+  end
+
+  defp put_limits(limits), do: Application.put_env(:kanban, Limits, limits)
 end

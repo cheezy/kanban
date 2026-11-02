@@ -3,6 +3,8 @@ defmodule KanbanWeb.TaskLive.Components.CommentRowTest do
 
   import Phoenix.LiveViewTest
 
+  alias Kanban.Accounts.User
+  alias Kanban.Attachments.TaskAttachment
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.TaskLive.Components.CommentRow
 
@@ -201,6 +203,88 @@ defmodule KanbanWeb.TaskLive.Components.CommentRowTest do
       assert html =~ ~s(phx-hook="MentionAutocomplete")
       assert html =~ ~s(id="t-edit-5_content-mentions")
       refute html =~ "data-comment-body"
+    end
+  end
+
+  describe "comment_row/1 attachments" do
+    defp attachment(attrs \\ %{}) do
+      struct(
+        %TaskAttachment{
+          id: 9,
+          comment_id: 1,
+          filename: "build.log",
+          content_type: "text/plain",
+          byte_size: 10,
+          inserted_at: ~N[2024-01-15 10:30:00],
+          uploaded_by: %User{id: 7, name: "Ada", email: "ada@x.test"}
+        },
+        attrs
+      )
+    end
+
+    defp edit_form(comment),
+      do: comment |> TaskComment.changeset(%{}) |> Phoenix.Component.to_form(id: "t-edit-1")
+
+    test "a comment without attachments renders no attachment list" do
+      html = render_row(entry(comment(%{})), dom_prefix: "t")
+
+      refute html =~ "data-comment-attachments"
+      refute html =~ "No attachments yet"
+    end
+
+    test "lists each attachment under the body with its uploader and download link" do
+      html =
+        render_row(entry(comment(%{})),
+          dom_prefix: "t",
+          attachments: [attachment(), attachment(%{id: 10, filename: "b.txt", uploaded_by: nil})]
+        )
+
+      assert html =~ "data-comment-attachments"
+      assert html =~ ~s(id="t-comment-1-attachments-attachment-9")
+      assert html =~ "build.log"
+      assert html =~ "Ada"
+      assert html =~ "Unknown"
+      assert html =~ ~s(href="/attachments/9/download")
+      assert html =~ ~s(href="/attachments/10/download")
+    end
+
+    test "an agent-authored comment lists its attachments under the agent attribution" do
+      agent_comment =
+        comment(%{
+          author_agent_name: "Claude Opus 5.5",
+          author: %{id: 7, name: "Ada", email: "ada@x.test"}
+        })
+
+      html = render_row(entry(agent_comment), dom_prefix: "t", attachments: [attachment()])
+
+      assert html =~ "Claude Opus 5.5"
+      assert html =~ "via Ada"
+      assert html =~ ~s(id="t-comment-1-attachments-attachment-9")
+      assert html =~ "build.log"
+    end
+
+    test "renders the remove control only when editing an editable comment" do
+      comment = comment(%{})
+      attachments = [attachment()]
+
+      for {editing, can_edit, shown?} <- [
+            {false, true, false},
+            {true, false, false},
+            {false, false, false},
+            {true, true, true}
+          ] do
+        html =
+          render_row(entry(comment, %{can_edit: can_edit}),
+            editing: editing,
+            edit_form: edit_form(comment),
+            dom_prefix: "t",
+            attachments: attachments
+          )
+
+        assert html =~ "build.log"
+        assert html =~ ~s(phx-click="remove_comment_attachment") == shown?
+        assert html =~ "Are you sure you want to delete this attachment?" == shown?
+      end
     end
   end
 end
