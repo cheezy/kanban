@@ -27,8 +27,12 @@ defmodule Kanban.Attachments.ContentType do
   ## Normalising a declared type
 
   `normalize/2` drops any parameter (`text/plain; charset=utf-8` becomes
-  `text/plain`), lowercases the type, and maps a few common aliases
-  (`image/jpg` becomes `image/jpeg`). When the declared type is missing,
+  `text/plain`), lowercases the type, and maps the other names clients
+  report for an allowed type (`image/jpg` and `image/pjpeg` become
+  `image/jpeg`, `image/x-png` becomes `image/png`, `text/x-log` becomes
+  `text/plain`, and so on). `application/vnd.ms-excel`, which Windows reports
+  for a `.csv` when Excel is installed, becomes `text/csv` only for a `.csv`
+  name, since it also names Excel's own formats. When the declared type is missing,
   empty or `application/octet-stream`, it infers the type from the file
   name's extension instead.
 
@@ -46,7 +50,11 @@ defmodule Kanban.Attachments.ContentType do
       required to be UTF-8, because Latin-1 CSV exports are common. A text
       file that happens to start with the letters `MZ` is accepted: Windows
       executables are caught by the NUL rule instead, since their headers
-      contain NUL bytes. UTF-16 text contains NUL bytes too, so it is refused.
+      contain NUL bytes. UTF-16 text is refused: always when it starts with
+      a byte-order mark, and otherwise when any character encodes with a NUL
+      byte, as every ASCII character (a space, a newline) does. UTF-16 text
+      with no byte-order mark and no such character is not recognised and
+      is stored as text.
       So is a `.txt` file whose content starts with `%PDF-`, an accepted
       trade-off.
     * The head alone cannot see a binary behind a long text prefix, so a
@@ -73,11 +81,28 @@ defmodule Kanban.Attachments.ContentType do
 
   @text_types ["text/plain", "text/markdown", "text/csv", "application/json"]
 
+  # Other names browsers and operating systems report for an allowed type.
+  # Refusing them refused valid files whose only fault was the name the
+  # client chose (G488 exploratory campaign, 2026-11-02).
   @aliases %{
     "image/jpg" => "image/jpeg",
     "image/pjpeg" => "image/jpeg",
+    "image/x-png" => "image/png",
+    "application/x-pdf" => "application/pdf",
     "text/x-markdown" => "text/markdown",
-    "text/x-csv" => "text/csv"
+    "text/x-csv" => "text/csv",
+    "text/comma-separated-values" => "text/csv",
+    "application/csv" => "text/csv",
+    "text/x-log" => "text/plain",
+    "text/json" => "application/json",
+    "text/x-json" => "application/json"
+  }
+
+  # Aliases that hold only for one extension. Windows reports a .csv file as
+  # application/vnd.ms-excel when Excel is installed, but that type also
+  # names Excel's own formats, so it is read as text/csv only for a .csv.
+  @extension_aliases %{
+    {"application/vnd.ms-excel", ".csv"} => "text/csv"
   }
 
   @extensions %{
@@ -124,7 +149,7 @@ defmodule Kanban.Attachments.ContentType do
   def normalize(declared, filename) do
     case clean(declared) do
       type when type in @inferred -> from_extension(filename)
-      type -> type
+      type -> Map.get(@extension_aliases, {type, lower_extension(filename)}, type)
     end
   end
 
@@ -133,13 +158,13 @@ defmodule Kanban.Attachments.ContentType do
   or `nil` for an unknown extension or a value that is not a valid string.
   """
   @spec from_extension(term()) :: String.t() | nil
-  def from_extension(filename) when is_binary(filename) do
-    if String.valid?(filename) do
-      Map.get(@extensions, filename |> Path.extname() |> String.downcase())
-    end
+  def from_extension(filename), do: Map.get(@extensions, lower_extension(filename))
+
+  defp lower_extension(filename) when is_binary(filename) do
+    if String.valid?(filename), do: filename |> Path.extname() |> String.downcase()
   end
 
-  def from_extension(_filename), do: nil
+  defp lower_extension(_filename), do: nil
 
   @doc """
   Whether the file's first bytes, `head`, agree with `type`. Always `false`
@@ -231,7 +256,16 @@ defmodule Kanban.Attachments.ContentType do
     Map.get(@aliases, type, type)
   end
 
-  defp text_head?(head), do: not String.contains?(head, <<0>>) and not binary_signature?(head)
+  defp text_head?(head),
+    do: not String.contains?(head, <<0>>) and not utf16_bom?(head) and not binary_signature?(head)
+
+  # UTF-16 text is refused. The NUL rule catches it only when a character
+  # encodes with a zero byte, which every ASCII one does, so the same file
+  # was accepted or refused by whether it held a space. Its byte-order mark
+  # makes the verdict the same for every such file.
+  defp utf16_bom?(<<0xFF, 0xFE, _rest::binary>>), do: true
+  defp utf16_bom?(<<0xFE, 0xFF, _rest::binary>>), do: true
+  defp utf16_bom?(_head), do: false
 
   defp binary_signature?(head),
     do: png?(head) or jpeg?(head) or gif?(head) or webp?(head) or pdf?(head) or zip?(head)

@@ -126,7 +126,13 @@ SVG and HTML are refused because a browser runs scripts inside them, and zip
 archives are refused because their contents cannot be checked and an agent
 that unpacks one risks a zip bomb. When an upload declares no type, or
 declares `application/octet-stream`, Stride takes the type from the file's
-extension. A file name's extension must agree with the file's type, so
+extension. The other names browsers and operating systems report for an
+allowed type are read as that type: `image/jpg`, `image/pjpeg` and
+`image/x-png`, `application/x-pdf`, `text/x-markdown`, `text/x-csv`,
+`text/comma-separated-values` and `application/csv`, `text/x-log`, and
+`text/json` and `text/x-json`. `application/vnd.ms-excel`, which Windows
+reports for a `.csv` file when Excel is installed, is read as CSV only for a
+name ending in `.csv`, since it also names Excel's own formats. A file name's extension must agree with the file's type, so
 `report.html` or `logo.svg` declared as plain text is refused rather than
 stored under a name that would open it as HTML or SVG. A name with no
 extension, such as `README`, is accepted when the upload declares an allowed
@@ -142,8 +148,11 @@ format's signature, so a PDF renamed to `.png` is refused. A text file is
 refused when it starts with another format's signature or when any byte of
 the whole file is a NUL byte, so a zip archive or an executable hidden
 behind a text prefix is refused too. Text does not have to be UTF-8, so
-Latin-1 CSV exports are accepted. UTF-16 text contains NUL bytes and is
-refused.
+Latin-1 CSV exports are accepted. UTF-16 text is refused: always when it
+starts with a byte-order mark, and otherwise whenever a character in it
+encodes with a NUL byte, as every ASCII character, space and newline does.
+UTF-16 text with neither, such as a few words of Chinese with no spaces and
+no byte-order mark, cannot be told from other text and is accepted.
 
 File names are cleaned before they are stored
 (`Kanban.Attachments.Filename`): any directory part is dropped (`../../x.png`

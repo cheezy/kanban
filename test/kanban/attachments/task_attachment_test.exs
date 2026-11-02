@@ -139,6 +139,31 @@ defmodule Kanban.Attachments.TaskAttachmentTest do
       assert Ecto.Changeset.get_change(jpeg, :content_type) == "image/jpeg"
     end
 
+    test "stores the allowed type for a client's other name for it" do
+      csv =
+        text_changeset(
+          %{"filename" => "data.csv", "content_type" => "application/vnd.ms-excel"},
+          "name,qty\nwidget,3\n"
+        )
+
+      assert csv.valid?
+      assert Ecto.Changeset.get_field(csv, :content_type) == "text/csv"
+
+      png = changeset(%{"filename" => "shot.png", "content_type" => "image/x-png"})
+      assert png.valid?
+      assert Ecto.Changeset.get_field(png, :content_type) == "image/png"
+
+      xls = changeset(%{"filename" => "book.xls", "content_type" => "application/vnd.ms-excel"})
+      assert %{content_type: ["is not an allowed type"]} = errors(xls)
+    end
+
+    test "refuses UTF-16 text with a byte-order mark whatever characters it holds" do
+      body = <<0xFF, 0xFE>> <> :unicode.characters_to_binary("中文日本語", :utf8, {:utf16, :little})
+      utf16 = text_changeset(%{"filename" => "a.txt", "content_type" => "text/plain"}, body)
+
+      assert %{content_type: ["does not match the file contents"]} = errors(utf16)
+    end
+
     test "refuses a declared type whose file extension disagrees with it" do
       for {name, body} <- [
             {"report.html", "<html><script>x()</script></html>"},

@@ -51,6 +51,35 @@ defmodule Kanban.Attachments.ContentTypeTest do
       assert ContentType.normalize("  IMAGE/PNG  ", "a.png") == "image/png"
     end
 
+    test "maps the other names clients report for an allowed type" do
+      for {declared, filename, type} <- [
+            {"image/x-png", "shot.png", "image/png"},
+            {"application/x-pdf", "r.pdf", "application/pdf"},
+            {"text/comma-separated-values", "data.csv", "text/csv"},
+            {"application/csv", "data.csv", "text/csv"},
+            {"text/x-log", "server.log", "text/plain"},
+            {"text/json", "x.json", "application/json"},
+            {"text/x-json", "x.json", "application/json"},
+            {"Application/CSV; header=present", "data.csv", "text/csv"}
+          ] do
+        assert ContentType.normalize(declared, filename) == type
+        assert ContentType.allowed?(type)
+        assert ContentType.extension_matches?(type, filename)
+      end
+    end
+
+    test "reads application/vnd.ms-excel as text/csv only for a .csv name" do
+      assert ContentType.normalize("application/vnd.ms-excel", "data.csv") == "text/csv"
+      assert ContentType.normalize("application/vnd.ms-excel", "DATA.CSV") == "text/csv"
+
+      for filename <- ["book.xls", "data.txt", "no-extension", nil, <<0xFF>>] do
+        assert ContentType.normalize("application/vnd.ms-excel", filename) ==
+                 "application/vnd.ms-excel"
+      end
+
+      refute ContentType.allowed?("application/vnd.ms-excel")
+    end
+
     test "keeps a declared type that is not on the allow-list for the caller to refuse" do
       assert ContentType.normalize("image/svg+xml", "a.svg") == "image/svg+xml"
     end
@@ -134,6 +163,19 @@ defmodule Kanban.Attachments.ContentTypeTest do
     test "refuses UTF-16 text with a BOM because it contains NUL bytes" do
       utf16 = <<0xFF, 0xFE>> <> :unicode.characters_to_binary("hi", :utf8, {:utf16, :little})
       refute ContentType.matches?("text/plain", utf16)
+    end
+
+    test "refuses UTF-16 text with a BOM even when no character holds a NUL byte" do
+      # Every code unit of these characters has two non-zero bytes, so only
+      # the byte-order mark shows the file is UTF-16.
+      for {bom, encoding} <- [{<<0xFF, 0xFE>>, :little}, {<<0xFE, 0xFF>>, :big}],
+          text <- ["中文日本語", "Привет", "Γειά"],
+          type <- ["text/plain", "text/csv", "application/json"] do
+        body = bom <> :unicode.characters_to_binary(text, :utf8, {:utf16, encoding})
+
+        refute String.contains?(body, <<0>>)
+        refute ContentType.matches?(type, body)
+      end
     end
 
     test "refuses a text type whose head carries a binary signature" do
