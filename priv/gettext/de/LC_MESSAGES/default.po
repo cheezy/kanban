@@ -13974,22 +13974,22 @@ msgstr "Diese Datei wurde nicht vollständig hochgeladen."
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Cancel some files to upload the rest."
-msgstr "Brich einige Dateien ab, um die übrigen hochzuladen."
+msgstr "Brechen Sie einige Dateien ab, um die übrigen hochzuladen."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:249
 #, elixir-autogen, elixir-format
 msgid "Cancel the files marked with an error to upload the others."
-msgstr "Brich die mit einem Fehler markierten Dateien ab, um die anderen hochzuladen."
+msgstr "Brechen Sie die mit einem Fehler markierten Dateien ab, um die anderen hochzuladen."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:268
 #, elixir-autogen, elixir-format
 msgid "Delete a file to upload another."
-msgstr "Lösche eine Datei, um eine weitere hochzuladen."
+msgstr "Löschen Sie eine Datei, um eine weitere hochzuladen."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:252
 #, elixir-autogen, elixir-format
 msgid "This task has no room for more files. Delete a file or cancel the staged ones."
-msgstr "Diese Aufgabe hat keinen Platz für weitere Dateien. Lösche eine Datei oder brich die vorbereiteten ab."
+msgstr "Diese Aufgabe hat keinen Platz für weitere Dateien. Löschen Sie eine Datei oder brechen Sie die vorbereiteten ab."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:256
 #, elixir-autogen, elixir-format

@@ -13806,7 +13806,7 @@ msgstr "Adjunto eliminado por el propietario del tablero"
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:115
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this attachment?"
-msgstr "¿Seguro que desea eliminar este adjunto?"
+msgstr "¿Seguro que deseas eliminar este adjunto?"
 
 #: lib/kanban_web/live/task_live/attachments_component.ex:163
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:167
@@ -13827,7 +13827,7 @@ msgstr "Cancelar la subida de %{name}"
 #: lib/kanban_web/live/task_live/attachments_component.ex:127
 #, elixir-autogen, elixir-format
 msgid "Choose files to upload first."
-msgstr "Elija primero los archivos que desea subir."
+msgstr "Elige primero los archivos que quieres subir."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:78
 #, elixir-autogen, elixir-format
@@ -13837,12 +13837,12 @@ msgstr "No se pudo subir %{filename}: %{reason}"
 #: lib/kanban_web/live/task_live/attachments_component.ex:358
 #, elixir-autogen, elixir-format
 msgid "Drop files here or browse"
-msgstr "Suelte los archivos aquí o explore"
+msgstr "Suelta los archivos aquí o búscalos"
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:329
 #, elixir-autogen, elixir-format
 msgid "File storage is unavailable. Please try again later."
-msgstr "El almacenamiento de archivos no está disponible. Inténtelo de nuevo más tarde."
+msgstr "El almacenamiento de archivos no está disponible. Inténtalo de nuevo más tarde."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:61
 #, elixir-autogen, elixir-format
@@ -13858,7 +13858,7 @@ msgstr "El contenido del archivo no coincide con su tipo."
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:345
 #, elixir-autogen, elixir-format
 msgid "The upload failed. Please try again."
-msgstr "La subida falló. Inténtelo de nuevo."
+msgstr "La subida falló. Inténtalo de nuevo."
 
 #: lib/kanban_web/live/task_live/attachments_component.ex:174
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:285
@@ -13869,12 +13869,12 @@ msgstr "Este adjunto ya no existe."
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:319
 #, elixir-autogen, elixir-format
 msgid "This file could not be read. Please try again."
-msgstr "No se pudo leer este archivo. Inténtelo de nuevo."
+msgstr "No se pudo leer este archivo. Inténtalo de nuevo."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:343
 #, elixir-autogen, elixir-format
 msgid "This file could not be saved. Check its name and try again."
-msgstr "No se pudo guardar este archivo. Revise su nombre e inténtelo de nuevo."
+msgstr "No se pudo guardar este archivo. Revisa su nombre e inténtalo de nuevo."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:317
 #, elixir-autogen, elixir-format
@@ -13914,7 +13914,7 @@ msgstr "Subiendo..."
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:338
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change attachments on this task."
-msgstr "No tiene permiso para cambiar los adjuntos de esta tarea."
+msgstr "No tienes permiso para cambiar los adjuntos de esta tarea."
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:143
 #, elixir-autogen, elixir-format

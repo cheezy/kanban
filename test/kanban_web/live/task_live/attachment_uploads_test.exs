@@ -329,6 +329,35 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
       end
     end
 
+    # One rendered section must not change how it addresses the user: the
+    # app's German is "Sie", its Spanish "tú", and its French says "envoyer"
+    # for the Upload files button.
+    test "the notices keep each locale's register and wording" do
+      messages = fn ->
+        [
+          AttachmentUploads.full_message(),
+          AttachmentUploads.blocked_message(:errors),
+          AttachmentUploads.blocked_message({:over_room, 0}),
+          AttachmentUploads.blocked_message({:over_room, 2}),
+          AttachmentUploads.error_message(:unreadable),
+          AttachmentUploads.error_message(:unauthorized)
+        ]
+      end
+
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        for message <- messages.(), do: refute(message =~ ~r/\b(Lösche|Brich|brich)\b/, message)
+      end)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "fr", fn ->
+        for message <- messages.(), do: refute(message =~ "téléverser", message)
+      end)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "es", fn ->
+        for message <- messages.(),
+            do: refute(message =~ ~r/\b(Inténtelo|tiene permiso)\b/, message)
+      end)
+    end
+
     test "full_message/0 names the limit and how to make room" do
       put_limits = Application.get_env(:kanban, Limits)
       Application.put_env(:kanban, Limits, max_files_per_task: 1)

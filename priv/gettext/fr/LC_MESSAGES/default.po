@@ -13874,7 +13874,7 @@ msgstr "Vous n’êtes pas autorisé à modifier les pièces jointes de cette t�
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:143
 #, elixir-autogen, elixir-format
 msgid "Open preview of %{name}"
-msgstr "Ouvrir l'aperçu de %{name}"
+msgstr "Ouvrir l’aperçu de %{name}"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:168
 #, elixir-autogen, elixir-format
@@ -13924,17 +13924,17 @@ msgstr "L’envoi de ce fichier ne s’est pas terminé."
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:261
 #, elixir-autogen, elixir-format
 msgid "Cancel some files to upload the rest."
-msgstr "Annulez certains fichiers pour téléverser les autres."
+msgstr "Annulez certains fichiers pour envoyer les autres."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:249
 #, elixir-autogen, elixir-format
 msgid "Cancel the files marked with an error to upload the others."
-msgstr "Annulez les fichiers signalés par une erreur pour téléverser les autres."
+msgstr "Annulez les fichiers signalés par une erreur pour envoyer les autres."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:268
 #, elixir-autogen, elixir-format
 msgid "Delete a file to upload another."
-msgstr "Supprimez un fichier pour en téléverser un autre."
+msgstr "Supprimez un fichier pour en envoyer un autre."
 
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:252
 #, elixir-autogen, elixir-format
