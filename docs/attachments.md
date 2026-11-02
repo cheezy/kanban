@@ -237,7 +237,10 @@ the error message.
 - **Uploading.** Drag files onto **Drop files here or browse**, or click it to
   pick them, then click **Upload files** once they have finished. A file that
   is too large, of a type that is not allowed, or whose contents do not match
-  its type says why and is not attached.
+  its type says why and is not attached. **Upload files** waits while a file
+  shows an error, or while more files are waiting than the task has room for,
+  and says so: cancel those files to upload the rest. A task that already
+  holds its limit offers no drop zone until a file is deleted.
 - **Images.** PNG, JPEG, GIF and WebP files show a thumbnail; clicking it opens
   the full image. Every other file, PDFs included, shows an icon and is
   opened by downloading it.

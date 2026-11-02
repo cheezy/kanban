@@ -222,10 +222,11 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       put_limits(max_files_per_task: 2)
       {board, task} = board_with_task(owner)
       attachment_fixture(task, %{uploaded_by: owner})
-      attachment_fixture(task, %{uploaded_by: owner})
       view = open_task_view(conn, board, task)
 
       upload(view, task, [%{name: "third.txt", content: "three", type: "text/plain"}])
+      # The last slot fills behind the open view, with no broadcast.
+      attachment_fixture(task, %{uploaded_by: owner})
       submit_upload(view, task)
 
       html = render(view)
@@ -238,13 +239,14 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
          %{conn: conn, user: owner} do
       put_limits(max_files_per_task: 1)
       {board, task} = board_with_task(owner)
-      attachment_fixture(task, %{uploaded_by: owner})
       view = open_task_view(conn, board, task)
 
       upload(view, task, [%{name: "invoice\u202Egpj.txt", content: "x", type: "text/plain"}])
       assert render(view) =~ "invoicegpj.txt"
       refute render(view) =~ "\u202E"
 
+      # The only slot fills behind the open view, with no broadcast.
+      attachment_fixture(task, %{uploaded_by: owner})
       submit_upload(view, task)
 
       html = render(view)
@@ -526,6 +528,109 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       done_view = open_task_view(conn, board, task)
       upload(done_view, task, [%{name: "done.txt", content: "done", type: "text/plain"}])
       refute has_element?(done_view, button <> "[disabled]")
+    end
+
+    # LiveView's client drops a submit while the file input carries error
+    # refs, so an enabled button would do nothing at all when clicked.
+    test "the Upload files button waits while a staged file has an error, and says why",
+         %{conn: conn, user: owner} do
+      put_limits(max_file_bytes: 10)
+      {board, task} = board_with_task(owner)
+      view = open_task_view(conn, board, task)
+      button = upload_form(task) <> " button[type='submit']"
+
+      upload(view, task, [%{name: "ok.txt", content: "fine", type: "text/plain"}])
+      refute has_element?(view, button <> "[disabled]")
+
+      file_input(view, upload_form(task), :files, [
+        %{name: "big.txt", content: String.duplicate("x", 20), type: "text/plain"}
+      ])
+      |> render_upload("big.txt")
+
+      assert has_element?(view, button <> "[disabled]")
+
+      assert view |> element(section(task) <> "-store-blocked") |> render() =~
+               "Cancel the files marked with an error to upload the others."
+
+      [big] =
+        view
+        |> upload_entry_refs(task)
+        |> Enum.filter(&(view |> element("#upload-entry-#{&1}") |> render() =~ "big.txt"))
+
+      view |> element("#{upload_form(task)} button[phx-value-ref='#{big}']") |> render_click()
+
+      refute has_element?(view, button <> "[disabled]")
+      refute has_element?(view, section(task) <> "-store-blocked")
+    end
+
+    # The per-task limit counts every file on the task, a comment's included.
+    test "staging more files than the task has room for says so and waits for a cancel",
+         %{conn: conn, user: owner} do
+      put_limits(max_files_per_task: 3)
+      {board, task} = board_with_task(owner)
+      attachment_fixture(task, %{uploaded_by: owner})
+
+      {:ok, comment} =
+        owner |> Scope.for_user() |> Comments.create_comment(task, %{"content" => "see file"})
+
+      attachment_fixture(task, %{comment: comment, filename: "on-comment.txt"})
+      view = open_task_view(conn, board, task)
+      button = upload_form(task) <> " button[type='submit']"
+
+      upload(view, task, [
+        %{name: "a.txt", content: "a", type: "text/plain"},
+        %{name: "b.txt", content: "b", type: "text/plain"}
+      ])
+
+      assert has_element?(view, button <> "[disabled]")
+
+      assert view |> element(section(task) <> "-store-blocked") |> render() =~
+               "This task has room for 1 more file. Cancel some files to upload the rest."
+
+      [first | _rest] = upload_entry_refs(view, task)
+      view |> element("#{upload_form(task)} button[phx-value-ref='#{first}']") |> render_click()
+
+      refute has_element?(view, button <> "[disabled]")
+      refute has_element?(view, section(task) <> "-store-blocked")
+    end
+
+    test "a full task offers no drop zone and says how to make room", %{conn: conn, user: owner} do
+      put_limits(max_files_per_task: 1)
+      {board, task} = board_with_task(owner)
+      attachment_fixture(task, %{uploaded_by: owner})
+      view = open_task_view(conn, board, task)
+
+      refute has_element?(view, upload_form(task) <> " label[phx-drop-target]")
+
+      assert view |> element(section(task) <> "-full") |> render() =~
+               "A task can hold at most 1 file. Delete a file to upload another."
+    end
+
+    test "a file stored elsewhere for the last slot blocks the staged one at once",
+         %{conn: conn, user: owner} do
+      put_limits(max_files_per_task: 2)
+      {board, task} = board_with_task(owner)
+      attachment_fixture(task, %{uploaded_by: owner})
+      view = open_task_view(conn, board, task)
+      button = upload_form(task) <> " button[type='submit']"
+
+      upload(view, task, [%{name: "mine.txt", content: "m", type: "text/plain"}])
+      refute has_element?(view, button <> "[disabled]")
+
+      attachment_fixture(task, %{uploaded_by: owner, filename: "theirs.txt"})
+
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "board:#{board.id}",
+        {Kanban.Attachments, :attachment_changed, %{task_id: task.id}}
+      )
+
+      :timer.sleep(100)
+
+      assert has_element?(view, button <> "[disabled]")
+
+      assert view |> element(section(task) <> "-store-blocked") |> render() =~
+               "This task has no room for more files. Delete a file or cancel the staged ones."
     end
 
     test "a task deleted while its modal is open refuses upload and delete without crashing",

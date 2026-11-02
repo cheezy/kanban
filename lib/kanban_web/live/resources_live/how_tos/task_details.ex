@@ -177,7 +177,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
           %{
             title: "Uploading Files",
             content:
-              "Drag files onto **Drop files here or browse**, or click it to pick files from your computer. You can add several at once. Each file shows its progress, with **Cancel** to drop it, and an image shows a small preview.\n\nWhen the files have finished, click **Upload files** to attach them. A file that breaks a rule, such as one that's too large or of a type that isn't allowed, says why under its name and isn't attached.",
+              "Drag files onto **Drop files here or browse**, or click it to pick files from your computer. You can add several at once. Each file shows its progress, with **Cancel** to drop it, and an image shows a small preview.\n\nWhen the files have finished, click **Upload files** to attach them. A file that breaks a rule, such as one that's too large or of a type that isn't allowed, says why under its name and isn't attached. **Upload files** waits while a file shows an error, or while more files are waiting than the task has room for, and says so: cancel those files to upload the rest. A task that already holds its limit has no drop zone until a file is deleted.",
             image: nil
           },
           %{
