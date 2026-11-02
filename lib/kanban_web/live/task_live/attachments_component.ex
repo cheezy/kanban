@@ -127,7 +127,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   end
 
   defp handle_store_result(%{stored: stored, failed: []}, socket) do
-    {:noreply, socket |> load() |> notify_flash(:info, uploaded_message(stored))}
+    {:noreply, socket |> load_after_store() |> notify_flash(:info, uploaded_message(stored))}
   end
 
   # A partly successful submit says what was stored before what was refused.
@@ -137,14 +137,15 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
       |> Enum.reject(&is_nil/1)
       |> Enum.join(" ")
 
-    {:noreply, socket |> load() |> notify_flash(:error, message)}
+    {:noreply, socket |> load_after_store() |> notify_flash(:error, message)}
   end
 
   # LiveView drops consumed entries only after this event returns, so the
-  # reload inside handle_store_result still sees them and keeps the upload.
-  # When the store left the viewer unable to upload (rights or plan lost
-  # mid-session), a refresh queued now runs after the entries are gone and
-  # drops the upload registration.
+  # reload inside handle_store_result still sees them, with their upload
+  # channels already stopped, and must leave the upload alone. When the store
+  # left the viewer unable to upload (rights or plan lost mid-session), a
+  # refresh queued now runs after the entries are gone and drops the upload
+  # registration.
   defp resync_after_store({:noreply, socket} = reply) do
     if not socket.assigns.can_upload?,
       do: send_update(__MODULE__, id: socket.assigns.id, refresh: true)
@@ -173,11 +174,13 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   end
 
   # A refusal re-reads the plan and the rights, so the controls catch up
-  # with whatever changed, and says why.
+  # with whatever changed, and says why. The reason is flashed before the
+  # reload, so a reload that drops staged files names them last, and that
+  # more specific message is the one shown.
   defp refuse(socket, reason) do
     socket
-    |> load()
     |> notify_flash(:error, AttachmentUploads.error_message(reason))
+    |> load()
   end
 
   # ── Checks ──────────────────────────────────────────────────────────
@@ -217,9 +220,13 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
 
   # Every reload re-reads the plan and the rights and then syncs the upload,
   # so an upload that can no longer be used is dropped on every path (a
-  # refused or partly failed store, a delete, a broadcast refresh), not only
-  # on an outright refusal.
-  defp load(socket) do
+  # refusal, a delete, a broadcast refresh, and after a store the refresh
+  # resync_after_store/1 queues), not only on an outright refusal.
+  defp load(socket), do: socket |> load_after_store() |> sync_upload()
+
+  # Re-reads the plan, the rights and the list without touching the upload;
+  # see resync_after_store/1 for why a store cannot sync it yet.
+  defp load_after_store(socket) do
     %{board_id: board_id, current_scope: scope} = socket.assigns
     locked? = not Plans.board_unlocked?(board_id)
     viewer = Policy.resolve(scope, board_id)
@@ -229,7 +236,6 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
     |> assign(:viewer, viewer)
     |> assign(:can_upload?, not locked? and Policy.allowed?(viewer, :upload))
     |> assign(:attachments, list_attachments(socket, locked?))
-    |> sync_upload()
   end
 
   defp list_attachments(_socket, true), do: []
@@ -242,20 +248,40 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   end
 
   # allow_upload only for a viewer who may upload on an unlocked board, and
-  # only once; an upload that can no longer be used is dropped unless files
-  # are still staged in it, which the events then refuse.
+  # only once; an upload that can no longer be used is dropped.
   defp sync_upload(socket) do
     case {socket.assigns.can_upload?, upload_allowed?(socket)} do
       {true, false} -> AttachmentUploads.allow(socket, @upload)
-      {false, true} -> maybe_disallow(socket)
+      {false, true} -> drop_upload(socket)
       _unchanged -> socket
     end
   end
 
-  defp maybe_disallow(socket) do
-    if socket.assigns.uploads[@upload].entries == [],
-      do: disallow_upload(socket, @upload),
-      else: socket
+  # Files still staged when the viewer lost the right to upload (the plan
+  # lapsed, or their access changed) can never be stored, and the section now
+  # hides them behind the locked panel, so they are cancelled and named, as
+  # the comment composer and the new-task form do. A cancelled entry whose
+  # upload channel is alive is only marked cancelled and leaves when the
+  # channel stops, so the upload stays registered, and never rendered, until
+  # a later load finds it empty and disallows it.
+  defp drop_upload(socket) do
+    case socket.assigns.uploads[@upload].entries do
+      [] -> disallow_upload(socket, @upload)
+      entries -> entries |> Enum.reject(& &1.cancelled?) |> cancel_staged(socket)
+    end
+  end
+
+  defp cancel_staged([], socket), do: socket
+
+  defp cancel_staged(staged, socket) do
+    reason = if socket.assigns.locked?, do: {:plan_required, :attachments}, else: :unauthorized
+
+    message =
+      Enum.map_join(staged, " ", &AttachmentUploads.failure_sentence({&1.client_name, reason}))
+
+    staged
+    |> Enum.reduce(socket, &cancel_upload(&2, @upload, &1.ref))
+    |> notify_flash(:error, message)
   end
 
   defp upload_allowed?(socket), do: AttachmentUploads.upload_allowed?(socket, @upload)

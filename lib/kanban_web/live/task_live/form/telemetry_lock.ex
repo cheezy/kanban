@@ -21,6 +21,14 @@ defmodule KanbanWeb.TaskLive.Form.TelemetryLock do
   alias KanbanWeb.TaskLive.Form.ParamNormalizer
 
   @doc """
+  Assigns `:telemetry_locked?`, true when `board`'s plan does not include the
+  paid task fields, so the form shows the lock instead of their inputs.
+  """
+  @spec assign_locked(Phoenix.LiveView.Socket.t(), map()) :: Phoenix.LiveView.Socket.t()
+  def assign_locked(socket, board),
+    do: assign(socket, :telemetry_locked?, not Plans.board_unlocked?(board))
+
+  @doc """
   Normalizes a save's params with `ParamNormalizer.normalize_params/3` for the
   socket's board and task, then passes any lost paid-field changes to
   `warn_lost/2`. Returns `{params, socket}`.

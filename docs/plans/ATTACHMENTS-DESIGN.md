@@ -228,6 +228,8 @@ All UI text is translated in every locale with no fuzzy entries, and every new s
 - A `read_only` member sees and can download the files but gets no drop zone, upload button or delete control.
 - A free board under enforcement shows the LockedFeature panel instead of the list and upload controls.
 - Every upload, cancel and delete event checks `Plans.check_board(board_id, :attachments, surface: :live_view)` again and calls the context's authorizing functions, so a forged event is refused with a flash.
+- A board moving into or out of an Organization changes its plan and broadcasts `{Kanban.Boards, :members_changed, id}`. `KanbanWeb.BoardLive.BoardEvents` then refreshes the open task's Attachments section and comment thread, and sends an open task form `refresh_plan: true`, so the drop zone, the LockedFeature panel and the form's Attachments and telemetry fields follow the new plan without a reload.
+- When the section finds the viewer can no longer upload (the plan lapsed or their access changed) while files are staged, it cancels them and names each in the flash ("Could not upload a.txt: …"), as the comment composer and the new-task form do on submit; the staged files would otherwise sit hidden behind the locked panel.
 - A staged file, and a flash naming a file that could not be stored, shows the name the file would be stored under (`KanbanWeb.TaskLive.AttachmentUploads.display_name/1`, which runs `Kanban.Attachments.Filename.sanitize/1`), never the raw client name; a name with nothing left reads "unnamed file". This holds on all three upload surfaces: the task view, the comment composer and the new-task form.
 
 ### 6.3 Image previews (W2512)

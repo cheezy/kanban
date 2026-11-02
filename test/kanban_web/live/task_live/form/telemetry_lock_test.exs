@@ -32,6 +32,26 @@ defmodule KanbanWeb.TaskLive.Form.TelemetryLockTest do
     %{socket: socket}
   end
 
+  describe "assign_locked/2" do
+    test "locks a free board under enforcement and unlocks it otherwise", %{socket: socket} do
+      board = socket.assigns.board
+      assert TelemetryLock.assign_locked(socket, board).assigns.telemetry_locked?
+
+      Application.put_env(:kanban, :plans_enforced, false)
+      refute TelemetryLock.assign_locked(socket, board).assigns.telemetry_locked?
+    end
+
+    test "unlocks a board in an Organization", %{socket: socket} do
+      board =
+        move_board_to_organization(
+          socket.assigns.board,
+          Kanban.OrganizationsFixtures.organization_fixture()
+        )
+
+      refute TelemetryLock.assign_locked(socket, board).assigns.telemetry_locked?
+    end
+  end
+
   describe "warn_lost/2" do
     test "returns the socket unchanged when nothing was lost", %{socket: socket} do
       attach_telemetry(@refused)

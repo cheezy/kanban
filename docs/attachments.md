@@ -226,7 +226,10 @@ free board shows a locked **Attachments** section and an **Available to
 organizations** prompt instead of its files; a free board's existing files
 stay stored, hidden, and show again once the board moves into an
 Organization. [Organizations and Workspaces](organizations.md#plans) covers plans
-and moving a board.
+and moving a board. A task or task form that is already open follows the move
+without a reload. If the board loses attachments while files are waiting to be
+uploaded, the task's **Attachments** section drops them and names each one in
+the error message.
 
 - **Where files are.** A task's details have an **Attachments** section
   above **History** that lists the files attached to the task, and its edit

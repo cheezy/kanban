@@ -15,7 +15,9 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   member that is gone, re-rendering the cards and correcting the URL, so the
   board never shows a filtered view its controls no longer describe. A
   membership change also refreshes an open members screen, whose free-board cap
-  line depends on the board's plan (a board move changes it). A column
+  line depends on the board's plan (a board move changes it), and for the same
+  reason makes the open task's Attachments section, its comment thread and an
+  open task form re-read the plan. A column
   change re-renders every column. Comment changes go straight to the open
   comment thread. Attachment changes refresh the open task's Attachments
   section and its comment thread, which lists each comment's files; the
@@ -57,6 +59,7 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
       Params.handle_board_not_found(socket)
     else
       refresh_members_screen(socket.assigns)
+      refresh_plan_gated(socket.assigns)
       {socket, filters_changed?} = FilterActions.refresh_options(socket, socket.assigns.board)
       {:noreply, socket} = BoardState.reload_board_data(socket)
       {:noreply, maybe_sync_url(socket, filters_changed?)}
@@ -106,14 +109,41 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   # The open task form's label picker would otherwise keep offering, and
   # keep ticked, a label that was just deleted.
-  defp refresh_open_task_form(%{live_action: action}) when action in [:new_task, :new_goal],
-    do: send_update(FormComponent, id: :new, refresh_labels: true)
+  defp refresh_open_task_form(assigns), do: update_open_task_form(assigns, refresh_labels: true)
 
-  defp refresh_open_task_form(%{live_action: action, task: %{id: id}})
+  defp update_open_task_form(%{live_action: action}, update)
+       when action in [:new_task, :new_goal],
+       do: send_update(FormComponent, [id: :new] ++ update)
+
+  defp update_open_task_form(%{live_action: action, task: %{id: id}}, update)
        when action in [:edit_task, :edit_task_in_column],
-       do: send_update(FormComponent, id: "edit-#{id}", refresh_labels: true)
+       do: send_update(FormComponent, [id: "edit-#{id}"] ++ update)
 
-  defp refresh_open_task_form(_assigns), do: :ok
+  defp update_open_task_form(_assigns, _update), do: :ok
+
+  # A board moved into or out of an Organization changes plan, and nothing
+  # else an open surface holds changes with it, so no re-render would reach
+  # its plan-gated controls: the open task's Attachments section and comment
+  # thread re-read the plan, and so does an open task form (its Attachments
+  # field and the paid telemetry fields).
+  defp refresh_plan_gated(assigns) do
+    update_open_task_form(assigns, refresh_plan: true)
+
+    for task_id <- open_task_ids(assigns) do
+      AttachmentsComponent.refresh(task_id)
+      CommentThreadComponent.refresh(task_id)
+    end
+
+    :ok
+  end
+
+  defp open_task_ids(assigns) do
+    edited =
+      if assigns[:live_action] in [:edit_task, :edit_task_in_column],
+        do: assigns[:task] && assigns.task.id
+
+    Enum.uniq(for id <- [assigns[:viewing_task_id], edited], is_integer(id), do: id)
+  end
 
   defp lost_access?(%{user_access: nil, board: %{read_only: read_only}}), do: read_only != true
   defp lost_access?(_assigns), do: false

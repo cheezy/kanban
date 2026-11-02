@@ -421,6 +421,29 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       refute files_upload_registered?(view, task)
     end
 
+    test "a member downgraded with files staged is told which files were dropped",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      view = conn |> log_in_user(member) |> open_task_view(board, task)
+      upload(view, task, [%{name: "pending.txt", content: "pending", type: "text/plain"}])
+
+      {:ok, _} = Boards.update_user_access(board, member, :read_only, owner)
+      :timer.sleep(100)
+
+      assert render(view) =~
+               "Could not upload pending.txt: " <> AttachmentUploads.error_message(:unauthorized)
+
+      refute has_element?(view, upload_form(task))
+
+      {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
+      :timer.sleep(100)
+      assert has_element?(view, upload_form(task))
+      refute has_element?(view, upload_form(task) <> " progress")
+      assert listed(task, owner) == []
+    end
+
     test "a member downgraded and then restored mid-session can upload again",
          %{conn: conn, user: owner} do
       {board, task} = board_with_task(owner)

@@ -29,6 +29,13 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   def update(%{refresh_labels: true}, socket),
     do: {:ok, LabelSelection.refresh_options(socket)}
 
+  # The board moved into or out of an Organization while the form was open
+  # (sent by BoardEvents), so the plan-gated fields follow its new plan.
+  def update(%{refresh_plan: true}, %{assigns: %{board: board, action: action}} = socket),
+    do:
+      {:ok,
+       socket |> TelemetryLock.assign_locked(board) |> AttachmentStaging.allow(board, action)}
+
   # A re-render of the hosting LiveView (a flash, for example) can re-send the
   # same task. Rebuilding the form from it would throw away what the user has
   # typed, so keep the form unless the stored task itself changed.
@@ -72,7 +79,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     socket
     |> LabelSelection.assign_options(assigns[:current_scope], board, task, action)
     |> assign(:field_visibility, board.field_visibility || %{})
-    |> assign(:telemetry_locked?, not Kanban.Plans.board_unlocked?(board))
+    |> TelemetryLock.assign_locked(board)
     |> AttachmentStaging.allow(board, action)
   end
 
