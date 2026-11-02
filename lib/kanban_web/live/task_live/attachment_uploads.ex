@@ -68,14 +68,23 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
 
   @doc """
   The translated sentence for one file that could not be stored, from a
-  `{client_name, reason}` pair as `store_entries/4` returns them.
+  `{client_name, reason}` pair as `store_entries/4` returns them. A name
+  with nothing left to show after cleaning has a sentence of its own.
   """
   @spec failure_sentence({term(), term()}) :: String.t()
   def failure_sentence({client_name, reason}) do
-    gettext("Could not upload %{filename}: %{reason}",
-      filename: display_name(client_name),
-      reason: error_message(reason)
-    )
+    case Filename.sanitize(client_name) do
+      {:ok, name} ->
+        gettext("Could not upload %{filename}: %{reason}",
+          filename: name,
+          reason: error_message(reason)
+        )
+
+      {:error, _reason} ->
+        gettext("Could not upload a file with no usable name: %{reason}",
+          reason: error_message(reason)
+        )
+    end
   end
 
   @doc """

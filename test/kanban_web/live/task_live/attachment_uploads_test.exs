@@ -135,8 +135,13 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
       assert AttachmentUploads.failure_sentence({"a\u202Etxt.exe", :too_large}) ==
                "Could not upload atxt.exe: " <> AttachmentUploads.error_message(:too_large)
 
-      assert AttachmentUploads.failure_sentence({"    ", :empty}) ==
-               "Could not upload unnamed file: " <> AttachmentUploads.error_message(:empty)
+      # A name with nothing left to show gets its own sentence, so no locale
+      # has to fit a bare "unnamed file" into the filename's place.
+      for raw <- ["    ", "", "/"] do
+        assert AttachmentUploads.failure_sentence({raw, :empty}) ==
+                 "Could not upload a file with no usable name: " <>
+                   AttachmentUploads.error_message(:empty)
+      end
     end
   end
 
