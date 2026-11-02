@@ -29,7 +29,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   Each key is claimed before its blob is touched. In one short transaction
   the worker locks every tombstone for the key, checks again that no row
-  names it, and records the try: `attempts` goes up by one and a due
+  names it, and records the try: `attempts` goes up by one (from at least 0
+  and never past the column's limit, so a row written by hand with a
+  negative or maximal count cannot crash every run at its claim) and a due
   tombstone's `delete_after` moves out by the backoff, so a run that crashes
   after the claim only repeats an idempotent delete later. An upload commits
   its row only by removing its own pending tombstone while `attempts` is
@@ -87,6 +89,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   @max_backoff_minutes 24 * 60
   # 2^11 minutes already exceeds one day, so larger exponents are never needed.
   @max_backoff_exponent 11
+  @max_attempts 2_147_483_647
   @last_error_max_length 64
   # Leftovers of unfinished writes (a Local temp file whose process died
   # mid-write) are swept once they are as old as an upload's grace period.
@@ -111,7 +114,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
         Map.update!(acc, outcome(tombstone, clock, budget_ms), &(&1 + 1))
       end)
 
-    log_counts(counts)
+    counts |> Map.put(:left, due_count(clock.now)) |> log_counts()
     Storage.sweep(@sweep_after_seconds)
   end
 
@@ -134,8 +137,16 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     Logger.info(
       "attachment blob cleanup: #{counts.deleted} deleted, #{counts.in_use} still in use, " <>
         "#{counts.invalid} invalid, #{counts.failed} failed, #{counts.skipped} already handled, " <>
-        "#{counts.deferred} left for the next run"
+        "#{counts.left} left for the next run"
     )
+  end
+
+  # Every tombstone still due once the run ends: the ones the budget
+  # deferred and the ones past the batch. Counting only the deferred ones
+  # reported "0 left" through a whole backlog.
+  defp due_count(now) do
+    from(d in BlobDeletion, where: d.delete_after <= ^now)
+    |> Repo.aggregate(:count)
   end
 
   defp elapsed_ms(%{started: started}), do: System.monotonic_time(:millisecond) - started
@@ -149,11 +160,11 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   @doc """
   The backoff, in minutes, after a tombstone's `attempts`-th failed delete:
-  2^attempts, capped at one day.
+  2^attempts, capped at one day. A negative count is treated as 0.
   """
-  @spec backoff_minutes(non_neg_integer()) :: pos_integer()
-  def backoff_minutes(attempts) when is_integer(attempts) and attempts >= 0 do
-    exponent = min(attempts, @max_backoff_exponent)
+  @spec backoff_minutes(integer()) :: pos_integer()
+  def backoff_minutes(attempts) when is_integer(attempts) do
+    exponent = attempts |> max(0) |> min(@max_backoff_exponent)
     min(Integer.pow(2, exponent), @max_backoff_minutes)
   end
 
@@ -208,7 +219,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   end
 
   defp record_try(tombstones, due_ids, claimed_at) do
-    attempts = (tombstones |> Enum.map(& &1.attempts) |> Enum.max()) + 1
+    attempts = tombstones |> Enum.map(& &1.attempts) |> Enum.max() |> next_attempt()
     retry_at = DateTime.add(claimed_at, backoff_minutes(attempts), :minute)
 
     for t <- tombstones do
@@ -220,6 +231,12 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
     {:ok, {:claimed, due_ids, attempts}}
   end
+
+  # attempts is an int4 with no check constraint. One more than the highest
+  # count, at least 1 so a claimed key's pending tombstone never reads 0
+  # (which would let its upload commit), and never past the column's limit,
+  # where the update raised and aborted every run at the same row.
+  defp next_attempt(highest), do: highest |> max(0) |> Kernel.+(1) |> min(@max_attempts)
 
   defp key_in_use?(key) do
     from(a in TaskAttachment, where: a.storage_key == ^key)

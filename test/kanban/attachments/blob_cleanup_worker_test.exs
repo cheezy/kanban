@@ -90,6 +90,12 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
     end)
   end
 
+  defp info_logs do
+    original = Logger.level()
+    Logger.configure(level: :info)
+    on_exit(fn -> Logger.configure(level: original) end)
+  end
+
   defp run(now \\ @now), do: perform_job(BlobCleanupWorker, %{"now" => DateTime.to_iso8601(now)})
 
   defp key, do: unique_storage_key(System.unique_integer([:positive]))
@@ -235,6 +241,54 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
 
       assert log =~ "attachment storage delete failed: :exit"
       assert %BlobDeletion{attempts: 2} = reload(first)
+    end
+
+    test "a row with an extreme attempts count fails only itself, never the run" do
+      info_logs()
+      Process.put(:delete_result, {:error, :storage_unavailable})
+      maximal = tombstone(key(), minutes(-30), %{attempts: 2_147_483_647})
+      negative = tombstone(key(), minutes(-20), %{attempts: -5})
+      behind = tombstone(stored_blob(), minutes(-10))
+
+      log =
+        capture_log([level: :info], fn ->
+          assert :ok = run()
+        end)
+
+      # Clamped at the int4 limit, and a negative count claims as attempt 1.
+      assert %BlobDeletion{attempts: 2_147_483_647} = reload(maximal)
+      assert %BlobDeletion{attempts: 1} = updated = reload(negative)
+      assert DateTime.compare(updated.delete_after, minutes(2)) == :eq
+      assert %BlobDeletion{attempts: 1} = reload(behind)
+      assert log =~ "3 failed"
+    end
+
+    test "a claim never leaves a pending tombstone at 0, whatever its count was" do
+      key = key()
+      Process.put(:delete_result, {:error, :storage_unavailable})
+      _due = tombstone(key, minutes(-5), %{attempts: -1})
+      pending = tombstone(key, minutes(60))
+
+      capture_log(fn -> assert :ok = run() end)
+
+      # An upload commits only while its pending tombstone reads 0.
+      assert %BlobDeletion{attempts: 1} = reload(pending)
+    end
+
+    test "the summary counts every due tombstone left, the ones past the batch included" do
+      info_logs()
+      Application.put_env(:kanban, BlobCleanupWorker, batch_size: 2)
+      for minutes <- [-3, -2, -1], do: tombstone(stored_blob(), minutes(minutes))
+      _later = tombstone(stored_blob(), minutes(30))
+
+      log = capture_log([level: :info], fn -> assert :ok = run() end)
+
+      assert log =~ "2 deleted"
+      assert log =~ "1 left for the next run"
+
+      log = capture_log([level: :info], fn -> assert :ok = run() end)
+      assert log =~ "1 deleted"
+      assert log =~ "0 left for the next run"
     end
 
     test "processes at most batch_size rows per run, oldest first" do
@@ -579,6 +633,12 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       assert BlobCleanupWorker.backoff_minutes(10) == 1024
       assert BlobCleanupWorker.backoff_minutes(11) == 1440
       assert BlobCleanupWorker.backoff_minutes(1_000_000) == 1440
+      assert BlobCleanupWorker.backoff_minutes(2_147_483_647) == 1440
+    end
+
+    test "treats a negative count as 0" do
+      assert BlobCleanupWorker.backoff_minutes(-1) == 1
+      assert BlobCleanupWorker.backoff_minutes(-2_147_483_648) == 1
     end
   end
 
