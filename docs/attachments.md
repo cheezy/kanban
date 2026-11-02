@@ -75,10 +75,14 @@ gives up after 60 seconds in all, so a store that sends its reply a byte at a
 time cannot hold the request. A download has no overall limit, since a large
 file on a slow link takes as long as it takes. Redirects are never followed, so a misconfigured
 endpoint cannot send a signed request to another host. When the store
-refuses a request, the app log shows only the operation and the HTTP
-status, such as
-`attachment storage put failed with status 403`; it never shows a header, a
-signed URL or a credential.
+refuses a request, the app log shows only the operation, the HTTP status
+and the store's error code, such as
+`attachment storage delete failed with status 404 (NoSuchBucket)`; it never
+shows a header, a signed URL, a response body or a credential. Only a 404
+with the code `NoSuchKey` counts as a file that is already gone. A 404 for a
+bucket that does not exist, or from an endpoint that is not the store, is a
+storage failure: the cleanup job keeps its queue entry and tries again, and
+a download logs a warning instead of looking like a missing file.
 
 ### Limits
 

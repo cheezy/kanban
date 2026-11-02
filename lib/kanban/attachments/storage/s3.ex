@@ -58,11 +58,13 @@ defmodule Kanban.Attachments.Storage.S3 do
       DELETE on a fixed key are idempotent, and these calls run inside user
       requests rather than a job with its own retries. A retried download is
       cancelled before the retry, so it leaves no stray messages behind.
-    * A 404 on a read is `:not_found`, and on a delete it is `:ok`. A 404 on
-      a put (a missing bucket) and any other failure is
-      `:storage_unavailable`.
-      Only the operation and the HTTP status are logged, never a header, a
-      URL or a credential.
+    * A 404 whose error code is `NoSuchKey` is `:not_found` on a download
+      and `:ok` on a delete. Any other 404 (`NoSuchBucket`, an empty body, a
+      proxy's page) means the request reached no bucket, so it is
+      `:storage_unavailable`, as is a 404 on a put and any other failure. A
+      HEAD reply has no body, so its 404 is `{:ok, false}` either way.
+      Only the operation, the HTTP status and a well-formed S3 error code
+      are logged, never a header, a URL, a body or a credential.
   """
 
   @behaviour Kanban.Attachments.Storage
@@ -73,6 +75,8 @@ defmodule Kanban.Attachments.Storage.S3 do
   @default_request_timeout 60_000
   @default_content_type "application/octet-stream"
   @chunk_bytes 65_536
+  @error_body_bytes 4_096
+  @error_body_chunks 4
 
   @impl true
   def put(key, {:file, path}, opts) do
@@ -89,19 +93,7 @@ defmodule Kanban.Attachments.Storage.S3 do
   def put(key, {:binary, data}, opts), do: upload(key, data, [], opts)
 
   @impl true
-  def stream(key) do
-    case request(:get, key, into: :self) do
-      {:ok, %Req.Response{status: 200, body: body}} ->
-        {:ok, body}
-
-      {:ok, %Req.Response{status: status} = response} ->
-        _ = Req.cancel_async_response(response)
-        status_error(:get, status)
-
-      {:error, reason} ->
-        log_failure(:get, reason)
-    end
-  end
+  def stream(key), do: :get |> request(key, into: :self) |> stream_result()
 
   @impl true
   def exists(key) do
@@ -114,13 +106,27 @@ defmodule Kanban.Attachments.Storage.S3 do
   end
 
   @impl true
-  def delete(key) do
-    case request(:delete, key) do
-      {:ok, %Req.Response{status: status}} when status in 200..299 or status == 404 -> :ok
-      {:ok, %Req.Response{status: status}} -> status_error(:delete, status)
-      {:error, reason} -> log_failure(:delete, reason)
-    end
+  def delete(key), do: :delete |> request(key) |> delete_result()
+
+  defp stream_result({:ok, %Req.Response{status: 200, body: body}}), do: {:ok, body}
+
+  defp stream_result({:ok, %Req.Response{status: 404} = response}),
+    do: response |> read_error_body() |> missing_or_failed(:get, {:error, :not_found})
+
+  defp stream_result({:ok, %Req.Response{status: status} = response}) do
+    _ = Req.cancel_async_response(response)
+    status_error(:get, status)
   end
+
+  defp stream_result({:error, reason}), do: log_failure(:get, reason)
+
+  defp delete_result({:ok, %Req.Response{status: status}}) when status in 200..299, do: :ok
+
+  defp delete_result({:ok, %Req.Response{status: 404} = response}),
+    do: response |> read_error_body() |> missing_or_failed(:delete, :ok)
+
+  defp delete_result({:ok, %Req.Response{status: status}}), do: status_error(:delete, status)
+  defp delete_result({:error, reason}), do: log_failure(:delete, reason)
 
   @doc """
   The URL of the object stored under `key`: virtual-hosted by default,
@@ -303,13 +309,64 @@ defmodule Kanban.Attachments.Storage.S3 do
   # so a store asking for a long pause cannot stall a user request with it.
   defp retry_delay(attempt), do: 250 * Integer.pow(2, attempt)
 
-  # A 404 on a GET is a missing object. A put never comes here: its 404
-  # means a missing bucket, so upload/4 logs it as a failure.
-  defp status_error(_operation, 404), do: {:error, :not_found}
   defp status_error(operation, status), do: log_status(operation, status)
 
-  defp log_status(operation, status) do
+  # S3 answers 404 for a missing object (NoSuchKey) and for a missing bucket
+  # (NoSuchBucket), and a wrong endpoint or a proxy may answer 404 too. Only
+  # NoSuchKey says the object is gone. Mapping every 404 by its status let
+  # the cleanup worker drop the tombstones of every blob it "deleted" from a
+  # bucket that did not exist, logging nothing, and made a missing bucket
+  # look like a missing file (G488 exploratory campaign, 2026-11-02).
+  defp missing_or_failed(body, operation, missing) do
+    case error_code(body) do
+      "NoSuchKey" -> missing
+      code -> log_status(operation, 404, code)
+    end
+  end
+
+  # An error body is a few hundred bytes; at most @error_body_bytes of it, in
+  # at most @error_body_chunks reads, are taken, so a reply that trickles
+  # cannot hold the call for long. A body that fails to arrive is no code.
+  defp read_error_body(%Req.Response{body: %Req.Response.Async{} = async}) do
+    async
+    |> Enum.reduce_while({[], 0, 0}, fn data, {acc, bytes, chunks} ->
+      next = {[acc | data], bytes + IO.iodata_length(data), chunks + 1}
+      if full?(next), do: {:halt, next}, else: {:cont, next}
+    end)
+    |> elem(0)
+    |> IO.iodata_to_binary()
+  rescue
+    _exception -> ""
+  catch
+    :exit, _reason -> ""
+  end
+
+  defp read_error_body(%Req.Response{body: body}) when is_binary(body), do: body
+  defp read_error_body(_response), do: ""
+
+  defp full?({_acc, bytes, chunks}),
+    do: bytes >= @error_body_bytes or chunks >= @error_body_chunks
+
+  # Only a code made of letters, as every S3 error code is, is kept, so
+  # nothing else from the body can reach the log.
+  defp error_code(body) do
+    head = binary_part(body, 0, min(byte_size(body), @error_body_bytes))
+
+    case Regex.run(~r|<Code>([A-Za-z]{1,64})</Code>|, head) do
+      [_match, code] -> code
+      nil -> nil
+    end
+  end
+
+  defp log_status(operation, status, code \\ nil)
+
+  defp log_status(operation, status, nil) do
     Logger.warning("attachment storage #{operation} failed with status #{status}")
+    {:error, :storage_unavailable}
+  end
+
+  defp log_status(operation, status, code) do
+    Logger.warning("attachment storage #{operation} failed with status #{status} (#{code})")
     {:error, :storage_unavailable}
   end
 

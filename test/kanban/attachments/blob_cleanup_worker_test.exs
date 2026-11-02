@@ -449,6 +449,38 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
     end
   end
 
+  describe "with the S3 adapter" do
+    setup do
+      Application.put_env(:kanban, Storage, adapter: Kanban.Attachments.Storage.S3)
+      :ok
+    end
+
+    defp s3_replies(status, body) do
+      Req.Test.stub(Kanban.Attachments.Storage.S3, &Plug.Conn.send_resp(&1, status, body))
+    end
+
+    test "a bucket that does not exist keeps every tombstone for a later run" do
+      s3_replies(404, "<Error><Code>NoSuchBucket</Code></Error>")
+      rows = for minutes <- [-3, -2], do: tombstone(key(), minutes(minutes))
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      for row <- rows do
+        assert %BlobDeletion{attempts: 1, last_error: "storage_unavailable"} = reload(row)
+      end
+
+      assert log =~ "attachment storage delete failed with status 404 (NoSuchBucket)"
+    end
+
+    test "an object that is already gone (NoSuchKey) removes its tombstone" do
+      s3_replies(404, "<Error><Code>NoSuchKey</Code></Error>")
+      row = tombstone(key(), minutes(-1))
+
+      assert :ok = run()
+      assert reload(row) == nil
+    end
+  end
+
   describe "a long run" do
     # The run's summary line is info, below the test level. The module is
     # not async, so lowering the global level here is safe.

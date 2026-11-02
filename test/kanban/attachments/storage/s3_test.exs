@@ -369,6 +369,122 @@ defmodule Kanban.Attachments.Storage.S3Test do
     end
   end
 
+  describe "a 404 that is not NoSuchKey" do
+    @no_such_bucket "<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist</Message></Error>"
+
+    test "is storage_unavailable on a download and a delete, logged with its code" do
+      stub(404, @no_such_bucket)
+
+      log =
+        capture_log(fn ->
+          assert {:error, :storage_unavailable} = S3.stream(@key)
+          assert {:error, :storage_unavailable} = S3.delete(@key)
+        end)
+
+      assert log =~ "attachment storage get failed with status 404 (NoSuchBucket)"
+      assert log =~ "attachment storage delete failed with status 404 (NoSuchBucket)"
+      refute log =~ "specified bucket"
+    end
+
+    test "an empty 404 or a proxy's page is storage_unavailable too, with no code" do
+      for body <- ["", "<html><body><h1>404 Not Found</h1></body></html>"] do
+        stub(404, body)
+
+        log =
+          capture_log(fn ->
+            assert {:error, :storage_unavailable} = S3.stream(@key)
+            assert {:error, :storage_unavailable} = S3.delete(@key)
+          end)
+
+        assert log =~ "attachment storage delete failed with status 404\n"
+        refute log =~ "html"
+      end
+    end
+
+    test "only a code made of letters reaches the log" do
+      for code <- ["token=abc123 secret", "No Such<script>Bucket"] do
+        stub(404, "<Error><Code>#{code}</Code></Error>")
+
+        log = capture_log(fn -> assert {:error, :storage_unavailable} = S3.delete(@key) end)
+
+        assert log =~ "attachment storage delete failed with status 404\n"
+        refute log =~ "secret"
+        refute log =~ "script"
+      end
+    end
+
+    test "a HEAD has no body to read, so its 404 is still absent" do
+      stub(404, @no_such_bucket)
+      assert {:ok, false} = S3.exists(@key)
+    end
+  end
+
+  describe "a 404 read from a real socket" do
+    # The download path reads a streamed (async) body, which the Req.Test
+    # plug does not produce; the stub replies with the code named in the
+    # key's last segment, a byte every 20 ms for "trickle".
+    defmodule ErrorStub do
+      @behaviour Plug
+
+      @impl true
+      def init(opts), do: opts
+
+      @impl true
+      def call(conn, _opts) do
+        case List.last(conn.path_info) do
+          "trickle" -> trickle(Plug.Conn.send_chunked(conn, 404))
+          code -> Plug.Conn.send_resp(conn, 404, "<Error><Code>#{code}</Code></Error>")
+        end
+      end
+
+      defp trickle(conn) do
+        Enum.reduce_while(1..200, conn, fn _i, conn ->
+          Process.sleep(20)
+
+          case Plug.Conn.chunk(conn, "x") do
+            {:ok, conn} -> {:cont, conn}
+            {:error, _closed} -> {:halt, conn}
+          end
+        end)
+      end
+    end
+
+    setup do
+      {:ok, server} =
+        Bandit.start_link(plug: ErrorStub, ip: {127, 0, 0, 1}, port: 0, startup_log: false)
+
+      {:ok, {_ip, port}} = ThousandIsland.listener_info(server)
+      on_exit(fn -> stop_server(server) end)
+
+      put_config(
+        endpoint: "http://127.0.0.1:#{port}",
+        path_style: true,
+        req_options: [retry: false]
+      )
+
+      :ok
+    end
+
+    test "NoSuchKey is not_found and NoSuchBucket is storage_unavailable" do
+      assert {:error, :not_found} = S3.stream("boards/1/NoSuchKey")
+
+      log =
+        capture_log(fn ->
+          assert {:error, :storage_unavailable} = S3.stream("boards/1/NoSuchBucket")
+        end)
+
+      assert log =~ "attachment storage get failed with status 404 (NoSuchBucket)"
+    end
+
+    test "a trickling 404 body is read for a few chunks only" do
+      {elapsed_us, {result, _log}} =
+        :timer.tc(fn -> with_log(fn -> S3.stream("boards/1/trickle") end) end)
+
+      assert result == {:error, :storage_unavailable}
+      assert elapsed_us < 1_000_000
+    end
+  end
+
   describe "a store that trickles its reply" do
     # A real socket, not the Req.Test plug: receive_timeout bounds each read,
     # so only a reply that keeps arriving shows whether the whole call is
