@@ -17,8 +17,9 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   membership change also refreshes an open members screen, whose free-board cap
   line depends on the board's plan (a board move changes it). A column
   change re-renders every column. Comment changes go straight to the open
-  comment thread. Attachment changes are acknowledged and ignored until the
-  board UI shows attachments.
+  comment thread. Attachment changes refresh the open task's Attachments
+  section and its comment thread, which lists each comment's files; the
+  board columns render no attachments, so they are not reloaded.
 
   There is deliberately no catch-all clause: an unknown message is a bug in a
   broadcaster, not something to swallow.
