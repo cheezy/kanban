@@ -256,4 +256,42 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
                "This file is larger than the"
     end
   end
+
+  describe "upload_entries/1 names" do
+    # The browser sends the name as typed; the server stores it cleaned by
+    # Kanban.Attachments.Filename, so the staged row must show that same name.
+    test "shows a staged entry under its cleaned name, without bidi overrides or directories" do
+      raw = "C:\\fakepath\\invoice\u202Egpj.txt"
+      html = render_entries(upload([entry(%{ref: "4", client_name: raw})]))
+
+      refute html =~ "\u202E"
+      refute html =~ "fakepath"
+      shown = "invoicegpj.txt"
+      assert attr(html, "#upload-entry-4 img", "alt") == [shown]
+      assert attr(html, "#upload-entry-4 span.truncate", "title") == [shown]
+
+      assert attr(html, "#upload-entry-4 button", "aria-label") == [
+               "Cancel upload of " <> shown
+             ]
+
+      assert attr(html, "#upload-entry-4 progress", "aria-label") == [
+               "Upload progress for " <> shown
+             ]
+    end
+
+    test "caps a very long staged name at the stored length" do
+      raw = String.duplicate("a", 5000) <> ".png"
+      html = render_entries(upload([entry(%{ref: "5", client_name: raw})]))
+
+      [title] = attr(html, "#upload-entry-5 span.truncate", "title")
+      assert String.length(title) == Kanban.Attachments.Filename.max_codepoints()
+      assert String.ends_with?(title, ".png")
+    end
+
+    test "shows a placeholder for a name that is blank once cleaned" do
+      html = render_entries(upload([entry(%{ref: "6", client_name: "   \u200B "})]))
+
+      assert attr(html, "#upload-entry-6 span.truncate", "title") == ["unnamed file"]
+    end
+  end
 end

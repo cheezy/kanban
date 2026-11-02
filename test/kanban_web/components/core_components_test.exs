@@ -38,6 +38,21 @@ defmodule KanbanWeb.CoreComponentsTest do
       refute html =~ "alert-error"
     end
 
+    test "breaks a long unbroken word in the message, such as a file name, inside the card" do
+      assigns = %{name: String.duplicate("a", 255) <> ".txt"}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:error}>Could not upload {@name}: too big</CoreComponents.flash>
+        """)
+
+      [paragraph] =
+        html |> LazyHTML.from_fragment() |> LazyHTML.query("[role=alert] p") |> Enum.to_list()
+
+      assert paragraph |> LazyHTML.attribute("class") == ["break-words"]
+      assert LazyHTML.text(paragraph) =~ String.duplicate("a", 255)
+    end
+
     test "renders an optional title above the message" do
       assigns = %{}
 

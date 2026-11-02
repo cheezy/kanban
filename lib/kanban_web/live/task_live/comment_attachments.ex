@@ -21,8 +21,6 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   hint that the context re-checks. Nothing here touches the Repo.
   """
 
-  use Gettext, backend: KanbanWeb.Gettext
-
   import Phoenix.LiveView, only: [cancel_upload: 3, disallow_upload: 2, uploaded_entries: 2]
 
   alias Kanban.Attachments
@@ -222,11 +220,6 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   def failure_message([]), do: nil
 
   def failure_message(failed) when is_list(failed) do
-    Enum.map_join(failed, " ", fn {filename, reason} ->
-      gettext("Could not upload %{filename}: %{reason}",
-        filename: filename,
-        reason: AttachmentUploads.error_message(reason)
-      )
-    end)
+    Enum.map_join(failed, " ", &AttachmentUploads.failure_sentence/1)
   end
 end

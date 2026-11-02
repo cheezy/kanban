@@ -163,6 +163,13 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStagingTest do
       assert message =~ AttachmentUploads.error_message(:type_not_allowed)
     end
 
+    test "names each file the way it would be stored, never with a bidi override" do
+      message = AttachmentStaging.failure_message([{"evil\u202Efdp.exe", :not_accepted}])
+
+      refute message =~ "\u202E"
+      assert message =~ "Could not upload evilfdp.exe:"
+    end
+
     test "puts no flash when nothing failed and an error flash otherwise" do
       socket = %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}, flash: %{}}}
 

@@ -12,6 +12,8 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
       LiveView limits are only a hint for the browser.
     * `error_message/1` turns a LiveView upload error or a context refusal
       into a translated sentence.
+    * `display_name/1` and `failure_sentence/1` show a file the browser named
+      under the name it would be stored as, never under the raw client name.
     * `upload_allowed?/2` says whether an upload is usable right now.
 
   Nothing here touches the Repo or decides who may upload.
@@ -24,6 +26,7 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
 
   alias Kanban.Attachments
   alias Kanban.Attachments.ContentType
+  alias Kanban.Attachments.Filename
   alias Kanban.Attachments.Limits
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
@@ -42,6 +45,37 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   @spec upload_allowed?(Phoenix.LiveView.Socket.t(), atom()) :: boolean()
   def upload_allowed?(socket, name) when is_atom(name) do
     match?(%{allowed?: true}, Map.get(socket.assigns[:uploads] || %{}, name))
+  end
+
+  @doc """
+  The name to show for a file the browser named `client_name`: the name
+  `Kanban.Attachments.Filename.sanitize/1` would store, or a translated
+  placeholder when nothing is left of it.
+
+  The client name is whatever the browser sent, so it can carry bidi
+  overrides that make `invoice\\u202Egpj.txt` read as `invoicetxt.jpg`,
+  invisible characters, a directory or thousands of characters. Showing it
+  raw would let the staged row and the failure message disagree with the
+  name the file is stored and downloaded under.
+  """
+  @spec display_name(term()) :: String.t()
+  def display_name(client_name) do
+    case Filename.sanitize(client_name) do
+      {:ok, name} -> name
+      {:error, _reason} -> gettext("unnamed file")
+    end
+  end
+
+  @doc """
+  The translated sentence for one file that could not be stored, from a
+  `{client_name, reason}` pair as `store_entries/4` returns them.
+  """
+  @spec failure_sentence({term(), term()}) :: String.t()
+  def failure_sentence({client_name, reason}) do
+    gettext("Could not upload %{filename}: %{reason}",
+      filename: display_name(client_name),
+      reason: error_message(reason)
+    )
   end
 
   @doc """

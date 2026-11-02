@@ -211,6 +211,13 @@ defmodule KanbanWeb.TaskLive.CommentAttachmentsTest do
       assert message =~
                "Could not upload third.txt: #{AttachmentUploads.error_message(:too_many_files)}"
     end
+
+    test "names each file the way it would be stored, never with a bidi override" do
+      message = CommentAttachments.failure_message([{"evil\u202Efdp.exe", :not_accepted}])
+
+      refute message =~ "\u202E"
+      assert message =~ "Could not upload evilfdp.exe:"
+    end
   end
 
   describe "cancel_entry/2" do

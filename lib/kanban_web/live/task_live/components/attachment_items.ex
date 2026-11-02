@@ -266,6 +266,11 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
 
   def staged_preview?(_entry), do: false
 
+  # Each staged entry with the name it would be stored under, so the row, its
+  # preview's alt text and its aria-labels never show the raw client name.
+  defp named_entries(entries),
+    do: Enum.map(entries, &{&1, AttachmentUploads.display_name(&1.client_name)})
+
   @doc """
   Lists the entries staged in `upload` (a `Phoenix.LiveView.UploadConfig`)
   with a progress bar, a cancel button that sends `cancel_event` with
@@ -290,7 +295,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
       style="margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;"
     >
       <li
-        :for={entry <- @upload.entries}
+        :for={{entry, name} <- named_entries(@upload.entries)}
         id={"upload-entry-#{entry.ref}"}
         style="display: flex; flex-direction: column; gap: 4px;"
       >
@@ -298,7 +303,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           <.live_img_preview
             :if={staged_preview?(entry)}
             entry={entry}
-            alt={entry.client_name}
+            alt={name}
             width="40"
             height="40"
             style="flex-shrink: 0; width: 40px; height: 40px; object-fit: cover; border: 1px solid var(--line); border-radius: 6px;"
@@ -310,10 +315,10 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           />
           <span
             class="truncate"
-            title={entry.client_name}
+            title={name}
             style="flex: 1; min-width: 0; font-size: 13px; color: var(--ink);"
           >
-            {entry.client_name}
+            {name}
           </span>
           <span style="font-size: 12px; color: var(--ink-2);">
             {Exports.format_bytes(entry.client_size)}
@@ -324,7 +329,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
             phx-click={@cancel_event}
             phx-value-ref={entry.ref}
             phx-target={@target}
-            aria-label={gettext("Cancel upload of %{name}", name: entry.client_name)}
+            aria-label={gettext("Cancel upload of %{name}", name: name)}
             style="color: var(--ink-2);"
           >
             {gettext("Cancel")}
@@ -333,7 +338,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
         <progress
           value={entry.progress}
           max="100"
-          aria-label={gettext("Upload progress for %{name}", name: entry.client_name)}
+          aria-label={gettext("Upload progress for %{name}", name: name)}
           class="progress progress-primary w-full"
         >
           {entry.progress}%

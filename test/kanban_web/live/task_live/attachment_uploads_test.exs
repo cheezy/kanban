@@ -114,6 +114,32 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
     end
   end
 
+  describe "display_name/1 and failure_sentence/1" do
+    test "display_name/1 shows a client name the way it would be stored" do
+      assert AttachmentUploads.display_name("report.pdf") == "report.pdf"
+      assert AttachmentUploads.display_name("../../a\u202Etxt.exe") == "atxt.exe"
+      assert AttachmentUploads.display_name("  zero\u200Bwidth.txt ") == "zerowidth.txt"
+      assert AttachmentUploads.display_name("👨\u200D👩\u200D👧.png") == "👨\u200D👩\u200D👧.png"
+
+      capped = AttachmentUploads.display_name(String.duplicate("b", 5000) <> ".txt")
+      assert String.length(capped) == Kanban.Attachments.Filename.max_codepoints()
+    end
+
+    test "display_name/1 shows a placeholder for a name with nothing left to show" do
+      for raw <- ["", "   ", "\u202E", "..", "dir/", <<0xFF>>, nil] do
+        assert AttachmentUploads.display_name(raw) == "unnamed file", inspect(raw)
+      end
+    end
+
+    test "failure_sentence/1 names the cleaned file and the translated reason" do
+      assert AttachmentUploads.failure_sentence({"a\u202Etxt.exe", :too_large}) ==
+               "Could not upload atxt.exe: " <> AttachmentUploads.error_message(:too_large)
+
+      assert AttachmentUploads.failure_sentence({"    ", :empty}) ==
+               "Could not upload unnamed file: " <> AttachmentUploads.error_message(:empty)
+    end
+  end
+
   describe "error_message/1" do
     test "error_message translates every upload and context error" do
       put_limits(max_file_bytes: 2048, max_files_per_task: 7)

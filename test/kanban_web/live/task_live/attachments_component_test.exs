@@ -234,6 +234,24 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
       assert length(listed(task, owner)) == 2
     end
 
+    test "names a refused file the way it would be stored, in the row and the flash",
+         %{conn: conn, user: owner} do
+      put_limits(max_files_per_task: 1)
+      {board, task} = board_with_task(owner)
+      attachment_fixture(task, %{uploaded_by: owner})
+      view = open_task_view(conn, board, task)
+
+      upload(view, task, [%{name: "invoice\u202Egpj.txt", content: "x", type: "text/plain"}])
+      assert render(view) =~ "invoicegpj.txt"
+      refute render(view) =~ "\u202E"
+
+      submit_upload(view, task)
+
+      html = render(view)
+      assert html =~ "Could not upload invoicegpj.txt:"
+      refute html =~ "\u202E"
+    end
+
     test "shows the empty state when a task has no attachments", %{conn: conn, user: owner} do
       {board, task} = board_with_task(owner)
       view = open_task_view(conn, board, task)

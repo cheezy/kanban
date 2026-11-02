@@ -133,7 +133,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   # A partly successful submit says what was stored before what was refused.
   defp handle_store_result(%{stored: stored, failed: failed}, socket) do
     message =
-      [uploaded_message(stored) | Enum.map(failed, &failure_message/1)]
+      [uploaded_message(stored) | Enum.map(failed, &AttachmentUploads.failure_sentence/1)]
       |> Enum.reject(&is_nil/1)
       |> Enum.join(" ")
 
@@ -156,13 +156,6 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
 
   defp uploaded_message(stored),
     do: ngettext("Uploaded %{count} file.", "Uploaded %{count} files.", length(stored))
-
-  defp failure_message({filename, reason}) do
-    gettext("Could not upload %{filename}: %{reason}",
-      filename: filename,
-      reason: AttachmentUploads.error_message(reason)
-    )
-  end
 
   defp handle_delete_result({:ok, _deleted}, socket) do
     {:noreply, socket |> load() |> notify_flash(:info, gettext("Attachment deleted"))}

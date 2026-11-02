@@ -93,7 +93,7 @@ defmodule KanbanWeb.CoreComponents do
         </span>
         <div style="min-width: 0; flex: 1; color: var(--ink);">
           <p :if={@title} class="font-semibold">{@title}</p>
-          <p>{msg}</p>
+          <p class="break-words">{msg}</p>
         </div>
         <button
           type="button"

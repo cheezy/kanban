@@ -228,6 +228,7 @@ All UI text is translated in every locale with no fuzzy entries, and every new s
 - A `read_only` member sees and can download the files but gets no drop zone, upload button or delete control.
 - A free board under enforcement shows the LockedFeature panel instead of the list and upload controls.
 - Every upload, cancel and delete event checks `Plans.check_board(board_id, :attachments, surface: :live_view)` again and calls the context's authorizing functions, so a forged event is refused with a flash.
+- A staged file, and a flash naming a file that could not be stored, shows the name the file would be stored under (`KanbanWeb.TaskLive.AttachmentUploads.display_name/1`, which runs `Kanban.Attachments.Filename.sanitize/1`), never the raw client name; a name with nothing left reads "unnamed file". This holds on all three upload surfaces: the task view, the comment composer and the new-task form.
 
 ### 6.3 Image previews (W2512)
 
