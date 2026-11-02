@@ -246,7 +246,8 @@ the error message.
   opened by downloading it.
 - **Comments.** Drag files onto **Attach files** under the comment box, or
   click it, before you post. The files are stored once the comment is saved.
-  The comment's author can remove a file while editing the comment, and
+  The comment's author can remove a file while editing the comment, the
+  board's owner can delete any comment's file without editing it, and
   deleting a comment deletes its files. Like **Upload files**, **Add
   Comment** waits while a staged file shows an error or more files are
   staged than the task has room for, and says what to cancel.

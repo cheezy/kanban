@@ -917,21 +917,49 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       assert render(view) =~ "Could not upload #{refused}"
     end
 
-    test "only the author can remove an attachment while editing; the board owner cannot",
+    # docs/attachments.md: the board's owner (an org-admin counts) can delete
+    # any file, so they can take one down without wiping the author's text.
+    test "the board owner can delete a file on a member's comment without editing it",
          %{conn: conn, user: owner} do
       {board, task} = board_with_task(owner)
-      {author, comment, attachment} = comment_with_file(board, owner, task)
+      {_author, comment, attachment} = comment_with_file(board, owner, task)
 
       owner_view = open_task_view(conn, board, task)
-      assert has_element?(owner_view, file_row(task, comment, attachment))
-      refute has_element?(owner_view, remove_button())
+      button = file_row(task, comment, attachment) <> " " <> remove_button()
+      assert has_element?(owner_view, button)
+      assert owner_view |> element(button) |> render() =~ "data-confirm"
 
-      owner_view
+      owner_view |> element(button) |> render_click()
+
+      refute Repo.get(TaskAttachment, attachment.id)
+      refute has_element?(owner_view, file_row(task, comment, attachment))
+      assert render(owner_view) =~ "Attachment deleted"
+      assert Repo.get(TaskComment, comment.id)
+    end
+
+    test "another member cannot remove a file on someone else's comment, even by a forged event",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      {_author, comment, attachment} = comment_with_file(board, owner, task)
+      bystander = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, bystander, :modify, owner)
+
+      view = conn |> log_in_user(bystander) |> open_task_view(board, task)
+      assert has_element?(view, file_row(task, comment, attachment))
+      refute has_element?(view, remove_button())
+
+      view
       |> with_target(thread(task))
       |> render_click("remove_comment_attachment", %{"id" => to_string(attachment.id)})
 
-      assert render(owner_view) =~ "You are not allowed to change this comment"
+      assert render(view) =~ "You are not allowed to change this comment"
       assert Repo.get(TaskAttachment, attachment.id)
+    end
+
+    test "the author removes a file on their comment while editing it",
+         %{conn: conn, user: owner} do
+      {board, task} = board_with_task(owner)
+      {author, comment, attachment} = comment_with_file(board, owner, task)
 
       author_view = conn |> log_in_user(author) |> open_task_view(board, task)
       refute has_element?(author_view, remove_button())
@@ -940,17 +968,11 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       |> element(row(task, comment) <> ~s( button[phx-click="edit_comment"]))
       |> render_click()
 
-      assert has_element?(
-               author_view,
-               file_row(task, comment, attachment) <> " " <> remove_button()
-             )
-
       author_view
       |> element(file_row(task, comment, attachment) <> " " <> remove_button())
       |> render_click()
 
       refute Repo.get(TaskAttachment, attachment.id)
-      refute has_element?(author_view, file_row(task, comment, attachment))
       assert render(author_view) =~ "Attachment deleted"
       assert Repo.get(TaskComment, comment.id)
     end

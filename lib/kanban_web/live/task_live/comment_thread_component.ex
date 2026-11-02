@@ -390,6 +390,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
           target={@myself}
           dom_prefix={@id}
           attachments={Map.get(@comment_attachments, entry.comment.id, [])}
+          moderate={@moderates_files?}
         />
       </div>
 

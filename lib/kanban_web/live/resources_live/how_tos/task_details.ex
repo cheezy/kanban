@@ -189,7 +189,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
           %{
             title: "Attaching Files to a Comment",
             content:
-              "Below **Add a comment**, drag files onto **Attach files** or click it to browse, then click **Add Comment**. The files are stored once the comment is saved, and they show under the comment rather than in **Attachments**. Like **Upload files**, **Add Comment** waits while a file shows an error or more files are waiting than the task has room for, and says what to cancel.\n\nWhile you're editing your own comment, you can remove one of its files with **Delete**. Deleting a comment deletes its files too. [Commenting and Mentioning](/resources/commenting-and-mentioning) covers the rest of comments.",
+              "Below **Add a comment**, drag files onto **Attach files** or click it to browse, then click **Add Comment**. The files are stored once the comment is saved, and they show under the comment rather than in **Attachments**. Like **Upload files**, **Add Comment** waits while a file shows an error or more files are waiting than the task has room for, and says what to cancel.\n\nWhile you're editing your own comment, you can remove one of its files with **Delete**. The board's owner can delete a file on anyone's comment without editing it, so a file can come down while the comment stays. Deleting a comment deletes its files too. [Commenting and Mentioning](/resources/commenting-and-mentioning) covers the rest of comments.",
             image: nil
           },
           %{

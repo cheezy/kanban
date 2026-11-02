@@ -125,12 +125,26 @@ defmodule KanbanWeb.TaskLive.CommentAttachmentsTest do
                reader |> Scope.for_user() |> CommentAttachments.load(task, board.id)
     end
 
+    test "only the board's owner moderates its comment files", %{
+      owner: owner,
+      board: board,
+      task: task
+    } do
+      load = fn user -> user |> Scope.for_user() |> CommentAttachments.load(task, board.id) end
+
+      assert %{moderates_files?: true} = load.(owner)
+      assert %{moderates_files?: false} = board |> member(owner, :modify) |> load.()
+      assert %{moderates_files?: false} = board |> member(owner, :read_only) |> load.()
+      assert %{moderates_files?: false} = load.(user_fixture())
+    end
+
     test "has nothing for a thread without a board", %{owner: owner, task: task} do
       assert owner |> Scope.for_user() |> CommentAttachments.load(task, nil) == %{
                comment_attachments: %{},
                can_attach?: false,
                attach_locked?: false,
-               attach_room: 0
+               attach_room: 0,
+               moderates_files?: false
              }
     end
 
@@ -201,6 +215,19 @@ defmodule KanbanWeb.TaskLive.CommentAttachmentsTest do
                %{assigns | entries: entries},
                to_string(attachment.id)
              ) == {:error, :unauthorized}
+    end
+
+    test "returns any comment's attachment to a viewer who moderates the board's files",
+         %{assigns: assigns, attachment: attachment, elsewhere: elsewhere} do
+      moderator = %{assigns | editing_id: nil} |> Map.put(:moderates_files?, true)
+
+      assert CommentAttachments.find_removable(moderator, to_string(elsewhere.id)) ==
+               {:ok, elsewhere}
+
+      assert CommentAttachments.find_removable(moderator, to_string(attachment.id)) ==
+               {:ok, attachment}
+
+      assert CommentAttachments.find_removable(moderator, "0") == {:error, :not_found}
     end
 
     test "is not found for an unknown, malformed or non-string id", %{assigns: assigns} do

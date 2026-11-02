@@ -243,7 +243,7 @@ All UI text is translated in every locale with no fuzzy entries, and every new s
 - The comment composer gets an **Attach files** input under the mention field; a free board under enforcement shows no input and no comment files. After **Add Comment**, the files are stored on the comment the server returned, never on an id from the client.
 - If the comment fails validation, the staged files stay. If a file fails to store after the comment is saved, the comment stays and a flash names the failed files.
 - The thread loads every comment's attachments with one context call (`KanbanWeb.TaskLive.CommentAttachments.group_by_comment/1`).
-- Only the comment's author, in edit mode, can remove a comment's files. Deleting a comment removes its files through the cascade and the tombstone, so no extra attachment code is needed.
+- The comment's author, in edit mode, can remove a comment's files, and so can the board's owner (an org-admin counts) at any time, as the delete rule in §4 allows; the owner can take a file down without deleting the author's comment. Deleting a comment removes its files through the cascade and the tombstone, so no extra attachment code is needed.
 
 ### 6.5 Task form (W2514)
 

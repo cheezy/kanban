@@ -71,13 +71,22 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
       not include attachments, so the composer shows the locked notice.
     * `attach_room` — how many more files the task can hold, counting every
       file on it, its own and its comments', as the per-task limit does.
+    * `moderates_files?` — the viewer is the board's owner (an org-admin
+      counts), who may delete any comment's file without editing it.
   """
   @spec load(term(), Task.t(), integer() | nil) :: map()
   def load(_scope, _task, nil),
-    do: %{comment_attachments: %{}, can_attach?: false, attach_locked?: false, attach_room: 0}
+    do: %{
+      comment_attachments: %{},
+      can_attach?: false,
+      attach_locked?: false,
+      attach_room: 0,
+      moderates_files?: false
+    }
 
   def load(scope, %Task{} = task, board_id) when is_integer(board_id) do
-    may_attach? = can_attach?(scope, board_id)
+    viewer = Policy.resolve(scope, board_id)
+    may_attach? = Policy.allowed?(viewer, :upload)
     locked? = not Plans.board_unlocked?(board_id)
 
     attachments = list_all(scope, task, locked?)
@@ -86,7 +95,8 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
       comment_attachments: group_by_comment(attachments),
       can_attach?: may_attach? and not locked?,
       attach_locked?: may_attach? and locked?,
-      attach_room: max(Limits.max_files_per_task() - length(attachments), 0)
+      attach_room: max(Limits.max_files_per_task() - length(attachments), 0),
+      moderates_files?: viewer.access == :owner and not locked?
     }
   end
 
@@ -186,19 +196,21 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   @doc """
   Finds the attachment `raw_id` among the thread's loaded rows, for removal.
 
-  It must sit on the comment being edited (`editing_id`), and that comment's
-  entry must be editable by the viewer — the author-only edit rule — so a
-  forged event for any other comment is `{:error, :unauthorized}`, even from
-  the board owner whom `Kanban.Attachments.delete_attachment/2` would allow.
-  An id that is not loaded is `{:error, :not_found}`.
+  The board's owner (`moderates_files?`, an org-admin counts) may remove any
+  comment's file, as `Kanban.Attachments.delete_attachment/2` allows. Anyone
+  else must be editing the comment it sits on (`editing_id`) and be allowed to
+  edit it — the author-only edit rule — so a forged event for any other
+  comment is `{:error, :unauthorized}`. An id that is not loaded is
+  `{:error, :not_found}`. The context authorizes the delete again.
   """
   @spec find_removable(map(), term()) :: {:ok, struct()} | {:error, :not_found | :unauthorized}
   def find_removable(assigns, raw_id) when is_binary(raw_id) do
     with {id, ""} <- Integer.parse(raw_id),
          %{} = attachment <- find_loaded(assigns.comment_attachments, id) do
-      if editing_editable?(assigns, attachment.comment_id),
-        do: {:ok, attachment},
-        else: {:error, :unauthorized}
+      if Map.get(assigns, :moderates_files?, false) or
+           editing_editable?(assigns, attachment.comment_id),
+         do: {:ok, attachment},
+         else: {:error, :unauthorized}
     else
       _missing -> {:error, :not_found}
     end

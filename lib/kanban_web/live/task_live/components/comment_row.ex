@@ -36,8 +36,9 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
 
   `attachments` are the comment's files, listed under the body through
   `KanbanWeb.TaskLive.Components.AttachmentItems.attachment_list/1`. Each gets
-  a remove control, sending `remove_comment_attachment` to `target`, only
-  while the row is being edited and the entry is editable (the author).
+  a remove control, sending `remove_comment_attachment` to `target`, while
+  the row is being edited and the entry is editable (the author), or always
+  when `moderate` is set (the board's owner, who may delete any file).
   """
   attr :entry, :map, required: true
   attr :editing, :boolean, default: false
@@ -45,6 +46,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
   attr :target, :any, default: nil
   attr :dom_prefix, :string, default: "comment-thread"
   attr :attachments, :list, default: []
+  attr :moderate, :boolean, default: false
 
   def comment_row(assigns) do
     comment = assigns.entry.comment
@@ -169,7 +171,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
             attachments={@attachments}
             dom_prefix={comment_dom_id(@dom_prefix, @comment) <> "-attachments"}
             target={@target}
-            can_delete={remove_control(@editing, @entry)}
+            can_delete={remove_control(@moderate, @editing, @entry)}
             delete_event="remove_comment_attachment"
           />
         </div>
@@ -203,10 +205,12 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
     """
   end
 
-  # The remove control is a hint for the author while editing; the thread
-  # re-checks the same rule before Kanban.Attachments decides.
-  defp remove_control(true, %{can_edit: true}), do: fn _attachment -> true end
-  defp remove_control(_editing, _entry), do: nil
+  # The remove control is a hint for the board's owner, and for the author
+  # while editing; the thread re-checks the same rule before
+  # Kanban.Attachments decides.
+  defp remove_control(true, _editing, _entry), do: fn _attachment -> true end
+  defp remove_control(false, true, %{can_edit: true}), do: fn _attachment -> true end
+  defp remove_control(_moderate, _editing, _entry), do: nil
 
   # An agent comment is attributed to the agent and to the human whose token
   # it ran under; anything else to its human author, or "Unknown" when the
