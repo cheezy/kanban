@@ -38,7 +38,8 @@ defmodule Kanban.Attachments do
   `AFTER DELETE` trigger queues the blob (`Kanban.Attachments.BlobDeletion`),
   so a rolled-back delete never loses a blob a row still points at. An owner
   deleting someone else's attachment emits the
-  `:attachment_deleted_by_owner` audit event with ids only. Telemetry is
+  `:attachment_deleted_by_owner` audit event with ids only, linked to the
+  board's Organization when it has one. Telemetry is
   `[:kanban, :attachment, :uploaded | :upload_refused | :downloaded |
   :deleted]`; see `docs/telemetry.md`.
   """
@@ -48,6 +49,7 @@ defmodule Kanban.Attachments do
   alias Kanban.Attachments.Pipeline
   alias Kanban.Attachments.Policy
   alias Kanban.Attachments.TaskAttachment
+  alias Kanban.Attachments.Usage
   alias Kanban.AuditLog
   alias Kanban.Plans
   alias Kanban.Repo
@@ -350,6 +352,7 @@ defmodule Kanban.Attachments do
     metadata =
       [
         user_id: user_id,
+        organization_id: organization_id(board_id),
         board_id: board_id,
         task_id: deleted.task_id,
         comment_id: deleted.comment_id,
@@ -362,6 +365,15 @@ defmodule Kanban.Attachments do
   end
 
   defp maybe_audit_owner_delete(_viewer, _deleted, _board_id), do: :ok
+
+  # The Organization of the board's workspace, so the row is listed in that
+  # Organization's audit log; nil for a board outside any Organization.
+  defp organization_id(board_id) do
+    case Usage.quota_scope(board_id) do
+      {:organization, organization_id} -> organization_id
+      {:board, _board_id} -> nil
+    end
+  end
 
   defp broadcast(task_id, board_id) do
     payload = %{task_id: task_id, board_id: board_id}

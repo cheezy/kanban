@@ -60,8 +60,16 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:comment_deleted_by_owner, [:user_id, :board_id, :task_id, :comment_id, :author_user_id],
      "A board owner deleted someone else's comment."},
     {:attachment_deleted_by_owner,
-     [:user_id, :board_id, :task_id, :comment_id, :attachment_id, :uploaded_by_id],
-     "A board owner deleted someone else's attachment."},
+     [
+       :user_id,
+       :organization_id,
+       :board_id,
+       :task_id,
+       :comment_id,
+       :attachment_id,
+       :uploaded_by_id
+     ],
+     "A board owner or org-admin deleted someone else's attachment. organization_id is set when the board is in an Organization, so the row is listed in that Organization's audit log."},
     {:completion_notes_credential_suspected, [:task_id, :agent_name],
      "Completion notes looked like they contained a credential."},
     {:security_considerations_credential_suspected, [:task_id, :agent_name],

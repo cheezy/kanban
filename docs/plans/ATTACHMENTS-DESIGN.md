@@ -429,10 +429,10 @@ Every use task checks what the installed runtime's read tool returns for images 
 
 ## 10. Telemetry, audit and docs
 
-- **Context telemetry (W2508):** `[:kanban, :attachment, :uploaded]`, `:downloaded`, `:deleted` and `:upload_refused`, declared in a new `Catalog.AttachmentEvents` module. Refusals carry a `reason` tag: `too_large`, `type_not_allowed`, `type_mismatch`, `empty`, `too_many_files`, `quota_exceeded` or `storage_unavailable`. Every upload event also carries a `source` tag, `upload` for a person's upload; the Jira import's `import_attachment/4` emits the same events with `source` set to `import`. `downloaded` carries a `via` tag: `download` from the download route, `preview` from the preview route, so thumbnails are not counted as downloads.
+- **Context telemetry (W2508):** `[:kanban, :attachment, :uploaded]`, `:downloaded`, `:deleted` and `:upload_refused`, declared in a new `Catalog.AttachmentEvents` module. Refusals carry a `reason` tag: `too_large`, `type_not_allowed`, `type_mismatch`, `empty`, `too_many_files`, `quota_exceeded` or `storage_unavailable`, or `invalid_file` for a file the changeset refuses for anything else, such as an unusable name (the caller still gets the changeset). Every upload event also carries a `source` tag, `upload` for a person's upload; the Jira import's `import_attachment/4` emits the same events with `source` set to `import`. `downloaded` carries a `via` tag: `download` from the download route, `preview` from the preview route, so thumbnails are not counted as downloads.
 - **API telemetry (W2517):** `[:kanban, :api, :attachment_downloaded]`.
 - Metadata carries ids, sizes and reason codes only, never filenames, contents or hashes. [Telemetry](../telemetry.md) gets an *Attachment events* section and a refreshed event reference.
-- **Audit:** an owner deleting someone else's attachment emits `:attachment_deleted_by_owner`, with ids only and a translated label.
+- **Audit:** an owner deleting someone else's attachment emits `:attachment_deleted_by_owner`, with ids only and a translated label, and the board's `organization_id` when it is in an Organization so the row is listed in that Organization's audit log.
 - **Real-time updates:** creates and deletes broadcast `{Kanban.Attachments, :attachment_changed, %{task_id, board_id}}` on `board:<id>`.
 - **Docs:**
   - `docs/attachments.md`: W2505 creates it as the operator guide (environment variables, limits, Fly/Tigris setup, local-disk caveats); W2515 adds a user section.

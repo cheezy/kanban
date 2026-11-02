@@ -60,7 +60,7 @@ defmodule Kanban.Telemetry.Catalog.AttachmentEvents do
       measurements: [:count],
       metadata: [:reason, :source, :task_id, :board_id, :user_id],
       description:
-        "An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, and source is :upload or :import. A plan refusal is plan.feature_refused instead.",
+        "An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, or :invalid_file for a file refused for anything else, such as an unusable name; source is :upload or :import. A plan refusal is plan.feature_refused instead.",
       legacy: false,
       metrics: [counter: :count],
       persist: false,

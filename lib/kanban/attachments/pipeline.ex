@@ -29,8 +29,10 @@ defmodule Kanban.Attachments.Pipeline do
   #      cleanup worker.
   #
   # Telemetry: `uploaded` after the insert commits, `upload_refused` for each
-  # of the seven refusal reasons. Metadata carries ids, sizes and the reason
-  # only, never the filename, the contents or the hash.
+  # of the seven refusal reasons, and `upload_refused` with `:invalid_file`
+  # for a file the changeset refuses for any other reason (an unusable name,
+  # say), whose caller still gets the changeset. Metadata carries ids, sizes
+  # and the reason only, never the filename, the contents or the hash.
 
   import Ecto.Query, only: [from: 2]
 
@@ -228,9 +230,11 @@ defmodule Kanban.Attachments.Pipeline do
     if changeset.valid?, do: {:ok, changeset}, else: refuse_changeset(changeset)
   end
 
+  # A changeset refusal with no reason of its own is tagged here, so report/3
+  # counts it as :invalid_file; the caller still gets the changeset.
   defp refuse_changeset(changeset) do
     case refusal_reason(changeset.errors) do
-      nil -> {:error, changeset}
+      nil -> {:error, {:invalid_file, changeset}}
       reason -> {:error, reason}
     end
   end
@@ -372,7 +376,19 @@ defmodule Kanban.Attachments.Pipeline do
     result
   end
 
+  defp report({:error, {:invalid_file, changeset}}, base, source) do
+    emit_refused(:invalid_file, base, source)
+    {:error, changeset}
+  end
+
   defp report({:error, reason} = result, base, source) when reason in @refusal_reasons do
+    emit_refused(reason, base, source)
+    result
+  end
+
+  defp report(result, _base, _source), do: result
+
+  defp emit_refused(reason, base, source) do
     Kanban.Telemetry.emit(
       [:kanban, :attachment, :upload_refused],
       %{count: 1},
@@ -384,9 +400,5 @@ defmodule Kanban.Attachments.Pipeline do
         user_id: base.uploaded_by_id
       }
     )
-
-    result
   end
-
-  defp report(result, _base, _source), do: result
 end

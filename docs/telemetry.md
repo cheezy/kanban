@@ -833,7 +833,9 @@ and emits no `deleted` event. Every event measures `count: 1`;
   its sha256 are never sent, in telemetry or in the audit event below.
 - **`reason` is a closed set.** `upload_refused` carries one of `:too_large`,
   `:type_not_allowed`, `:type_mismatch`, `:empty`, `:too_many_files`,
-  `:quota_exceeded` or `:storage_unavailable`. It is a tag. An upload refused
+  `:quota_exceeded` or `:storage_unavailable`, or `:invalid_file` for a file
+  refused for anything else, such as a name that is blank or only dots and
+  slashes (the caller gets the changeset). It is a tag. An upload refused
   because the caller is not a member or lacks the right, or because the temp
   file cannot be read, emits nothing.
 - **Plan refusals are not upload refusals.** While plans are enforced, every
@@ -861,7 +863,8 @@ and emits no `deleted` event. Every event measures `count: 1`;
   `"board:<board_id>"`, counted by `[:kanban, :pubsub, :broadcast]` with
   `event: :attachment_changed`. A board owner deleting someone else's file
   records the `:attachment_deleted_by_owner` [audit event](#audit-events), with
-  ids only.
+  ids only. On a board in an Organization it carries that `organization_id`,
+  so the row is listed in the Organization's audit log.
 
 ## Emitting an event
 
@@ -1243,7 +1246,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :attachment, :uploaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `comment_id`, `user_id`, `source` | A file was attached to a task or comment. source is :upload or :import; comment_id is set for a comment-level file. The filename, contents and hash are never sent. |
 | `[:kanban, :attachment, :downloaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | A board member was authorized to fetch an attachment. via is :download when they download it, :preview when a thumbnail or the lightbox shows it, and :head for a HEAD request, which sends no body. The filename, contents and hash are never sent. |
 | `[:kanban, :attachment, :deleted]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id` | An attachment was deleted through Kanban.Attachments; its blob is queued for removal. user_id is the person who deleted it. The filename is never sent. |
-| `[:kanban, :attachment, :upload_refused]` | event | `count` | `reason`, `source`, `task_id`, `board_id`, `user_id` | An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, and source is :upload or :import. A plan refusal is plan.feature_refused instead. |
+| `[:kanban, :attachment, :upload_refused]` | event | `count` | `reason`, `source`, `task_id`, `board_id`, `user_id` | An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, or :invalid_file for a file refused for anything else, such as an unusable name; source is :upload or :import. A plan refusal is plan.feature_refused instead. |
 
 ### Domain `audit`
 
@@ -1255,7 +1258,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :api_token_created]` | event, legacy | `count` | `user_id`, `board_id`, `workspace_id`, `organization_id`, `token_id` | An API token was created. |
 | `[:kanban, :audit, :api_token_revoked]` | event, legacy | `count` | `user_id`, `token_id`, `organization_id` | An API token was revoked. |
 | `[:kanban, :audit, :comment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `author_user_id` | A board owner deleted someone else's comment. |
-| `[:kanban, :audit, :attachment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `attachment_id`, `uploaded_by_id` | A board owner deleted someone else's attachment. |
+| `[:kanban, :audit, :attachment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `organization_id`, `board_id`, `task_id`, `comment_id`, `attachment_id`, `uploaded_by_id` | A board owner or org-admin deleted someone else's attachment. organization_id is set when the board is in an Organization, so the row is listed in that Organization's audit log. |
 | `[:kanban, :audit, :completion_notes_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | Completion notes looked like they contained a credential. |
 | `[:kanban, :audit, :security_considerations_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | A security consideration in a reviewer result looked like it contained a credential. |
 | `[:kanban, :audit, :two_factor_enabled]` | event, legacy | `count` | `user_id` | A user turned on two-factor authentication. |

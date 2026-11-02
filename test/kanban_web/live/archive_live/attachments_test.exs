@@ -113,4 +113,28 @@ defmodule KanbanWeb.ArchiveLive.AttachmentsTest do
 
     assert view |> files(ctx.task) |> render() =~ "late.txt"
   end
+
+  test "deleting a comment drops its files from an open archive page", ctx do
+    scope = Kanban.Accounts.Scope.for_user(ctx.owner)
+    {:ok, comment} = Kanban.Tasks.Comments.create_comment(scope, ctx.task, %{"content" => "x"})
+    attachment_fixture(ctx.task, %{uploaded_by: ctx.owner, filename: "on-task.txt"})
+
+    attachment_fixture(ctx.task, %{
+      uploaded_by: ctx.owner,
+      comment: comment,
+      filename: "on-comment.txt"
+    })
+
+    {:ok, view, _html} =
+      ctx.conn |> log_in_user(ctx.owner) |> live(~p"/boards/#{ctx.board}/archive")
+
+    assert view |> files(ctx.task) |> render() =~ "2 files"
+
+    assert {:ok, _} = Kanban.Tasks.Comments.delete_comment(scope, comment)
+
+    html = view |> files(ctx.task) |> render()
+    assert html =~ "1 file"
+    assert html =~ "on-task.txt"
+    refute html =~ "on-comment.txt"
+  end
 end

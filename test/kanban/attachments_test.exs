@@ -20,6 +20,7 @@ defmodule Kanban.AttachmentsTest do
   alias Kanban.Attachments.Storage
   alias Kanban.Attachments.TaskAttachment
   alias Kanban.Attachments.Usage
+  alias Kanban.AuditLog
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Tasks.Comments
@@ -766,6 +767,7 @@ defmodule Kanban.AttachmentsTest do
 
       assert metadata == %{
                user_id: ctx.owner.id,
+               organization_id: ctx.organization.id,
                board_id: ctx.board.id,
                task_id: ctx.task.id,
                attachment_id: attachment.id,
@@ -776,6 +778,41 @@ defmodule Kanban.AttachmentsTest do
 
       assert {:ok, _} = ctx.owner |> scope() |> Attachments.delete_attachment(own)
       refute_received {:telemetry_event, @owner_delete, _, _}
+    end
+
+    test "an owner delete on an Organization board is listed in that Organization's audit log",
+         ctx do
+      attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier})
+
+      assert {:ok, _} = ctx.owner |> scope() |> Attachments.delete_attachment(attachment)
+
+      assert [event] =
+               AuditLog.list_events(
+                 organization_id: ctx.organization.id,
+                 action: :attachment_deleted_by_owner
+               )
+
+      assert event.actor_user_id == ctx.owner.id
+      assert event.organization_id == ctx.organization.id
+      assert event.actor_in_organization == true
+    end
+
+    test "an owner delete on a board outside any Organization records no organization_id",
+         ctx do
+      modifier = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(ctx.personal_board, modifier, :modify, ctx.owner)
+      task = ctx.personal_board |> column_fixture() |> task_fixture()
+      attachment = attachment_fixture(task, %{uploaded_by: modifier})
+      attach_telemetry(@owner_delete)
+
+      assert {:ok, _} = ctx.owner |> scope() |> Attachments.delete_attachment(attachment)
+
+      assert_received {:telemetry_event, @owner_delete, _, metadata}
+      refute Map.has_key?(metadata, :organization_id)
+      assert metadata.board_id == ctx.personal_board.id
+
+      assert [event] = AuditLog.list_events(action: :attachment_deleted_by_owner)
+      assert event.organization_id == nil
     end
 
     test "delete_attachment refuses a modify member who did not upload", ctx do
@@ -919,6 +956,32 @@ defmodule Kanban.AttachmentsTest do
                ctx.reader |> scope() |> Attachments.create_attachment(ctx.task, text_upload(ctx))
 
       refute_received {:telemetry_event, @refused, _, _}
+    end
+
+    test "a file the changeset refuses emits upload_refused invalid_file and returns the changeset",
+         ctx do
+      attach_telemetry(@refused)
+
+      for name <- ["", "   ", "/", ".", ".."] do
+        bad = upload(ctx.tmp_dir, "x.txt", "hello\n") |> Map.put(:filename, name)
+
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 ctx.modifier |> scope() |> Attachments.create_attachment(ctx.task, bad)
+
+        assert Keyword.has_key?(changeset.errors, :filename)
+
+        assert_received {:telemetry_event, @refused, %{count: 1}, metadata}
+
+        assert metadata == %{
+                 reason: :invalid_file,
+                 source: :upload,
+                 task_id: ctx.task.id,
+                 board_id: ctx.board.id,
+                 user_id: ctx.modifier.id
+               }
+      end
+
+      assert row_count(ctx.task) == 0
     end
 
     test "uploaded and upload_refused carry source upload", ctx do

@@ -207,6 +207,12 @@ defmodule KanbanWeb.ArchiveLive.Index do
   def handle_info({Kanban.Attachments, :attachment_changed, _payload}, socket),
     do: {:noreply, assign_attachments(socket)}
 
+  # Deleting a comment deletes its files through the database cascade, with
+  # no attachment broadcast of its own, and the file count here includes
+  # comment files, so a comment change recounts them too.
+  def handle_info({Kanban.Tasks.Comments, :comment_changed, _payload}, socket),
+    do: {:noreply, assign_attachments(socket)}
+
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
