@@ -30,4 +30,25 @@ ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)
 # while preserving the logs as failure diagnostics. Individual tests that
 # assert on log output continue to use ExUnit.CaptureLog.capture_log/1.
 ExUnit.start(capture_log: true)
+
+# Attachment blobs. A stored file's row rolls back with the test's sandbox,
+# but Kanban.Attachments.Storage.Local has already written its bytes, so
+# every run used to leave its blobs under the configured root. Each run gets
+# its own directory under that root instead, removed when the suite ends.
+# A shared root cannot simply be wiped: two `mix test` runs at once (a hook
+# and a developer) would delete each other's files mid-test.
+attachments_root =
+  Path.join(Kanban.Attachments.Storage.Local.root(), "run-#{System.pid()}")
+
+Application.put_env(
+  :kanban,
+  Kanban.Attachments.Storage.Local,
+  Keyword.put(
+    Application.get_env(:kanban, Kanban.Attachments.Storage.Local, []),
+    :root,
+    attachments_root
+  )
+)
+
+ExUnit.after_suite(fn _result -> File.rm_rf(attachments_root) end)
 Ecto.Adapters.SQL.Sandbox.mode(Kanban.Repo, :manual)
