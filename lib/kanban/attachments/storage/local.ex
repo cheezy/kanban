@@ -49,6 +49,12 @@ defmodule Kanban.Attachments.Storage.Local do
       real root. A symlink planted under the root therefore never serves, and
       never receives, a file from elsewhere. The root itself may be a symlink
       only when it is configured explicitly; the default root never is.
+    * A hard link is not caught: its real path is inside the root, so a hard
+      link planted under a key serves the bytes of the file it shares with
+      elsewhere on the same filesystem, and a delete removes only the link.
+      Files are not refused for having more than one link, because a backup
+      that hard-links the store on the same filesystem would then make every
+      file unservable. Only the app's own user can plant one.
     * `sweep/1` checks the root as every other call does, so it never sweeps
       through a symlinked default root or one others can write.
 
@@ -59,7 +65,10 @@ defmodule Kanban.Attachments.Storage.Local do
   The swap check guards against a race only the app's own user (or root)
   could start, since no one else can write under a trusted root: it
   narrows it to the instant between the check and the rename, which no
-  call this VM exposes can close.
+  call this VM exposes can close. A delete has the same kind of window: a
+  key's directory swapped for a link after its checks and before the
+  remove would have the remove follow that link, since this VM exposes no
+  `unlinkat` on a directory handle. That too needs the app's own user.
 
   Keys arrive already validated by `Kanban.Attachments.Storage`, so they
   hold no `..`, no leading slash and no empty segment.
