@@ -170,6 +170,32 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
       assert count(view <> form, "#attachments-form-7-attachment-11-lightbox") == 1
     end
 
+    # A screen reader lists every control on the page out of context, so a row
+    # of "Download" and "Delete" links must each say which file they act on.
+    test "names the file in every Download and Delete control" do
+      html =
+        render_list(
+          [
+            attachment(%{id: 3, filename: "notes.txt", content_type: "text/plain"}),
+            attachment(%{id: 4, filename: "shot.png"})
+          ],
+          can_delete: fn _attachment -> true end
+        )
+
+      assert attr(html, ~s(a[href="/attachments/3/download"]), "aria-label") == [
+               "Download notes.txt"
+             ]
+
+      # The png's row link and its lightbox link both name it.
+      assert attr(html, ~s(a[href="/attachments/4/download"]), "aria-label") == [
+               "Download shot.png",
+               "Download shot.png"
+             ]
+
+      assert attr(html, ~s(button[phx-value-id="3"]), "aria-label") == ["Delete notes.txt"]
+      assert attr(html, ~s(button[phx-value-id="4"]), "aria-label") == ["Delete shot.png"]
+    end
+
     test "escapes a crafted filename in the alt text and labels" do
       html = render_list([attachment(%{id: 6, filename: ~s("><script>x</script>.png)})])
 

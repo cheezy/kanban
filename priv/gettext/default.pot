@@ -171,7 +171,7 @@ msgstr ""
 #: lib/kanban_web/live/org_live/sso.html.heex:233
 #: lib/kanban_web/live/org_live/sso.html.heex:334
 #: lib/kanban_web/live/target_live/form.html.heex:39
-#: lib/kanban_web/live/task_live/components/comment_row.ex:146
+#: lib/kanban_web/live/task_live/components/comment_row.ex:148
 #: lib/kanban_web/live/task_live/form_component.html.heex:440
 #: lib/kanban_web/live/user_live/settings.ex:66
 #: lib/kanban_web/live/user_live/settings.ex:147
@@ -218,8 +218,8 @@ msgstr ""
 #: lib/kanban_web/live/org_live/console.html.heex:280
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:342
-#: lib/kanban_web/live/task_live/components/comment_row.ex:150
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:345
+#: lib/kanban_web/live/task_live/components/comment_row.ex:152
 #: lib/kanban_web/live/user_live/danger_zone_component.ex:243
 #: lib/kanban_web/live/user_live/two_factor_component.ex:141
 #, elixir-autogen, elixir-format
@@ -568,18 +568,18 @@ msgstr ""
 msgid "to"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:454
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:455
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:408
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:409
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr ""
 
 #: lib/kanban_web/live/org_live/sso.html.heex:151
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:452
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:453
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr ""
@@ -595,7 +595,7 @@ msgstr ""
 msgid "Comments"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:409
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:410
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr ""
@@ -1571,8 +1571,8 @@ msgstr ""
 #: lib/kanban_web/components/task_activity_log.ex:194
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:383
-#: lib/kanban_web/live/task_live/components/comment_row.ex:235
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:386
+#: lib/kanban_web/live/task_live/components/comment_row.ex:239
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
 #: lib/kanban_web/live/task_live/form_component.ex:511
@@ -2027,8 +2027,8 @@ msgstr ""
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:911
 #: lib/kanban_web/live/board_live/webhook_views.ex:286
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:115
-#: lib/kanban_web/live/task_live/components/comment_row.ex:130
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:117
+#: lib/kanban_web/live/task_live/components/comment_row.ex:132
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr ""
@@ -4593,7 +4593,7 @@ msgid "Open goal %{id}"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/members_form_component.ex:319
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:192
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:194
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr ""
@@ -4602,7 +4602,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/settings_form_component.ex:188
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
 #: lib/kanban_web/live/org_live/console.html.heex:272
-#: lib/kanban_web/live/task_live/components/comment_row.ex:147
+#: lib/kanban_web/live/task_live/components/comment_row.ex:149
 #: lib/kanban_web/live/workspace_live/settings.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -9270,7 +9270,7 @@ msgstr ""
 msgid "User #%{id} (deleted)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/comment_row.ex:127
+#: lib/kanban_web/live/task_live/components/comment_row.ex:129
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this comment?"
 msgstr ""
@@ -9279,7 +9279,7 @@ msgstr ""
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:26
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
 #: lib/kanban_web/live/board_live/webhook_views.ex:219
-#: lib/kanban_web/live/task_live/components/comment_row.ex:118
+#: lib/kanban_web/live/task_live/components/comment_row.ex:120
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr ""
@@ -9295,12 +9295,12 @@ msgstr ""
 msgid "You are not allowed to change this comment"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/comment_row.ex:103
+#: lib/kanban_web/live/task_live/components/comment_row.ex:105
 #, elixir-autogen, elixir-format
 msgid "edited"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/comment_row.ex:87
+#: lib/kanban_web/live/task_live/components/comment_row.ex:89
 #, elixir-autogen, elixir-format
 msgid "via %{name}"
 msgstr ""
@@ -11677,8 +11677,8 @@ msgstr ""
 msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:103
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:206
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:104
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:209
 #: lib/kanban_web/live/workspace_live/export_card.ex:107
 #, elixir-autogen, elixir-format
 msgid "Download"
@@ -13719,7 +13719,7 @@ msgctxt "audit action"
 msgid "Attachment deleted by board owner"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:112
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:114
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this attachment?"
 msgstr ""
@@ -13735,7 +13735,7 @@ msgstr ""
 msgid "Attachments need a paid plan."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:339
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:342
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
 msgstr ""
@@ -13817,7 +13817,7 @@ msgstr ""
 msgid "Upload files"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:348
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:351
 #, elixir-autogen, elixir-format
 msgid "Upload progress for %{name}"
 msgstr ""
@@ -13832,17 +13832,17 @@ msgstr ""
 msgid "You are not allowed to change attachments on this task."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:140
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:142
 #, elixir-autogen, elixir-format
 msgid "Open preview of %{name}"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/components/attachment_items.ex:165
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:167
 #, elixir-autogen, elixir-format
 msgid "Preview of %{name}"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:427
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:428
 #: lib/kanban_web/live/task_live/form/attachment_staging.ex:209
 #, elixir-autogen, elixir-format
 msgid "Attach files"
@@ -13908,3 +13908,14 @@ msgid "This task has room for %{count} more file."
 msgid_plural "This task has room for %{count} more files."
 msgstr[0] ""
 msgstr[1] ""
+
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:113
+#, elixir-autogen, elixir-format
+msgid "Delete %{name}"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:100
+#: lib/kanban_web/live/task_live/components/attachment_items.ex:205
+#, elixir-autogen, elixir-format
+msgid "Download %{name}"
+msgstr ""

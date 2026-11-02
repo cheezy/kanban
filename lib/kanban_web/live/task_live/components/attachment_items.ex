@@ -97,6 +97,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
         </div>
         <.link
           href={~p"/attachments/#{attachment.id}/download"}
+          aria-label={gettext("Download %{name}", name: attachment.filename)}
           class="btn btn-ghost btn-xs"
           style="color: var(--ink-2);"
         >
@@ -109,6 +110,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           phx-click={@delete_event}
           phx-value-id={attachment.id}
           phx-target={@target}
+          aria-label={gettext("Delete %{name}", name: attachment.filename)}
           data-confirm={gettext("Are you sure you want to delete this attachment?")}
           style="color: var(--st-blocked);"
         >
@@ -200,6 +202,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
             </span>
             <.link
               href={~p"/attachments/#{@attachment.id}/download"}
+              aria-label={gettext("Download %{name}", name: @attachment.filename)}
               class="btn btn-ghost btn-xs"
               style="color: var(--ink-2);"
             >
