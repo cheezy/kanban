@@ -30,7 +30,8 @@ defmodule Kanban.Attachments.Storage.Local do
       created); a put that finds it swapped, or `.staging` swapped for a
       link, fails with a logged `:staging_replaced` and renames nothing. A failed
       write removes its temp file, and an unknown source shape is a failed
-      write (`:badarg`). A process or VM that dies mid-write can leave a
+      write (`:badarg`), and so is a `{:file, path}` that is not a regular
+      file (`:source_unreadable`), as in `Kanban.Attachments.Storage.S3`. A process or VM that dies mid-write can leave a
       `.tmp-` file in `.staging`, which no valid key can name, so it is never
       served; `sweep/1`, run by the cleanup worker, removes it once it is an
       hour old.
@@ -106,17 +107,18 @@ defmodule Kanban.Attachments.Storage.Local do
 
   @impl true
   def put(key, source, _opts) do
-    root = root()
-    path = Path.join(root, key)
-
-    with :ok <- Tree.ensure_root(root, follow_root?()),
-         {:ok, staging} <- Tree.ensure_staging(root),
-         {:ok, tmp} <- write_tmp(staging, source),
-         :ok <- place(tmp, path, root, key) do
-      :ok
-    else
+    case write_and_place(root(), key, source) do
+      :ok -> :ok
       {:error, reason} -> unavailable(:put, reason)
     end
+  end
+
+  defp write_and_place(root, key, source) do
+    with :ok <- check_source(source),
+         :ok <- Tree.ensure_root(root, follow_root?()),
+         {:ok, staging} <- Tree.ensure_staging(root),
+         {:ok, tmp} <- write_tmp(staging, source),
+         do: place(tmp, Path.join(root, key), root, key)
   end
 
   @impl true
@@ -296,6 +298,18 @@ defmodule Kanban.Attachments.Storage.Local do
         unavailable(:read, reason)
     end
   end
+
+  # A file source must be a regular file, as Storage.S3 requires too: a
+  # device such as /dev/null once stored an empty blob here while S3
+  # refused it, and a FIFO or /dev/zero could hold or fill the copy.
+  defp check_source({:file, path}) when is_binary(path) do
+    case File.stat(path) do
+      {:ok, %File.Stat{type: :regular}} -> :ok
+      _missing_or_other -> {:error, :source_unreadable}
+    end
+  end
+
+  defp check_source(_binary_or_unknown), do: :ok
 
   # The temp file's identity (device and inode) is taken the moment the
   # exclusive open has created it, and checked again before the rename (see

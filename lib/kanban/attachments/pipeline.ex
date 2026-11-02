@@ -122,7 +122,7 @@ defmodule Kanban.Attachments.Pipeline do
   # 2026-11-02).
   defp snapshot(source) do
     with {:ok, target} <- Plug.Upload.random_file("stride-upload"),
-         {:ok, device} <- File.open(target, [:write, :binary]) do
+         {:ok, device} <- File.open(target, [:write, :binary, :raw]) do
       copied = copy_capped(source, device, target)
       _ = File.close(device)
       settle_snapshot(copied, target)
@@ -131,9 +131,13 @@ defmodule Kanban.Attachments.Pipeline do
     end
   end
 
+  # Both files are opened raw, in this process. Opened any other way, a file
+  # is opened by the VM's one file server, so a source swapped for a FIFO
+  # (or on a hung mount) after the size check would stall every other file
+  # call in the VM behind this upload.
   defp copy_capped(source, device, target) do
     with :ok <- File.chmod(target, 0o600) do
-      :file.copy(source, device, Limits.max_file_bytes() + 1)
+      :file.copy({source, [:read, :binary, :raw]}, device, Limits.max_file_bytes() + 1)
     end
   end
 

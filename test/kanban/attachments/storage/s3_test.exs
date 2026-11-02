@@ -582,6 +582,155 @@ defmodule Kanban.Attachments.Storage.S3Test do
     end
   end
 
+  describe "a file that changes size while it is uploaded" do
+    # A real socket, so bytes past the declared content-length would reach
+    # the store as the start of the next request on the pooled connection.
+    defmodule StoreStub do
+      @behaviour Plug
+
+      @impl true
+      def init(test), do: test
+
+      @impl true
+      def call(conn, test) do
+        send(test, {:store_saw, conn.method, conn.request_path})
+
+        case conn.method do
+          "PUT" ->
+            {:ok, body, conn} = Plug.Conn.read_body(conn)
+            send(test, {:stored, conn.request_path, body})
+            :persistent_term.put({__MODULE__, conn.request_path}, body)
+            Plug.Conn.send_resp(conn, 200, "")
+
+          "GET" ->
+            body = :persistent_term.get({__MODULE__, conn.request_path}, nil)
+
+            if body,
+              do: Plug.Conn.send_resp(conn, 200, body),
+              else: Plug.Conn.send_resp(conn, 404, "")
+
+          _other ->
+            Plug.Conn.send_resp(conn, 400, "")
+        end
+      end
+    end
+
+    setup %{tmp_dir: tmp_dir} do
+      {:ok, server} =
+        Bandit.start_link(
+          plug: {StoreStub, self()},
+          ip: {127, 0, 0, 1},
+          port: 0,
+          startup_log: false
+        )
+
+      {:ok, {_ip, port}} = ThousandIsland.listener_info(server)
+      on_exit(fn -> stop_server(server) end)
+
+      put_config(
+        endpoint: "http://127.0.0.1:#{port}",
+        path_style: true,
+        req_options: [retry: false]
+      )
+
+      %{path: Path.join(tmp_dir, "upload")}
+    end
+
+    # Rewrites the file once, after put/3 has read its size and before the
+    # body is read, from the process that makes the request.
+    defp rewrite_after_stat(path, bytes) do
+      id = {__MODULE__, make_ref()}
+
+      :telemetry.attach(
+        id,
+        [:finch, :request, :start],
+        fn _event, _measurements, %{request: %{method: "PUT"}}, _config ->
+          File.write!(path, bytes)
+          :telemetry.detach(id)
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(id) end)
+    end
+
+    defp neighbour_reads_back do
+      :ok = S3.put("boards/1/neighbour", {:binary, "abc"}, [])
+
+      fn ->
+        assert {:ok, chunks} = S3.stream("boards/1/neighbour")
+        read_all(chunks)
+      end
+    end
+
+    @tag :tmp_dir
+    test "a file that grew fails the put and never corrupts the next request", %{path: path} do
+      read_neighbour = neighbour_reads_back()
+      File.write!(path, "")
+      rewrite_after_stat(path, "hello")
+
+      log =
+        capture_log(fn ->
+          assert {:error, :storage_unavailable} = S3.put(@key, {:file, path}, [])
+        end)
+
+      assert log =~ "attachment storage put failed: :source_changed"
+      assert read_neighbour.() == "abc"
+      assert read_neighbour |> Task.async() |> Task.await() == "abc"
+      refute_received {:store_saw, "hello" <> _, _}
+
+      for {:store_saw, method, _path} <- flush_seen(), do: assert(method in ["PUT", "GET"])
+    end
+
+    @tag :tmp_dir
+    test "a file that grew past a non-empty size sends no byte past it", %{path: path} do
+      File.write!(path, "hello")
+      rewrite_after_stat(path, "helloWORLD")
+
+      log =
+        capture_log(fn ->
+          assert {:error, :storage_unavailable} = S3.put(@key, {:file, path}, [])
+        end)
+
+      assert log =~ ":source_changed"
+      refute_received {:stored, _path, _body}
+      assert neighbour_reads_back().() == "abc"
+    end
+
+    @tag :tmp_dir
+    test "a file that shrank fails at once instead of waiting on the store", %{path: path} do
+      File.write!(path, "hello")
+      rewrite_after_stat(path, "he")
+
+      {elapsed_us, log} =
+        :timer.tc(fn ->
+          capture_log(fn ->
+            assert {:error, :storage_unavailable} = S3.put(@key, {:file, path}, [])
+          end)
+        end)
+
+      assert log =~ ":source_changed"
+      assert elapsed_us < 2_000_000
+      refute_received {:stored, _path, _body}
+    end
+
+    @tag :tmp_dir
+    test "a file that keeps its size uploads whole", %{path: path} do
+      File.write!(path, "hello")
+
+      assert :ok = S3.put(@key, {:file, path}, [])
+      assert_received {:stored, _path, "hello"}
+    end
+  end
+
+  defp flush_seen do
+    receive do
+      {:store_saw, _method, _path} = seen -> [seen | flush_seen()]
+    after
+      0 -> []
+    end
+  end
+
   defp stop_server(server) do
     if Process.alive?(server), do: Supervisor.stop(server)
   catch

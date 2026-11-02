@@ -6,6 +6,7 @@ defmodule Kanban.Attachments.Storage.LocalTest do
 
   alias Kanban.Attachments.Storage
   alias Kanban.Attachments.Storage.Local
+  alias Kanban.Attachments.Storage.Local.Tree
 
   @key "boards/12/0b9c4e2a-6f1d-4c8e-9a7b-3d2e1f0a9b8c"
 
@@ -255,7 +256,8 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     # The key's directories are created only once there is a file to rename
     # into them, so a failed write leaves none behind.
     refute present?(root, Path.dirname(@key))
-    assert entries(Path.join(root, ".staging")) == []
+    staged = root |> Path.join(".staging") |> File.ls()
+    assert staged in [{:ok, []}, {:error, :enoent}]
     assert {:ok, false} = Local.exists(@key)
   end
 
@@ -449,43 +451,51 @@ defmodule Kanban.Attachments.Storage.LocalTest do
   end
 
   describe "a staging directory or temp file swapped before the rename" do
-    # A FIFO source holds the put inside its copy, after the temp file is
-    # created and before the rename, until the test writes to the FIFO.
+    # The put is suspended mid-copy, after its temp file exists and before
+    # the rename: a call trace tells the test when the put has taken the temp
+    # file's identity, which happens right after the exclusive create, and
+    # the source is large enough that the copy is still running when the
+    # test suspends it.
+    @source_bytes 64 * 1024 * 1024
+
     setup %{base: base} do
       File.mkdir_p!(base)
-      fifo = Path.join(base, "upload-fifo")
-      {_output, 0} = System.cmd("mkfifo", [fifo])
-      %{fifo: fifo}
+      source = Path.join(base, "upload")
+      File.write!(source, :binary.copy("u", @source_bytes))
+      %{source: source}
     end
 
-    defp start_paused_put(root, fifo) do
-      put = Task.async(fn -> Local.put(@key, {:file, fifo}, []) end)
-      staging = Path.join(root, ".staging")
-      [tmp_name] = wait_for_temp_file(staging, 200, fifo)
-      {put, staging, tmp_name}
+    defp start_suspended_put(root, source) do
+      put =
+        Task.async(fn ->
+          receive do
+            :go -> Local.put(@key, {:file, source}, [])
+          end
+        end)
+
+      trace_identity_calls(put.pid)
+      send(put.pid, :go)
+
+      assert_receive {:trace, _pid, :call, {Tree, :file_identity, [tmp]}}, 5_000
+      :erlang.suspend_process(put.pid)
+      :erlang.trace(put.pid, false, [:call])
+
+      refute present?(root, @key)
+      {put, Path.join(root, ".staging"), Path.basename(tmp)}
     end
 
-    defp wait_for_temp_file(_staging, 0, fifo) do
-      release(fifo, "")
-      flunk("the put never created its temp file")
+    defp trace_identity_calls(pid) do
+      Code.ensure_loaded!(Tree)
+      assert :erlang.trace_pattern({Tree, :file_identity, 1}, true, [:global]) == 1
+      :erlang.trace(pid, true, [:call])
+      on_exit(fn -> :erlang.trace_pattern({Tree, :file_identity, 1}, false, [:global]) end)
     end
 
-    defp wait_for_temp_file(staging, tries, fifo) do
-      case File.ls(staging) do
-        {:ok, [_name] = names} ->
-          names
-
-        _not_yet ->
-          Process.sleep(10)
-          wait_for_temp_file(staging, tries - 1, fifo)
-      end
-    end
-
-    defp release(fifo, bytes), do: File.write!(fifo, bytes)
+    defp resume(put), do: :erlang.resume_process(put.pid)
 
     test "a staging directory swapped for a symlink is refused and its file is kept",
-         %{root: root, base: base, fifo: fifo} do
-      {put, staging, tmp_name} = start_paused_put(root, fifo)
+         %{root: root, base: base, source: source} do
+      {put, staging, tmp_name} = start_suspended_put(root, source)
 
       planted_dir = Path.join(base, "planted")
       File.mkdir_p!(planted_dir)
@@ -497,8 +507,8 @@ defmodule Kanban.Attachments.Storage.LocalTest do
 
       log =
         capture_log(fn ->
-          release(fifo, "uploaded bytes")
-          assert {:error, :storage_unavailable} = Task.await(put)
+          resume(put)
+          assert {:error, :storage_unavailable} = Task.await(put, 30_000)
         end)
 
       assert log =~ "attachment storage put failed: :staging_replaced"
@@ -507,8 +517,8 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     end
 
     test "a temp file replaced under the same name is refused and the new file is kept",
-         %{root: root, fifo: fifo} do
-      {put, staging, tmp_name} = start_paused_put(root, fifo)
+         %{root: root, source: source} do
+      {put, staging, tmp_name} = start_suspended_put(root, source)
 
       tmp = Path.join(staging, tmp_name)
       File.rename!(tmp, Path.join(root, "the-real-temp-file"))
@@ -516,8 +526,8 @@ defmodule Kanban.Attachments.Storage.LocalTest do
 
       log =
         capture_log(fn ->
-          release(fifo, "uploaded bytes")
-          assert {:error, :storage_unavailable} = Task.await(put)
+          resume(put)
+          assert {:error, :storage_unavailable} = Task.await(put, 30_000)
         end)
 
       assert log =~ "attachment storage put failed: :staging_replaced"
@@ -525,13 +535,14 @@ defmodule Kanban.Attachments.Storage.LocalTest do
       assert File.read!(tmp) == "planted bytes"
     end
 
-    test "an unswapped paused put places its bytes", %{root: root, fifo: fifo} do
-      {put, staging, _tmp_name} = start_paused_put(root, fifo)
+    test "a suspended put that nothing swapped places its bytes",
+         %{root: root, source: source} do
+      {put, staging, _tmp_name} = start_suspended_put(root, source)
 
-      release(fifo, "uploaded bytes")
+      resume(put)
 
-      assert :ok = Task.await(put)
-      assert root |> Path.join(@key) |> File.read!() == "uploaded bytes"
+      assert :ok = Task.await(put, 30_000)
+      assert root |> Path.join(@key) |> File.stat!() |> Map.get(:size) == @source_bytes
       assert entries(staging) == []
     end
   end
@@ -606,6 +617,34 @@ defmodule Kanban.Attachments.Storage.LocalTest do
       assert log =~ "attachment storage sweep failed: :eacces"
       refute log =~ root
       assert File.exists?(stale)
+    end
+  end
+
+  describe "a file source that is not a regular file" do
+    test "is refused before anything is written, as S3 refuses it", %{root: root, base: base} do
+      File.mkdir_p!(base)
+
+      for path <- ["/dev/null", base, Path.join(base, "missing")] do
+        log =
+          capture_log(fn ->
+            assert {:error, :storage_unavailable} = Local.put(@key, {:file, path}, [])
+          end)
+
+        assert log =~ "attachment storage put failed: :source_unreadable"
+        refute present?(root, @key)
+      end
+    end
+
+    test "a symlink to a regular file is read through", %{base: base} do
+      File.mkdir_p!(base)
+      real = Path.join(base, "real")
+      File.write!(real, "linked bytes")
+      link = Path.join(base, "link")
+      File.ln_s!(real, link)
+
+      assert :ok = Local.put(@key, {:file, link}, [])
+      assert {:ok, stream} = Local.stream(@key)
+      assert read_all(stream) == "linked bytes"
     end
   end
 

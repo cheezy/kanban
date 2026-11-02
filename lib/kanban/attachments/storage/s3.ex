@@ -34,7 +34,9 @@ defmodule Kanban.Attachments.Storage.S3 do
 
     * A file upload is streamed from disk with an explicit `content-length`,
       which Req requires to sign a streamed body. It is then signed with
-      `UNSIGNED-PAYLOAD`; an in-memory upload has its SHA-256 signed.
+      `UNSIGNED-PAYLOAD`; an in-memory upload has its SHA-256 signed. A file
+      that changes size while it is sent fails the put with a logged
+      `:source_changed` and never sends a byte past its declared length.
     * Bodies are never decoded or decompressed, so a JSON or gzip object
       comes back byte for byte as it was stored.
     * `stream/1` reads the object with `into: :self`: the bytes arrive as
@@ -77,6 +79,13 @@ defmodule Kanban.Attachments.Storage.S3 do
   @default_region "us-east-1"
   @default_request_timeout 60_000
   @default_content_type "application/octet-stream"
+  defmodule SourceChanged do
+    @moduledoc false
+    # Raised inside a file upload's body when the file no longer has the
+    # size its content-length declared; caught by the put that sent it.
+    defexception message: "the file changed size while it was being uploaded"
+  end
+
   @chunk_bytes 65_536
   @error_body_bytes 4_096
   @region_format ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
@@ -86,7 +95,7 @@ defmodule Kanban.Attachments.Storage.S3 do
   def put(key, {:file, path}, opts) do
     case File.stat(path) do
       {:ok, %File.Stat{type: :regular, size: size}} ->
-        body = File.stream!(path, @chunk_bytes)
+        body = framed_body(path, size)
         upload(key, body, [{"content-length", Integer.to_string(size)}], opts)
 
       _not_a_file ->
@@ -175,7 +184,32 @@ defmodule Kanban.Attachments.Storage.S3 do
       {:ok, %Req.Response{status: status}} -> log_status(:put, status)
       {:error, reason} -> log_failure(:put, reason)
     end
+  rescue
+    SourceChanged -> log_failure(:put, :source_changed)
   end
+
+  # A file's content-length is its size when it was checked, and the body is
+  # read from disk only as it is sent. A file that grew in between used to
+  # send bytes past the declared length, which the store read as the start
+  # of the next request on that pooled connection (someone else's), while
+  # this put returned :ok; one that shrank left the store waiting for bytes
+  # until its read timeout. So the body is held to the declared length: a
+  # chunk that would pass it, or an end that falls short of it, raises
+  # before anything past the length is sent. The connection is then
+  # dropped rather than returned to the pool (G488 exploratory campaign).
+  defp framed_body(path, size) do
+    path
+    |> File.stream!(@chunk_bytes)
+    |> Stream.transform(fn -> 0 end, &within_size(&1, &2, size), &at_size(&1, size), & &1)
+  end
+
+  defp within_size(chunk, sent, size) do
+    sent = sent + byte_size(chunk)
+    if sent > size, do: raise(SourceChanged), else: {[chunk], sent}
+  end
+
+  defp at_size(size, size), do: {[], size}
+  defp at_size(_sent, _size), do: raise(SourceChanged)
 
   # SigV4 signs a header value trimmed, with runs of whitespace collapsed,
   # but Req signs it exactly as given, and HTTP drops a value's outer
