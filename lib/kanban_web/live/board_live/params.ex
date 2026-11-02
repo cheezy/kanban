@@ -47,10 +47,23 @@ defmodule KanbanWeb.BoardLive.Params do
 
   # handle_params runs on every patch (each filter change, opening a modal),
   # and a second subscribe to the same topic would deliver every broadcast
-  # twice. Subscribe only when this socket has not already loaded this board.
+  # twice. Subscribe only when this socket has not already loaded this board,
+  # and leave the topic of a board it showed before, whose broadcasts would
+  # otherwise keep reloading this one (and keep reaching a viewer since
+  # removed from it).
   def subscribe_to_board_updates(socket, board_id) do
-    if connected?(socket) and not match?(%{id: ^board_id}, socket.assigns[:board]) do
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board_id}")
+    case {connected?(socket), socket.assigns[:board]} do
+      {false, _board} ->
+        :ok
+
+      {true, %{id: ^board_id}} ->
+        :ok
+
+      {true, previous} ->
+        if match?(%{id: _}, previous),
+          do: Phoenix.PubSub.unsubscribe(Kanban.PubSub, "board:#{previous.id}")
+
+        Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board_id}")
     end
   end
 

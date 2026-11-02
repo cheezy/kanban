@@ -366,7 +366,7 @@ msgstr "Error al eliminar tarea"
 msgid "Save Task"
 msgstr "Guardar Tarea"
 
-#: lib/kanban_web/live/task_live/form_component.ex:422
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Tarea creada exitosamente"
@@ -397,7 +397,7 @@ msgstr "Título"
 msgid "Update task details"
 msgstr "Actualizar detalles de tarea"
 
-#: lib/kanban_web/live/task_live/form_component.ex:431
+#: lib/kanban_web/live/task_live/form_component.ex:438
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "Límite WIP alcanzado para esta columna"
@@ -1575,7 +1575,7 @@ msgstr "Tiempo invertido (minutos)"
 #: lib/kanban_web/live/task_live/components/comment_row.ex:235
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
-#: lib/kanban_web/live/task_live/form_component.ex:504
+#: lib/kanban_web/live/task_live/form_component.ex:511
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr "Desconocido"
@@ -1935,7 +1935,7 @@ msgstr "Stride es más que un tablero kanban — está diseñado desde cero para
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Este enfoque colaborativo permite a los equipos delegar tareas repetitivas de programación a agentes de IA mientras los humanos se centran en decisiones de alto nivel, arquitectura y revisión del código generado por IA antes de fusionarlo."
 
-#: lib/kanban_web/live/task_live/form_component.ex:435
+#: lib/kanban_web/live/task_live/form_component.ex:442
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "No se puede agregar la tarea: se ha alcanzado el límite WIP de esta columna"
@@ -1955,9 +1955,9 @@ msgstr "Resultado esperado"
 msgid "Note about this file"
 msgstr "Nota sobre este archivo"
 
-#: lib/kanban_web/live/task_live/form_component.ex:258
-#: lib/kanban_web/live/task_live/form_component.ex:356
-#: lib/kanban_web/live/task_live/form_component.ex:410
+#: lib/kanban_web/live/task_live/form_component.ex:265
+#: lib/kanban_web/live/task_live/form_component.ex:363
+#: lib/kanban_web/live/task_live/form_component.ex:417
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Por favor corrige los errores a continuación"
@@ -2056,7 +2056,7 @@ msgid "Task unarchived successfully"
 msgstr "Tarea desarchivada correctamente"
 
 #: lib/kanban_web/live/task_live/form/relational_scopes.ex:54
-#: lib/kanban_web/live/task_live/form_component.ex:305
+#: lib/kanban_web/live/task_live/form_component.ex:312
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "La columna no pertenece a este tablero"
@@ -3155,8 +3155,8 @@ msgstr "Tareas en espera en Backlog"
 
 #: lib/kanban_web/live/board_live/bulk_selection.ex:329
 #: lib/kanban_web/live/board_live/column_actions.ex:28
-#: lib/kanban_web/live/board_live/params.ex:96
-#: lib/kanban_web/live/board_live/params.ex:123
+#: lib/kanban_web/live/board_live/params.ex:109
+#: lib/kanban_web/live/board_live/params.ex:136
 #: lib/kanban_web/live/board_live/task_actions.ex:28
 #: lib/kanban_web/live/board_live/task_actions.ex:67
 #: lib/kanban_web/live/board_live/task_actions.ex:177
@@ -3164,7 +3164,7 @@ msgstr "Tareas en espera en Backlog"
 msgid "Column not found on this board"
 msgstr "Columna no encontrada en este tablero"
 
-#: lib/kanban_web/live/board_live/params.ex:207
+#: lib/kanban_web/live/board_live/params.ex:220
 #, elixir-autogen, elixir-format
 msgid "Column or task not found on this board"
 msgstr "Columna o tarea no encontrada en este tablero"
@@ -3210,7 +3210,7 @@ msgstr "Error de seguridad: asignado inválido"
 msgid "Security error: Invalid parent goal"
 msgstr "Error de seguridad: objetivo principal inválido"
 
-#: lib/kanban_web/live/board_live/params.ex:233
+#: lib/kanban_web/live/board_live/params.ex:246
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "Tarea no encontrada en este tablero"
@@ -7709,7 +7709,7 @@ msgstr "No se pudieron actualizar los datos de los agentes en este momento. Se m
 
 #: lib/kanban_web/live/board_live/authorization.ex:84
 #: lib/kanban_web/live/board_live/bulk_selection.ex:361
-#: lib/kanban_web/live/task_live/form_component.ex:145
+#: lib/kanban_web/live/task_live/form_component.ex:152
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
 msgstr "No tienes permiso para modificar tareas en este tablero"
@@ -10994,7 +10994,7 @@ msgid_plural "%{fields} need a board in an Organization and were not stored."
 msgstr[0] "%{fields} requiere un tablero en una organización y no se guardó."
 msgstr[1] "%{fields} requieren un tablero en una organización y no se guardaron."
 
-#: lib/kanban_web/live/task_live/form/telemetry_lock.ex:56
+#: lib/kanban_web/live/task_live/form/telemetry_lock.ex:64
 #, elixir-autogen, elixir-format
 msgid "Telemetry Event and Metrics to Track need a board in an Organization, so your changes to them were not saved."
 msgstr "Evento de telemetría y Métricas a seguir requieren un tablero en una organización, así que tus cambios en ellos no se guardaron."
@@ -13791,7 +13791,7 @@ msgid "{lead} to create the Backlog."
 msgstr "{lead} para crear los Pendientes."
 
 #: lib/kanban_web/components/locked_feature.ex:144
-#: lib/kanban_web/live/task_live/attachments_component.ex:279
+#: lib/kanban_web/live/task_live/attachments_component.ex:305
 #: lib/kanban_web/live/task_live/form/attachment_staging.ex:175
 #, elixir-autogen, elixir-format
 msgid "Attachments"
@@ -13813,7 +13813,7 @@ msgstr "Una tarea puede contener como máximo %{count} archivos."
 msgid "Are you sure you want to delete this attachment?"
 msgstr "¿Seguro que desea eliminar este adjunto?"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:161
+#: lib/kanban_web/live/task_live/attachments_component.ex:162
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:167
 #, elixir-autogen, elixir-format
 msgid "Attachment deleted"
@@ -13839,7 +13839,7 @@ msgstr "Elija primero los archivos que desea subir."
 msgid "Could not upload %{filename}: %{reason}"
 msgstr "No se pudo subir %{filename}: %{reason}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:314
+#: lib/kanban_web/live/task_live/attachments_component.ex:340
 #, elixir-autogen, elixir-format
 msgid "Drop files here or browse"
 msgstr "Suelte los archivos aquí o explore"
@@ -13865,7 +13865,7 @@ msgstr "El contenido del archivo no coincide con su tipo."
 msgid "The upload failed. Please try again."
 msgstr "La subida falló. Inténtelo de nuevo."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:172
+#: lib/kanban_web/live/task_live/attachments_component.ex:173
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:285
 #, elixir-autogen, elixir-format
 msgid "This attachment no longer exists."
@@ -13901,7 +13901,7 @@ msgstr "Este archivo o tarea ya no existe."
 msgid "This file type is not allowed."
 msgstr "Este tipo de archivo no está permitido."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:326
+#: lib/kanban_web/live/task_live/attachments_component.ex:352
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr "Subir archivos"
@@ -13911,7 +13911,7 @@ msgstr "Subir archivos"
 msgid "Upload progress for %{name}"
 msgstr "Progreso de subida de %{name}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:324
+#: lib/kanban_web/live/task_live/attachments_component.ex:350
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr "Subiendo..."
@@ -13942,7 +13942,7 @@ msgstr "Vista previa de %{name}"
 msgid "Attach files"
 msgstr "Adjuntar archivos"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:158
+#: lib/kanban_web/live/task_live/attachments_component.ex:159
 #, elixir-autogen, elixir-format
 msgid "Uploaded %{count} file."
 msgid_plural "Uploaded %{count} files."
@@ -13953,3 +13953,8 @@ msgstr[1] "%{count} archivos subidos."
 #, elixir-autogen, elixir-format
 msgid "unnamed file"
 msgstr "archivo sin nombre"
+
+#: lib/kanban_web/live/board_live/board_events.ex:187
+#, elixir-autogen, elixir-format
+msgid "This task was deleted."
+msgstr "Esta tarea se eliminó."

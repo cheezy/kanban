@@ -18,7 +18,8 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   line depends on the board's plan (a board move changes it), and for the same
   reason makes the open task's Attachments section, its comment thread and an
   open task form re-read the plan. A column
-  change re-renders every column. Comment changes go straight to the open
+  change re-renders every column. A deleted task that is open in the task view
+  or an edit form closes it, with a flash when the delete came from elsewhere. Comment changes go straight to the open
   comment thread. Attachment changes refresh the open task's Attachments
   section and its comment thread, which lists each comment's files; the
   board columns render no attachments, so they are not reloaded.
@@ -26,8 +27,11 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   There is deliberately no catch-all clause: an unknown message is a bug in a
   broadcaster, not something to swallow.
   """
-  import Phoenix.Component, only: [assign: 3]
-  import Phoenix.LiveView, only: [send_update: 2]
+  use Gettext, backend: KanbanWeb.Gettext
+  use KanbanWeb, :verified_routes
+
+  import Phoenix.Component, only: [assign: 2, assign: 3]
+  import Phoenix.LiveView, only: [push_patch: 2, put_flash: 3, send_update: 2]
 
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.FilterActions
@@ -75,8 +79,14 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   def handle({Kanban.Tasks, :task_created, _task}, socket),
     do: BoardState.reload_board_data(socket)
 
+  # A deleted task takes its attachments and comments with it through the
+  # cascade, which broadcasts nothing else, so a view or form still open on
+  # it would keep showing a task whose files and actions are all gone.
+  def handle({Kanban.Tasks, :task_deleted, task}, socket),
+    do: socket |> close_deleted_task(task) |> reload_unless_skipped()
+
   def handle({Kanban.Tasks, event, _task}, socket)
-      when event in [:task_updated, :task_deleted, :task_status_changed, :task_reviewed],
+      when event in [:task_updated, :task_status_changed, :task_reviewed],
       do: reload_unless_skipped(socket)
 
   # The simple-format events the API paths broadcast.
@@ -150,6 +160,32 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   defp maybe_sync_url(socket, true), do: FilterActions.sync_url(socket)
   defp maybe_sync_url(socket, false), do: socket
+
+  defp close_deleted_task(socket, %{id: id}) when is_integer(id) do
+    case open_on(socket.assigns, id) do
+      :view -> socket |> assign(viewing_task_id: nil, show_task_modal: false) |> deleted_flash()
+      :form -> socket |> push_patch(to: ~p"/boards/#{socket.assigns.board}") |> deleted_flash()
+      nil -> socket
+    end
+  end
+
+  defp close_deleted_task(socket, _task), do: socket
+
+  defp open_on(%{viewing_task_id: id}, id), do: :view
+
+  defp open_on(%{live_action: action, task: %{id: id}}, id)
+       when action in [:edit_task, :edit_task_in_column],
+       do: :form
+
+  defp open_on(_assigns, _id), do: nil
+
+  # This view's own delete flashes its own message (and sets
+  # :skip_next_reload); a delete made elsewhere is explained here.
+  defp deleted_flash(socket) do
+    if socket.assigns[:skip_next_reload],
+      do: socket,
+      else: put_flash(socket, :info, gettext("This task was deleted."))
+  end
 
   defp reload_unless_skipped(socket) do
     if socket.assigns[:skip_next_reload],
