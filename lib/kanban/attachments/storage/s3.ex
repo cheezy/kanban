@@ -25,7 +25,7 @@ defmodule Kanban.Attachments.Storage.S3 do
   `"us-east-1"`. With `path_style: false` (the default) an object is
   addressed as `https://<bucket>.<endpoint host>/<key>`; with `true` as
   `https://<endpoint host>/<bucket>/<key>`, which MinIO usually needs.
-  Path-style is used anyway for an IP-address endpoint or a dotted bucket
+  Path-style is used anyway for an IPv4-address endpoint or a dotted bucket
   name, and a path on the endpoint is kept as a prefix (see `object_url/2`).
   `req_options` are merged last, so tests can route requests to a
   `Req.Test` stub.
@@ -47,6 +47,9 @@ defmodule Kanban.Attachments.Storage.S3 do
       read. A put, a delete and a HEAD also have an overall deadline,
       `request_timeout` (60 seconds), so a store that trickles its reply
       cannot hold the call; a download has none, since its body is the file.
+    * An endpoint whose host is an IPv6 address is refused, with the reason
+      `:ipv6_endpoint_unsupported` in the log, because Req signs and sends
+      its Host header without the brackets. Use a host name for it instead.
     * The enumerable is single-pass: enumerate it once, in the process
       that called `stream/1`. Halting early cancels the download.
     * Transient failures (a 408, 429, 500, 502, 503 or 504, a timeout, a
@@ -164,21 +167,50 @@ defmodule Kanban.Attachments.Storage.S3 do
     end
   end
 
-  defp content_type(opts), do: Keyword.get(opts, :content_type) || @default_content_type
+  # SigV4 signs a header value trimmed, with runs of whitespace collapsed,
+  # but Req signs it exactly as given, and HTTP drops a value's outer
+  # whitespace in transit. So the value is put in that form before it is
+  # signed and sent: otherwise " text/plain" was signed with its space, sent
+  # without it, and refused by the store (G488 exploratory campaign).
+  defp content_type(opts) do
+    (Keyword.get(opts, :content_type) || @default_content_type)
+    |> String.trim()
+    |> String.replace(~r/\s+/, " ")
+    |> case do
+      "" -> @default_content_type
+      value -> value
+    end
+  end
 
   defp request(method, key, extra \\ []) do
     case config() do
-      {:ok, config} ->
-        [method: method, url: object_url(config, key), aws_sigv4: sigv4(config)]
-        |> Keyword.merge(base_options())
-        |> Keyword.merge(deadline(method, config))
-        |> Keyword.merge(extra)
-        |> Keyword.merge(Keyword.get(config, :req_options, []))
-        |> Req.request()
-
-      :error ->
-        {:error, :not_configured}
+      {:ok, config} -> send_request(method, key, config, extra)
+      :error -> {:error, :not_configured}
     end
+  end
+
+  # Req builds the signed Host header from the bare URL host, so an IPv6
+  # literal went out as "::1:9000" instead of "[::1]:9000", which names a
+  # different host. Such an endpoint is refused rather than sent malformed;
+  # a host name that resolves to the address works.
+  defp send_request(method, key, config, extra) do
+    if ipv6_endpoint?(config) do
+      {:error, :ipv6_endpoint_unsupported}
+    else
+      [method: method, url: object_url(config, key), aws_sigv4: sigv4(config)]
+      |> Keyword.merge(base_options())
+      |> Keyword.merge(deadline(method, config))
+      |> Keyword.merge(extra)
+      |> Keyword.merge(Keyword.get(config, :req_options, []))
+      |> Req.request()
+    end
+  end
+
+  defp ipv6_endpoint?(config) do
+    host = config |> endpoint() |> URI.parse() |> Map.get(:host)
+
+    is_binary(host) and
+      match?({:ok, _ip}, host |> to_charlist() |> :inet.parse_ipv6strict_address())
   end
 
   # receive_timeout bounds each socket read, not the whole response, so a

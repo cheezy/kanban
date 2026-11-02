@@ -313,6 +313,62 @@ defmodule Kanban.Attachments.Storage.S3Test do
     refute_received {:request, _conn, _body}
   end
 
+  describe "header values are signed as they are sent" do
+    test "the content type is trimmed and its runs of whitespace collapsed" do
+      stub(200)
+
+      assert :ok =
+               S3.put(@key, {:binary, "x"}, content_type: "  text/plain;   charset=utf-8\t")
+
+      assert_received {:request, conn, _body}
+      assert header(conn, "content-type") == "text/plain; charset=utf-8"
+
+      # content-type is among the signed headers, so what was signed is the
+      # value that was sent.
+      assert header(conn, "authorization") =~ "SignedHeaders=content-type;"
+    end
+
+    test "a content type that is only whitespace falls back to the default" do
+      stub(200)
+
+      assert :ok = S3.put(@key, {:binary, "x"}, content_type: " \t ")
+      assert_received {:request, conn, _body}
+      assert header(conn, "content-type") == "application/octet-stream"
+    end
+  end
+
+  describe "an IPv6-address endpoint" do
+    test "is refused for every operation, with no request sent" do
+      stub(200)
+
+      for endpoint <- ["http://[::1]:9000", "https://[2001:db8::5]/s3"] do
+        put_config(endpoint: endpoint)
+
+        log =
+          capture_log(fn ->
+            assert {:error, :storage_unavailable} = S3.put(@key, {:binary, "x"}, [])
+            assert {:error, :storage_unavailable} = S3.stream(@key)
+            assert {:error, :storage_unavailable} = S3.exists(@key)
+            assert {:error, :storage_unavailable} = S3.delete(@key)
+          end)
+
+        assert log =~ "attachment storage put failed: :ipv6_endpoint_unsupported"
+        assert log =~ "attachment storage delete failed: :ipv6_endpoint_unsupported"
+      end
+
+      refute_received {:request, _conn, _body}
+    end
+
+    test "an IPv4-address endpoint still works, path-style" do
+      stub(200)
+      put_config(endpoint: "http://10.0.0.5:9000")
+
+      assert :ok = S3.put(@key, {:binary, "x"}, [])
+      assert_received {:request, conn, _body}
+      assert conn.request_path == "/#{Application.get_env(:kanban, S3)[:bucket]}/#{@key}"
+    end
+  end
+
   describe "a store that trickles its reply" do
     # A real socket, not the Req.Test plug: receive_timeout bounds each read,
     # so only a reply that keeps arriving shows whether the whole call is
