@@ -50,6 +50,9 @@ defmodule Kanban.Attachments.Storage.S3 do
     * An endpoint whose host is an IPv6 address is refused, with the reason
       `:ipv6_endpoint_unsupported` in the log, because Req signs and sends
       its Host header without the brackets. Use a host name for it instead.
+      An endpoint `URI.new/1` cannot parse is refused as
+      `:invalid_endpoint`, and a region that is not a plain region name
+      (lowercase letters and digits joined by hyphens) as `:invalid_region`.
     * The enumerable is single-pass: enumerate it once, in the process
       that called `stream/1`. Halting early cancels the download.
     * Transient failures (a 408, 429, 500, 502, 503 or 504, a timeout, a
@@ -76,6 +79,7 @@ defmodule Kanban.Attachments.Storage.S3 do
   @default_content_type "application/octet-stream"
   @chunk_bytes 65_536
   @error_body_bytes 4_096
+  @region_format ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
   @error_body_chunks 4
 
   @impl true
@@ -195,28 +199,48 @@ defmodule Kanban.Attachments.Storage.S3 do
     end
   end
 
-  # Req builds the signed Host header from the bare URL host, so an IPv6
-  # literal went out as "::1:9000" instead of "[::1]:9000", which names a
-  # different host. Such an endpoint is refused rather than sent malformed;
-  # a host name that resolves to the address works.
   defp send_request(method, key, config, extra) do
-    if ipv6_endpoint?(config) do
-      {:error, :ipv6_endpoint_unsupported}
-    else
-      [method: method, url: object_url(config, key), aws_sigv4: sigv4(config)]
-      |> Keyword.merge(base_options())
-      |> Keyword.merge(deadline(method, config))
-      |> Keyword.merge(extra)
-      |> Keyword.merge(Keyword.get(config, :req_options, []))
-      |> Req.request()
+    case config_problem(config) do
+      nil -> sign_and_send(method, key, config, extra)
+      problem -> {:error, problem}
     end
   end
 
-  defp ipv6_endpoint?(config) do
-    host = config |> endpoint() |> URI.parse() |> Map.get(:host)
+  defp sign_and_send(method, key, config, extra) do
+    [method: method, url: object_url(config, key), aws_sigv4: sigv4(config)]
+    |> Keyword.merge(base_options())
+    |> Keyword.merge(deadline(method, config))
+    |> Keyword.merge(extra)
+    |> Keyword.merge(Keyword.get(config, :req_options, []))
+    |> Req.request()
+  end
 
-    is_binary(host) and
-      match?({:ok, _ip}, host |> to_charlist() |> :inet.parse_ipv6strict_address())
+  # config/runtime.exs refuses these at boot; they are checked again here
+  # because the adapter's config can be set by other means.
+  #
+  #   * The region is part of the default AWS host name, so one such as
+  #     "x.example?" sent signed requests to another host.
+  #   * Req builds the signed Host header from the bare URL host, so an IPv6
+  #     literal went out as "::1:9000" instead of "[::1]:9000", which names a
+  #     different host. A host name that resolves to the address works.
+  #   * An endpoint URI.new/1 cannot parse is not guessed at: URI.parse/1
+  #     read "http://[fe80::1%25en0]:9000" as host "fe80", port 80.
+  defp config_problem(config) do
+    region = Keyword.get(config, :region)
+
+    if is_nil(region) or region =~ @region_format,
+      do: endpoint_problem(endpoint(config)),
+      else: :invalid_region
+  end
+
+  defp endpoint_problem(endpoint) do
+    case URI.new(endpoint) do
+      {:ok, %URI{host: host}} when is_binary(host) and host != "" ->
+        if String.contains?(host, ":"), do: :ipv6_endpoint_unsupported
+
+      _unparseable ->
+        :invalid_endpoint
+    end
   end
 
   # receive_timeout bounds each socket read, not the whole response, so a

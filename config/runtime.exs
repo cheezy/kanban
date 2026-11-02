@@ -97,34 +97,56 @@ end
 # keeps its own values and an unset variable leaves the default in place.
 # This block runs in every environment, not only prod, so a missing S3
 # variable fails the boot wherever ATTACHMENTS_STORAGE=s3 is set. Errors name
-# the variable and never print its value.
-attachments_env = fn names ->
-  Enum.find_value(names, fn name ->
-    case System.get_env(name) do
-      value when is_binary(value) and value != "" -> value
-      _unset -> nil
-    end
-  end)
+# the variable and never print its value. Every value is trimmed, and one that
+# is empty or only whitespace counts as unset (G488 exploratory campaign: a
+# blank value used to shadow a working fallback).
+attachments_value = fn name ->
+  case System.get_env(name) do
+    value when is_binary(value) ->
+      case String.trim(value) do
+        "" -> nil
+        trimmed -> trimmed
+      end
+
+    nil ->
+      nil
+  end
 end
 
-case System.get_env("ATTACHMENTS_DIR") do
-  dir when is_binary(dir) and dir != "" ->
-    if Path.type(dir) != :absolute do
-      raise "ATTACHMENTS_DIR must be an absolute path. See docs/attachments.md."
-    end
+# A directory the app can use: it exists and is writable, or its nearest
+# existing parent is a writable directory it can be created in.
+attachments_dir_usable? = fn dir ->
+  nearest = dir |> Stream.iterate(&Path.dirname/1) |> Enum.find(&File.exists?/1)
 
-    config :kanban, Kanban.Attachments.Storage.Local, root: dir
-
-  _unset ->
-    :ok
+  match?(
+    {:ok, %File.Stat{type: :directory, access: access}} when access in [:read_write, :write],
+    File.stat(nearest)
+  )
 end
 
-# A production app that sets neither variable keeps its files under the
-# system temp directory, which many hosts clear on reboot and a Fly machine
-# without a volume loses on every deploy. Warn loudly rather than fail, so an
-# instance that does not offer attachments yet still boots.
-if config_env() == :prod and System.get_env("ATTACHMENTS_STORAGE") in [nil, ""] and
-     System.get_env("ATTACHMENTS_DIR") in [nil, ""] do
+attachments_dir = attachments_value.("ATTACHMENTS_DIR")
+
+attachments_storage =
+  "ATTACHMENTS_STORAGE" |> attachments_value.() |> then(&(&1 && String.downcase(&1)))
+
+if attachments_dir do
+  if Path.type(attachments_dir) != :absolute do
+    raise "ATTACHMENTS_DIR must be an absolute path. See docs/attachments.md."
+  end
+
+  if not attachments_dir_usable?.(attachments_dir) do
+    raise "ATTACHMENTS_DIR must be a writable directory, or a path that can be created in one. " <>
+            "See docs/attachments.md."
+  end
+
+  config :kanban, Kanban.Attachments.Storage.Local, root: attachments_dir
+end
+
+# A production app with local storage and no ATTACHMENTS_DIR keeps its files
+# under the system temp directory, which many hosts clear on reboot and a Fly
+# machine without a volume loses on every deploy. Warn loudly rather than
+# fail, so an instance that does not offer attachments yet still boots.
+if config_env() == :prod and attachments_storage in [nil, "local"] and is_nil(attachments_dir) do
   IO.warn(
     "Attachments use local storage under the system temp directory, which does not survive " <>
       "a reboot or a redeploy. Set ATTACHMENTS_STORAGE=s3 (see docs/attachments-fly-setup.md) " <>
@@ -133,46 +155,88 @@ if config_env() == :prod and System.get_env("ATTACHMENTS_STORAGE") in [nil, ""] 
   )
 end
 
-case System.get_env("ATTACHMENTS_STORAGE") do
-  storage when storage in [nil, ""] ->
+# An endpoint is an http or https URL whose host is a name or an IPv4
+# address, with a valid port if any, and nothing else: no user name or
+# password, no query and no fragment. An IPv6 address is refused, because
+# the request signer drops its brackets.
+attachments_endpoint_valid? = fn endpoint ->
+  case URI.new(endpoint) do
+    {:ok, %URI{scheme: scheme, host: host, port: port, userinfo: nil, query: nil, fragment: nil}}
+    when scheme in ["http", "https"] and is_binary(host) and port in 1..65_535 ->
+      host =~ ~r/\A[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\z/
+
+    _invalid ->
+      false
+  end
+end
+
+case attachments_storage do
+  nil ->
     :ok
 
   "local" ->
     config :kanban, Kanban.Attachments.Storage, adapter: Kanban.Attachments.Storage.Local
 
   "s3" ->
-    # Each setting reads the ATTACHMENTS_S3_* name first, then the name Fly's
-    # Tigris integration (fly storage create) sets as an app secret.
-    s3_vars = [
-      bucket: ["ATTACHMENTS_S3_BUCKET", "BUCKET_NAME"],
-      access_key_id: ["ATTACHMENTS_S3_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"],
-      secret_access_key: ["ATTACHMENTS_S3_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"],
-      endpoint: ["ATTACHMENTS_S3_ENDPOINT", "AWS_ENDPOINT_URL_S3"],
-      region: ["ATTACHMENTS_S3_REGION", "AWS_REGION"]
+    # Where and as whom the app stores files come from one family of names:
+    # the ATTACHMENTS_S3_* names as soon as any of them is set, otherwise the
+    # names Fly's Tigris integration (fly storage create) sets as app
+    # secrets. Taking each setting from whichever family had it mixed two
+    # providers in one deploy, such as AWS keys with a Tigris endpoint left
+    # behind by an earlier setup (G488 exploratory campaign, 2026-11-02).
+    s3_identity = [
+      bucket: {"ATTACHMENTS_S3_BUCKET", "BUCKET_NAME"},
+      access_key_id: {"ATTACHMENTS_S3_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID"},
+      secret_access_key: {"ATTACHMENTS_S3_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY"},
+      endpoint: {"ATTACHMENTS_S3_ENDPOINT", "AWS_ENDPOINT_URL_S3"}
     ]
 
-    s3 = for {key, names} <- s3_vars, do: {key, attachments_env.(names)}
+    own_names? = Enum.any?(s3_identity, fn {_key, {own, _fly}} -> attachments_value.(own) end)
+    name_for = fn {own, fly} -> if own_names?, do: own, else: fly end
+
+    # ATTACHMENTS_S3_REGION applies to either family; AWS_REGION only to the
+    # Fly names it came with.
+    region =
+      attachments_value.("ATTACHMENTS_S3_REGION") ||
+        if(own_names?, do: nil, else: attachments_value.("AWS_REGION"))
+
+    s3 =
+      for {key, names} <- s3_identity, do: {key, names |> name_for.() |> attachments_value.()}
 
     missing =
       for key <- [:bucket, :access_key_id, :secret_access_key], is_nil(s3[key]) do
-        Enum.join(s3_vars[key], " (or ") <> ")"
+        {own, fly} = s3_identity[key]
+        if own_names?, do: own, else: "#{own} (or #{fly})"
       end
 
     if missing != [] do
       raise """
       ATTACHMENTS_STORAGE is s3 but these environment variables are missing:
       #{Enum.join(missing, "\n")}
-      See docs/attachments.md.
+      Once any ATTACHMENTS_S3_* name for the bucket, keys or endpoint is set, they are all read
+      from the ATTACHMENTS_S3_* names. See docs/attachments.md.
       """
     end
 
-    endpoint = s3[:endpoint] && URI.parse(s3[:endpoint])
-
-    if endpoint &&
-         (endpoint.scheme not in ["http", "https"] or endpoint.host in [nil, ""] or
-            endpoint.userinfo != nil) do
+    if s3[:endpoint] && not attachments_endpoint_valid?.(s3[:endpoint]) do
       raise "ATTACHMENTS_S3_ENDPOINT (or AWS_ENDPOINT_URL_S3) must be an http:// or https:// URL " <>
-              "with no user name or password in it. See docs/attachments.md."
+              "whose host is a name or an IPv4 address (IPv6 is not supported), with a port from " <>
+              "1 to 65535 if any, and no user name or password, query or fragment. " <>
+              "See docs/attachments.md."
+    end
+
+    # The region is part of the default AWS host name, so it must be a plain
+    # region name: a value such as "x.example?" sent signed requests to
+    # another host. "auto" is Tigris's region and has no AWS host.
+    if region && not (region =~ ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/) do
+      raise "ATTACHMENTS_S3_REGION (or AWS_REGION) must be a region name such as us-east-1 or " <>
+              "auto. See docs/attachments.md."
+    end
+
+    if region == "auto" and is_nil(s3[:endpoint]) do
+      raise "ATTACHMENTS_S3_REGION (or AWS_REGION) is auto, which needs an endpoint: set " <>
+              "ATTACHMENTS_S3_ENDPOINT (or AWS_ENDPOINT_URL_S3), such as " <>
+              "https://fly.storage.tigris.dev. See docs/attachments.md."
     end
 
     path_style =
@@ -193,7 +257,7 @@ case System.get_env("ATTACHMENTS_STORAGE") do
 
     config :kanban,
            Kanban.Attachments.Storage.S3,
-           Enum.reject(s3, fn {_key, value} -> is_nil(value) end) ++
+           Enum.reject(s3 ++ [region: region], fn {_key, value} -> is_nil(value) end) ++
              [path_style: path_style]
 
   _other ->
@@ -201,23 +265,26 @@ case System.get_env("ATTACHMENTS_STORAGE") do
 end
 
 # Megabytes and gigabytes here are binary (MiB, GiB): 25 means 26_214_400 bytes.
+# Each limit is a whole number of at most its ceiling: a file can be at most
+# 5 GiB, the largest single upload S3 accepts.
 attachment_limits = [
-  max_file_bytes: {"ATTACHMENTS_MAX_FILE_MB", 1024 * 1024},
-  max_files_per_task: {"ATTACHMENTS_MAX_FILES_PER_TASK", 1},
-  organization_quota_bytes: {"ATTACHMENTS_ORG_QUOTA_GB", 1024 * 1024 * 1024}
+  max_file_bytes: {"ATTACHMENTS_MAX_FILE_MB", 1024 * 1024, 5_120},
+  max_files_per_task: {"ATTACHMENTS_MAX_FILES_PER_TASK", 1, 1_000},
+  organization_quota_bytes: {"ATTACHMENTS_ORG_QUOTA_GB", 1024 * 1024 * 1024, 1_048_576}
 ]
 
 attachment_limits =
-  Enum.flat_map(attachment_limits, fn {key, {name, unit}} ->
-    case attachments_env.([name]) do
+  Enum.flat_map(attachment_limits, fn {key, {name, unit, ceiling}} ->
+    with value when is_binary(value) <- attachments_value.(name),
+         true <- value =~ ~r/\A[0-9]+\z/,
+         count when count in 1..ceiling//1 <- String.to_integer(value) do
+      [{key, count * unit}]
+    else
       nil ->
         []
 
-      value ->
-        case Integer.parse(value) do
-          {count, ""} when count > 0 -> [{key, count * unit}]
-          _invalid -> raise "#{name} must be a positive integer. See docs/attachments.md."
-        end
+      _invalid ->
+        raise "#{name} must be a whole number from 1 to #{ceiling}. See docs/attachments.md."
     end
   end)
 
@@ -290,7 +357,19 @@ if config_env() == :prod do
   # credentials and query data in cleartext to a public database. Set
   # DATABASE_ALLOW_INSECURE=true to explicitly opt out (e.g. another genuinely
   # private network whose host is not *.internal / *.flycast).
-  db_host = URI.parse(database_url).host || ""
+  database_uri = URI.parse(database_url)
+
+  # A reserved character (/, # or ?) left unencoded in the user name or
+  # password ends the URL's host part early, so the user name was taken for
+  # the host and named in the TLS error below. Only the shape is reported.
+  if is_nil(database_uri.userinfo) and String.contains?(database_url, "@") do
+    raise """
+    DATABASE_URL could not be parsed: percent-encode any /, # or ? in its user name or
+    password (for example / as %2F).
+    """
+  end
+
+  db_host = database_uri.host || ""
 
   # Fly-network database hosts reached over the private 6PN network: `.internal`
   # and `.flycast` (Fly apps/Postgres) and `.flympg.net` (Fly Managed Postgres,

@@ -17,8 +17,9 @@ Stride stores the bytes of each attachment through one storage interface,
 
 The adapter is chosen at boot from the environment and nothing else. Every
 variable below is read by `config/runtime.exs` only when it is set, so an
-unset variable keeps the default shown. An invalid value stops the boot with
-an error that names the variable and never prints its value.
+unset variable keeps the default shown. Each value is trimmed, and a variable
+that is empty or only whitespace counts as unset. An invalid value stops the
+boot with an error that names the variable and never prints its value.
 
 S3 requests are signed with AWS Signature Version 4 by Req, the HTTP client
 Stride already uses, so no AWS SDK is installed.
@@ -29,34 +30,40 @@ Stride already uses, so no AWS SDK is installed.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ATTACHMENTS_STORAGE` | `local` | `local` or `s3`. Any other value stops the boot. |
+| `ATTACHMENTS_STORAGE` | `local` | `local` or `s3`, in any case. Any other value stops the boot. |
 
 ### Local disk
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ATTACHMENTS_DIR` | a `stride_attachments` directory in the system temp directory | The directory files are written under. Created if missing. It must be an absolute path, or the boot stops. |
+| `ATTACHMENTS_DIR` | a `stride_attachments` directory in the system temp directory | The directory files are written under. Created if missing. It must be an absolute path to a writable directory, or to a path that can be created inside one, or the boot stops: a regular file, a read-only directory or a path under either is refused. |
 
 ### S3-compatible storage
 
-Each S3 setting reads its `ATTACHMENTS_S3_*` name first, then the name in the
-second column. Those second names are the secrets that `fly storage create`
-sets on a Fly app, so on Fly with Tigris you set only `ATTACHMENTS_STORAGE=s3`
-and the region. When `ATTACHMENTS_STORAGE` is `s3`, a missing bucket, access
-key id or secret access key stops the boot, and the error lists which
-variables are missing.
+The bucket, the two keys and the endpoint are read as one set. When any of
+`ATTACHMENTS_S3_BUCKET`, `ATTACHMENTS_S3_ACCESS_KEY_ID`,
+`ATTACHMENTS_S3_SECRET_ACCESS_KEY` or `ATTACHMENTS_S3_ENDPOINT` is set, all
+four are read from those names and the second column is ignored. Otherwise
+all four are read from the names in the second column, the secrets that
+`fly storage create` sets on a Fly app, so on Fly with Tigris you set only
+`ATTACHMENTS_STORAGE=s3` and the region. Reading each setting on its own
+would let one deploy mix two providers, such as AWS keys with a Tigris
+endpoint left over from an earlier setup. `ATTACHMENTS_S3_REGION` applies to
+either set; `AWS_REGION` is used only with the second-column names. When
+`ATTACHMENTS_STORAGE` is `s3`, a missing bucket, access key id or secret
+access key stops the boot, and the error lists which variables are missing.
 
 | Variable | Falls back to | Default | Meaning |
 |---|---|---|---|
 | `ATTACHMENTS_S3_BUCKET` | `BUCKET_NAME` | none, required | The bucket that holds every attachment. |
 | `ATTACHMENTS_S3_ACCESS_KEY_ID` | `AWS_ACCESS_KEY_ID` | none, required | The access key id requests are signed with. |
 | `ATTACHMENTS_S3_SECRET_ACCESS_KEY` | `AWS_SECRET_ACCESS_KEY` | none, required | The secret access key. Never logged. |
-| `ATTACHMENTS_S3_ENDPOINT` | `AWS_ENDPOINT_URL_S3` | `https://s3.<region>.amazonaws.com` | The store's base URL, for example `https://fly.storage.tigris.dev` for Tigris or `http://localhost:9000` for a local MinIO. It must start with `http://` or `https://` and carry no user name or password, or the boot stops. A path on it, such as `https://proxy.example/s3`, is kept in front of every object's path. An IPv6 address such as `http://[fdaa::3]:9000` is not supported: every request is refused with `ipv6_endpoint_unsupported` in the log, because the request signer drops the brackets from the host. Use a host name that resolves to it. |
-| `ATTACHMENTS_S3_REGION` | `AWS_REGION` | `us-east-1` | The region requests are signed for. Use `auto` for Tigris. |
+| `ATTACHMENTS_S3_ENDPOINT` | `AWS_ENDPOINT_URL_S3` | `https://s3.<region>.amazonaws.com` | The store's base URL, for example `https://fly.storage.tigris.dev` for Tigris or `http://localhost:9000` for a local MinIO. It must be an `http://` or `https://` URL whose host is a name or an IPv4 address, with a port from 1 to 65535 if any, and no user name or password, query or fragment, or the boot stops. A path on it, such as `https://proxy.example/s3`, is kept in front of every object's path. An IPv6 address such as `http://[fdaa::3]:9000` is not supported and stops the boot, because the request signer drops the brackets from the host. Use a host name that resolves to it. |
+| `ATTACHMENTS_S3_REGION` | `AWS_REGION` (only with the second-column names) | `us-east-1` | The region requests are signed for. Use `auto` for Tigris. It must be lowercase letters and digits joined by hyphens, such as `eu-west-1`, or the boot stops, since it is also part of the default AWS host name. `auto` needs an endpoint: it has no AWS host, so `auto` with no endpoint stops the boot. |
 | `ATTACHMENTS_S3_PATH_STYLE` | none | `false` | `true` (or `1`) addresses objects as `<endpoint>/<bucket>/<key>` instead of `<bucket>.<endpoint host>/<key>`; `false` (or `0`) turns it off. Case is ignored, and any other value stops the boot. MinIO usually needs it. Path style is used anyway when the endpoint is an IPv4 address or the bucket name contains a dot, since neither works with a virtual-hosted address. |
 
-In production, when neither `ATTACHMENTS_STORAGE` nor `ATTACHMENTS_DIR` is
-set, the boot prints a warning: files would be kept under the system temp
+In production, when the storage is local (`ATTACHMENTS_STORAGE` unset or
+`local`) and `ATTACHMENTS_DIR` is not set, the boot prints a warning: files would be kept under the system temp
 directory, which does not survive a reboot or, on Fly, a redeploy. The app
 still starts, so an instance that does not offer attachments yet is not
 blocked.
@@ -92,8 +99,11 @@ a download logs a warning instead of looking like a missing file.
 | `ATTACHMENTS_MAX_FILES_PER_TASK` | `20` | How many files one task can hold. |
 | `ATTACHMENTS_ORG_QUOTA_GB` | `10` | The total size of every file in one Organization, in gibibytes (10 means 10,737,418,240 bytes). A board outside any Organization, which can hold files only while plans are not enforced, has a quota of this size of its own. |
 
-Each must be a positive whole number; `0`, a negative number or a value such
-as `2.5` stops the boot. They are stored as
+Each must be a whole number of digits from 1 up to a ceiling: 5120 for
+`ATTACHMENTS_MAX_FILE_MB` (5 GiB, the largest single upload S3 accepts), 1000
+for `ATTACHMENTS_MAX_FILES_PER_TASK` and 1048576 for
+`ATTACHMENTS_ORG_QUOTA_GB`. `0`, a sign, a value such as `2.5` or `25MB`, or
+one above its ceiling stops the boot. They are stored as
 `config :kanban, Kanban.Attachments.Limits` with the keys `max_file_bytes`,
 `max_files_per_task` and `organization_quota_bytes`.
 `Kanban.Attachments.Limits` reads them each time a limit is checked, and

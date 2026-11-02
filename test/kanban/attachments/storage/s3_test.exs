@@ -359,6 +359,46 @@ defmodule Kanban.Attachments.Storage.S3Test do
       refute_received {:request, _conn, _body}
     end
 
+    test "a scoped IPv6 endpoint, which URI.parse misreads, is refused too" do
+      stub(200)
+      put_config(endpoint: "http://[fe80::1%25en0]:9000")
+
+      log = capture_log(fn -> assert {:error, :storage_unavailable} = S3.exists(@key) end)
+
+      assert log =~ "attachment storage head failed: :invalid_endpoint"
+      refute_received {:request, _conn, _body}
+    end
+
+    test "an endpoint that does not parse is refused" do
+      stub(200)
+
+      for endpoint <- ["https://h.test:abc", "https://h .test", "not a url"] do
+        put_config(endpoint: endpoint)
+        log = capture_log(fn -> assert {:error, :storage_unavailable} = S3.delete(@key) end)
+        assert log =~ "attachment storage delete failed: :invalid_endpoint"
+      end
+
+      refute_received {:request, _conn, _body}
+    end
+
+    test "a region that is not a plain region name is refused before it builds a host" do
+      stub(200)
+      put_config(endpoint: nil)
+
+      for region <- ["attacker.test?", "x.attacker.test/", "a@attacker.test", " us-east-1"] do
+        put_config(region: region)
+        log = capture_log(fn -> assert {:error, :storage_unavailable} = S3.exists(@key) end)
+        assert log =~ "attachment storage head failed: :invalid_region"
+      end
+
+      refute_received {:request, _conn, _body}
+
+      put_config(region: "eu-west-1")
+      assert {:ok, true} = S3.exists(@key)
+      assert_received {:request, conn, _body}
+      assert conn.host == "test-bucket.s3.eu-west-1.amazonaws.com"
+    end
+
     test "an IPv4-address endpoint still works, path-style" do
       stub(200)
       put_config(endpoint: "http://10.0.0.5:9000")
