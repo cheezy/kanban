@@ -31,6 +31,7 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   alias Kanban.Attachments.Limits
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
+  alias KanbanWeb.Sentences
 
   @doc """
   `true` when the upload `name` is registered on `socket` and not disallowed.
@@ -268,10 +269,6 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
     join_sentences([error_message(:too_many_files), gettext("Delete a file to upload another.")])
   end
 
-  # Japanese and Chinese end a sentence with a full-width full stop and no
-  # space after it.
-  @unspaced_locales ~w(ja zh)
-
   # Languages that write a decimal comma.
   @decimal_comma_locales ~w(de es fr pt)
 
@@ -280,16 +277,14 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   @gib 1024 * 1024 * 1024
 
   @doc """
-  Joins translated sentences, dropping `nil`s, the way the current locale
-  spaces them: a space between sentences, none in Japanese or Chinese. Use
-  it wherever separately translated sentences are shown as one message.
+  Joins translated sentences, dropping `nil`s, with `KanbanWeb.Sentences`:
+  a space between sentences, none in Japanese or Chinese. Use it wherever
+  separately translated sentences are shown as one message.
   """
   @spec join_sentences([String.t() | nil]) :: String.t()
   def join_sentences(sentences) when is_list(sentences) do
-    sentences |> Enum.reject(&is_nil/1) |> Enum.join(sentence_gap())
+    sentences |> Enum.reject(&is_nil/1) |> Sentences.join()
   end
-
-  defp sentence_gap, do: if(language() in @unspaced_locales, do: "", else: " ")
 
   defp language do
     [language | _region] = KanbanWeb.Gettext |> Gettext.get_locale() |> String.split(["_", "-"])
