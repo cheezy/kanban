@@ -55,6 +55,9 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
     @impl true
     def exists(key), do: Local.exists(key)
 
+    @impl true
+    def sweep(older_than), do: Local.sweep(older_than)
+
     # A test can run code at a step boundary, in the process making the
     # storage call, to stand in for another process interleaving there.
     defp run_hook(name, key) do
@@ -187,19 +190,48 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       assert DateTime.compare(updated.delete_after, minutes(24 * 60)) == :eq
     end
 
-    test "records an unexpected adapter result as unexpected_result and keeps the row" do
+    test "an unexpected adapter result keeps the row as a storage failure" do
+      # The storage facade turns a result outside the adapter contract into
+      # :storage_unavailable and logs which contract was broken.
       first = tombstone(key(), minutes(-2))
       Process.put(:delete_result, {:error, "a message, not a reason atom"})
-      capture_log(fn -> assert :ok = run() end)
+      log = capture_log(fn -> assert :ok = run() end)
 
-      assert %BlobDeletion{attempts: 1, last_error: "unexpected_result"} = updated = reload(first)
+      assert log =~ "attachment storage delete failed: :unexpected_reason"
+      assert %BlobDeletion{attempts: 1, last_error: "storage_unavailable"} = updated = reload(first)
       assert DateTime.compare(updated.delete_after, minutes(2)) == :eq
 
       second = tombstone(key(), minutes(-2))
       Process.put(:delete_result, :what)
-      capture_log(fn -> assert :ok = run() end)
+      log = capture_log(fn -> assert :ok = run() end)
 
-      assert %BlobDeletion{attempts: 1, last_error: "unexpected_result"} = reload(second)
+      assert log =~ "attachment storage delete failed: :unexpected_result"
+      assert %BlobDeletion{attempts: 1, last_error: "storage_unavailable"} = reload(second)
+    end
+
+    test "an adapter delete that raises or exits fails that key and the run goes on" do
+      first = tombstone(stored_blob(), minutes(-3))
+      second = tombstone(stored_blob(), minutes(-2))
+      first_key = first.storage_key
+
+      Process.put(:before_delete, fn
+        ^first_key -> raise "store overloaded"
+        _other -> :ok
+      end)
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      assert log =~ "attachment storage delete failed: :exception"
+      refute log =~ "store overloaded"
+      assert %BlobDeletion{attempts: 1, last_error: "storage_unavailable"} = reload(first)
+      assert reload(second) == nil
+      refute blob_exists?(second.storage_key)
+
+      Process.put(:before_delete, fn _key -> exit(:timeout) end)
+      log = capture_log(fn -> assert :ok = run(minutes(10)) end)
+
+      assert log =~ "attachment storage delete failed: :exit"
+      assert %BlobDeletion{attempts: 2} = reload(first)
     end
 
     test "processes at most batch_size rows per run, oldest first" do
@@ -283,6 +315,24 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
 
       refute blob_exists?(key)
       assert Enum.all?(rows, &(reload(&1) == nil))
+    end
+
+    test "each run sweeps the local adapter's temp files once they are an hour old",
+         %{tmp_dir: tmp_dir} do
+      _ = stored_blob()
+      staging = Path.join([tmp_dir, "root", ".staging"])
+      old = Path.join(staging, ".tmp-left-by-a-killed-put")
+      young = Path.join(staging, ".tmp-still-being-written")
+
+      for {path, age} <- [{old, 3_700}, {young, 30}] do
+        File.write!(path, "partial")
+        File.touch!(path, System.os_time(:second) - age)
+      end
+
+      assert :ok = run()
+
+      refute File.exists?(old)
+      assert File.exists?(young)
     end
 
     test "uses the current time when no now argument is given" do

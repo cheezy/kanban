@@ -391,11 +391,13 @@ defmodule KanbanWeb.AttachmentControllerTest do
     log = capture_log(fn -> assert_not_found(download(conn, ctx.reader, unavailable.id)) end)
     assert log =~ "reason=:storage_unavailable"
 
-    # A reason that is not an atom could carry a key or a path: it is logged
-    # as :unknown.
+    # A reason outside the storage contract could carry a key or a path: the
+    # storage facade logs only that the contract was broken, and the
+    # controller sees :storage_unavailable.
     Process.put(:stream_result, {:error, {:failed, unavailable.storage_key}})
     log = capture_log(fn -> assert_not_found(download(conn, ctx.reader, unavailable.id)) end)
-    assert log =~ "reason=:unknown"
+    assert log =~ "attachment storage stream failed: :unexpected_reason"
+    assert log =~ "reason=:storage_unavailable"
     refute log =~ unavailable.storage_key
   end
 

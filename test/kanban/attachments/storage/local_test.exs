@@ -123,6 +123,48 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     assert :ok = Local.delete(@key)
   end
 
+  describe "sweep/1" do
+    defp staged(root, name, age_seconds) do
+      staging = Path.join(root, ".staging")
+      path = Path.join(staging, name)
+      File.write!(path, "partial bytes")
+      mtime = System.os_time(:second) - age_seconds
+      File.touch!(path, mtime)
+      path
+    end
+
+    test "removes temp files older than the age and keeps younger ones and anything else",
+         %{root: root} do
+      :ok = Local.put(@key, {:binary, "live"}, [])
+
+      old = staged(root, ".tmp-old", 7_200)
+      young = staged(root, ".tmp-young", 60)
+      other = staged(root, "not-a-temp-file", 7_200)
+
+      assert Local.sweep(3_600) == :ok
+
+      refute File.exists?(old)
+      assert File.exists?(young)
+      assert File.exists?(other)
+      assert {:ok, true} = Local.exists(@key)
+    end
+
+    test "is ok when there is no staging directory or root yet" do
+      assert Local.sweep(3_600) == :ok
+    end
+
+    test "never sweeps a staging directory others can open", %{root: root} do
+      :ok = Local.put(@key, {:binary, "live"}, [])
+      old = staged(root, ".tmp-old", 7_200)
+      root |> Path.join(".staging") |> File.chmod!(0o755)
+
+      log = capture_log(fn -> assert {:error, :storage_unavailable} = Local.sweep(3_600) end)
+
+      assert log =~ "attachment storage sweep failed: :untrusted_directory"
+      assert File.exists?(old)
+    end
+  end
+
   describe "directories left after a delete" do
     @sibling "boards/12/7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f"
 

@@ -38,9 +38,19 @@ defmodule Kanban.Attachments.Storage do
     * `exists/1` returns `{:ok, boolean}`.
     * Any failure is `{:error, reason}`, with `reason` one of `:invalid_key`,
       `:not_found` or `:storage_unavailable`.
+
+  The facade holds every adapter to that contract. An adapter call that
+  raises, exits or throws (the S3 adapter's HTTP pool raises when no
+  connection frees up in time, for example), or that returns anything else,
+  is logged with the operation and a reason code only, never the message,
+  which can hold a URL, and becomes `{:error, :storage_unavailable}`. So a
+  caller can rely on the documented results alone, and a storage outage
+  reaches it as a refusal rather than a crash.
   """
 
   alias Kanban.Attachments.Storage.Local
+
+  require Logger
 
   @typedoc "A validated storage key such as `boards/12/0b9c...`."
   @type key :: String.t()
@@ -67,6 +77,15 @@ defmodule Kanban.Attachments.Storage do
   @doc "Reports whether an object is stored under `key`."
   @callback exists(key()) :: {:ok, boolean()} | {:error, reason()}
 
+  @doc """
+  Removes leftovers of writes that never finished, such as a temp file a
+  killed process left behind, once they are older than `older_than_seconds`.
+  Optional: an adapter that leaves nothing behind need not implement it.
+  """
+  @callback sweep(older_than_seconds :: pos_integer()) :: :ok
+
+  @optional_callbacks sweep: 1
+
   @max_key_length 512
   @key_format ~r/\A[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\z/
 
@@ -84,23 +103,40 @@ defmodule Kanban.Attachments.Storage do
   def put(key, source, opts \\ [])
 
   def put(key, {:file, path} = source, opts) when is_binary(path) and is_list(opts),
-    do: with_valid_key(key, fn -> adapter().put(key, source, opts) end)
+    do: with_valid_key(key, :put, fn -> adapter().put(key, source, opts) end)
 
   def put(key, {:binary, data} = source, opts)
       when (is_binary(data) or is_list(data)) and is_list(opts),
-      do: with_valid_key(key, fn -> adapter().put(key, source, opts) end)
+      do: with_valid_key(key, :put, fn -> adapter().put(key, source, opts) end)
 
   @doc "Returns `{:ok, enumerable}` of the bytes stored under `key`."
   @spec stream(term()) :: {:ok, Enumerable.t()} | {:error, reason()}
-  def stream(key), do: with_valid_key(key, fn -> adapter().stream(key) end)
+  def stream(key), do: with_valid_key(key, :stream, fn -> adapter().stream(key) end)
 
   @doc "Removes the object under `key`; `:ok` when it is already gone."
   @spec delete(term()) :: :ok | {:error, reason()}
-  def delete(key), do: with_valid_key(key, fn -> adapter().delete(key) end)
+  def delete(key), do: with_valid_key(key, :delete, fn -> adapter().delete(key) end)
 
   @doc "Returns `{:ok, true}` when an object is stored under `key`."
   @spec exists(term()) :: {:ok, boolean()} | {:error, reason()}
-  def exists(key), do: with_valid_key(key, fn -> adapter().exists(key) end)
+  def exists(key), do: with_valid_key(key, :exists, fn -> adapter().exists(key) end)
+
+  @doc """
+  Asks the adapter to remove leftovers of unfinished writes older than
+  `older_than_seconds` (see the optional `c:sweep/1` callback). Always `:ok`:
+  an adapter without the callback has nothing to sweep, and a failure is
+  logged and retried on the next call.
+  """
+  @spec sweep(pos_integer()) :: :ok
+  def sweep(older_than_seconds) when is_integer(older_than_seconds) and older_than_seconds > 0 do
+    adapter = adapter()
+
+    if Code.ensure_loaded?(adapter) and function_exported?(adapter, :sweep, 1) do
+      _ = contain(:sweep, fn -> adapter.sweep(older_than_seconds) end)
+    end
+
+    :ok
+  end
 
   @doc """
   True when `key` is a valid storage key: lowercase letters, digits, `_` and
@@ -124,7 +160,37 @@ defmodule Kanban.Attachments.Storage do
     |> Keyword.get(:adapter, Local)
   end
 
-  defp with_valid_key(key, fun) do
-    if valid_key?(key), do: fun.(), else: {:error, :invalid_key}
+  defp with_valid_key(key, operation, fun) do
+    if valid_key?(key), do: contain(operation, fun), else: {:error, :invalid_key}
   end
+
+  # Runs one adapter call and holds its result to the contract above.
+  defp contain(operation, fun) do
+    operation |> conform(fun.()) |> report(operation)
+  rescue
+    _exception -> report({:violation, :exception}, operation)
+  catch
+    :exit, _reason -> report({:violation, :exit}, operation)
+    :throw, _value -> report({:violation, :throw}, operation)
+  end
+
+  defp conform(:put, :ok), do: :ok
+  defp conform(:delete, :ok), do: :ok
+  defp conform(:sweep, :ok), do: :ok
+  defp conform(:stream, {:ok, _enumerable} = ok), do: ok
+  defp conform(:exists, {:ok, exists} = ok) when is_boolean(exists), do: ok
+
+  defp conform(_operation, {:error, reason} = error)
+       when reason in [:invalid_key, :not_found, :storage_unavailable],
+       do: error
+
+  defp conform(_operation, {:error, _other}), do: {:violation, :unexpected_reason}
+  defp conform(_operation, _other), do: {:violation, :unexpected_result}
+
+  defp report({:violation, code}, operation) do
+    Logger.warning("attachment storage #{operation} failed: #{inspect(code)}")
+    {:error, :storage_unavailable}
+  end
+
+  defp report(result, _operation), do: result
 end

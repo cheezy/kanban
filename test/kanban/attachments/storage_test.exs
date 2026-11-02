@@ -2,6 +2,8 @@ defmodule Kanban.Attachments.StorageTest do
   # Not async: the dispatch tests change the application-wide adapter.
   use ExUnit.Case, async: false
 
+  import ExUnit.CaptureLog
+
   alias Kanban.Attachments.Storage
   alias Kanban.Attachments.Storage.Local
 
@@ -24,6 +26,37 @@ defmodule Kanban.Attachments.StorageTest do
     defp record(call, result) do
       send(self(), {:adapter_called, call})
       result
+    end
+  end
+
+  defmodule MisbehavingAdapter do
+    @moduledoc false
+    # Each call does whatever the test put under the operation's name in the
+    # process dictionary: return a value, or raise, exit or throw.
+    @behaviour Kanban.Attachments.Storage
+
+    @impl true
+    def put(_key, _source, _opts), do: act(:put)
+
+    @impl true
+    def stream(_key), do: act(:stream)
+
+    @impl true
+    def delete(_key), do: act(:delete)
+
+    @impl true
+    def exists(_key), do: act(:exists)
+
+    @impl true
+    def sweep(_older_than), do: act(:sweep)
+
+    defp act(operation) do
+      case Process.get(operation) do
+        {:raise, message} -> raise message
+        {:exit, reason} -> exit(reason)
+        {:throw, value} -> throw(value)
+        {:return, value} -> value
+      end
     end
   end
 
@@ -109,6 +142,88 @@ defmodule Kanban.Attachments.StorageTest do
         assert {:error, :invalid_key} = Storage.exists(key)
       end
 
+      refute_received {:adapter_called, _call}
+    end
+  end
+
+  describe "holding adapters to the contract" do
+    setup do
+      previous = Application.get_env(:kanban, Storage)
+      Application.put_env(:kanban, Storage, adapter: MisbehavingAdapter)
+
+      on_exit(fn ->
+        if previous,
+          do: Application.put_env(:kanban, Storage, previous),
+          else: Application.delete_env(:kanban, Storage)
+      end)
+    end
+
+    defp call(:put), do: Storage.put("boards/1/a", {:binary, "x"})
+    defp call(:stream), do: Storage.stream("boards/1/a")
+    defp call(:delete), do: Storage.delete("boards/1/a")
+    defp call(:exists), do: Storage.exists("boards/1/a")
+
+    test "a raise, exit or throw is storage_unavailable, logged without its message" do
+      for operation <- [:put, :stream, :delete, :exists],
+          {behaviour, code} <- [
+            {{:raise, "https://bucket.example/secret-key?X-Amz-Signature=abc"}, ":exception"},
+            {{:exit, :timeout}, ":exit"},
+            {{:throw, :oops}, ":throw"}
+          ] do
+        Process.put(operation, behaviour)
+
+        log = capture_log(fn -> assert call(operation) == {:error, :storage_unavailable} end)
+
+        assert log =~ "attachment storage #{operation} failed: #{code}"
+        refute log =~ "Signature"
+      end
+    end
+
+    test "a result outside the contract is storage_unavailable" do
+      cases = [
+        put: [{:ok, "etag"}, :error, nil, {:error, "message"}, {:error, :other}],
+        stream: [:ok, {:ok}, nil, {:error, :other}],
+        delete: [:deleted, {:ok, :x}, {:error, :a, :b}],
+        exists: [{:ok, "yes"}, true, {:error, :timeout}]
+      ]
+
+      for {operation, results} <- cases, result <- results do
+        Process.put(operation, {:return, result})
+
+        capture_log(fn ->
+          assert call(operation) == {:error, :storage_unavailable},
+                 "expected #{operation} returning #{inspect(result)} to be storage_unavailable"
+        end)
+      end
+    end
+
+    test "results inside the contract pass through unchanged" do
+      for {operation, result} <- [
+            put: :ok,
+            stream: {:ok, ["bytes"]},
+            delete: :ok,
+            exists: {:ok, false},
+            put: {:error, :storage_unavailable},
+            stream: {:error, :not_found},
+            delete: {:error, :invalid_key}
+          ] do
+        Process.put(operation, {:return, result})
+        assert call(operation) == result
+      end
+    end
+
+    test "sweep/1 calls the adapter's sweep, and contains a failing one" do
+      Process.put(:sweep, {:return, :ok})
+      assert Storage.sweep(3_600) == :ok
+
+      Process.put(:sweep, {:raise, "disk gone"})
+      log = capture_log(fn -> assert Storage.sweep(3_600) == :ok end)
+      assert log =~ "attachment storage sweep failed: :exception"
+    end
+
+    test "sweep/1 is a no-op for an adapter without the callback" do
+      Application.put_env(:kanban, Storage, adapter: RecordingAdapter)
+      assert Storage.sweep(3_600) == :ok
       refute_received {:adapter_called, _call}
     end
   end

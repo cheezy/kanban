@@ -60,7 +60,12 @@ defmodule Kanban.AttachmentsTest do
     @impl true
     def delete(key) do
       send(self(), {:storage_deleted, key})
-      Process.get(:delete_result) || Local.delete(key)
+
+      case Process.get(:delete_result) do
+        nil -> Local.delete(key)
+        fun when is_function(fun, 0) -> fun.()
+        result -> result
+      end
     end
 
     @impl true
@@ -437,6 +442,106 @@ defmodule Kanban.AttachmentsTest do
       assert_received {:storage_deleted, ^key}
       assert tombstone(key) == nil
       assert row_count(ctx.task) == 0
+    end
+
+    test "a put that raises, exits, throws or breaks the contract is storage_unavailable, not a crash",
+         ctx do
+      attach_telemetry([@refused])
+
+      misbehaving = [
+        fn _key, _source, _opts -> raise "Finch was unable to provide a connection" end,
+        fn _key, _source, _opts -> exit(:timeout) end,
+        fn _key, _source, _opts -> throw(:oops) end,
+        fn key, source, opts ->
+          :ok = Storage.Local.put(key, source, opts)
+          {:ok, "etag"}
+        end,
+        fn _key, _source, _opts -> nil end
+      ]
+
+      for on_put <- misbehaving do
+        Process.put(:on_put, on_put)
+
+        log =
+          ExUnit.CaptureLog.capture_log(fn ->
+            assert {:error, :storage_unavailable} =
+                     ctx.modifier
+                     |> scope()
+                     |> Attachments.create_attachment(ctx.task, text_upload(ctx))
+          end)
+
+        assert log =~ "attachment storage put failed"
+        refute log =~ "Finch"
+        assert_received {:storage_put, key}
+        assert_received {:storage_deleted, ^key}
+        assert Storage.exists(key) == {:ok, false}
+        assert tombstone(key) == nil
+
+        assert_received {:telemetry_event, @refused, _, %{reason: :storage_unavailable}}
+      end
+
+      assert row_count(ctx.task) == 0
+    end
+
+    test "a discard delete that raises keeps the refusal and leaves the tombstone for the worker",
+         ctx do
+      attach_telemetry([@refused])
+      Process.put(:on_put, fn _key, _source, _opts -> {:error, :storage_unavailable} end)
+      Process.put(:delete_result, fn -> raise "connection reset" end)
+
+      ExUnit.CaptureLog.capture_log(fn ->
+        assert {:error, :storage_unavailable} =
+                 ctx.modifier
+                 |> scope()
+                 |> Attachments.create_attachment(ctx.task, text_upload(ctx))
+      end)
+
+      assert_received {:storage_put, key}
+      assert %BlobDeletion{attempts: 0} = tombstone(key)
+      assert_received {:telemetry_event, @refused, _, %{reason: :storage_unavailable}}
+    end
+
+    test "an upload killed mid-put leaves no copy of the file in the temp directory", ctx do
+      test_pid = self()
+
+      Process.put(:on_put, fn _key, {:file, snapshot}, _opts ->
+        send(test_pid, {:snapshot, snapshot, File.read!(snapshot)})
+        Process.sleep(:infinity)
+      end)
+
+      # The spawned uploader needs the hook and the adapter the test set.
+      on_put = Process.get(:on_put)
+      upload = text_upload(ctx, "secret quarterly figures\n")
+      scope = scope(ctx.modifier)
+
+      uploader =
+        spawn(fn ->
+          Process.put(:on_put, on_put)
+
+          receive do
+            :go -> Attachments.create_attachment(scope, ctx.task, upload)
+          end
+        end)
+
+      Ecto.Adapters.SQL.Sandbox.allow(Repo, test_pid, uploader)
+      send(uploader, :go)
+
+      assert_receive {:snapshot, snapshot, "secret quarterly figures\n"}, 5_000
+      ref = Process.monitor(uploader)
+      Process.exit(uploader, :kill)
+      assert_receive {:DOWN, ^ref, :process, ^uploader, :killed}
+
+      assert eventually(fn -> not File.exists?(snapshot) end)
+      assert row_count(ctx.task) == 0
+    end
+  end
+
+  # Plug's upload server removes a dead owner's files asynchronously.
+  defp eventually(check, attempts \\ 50) do
+    cond do
+      check.() -> true
+      attempts == 0 -> false
+      true -> Process.sleep(20) && eventually(check, attempts - 1)
     end
   end
 

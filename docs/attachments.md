@@ -210,7 +210,10 @@ emptied directory goes too, so a deleted board leaves no directory named
 after it. A file is written
 to a temporary name in a private `.staging` directory under
 `ATTACHMENTS_DIR`, synced to disk and then renamed into place, so a crash
-never leaves a half-written file behind. `.staging` must stay `0o700`: if
+never leaves a half-written file under a file's real name. A write cut off
+mid-way (the app killed or restarted during an upload) can leave its
+temporary file in `.staging`; the cleanup job removes it once it is an hour
+old. `.staging` must stay `0o700`: if
 group or others can read it, uploads fail with `:untrusted_directory`.
 Stride never serves a symbolic link or a file whose real path leaves
 `ATTACHMENTS_DIR`, and never writes through a linked directory below it.

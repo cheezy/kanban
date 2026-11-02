@@ -42,6 +42,10 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   tombstones the database wrote, and every key still passes the storage
   facade's validation.
 
+  Each run then calls `Kanban.Attachments.Storage.sweep/1`, which removes
+  what an adapter's unfinished writes left behind once it is an hour old: the
+  local adapter's temp files from a process or VM that died mid-write.
+
   With the local storage adapter a run sees only its own machine's disk, which
   is why that adapter is for a single machine only.
 
@@ -74,6 +78,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   # 2^11 minutes already exceeds one day, so larger exponents are never needed.
   @max_backoff_exponent 11
   @last_error_max_length 64
+  # Leftovers of unfinished writes (a Local temp file whose process died
+  # mid-write) are swept once they are as old as an upload's grace period.
+  @sweep_after_seconds 3_600
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
@@ -96,7 +103,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
         "#{counts.invalid} invalid, #{counts.failed} failed, #{counts.skipped} already handled"
     )
 
-    :ok
+    Storage.sweep(@sweep_after_seconds)
   end
 
   @doc """
@@ -202,8 +209,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   defp outcome(:ok), do: :deleted
   defp outcome({:error, :not_found}), do: :deleted
   defp outcome({:error, :invalid_key}), do: :invalid
-  defp outcome({:error, reason}) when is_atom(reason), do: {:failed, reason}
-  defp outcome(_unexpected), do: {:failed, :unexpected_result}
+  # The storage facade holds the adapter to its contract, so any other
+  # result is {:error, :storage_unavailable}.
+  defp outcome({:error, reason}), do: {:failed, reason}
 
   defp delete_tombstones(ids),
     do: from(d in BlobDeletion, where: d.id in ^ids) |> Repo.delete_all()

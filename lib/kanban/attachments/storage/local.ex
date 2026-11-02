@@ -25,9 +25,10 @@ defmodule Kanban.Attachments.Storage.Local do
       crash or a failed copy never leaves a half-written file under a live
       key. `.staging` must be `0o700` or stricter whoever created it, so no
       other user can open a temp file in the moment before it is made
-      `0o600`. A failed write removes its temp file; a VM that dies
-      mid-write can leave a `.tmp-` file in `.staging`, which no valid key
-      can name, so it is never served and can be deleted.
+      `0o600`. A failed write removes its temp file. A process or VM that
+      dies mid-write can leave a `.tmp-` file in `.staging`, which no valid
+      key can name, so it is never served; `sweep/1`, run by the cleanup
+      worker, removes it once it is an hour old.
     * Directories it creates are `0o700` and files `0o600`. A delete removes
       the key's directories again once they are empty, so a board whose last
       file is gone leaves no directory named after it.
@@ -173,6 +174,39 @@ defmodule Kanban.Attachments.Storage.Local do
 
       {:error, reason} ->
         unavailable(:delete, reason)
+    end
+  end
+
+  @doc """
+  Removes temp files older than `older_than_seconds` from the `.staging`
+  directory: writes that never reached their rename because the process or
+  the VM died mid-write. A live write's temp file exists only for as long as
+  the write takes, so the cleanup worker's one-hour age never touches one.
+  Only regular `.tmp-` files are removed, and only from a `.staging` the
+  app's own user owns and no one else can open.
+  """
+  @impl true
+  def sweep(older_than_seconds) when is_integer(older_than_seconds) and older_than_seconds > 0 do
+    staging = Path.join(root(), @staging)
+
+    with :ok <- private_dir(File.lstat(staging)),
+         {:ok, names} <- File.ls(staging) do
+      sweep_names(staging, names, System.os_time(:second) - older_than_seconds)
+    else
+      {:error, :enoent} -> :ok
+      {:error, reason} -> unavailable(:sweep, reason)
+    end
+  end
+
+  defp sweep_names(staging, names, cutoff) do
+    for ".tmp-" <> _ = name <- names, do: remove_stale(Path.join(staging, name), cutoff)
+    :ok
+  end
+
+  defp remove_stale(path, cutoff) do
+    case File.lstat(path, time: :posix) do
+      {:ok, %File.Stat{type: :regular, mtime: mtime}} when mtime < cutoff -> File.rm(path)
+      _young_or_other -> :ok
     end
   end
 

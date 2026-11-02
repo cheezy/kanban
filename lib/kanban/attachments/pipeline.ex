@@ -82,7 +82,7 @@ defmodule Kanban.Attachments.Pipeline do
       try do
         prepare_and_store(base, attrs, file)
       after
-        File.rm(file.path)
+        remove_snapshot(file.path)
       end
     end
   end
@@ -112,17 +112,20 @@ defmodule Kanban.Attachments.Pipeline do
     end
   end
 
+  # The snapshot is a Plug.Upload temp file, so Plug's upload server removes
+  # it when this process ends, whatever ends it. The `after` in run/2 removes
+  # it sooner on every normal return, but an exit signal (a LiveView killed
+  # mid-upload, a shutdown) skips `after` clauses and left a full copy of the
+  # user's file in the temp directory for good (G488 exploratory campaign,
+  # 2026-11-02).
   defp snapshot(source) do
-    target = Path.join(System.tmp_dir!(), "stride-upload-" <> random_name())
-
-    case File.open(target, [:write, :exclusive, :binary]) do
-      {:ok, device} ->
-        copied = copy_capped(source, device, target)
-        _ = File.close(device)
-        settle_snapshot(copied, target)
-
-      {:error, _reason} ->
-        {:error, :unreadable}
+    with {:ok, target} <- Plug.Upload.random_file("stride-upload"),
+         {:ok, device} <- File.open(target, [:write, :binary]) do
+      copied = copy_capped(source, device, target)
+      _ = File.close(device)
+      settle_snapshot(copied, target)
+    else
+      _error -> {:error, :unreadable}
     end
   end
 
@@ -145,11 +148,16 @@ defmodule Kanban.Attachments.Pipeline do
   defp settle_snapshot(_error, target), do: discard_snapshot(target, :unreadable)
 
   defp discard_snapshot(snapshot, reason) do
-    _ = File.rm(snapshot)
+    remove_snapshot(snapshot)
     {:error, reason}
   end
 
-  defp random_name, do: 16 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false)
+  # Plug.Upload.delete/1 also drops Plug's record of the file, which a
+  # long-lived caller such as a LiveView would otherwise accumulate.
+  defp remove_snapshot(snapshot) do
+    _ = Plug.Upload.delete(snapshot)
+    :ok
+  end
 
   # Everything that can refuse the file before it is stored: the changeset,
   # then the quota.
