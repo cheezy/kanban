@@ -207,7 +207,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
           %{
             title: "Who Can Do What",
             content:
-              "- The board's owner and members with modify access can upload files to a task and attach files to their own comments.\n- Members with read-only access can see and download every file, but they get no upload box. They see **Delete** only on a file they uploaded before their access changed. They can still comment, without files.\n- Someone viewing a shared board without being a member sees no files.\n\nFiles follow the board's access, so anyone who can see a task's files can download them. Think about who is on the board before you attach something sensitive, and see [Adding Team Members to Your Board](/resources/inviting-team-members).",
+              "- The board's owner and members with modify access can upload files to a task and attach files to their own comments.\n- Members with read-only access can see and download every file, but they get no upload box. They see **Delete** only on a file they uploaded before their access changed. They can still comment, without files.\n- Someone viewing a shared board without being a member sees no files. The task says that only board members can see them, rather than that it has none.\n\nFiles follow the board's access, so anyone who can see a task's files can download them. Think about who is on the board before you attach something sensitive, and see [Adding Team Members to Your Board](/resources/inviting-team-members).",
             image: nil
           },
           %{

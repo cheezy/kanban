@@ -13707,7 +13707,7 @@ msgid "{lead} to create the Backlog."
 msgstr ""
 
 #: lib/kanban_web/components/locked_feature.ex:144
-#: lib/kanban_web/live/task_live/attachments_component.ex:315
+#: lib/kanban_web/live/task_live/attachments_component.ex:316
 #: lib/kanban_web/live/task_live/form/attachment_staging.ex:202
 #, elixir-autogen, elixir-format
 msgid "Attachments"
@@ -13750,7 +13750,7 @@ msgstr ""
 msgid "Could not upload %{filename}: %{reason}"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:358
+#: lib/kanban_web/live/task_live/attachments_component.ex:367
 #, elixir-autogen, elixir-format
 msgid "Drop files here or browse"
 msgstr ""
@@ -13812,7 +13812,7 @@ msgstr ""
 msgid "This file type is not allowed."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:385
+#: lib/kanban_web/live/task_live/attachments_component.ex:394
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr ""
@@ -13822,7 +13822,7 @@ msgstr ""
 msgid "Upload progress for %{name}"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:383
+#: lib/kanban_web/live/task_live/attachments_component.ex:392
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr ""
@@ -13860,7 +13860,7 @@ msgstr[1] ""
 msgid "unnamed file"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/board_events.ex:187
+#: lib/kanban_web/live/board_live/board_events.ex:191
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr ""
@@ -13943,4 +13943,9 @@ msgstr ""
 #: lib/kanban_web/live/task_live/attachment_uploads.ex:312
 #, elixir-autogen, elixir-format
 msgid "%{number} MB"
+msgstr ""
+
+#: lib/kanban_web/live/task_live/attachments_component.ex:332
+#, elixir-autogen, elixir-format
+msgid "Only board members can see this task's files."
 msgstr ""

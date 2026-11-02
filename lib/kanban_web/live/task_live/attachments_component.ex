@@ -236,6 +236,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
     |> assign(:locked?, locked?)
     |> assign(:viewer, viewer)
     |> assign(:can_upload?, not locked? and Policy.allowed?(viewer, :upload))
+    |> assign(:members_only?, not locked? and not Policy.allowed?(viewer, :read))
     |> assign_attachments(list_attachments(socket, locked?))
   end
 
@@ -313,7 +314,7 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
     <section id={@id} data-attachments>
       <SectionHead.section_head
         title={gettext("Attachments")}
-        count_label={count_label(@locked?, @attachments)}
+        count_label={count_label(@locked? or @members_only?, @attachments)}
       />
 
       <KanbanWeb.LockedFeature.locked_feature
@@ -323,7 +324,15 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
         id={"#{@id}-lock"}
       />
 
-      <div :if={!@locked?}>
+      <p
+        :if={@members_only?}
+        id={"#{@id}-members-only"}
+        style="margin: 0; font-size: 12px; color: var(--ink-3); font-style: italic;"
+      >
+        {gettext("Only board members can see this task's files.")}
+      </p>
+
+      <div :if={!@locked? and !@members_only?}>
         <AttachmentItems.attachment_list
           attachments={@attachments}
           dom_prefix={@id}

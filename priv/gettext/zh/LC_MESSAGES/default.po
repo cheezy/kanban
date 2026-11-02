@@ -13727,7 +13727,7 @@ msgid "{lead} to create the Backlog."
 msgstr "{lead}，创建待办。"
 
 #: lib/kanban_web/components/locked_feature.ex:144
-#: lib/kanban_web/live/task_live/attachments_component.ex:315
+#: lib/kanban_web/live/task_live/attachments_component.ex:316
 #: lib/kanban_web/live/task_live/form/attachment_staging.ex:202
 #, elixir-autogen, elixir-format
 msgid "Attachments"
@@ -13770,7 +13770,7 @@ msgstr "请先选择要上传的文件。"
 msgid "Could not upload %{filename}: %{reason}"
 msgstr "无法上传 %{filename}：%{reason}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:358
+#: lib/kanban_web/live/task_live/attachments_component.ex:367
 #, elixir-autogen, elixir-format
 msgid "Drop files here or browse"
 msgstr "将文件拖放到此处或浏览"
@@ -13832,7 +13832,7 @@ msgstr "此文件或任务已不存在。"
 msgid "This file type is not allowed."
 msgstr "不允许此文件类型。"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:385
+#: lib/kanban_web/live/task_live/attachments_component.ex:394
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr "上传文件"
@@ -13842,7 +13842,7 @@ msgstr "上传文件"
 msgid "Upload progress for %{name}"
 msgstr "%{name} 的上传进度"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:383
+#: lib/kanban_web/live/task_live/attachments_component.ex:392
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr "正在上传..."
@@ -13879,7 +13879,7 @@ msgstr[0] "已上传 %{count} 个文件。"
 msgid "unnamed file"
 msgstr "未命名文件"
 
-#: lib/kanban_web/live/board_live/board_events.ex:187
+#: lib/kanban_web/live/board_live/board_events.ex:191
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "此任务已被删除。"
@@ -13961,3 +13961,8 @@ msgstr "%{number} KB"
 #, elixir-autogen, elixir-format
 msgid "%{number} MB"
 msgstr "%{number} MB"
+
+#: lib/kanban_web/live/task_live/attachments_component.ex:332
+#, elixir-autogen, elixir-format
+msgid "Only board members can see this task's files."
+msgstr "只有看板成员才能查看此任务的文件。"

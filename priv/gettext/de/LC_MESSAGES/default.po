@@ -13796,7 +13796,7 @@ msgid "{lead} to create the Backlog."
 msgstr "{lead} und erstellen so das Backlog."
 
 #: lib/kanban_web/components/locked_feature.ex:144
-#: lib/kanban_web/live/task_live/attachments_component.ex:315
+#: lib/kanban_web/live/task_live/attachments_component.ex:316
 #: lib/kanban_web/live/task_live/form/attachment_staging.ex:202
 #, elixir-autogen, elixir-format
 msgid "Attachments"
@@ -13839,7 +13839,7 @@ msgstr "Wählen Sie zuerst Dateien zum Hochladen aus."
 msgid "Could not upload %{filename}: %{reason}"
 msgstr "%{filename} konnte nicht hochgeladen werden: %{reason}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:358
+#: lib/kanban_web/live/task_live/attachments_component.ex:367
 #, elixir-autogen, elixir-format
 msgid "Drop files here or browse"
 msgstr "Dateien hier ablegen oder durchsuchen"
@@ -13901,7 +13901,7 @@ msgstr "Diese Datei oder Aufgabe existiert nicht mehr."
 msgid "This file type is not allowed."
 msgstr "Dieser Dateityp ist nicht erlaubt."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:385
+#: lib/kanban_web/live/task_live/attachments_component.ex:394
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr "Dateien hochladen"
@@ -13911,7 +13911,7 @@ msgstr "Dateien hochladen"
 msgid "Upload progress for %{name}"
 msgstr "Upload-Fortschritt für %{name}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:383
+#: lib/kanban_web/live/task_live/attachments_component.ex:392
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr "Wird hochgeladen..."
@@ -13949,7 +13949,7 @@ msgstr[1] "%{count} Dateien hochgeladen."
 msgid "unnamed file"
 msgstr "unbenannte Datei"
 
-#: lib/kanban_web/live/board_live/board_events.ex:187
+#: lib/kanban_web/live/board_live/board_events.ex:191
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "Diese Aufgabe wurde gelöscht."
@@ -14033,3 +14033,8 @@ msgstr "%{number} KB"
 #, elixir-autogen, elixir-format
 msgid "%{number} MB"
 msgstr "%{number} MB"
+
+#: lib/kanban_web/live/task_live/attachments_component.ex:332
+#, elixir-autogen, elixir-format
+msgid "Only board members can see this task's files."
+msgstr "Nur Board-Mitglieder können die Dateien dieser Aufgabe sehen."

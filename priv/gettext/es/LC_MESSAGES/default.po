@@ -13791,7 +13791,7 @@ msgid "{lead} to create the Backlog."
 msgstr "{lead} para crear los Pendientes."
 
 #: lib/kanban_web/components/locked_feature.ex:144
-#: lib/kanban_web/live/task_live/attachments_component.ex:315
+#: lib/kanban_web/live/task_live/attachments_component.ex:316
 #: lib/kanban_web/live/task_live/form/attachment_staging.ex:202
 #, elixir-autogen, elixir-format
 msgid "Attachments"
@@ -13834,7 +13834,7 @@ msgstr "Elige primero los archivos que quieres subir."
 msgid "Could not upload %{filename}: %{reason}"
 msgstr "No se pudo subir %{filename}: %{reason}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:358
+#: lib/kanban_web/live/task_live/attachments_component.ex:367
 #, elixir-autogen, elixir-format
 msgid "Drop files here or browse"
 msgstr "Suelta los archivos aquí o búscalos"
@@ -13896,7 +13896,7 @@ msgstr "Este archivo o tarea ya no existe."
 msgid "This file type is not allowed."
 msgstr "Este tipo de archivo no está permitido."
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:385
+#: lib/kanban_web/live/task_live/attachments_component.ex:394
 #, elixir-autogen, elixir-format
 msgid "Upload files"
 msgstr "Subir archivos"
@@ -13906,7 +13906,7 @@ msgstr "Subir archivos"
 msgid "Upload progress for %{name}"
 msgstr "Progreso de subida de %{name}"
 
-#: lib/kanban_web/live/task_live/attachments_component.ex:383
+#: lib/kanban_web/live/task_live/attachments_component.ex:392
 #, elixir-autogen, elixir-format
 msgid "Uploading..."
 msgstr "Subiendo..."
@@ -13944,7 +13944,7 @@ msgstr[1] "%{count} archivos subidos."
 msgid "unnamed file"
 msgstr "archivo sin nombre"
 
-#: lib/kanban_web/live/board_live/board_events.ex:187
+#: lib/kanban_web/live/board_live/board_events.ex:191
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "Esta tarea se eliminó."
@@ -14028,3 +14028,8 @@ msgstr "%{number} KB"
 #, elixir-autogen, elixir-format
 msgid "%{number} MB"
 msgstr "%{number} MB"
+
+#: lib/kanban_web/live/task_live/attachments_component.ex:332
+#, elixir-autogen, elixir-format
+msgid "Only board members can see this task's files."
+msgstr "Solo los miembros del tablero pueden ver los archivos de esta tarea."

@@ -270,7 +270,7 @@ Who can do what follows the board's access, checked on every request:
 | The board's owner (an org-admin counts as the owner of their Organization's boards) | Upload, download, and delete any file |
 | Members with modify access | Upload, download, attach files to their own comments, and delete the files they uploaded |
 | Members with read-only access | See and download every file; no upload box, and **Delete** only on a file they uploaded before their access changed |
-| Anyone who is not a member, including someone viewing a shared board | Nothing: the files are not listed |
+| Anyone who is not a member, including someone viewing a shared board | Nothing: the files are not listed, and the task says only board members can see its files |
 
 Anyone who can see a task's files can download them, so check who is on the
 board before attaching something sensitive.

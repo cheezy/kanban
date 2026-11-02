@@ -606,6 +606,23 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
                "A task can hold at most 1 file. Delete a file to upload another."
     end
 
+    # A signed-in non-member viewing a shared board may not see the files,
+    # but the section must not claim the task has none.
+    test "a non-member on a shared board is told the files are for members", %{conn: conn} do
+      owner = user_fixture()
+      {board, task} = board_with_task(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
+      attachment_fixture(task, %{uploaded_by: owner, filename: "secret-plan.txt"})
+
+      view = open_task_view(conn, board, task)
+      html = view |> element(section(task)) |> render()
+
+      assert html =~ "Only board members can see this task&#39;s files."
+      refute html =~ "No attachments yet"
+      refute html =~ "secret-plan.txt"
+      refute has_element?(view, section(task) <> " [data-section-head] .ident")
+    end
+
     # Deleting a comment deletes its files, and only a comment broadcast
     # follows, so the section must recount its room on that broadcast too.
     test "deleting a comment that held files gives the drop zone back",
