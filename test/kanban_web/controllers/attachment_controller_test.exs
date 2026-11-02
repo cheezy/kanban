@@ -24,6 +24,7 @@ defmodule KanbanWeb.AttachmentControllerTest do
   @moduletag :tmp_dir
 
   @feature_refused [:kanban, :plan, :feature_refused]
+  @downloaded [:kanban, :attachment, :downloaded]
   @raster ~w(image/png image/jpeg image/gif image/webp)
 
   defmodule StreamAdapter do
@@ -236,6 +237,19 @@ defmodule KanbanWeb.AttachmentControllerTest do
                      %{feature: :attachments, surface: :context}}
 
     refute_received {:telemetry_event, @feature_refused, _, _}
+  end
+
+  test "a download and a preview are told apart in the downloaded event", %{conn: conn} = ctx do
+    png = stored(ctx.task, %{filename: "shot.png", content_type: "image/png"}, "png bytes")
+    attach_telemetry([@downloaded])
+
+    assert download(conn, ctx.reader, png.id).status == 200
+    assert_received {:telemetry_event, @downloaded, %{count: 1}, %{via: :download}}
+
+    assert preview(conn, ctx.reader, png.id).status == 200
+    assert_received {:telemetry_event, @downloaded, %{count: 1}, %{via: :preview}}
+
+    refute_received {:telemetry_event, @downloaded, _, _}
   end
 
   test "returns 404 when the stored object is missing", %{conn: conn} = ctx do

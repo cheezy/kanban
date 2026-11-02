@@ -7,7 +7,9 @@ defmodule Kanban.Telemetry.Catalog.AttachmentEvents do
   `uploaded` and `upload_refused` also carry `source`: `:upload` for a
   person's upload. `:import` is reserved for the Jira import's
   `import_attachment/4`, which is not built yet.
-  `reason` and `source` come from fixed atom sets, so both are tags.
+  `downloaded` carries `via`: `:download` or `:preview`.
+  `reason`, `source` and `via` come from fixed atom sets, so all three
+  are tags.
   `Kanban.Telemetry.Catalog` appends these entries to its own list; nothing
   else should call this module.
   """
@@ -31,12 +33,13 @@ defmodule Kanban.Telemetry.Catalog.AttachmentEvents do
       kind: :event,
       domain: :attachment,
       measurements: [:count, :byte_size],
-      metadata: [:attachment_id, :task_id, :board_id, :user_id],
+      metadata: [:attachment_id, :task_id, :board_id, :user_id, :via],
       description:
-        "A board member was authorized to download an attachment. The filename, contents and hash are never sent.",
+        "A board member was authorized to fetch an attachment. via is :download when they download it, :preview when a thumbnail or the lightbox shows it. The filename, contents and hash are never sent.",
       legacy: false,
       metrics: [counter: :count],
-      persist: false
+      persist: false,
+      tags: [:via]
     },
     %{
       name: [:kanban, :attachment, :deleted],

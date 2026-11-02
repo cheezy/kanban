@@ -262,7 +262,7 @@ User-uploaded bytes must never run as part of the Stride origin. There are two s
 
 `GET /attachments/:id/download` and `GET /attachments/:id/preview` are plain controller routes (`KanbanWeb.AttachmentController`). They sit in the router scope that pipes through `:browser`, `:require_authenticated_user` and `:enforce_organization_two_factor`, outside any `live_session`, beside the export downloads.
 
-- **Authorization:** every request goes through `Kanban.Attachments.fetch_for_download/2` for the signed-in user. The board comes from the attachment row; the URL id is only a hint.
+- **Authorization:** every request goes through `Kanban.Attachments.fetch_for_download/3` for the signed-in user. The board comes from the attachment row; the URL id is only a hint.
 - **Uniform 404:** no access, another board's attachment, an unknown or malformed id, a locked plan and a missing storage object all return the same 404 page, so ids cannot be enumerated. A signed-out request redirects to log in.
 - **Preview** serves PNG, JPEG, GIF and WebP inline and returns 404 for every other type, including SVG, HTML and PDF.
 - **Streaming:** bytes are streamed with `send_chunked/2`, and the object's existence is confirmed before any header is sent.
@@ -424,7 +424,7 @@ Every use task checks what the installed runtime's read tool returns for images 
 
 ## 10. Telemetry, audit and docs
 
-- **Context telemetry (W2508):** `[:kanban, :attachment, :uploaded]`, `:downloaded`, `:deleted` and `:upload_refused`, declared in a new `Catalog.AttachmentEvents` module. Refusals carry a `reason` tag: `too_large`, `type_not_allowed`, `type_mismatch`, `empty`, `too_many_files`, `quota_exceeded` or `storage_unavailable`. Every upload event also carries a `source` tag, `upload` for a person's upload; the Jira import's `import_attachment/4` emits the same events with `source` set to `import`.
+- **Context telemetry (W2508):** `[:kanban, :attachment, :uploaded]`, `:downloaded`, `:deleted` and `:upload_refused`, declared in a new `Catalog.AttachmentEvents` module. Refusals carry a `reason` tag: `too_large`, `type_not_allowed`, `type_mismatch`, `empty`, `too_many_files`, `quota_exceeded` or `storage_unavailable`. Every upload event also carries a `source` tag, `upload` for a person's upload; the Jira import's `import_attachment/4` emits the same events with `source` set to `import`. `downloaded` carries a `via` tag: `download` from the download route, `preview` from the preview route, so thumbnails are not counted as downloads.
 - **API telemetry (W2517):** `[:kanban, :api, :attachment_downloaded]`.
 - Metadata carries ids, sizes and reason codes only, never filenames, contents or hashes. [Telemetry](../telemetry.md) gets an *Attachment events* section and a refreshed event reference.
 - **Audit:** an owner deleting someone else's attachment emits `:attachment_deleted_by_owner`, with ids only and a translated label.

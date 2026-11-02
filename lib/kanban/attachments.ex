@@ -54,6 +54,9 @@ defmodule Kanban.Attachments do
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
 
+  # Which route fetched the bytes, sent as the downloaded event's `via`.
+  @download_vias [:download, :preview]
+
   @type upload :: %{path: Path.t(), filename: String.t(), content_type: String.t() | nil}
 
   @type refusal ::
@@ -154,19 +157,27 @@ defmodule Kanban.Attachments do
   Authorizes a download of the attachment with `attachment_id` and returns
   it. Any board member, `:read_only` included, may download; a non-member or
   an unknown or non-integer id gets `:not_found`. Emits
-  `[:kanban, :attachment, :downloaded]` once the download is authorized.
+  `[:kanban, :attachment, :downloaded]` once the download is authorized, with
+  `via` saying which route fetched the bytes: `:download` (the default)
+  when a person downloads the file, `:preview` when a thumbnail or the
+  lightbox shows it inline.
   """
-  @spec fetch_for_download(term(), term()) :: {:ok, TaskAttachment.t()} | {:error, error()}
-  def fetch_for_download(scope, attachment_id) when is_integer(attachment_id) do
+  @spec fetch_for_download(term(), term(), :download | :preview) ::
+          {:ok, TaskAttachment.t()} | {:error, error()}
+  def fetch_for_download(scope, attachment_id, via \\ :download)
+
+  def fetch_for_download(scope, attachment_id, via)
+      when is_integer(attachment_id) and via in @download_vias do
     with {:ok, board_id} <- board_id_for_attachment(attachment_id),
          {:ok, viewer} <- gate(scope, board_id, :read),
          {:ok, attachment} <- fetch(attachment_id) do
-      emit_downloaded(attachment, board_id, viewer)
+      emit_downloaded(attachment, board_id, viewer, via)
       {:ok, attachment}
     end
   end
 
-  def fetch_for_download(_scope, _attachment_id), do: {:error, :not_found}
+  def fetch_for_download(_scope, _attachment_id, via) when via in @download_vias,
+    do: {:error, :not_found}
 
   @doc """
   Deletes `attachment`. The uploader (while still a member) or the board
@@ -339,7 +350,7 @@ defmodule Kanban.Attachments do
     )
   end
 
-  defp emit_downloaded(attachment, board_id, viewer) do
+  defp emit_downloaded(attachment, board_id, viewer, via) do
     Kanban.Telemetry.emit(
       [:kanban, :attachment, :downloaded],
       %{count: 1, byte_size: attachment.byte_size},
@@ -347,7 +358,8 @@ defmodule Kanban.Attachments do
         attachment_id: attachment.id,
         task_id: attachment.task_id,
         board_id: board_id,
-        user_id: viewer.user_id
+        user_id: viewer.user_id,
+        via: via
       }
     )
   end

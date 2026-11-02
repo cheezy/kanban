@@ -523,7 +523,8 @@ defmodule Kanban.AttachmentsTest do
                attachment_id: attachment.id,
                task_id: ctx.task.id,
                board_id: ctx.board.id,
-               user_id: ctx.reader.id
+               user_id: ctx.reader.id,
+               via: :download
              }
 
       assert {:error, :not_found} =
@@ -536,6 +537,24 @@ defmodule Kanban.AttachmentsTest do
 
       assert {:error, :not_found} = ctx.reader |> scope() |> Attachments.fetch_for_download(nil)
       refute_received {:telemetry_event, @downloaded, _, _}
+    end
+
+    test "fetch_for_download/3 records a preview as via :preview", ctx do
+      attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier})
+      attach_telemetry(@downloaded)
+
+      assert {:ok, _} =
+               ctx.reader |> scope() |> Attachments.fetch_for_download(attachment.id, :preview)
+
+      assert_received {:telemetry_event, @downloaded, %{count: 1}, %{via: :preview}}
+    end
+
+    test "fetch_for_download/3 refuses a via outside :download and :preview", ctx do
+      attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier})
+
+      assert_raise FunctionClauseError, fn ->
+        ctx.reader |> scope() |> Attachments.fetch_for_download(attachment.id, :inline)
+      end
     end
   end
 

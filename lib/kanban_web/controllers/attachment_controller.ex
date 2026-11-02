@@ -8,7 +8,7 @@ defmodule KanbanWeb.AttachmentController do
       included.
 
   Authorization is derived from the signed-in user on every request. The URL
-  id is only a lookup hint for `Kanban.Attachments.fetch_for_download/2`,
+  id is only a lookup hint for `Kanban.Attachments.fetch_for_download/3`,
   which finds the board through the attachment's task, checks membership and
   the `:attachments` plan (emitting the one `feature_refused` event) and the
   read right. The storage key comes from the stored row, never from the
@@ -28,10 +28,11 @@ defmodule KanbanWeb.AttachmentController do
   headers are out (a storage failure mid-stream, or a blob shorter than its
   row) raises `KanbanWeb.AttachmentController.IncompleteTransfer`, so the
   server closes the connection and the client sees an incomplete download,
-  never a finished response that passes for the whole file. `fetch_for_download/2` emits
-  `[:kanban, :attachment, :downloaded]` once access is authorized, so a
-  preview refused for its type or a missing object still counts; this
-  controller adds no telemetry of its own.
+  never a finished response that passes for the whole file.
+  `fetch_for_download/3` emits `[:kanban, :attachment, :downloaded]` once
+  access is authorized, with `via: :download` from the download route
+  and `:preview` from the preview route, so a preview refused for its type or
+  a missing object still counts; this controller adds no telemetry of its own.
 
   Storage failures are logged with the attachment id and a reason atom only:
   never the storage key, the file name or the contents.
@@ -65,7 +66,7 @@ defmodule KanbanWeb.AttachmentController do
   def preview(conn, %{"id" => id}), do: serve(conn, id, :inline)
 
   defp serve(conn, raw_id, disposition) do
-    with {:ok, attachment} <- fetch(conn, raw_id),
+    with {:ok, attachment} <- fetch(conn, raw_id, disposition),
          :ok <- servable_as(attachment, disposition),
          {:ok, chunks} <- open_stream(attachment) do
       send_attachment(conn, attachment, disposition, chunks)
@@ -83,12 +84,22 @@ defmodule KanbanWeb.AttachmentController do
     |> finish(attachment.id)
   end
 
-  # The id is parsed here because fetch_for_download/2 takes an integer: a
-  # malformed or out-of-range id never reaches the database.
-  defp fetch(conn, raw_id) do
+  # The id is parsed here because fetch_for_download/3 takes an integer: a
+  # malformed or out-of-range id never reaches the database. The downloaded
+  # event says whether a person downloaded the file or a thumbnail or the
+  # lightbox showed it.
+  defp fetch(conn, raw_id, disposition) do
     with {:ok, id} <- IdParams.parse(raw_id),
-         do: Attachments.fetch_for_download(conn.assigns.current_scope, id)
+         do:
+           Attachments.fetch_for_download(
+             conn.assigns.current_scope,
+             id,
+             event_via(disposition)
+           )
   end
+
+  defp event_via(:attachment), do: :download
+  defp event_via(:inline), do: :preview
 
   # A download serves any type; a preview only a raster image, judged by the
   # type the server stored.
