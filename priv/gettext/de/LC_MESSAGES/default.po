@@ -353,8 +353,8 @@ msgstr "Spalte"
 msgid "Create a new task"
 msgstr "Neue Aufgabe erstellen"
 
-#: lib/kanban_web/live/archive_live/index.ex:427
-#: lib/kanban_web/live/archive_live/index.ex:452
+#: lib/kanban_web/live/archive_live/index.ex:433
+#: lib/kanban_web/live/archive_live/index.ex:458
 #: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
@@ -371,7 +371,7 @@ msgstr "Aufgabe speichern"
 msgid "Task created successfully"
 msgstr "Aufgabe erfolgreich erstellt"
 
-#: lib/kanban_web/live/archive_live/index.ex:423
+#: lib/kanban_web/live/archive_live/index.ex:429
 #: lib/kanban_web/live/board_live/task_actions.ex:309
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -2039,8 +2039,8 @@ msgstr "Löschen"
 msgid "Failed to archive task"
 msgstr "Aufgabe konnte nicht archiviert werden"
 
-#: lib/kanban_web/live/archive_live/index.ex:414
-#: lib/kanban_web/live/archive_live/index.ex:448
+#: lib/kanban_web/live/archive_live/index.ex:420
+#: lib/kanban_web/live/archive_live/index.ex:454
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
 msgstr "Aufgabe konnte nicht aus dem Archiv geholt werden"
@@ -2050,7 +2050,7 @@ msgstr "Aufgabe konnte nicht aus dem Archiv geholt werden"
 msgid "Task archived successfully"
 msgstr "Aufgabe erfolgreich archiviert"
 
-#: lib/kanban_web/live/archive_live/index.ex:410
+#: lib/kanban_web/live/archive_live/index.ex:416
 #, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
 msgstr "Aufgabe erfolgreich aus dem Archiv geholt"
@@ -3085,7 +3085,7 @@ msgstr "Während viele große Organisationen versuchen, Ergebnisse durch das Mes
 msgid "You do not have permission to archive tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu archivieren"
 
-#: lib/kanban_web/live/archive_live/index.ex:443
+#: lib/kanban_web/live/archive_live/index.ex:449
 #: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -3110,7 +3110,7 @@ msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu verschieben"
 msgid "You do not have permission to promote goals on this board"
 msgstr "Sie sind nicht berechtigt, Ziele auf diesem Board hochzustufen"
 
-#: lib/kanban_web/live/archive_live/index.ex:435
+#: lib/kanban_web/live/archive_live/index.ex:441
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu entarchivieren"
@@ -6178,17 +6178,17 @@ msgstr "Alle abgeschlossenen Aufgaben älter als 30 Tage archivieren?"
 msgid "Archive old (30d+)"
 msgstr "Alte archivieren (30T+)"
 
-#: lib/kanban_web/live/archive_live/index.ex:402
+#: lib/kanban_web/live/archive_live/index.ex:408
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} completed tasks older than 30 days."
 msgstr "%{count} abgeschlossene Aufgaben älter als 30 Tage archiviert."
 
-#: lib/kanban_web/live/archive_live/index.ex:398
+#: lib/kanban_web/live/archive_live/index.ex:404
 #, elixir-autogen, elixir-format
 msgid "Archived 1 completed task older than 30 days."
 msgstr "1 abgeschlossene Aufgabe älter als 30 Tage archiviert."
 
-#: lib/kanban_web/live/archive_live/index.ex:394
+#: lib/kanban_web/live/archive_live/index.ex:400
 #, elixir-autogen, elixir-format
 msgid "No completed tasks older than 30 days were found."
 msgstr "Keine abgeschlossenen Aufgaben älter als 30 Tage gefunden."

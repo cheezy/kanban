@@ -353,8 +353,8 @@ msgstr "Coluna"
 msgid "Create a new task"
 msgstr "Criar uma nova tarefa"
 
-#: lib/kanban_web/live/archive_live/index.ex:427
-#: lib/kanban_web/live/archive_live/index.ex:452
+#: lib/kanban_web/live/archive_live/index.ex:433
+#: lib/kanban_web/live/archive_live/index.ex:458
 #: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
@@ -371,7 +371,7 @@ msgstr "Salvar Tarefa"
 msgid "Task created successfully"
 msgstr "Tarefa criada com sucesso"
 
-#: lib/kanban_web/live/archive_live/index.ex:423
+#: lib/kanban_web/live/archive_live/index.ex:429
 #: lib/kanban_web/live/board_live/task_actions.ex:309
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -2039,8 +2039,8 @@ msgstr "Excluir"
 msgid "Failed to archive task"
 msgstr "Falha ao arquivar a tarefa"
 
-#: lib/kanban_web/live/archive_live/index.ex:414
-#: lib/kanban_web/live/archive_live/index.ex:448
+#: lib/kanban_web/live/archive_live/index.ex:420
+#: lib/kanban_web/live/archive_live/index.ex:454
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
 msgstr "Falha ao desarquivar a tarefa"
@@ -2050,7 +2050,7 @@ msgstr "Falha ao desarquivar a tarefa"
 msgid "Task archived successfully"
 msgstr "Tarefa arquivada com sucesso"
 
-#: lib/kanban_web/live/archive_live/index.ex:410
+#: lib/kanban_web/live/archive_live/index.ex:416
 #, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
 msgstr "Tarefa desarquivada com sucesso"
@@ -3085,7 +3085,7 @@ msgstr "Enquanto muitas grandes organizações tentam melhorar resultados medind
 msgid "You do not have permission to archive tasks on this board"
 msgstr "Você não tem permissão para arquivar tarefas neste quadro"
 
-#: lib/kanban_web/live/archive_live/index.ex:443
+#: lib/kanban_web/live/archive_live/index.ex:449
 #: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -3110,7 +3110,7 @@ msgstr "Você não tem permissão para mover tarefas neste quadro"
 msgid "You do not have permission to promote goals on this board"
 msgstr "Você não tem permissão para promover metas neste quadro"
 
-#: lib/kanban_web/live/archive_live/index.ex:435
+#: lib/kanban_web/live/archive_live/index.ex:441
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr "Você não tem permissão para desarquivar tarefas neste quadro"
@@ -6178,17 +6178,17 @@ msgstr "Arquivar todas as tarefas concluídas há mais de 30 dias?"
 msgid "Archive old (30d+)"
 msgstr "Arquivar antigas (30d+)"
 
-#: lib/kanban_web/live/archive_live/index.ex:402
+#: lib/kanban_web/live/archive_live/index.ex:408
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} completed tasks older than 30 days."
 msgstr "%{count} tarefas concluídas há mais de 30 dias arquivadas."
 
-#: lib/kanban_web/live/archive_live/index.ex:398
+#: lib/kanban_web/live/archive_live/index.ex:404
 #, elixir-autogen, elixir-format
 msgid "Archived 1 completed task older than 30 days."
 msgstr "1 tarefa concluída há mais de 30 dias arquivada."
 
-#: lib/kanban_web/live/archive_live/index.ex:394
+#: lib/kanban_web/live/archive_live/index.ex:400
 #, elixir-autogen, elixir-format
 msgid "No completed tasks older than 30 days were found."
 msgstr "Nenhuma tarefa concluída há mais de 30 dias foi encontrada."
