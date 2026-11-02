@@ -176,7 +176,7 @@ The limits hold under concurrent uploads. `create_attachment`:
 
 1. checks access, the plan and the limits, then reads the temp file exactly once, into a private snapshot capped one byte past the per-file limit. `byte_size`, `sha256`, the sniff and the stored bytes all come from that snapshot, so a temp file that changes afterwards can never store bytes that differ from what was checked. It builds the changeset before storing anything;
 2. records a pending tombstone for the new key, due one hour later, then puts the blob;
-3. in one transaction, takes `FOR KEY SHARE` locks on the uploader, board and comment rows the new row references, locks the task row, takes a transaction-scoped advisory lock keyed by the Organization id (or the board id), checks the count and quota again, inserts the row and removes the pending tombstone. The key-share locks come first because a board, comment or account deletion locks those rows before its cascade reaches the task; taking them only through the insert's foreign-key checks, after the task row, deadlocked an upload with a concurrent board deletion (found in the G488 exploratory session, 2026-11-01).
+3. in one transaction, takes `FOR KEY SHARE` locks on the uploader, board and comment rows the new row references, locks the task row, takes a transaction-scoped advisory lock keyed by the Organization id (or the board id), checks the count and quota again, inserts the row and removes the pending tombstone. The row commits only if that tombstone is still untouched (`attempts` 0): the cleanup worker raises `attempts` when it claims a key, before it deletes the blob, so an upload whose key was claimed is refused with `:storage_unavailable` and its blob discarded, rather than committing a row whose file is gone ([§5](#5-cleanup-g488)). The key-share locks come first because a board, comment or account deletion locks those rows before its cascade reaches the task; taking them only through the insert's foreign-key checks, after the task row, deadlocked an upload with a concurrent board deletion (found in the G488 exploratory session, 2026-11-01).
 
 If the transaction fails, the blob is deleted, and then its tombstone. If that delete fails, the tombstone stays and the cleanup worker removes the blob later. A refused or failed upload never leaves an attachment row.
 
@@ -198,13 +198,15 @@ The UI ([§6](#6-board-ui-g489)), the REST API ([§8.2](#82-download-endpoint-w2
 
 `Kanban.Attachments.BlobCleanupWorker` (W2509) is an Oban cron job on a new `:attachments` queue (concurrency 1). It runs every 15 minutes, with `max_attempts: 3`, and a `unique` option over the available, scheduled, executing and retryable states so runs never overlap.
 
-Each run takes up to `batch_size` (default 200) tombstones whose `delete_after` has passed, oldest first. A tombstone whose key a `task_attachments` row still names is stale (a pending upload whose grace period ran out before its row committed, for example), so it is deleted without touching the blob; the row's own deletion queues the key again through the trigger. Without that check the worker removed the file of a live attachment (found in the G488 exploratory session, 2026-11-01). Every other tombstone gets `Storage.delete/1`:
+Each run takes up to `batch_size` (default 200) tombstones whose `delete_after` has passed, oldest first, and claims each key before touching its blob. The claim is one short transaction: it locks every tombstone for the key, and if none is due any more (an earlier tombstone or an upload's commit handled it) it moves on. A key that a `task_attachments` row still names is stale (a pending upload whose grace period ran out before its row committed, for example), so its due tombstones are deleted without touching the blob; the row's own deletion queues the key again through the trigger. Without that check the worker removed the file of a live attachment (found in the G488 exploratory session, 2026-11-01). Otherwise the claim records the try on every tombstone for the key, raising `attempts` by one and pushing a due tombstone's `delete_after` out by 2^attempts minutes, capped at one day, and commits; only then does the worker call `Storage.delete/1`:
 
 | Result | Action |
 | --- | --- |
-| `:ok`, including an object that is already gone | delete the tombstone |
-| `{:error, :invalid_key}` | delete the tombstone and log an error (the key can never be removed) |
-| any other error | increment `attempts`, store the reason in `last_error`, and push `delete_after` out by 2^attempts minutes, capped at one day |
+| `:ok`, including an object that is already gone | delete the due tombstones |
+| `{:error, :invalid_key}` | delete the due tombstones and log an error (the key can never be removed) |
+| any other error | store the reason in `last_error`; the claim already set `attempts` and the backoff |
+
+Claiming each key under a lock, rather than checking the whole batch once before any delete, closes two races found in the G488 exploratory campaign (2026-11-02): an upload whose row committed while a run was mid-batch lost its blob, and a run between an upload's put and its commit deleted the blob while the upload still committed its row and reported success. The claim sees a row that committed first, and an upload that commits after a claim is refused (§4.2). No transaction is held across a storage call, and a run that crashes after its claim only repeats an idempotent delete once the backoff has passed.
 
 The worker only deletes keys the database wrote, and those keys still pass the facade's validation, so it cannot be steered to delete arbitrary paths. It accepts a `now` job argument for tests, as `Export.CleanupWorker` does.
 

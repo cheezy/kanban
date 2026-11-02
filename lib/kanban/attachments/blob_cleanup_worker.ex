@@ -24,10 +24,23 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   queues the key again.
 
   A tombstone whose `delete_after` is still in the future belongs to an upload
-  in flight and is left alone. No database transaction is held across a
-  storage call: the batch is read first and each tombstone is then updated or
-  deleted on its own. Removal is driven only by tombstones the database wrote,
-  and every key still passes the storage facade's validation.
+  in flight and is left alone.
+
+  Each key is claimed before its blob is touched. In one short transaction
+  the worker locks every tombstone for the key, checks again that no row
+  names it, and records the try: `attempts` goes up by one and a due
+  tombstone's `delete_after` moves out by the backoff, so a run that crashes
+  after the claim only repeats an idempotent delete later. An upload commits
+  its row only by removing its own pending tombstone while `attempts` is
+  still 0 (`Kanban.Attachments.Pipeline`), so an upload whose key the worker
+  has claimed is refused instead of committing a row whose blob is gone, and
+  a row that commits first is seen by the claim. Checking once per batch
+  before any delete removed the blob of an upload that committed mid-run, and
+  a worker run between an upload's put and its commit left a committed row
+  with no blob (G488 exploratory campaign, 2026-11-02). No database
+  transaction is held across a storage call. Removal is driven only by
+  tombstones the database wrote, and every key still passes the storage
+  facade's validation.
 
   With the local storage adapter a run sees only its own machine's disk, which
   is why that adapter is for a single machine only.
@@ -70,37 +83,20 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     batch_size =
       settings |> Keyword.get(:batch_size, @default_batch_size) |> positive_or_default()
 
-    tombstones = due_tombstones(now, batch_size)
-    in_use = keys_in_use(tombstones)
-
     counts =
-      Enum.reduce(tombstones, %{deleted: 0, in_use: 0, invalid: 0, failed: 0}, fn tombstone,
-                                                                                  acc ->
-        outcome = process(tombstone, in_use, now)
-        Map.update!(acc, outcome, &(&1 + 1))
+      now
+      |> due_tombstones(batch_size)
+      |> Enum.reduce(%{deleted: 0, in_use: 0, invalid: 0, failed: 0, skipped: 0}, fn tombstone,
+                                                                                     acc ->
+        Map.update!(acc, process(tombstone, now), &(&1 + 1))
       end)
 
     Logger.info(
       "attachment blob cleanup: #{counts.deleted} deleted, #{counts.in_use} still in use, " <>
-        "#{counts.invalid} invalid, #{counts.failed} failed"
+        "#{counts.invalid} invalid, #{counts.failed} failed, #{counts.skipped} already handled"
     )
 
     :ok
-  end
-
-  # The storage keys among `tombstones` that a task_attachments row still
-  # names. Such a blob is never deleted: the tombstone is stale (a pending
-  # upload whose grace period ran out before its row committed, for
-  # example), and the row's own deletion queues the key again through the
-  # trigger.
-  defp keys_in_use([]), do: MapSet.new()
-
-  defp keys_in_use(tombstones) do
-    keys = Enum.map(tombstones, & &1.storage_key)
-
-    from(a in TaskAttachment, where: a.storage_key in ^keys, select: a.storage_key)
-    |> Repo.all()
-    |> MapSet.new()
   end
 
   @doc """
@@ -122,27 +118,75 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     |> Repo.all()
   end
 
-  defp process(tombstone, in_use, now) do
-    if MapSet.member?(in_use, tombstone.storage_key) do
-      delete_tombstone(tombstone)
-      :in_use
-    else
-      delete_blob(tombstone, now)
+  defp process(tombstone, now) do
+    case claim(tombstone.storage_key, now) do
+      {:ok, :handled} -> :skipped
+      {:ok, :in_use} -> :in_use
+      {:ok, {:claimed, ids, attempts}} -> delete_blob(tombstone, {ids, attempts})
     end
   end
 
-  defp delete_blob(tombstone, now) do
-    case Storage.delete(tombstone.storage_key) do
-      :ok ->
-        delete_tombstone(tombstone)
+  # Locks every tombstone for the key and, unless a row names the key or no
+  # due tombstone is left (an earlier tombstone in this batch, or an upload's
+  # commit, handled it), records this try on all of them before the blob is
+  # touched. The pending tombstone of an upload still in flight gets its
+  # attempts raised too, which is what refuses that upload's commit.
+  defp claim(key, now) do
+    Repo.transact(fn ->
+      tombstones =
+        from(d in BlobDeletion,
+          where: d.storage_key == ^key,
+          lock: "FOR UPDATE",
+          select: %{id: d.id, attempts: d.attempts, delete_after: d.delete_after}
+        )
+        |> Repo.all()
+
+      due_ids = for t <- tombstones, DateTime.compare(t.delete_after, now) != :gt, do: t.id
+
+      cond do
+        due_ids == [] -> {:ok, :handled}
+        key_in_use?(key) -> drop_stale(due_ids)
+        true -> record_try(tombstones, due_ids, now)
+      end
+    end)
+  end
+
+  # The key's row committed, so its due tombstones are stale (a pending
+  # upload whose grace period ran out before the commit, for example); the
+  # row's own deletion queues the key again through the trigger.
+  defp drop_stale(due_ids) do
+    delete_tombstones(due_ids)
+    {:ok, :in_use}
+  end
+
+  defp record_try(tombstones, due_ids, now) do
+    attempts = (tombstones |> Enum.map(& &1.attempts) |> Enum.max()) + 1
+    retry_at = DateTime.add(now, backoff_minutes(attempts), :minute)
+
+    for t <- tombstones do
+      delete_after = if t.id in due_ids, do: retry_at, else: t.delete_after
+
+      from(d in BlobDeletion, where: d.id == ^t.id)
+      |> Repo.update_all(set: [attempts: attempts, delete_after: delete_after])
+    end
+
+    {:ok, {:claimed, due_ids, attempts}}
+  end
+
+  defp key_in_use?(key) do
+    from(a in TaskAttachment, where: a.storage_key == ^key)
+    |> Repo.exists?()
+  end
+
+  # The claim already recorded the try, so a failure only needs its reason.
+  defp delete_blob(tombstone, {due_ids, attempts}) do
+    case tombstone.storage_key |> Storage.delete() |> outcome() do
+      :deleted ->
+        delete_tombstones(due_ids)
         :deleted
 
-      {:error, :not_found} ->
-        delete_tombstone(tombstone)
-        :deleted
-
-      {:error, :invalid_key} ->
-        delete_tombstone(tombstone)
+      :invalid ->
+        delete_tombstones(due_ids)
 
         Logger.error(
           "attachment blob cleanup: dropped tombstone #{tombstone.id}, its storage key is invalid"
@@ -150,33 +194,30 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
         :invalid
 
-      {:error, reason} when is_atom(reason) ->
-        back_off(tombstone, reason, now)
-        :failed
-
-      _unexpected ->
-        back_off(tombstone, :unexpected_result, now)
-        :failed
+      {:failed, reason} ->
+        record_failure(tombstone, due_ids, reason, attempts)
     end
   end
 
-  defp delete_tombstone(tombstone) do
-    from(d in BlobDeletion, where: d.id == ^tombstone.id) |> Repo.delete_all()
-  end
+  defp outcome(:ok), do: :deleted
+  defp outcome({:error, :not_found}), do: :deleted
+  defp outcome({:error, :invalid_key}), do: :invalid
+  defp outcome({:error, reason}) when is_atom(reason), do: {:failed, reason}
+  defp outcome(_unexpected), do: {:failed, :unexpected_result}
 
-  defp back_off(tombstone, reason, now) do
-    attempts = tombstone.attempts + 1
-    delete_after = DateTime.add(now, backoff_minutes(attempts), :minute)
+  defp delete_tombstones(ids),
+    do: from(d in BlobDeletion, where: d.id in ^ids) |> Repo.delete_all()
 
-    from(d in BlobDeletion, where: d.id == ^tombstone.id)
-    |> Repo.update_all(
-      set: [attempts: attempts, last_error: reason_code(reason), delete_after: delete_after]
-    )
+  defp record_failure(tombstone, due_ids, reason, attempts) do
+    from(d in BlobDeletion, where: d.id in ^due_ids)
+    |> Repo.update_all(set: [last_error: reason_code(reason)])
 
     Logger.warning(
       "attachment blob cleanup: tombstone #{tombstone.id} failed with #{reason}, " <>
         "attempt #{attempts}"
     )
+
+    :failed
   end
 
   defp reason_code(reason),

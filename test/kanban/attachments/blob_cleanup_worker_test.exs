@@ -32,7 +32,11 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
     alias Kanban.Attachments.Storage.Local
 
     @impl true
-    def put(key, source, opts), do: Local.put(key, source, opts)
+    def put(key, source, opts) do
+      result = Local.put(key, source, opts)
+      run_hook(:after_put, key)
+      result
+    end
 
     @impl true
     def stream(key), do: Local.stream(key)
@@ -40,6 +44,7 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
     @impl true
     def delete(key) do
       send(self(), {:storage_deleted, key})
+      run_hook(:before_delete, key)
 
       case Process.get(:delete_result) do
         nil -> Local.delete(key)
@@ -49,6 +54,15 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
 
     @impl true
     def exists(key), do: Local.exists(key)
+
+    # A test can run code at a step boundary, in the process making the
+    # storage call, to stand in for another process interleaving there.
+    defp run_hook(name, key) do
+      case Process.get(name) do
+        nil -> :ok
+        hook -> hook.(key)
+      end
+    end
   end
 
   setup %{tmp_dir: tmp_dir} do
@@ -254,7 +268,11 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
 
       refute blob_exists?(key)
       assert reload(due) == nil
-      assert %BlobDeletion{attempts: 0} = reload(pending)
+      # The pending tombstone stays, with the claim recorded on it, so the
+      # upload it belongs to is refused at commit rather than naming a blob
+      # that was just deleted.
+      assert %BlobDeletion{attempts: 1, delete_after: delete_after} = reload(pending)
+      assert delete_after == minutes(60)
     end
 
     test "two due tombstones for the same key are both removed" do
@@ -277,6 +295,80 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
 
       assert :ok = perform_job(BlobCleanupWorker, %{"now" => "not a timestamp"})
       assert %BlobDeletion{} = reload(future)
+    end
+  end
+
+  describe "racing an upload" do
+    setup %{tmp_dir: tmp_dir} do
+      user = user_fixture()
+      task = user |> board_fixture() |> column_fixture() |> task_fixture()
+      path = Path.join(tmp_dir, "notes.txt")
+      File.write!(path, "racing an upload\n")
+
+      %{
+        scope: Kanban.Accounts.Scope.for_user(user),
+        task: task,
+        upload: %{path: path, filename: "notes.txt", content_type: "text/plain"}
+      }
+    end
+
+    test "a run between an upload's put and its commit refuses the upload instead of leaving a row with no blob",
+         %{scope: scope, task: task, upload: upload} do
+      # The pending tombstone comes due early, as with a future "now".
+      Process.put(:after_put, fn _key ->
+        assert :ok = run(DateTime.add(DateTime.utc_now(), 2, :hour))
+      end)
+
+      assert {:error, :storage_unavailable} =
+               Kanban.Attachments.create_attachment(scope, task, upload)
+
+      assert Repo.aggregate(Kanban.Attachments.TaskAttachment, :count) == 0
+      assert_received {:storage_deleted, key}
+      refute blob_exists?(key)
+      assert Repo.aggregate(BlobDeletion, :count) == 0
+    end
+
+    test "an upload that commits after the batch is read keeps its blob", %{task: task} do
+      first = tombstone(stored_blob(), minutes(-10))
+      first_key = first.storage_key
+      # An upload's blob is stored and its pending tombstone has come due.
+      key = stored_blob()
+      tombstone(key, minutes(-5))
+
+      # The run reads a batch holding both tombstones; while it deletes the
+      # first blob, the upload commits its row and removes its tombstone.
+      Process.put(:before_delete, fn
+        ^first_key ->
+          attachment_fixture(task, %{storage_key: key})
+          BlobDeletion |> where([d], d.storage_key == ^key) |> Repo.delete_all()
+
+        _other ->
+          :ok
+      end)
+
+      assert :ok = run()
+
+      refute blob_exists?(first_key)
+      assert blob_exists?(key)
+      refute_received {:storage_deleted, ^key}
+    end
+
+    test "a row that commits after the batch is read, with its tombstone still due, keeps its blob",
+         %{task: task} do
+      first = tombstone(stored_blob(), minutes(-10))
+      first_key = first.storage_key
+      key = stored_blob()
+      stale = tombstone(key, minutes(-5))
+
+      Process.put(:before_delete, fn
+        ^first_key -> attachment_fixture(task, %{storage_key: key})
+        _other -> :ok
+      end)
+
+      assert :ok = run()
+
+      assert blob_exists?(key)
+      assert reload(stale) == nil
     end
   end
 

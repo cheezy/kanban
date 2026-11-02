@@ -21,7 +21,9 @@ defmodule Kanban.Attachments.Pipeline do
   #      put the snapshot.
   #   6. In one transaction: key-share lock the uploader, board and comment
   #      rows, lock the task row, then the quota scope's advisory lock,
-  #      re-check count and quota, insert, and remove the pending tombstone.
+  #      re-check count and quota, insert, and remove the pending tombstone,
+  #      refusing with :storage_unavailable if the cleanup worker has
+  #      already claimed the key (its attempts are no longer 0).
   #   7. If the put or the transaction fails, delete the blob and, only when
   #      that succeeds, its tombstone; otherwise the tombstone stays for the
   #      cleanup worker.
@@ -281,11 +283,27 @@ defmodule Kanban.Attachments.Pipeline do
     Repo.transact(fn ->
       with {:ok, scope} <- Usage.lock_for_upload(task_id, upload_refs(changeset)),
            :ok <- Usage.check_limits(task_id, scope, size),
-           {:ok, attachment} <- changeset |> Repo.insert() |> map_insert_error() do
-        delete_tombstone(key)
+           {:ok, attachment} <- changeset |> Repo.insert() |> map_insert_error(),
+           :ok <- release_pending_tombstone(key) do
         {:ok, attachment}
       end
     end)
+  end
+
+  # The row commits only if the upload's own pending tombstone is still
+  # untouched. The cleanup worker raises a tombstone's attempts when it
+  # claims the key, before it deletes the blob, so a claimed key means the
+  # blob may already be gone: the insert is rolled back and the blob
+  # discarded instead of committing a row with nothing behind it. A worker
+  # claim in progress holds the tombstone's row lock, so this delete waits
+  # for it.
+  defp release_pending_tombstone(key) do
+    query = from(d in BlobDeletion, where: d.storage_key == ^key and d.attempts == 0)
+
+    case Repo.delete_all(query) do
+      {0, _rows} -> {:error, :storage_unavailable}
+      {_count, _rows} -> :ok
+    end
   end
 
   # The rows the insert references besides the task, in the order

@@ -14,8 +14,10 @@ defmodule Kanban.Attachments.BlobDeletion do
       grace period has passed.
 
   The cleanup worker deletes each blob whose `delete_after` has passed and
-  then the tombstone, counting failed tries in `attempts` and keeping a short
-  reason code (never a message or a URL) in `last_error`.
+  then the tombstone, keeping a short reason code (never a message or a URL)
+  in `last_error`. `attempts` counts the worker's tries at the key, recorded
+  before each delete; an upload commits its row only while its own pending
+  tombstone's `attempts` is still 0.
   """
 
   use Ecto.Schema
