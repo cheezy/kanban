@@ -149,6 +149,45 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStagingTest do
     end
   end
 
+  describe "each new-task form stages its own files" do
+    # New task and New goal used to share one form component, so a file
+    # staged in one followed the user into the other and was stored there.
+    test "files staged in New task are not carried into New goal", %{conn: conn} do
+      %{conn: conn, user: user} = register_and_log_in_user(%{conn: conn})
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = stage_notes(conn, board, column)
+      assert render(view) =~ "notes.txt"
+
+      html = render_patch(view, ~p"/boards/#{board}/goals/new")
+      assert html =~ "task-form"
+      refute html =~ "notes.txt"
+
+      view
+      |> element("#task-form")
+      |> render_submit(%{"task" => %{"title" => "Goal without files", "column_id" => column.id}})
+
+      assert Repo.get_by(Task, title: "Goal without files")
+      assert Repo.all(TaskAttachment) == []
+    end
+
+    test "files staged in New goal are not carried into New task", %{conn: conn} do
+      %{conn: conn, user: user} = register_and_log_in_user(%{conn: conn})
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/goals/new")
+
+      view
+      |> file_input("#task-form", AttachmentStaging.upload_name(), [
+        %{name: "plan.txt", content: "steps", type: "text/plain"}
+      ])
+      |> render_upload("plan.txt")
+
+      assert render(view) =~ "plan.txt"
+      refute render_patch(view, ~p"/boards/#{board}/columns/#{column}/tasks/new") =~ "plan.txt"
+    end
+  end
+
   describe "store_staged/3 order and unfinished files" do
     setup do
       previous = Application.get_env(:kanban, Kanban.Attachments.Limits)

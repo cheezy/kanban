@@ -91,6 +91,17 @@ defmodule KanbanWeb.BoardLive.BoardState do
      |> refresh_board_metrics()}
   end
 
+  @doc """
+  The id of the task form component the board mounts for `live_action`.
+  New task and New goal get different ids, so switching from one to the other
+  mounts a fresh form and its staged files are never stored by the other;
+  an edit form is keyed by its task.
+  """
+  @spec task_form_id(:new_task | :new_goal | :edit_task, term()) :: String.t()
+  def task_form_id(:new_task, _task), do: "new-task"
+  def task_form_id(:new_goal, _task), do: "new-goal"
+  def task_form_id(:edit_task, %{id: id}), do: "edit-#{id}"
+
   def page_title(:show), do: "Stride"
   def page_title(:new_column), do: "New column"
   def page_title(:edit_column), do: "Edit Column"

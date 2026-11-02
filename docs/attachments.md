@@ -257,7 +257,9 @@ the error message.
 - **New tasks.** The new-task form has its own **Attachments** field. Its files
   are stored after the task is saved; if one cannot be stored, the task is
   still created and Stride names the file. **Save Task** waits while a staged
-  file shows an error, and says to cancel it. On the edit form, uploads and
+  file shows an error, and says to cancel it. The new-goal form works the
+  same way, and each form keeps its own files: closing a form, or switching
+  from one to the other, leaves nothing staged. On the edit form, uploads and
   deletes happen at once.
 - **Deleting.** **Delete** asks you to confirm, and a deleted file cannot be
   brought back. Deleting a task deletes its files.

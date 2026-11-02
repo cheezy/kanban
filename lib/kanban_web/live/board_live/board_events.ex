@@ -127,11 +127,10 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   defp update_open_task_form(%{live_action: action}, update)
        when action in [:new_task, :new_goal],
-       do: send_update(FormComponent, [id: :new] ++ update)
+       do: send_update(FormComponent, [id: BoardState.task_form_id(action, nil)] ++ update)
 
-  defp update_open_task_form(%{live_action: action, task: %{id: id}}, update)
-       when action == :edit_task,
-       do: send_update(FormComponent, [id: "edit-#{id}"] ++ update)
+  defp update_open_task_form(%{live_action: :edit_task, task: %{id: _} = task}, update),
+    do: send_update(FormComponent, [id: BoardState.task_form_id(:edit_task, task)] ++ update)
 
   defp update_open_task_form(_assigns, _update), do: :ok
 

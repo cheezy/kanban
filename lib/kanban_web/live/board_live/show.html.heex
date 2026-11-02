@@ -454,10 +454,12 @@
   >
     <%!-- :new_goal is a routing concept only: the FormComponent receives the
     familiar :new_task action so its save/subtitle/column-select logic keeps
-    working; the Goal type comes preset on the task struct. --%>
+    working; the Goal type comes preset on the task struct. Each form has
+    its own id, so switching between New task and New goal mounts a fresh
+    component and files staged in one are never stored by the other. --%>
     <.live_component
       module={KanbanWeb.TaskLive.FormComponent}
-      id={(@live_action in [:new_task, :new_goal] && :new) || "edit-#{@task.id}"}
+      id={BoardState.task_form_id(@live_action, @live_action == :edit_task && @task)}
       title={
         cond do
           @live_action == :new_goal -> gettext("New goal")
