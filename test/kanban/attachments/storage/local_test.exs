@@ -448,6 +448,182 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     end
   end
 
+  describe "a staging directory or temp file swapped before the rename" do
+    # A FIFO source holds the put inside its copy, after the temp file is
+    # created and before the rename, until the test writes to the FIFO.
+    setup %{base: base} do
+      File.mkdir_p!(base)
+      fifo = Path.join(base, "upload-fifo")
+      {_output, 0} = System.cmd("mkfifo", [fifo])
+      %{fifo: fifo}
+    end
+
+    defp start_paused_put(root, fifo) do
+      put = Task.async(fn -> Local.put(@key, {:file, fifo}, []) end)
+      staging = Path.join(root, ".staging")
+      [tmp_name] = wait_for_temp_file(staging, 200, fifo)
+      {put, staging, tmp_name}
+    end
+
+    defp wait_for_temp_file(_staging, 0, fifo) do
+      release(fifo, "")
+      flunk("the put never created its temp file")
+    end
+
+    defp wait_for_temp_file(staging, tries, fifo) do
+      case File.ls(staging) do
+        {:ok, [_name] = names} ->
+          names
+
+        _not_yet ->
+          Process.sleep(10)
+          wait_for_temp_file(staging, tries - 1, fifo)
+      end
+    end
+
+    defp release(fifo, bytes), do: File.write!(fifo, bytes)
+
+    test "a staging directory swapped for a symlink is refused and its file is kept",
+         %{root: root, base: base, fifo: fifo} do
+      {put, staging, tmp_name} = start_paused_put(root, fifo)
+
+      planted_dir = Path.join(base, "planted")
+      File.mkdir_p!(planted_dir)
+      File.chmod!(planted_dir, 0o700)
+      planted = Path.join(planted_dir, tmp_name)
+      File.write!(planted, "planted bytes")
+      File.rename!(staging, Path.join(root, ".staging-moved"))
+      File.ln_s!(planted_dir, staging)
+
+      log =
+        capture_log(fn ->
+          release(fifo, "uploaded bytes")
+          assert {:error, :storage_unavailable} = Task.await(put)
+        end)
+
+      assert log =~ "attachment storage put failed: :staging_replaced"
+      refute present?(root, @key)
+      assert File.read!(planted) == "planted bytes"
+    end
+
+    test "a temp file replaced under the same name is refused and the new file is kept",
+         %{root: root, fifo: fifo} do
+      {put, staging, tmp_name} = start_paused_put(root, fifo)
+
+      tmp = Path.join(staging, tmp_name)
+      File.rename!(tmp, Path.join(root, "the-real-temp-file"))
+      File.write!(tmp, "planted bytes")
+
+      log =
+        capture_log(fn ->
+          release(fifo, "uploaded bytes")
+          assert {:error, :storage_unavailable} = Task.await(put)
+        end)
+
+      assert log =~ "attachment storage put failed: :staging_replaced"
+      refute present?(root, @key)
+      assert File.read!(tmp) == "planted bytes"
+    end
+
+    test "an unswapped paused put places its bytes", %{root: root, fifo: fifo} do
+      {put, staging, _tmp_name} = start_paused_put(root, fifo)
+
+      release(fifo, "uploaded bytes")
+
+      assert :ok = Task.await(put)
+      assert root |> Path.join(@key) |> File.read!() == "uploaded bytes"
+      assert entries(staging) == []
+    end
+  end
+
+  describe "a root that does not exist yet" do
+    test "every directory created on the way to it is 0o700", %{base: base} do
+      File.mkdir_p!(base)
+      File.chmod!(base, 0o755)
+      root = Path.join([base, "deep", "er", "root"])
+      Application.put_env(:kanban, Local, root: root)
+
+      assert :ok = Local.put(@key, {:binary, "x"}, [])
+
+      assert mode(Path.join(base, "deep")) == 0o700
+      assert mode(Path.join(base, "deep/er")) == 0o700
+      assert mode(root) == 0o700
+      # An ancestor that already existed keeps its mode.
+      assert mode(base) == 0o755
+    end
+  end
+
+  describe "sweep/1 and the root" do
+    defp stale_in(staging) do
+      File.mkdir_p!(staging)
+      File.chmod!(staging, 0o700)
+      path = Path.join(staging, ".tmp-stale")
+      File.write!(path, "partial bytes")
+      File.touch!(path, System.os_time(:second) - 7_200)
+      path
+    end
+
+    test "never sweeps through a default root that is a symlink", %{base: base} do
+      tmp = Path.join(base, "tmp")
+      target = Path.join(base, "elsewhere")
+      File.mkdir_p!(tmp)
+      File.mkdir_p!(target)
+      File.chmod!(target, 0o700)
+      File.ln_s!(target, Path.join(tmp, "stride_attachments"))
+      stale = stale_in(Path.join(target, ".staging"))
+
+      previous_tmpdir = System.get_env("TMPDIR")
+      on_exit(fn -> restore_env("TMPDIR", previous_tmpdir) end)
+      System.put_env("TMPDIR", tmp)
+      Application.put_env(:kanban, Local, [])
+
+      log = capture_log(fn -> assert {:error, :storage_unavailable} = Local.sweep(3_600) end)
+
+      assert log =~ "attachment storage sweep failed: :symlink"
+      assert File.exists?(stale)
+    end
+
+    test "never sweeps under a root others can write", %{root: root} do
+      stale = stale_in(Path.join(root, ".staging"))
+      File.chmod!(root, 0o777)
+
+      log = capture_log(fn -> assert {:error, :storage_unavailable} = Local.sweep(3_600) end)
+
+      assert log =~ "attachment storage sweep failed: :untrusted_directory"
+      assert File.exists?(stale)
+    end
+
+    test "a temp file it cannot remove is logged, not reported as swept", %{root: root} do
+      File.mkdir_p!(root)
+      File.chmod!(root, 0o700)
+      staging = Path.join(root, ".staging")
+      stale = stale_in(staging)
+      File.chmod!(staging, 0o500)
+      on_exit(fn -> File.chmod(staging, 0o700) end)
+
+      log = capture_log(fn -> assert {:error, :storage_unavailable} = Local.sweep(3_600) end)
+
+      assert log =~ "attachment storage sweep failed: :eacces"
+      refute log =~ root
+      assert File.exists?(stale)
+    end
+  end
+
+  describe "a source that is not a file or binary" do
+    test "fails the put and leaves no temp file", %{root: root} do
+      for source <- [{:stream, ["x"]}, {:file, 123}, "bare bytes"] do
+        log =
+          capture_log(fn ->
+            assert {:error, :storage_unavailable} = Local.put(@key, source, [])
+          end)
+
+        assert log =~ "attachment storage put failed: :badarg"
+        assert entries(Path.join(root, ".staging")) == []
+        refute present?(root, @key)
+      end
+    end
+  end
+
   defp mode(path), do: Bitwise.band(File.stat!(path).mode, 0o777)
 
   defp restore_env(name, nil), do: System.delete_env(name)

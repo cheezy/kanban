@@ -81,8 +81,11 @@ defmodule Kanban.Attachments.Storage do
   Removes leftovers of writes that never finished, such as a temp file a
   killed process left behind, once they are older than `older_than_seconds`.
   Optional: an adapter that leaves nothing behind need not implement it.
+  Returns `{:error, :storage_unavailable}` when it could not sweep or could
+  not remove a leftover; the facade logs nothing more and the next call
+  tries again.
   """
-  @callback sweep(older_than_seconds :: pos_integer()) :: :ok
+  @callback sweep(older_than_seconds :: pos_integer()) :: :ok | {:error, :storage_unavailable}
 
   @optional_callbacks sweep: 1
 

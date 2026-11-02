@@ -237,7 +237,9 @@ With `ATTACHMENTS_STORAGE` unset or `local`, files are written under
   such as the default one under a shared `/tmp`.
 
 Stride creates the directories it writes as `0o700` and its files as
-`0o600`, so only the user the app runs as can read them. Files are kept
+`0o600`, so only the user the app runs as can read them. That includes the
+parent directories it makes when `ATTACHMENTS_DIR` does not exist yet;
+parents that already exist keep their own mode. Files are kept
 under `boards/<board id>/`, and when a board's last file is removed the
 emptied directory goes too, so a deleted board leaves no directory named
 after it. A file is written
@@ -246,8 +248,17 @@ to a temporary name in a private `.staging` directory under
 never leaves a half-written file under a file's real name. A write cut off
 mid-way (the app killed or restarted during an upload) can leave its
 temporary file in `.staging`; the cleanup job removes it once it is an hour
-old. `.staging` must stay `0o700`: if
-group or others can read it, uploads fail with `:untrusted_directory`.
+old. The cleanup job checks `ATTACHMENTS_DIR` the same way an upload does,
+so it skips a directory Stride would refuse, and a temporary file it cannot
+remove is logged (`attachment storage sweep failed: :eacces`, say) and tried
+again on the next run. `.staging` must stay `0o700`: if
+group or others can read it, uploads fail with `:untrusted_directory`. If
+the temporary file, or `.staging` itself, is replaced while an upload is
+being written, the upload fails with
+`attachment storage put failed: :staging_replaced` and nothing is placed
+under the file's real name. Only the user the app runs as can do that, so
+seeing this line means that user, or a process running as it, touched
+`.staging`.
 Stride never serves a symbolic link or a file whose real path leaves
 `ATTACHMENTS_DIR`, and never writes through a linked directory below it.
 `ATTACHMENTS_DIR` itself may be a link, for example to a mounted volume, but

@@ -25,11 +25,17 @@ defmodule Kanban.Attachments.Storage.Local do
       crash or a failed copy never leaves a half-written file under a live
       key. `.staging` must be `0o700` or stricter whoever created it, so no
       other user can open a temp file in the moment before it is made
-      `0o600`. A failed write removes its temp file. A process or VM that
-      dies mid-write can leave a `.tmp-` file in `.staging`, which no valid
-      key can name, so it is never served; `sweep/1`, run by the cleanup
-      worker, removes it once it is an hour old.
-    * Directories it creates are `0o700` and files `0o600`. A delete removes
+      `0o600`. Just before the rename, the temp file's path must still name
+      the file the put wrote (the same device and inode, taken when it was
+      created); a put that finds it swapped, or `.staging` swapped for a
+      link, fails with a logged `:staging_replaced` and renames nothing. A failed
+      write removes its temp file, and an unknown source shape is a failed
+      write (`:badarg`). A process or VM that dies mid-write can leave a
+      `.tmp-` file in `.staging`, which no valid key can name, so it is never
+      served; `sweep/1`, run by the cleanup worker, removes it once it is an
+      hour old.
+    * Directories it creates are `0o700`, a missing root's missing ancestors
+      included, and files `0o600`. A delete removes
       the key's directories again once they are empty, so a board whose last
       file is gone leaves no directory named after it.
     * The root and every directory on the way to a key must be owned by the
@@ -42,6 +48,17 @@ defmodule Kanban.Attachments.Storage.Local do
       real root. A symlink planted under the root therefore never serves, and
       never receives, a file from elsewhere. The root itself may be a symlink
       only when it is configured explicitly; the default root never is.
+    * `sweep/1` checks the root as every other call does, so it never sweeps
+      through a symlinked default root or one others can write.
+
+  The directory checks and creation live in
+  `Kanban.Attachments.Storage.Local.Tree`; this module writes, serves and
+  removes the files.
+
+  The swap check guards against a race only the app's own user (or root)
+  could start, since no one else can write under a trusted root: it
+  narrows it to the instant between the check and the rename, which no
+  call this VM exposes can close.
 
   Keys arrive already validated by `Kanban.Attachments.Storage`, so they
   hold no `..`, no leading slash and no empty segment.
@@ -57,14 +74,11 @@ defmodule Kanban.Attachments.Storage.Local do
 
   @behaviour Kanban.Attachments.Storage
 
-  alias Kanban.Workspaces.Export
+  alias Kanban.Attachments.Storage.Local.Tree
 
   require Logger
 
   @chunk_bytes 65_536
-  @group_or_other_write 0o022
-  @group_or_other_any 0o077
-  @staging ".staging"
 
   @doc """
   The root directory: `config :kanban, Kanban.Attachments.Storage.Local,
@@ -86,13 +100,17 @@ defmodule Kanban.Attachments.Storage.Local do
     end
   end
 
+  # A configured root may be a symlink an operator chose (to a mounted
+  # volume, say) and is followed; the default root never is.
+  defp follow_root?, do: configured_root() != nil
+
   @impl true
   def put(key, source, _opts) do
     root = root()
     path = Path.join(root, key)
 
-    with :ok <- ensure_root(root),
-         {:ok, staging} <- ensure_staging(root),
+    with :ok <- Tree.ensure_root(root, follow_root?()),
+         {:ok, staging} <- Tree.ensure_staging(root),
          {:ok, tmp} <- write_tmp(staging, source),
          :ok <- place(tmp, path, root, key) do
       :ok
@@ -162,9 +180,9 @@ defmodule Kanban.Attachments.Storage.Local do
     root = root()
     path = Path.join(root, key)
 
-    case trusted_tree(root, key) do
+    case Tree.trusted_tree(root, key, follow_root?()) do
       :ok ->
-        if confined?(Path.dirname(path), root, :dir),
+        if path |> Path.dirname() |> Tree.confined?(root, :dir),
           do: remove(path, root, key),
           else: unavailable(:delete, :outside_root)
 
@@ -182,31 +200,56 @@ defmodule Kanban.Attachments.Storage.Local do
   directory: writes that never reached their rename because the process or
   the VM died mid-write. A live write's temp file exists only for as long as
   the write takes, so the cleanup worker's one-hour age never touches one.
-  Only regular `.tmp-` files are removed, and only from a `.staging` the
-  app's own user owns and no one else can open.
+
+  The root is checked first, as every other call checks it, and only regular
+  `.tmp-` files are removed, only from a `.staging` the app's own user owns
+  and no one else can open. A missing root or `.staging` is `:ok`; a root or
+  `.staging` that is not trusted, or a temp file that cannot be removed, is
+  logged with its reason and returns `{:error, :storage_unavailable}`, after
+  every other stale file has still been removed.
   """
   @impl true
   def sweep(older_than_seconds) when is_integer(older_than_seconds) and older_than_seconds > 0 do
-    staging = Path.join(root(), @staging)
+    case staged_names(root()) do
+      {:ok, staging, names} ->
+        staging
+        |> sweep_names(names, System.os_time(:second) - older_than_seconds)
+        |> swept()
 
-    with :ok <- private_dir(File.lstat(staging)),
-         {:ok, names} <- File.ls(staging) do
-      sweep_names(staging, names, System.os_time(:second) - older_than_seconds)
-    else
-      {:error, :enoent} -> :ok
-      {:error, reason} -> unavailable(:sweep, reason)
+      {:error, :enoent} ->
+        :ok
+
+      {:error, reason} ->
+        unavailable(:sweep, reason)
     end
   end
 
-  defp sweep_names(staging, names, cutoff) do
-    for ".tmp-" <> _ = name <- names, do: remove_stale(Path.join(staging, name), cutoff)
-    :ok
+  defp staged_names(root) do
+    staging = Tree.staging(root)
+
+    with :ok <- Tree.check_root(root, follow_root?()),
+         :ok <- Tree.private_dir(staging),
+         {:ok, names} <- File.ls(staging),
+         do: {:ok, staging, names}
   end
 
+  defp sweep_names(staging, names, cutoff) do
+    for ".tmp-" <> _ = name <- names,
+        {:error, reason} <- [remove_stale(Path.join(staging, name), cutoff)],
+        do: reason
+  end
+
+  defp swept([]), do: :ok
+  defp swept([reason | _more]), do: unavailable(:sweep, reason)
+
+  # A file another sweep removed first is gone, as wanted.
   defp remove_stale(path, cutoff) do
-    case File.lstat(path, time: :posix) do
-      {:ok, %File.Stat{type: :regular, mtime: mtime}} when mtime < cutoff -> File.rm(path)
-      _young_or_other -> :ok
+    with {:ok, %File.Stat{type: :regular, mtime: mtime}} when mtime < cutoff <-
+           File.lstat(path, time: :posix),
+         {:error, reason} when reason != :enoent <- File.rm(path) do
+      {:error, reason}
+    else
+      _removed_young_or_other -> :ok
     end
   end
 
@@ -239,45 +282,10 @@ defmodule Kanban.Attachments.Storage.Local do
     end)
   end
 
-  # A missing root is created, then checked like an existing one, so a root
-  # another user created in the gap is refused too: mkdir_p accepts it and
-  # the chmod of a directory someone else owns fails.
-  defp ensure_root(root) do
-    with {:error, :enoent} <- check_root(root),
-         :ok <- File.mkdir_p(root),
-         :ok <- File.chmod(root, 0o700) do
-      check_root(root)
-    end
-  end
-
-  # The root may itself be a symlink an operator configured (to a mounted
-  # volume, say), so a configured root is followed; the default root, a
-  # fixed name under a temp directory other users may share, never is.
-  defp check_root(root) do
-    stat = if configured_root(), do: File.stat(root), else: File.lstat(root)
-    check_dir(stat)
-  end
-
-  # Every directory from the root down to the key's own.
-  defp trusted_tree(root, key) do
-    with :ok <- check_root(root) do
-      key |> Path.dirname() |> Path.split() |> check_segments(root)
-    end
-  end
-
-  defp check_segments(["."], _parent), do: :ok
-  defp check_segments([], _parent), do: :ok
-
-  defp check_segments([segment | rest], parent) do
-    dir = Path.join(parent, segment)
-
-    with :ok <- check_dir(File.lstat(dir)), do: check_segments(rest, dir)
-  end
-
   # A read through a missing or non-directory segment finds nothing; a
   # directory someone else owns or can write fails loudly.
   defp readable_tree(root, key) do
-    case trusted_tree(root, key) do
+    case Tree.trusted_tree(root, key, follow_root?()) do
       :ok ->
         :ok
 
@@ -289,107 +297,30 @@ defmodule Kanban.Attachments.Storage.Local do
     end
   end
 
-  defp check_dir({:ok, %File.Stat{type: :directory} = stat}), do: owned(stat)
-  defp check_dir({:ok, %File.Stat{type: :symlink}}), do: {:error, :symlink}
-  defp check_dir({:ok, %File.Stat{}}), do: {:error, :not_a_directory}
-  defp check_dir({:error, _reason} = error), do: error
-
-  defp owned(stat, forbidden_bits \\ @group_or_other_write)
-
-  defp owned(%File.Stat{uid: uid, mode: mode}, forbidden_bits) do
-    with {:ok, own_uid} <- own_uid() do
-      if uid == own_uid and Bitwise.band(mode, forbidden_bits) == 0,
-        do: :ok,
-        else: {:error, :untrusted_directory}
-    end
-  end
-
-  # Temp files live here until renamed into place. Unlike the directories
-  # on the way to a key, it must deny group and other every access, not
-  # only writes, because a temp file is briefly readable under the umask.
-  # Keys never hold a dot, so no key can name it.
-  defp ensure_staging(root) do
-    staging = Path.join(root, @staging)
-
-    result =
-      case File.mkdir(staging) do
-        :ok -> File.chmod(staging, 0o700)
-        {:error, :eexist} -> private_dir(File.lstat(staging))
-        {:error, _reason} = error -> error
-      end
-
-    with :ok <- result, do: {:ok, staging}
-  end
-
-  defp private_dir({:ok, %File.Stat{type: :directory} = stat}),
-    do: owned(stat, @group_or_other_any)
-
-  defp private_dir(stat), do: check_dir(stat)
-
-  # The VM's effective uid, which Elixir does not expose: the owner of a
-  # file this process has just created. Learned once, then cached.
-  defp own_uid do
-    case :persistent_term.get({__MODULE__, :uid}, nil) do
-      nil -> probe_uid()
-      uid -> {:ok, uid}
-    end
-  end
-
-  defp probe_uid do
-    probe = Path.join(System.tmp_dir!(), tmp_name())
-
-    with {:ok, device} <- File.open(probe, [:write, :exclusive]) do
-      _ = File.close(device)
-      stat = File.lstat(probe)
-      _ = File.rm(probe)
-
-      with {:ok, %File.Stat{uid: uid}} <- stat do
-        :persistent_term.put({__MODULE__, :uid}, uid)
-        {:ok, uid}
-      end
-    end
-  end
-
-  defp ensure_dirs(_parent, ["."]), do: :ok
-  defp ensure_dirs(_parent, []), do: :ok
-
-  defp ensure_dirs(parent, [segment | rest]) do
-    dir = Path.join(parent, segment)
-
-    with :ok <- ensure_dir(dir), do: ensure_dirs(dir, rest)
-  end
-
-  # File.mkdir/1, unlike mkdir_p, never reuses a path silently: an existing
-  # entry is accepted only when lstat shows a real directory, not a link,
-  # that this app's user owns and no one else can write.
-  defp ensure_dir(dir) do
-    case File.mkdir(dir) do
-      :ok -> File.chmod(dir, 0o700)
-      {:error, :eexist} -> check_dir(File.lstat(dir))
-      {:error, _reason} = error -> error
-    end
-  end
-
-  defp confined_dir(dir, root) do
-    if confined?(dir, root, :dir), do: :ok, else: {:error, :outside_root}
-  end
-
-  # The root, then every directory down to the key's own, created or
-  # checked, and the key's directory confined to the root.
-  defp ensure_key_dir(root, key) do
-    with :ok <- ensure_root(root),
-         :ok <- ensure_dirs(root, key |> Path.dirname() |> Path.split()) do
-      root |> Path.join(key) |> Path.dirname() |> confined_dir(root)
-    end
-  end
-
+  # The temp file's identity (device and inode) is taken the moment the
+  # exclusive open has created it, and checked again before the rename (see
+  # place/5).
+  #
+  # Both the temp file and the source are opened raw, in this process. A
+  # file opened any other way is opened by the VM's one file server, so a
+  # source whose open stalls (a FIFO, a hung network mount) would stall
+  # every other file call in the VM behind it.
   defp write_tmp(dir, source) do
     tmp = Path.join(dir, tmp_name())
 
-    with {:ok, device} <- File.open(tmp, [:write, :exclusive, :binary]) do
-      written = fill(device, tmp, source)
-      settle(tmp, written, File.close(device))
+    with {:ok, device} <- File.open(tmp, [:write, :exclusive, :binary, :raw]) do
+      tmp |> Tree.file_identity() |> fill_identified(device, tmp, source)
     end
+  end
+
+  defp fill_identified({:ok, identity}, device, tmp, source) do
+    written = fill(device, tmp, source)
+    settle({tmp, identity}, written, File.close(device))
+  end
+
+  defp fill_identified({:error, reason}, device, _tmp, _source) do
+    _ = File.close(device)
+    {:error, replaced(reason)}
   end
 
   defp fill(device, tmp, source) do
@@ -399,8 +330,8 @@ defmodule Kanban.Attachments.Storage.Local do
   end
 
   defp settle(tmp, :ok, :ok), do: {:ok, tmp}
-  defp settle(tmp, :ok, close_error), do: discard(tmp, close_error)
-  defp settle(tmp, write_error, _closed), do: discard(tmp, write_error)
+  defp settle({tmp, _identity}, :ok, close_error), do: discard(tmp, close_error)
+  defp settle({tmp, _identity}, write_error, _closed), do: discard(tmp, write_error)
 
   # Keys never hold a dot, so a temp name can never be a live key.
   defp tmp_name do
@@ -409,25 +340,53 @@ defmodule Kanban.Attachments.Storage.Local do
 
   defp write_source(device, {:binary, data}), do: :file.write(device, data)
 
-  defp write_source(device, {:file, source_path}) do
-    case :file.copy(source_path, device) do
+  defp write_source(device, {:file, source_path}) when is_binary(source_path) do
+    case :file.copy({source_path, [:read, :binary, :raw]}, device) do
       {:ok, _bytes} -> :ok
       {:error, _reason} = error -> error
     end
   end
+
+  defp write_source(_device, _unknown_source), do: {:error, :badarg}
 
   # The key's directories are created or checked, then the temp file is
   # renamed over the key. A delete of a directory's last other file removes
   # the emptied directories (prune_dirs/2), which can happen between those
   # two steps or between two of the directories, so a missing directory is
   # created and checked again, a bounded number of times.
-  defp place(tmp, path, root, key, retries \\ 3) do
-    case with(:ok <- ensure_key_dir(root, key), do: File.rename(tmp, path)) do
+  #
+  # Just before the rename, the temp file's path must still name the file
+  # this put wrote. If it was swapped (for a link, for another file under
+  # the same name, or because `.staging` itself was swapped for a link to a
+  # directory holding one), the rename would place whatever now sits at that
+  # path under the live key, so the put is refused with `:staging_replaced`
+  # instead, and nothing is removed: a remove through the swapped path would
+  # delete what was planted there, not the file this put wrote.
+  defp place({tmp_path, _identity} = tmp, path, root, key, retries \\ 3) do
+    case rename_into(tmp, path, root, key) do
       :ok -> :ok
+      {:error, :staging_replaced} = error -> error
       {:error, :enoent} when retries > 0 -> place(tmp, path, root, key, retries - 1)
-      {:error, _reason} = error -> discard(tmp, error)
+      {:error, _reason} = error -> discard(tmp_path, error)
     end
   end
+
+  defp rename_into({tmp_path, _identity} = tmp, path, root, key) do
+    with :ok <- Tree.ensure_key_dir(root, key, follow_root?()),
+         :ok <- unchanged(tmp),
+         do: File.rename(tmp_path, path)
+  end
+
+  defp unchanged({tmp_path, identity}) do
+    case Tree.file_identity(tmp_path) do
+      {:ok, ^identity} -> :ok
+      _swapped_or_gone -> {:error, :staging_replaced}
+    end
+  end
+
+  defp replaced(:enoent), do: :staging_replaced
+  defp replaced(:not_a_regular_file), do: :staging_replaced
+  defp replaced(reason), do: reason
 
   defp discard(tmp, error) do
     _ = File.rm(tmp)
@@ -437,7 +396,7 @@ defmodule Kanban.Attachments.Storage.Local do
   defp servable(path, root) do
     case File.lstat(path) do
       {:ok, %File.Stat{type: :regular}} ->
-        if confined?(path, root, :file), do: :ok, else: {:error, :not_found}
+        if Tree.confined?(path, root, :file), do: :ok, else: {:error, :not_found}
 
       {:ok, %File.Stat{}} ->
         {:error, :not_found}
@@ -447,17 +406,6 @@ defmodule Kanban.Attachments.Storage.Local do
 
       {:error, reason} ->
         unavailable(:read, reason)
-    end
-  end
-
-  # The real path, every symlink resolved, must stay inside the real root.
-  # A file must lie strictly beneath it; a directory may be the root itself.
-  defp confined?(path, root, kind) do
-    with {:ok, real} <- Export.real_path(path),
-         {:ok, real_root} <- Export.real_path(root) do
-      String.starts_with?(real, real_root <> "/") or (kind == :dir and real == real_root)
-    else
-      _error -> false
     end
   end
 
