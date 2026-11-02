@@ -1,8 +1,9 @@
 defmodule KanbanWeb.TaskLive.Form.RelationalScopes do
   @moduledoc """
-  Board-scope checks for the task form's relational fields, extracted from
-  `KanbanWeb.TaskLive.FormComponent` (which sits at the module-size limit in
-  `AGENTS.md`). Both the new-task and the edit-task save run them.
+  Board-scope checks for the task form's relational fields, kept out of
+  `KanbanWeb.TaskLive.FormComponent` for the module-size guideline in
+  `AGENTS.md`. Both the new-task and the edit-task save in
+  `KanbanWeb.TaskLive.Form.Save` run them.
 
   Every relational field a user can change through the form must live on the
   current board: `column_id`, `parent_id` and `assigned_to_id`. Each check is

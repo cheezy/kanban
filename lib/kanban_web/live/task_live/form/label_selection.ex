@@ -1,8 +1,8 @@
 defmodule KanbanWeb.TaskLive.Form.LabelSelection do
   @moduledoc """
   The task form's label picker state and save path (W2234), kept out of
-  `KanbanWeb.TaskLive.FormComponent` (which sits at the module-size limit in
-  `AGENTS.md`).
+  `KanbanWeb.TaskLive.FormComponent` for the module-size guideline in
+  `AGENTS.md`. `KanbanWeb.TaskLive.Form.Save` calls it during a save.
 
   The picker posts `task[label_ids][]` — a hidden `""` sentinel plus one value
   per checked label — so an empty selection still arrives as a key. Labels are

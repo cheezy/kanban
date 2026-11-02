@@ -4,7 +4,7 @@ defmodule KanbanWeb.TaskLive.Form.TaskParams do
   pipeline expects: id coercion, assignment-target parsing, scope-error
   labelling, cascade counting, and flash-message building.
 
-  Used by `KanbanWeb.TaskLive.FormComponent` from the save path. None of these
+  Used by the save path, `KanbanWeb.TaskLive.Form.Save`. None of these
   functions touch the socket — pass the task struct and params explicitly.
   """
   use Gettext, backend: KanbanWeb.Gettext

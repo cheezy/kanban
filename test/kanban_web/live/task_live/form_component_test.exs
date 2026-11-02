@@ -9,6 +9,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
   alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
+  alias KanbanWeb.TaskLive.Form.Save
   alias KanbanWeb.TaskLive.FormComponent
 
   describe "responsive layout (W1391)" do
@@ -3857,7 +3858,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         "reviewed_by_id" => 999
       }
 
-      result = FormComponent.maybe_add_review_metadata(params, current_user)
+      result = Save.maybe_add_review_metadata(params, current_user)
 
       refute result["reviewed_at"] == "1999-01-01T00:00:00Z"
       refute result["reviewed_by_id"] == 999
@@ -3869,7 +3870,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       current_user = %{id: 42}
       params = %{"review_status" => "pending"}
 
-      result = FormComponent.maybe_add_review_metadata(params, current_user)
+      result = Save.maybe_add_review_metadata(params, current_user)
 
       refute Map.has_key?(result, "reviewed_at")
       refute Map.has_key?(result, "reviewed_by_id")
@@ -3884,7 +3885,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         "reviewed_by_id" => 999
       }
 
-      result = FormComponent.maybe_add_review_metadata(params, current_user)
+      result = Save.maybe_add_review_metadata(params, current_user)
 
       # Forged values must NOT survive even when the transition does not fire.
       refute Map.has_key?(result, "reviewed_at")
@@ -3899,7 +3900,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         "completed_at" => "1999-01-01T00:00:00Z"
       }
 
-      result = FormComponent.maybe_add_completed_at(params, task)
+      result = Save.maybe_add_completed_at(params, task)
 
       refute result["completed_at"] == "1999-01-01T00:00:00Z"
       assert %DateTime{} = result["completed_at"]
@@ -3913,7 +3914,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         "completed_at" => "1999-01-01T00:00:00Z"
       }
 
-      result = FormComponent.maybe_add_completed_at(params, task)
+      result = Save.maybe_add_completed_at(params, task)
 
       # Forged value must NOT survive even when the completion transition does
       # not fire — otherwise an attacker could pre-set completed_at on an
@@ -3926,7 +3927,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       task = %{completed_at: existing_dt}
       params = %{"status" => "completed"}
 
-      result = FormComponent.maybe_add_completed_at(params, task)
+      result = Save.maybe_add_completed_at(params, task)
 
       # No completed_at is added because the task is already completed;
       # the existing timestamp on task.completed_at is preserved by Ecto cast.

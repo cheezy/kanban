@@ -366,7 +366,7 @@ msgstr "Aufgabe konnte nicht gelöscht werden"
 msgid "Save Task"
 msgstr "Aufgabe speichern"
 
-#: lib/kanban_web/live/task_live/form_component.ex:429
+#: lib/kanban_web/live/task_live/form/save.ex:241
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Aufgabe erfolgreich erstellt"
@@ -397,7 +397,7 @@ msgstr "Titel"
 msgid "Update task details"
 msgstr "Aufgabendetails aktualisieren"
 
-#: lib/kanban_web/live/task_live/form_component.ex:438
+#: lib/kanban_web/live/task_live/form/save.ex:250
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
@@ -1575,7 +1575,7 @@ msgstr "Aufgewendete Zeit (Minuten)"
 #: lib/kanban_web/live/task_live/components/comment_row.ex:239
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
-#: lib/kanban_web/live/task_live/form_component.ex:511
+#: lib/kanban_web/live/task_live/form_component.ex:246
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr "Unbekannt"
@@ -1677,13 +1677,13 @@ msgstr "Telemetrie-Ereignis hinzufügen"
 msgid "Add Unit Test"
 msgstr "Unit-Test hinzufügen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:888
+#: lib/kanban_web/live/board_live/show.html.heex:890
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to revoke this token?"
 msgstr "Möchten Sie dieses Token wirklich widerrufen?"
 
-#: lib/kanban_web/live/board_live/show.html.heex:644
-#: lib/kanban_web/live/board_live/show.html.heex:674
+#: lib/kanban_web/live/board_live/show.html.heex:646
+#: lib/kanban_web/live/board_live/show.html.heex:676
 #: lib/kanban_web/live/board_live/webhook_views.ex:83
 #: lib/kanban_web/live/org_live/scim.html.heex:72
 #: lib/kanban_web/live/user_live/confirmation.ex:63
@@ -1695,7 +1695,7 @@ msgstr "Möchten Sie dieses Token wirklich widerrufen?"
 msgid "Copy"
 msgstr "Kopieren"
 
-#: lib/kanban_web/live/board_live/show.html.heex:794
+#: lib/kanban_web/live/board_live/show.html.heex:796
 #: lib/kanban_web/live/org_live/console.html.heex:223
 #: lib/kanban_web/live/org_live/scim.html.heex:146
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:64
@@ -1744,12 +1744,12 @@ msgstr "Manuelle Tests"
 msgid "Manual test description"
 msgstr "Beschreibung des manuellen Tests"
 
-#: lib/kanban_web/live/board_live/show.html.heex:718
+#: lib/kanban_web/live/board_live/show.html.heex:720
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "Mein KI-Agent"
 
-#: lib/kanban_web/live/board_live/show.html.heex:819
+#: lib/kanban_web/live/board_live/show.html.heex:821
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "Noch keine API-Tokens. Generieren Sie oben einen, um loszulegen."
@@ -1766,7 +1766,7 @@ msgstr "Phoenix-Channels"
 msgid "PubSub Broadcasts"
 msgstr "PubSub-Broadcasts"
 
-#: lib/kanban_web/live/board_live/show.html.heex:896
+#: lib/kanban_web/live/board_live/show.html.heex:898
 #: lib/kanban_web/live/org_live/scim.html.heex:206
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:129
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:125
@@ -1838,7 +1838,7 @@ msgstr "channel:event"
 msgid "topic:event"
 msgstr "topic:event"
 
-#: lib/kanban_web/live/board_live/show.html.heex:681
+#: lib/kanban_web/live/board_live/show.html.heex:683
 #: lib/kanban_web/live/board_live/webhook_views.ex:106
 #: lib/kanban_web/live/org_live/scim.html.heex:94
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:209
@@ -1846,7 +1846,7 @@ msgstr "topic:event"
 msgid "Dismiss"
 msgstr "Schließen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:645
+#: lib/kanban_web/live/board_live/show.html.heex:647
 #: lib/kanban_web/live/board_live/webhook_views.ex:90
 #: lib/kanban_web/live/org_live/scim.html.heex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:64
@@ -1935,7 +1935,7 @@ msgstr "Stride ist mehr als ein Kanban-Board — es wurde von Grund auf entwicke
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Dieser kollaborative Ansatz erlaubt es Teams, repetitive Programmieraufgaben an KI-Agenten zu delegieren, während sich Menschen auf übergeordnete Entscheidungen, Architektur und die Prüfung KI-generierten Codes vor dem Merge konzentrieren."
 
-#: lib/kanban_web/live/task_live/form_component.ex:442
+#: lib/kanban_web/live/task_live/form/save.ex:254
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "Aufgabe kann nicht hinzugefügt werden: WIP-Limit für diese Spalte erreicht"
@@ -1955,19 +1955,19 @@ msgstr "Erwartetes Ergebnis"
 msgid "Note about this file"
 msgstr "Hinweis zu dieser Datei"
 
-#: lib/kanban_web/live/task_live/form_component.ex:265
-#: lib/kanban_web/live/task_live/form_component.ex:363
-#: lib/kanban_web/live/task_live/form_component.ex:417
+#: lib/kanban_web/live/task_live/form/save.ex:77
+#: lib/kanban_web/live/task_live/form/save.ex:175
+#: lib/kanban_web/live/task_live/form/save.ex:229
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Bitte beheben Sie die untenstehenden Fehler"
 
-#: lib/kanban_web/live/board_live/show.html.heex:758
+#: lib/kanban_web/live/board_live/show.html.heex:760
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "Aufgabenautomatisierung"
 
-#: lib/kanban_web/live/board_live/show.html.heex:739
+#: lib/kanban_web/live/board_live/show.html.heex:741
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr "claude-4.5-opus"
@@ -1987,7 +1987,7 @@ msgstr "lib/kanban/tasks.ex"
 msgid "mix test"
 msgstr "mix test"
 
-#: lib/kanban_web/live/board_live/show.html.heex:646
+#: lib/kanban_web/live/board_live/show.html.heex:648
 #: lib/kanban_web/live/user_live/confirmation.ex:65
 #: lib/kanban_web/live/user_live/confirmation.ex:369
 #, elixir-autogen, elixir-format
@@ -2025,7 +2025,7 @@ msgstr "Board:"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
-#: lib/kanban_web/live/board_live/show.html.heex:911
+#: lib/kanban_web/live/board_live/show.html.heex:913
 #: lib/kanban_web/live/board_live/webhook_views.ex:286
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:119
 #: lib/kanban_web/live/task_live/components/comment_row.ex:132
@@ -2055,8 +2055,8 @@ msgstr "Aufgabe erfolgreich archiviert"
 msgid "Task unarchived successfully"
 msgstr "Aufgabe erfolgreich aus dem Archiv geholt"
 
-#: lib/kanban_web/live/task_live/form/relational_scopes.ex:54
-#: lib/kanban_web/live/task_live/form_component.ex:312
+#: lib/kanban_web/live/task_live/form/relational_scopes.ex:55
+#: lib/kanban_web/live/task_live/form/save.ex:124
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "Spalte gehört nicht zu diesem Board"
@@ -2071,7 +2071,7 @@ msgstr "Sicherheitsfehler: Ungültige Spalte"
 msgid "Select capability to add..."
 msgstr "Hinzuzufügende Fähigkeit auswählen..."
 
-#: lib/kanban_web/live/board_live/show.html.heex:772
+#: lib/kanban_web/live/board_live/show.html.heex:774
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -2081,7 +2081,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "API-Token erfolgreich gelöscht"
 
-#: lib/kanban_web/live/board_live/show.html.heex:903
+#: lib/kanban_web/live/board_live/show.html.heex:905
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "Sind Sie sicher, dass Sie dieses Token löschen möchten?"
@@ -3143,7 +3143,7 @@ msgstr "Geschwindigkeit"
 msgid "was born from our hands-on work with two AI tools —"
 msgstr "entstand aus unserer praktischen Arbeit mit zwei KI-Tools —"
 
-#: lib/kanban_web/live/task_live/form/relational_scopes.ex:91
+#: lib/kanban_web/live/task_live/form/relational_scopes.ex:92
 #, elixir-autogen, elixir-format
 msgid "Assignee does not have access to this board"
 msgstr "Der Zugewiesene hat keinen Zugriff auf dieses Board"
@@ -3175,7 +3175,7 @@ msgstr "Senden des Problems fehlgeschlagen. Bitte versuchen Sie es später erneu
 msgid "Invalid field name"
 msgstr "Ungültiger Feldname"
 
-#: lib/kanban_web/live/task_live/form/relational_scopes.ex:72
+#: lib/kanban_web/live/task_live/form/relational_scopes.ex:73
 #, elixir-autogen, elixir-format
 msgid "Parent goal does not belong to this board"
 msgstr "Übergeordnetes Ziel gehört nicht zu diesem Board"
@@ -3685,8 +3685,8 @@ msgstr "Leck von API-Tokens oder Geltungsbereichs-Ausbruch über die Agenten-API
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:593
-#: lib/kanban_web/live/board_live/show.html.heex:601
+#: lib/kanban_web/live/board_live/show.html.heex:595
+#: lib/kanban_web/live/board_live/show.html.heex:603
 #, elixir-autogen, elixir-format
 msgid "API tokens"
 msgstr "API-Tokens"
@@ -4205,7 +4205,7 @@ msgstr "Neues leeres Board"
 
 #: lib/kanban_web/live/board_live/show.html.heex:35
 #: lib/kanban_web/live/board_live/show.html.heex:444
-#: lib/kanban_web/live/board_live/show.html.heex:463
+#: lib/kanban_web/live/board_live/show.html.heex:465
 #, elixir-autogen, elixir-format
 msgid "New goal"
 msgstr "Neues Ziel"
@@ -4603,7 +4603,7 @@ msgstr "Schließen"
 msgid "Save"
 msgstr "Speichern"
 
-#: lib/kanban_web/live/board_live/show.html.heex:498
+#: lib/kanban_web/live/board_live/show.html.heex:500
 #, elixir-autogen, elixir-format
 msgid "Update board details and choose which task fields appear on cards."
 msgstr "Board-Details aktualisieren und auswählen, welche Aufgabenfelder auf den Karten erscheinen."
@@ -4613,8 +4613,8 @@ msgstr "Board-Details aktualisieren und auswählen, welche Aufgabenfelder auf de
 msgid "Add user by email"
 msgstr "Benutzer per E-Mail hinzufügen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:486
-#: lib/kanban_web/live/board_live/show.html.heex:494
+#: lib/kanban_web/live/board_live/show.html.heex:488
+#: lib/kanban_web/live/board_live/show.html.heex:496
 #, elixir-autogen, elixir-format
 msgid "Board settings"
 msgstr "Board-Einstellungen"
@@ -4634,7 +4634,7 @@ msgstr "Aktuelle Benutzer"
 msgid "Field visibility"
 msgstr "Feldsichtbarkeit"
 
-#: lib/kanban_web/live/board_live/show.html.heex:527
+#: lib/kanban_web/live/board_live/show.html.heex:529
 #, elixir-autogen, elixir-format
 msgid "Invite registered users and control their access to this board."
 msgstr "Laden Sie registrierte Benutzer ein und steuern Sie deren Zugriff auf dieses Board."
@@ -4649,38 +4649,38 @@ msgstr "Benutzer müssen bereits im System registriert sein, um zu Boards hinzug
 msgid "name@example.com"
 msgstr "name@beispiel.com"
 
-#: lib/kanban_web/live/board_live/show.html.heex:516
-#: lib/kanban_web/live/board_live/show.html.heex:524
+#: lib/kanban_web/live/board_live/show.html.heex:518
+#: lib/kanban_web/live/board_live/show.html.heex:526
 #, elixir-autogen, elixir-format
 msgid "Manage members"
 msgstr "Mitglieder verwalten"
 
-#: lib/kanban_web/live/board_live/show.html.heex:810
+#: lib/kanban_web/live/board_live/show.html.heex:812
 #, elixir-autogen, elixir-format
 msgid "Active tokens"
 msgstr "Aktive Tokens"
 
-#: lib/kanban_web/live/board_live/show.html.heex:766
+#: lib/kanban_web/live/board_live/show.html.heex:768
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities"
 msgstr "Agenten-Fähigkeiten"
 
-#: lib/kanban_web/live/board_live/show.html.heex:732
+#: lib/kanban_web/live/board_live/show.html.heex:734
 #, elixir-autogen, elixir-format
 msgid "Agent model (optional)"
 msgstr "Agentenmodell (Optional)"
 
-#: lib/kanban_web/live/board_live/show.html.heex:604
+#: lib/kanban_web/live/board_live/show.html.heex:606
 #, elixir-autogen, elixir-format
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr "Bearer-Tokens, die Agenten auf %{board_name} authentifizieren. Das Rotieren eines Tokens gibt laufende Claims nicht frei — das alte Token bleibt für ein 60-Sekunden-Übergangsfenster gültig."
 
-#: lib/kanban_web/live/board_live/show.html.heex:785
+#: lib/kanban_web/live/board_live/show.html.heex:787
 #, elixir-autogen, elixir-format
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr "Kommagetrennte Liste. Gültige Fähigkeiten: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leer lassen, um alle Aufgaben zuzulassen."
 
-#: lib/kanban_web/live/board_live/show.html.heex:627
+#: lib/kanban_web/live/board_live/show.html.heex:629
 #: lib/kanban_web/live/board_live/webhook_views.ex:55
 #: lib/kanban_web/live/org_live/scim.html.heex:45
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:157
@@ -4688,39 +4688,39 @@ msgstr "Kommagetrennte Liste. Gültige Fähigkeiten: api_design, code_generation
 msgid "Copy it now — you won't be able to see it again."
 msgstr "Kopieren Sie es jetzt — Sie werden es nicht erneut sehen können."
 
-#: lib/kanban_web/live/board_live/show.html.heex:697
+#: lib/kanban_web/live/board_live/show.html.heex:699
 #, elixir-autogen, elixir-format
 msgid "Create new token"
 msgstr "Neues Token erstellen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:802
+#: lib/kanban_web/live/board_live/show.html.heex:804
 #, elixir-autogen, elixir-format
 msgid "Generate token"
 msgstr "Token generieren"
 
-#: lib/kanban_web/live/board_live/show.html.heex:879
+#: lib/kanban_web/live/board_live/show.html.heex:881
 #, elixir-autogen, elixir-format
 msgid "Never used"
 msgstr "Nie verwendet"
 
-#: lib/kanban_web/live/board_live/show.html.heex:752
+#: lib/kanban_web/live/board_live/show.html.heex:754
 #, elixir-autogen, elixir-format
 msgid "Purpose (optional)"
 msgstr "Zweck (Optional)"
 
-#: lib/kanban_web/live/board_live/show.html.heex:624
+#: lib/kanban_web/live/board_live/show.html.heex:626
 #, elixir-autogen, elixir-format
 msgid "Token created"
 msgstr "Token erstellt"
 
-#: lib/kanban_web/live/board_live/show.html.heex:709
+#: lib/kanban_web/live/board_live/show.html.heex:711
 #: lib/kanban_web/live/org_live/scim.html.heex:136
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:46
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "Token-Name"
 
-#: lib/kanban_web/live/board_live/show.html.heex:865
+#: lib/kanban_web/live/board_live/show.html.heex:867
 #, elixir-autogen, elixir-format
 msgid "revoked"
 msgstr "widerrufen"
@@ -7709,7 +7709,7 @@ msgstr "Agentendaten konnten gerade nicht aktualisiert werden. Es werden die zul
 
 #: lib/kanban_web/live/board_live/authorization.ex:84
 #: lib/kanban_web/live/board_live/bulk_selection.ex:361
-#: lib/kanban_web/live/task_live/form_component.ex:152
+#: lib/kanban_web/live/task_live/form/save.ex:53
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu bearbeiten"
@@ -9681,7 +9681,7 @@ msgstr "Neue Aufgabe"
 msgid "Resources and information"
 msgstr "Ressourcen und Informationen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:569
+#: lib/kanban_web/live/board_live/show.html.heex:571
 #, elixir-autogen, elixir-format
 msgid "Task details"
 msgstr "Aufgabendetails"
@@ -9814,7 +9814,7 @@ msgstr "Labels"
 msgid "Labels tag and filter tasks. Changes save immediately."
 msgstr "Labels markieren und filtern Aufgaben. Änderungen werden sofort gespeichert."
 
-#: lib/kanban_web/live/board_live/show.html.heex:499
+#: lib/kanban_web/live/board_live/show.html.heex:501
 #, elixir-autogen, elixir-format
 msgid "Labels used to tag and filter tasks on this board."
 msgstr "Labels zum Markieren und Filtern von Aufgaben auf diesem Board."
@@ -10186,9 +10186,9 @@ msgstr "Generischer Webhook"
 
 #: lib/kanban_web/components/board_tabs.ex:158
 #: lib/kanban_web/components/locked_feature.ex:141
-#: lib/kanban_web/live/board_live/board_state.ex:103
-#: lib/kanban_web/live/board_live/show.html.heex:542
-#: lib/kanban_web/live/board_live/show.html.heex:550
+#: lib/kanban_web/live/board_live/board_state.ex:114
+#: lib/kanban_web/live/board_live/show.html.heex:544
+#: lib/kanban_web/live/board_live/show.html.heex:552
 #, elixir-autogen, elixir-format
 msgid "Integrations"
 msgstr "Integrationen"
@@ -10337,7 +10337,7 @@ msgstr "Discord"
 msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
 msgstr "Jeder Endpunkt erhält die Aufgabenereignisse, die du auswählst. Generische Endpunkte erhalten einen signierten JSON-POST; Slack- und Discord-Endpunkte erhalten eine Nachricht in einem Kanal."
 
-#: lib/kanban_web/live/board_live/show.html.heex:553
+#: lib/kanban_web/live/board_live/show.html.heex:555
 #, elixir-autogen, elixir-format
 msgid "Send this board's task events to your own services or to a Slack or Discord channel."
 msgstr "Sende die Aufgabenereignisse dieses Boards an deine eigenen Dienste oder an einen Slack- oder Discord-Kanal."
@@ -13939,7 +13939,7 @@ msgstr[1] "%{count} Dateien hochgeladen."
 msgid "unnamed file"
 msgstr "unbenannte Datei"
 
-#: lib/kanban_web/live/board_live/board_events.ex:191
+#: lib/kanban_web/live/board_live/board_events.ex:190
 #, elixir-autogen, elixir-format
 msgid "This task was deleted."
 msgstr "Diese Aufgabe wurde gelöscht."
