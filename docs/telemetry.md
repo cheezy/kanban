@@ -815,9 +815,11 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
 W2508 added these. They are declared in
 `Kanban.Telemetry.Catalog.AttachmentEvents`
 (`lib/kanban/telemetry/catalog/attachment_events.ex`) and emitted by the
-attachments context, `Kanban.Attachments`. The board UI, the REST API and MCP
-are not wired to it yet; once they call it, each will produce one event per
-change. Every event measures `count: 1`;
+attachments context, `Kanban.Attachments`. The board UI (uploads, deletes,
+and the `/attachments/:id/download` and `/preview` routes) calls it, so it
+produces these events; the REST API and MCP are not wired to it yet. A file
+removed with its comment, task or board goes through the database cascade
+and emits no `deleted` event. Every event measures `count: 1`;
 `uploaded`, `downloaded` and `deleted` also measure the file's `byte_size`.
 
 | Event | Metadata | Emitted by |

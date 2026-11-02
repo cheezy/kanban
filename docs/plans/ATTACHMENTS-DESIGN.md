@@ -225,7 +225,7 @@ All UI text is translated in every locale with no fuzzy entries, and every new s
 
 `KanbanWeb.TaskLive.AttachmentsComponent` adds an **Attachments** section to the task detail view, directly above History, with a file count. It lists task-level attachments (rows with no `comment_id`) and offers a drop zone and file browser to anyone allowed to upload.
 
-- A `read_only` member sees and can download the files but gets no drop zone, upload button or delete control.
+- A `read_only` member sees and can download the files but gets no drop zone or upload button. They see a delete control only on a file they uploaded themselves (before their access changed), because `Kanban.Attachments.Policy` lets an uploader delete their own file at any access level.
 - A free board under enforcement shows the LockedFeature panel instead of the list and upload controls.
 - Every upload, cancel and delete event checks `Plans.check_board(board_id, :attachments, surface: :live_view)` again and calls the context's authorizing functions, so a forged event is refused with a flash.
 - A board moving into or out of an Organization changes its plan and broadcasts `{Kanban.Boards, :members_changed, id}`. `KanbanWeb.BoardLive.BoardEvents` then refreshes the open task's Attachments section and comment thread, and sends an open task form `refresh_plan: true`, so the drop zone, the LockedFeature panel and the form's Attachments and telemetry fields follow the new plan without a reload.

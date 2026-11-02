@@ -19,6 +19,8 @@ defmodule Kanban.Attachments do
        stores, lists or removes nothing. Its files stay in storage, hidden,
        and reappear if the board moves back into an Organization.
     4. Check the right. A member without it gets `{:error, :unauthorized}`.
+       The delete right depends on who uploaded the file, so a delete looks
+       the attachment up first and checks the right on it.
     5. Only then look up the attachment or apply the limits.
 
   ## Rights

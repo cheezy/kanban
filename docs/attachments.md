@@ -82,7 +82,7 @@ signed URL or a credential.
 |---|---|---|
 | `ATTACHMENTS_MAX_FILE_MB` | `25` | The largest single file, in mebibytes (25 means 26,214,400 bytes). |
 | `ATTACHMENTS_MAX_FILES_PER_TASK` | `20` | How many files one task can hold. |
-| `ATTACHMENTS_ORG_QUOTA_GB` | `10` | The total size of every file in one Organization, in gibibytes (10 means 10,737,418,240 bytes). |
+| `ATTACHMENTS_ORG_QUOTA_GB` | `10` | The total size of every file in one Organization, in gibibytes (10 means 10,737,418,240 bytes). A board outside any Organization, which can hold files only while plans are not enforced, has a quota of this size of its own. |
 
 Each must be a positive whole number; `0`, a negative number or a value such
 as `2.5` stops the boot. They are stored as
@@ -111,8 +111,11 @@ declares `application/octet-stream`, Stride takes the type from the file's
 extension. A file name's extension must agree with the file's type, so
 `report.html` or `logo.svg` declared as plain text is refused rather than
 stored under a name that would open it as HTML or SVG. A name with no
-extension is accepted; a name that starts with a dot, such as `.html`, counts
-that as its extension. Plain text also accepts the extension of any other text
+extension, such as `README`, is accepted when the upload declares an allowed
+type such as `text/plain`; declared as no type or as
+`application/octet-stream`, it has no extension to take a type from and is
+refused, so rename it (`README.txt`) to attach it. A name that starts with a
+dot, such as `.html`, counts that as its extension. Plain text also accepts the extension of any other text
 type (`.md`, `.csv`, `.json`, `.log`).
 
 Stride also checks the first bytes of every file against its type
@@ -277,6 +280,7 @@ board before attaching something sensitive.
 
 With the default [limits](#limits), each file can be up to 25 MiB, a task can
 hold 20 files counting the files on its comments, and the files in one
-Organization share 10 GiB. The [types that can be attached](#which-files-can-be-attached)
+Organization share 10 GiB (a board outside an Organization has 10 GiB of its
+own). The [types that can be attached](#which-files-can-be-attached)
 are PNG, JPEG, GIF and WebP images, PDF, plain text and log files, Markdown,
 CSV and JSON; SVG, HTML and zip files are refused.

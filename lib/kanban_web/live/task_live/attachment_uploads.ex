@@ -4,8 +4,9 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   files: the task view's Attachments section, comments and the task form.
 
     * `allow/3` registers an upload with the accept list and limits taken
-      from `Kanban.Attachments`, so an operator changing them changes every
-      form at once.
+      from `Kanban.Attachments`, so every form uses the same limits. A form
+      reads them when its upload is registered; the context checks the
+      current limits again on every store.
     * `store_entries/4` consumes the finished entries and stores each through
       `Kanban.Attachments.create_attachment/4`, which authorizes the caller
       and checks the real size and type again. The accept list and the

@@ -28,9 +28,10 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   ## Attachments
 
   Files staged in the composer are stored on the comment the server creates,
-  only once it is saved. Each comment lists its files, and its author may
-  remove one while editing it; a deleted comment's files go with it through
-  the foreign key cascade. A locked board shows the inline
+  only once it is saved. Each comment lists its files. Its author may
+  remove one while editing it, and the board's owner (an org-admin counts)
+  may remove any comment's file without editing; a deleted comment's files
+  go with it through the foreign key cascade. A locked board shows the inline
   `KanbanWeb.LockedFeature`. The helpers live in
   `KanbanWeb.TaskLive.CommentAttachments`.
 
@@ -43,7 +44,8 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   ## Live refresh
 
   `refresh/1` re-reads the thread in every host that may have it open. The
-  board LiveView calls it when it receives a `:comment_changed` broadcast.
+  board LiveView calls it on a `:comment_changed` or `:attachment_changed`
+  broadcast, and on a membership change, which can change the board's plan.
   A refresh keeps an open composer draft and an open edit form, unless the
   comment being edited is gone or no longer editable.
   """
