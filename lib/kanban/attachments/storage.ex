@@ -21,9 +21,13 @@ defmodule Kanban.Attachments.Storage do
   Every function here validates the key before any adapter sees it, so an
   adapter can join a key onto a directory or a bucket URL without checking it
   again. A valid key is made of lowercase letters, digits, `_` and `-`
-  separated by single slashes, at most 512 characters, with no leading or
-  trailing slash and no empty segment. Dots are not allowed, so `..` can never
-  climb out of the storage root.
+  separated by single slashes, at most 512 characters in all and 255 in any
+  one segment, with no leading or trailing slash and no empty segment. Dots
+  are not allowed, so `..` can never climb out of the storage root. The
+  segment limit is the longest name a file system holds (`NAME_MAX` on
+  APFS and ext4): a longer segment is a key `Storage.Local` could never
+  store, find or delete, so it is refused here rather than reported by the
+  adapter as an outage.
 
   This module knows nothing about tasks, boards or the database. Key layout
   is decided by its caller, `Kanban.Attachments`.
@@ -90,11 +94,16 @@ defmodule Kanban.Attachments.Storage do
   @optional_callbacks sweep: 1
 
   @max_key_length 512
-  @key_format ~r/\A[a-z0-9_-]+(?:\/[a-z0-9_-]+)*\z/
+  @max_segment_length 255
+  @key_format ~r/\A[a-z0-9_-]{1,#{@max_segment_length}}(?:\/[a-z0-9_-]{1,#{@max_segment_length}})*\z/
 
   @doc "The longest key accepted, in characters."
   @spec max_key_length() :: pos_integer()
   def max_key_length, do: @max_key_length
+
+  @doc "The longest segment, between slashes, a key may have, in characters."
+  @spec max_segment_length() :: pos_integer()
+  def max_segment_length, do: @max_segment_length
 
   @doc """
   Stores `source` under `key`. `opts` may carry `content_type:`, which an
@@ -144,7 +153,8 @@ defmodule Kanban.Attachments.Storage do
   @doc """
   True when `key` is a valid storage key: lowercase letters, digits, `_` and
   `-` in segments separated by single slashes, no leading or trailing slash,
-  and at most `max_key_length/0` characters.
+  at most `max_key_length/0` characters, and no segment longer than
+  `max_segment_length/0`.
   """
   @spec valid_key?(term()) :: boolean()
   def valid_key?(key) when is_binary(key) and byte_size(key) in 1..@max_key_length,

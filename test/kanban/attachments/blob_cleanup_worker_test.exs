@@ -339,6 +339,17 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       refute log =~ invalid_key
     end
 
+    test "drops a row whose key has a segment no file name could hold, instead of retrying it" do
+      too_long = "boards/1/" <> String.duplicate("a", Storage.max_segment_length() + 1)
+      row = tombstone(too_long, minutes(-1))
+
+      log = capture_log([level: :error], fn -> assert :ok = run() end)
+
+      assert reload(row) == nil
+      refute_received {:storage_deleted, _key}
+      assert log =~ "dropped tombstone #{row.id}"
+    end
+
     test "a run with no tombstones returns ok and touches nothing" do
       assert Repo.aggregate(BlobDeletion, :count) == 0
 

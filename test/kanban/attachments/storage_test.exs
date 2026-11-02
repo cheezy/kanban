@@ -60,12 +60,35 @@ defmodule Kanban.Attachments.StorageTest do
     end
   end
 
+  # A key of exactly max_key_length/0 characters whose segments each fit in
+  # max_segment_length/0: 255 + "/" + 254 + "/" + 1 = 512.
+  defp longest_nested_key do
+    longest = Storage.max_segment_length()
+    rest = Storage.max_key_length() - longest - 3
+
+    key =
+      Enum.join([String.duplicate("a", longest), String.duplicate("b", rest), "c"], "/")
+
+    512 = byte_size(key)
+    key
+  end
+
   describe "valid_key?/1" do
     test "accepts a key of lowercase letters, digits, slashes and dashes" do
       assert Storage.valid_key?("boards/12/0b9c4e2a-6f1d-4c8e-9a7b-3d2e1f0a9b8c")
       assert Storage.valid_key?("a")
       assert Storage.valid_key?("snake_case/with-dash/123")
-      assert "a" |> String.duplicate(Storage.max_key_length()) |> Storage.valid_key?()
+      assert "a" |> String.duplicate(Storage.max_segment_length()) |> Storage.valid_key?()
+      assert Storage.valid_key?(longest_nested_key())
+    end
+
+    test "refuses a segment longer than a file name can be, wherever it sits" do
+      over = String.duplicate("a", Storage.max_segment_length() + 1)
+
+      refute Storage.valid_key?(over)
+      refute Storage.valid_key?("boards/" <> over)
+      refute Storage.valid_key?(over <> "/x")
+      refute Storage.valid_key?("a/" <> over <> "/b")
     end
 
     test "refuses traversal, absolute, empty-segment, uppercase, trailing-newline and over-long keys" do
@@ -85,7 +108,7 @@ defmodule Kanban.Attachments.StorageTest do
         "x\n",
         "x\nboards/1",
         "a.b",
-        String.duplicate("a", Storage.max_key_length() + 1)
+        longest_nested_key() <> "a"
       ]
 
       for key <- refused do
@@ -135,7 +158,9 @@ defmodule Kanban.Attachments.StorageTest do
     end
 
     test "refuses an invalid key with :invalid_key before any adapter runs" do
-      for key <- ["../etc/passwd", "/abs", "a//b", "x\n", nil] do
+      over_long_segment = "boards/" <> String.duplicate("a", Storage.max_segment_length() + 1)
+
+      for key <- ["../etc/passwd", "/abs", "a//b", "x\n", over_long_segment, nil] do
         assert {:error, :invalid_key} = Storage.put(key, {:binary, "x"})
         assert {:error, :invalid_key} = Storage.stream(key)
         assert {:error, :invalid_key} = Storage.delete(key)
