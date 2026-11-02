@@ -172,7 +172,7 @@ msgstr "Passwort"
 #: lib/kanban_web/live/org_live/sso.html.heex:334
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:146
-#: lib/kanban_web/live/task_live/form_component.html.heex:421
+#: lib/kanban_web/live/task_live/form_component.html.heex:429
 #: lib/kanban_web/live/user_live/settings.ex:66
 #: lib/kanban_web/live/user_live/settings.ex:147
 #, elixir-autogen, elixir-format
@@ -361,12 +361,12 @@ msgstr "Neue Aufgabe erstellen"
 msgid "Failed to delete task"
 msgstr "Aufgabe konnte nicht gelöscht werden"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:421
+#: lib/kanban_web/live/task_live/form_component.html.heex:429
 #, elixir-autogen, elixir-format
 msgid "Save Task"
 msgstr "Aufgabe speichern"
 
-#: lib/kanban_web/live/task_live/form_component.ex:402
+#: lib/kanban_web/live/task_live/form_component.ex:411
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Aufgabe erfolgreich erstellt"
@@ -397,7 +397,7 @@ msgstr "Titel"
 msgid "Update task details"
 msgstr "Aufgabendetails aktualisieren"
 
-#: lib/kanban_web/live/task_live/form_component.ex:420
+#: lib/kanban_web/live/task_live/form_component.ex:430
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
@@ -428,7 +428,7 @@ msgstr "Aufgabe kann nicht verschoben werden: Spalte hat ihr WIP-Limit erreicht"
 #: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:127
-#: lib/kanban_web/live/task_live/form_component.html.heex:469
+#: lib/kanban_web/live/task_live/form_component.html.heex:477
 #, elixir-autogen, elixir-format
 msgid "Created"
 msgstr "Erstellt"
@@ -494,7 +494,7 @@ msgstr "Mittel"
 
 #: lib/kanban_web/components/task_activity_log.ex:106
 #: lib/kanban_web/live/task_live/components/history_section.ex:43
-#: lib/kanban_web/live/task_live/form_component.html.heex:510
+#: lib/kanban_web/live/task_live/form_component.html.heex:518
 #, elixir-autogen, elixir-format
 msgid "Moved"
 msgstr "Verschoben"
@@ -512,7 +512,7 @@ msgstr "Meine Boards"
 msgid "Priority"
 msgstr "Priorität"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:440
+#: lib/kanban_web/live/task_live/form_component.html.heex:448
 #, elixir-autogen, elixir-format
 msgid "Task History"
 msgstr "Aufgabenverlauf"
@@ -548,9 +548,9 @@ msgstr "Arbeit"
 #: lib/kanban_web/live/task_live/components/history_section.ex:44
 #: lib/kanban_web/live/task_live/components/history_section.ex:49
 #: lib/kanban_web/live/task_live/components/history_section.ex:66
-#: lib/kanban_web/live/task_live/form_component.html.heex:474
-#: lib/kanban_web/live/task_live/form_component.html.heex:498
-#: lib/kanban_web/live/task_live/form_component.html.heex:511
+#: lib/kanban_web/live/task_live/form_component.html.heex:482
+#: lib/kanban_web/live/task_live/form_component.html.heex:506
+#: lib/kanban_web/live/task_live/form_component.html.heex:519
 #, elixir-autogen, elixir-format
 msgid "from"
 msgstr "von"
@@ -561,9 +561,9 @@ msgstr "von"
 #: lib/kanban_web/live/task_live/components/history_section.ex:45
 #: lib/kanban_web/live/task_live/components/history_section.ex:50
 #: lib/kanban_web/live/task_live/components/history_section.ex:70
-#: lib/kanban_web/live/task_live/form_component.html.heex:478
-#: lib/kanban_web/live/task_live/form_component.html.heex:502
-#: lib/kanban_web/live/task_live/form_component.html.heex:515
+#: lib/kanban_web/live/task_live/form_component.html.heex:486
+#: lib/kanban_web/live/task_live/form_component.html.heex:510
+#: lib/kanban_web/live/task_live/form_component.html.heex:523
 #, elixir-autogen, elixir-format
 msgid "to"
 msgstr "zu"
@@ -957,28 +957,28 @@ msgstr "Fehler-Tracker"
 
 #: lib/kanban_web/components/task_activity_log.ex:116
 #: lib/kanban_web/live/task_live/components/history_section.ex:48
-#: lib/kanban_web/live/task_live/form_component.html.heex:473
+#: lib/kanban_web/live/task_live/form_component.html.heex:481
 #, elixir-autogen, elixir-format
 msgid "Priority changed"
 msgstr "Priorität geändert"
 
 #: lib/kanban_web/components/task_activity_log.ex:142
 #: lib/kanban_web/live/task_live/components/history_section.ex:55
-#: lib/kanban_web/live/task_live/form_component.html.heex:487
+#: lib/kanban_web/live/task_live/form_component.html.heex:495
 #, elixir-autogen, elixir-format
 msgid "Assigned to"
 msgstr "Zugewiesen an"
 
 #: lib/kanban_web/components/task_activity_log.ex:160
 #: lib/kanban_web/live/task_live/components/history_section.ex:65
-#: lib/kanban_web/live/task_live/form_component.html.heex:497
+#: lib/kanban_web/live/task_live/form_component.html.heex:505
 #, elixir-autogen, elixir-format
 msgid "Reassigned"
 msgstr "Neu zugewiesen"
 
 #: lib/kanban_web/components/task_activity_log.ex:151
 #: lib/kanban_web/live/task_live/components/history_section.ex:60
-#: lib/kanban_web/live/task_live/form_component.html.heex:492
+#: lib/kanban_web/live/task_live/form_component.html.heex:500
 #, elixir-autogen, elixir-format
 msgid "Unassigned from"
 msgstr "Zuweisung entfernt von"
@@ -1575,7 +1575,7 @@ msgstr "Aufgewendete Zeit (Minuten)"
 #: lib/kanban_web/live/task_live/components/comment_row.ex:235
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
-#: lib/kanban_web/live/task_live/form_component.ex:493
+#: lib/kanban_web/live/task_live/form_component.ex:503
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr "Unbekannt"
@@ -1935,7 +1935,7 @@ msgstr "Stride ist mehr als ein Kanban-Board — es wurde von Grund auf entwicke
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Dieser kollaborative Ansatz erlaubt es Teams, repetitive Programmieraufgaben an KI-Agenten zu delegieren, während sich Menschen auf übergeordnete Entscheidungen, Architektur und die Prüfung KI-generierten Codes vor dem Merge konzentrieren."
 
-#: lib/kanban_web/live/task_live/form_component.ex:424
+#: lib/kanban_web/live/task_live/form_component.ex:434
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "Aufgabe kann nicht hinzugefügt werden: WIP-Limit für diese Spalte erreicht"
@@ -1955,9 +1955,9 @@ msgstr "Erwartetes Ergebnis"
 msgid "Note about this file"
 msgstr "Hinweis zu dieser Datei"
 
-#: lib/kanban_web/live/task_live/form_component.ex:253
-#: lib/kanban_web/live/task_live/form_component.ex:351
-#: lib/kanban_web/live/task_live/form_component.ex:411
+#: lib/kanban_web/live/task_live/form_component.ex:258
+#: lib/kanban_web/live/task_live/form_component.ex:356
+#: lib/kanban_web/live/task_live/form_component.ex:421
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Bitte beheben Sie die untenstehenden Fehler"
@@ -2056,7 +2056,7 @@ msgid "Task unarchived successfully"
 msgstr "Aufgabe erfolgreich aus dem Archiv geholt"
 
 #: lib/kanban_web/live/task_live/form/relational_scopes.ex:54
-#: lib/kanban_web/live/task_live/form_component.ex:300
+#: lib/kanban_web/live/task_live/form_component.ex:305
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "Spalte gehört nicht zu diesem Board"
@@ -4823,7 +4823,7 @@ msgstr "Zu befolgende Muster"
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: lib/kanban_web/live/task_live/form_component.html.heex:431
+#: lib/kanban_web/live/task_live/form_component.html.heex:439
 #: lib/kanban_web/live/task_live/view_component.ex:393
 #, elixir-autogen, elixir-format
 msgid "Review report"
@@ -7714,7 +7714,7 @@ msgstr "Agentendaten konnten gerade nicht aktualisiert werden. Es werden die zul
 
 #: lib/kanban_web/live/board_live/authorization.ex:84
 #: lib/kanban_web/live/board_live/bulk_selection.ex:361
-#: lib/kanban_web/live/task_live/form_component.ex:143
+#: lib/kanban_web/live/task_live/form_component.ex:145
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu bearbeiten"
@@ -13797,6 +13797,7 @@ msgstr "{lead} und erstellen so das Backlog."
 
 #: lib/kanban_web/components/locked_feature.ex:144
 #: lib/kanban_web/live/task_live/attachments_component.ex:270
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:180
 #, elixir-autogen, elixir-format
 msgid "Attachments"
 msgstr "Anhänge"
@@ -13840,6 +13841,7 @@ msgstr "Wählen Sie zuerst Dateien zum Hochladen aus."
 
 #: lib/kanban_web/live/task_live/attachments_component.ex:149
 #: lib/kanban_web/live/task_live/comment_attachments.ex:226
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:156
 #, elixir-autogen, elixir-format
 msgid "Could not upload %{filename}: %{reason}"
 msgstr "%{filename} konnte nicht hochgeladen werden: %{reason}"
@@ -13949,6 +13951,7 @@ msgid "Preview of %{name}"
 msgstr "Vorschau von %{name}"
 
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:419
+#: lib/kanban_web/live/task_live/form/attachment_staging.ex:189
 #, elixir-autogen, elixir-format
 msgid "Attach files"
 msgstr "Dateien anhängen"

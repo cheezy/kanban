@@ -417,6 +417,14 @@
       </div>
     <% end %>
 
+    <%!-- Staged files are stored once the new task exists; @uploads is only
+         read when the upload was allowed. --%>
+    <KanbanWeb.TaskLive.Form.AttachmentStaging.field
+      state={@attachment_staging}
+      upload={@attachment_staging == :open && @uploads[:task_attachments]}
+      target={@myself}
+    />
+
     <div class="mt-6 flex items-center gap-4">
       <.button phx-disable-with={gettext("Saving...")}>{gettext("Save Task")}</.button>
     </div>
@@ -529,6 +537,17 @@
   <% end %>
 
   <%= if @action == :edit_task && @task.id do %>
+    <%!-- Outside the task form, which must not nest the section's own form;
+         it stores and deletes at once, so Save never touches attachments. --%>
+    <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line);">
+      <.live_component
+        module={KanbanWeb.TaskLive.AttachmentsComponent}
+        id={KanbanWeb.TaskLive.AttachmentsComponent.dom_id(:form, @task.id)}
+        task_id={@task.id}
+        board_id={@board.id}
+        current_scope={@current_scope}
+      />
+    </div>
     <div style="margin-top: 28px; padding-top: 2px; border-top: 1px solid var(--line);">
       <.live_component
         module={KanbanWeb.TaskLive.CommentThreadComponent}

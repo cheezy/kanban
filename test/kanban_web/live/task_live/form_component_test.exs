@@ -4805,4 +4805,234 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert render(view) =~ "Typed title"
     end
   end
+
+  describe "staged attachments in the task form (W2514)" do
+    setup :register_and_log_in_user
+
+    setup do
+      previous = Application.get_env(:kanban, Kanban.Attachments.Limits)
+
+      on_exit(fn ->
+        if previous,
+          do: Application.put_env(:kanban, Kanban.Attachments.Limits, previous),
+          else: Application.delete_env(:kanban, Kanban.Attachments.Limits)
+      end)
+
+      :ok
+    end
+
+    defp open_new_task(conn, board, column) do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+      view
+    end
+
+    defp stage_files(view, files) do
+      input = file_input(view, "#task-form", :task_attachments, files)
+      for %{name: name} <- files, do: render_upload(input, name)
+      input
+    end
+
+    defp submit_task(view, params) do
+      view |> element("#task-form") |> render_submit(%{"task" => params})
+    end
+
+    defp notes_file, do: %{name: "notes.txt", content: "hello", type: "text/plain"}
+    defp log_file, do: %{name: "trace.csv", content: "a,b\n1,2\n", type: "text/csv"}
+    defp attachments, do: Kanban.Repo.all(Kanban.Attachments.TaskAttachment)
+
+    test "creating a task with a staged file stores the attachment on the new task",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      assert has_element?(
+               view,
+               "#task-form #task-attachments label[phx-drop-target]",
+               "Attach files"
+             )
+
+      assert has_element?(view, ~s(#task-form #task-attachments input[type="file"]))
+
+      stage_files(view, [notes_file(), log_file()])
+      assert has_element?(view, "#task-attachments progress")
+      submit_task(view, %{"title" => "Has files", "column_id" => column.id})
+
+      task = Kanban.Repo.get_by!(Tasks.Task, title: "Has files")
+      stored = attachments()
+      assert stored |> Enum.map(& &1.filename) |> Enum.sort() == ["notes.txt", "trace.csv"]
+      assert Enum.all?(stored, &(&1.task_id == task.id and is_nil(&1.comment_id)))
+      assert render(view) =~ "Task created successfully"
+    end
+
+    test "a staged file over the size limit shows the translated error and is not stored",
+         %{conn: conn, user: user} do
+      Application.put_env(:kanban, Kanban.Attachments.Limits, max_file_bytes: 16)
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      input =
+        file_input(view, "#task-form", :task_attachments, [
+          %{name: "big.txt", content: String.duplicate("a", 17), type: "text/plain"}
+        ])
+
+      assert {:error, [[_ref, :too_large]]} = render_upload(input, "big.txt")
+
+      assert view |> element("#task-attachments") |> render() =~
+               KanbanWeb.TaskLive.AttachmentUploads.error_message(:too_large)
+
+      submit_task(view, %{"title" => "Too big", "column_id" => column.id})
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Too big")
+      assert attachments() == []
+    end
+
+    test "keeps the created task and flashes the failed file names when storing fails",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      # The browser calls it a PNG; Goal A's context reads the bytes and refuses it.
+      stage_files(view, [
+        notes_file(),
+        %{name: "fake.png", content: "not a png", type: "image/png"}
+      ])
+
+      submit_task(view, %{"title" => "Partly stored", "column_id" => column.id})
+
+      task = Kanban.Repo.get_by!(Tasks.Task, title: "Partly stored")
+      assert [%{filename: "notes.txt", task_id: task_id}] = attachments()
+      assert task_id == task.id
+
+      html = render(view)
+      assert html =~ "Task created successfully"
+      assert html =~ "Could not upload fake.png"
+      assert html =~ KanbanWeb.TaskLive.AttachmentUploads.error_message(:type_mismatch)
+    end
+
+    test "a task that fails validation stores nothing and keeps the staged files",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      stage_files(view, [notes_file()])
+      submit_task(view, %{"title" => "", "column_id" => column.id})
+
+      assert attachments() == []
+      assert has_element?(view, "#task-attachments li", "notes.txt")
+
+      submit_task(view, %{"title" => "Second try", "column_id" => column.id})
+      task = Kanban.Repo.get_by!(Tasks.Task, title: "Second try")
+      assert [%{filename: "notes.txt", task_id: task_id}] = attachments()
+      assert task_id == task.id
+    end
+
+    test "a task refused by the WIP limit stores nothing and keeps the staged files",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{wip_limit: 1})
+      task_fixture(column)
+      view = open_new_task(conn, board, column)
+
+      stage_files(view, [notes_file()])
+      submit_task(view, %{"title" => "Over the limit", "column_id" => column.id})
+
+      refute Kanban.Repo.get_by(Tasks.Task, title: "Over the limit")
+      assert attachments() == []
+      assert has_element?(view, "#task-attachments li", "notes.txt")
+    end
+
+    test "creating a task with no staged files behaves as before",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      submit_task(view, %{"title" => "No files", "column_id" => column.id})
+
+      assert Kanban.Repo.get_by(Tasks.Task, title: "No files")
+      assert attachments() == []
+      html = render(view)
+      assert html =~ "Task created successfully"
+      refute html =~ "Could not upload"
+    end
+
+    test "a new goal can stage files too", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/goals/new")
+
+      assert has_element?(view, ~s(#task-form #task-attachments input[type="file"]))
+      stage_files(view, [notes_file()])
+      submit_task(view, %{"title" => "Goal with a file", "column_id" => column.id})
+
+      goal = Kanban.Repo.get_by!(Tasks.Task, title: "Goal with a file")
+      assert goal.type == :goal
+      assert [%{filename: "notes.txt", task_id: task_id}] = attachments()
+      assert task_id == goal.id
+    end
+
+    test "cancelling a staged file removes it before save", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      stage_files(view, [notes_file()])
+      assert has_element?(view, "#task-attachments li", "notes.txt")
+
+      view
+      |> element(~s(#task-attachments button[phx-click="cancel-attachment"]))
+      |> render_click()
+
+      refute has_element?(view, "#task-attachments li", "notes.txt")
+
+      submit_task(view, %{"title" => "Cancelled file", "column_id" => column.id})
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Cancelled file")
+      assert attachments() == []
+    end
+
+    test "the edit form mounts AttachmentsComponent outside the task form",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      section = "#" <> KanbanWeb.TaskLive.AttachmentsComponent.dom_id(:form, task.id)
+      assert has_element?(view, section)
+      refute has_element?(view, "#task-form " <> section)
+      refute has_element?(view, "#task-form #task-attachments")
+      refute has_element?(view, "#task-form form")
+
+      refute has_element?(
+               view,
+               "#" <> KanbanWeb.TaskLive.AttachmentsComponent.dom_id(:view, task.id)
+             )
+
+      assert has_element?(view, section <> ~s( input[type="file"]))
+
+      input = file_input(view, section <> "-upload-form", :files, [notes_file()])
+      render_upload(input, "notes.txt")
+      view |> element(section <> "-upload-form") |> render_submit()
+
+      assert [%{filename: "notes.txt", task_id: task_id}] = attachments()
+      assert task_id == task.id
+    end
+
+    test "a free board shows the inline LockedFeature and no file input in the new task form",
+         %{conn: conn, user: user} do
+      Kanban.PlansHelpers.enforce_plans()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      view = open_new_task(conn, board, column)
+
+      assert has_element?(
+               view,
+               ~s(#task-form #task-attachments [data-locked-feature="attachments"][data-variant="inline"])
+             )
+
+      refute has_element?(view, ~s(#task-form input[type="file"]))
+    end
+  end
 end

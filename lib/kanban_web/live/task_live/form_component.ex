@@ -11,6 +11,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   alias Kanban.Tasks
   alias KanbanWeb.IdParams
   alias KanbanWeb.ReviewReportPanel
+  alias KanbanWeb.TaskLive.Form.AttachmentStaging
   alias KanbanWeb.TaskLive.Form.FieldEvents
   alias KanbanWeb.TaskLive.Form.LabelSelection
   alias KanbanWeb.TaskLive.Form.OptionBuilders
@@ -72,6 +73,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     |> LabelSelection.assign_options(assigns[:current_scope], board, task, action)
     |> assign(:field_visibility, board.field_visibility || %{})
     |> assign(:telemetry_locked?, not Kanban.Plans.board_unlocked?(board))
+    |> AttachmentStaging.allow(board, action)
   end
 
   defp prepare_task_data(task, board, action, assigns) do
@@ -195,6 +197,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   def handle_event("add-capability-from-select", _params, socket), do: {:noreply, socket}
+
+  def handle_event("cancel-attachment", params, socket),
+    do: {:noreply, AttachmentStaging.cancel(socket, params["ref"])}
 
   # Every remaining add-/remove- row event is table-driven; see
   # KanbanWeb.TaskLive.Form.FieldEvents. Guarding on the table keeps unmapped
@@ -394,13 +399,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp create_task_in_column(socket, column, task_params) do
     case Tasks.create_task(column, task_params) do
       {:ok, task} ->
-        socket = LabelSelection.apply_change(socket, task)
-        notify_parent({:saved, task})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("Task created successfully"))
-         |> push_patch(to: socket.assigns.patch)}
+        handle_task_created(socket, task)
 
       {:error, :wip_limit_reached} ->
         handle_wip_limit_reached(socket, task_params)
@@ -411,6 +410,18 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
+  end
+
+  defp handle_task_created(socket, task) do
+    socket = LabelSelection.apply_change(socket, task)
+    {socket, failed} = AttachmentStaging.store_staged(socket, socket.assigns.current_scope, task)
+    notify_parent({:saved, task})
+
+    {:noreply,
+     socket
+     |> put_flash(:info, gettext("Task created successfully"))
+     |> AttachmentStaging.put_failure_flash(failed)
+     |> push_patch(to: socket.assigns.patch)}
   end
 
   defp handle_wip_limit_reached(socket, task_params) do
