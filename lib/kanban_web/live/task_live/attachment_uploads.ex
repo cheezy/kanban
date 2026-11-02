@@ -243,17 +243,39 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
     do: gettext("This task has no room for more files. Delete a file or cancel the staged ones.")
 
   def blocked_message({:over_room, room}) do
-    ngettext(
-      "This task has room for %{count} more file.",
-      "This task has room for %{count} more files.",
-      room
-    ) <> " " <> gettext("Cancel some files to upload the rest.")
+    join_sentences([
+      ngettext(
+        "This task has room for %{count} more file.",
+        "This task has room for %{count} more files.",
+        room
+      ),
+      gettext("Cancel some files to upload the rest.")
+    ])
   end
 
   @doc "The line shown in place of the drop zone on a task that holds its limit."
   @spec full_message() :: String.t()
   def full_message do
-    error_message(:too_many_files) <> " " <> gettext("Delete a file to upload another.")
+    join_sentences([error_message(:too_many_files), gettext("Delete a file to upload another.")])
+  end
+
+  # Japanese and Chinese end a sentence with a full-width full stop and no
+  # space after it.
+  @unspaced_locales ~w(ja zh)
+
+  @doc """
+  Joins translated sentences, dropping `nil`s, the way the current locale
+  spaces them: a space between sentences, none in Japanese or Chinese. Use
+  it wherever separately translated sentences are shown as one message.
+  """
+  @spec join_sentences([String.t() | nil]) :: String.t()
+  def join_sentences(sentences) when is_list(sentences) do
+    sentences |> Enum.reject(&is_nil/1) |> Enum.join(sentence_gap())
+  end
+
+  defp sentence_gap do
+    [language | _region] = KanbanWeb.Gettext |> Gettext.get_locale() |> String.split(["_", "-"])
+    if language in @unspaced_locales, do: "", else: " "
   end
 
   @doc """

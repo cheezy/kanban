@@ -255,6 +255,16 @@ defmodule KanbanWeb.TaskLive.CommentAttachmentsTest do
                "Could not upload third.txt: #{AttachmentUploads.error_message(:too_many_files)}"
     end
 
+    test "joins the sentences with no space in Japanese" do
+      Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+        message = CommentAttachments.failure_message([{"a.png", :too_large}, {"b.pdf", :empty}])
+
+        assert message =~ "a.png"
+        assert message =~ "b.pdf"
+        refute message =~ "。 "
+      end)
+    end
+
     test "names each file the way it would be stored, never with a bidi override" do
       message = CommentAttachments.failure_message([{"evil\u202Efdp.exe", :not_accepted}])
 

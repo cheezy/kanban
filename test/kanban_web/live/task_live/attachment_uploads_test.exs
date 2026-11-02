@@ -298,6 +298,32 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
                "This task has room for 2 more files. Cancel some files to upload the rest."
     end
 
+    # Japanese and Chinese put no space after the full stop that ends a
+    # sentence; every other supported locale puts one.
+    test "joined sentences follow the locale's spacing" do
+      put_limits(max_files_per_task: 20)
+
+      for locale <- ~w(ja zh) do
+        Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+          for message <- [
+                AttachmentUploads.full_message(),
+                AttachmentUploads.blocked_message({:over_room, 3}),
+                AttachmentUploads.join_sentences(["一。", nil, "二。"])
+              ] do
+            refute message =~ "。 ", "#{locale}: #{message}"
+          end
+
+          assert AttachmentUploads.join_sentences(["一。", nil, "二。"]) == "一。二。"
+        end)
+      end
+
+      for locale <- ~w(en de es fr pt) do
+        Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+          assert AttachmentUploads.join_sentences(["One.", nil, "Two."]) == "One. Two."
+        end)
+      end
+    end
+
     test "full_message/0 names the limit and how to make room" do
       put_limits = Application.get_env(:kanban, Limits)
       Application.put_env(:kanban, Limits, max_files_per_task: 1)

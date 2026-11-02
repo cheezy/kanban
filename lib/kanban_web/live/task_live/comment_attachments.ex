@@ -239,6 +239,8 @@ defmodule KanbanWeb.TaskLive.CommentAttachments do
   def failure_message([]), do: nil
 
   def failure_message(failed) when is_list(failed) do
-    Enum.map_join(failed, " ", &AttachmentUploads.failure_sentence/1)
+    failed
+    |> Enum.map(&AttachmentUploads.failure_sentence/1)
+    |> AttachmentUploads.join_sentences()
   end
 end

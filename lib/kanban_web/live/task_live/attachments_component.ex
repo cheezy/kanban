@@ -134,9 +134,9 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponent do
   # A partly successful submit says what was stored before what was refused.
   defp handle_store_result(%{stored: stored, failed: failed}, socket) do
     message =
-      [uploaded_message(stored) | Enum.map(failed, &AttachmentUploads.failure_sentence/1)]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.join(" ")
+      AttachmentUploads.join_sentences([
+        uploaded_message(stored) | Enum.map(failed, &AttachmentUploads.failure_sentence/1)
+      ])
 
     {:noreply, socket |> load_after_store() |> notify_flash(:error, message)}
   end

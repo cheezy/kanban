@@ -165,7 +165,9 @@ defmodule KanbanWeb.TaskLive.Form.AttachmentStaging do
   @doc "One translated sentence per file that could not be stored."
   @spec failure_message([{String.t(), term()}]) :: String.t()
   def failure_message(failed) when is_list(failed) do
-    Enum.map_join(failed, " ", &AttachmentUploads.failure_sentence/1)
+    failed
+    |> Enum.map(&AttachmentUploads.failure_sentence/1)
+    |> AttachmentUploads.join_sentences()
   end
 
   @doc """
