@@ -270,7 +270,10 @@ the error message.
 - **Downloading.** A download declares the file's recorded size. A file whose
   stored bytes are gone or cannot be read is "not found". If the bytes end
   early, the download fails, so the browser never saves part of a file as
-  if it were whole. The server logs the attachment id with the reason.
+  if it were whole. The server logs the attachment id with the reason. A
+  `HEAD` request gets the same status and headers with no body, and does not
+  read the file. Range requests are not supported: a download is always the
+  whole file.
 
 Who can do what follows the board's access, checked on every request:
 

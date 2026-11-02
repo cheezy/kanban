@@ -252,6 +252,125 @@ defmodule KanbanWeb.AttachmentControllerTest do
     refute_received {:telemetry_event, @downloaded, _, _}
   end
 
+  describe "HEAD" do
+    # Reports every chunk the controller pulls from storage to the test process.
+    defp count_reads(attachment) do
+      me = self()
+      {:ok, chunks} = Storage.stream(attachment.storage_key)
+
+      Process.put(
+        :stream_result,
+        {:ok, Stream.each(chunks, &send(me, {:read_chunk, byte_size(&1)}))}
+      )
+    end
+
+    defp head_as(conn, user, path), do: conn |> log_in_user(user) |> head(path)
+
+    defp read_bytes(total \\ 0) do
+      receive do
+        {:read_chunk, n} -> read_bytes(total + n)
+      after
+        0 -> total
+      end
+    end
+
+    test "sends the GET headers without reading the file", %{conn: conn} = ctx do
+      big = stored(ctx.task, %{filename: "big.bin"}, :crypto.strong_rand_bytes(300_000))
+      get_conn = download(conn, ctx.reader, big.id)
+      count_reads(big)
+
+      head_conn = head_as(conn, ctx.reader, ~p"/attachments/#{big.id}/download")
+
+      assert head_conn.status == 200
+      assert head_conn.resp_body == ""
+      assert header(head_conn, "content-length") == ["300000"]
+
+      for name <-
+            ~w(content-type content-disposition content-security-policy cache-control x-content-type-options) do
+        assert header(head_conn, name) == header(get_conn, name), name
+      end
+
+      # At most one chunk is read, only so the opened stream is closed.
+      assert read_bytes() <= 65_536
+    end
+
+    test "a preview HEAD reads at most one chunk too", %{conn: conn} = ctx do
+      png =
+        stored(
+          ctx.task,
+          %{filename: "a.png", content_type: "image/png"},
+          :crypto.strong_rand_bytes(200_000)
+        )
+
+      count_reads(png)
+
+      head_conn = head_as(conn, ctx.reader, ~p"/attachments/#{png.id}/preview")
+
+      assert head_conn.status == 200
+      assert header(head_conn, "content-length") == ["200000"]
+      assert read_bytes() <= 65_536
+    end
+
+    test "is recorded as via: :head, not as a download or a preview", %{conn: conn} = ctx do
+      png = stored(ctx.task, %{filename: "a.png", content_type: "image/png"}, "png bytes")
+      attach_telemetry([@downloaded])
+
+      head_as(conn, ctx.reader, ~p"/attachments/#{png.id}/download")
+      assert_received {:telemetry_event, @downloaded, %{count: 1}, %{via: :head}}
+
+      head_as(conn, ctx.reader, ~p"/attachments/#{png.id}/preview")
+      assert_received {:telemetry_event, @downloaded, %{count: 1}, %{via: :head}}
+
+      refute_received {:telemetry_event, @downloaded, _, _}
+    end
+
+    test "a blob shorter than its row is not an aborted transfer on HEAD", %{conn: conn} = ctx do
+      short = stored(ctx.task, %{filename: "short.txt"}, "bytes")
+      Process.put(:stream_result, {:ok, ["by"]})
+
+      head_conn = head_as(conn, ctx.reader, ~p"/attachments/#{short.id}/download")
+
+      assert head_conn.status == 200
+      assert header(head_conn, "content-length") == ["5"]
+    end
+
+    test "a stream that fails on its first read is a 404, decided before any header",
+         %{conn: conn} = ctx do
+      broken = stored(ctx.task, %{filename: "broken.txt"}, "bytes")
+
+      failing =
+        Stream.resource(
+          fn -> :start end,
+          fn _ -> raise File.Error, reason: :eio, action: "read", path: "attachment" end,
+          fn _ -> :ok end
+        )
+
+      Process.put(:stream_result, {:ok, failing})
+
+      log =
+        capture_log(fn ->
+          head_conn = head_as(conn, ctx.reader, ~p"/attachments/#{broken.id}/download")
+          assert head_conn.status == 404
+          assert header(head_conn, "content-disposition") == []
+        end)
+
+      assert log =~ "attachment_id=#{broken.id} reason=:eio"
+      refute log =~ broken.storage_key
+    end
+
+    test "a refused HEAD is the same uniform 404 as a GET", %{conn: conn} = ctx do
+      attachment = stored(ctx.task, %{}, "secret")
+
+      head_conn = head_as(conn, ctx.stranger, ~p"/attachments/#{attachment.id}/download")
+      get_conn = download(conn, ctx.stranger, attachment.id)
+
+      assert head_conn.status == 404
+      assert get_conn.status == 404
+      assert header(head_conn, "content-disposition") == []
+      assert header(head_conn, "content-length") == header(get_conn, "content-length")
+    end
+  end
+
   test "returns 404 when the stored object is missing", %{conn: conn} = ctx do
     never_stored = attachment_fixture(ctx.task, %{filename: "gone.txt"})
     deleted = stored(ctx.task, %{filename: "deleted.txt"}, "soon gone")

@@ -55,7 +55,7 @@ defmodule Kanban.Attachments do
   alias Kanban.Tasks.TaskComment
 
   # Which route fetched the bytes, sent as the downloaded event's `via`.
-  @download_vias [:download, :preview]
+  @download_vias [:download, :preview, :head]
 
   @type upload :: %{path: Path.t(), filename: String.t(), content_type: String.t() | nil}
 
@@ -188,9 +188,10 @@ defmodule Kanban.Attachments do
   `[:kanban, :attachment, :downloaded]` once the download is authorized, with
   `via` saying which route fetched the bytes: `:download` (the default)
   when a person downloads the file, `:preview` when a thumbnail or the
-  lightbox shows it inline.
+  lightbox shows it inline, and `:head` for a `HEAD` request, which gets the
+  headers and no body.
   """
-  @spec fetch_for_download(term(), term(), :download | :preview) ::
+  @spec fetch_for_download(term(), term(), :download | :preview | :head) ::
           {:ok, TaskAttachment.t()} | {:error, error()}
   def fetch_for_download(scope, attachment_id, via \\ :download)
 

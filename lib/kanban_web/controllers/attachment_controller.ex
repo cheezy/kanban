@@ -29,10 +29,20 @@ defmodule KanbanWeb.AttachmentController do
   row) raises `KanbanWeb.AttachmentController.IncompleteTransfer`, so the
   server closes the connection and the client sees an incomplete download,
   never a finished response that passes for the whole file.
+
+  A `HEAD` (recorded by `KanbanWeb.Plugs.HeadRequest`, since `Plug.Head`
+  turns it into a `GET`) gets the same status and headers as the `GET`, with
+  no body. The stored object is still opened, so a missing or unreadable one
+  is the same 404, but it is read for at most one chunk, only to close it,
+  so a `HEAD` never pulls a whole file from storage. Range and conditional
+  request headers are ignored: every 200 is the whole file, and no
+  `Accept-Ranges`, `ETag` or `Last-Modified` header is sent.
+
   `fetch_for_download/3` emits `[:kanban, :attachment, :downloaded]` once
-  access is authorized, with `via: :download` from the download route
-  and `:preview` from the preview route, so a preview refused for its type or
-  a missing object still counts; this controller adds no telemetry of its own.
+  access is authorized, with `via: :download` from the download route,
+  `:preview` from the preview route and `:head` for a `HEAD` on either, so a
+  preview refused for its type or a missing object still counts; this
+  controller adds no telemetry of its own.
 
   Storage failures are logged with the attachment id and a reason atom only:
   never the storage key, the file name or the contents.
@@ -44,6 +54,7 @@ defmodule KanbanWeb.AttachmentController do
   alias Kanban.Attachments.Storage
   alias KanbanWeb.AttachmentResponse
   alias KanbanWeb.IdParams
+  alias KanbanWeb.Plugs.HeadRequest
 
   require Logger
 
@@ -66,13 +77,23 @@ defmodule KanbanWeb.AttachmentController do
   def preview(conn, %{"id" => id}), do: serve(conn, id, :inline)
 
   defp serve(conn, raw_id, disposition) do
-    with {:ok, attachment} <- fetch(conn, raw_id, disposition),
-         :ok <- servable_as(attachment, disposition),
-         {:ok, chunks} <- open_stream(attachment) do
-      send_attachment(conn, attachment, disposition, chunks)
+    head? = HeadRequest.head?(conn)
+
+    with {:ok, attachment} <- fetch(conn, raw_id, event_via(disposition, head?)),
+         {:ok, body} <- open_body(attachment, disposition, head?) do
+      send_attachment(conn, attachment, disposition, body)
     else
       _refusal -> not_found(conn)
     end
+  end
+
+  # Everything that can still turn the response into a 404 runs here, before
+  # any header is sent: the type check, opening the stored object and, for a
+  # HEAD, closing it again.
+  defp open_body(attachment, disposition, head?) do
+    with :ok <- servable_as(attachment, disposition),
+         {:ok, chunks} <- open_stream(attachment),
+         do: close_for_head(chunks, attachment, head?)
   end
 
   defp send_attachment(conn, attachment, disposition, chunks) do
@@ -80,26 +101,45 @@ defmodule KanbanWeb.AttachmentController do
     |> put_headers(AttachmentResponse.response_headers(attachment, disposition))
     |> put_resp_header("content-length", Integer.to_string(attachment.byte_size))
     |> send_chunked(200)
-    |> stream_chunks(attachment, chunks)
-    |> finish(attachment.id)
+    |> stream_body(attachment, chunks)
   end
+
+  # A HEAD sends the GET headers and no body. The opened stream is pulled for
+  # at most one chunk, only so it is closed (a local file handle, an S3
+  # request); a failure there is still a 404, since no header is out yet.
+  defp close_for_head(chunks, _attachment, false), do: {:ok, chunks}
+
+  defp close_for_head(chunks, attachment, true) do
+    _first = Enum.take(chunks, 1)
+    {:ok, :head}
+  rescue
+    exception -> refuse_head(attachment, stream_reason(exception))
+  catch
+    :exit, _reason -> refuse_head(attachment, :stream_failed)
+  end
+
+  defp refuse_head(attachment, reason) do
+    log_failure(attachment.id, reason)
+    :error
+  end
+
+  defp stream_body(conn, _attachment, :head), do: conn
+
+  defp stream_body(conn, attachment, chunks),
+    do: conn |> stream_chunks(attachment, chunks) |> finish(attachment.id)
 
   # The id is parsed here because fetch_for_download/3 takes an integer: a
   # malformed or out-of-range id never reaches the database. The downloaded
-  # event says whether a person downloaded the file or a thumbnail or the
-  # lightbox showed it.
-  defp fetch(conn, raw_id, disposition) do
+  # event says whether a person downloaded the file, a thumbnail or the
+  # lightbox showed it, or a HEAD asked for the headers only.
+  defp fetch(conn, raw_id, via) do
     with {:ok, id} <- IdParams.parse(raw_id),
-         do:
-           Attachments.fetch_for_download(
-             conn.assigns.current_scope,
-             id,
-             event_via(disposition)
-           )
+         do: Attachments.fetch_for_download(conn.assigns.current_scope, id, via)
   end
 
-  defp event_via(:attachment), do: :download
-  defp event_via(:inline), do: :preview
+  defp event_via(_disposition, true), do: :head
+  defp event_via(:attachment, false), do: :download
+  defp event_via(:inline, false), do: :preview
 
   # A download serves any type; a preview only a raster image, judged by the
   # type the server stored.

@@ -826,7 +826,7 @@ and emits no `deleted` event. Every event measures `count: 1`;
 |---|---|---|
 | `[:kanban, :attachment, :uploaded]` | `attachment_id`, `task_id`, `board_id`, `comment_id`, `user_id`, `source` | `Kanban.Attachments.create_attachment/4`, after the row is inserted |
 | `[:kanban, :attachment, :upload_refused]` | `reason`, `source`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.create_attachment/4`, when a limit, the file or storage refuses the upload |
-| `[:kanban, :attachment, :downloaded]` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | `Kanban.Attachments.fetch_for_download/3`, once the download or preview is authorized |
+| `[:kanban, :attachment, :downloaded]` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | `Kanban.Attachments.fetch_for_download/3`, once the download, preview or `HEAD` is authorized |
 | `[:kanban, :attachment, :deleted]` | `attachment_id`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.delete_attachment/2`, after the row is deleted |
 
 - **Ids, sizes and reason codes only.** The filename, the file's contents and
@@ -847,9 +847,11 @@ and emits no `deleted` event. Every event measures `count: 1`;
   `uploaded` and `upload_refused`.
 - **`via` separates downloads from previews.** The download route
   sends `:download` and the preview route `:preview`, so every thumbnail and
-  lightbox image a task shows is a `:preview`, not a download. It is a tag on
-  `downloaded`. `byte_size` is the file's recorded size, not the bytes
-  delivered, and a preview is the full original file.
+  lightbox image a task shows is a `:preview`, not a download. A `HEAD` on
+  either route sends `:head`: it gets the headers only and reads at most one
+  chunk of the file. It is a tag on `downloaded`. `byte_size` is the file's
+  recorded size, not the bytes delivered, and a preview is the full original
+  file.
 - **`user_id` is the actor.** On `uploaded` and `upload_refused` it is the
   uploader, on `downloaded` the member who downloads, and on `deleted` the
   person who deleted the file. `comment_id` is `nil` for a task-level file.
@@ -1239,7 +1241,7 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :attachment, :uploaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `comment_id`, `user_id`, `source` | A file was attached to a task or comment. source is :upload or :import; comment_id is set for a comment-level file. The filename, contents and hash are never sent. |
-| `[:kanban, :attachment, :downloaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | A board member was authorized to fetch an attachment. via is :download when they download it, :preview when a thumbnail or the lightbox shows it. The filename, contents and hash are never sent. |
+| `[:kanban, :attachment, :downloaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | A board member was authorized to fetch an attachment. via is :download when they download it, :preview when a thumbnail or the lightbox shows it, and :head for a HEAD request, which sends no body. The filename, contents and hash are never sent. |
 | `[:kanban, :attachment, :deleted]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id` | An attachment was deleted through Kanban.Attachments; its blob is queued for removal. user_id is the person who deleted it. The filename is never sent. |
 | `[:kanban, :attachment, :upload_refused]` | event | `count` | `reason`, `source`, `task_id`, `board_id`, `user_id` | An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, and source is :upload or :import. A plan refusal is plan.feature_refused instead. |
 

@@ -606,11 +606,14 @@ defmodule Kanban.AttachmentsTest do
       assert_received {:telemetry_event, @downloaded, %{count: 1}, %{via: :preview}}
     end
 
-    test "fetch_for_download/3 refuses a via outside :download and :preview", ctx do
+    test "fetch_for_download/3 refuses a via outside :download, :preview and :head", ctx do
       attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier})
 
+      # Built at runtime: a literal would be flagged by the type checker.
+      unknown_via = String.to_existing_atom("inline")
+
       assert_raise FunctionClauseError, fn ->
-        ctx.reader |> scope() |> Attachments.fetch_for_download(attachment.id, :inline)
+        ctx.reader |> scope() |> Attachments.fetch_for_download(attachment.id, unknown_via)
       end
     end
   end

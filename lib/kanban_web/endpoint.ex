@@ -83,6 +83,9 @@ defmodule KanbanWeb.Endpoint do
     cookie_key: "request_logger"
 
   plug Plug.MethodOverride
+  # Records a HEAD before Plug.Head turns it into a GET, so a streaming
+  # controller can skip reading a body that would be dropped.
+  plug KanbanWeb.Plugs.HeadRequest
   plug Plug.Head
   plug Plug.Session, @session_options
   # Before the router: no route matches a miscased /hitme, so a router
