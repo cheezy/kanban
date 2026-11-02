@@ -243,7 +243,8 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
     test "renders each task-details guide with its links and screenshots", %{conn: conn} do
       images = %{
         "reading-a-tasks-details" => [2, 3, 4, 6, 7, 8],
-        "commenting-and-mentioning" => [4, 7]
+        "commenting-and-mentioning" => [4, 7],
+        "attaching-files-to-tasks-and-comments" => []
       }
 
       for {id, steps} <- images do

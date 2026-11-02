@@ -85,7 +85,11 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                                  Path.wildcard("lib/kanban_web/live/agents_live/**/*.ex") ++
                                  Path.wildcard("lib/kanban_web/live/target_live/*.{ex,heex}")
 
-  @task_details_ids ["reading-a-tasks-details", "commenting-and-mentioning"]
+  @task_details_ids [
+    "reading-a-tasks-details",
+    "commenting-and-mentioning",
+    "attaching-files-to-tasks-and-comments"
+  ]
 
   @notifications_integrations_ids [
     "staying-informed-with-notifications",
@@ -584,12 +588,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "non-developer guides content" do
-    test "all 5 non-developer guides exist" do
+    test "all 6 non-developer guides exist" do
       non_dev_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("non-developer" in &1.tags))
 
-      assert length(non_dev_guides) == 5
+      assert length(non_dev_guides) == 6
 
       guide_ids = Enum.map(non_dev_guides, & &1.id)
       assert "writing-tasks-for-ai" in guide_ids
@@ -597,6 +601,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "reviewing-completed-work" in guide_ids
       assert "reading-a-tasks-details" in guide_ids
       assert "commenting-and-mentioning" in guide_ids
+      assert "attaching-files-to-tasks-and-comments" in guide_ids
     end
 
     test "writing-tasks-for-ai guide has complete content" do
@@ -1274,8 +1279,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 42 guides" do
-      assert length(HowToData.all_how_tos()) == 42
+    test "has all 43 guides" do
+      assert length(HowToData.all_how_tos()) == 43
     end
 
     test "every guide id is unique across the area modules" do
@@ -2312,18 +2317,21 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     test "the task details guides exist with their tags and steps" do
       expected = [
         {"reading-a-tasks-details", "Reading a Task's Details",
-         ["non-developer", "reviewing", "tasks"], 9},
-        {"commenting-and-mentioning", "Commenting and Mentioning", ["non-developer", "tasks"], 7}
+         ["non-developer", "reviewing", "tasks"], 9, ~D[2026-10-24]},
+        {"commenting-and-mentioning", "Commenting and Mentioning", ["non-developer", "tasks"], 7,
+         ~D[2026-10-24]},
+        {"attaching-files-to-tasks-and-comments", "Attaching Files to Tasks and Comments",
+         ["non-developer", "tasks"], 9, ~D[2026-11-01]}
       ]
 
       assert Enum.map(KanbanWeb.ResourcesLive.HowTos.TaskDetails.how_tos(), & &1.id) ==
                @task_details_ids
 
-      for {id, title, tags, min_steps} <- expected do
+      for {id, title, tags, min_steps, created_at} <- expected do
         assert {:ok, guide} = HowToData.get_how_to(id)
         assert guide.title == title
         assert guide.tags == tags
-        assert guide.created_at == ~D[2026-10-24]
+        assert guide.created_at == created_at
         assert length(guide.steps) >= min_steps, "#{id} lost steps"
 
         for tag <-
@@ -2343,6 +2351,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         "reviewing-completed-work",
         "reading-a-tasks-details",
         "commenting-and-mentioning",
+        "attaching-files-to-tasks-and-comments",
         nil
       ]
 
@@ -2510,6 +2519,82 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       end
 
       assert comments =~ "Comments and mentions themselves work on every board."
+    end
+
+    test "the attachment facts match the code" do
+      guide = task_details_content(["attaching-files-to-tasks-and-comments"])
+      policy = File.read!("lib/kanban/attachments/policy.ex")
+      limits = File.read!("lib/kanban/attachments/limits.ex")
+      context = File.read!("lib/kanban/attachments.ex")
+
+      # Who may upload, read and delete.
+      assert policy =~ "def allowed?(%{access: access}, :upload), do: access in [:owner, :modify]"
+      assert policy =~ "def allowed?(viewer, :read), do: member?(viewer)"
+      assert policy =~ "def allowed?(%{access: :owner}, :delete, %TaskAttachment{}), do: true"
+      assert policy =~ "do: allowed?(viewer, :upload) and same_user?(viewer, author_id)"
+
+      assert guide =~
+               "The board's owner and members with modify access can upload files to a task and attach files to their own comments."
+
+      assert guide =~ "Members with read-only access can see and download every file"
+
+      # The uploader keeps Delete at any access level, read-only included.
+      assert policy =~
+               "def allowed?(viewer, :delete, %TaskAttachment{uploaded_by_id: uploader_id}),"
+
+      assert guide =~
+               "They see **Delete** only on a file they uploaded before their access changed."
+
+      assert guide =~ "the board's owner can delete anyone's; an org-admin counts as the owner"
+
+      # The limits, written as the defaults the code falls back to.
+      assert limits =~ "max_file_bytes: 26_214_400,"
+      assert limits =~ "max_files_per_task: 20,"
+      assert limits =~ "organization_quota_bytes: 10_737_418_240"
+      assert guide =~ "Each file can be up to 25 MiB, and a task can hold up to 20 files"
+      assert guide =~ "The files in one Organization share 10 GiB of storage."
+      refute guide =~ "25 MB"
+
+      assert File.read!("lib/kanban/attachments/usage.ex") =~
+               "|> where([a], a.task_id == ^task_id)"
+
+      assert guide =~ "counting the files on its comments"
+
+      # Allowed types.
+      assert Kanban.Attachments.ContentType.allowed() == [
+               "image/png",
+               "image/jpeg",
+               "image/gif",
+               "image/webp",
+               "application/pdf",
+               "text/plain",
+               "text/markdown",
+               "text/csv",
+               "application/json"
+             ]
+
+      assert guide =~ "PNG, JPEG, GIF and WebP images, PDFs, plain text and log files"
+      assert guide =~ "SVG, HTML and zip files are refused"
+
+      # The plan, and where files show.
+      assert context =~ ":ok <- Plans.check_board(board_id, :attachments, surface: :context)"
+      assert context =~ "reappear if the board moves back into an Organization"
+
+      assert guide =~
+               "When Stride's plans are switched on, attachments are part of the Organization plan."
+
+      assert File.read!("lib/kanban_web/live/task_live/attachments_component.ex") =~
+               "Enum.filter(attachments, &is_nil(&1.comment_id))"
+
+      assert guide =~ "a file attached to a comment shows under that comment instead"
+
+      assert File.read!("lib/kanban_web/live/task_live/form/attachment_staging.ex") =~
+               "The edit form does not stage at"
+
+      assert guide =~ "The files are stored once the task is saved"
+
+      # Only reading is shipped: the guide never promises agent or API uploads.
+      refute guide =~ ~r/\bAPI\b|\bMCP\b|agent/i
     end
   end
 

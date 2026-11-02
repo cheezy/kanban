@@ -213,3 +213,56 @@ the default directory under the system temp directory may not.
 
 Give each deployment its own `ATTACHMENTS_DIR` or bucket. Two deployments
 sharing one would read and delete each other's files.
+
+## Using attachments
+
+This section is for the people who use attachments on a board. The in-app
+Resources guide *Attaching Files to Tasks and Comments*
+(`/resources/attaching-files-to-tasks-and-comments`) walks through the same
+steps.
+
+Attachments are part of the Organization plan. While plans are enforced, a
+free board shows a locked **Attachments** section and an **Available to
+organizations** prompt instead of its files; a free board's existing files
+stay stored, hidden, and show again once the board moves into an
+Organization. [Organizations and Workspaces](organizations.md#plans) covers plans
+and moving a board.
+
+- **Where files are.** A task's details have an **Attachments** section
+  above **History** that lists the files attached to the task, and its edit
+  form has the same section. A file attached to a comment is listed under that comment.
+- **Uploading.** Drag files onto **Drop files here or browse**, or click it to
+  pick them, then click **Upload files** once they have finished. A file that
+  is too large, of a type that is not allowed, or whose contents do not match
+  its type says why and is not attached.
+- **Images.** PNG, JPEG, GIF and WebP files show a thumbnail; clicking it opens
+  the full image. Every other file, PDFs included, shows an icon and is
+  opened by downloading it.
+- **Comments.** Drag files onto **Attach files** under the comment box, or
+  click it, before you post. The files are stored once the comment is saved.
+  The comment's author can remove a file while editing the comment, and
+  deleting a comment deletes its files.
+- **New tasks.** The new-task form has its own **Attachments** field. Its files
+  are stored after the task is saved; if one cannot be stored, the task is
+  still created and Stride names the file. On the edit form, uploads and
+  deletes happen at once.
+- **Deleting.** **Delete** asks you to confirm, and a deleted file cannot be
+  brought back. Deleting a task deletes its files.
+
+Who can do what follows the board's access, checked on every request:
+
+| Who | Can |
+|---|---|
+| The board's owner (an org-admin counts as the owner of their Organization's boards) | Upload, download, and delete any file |
+| Members with modify access | Upload, download, attach files to their own comments, and delete the files they uploaded |
+| Members with read-only access | See and download every file; no upload box, and **Delete** only on a file they uploaded before their access changed |
+| Anyone who is not a member, including someone viewing a shared board | Nothing: the files are not listed |
+
+Anyone who can see a task's files can download them, so check who is on the
+board before attaching something sensitive.
+
+With the default [limits](#limits), each file can be up to 25 MiB, a task can
+hold 20 files counting the files on its comments, and the files in one
+Organization share 10 GiB. The [types that can be attached](#which-files-can-be-attached)
+are PNG, JPEG, GIF and WebP images, PDF, plain text and log files, Markdown,
+CSV and JSON; SVG, HTML and zip files are refused.

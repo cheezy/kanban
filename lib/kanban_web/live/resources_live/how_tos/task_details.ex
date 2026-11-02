@@ -1,20 +1,22 @@
 defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
   @moduledoc """
-  Guides for reading what a task records once an agent has worked on it, and
-  for talking about it in comments.
+  Guides for reading what a task records once an agent has worked on it, for
+  talking about it in comments, and for attaching files to it.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog. It sits after
   `HowTos.WorkingWithTasks` and before `HowTos.AgentsAndPlanning`.
 
-  Both guides lead with `non-developer`, so they extend that chain after
+  All three guides lead with `non-developer`, so they extend that chain after
   reviewing completed work: writing tasks for AI → monitoring task progress →
   reviewing completed work → reading a task's details → commenting and
-  mentioning.
+  mentioning → attaching files to tasks and comments.
 
   The guides follow `KanbanWeb.TaskLive.ViewComponent` and its components,
-  `KanbanWeb.TaskLive.CommentThreadComponent`, `Kanban.Tasks.CommentPolicy`
-  and `Kanban.Tasks.CommentNotifier`.
+  `KanbanWeb.TaskLive.CommentThreadComponent`, `Kanban.Tasks.CommentPolicy`,
+  `Kanban.Tasks.CommentNotifier`, `KanbanWeb.TaskLive.AttachmentsComponent`,
+  `KanbanWeb.TaskLive.Form.AttachmentStaging`, `Kanban.Attachments.Policy`
+  and `Kanban.Attachments.Limits`.
   """
 
   @doc "The guides in this group, in display order."
@@ -153,6 +155,72 @@ defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
             image: "/images/resources/guides/commenting-and-mentioning-step-7.png",
             image_width: 708,
             image_height: 240
+          }
+        ]
+      },
+      %{
+        id: "attaching-files-to-tasks-and-comments",
+        title: "Attaching Files to Tasks and Comments",
+        description:
+          "Add screenshots, logs and other files to a task or a comment, preview images, and delete files you no longer need.",
+        tags: ["non-developer", "tasks"],
+        content_type: "guide",
+        reading_time: 6,
+        created_at: ~D[2026-11-01],
+        steps: [
+          %{
+            title: "Where Attachments Are",
+            content:
+              "**Attachments** is a section of a task's details, just above **History**, and the task's edit form has one too. It lists the files attached to the task itself; a file attached to a comment shows under that comment instead. When there are none, it says **No attachments yet**.\n\nEach file shows its name, its size, who uploaded it and when. Click **Download** to save a copy. The list updates for everyone who has the task open.",
+            image: nil
+          },
+          %{
+            title: "Uploading Files",
+            content:
+              "Drag files onto **Drop files here or browse**, or click it to pick files from your computer. You can add several at once. Each file shows its progress, with **Cancel** to drop it, and an image shows a small preview.\n\nWhen the files have finished, click **Upload files** to attach them. A file that breaks a rule, such as one that's too large or of a type that isn't allowed, says why under its name and isn't attached.",
+            image: nil
+          },
+          %{
+            title: "Previewing Images",
+            content:
+              "A PNG, JPEG, GIF or WebP image shows a thumbnail in the list. Click the thumbnail to see the whole image, with **Download** beside it, and click **Close** to go back.\n\nEvery other file, PDFs included, shows an icon for its type instead of a preview. Download it to open it.",
+            image: nil
+          },
+          %{
+            title: "Attaching Files to a Comment",
+            content:
+              "Below **Add a comment**, drag files onto **Attach files** or click it to browse, then click **Add Comment**. The files are stored once the comment is saved, and they show under the comment rather than in **Attachments**.\n\nWhile you're editing your own comment, you can remove one of its files with **Delete**. Deleting a comment deletes its files too. [Commenting and Mentioning](/resources/commenting-and-mentioning) covers the rest of comments.",
+            image: nil
+          },
+          %{
+            title: "Attaching Files While Creating a Task",
+            content:
+              "The new-task form has an **Attachments** field. Drag files onto **Attach files** or click it to browse. The files are stored once the task is saved, so closing the form without saving stores nothing.\n\nIf a file can't be stored after the save, the task is still created and Stride names the file that failed. On the edit form, the **Attachments** section uploads and deletes straight away, without waiting for **Save**.",
+            image: nil
+          },
+          %{
+            title: "Deleting a File",
+            content:
+              "Click **Delete** beside a file and confirm. A deleted file can't be brought back.\n\nYou can delete the files you uploaded while you're still a member of the board, and the board's owner can delete anyone's; an org-admin counts as the owner of their Organization's boards. Deleting a task deletes its files too.",
+            image: nil
+          },
+          %{
+            title: "Who Can Do What",
+            content:
+              "- The board's owner and members with modify access can upload files to a task and attach files to their own comments.\n- Members with read-only access can see and download every file, but they get no upload box. They see **Delete** only on a file they uploaded before their access changed. They can still comment, without files.\n- Someone viewing a shared board without being a member sees no files.\n\nFiles follow the board's access, so anyone who can see a task's files can download them. Think about who is on the board before you attach something sensitive, and see [Adding Team Members to Your Board](/resources/inviting-team-members).",
+            image: nil
+          },
+          %{
+            title: "Limits and File Types",
+            content:
+              "Each file can be up to 25 MiB, and a task can hold up to 20 files, counting the files on its comments. The files in one Organization share 10 GiB of storage. These are Stride's defaults; a self-hosted Stride can set its own.\n\nYou can attach PNG, JPEG, GIF and WebP images, PDFs, plain text and log files (.txt and .log), Markdown (.md and .markdown), CSV and JSON. SVG, HTML and zip files are refused, and so is a file whose contents don't match its type, such as a PDF renamed to end in .png.",
+            image: nil
+          },
+          %{
+            title: "Attachments Need an Organization Board",
+            content:
+              "When Stride's plans are switched on, attachments are part of the Organization plan. A free board shows **Attachments** with a lock and **Available to organizations** instead of its files, on the task, in the new-task form and in the comment box.\n\nA free board keeps any files it already has, hidden, and they show again once the board moves into an Organization. [Free and Paid Boards](/resources/free-and-paid-boards) explains plans.",
+            image: nil
           }
         ]
       }

@@ -3,6 +3,85 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [Unreleased]
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Attachments
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Files on tasks and comments.</strong> Tasks and
+                comments can now hold files such as screenshots, logs and
+                designs. A task's details and its edit form have an
+                <strong>Attachments</strong> section: drag files onto it, or
+                browse for them, and click <strong>Upload files</strong>. Each
+                file shows its name, size, uploader and age, with
+                <strong>Download</strong>, and the list updates for everyone
+                who has the task open.
+              </li>
+              <li>
+                <strong>Image previews.</strong> PNG, JPEG, GIF and WebP files
+                show a thumbnail, and clicking it opens the full image. Images
+                waiting to upload show a preview too.
+              </li>
+              <li>
+                <strong>Attaching to comments and new tasks.</strong>
+                <strong>Attach files</strong> in the comment box stores files
+                on the comment once it is posted, and the new-task form stores
+                its files once the task is saved.
+              </li>
+              <li>
+                <strong>Who can do what.</strong> The board's owner and members
+                with modify access can upload; every member, read-only
+                included, can see and download; the uploader or the board's
+                owner can delete. Someone who is not a member of the board sees
+                no files.
+              </li>
+              <li>
+                <strong>Limits and types.</strong> Each file can be up to
+                25 MiB, a task can hold 20 files, counting the files on its
+                comments, and an Organization's files share 10 GiB; an
+                operator can change all three. PNG, JPEG, GIF,
+                WebP, PDF, plain text, Markdown, CSV and JSON files are
+                accepted; SVG, HTML and zip files are refused, and every file's
+                contents are checked against its type.
+              </li>
+              <li>
+                <strong>Organization plan.</strong> While plans are enforced, a
+                free board shows Attachments as a locked feature, and any files
+                it already has stay hidden until it moves into an Organization.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Attachments (<code>docs/attachments.md</code>) covers using
+              attachments and, for operators, storage, configuration and
+              limits. The Resources section has a new guide,
+              <em>Attaching Files to Tasks and Comments</em>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [3.0.0] - 2026-10-25
         </h2>
 
