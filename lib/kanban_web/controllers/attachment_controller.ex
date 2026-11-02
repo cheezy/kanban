@@ -18,12 +18,17 @@ defmodule KanbanWeb.AttachmentController do
   locked plan, a type that cannot be previewed, or a stored object that is
   missing or unreadable — is the same 404 page, so a response never reveals
   whether an attachment exists. The status is decided before any header is
-  sent: `Kanban.Attachments.Storage.stream/1` reports a missing object before
-  it yields a byte.
+  sent: `Kanban.Attachments.Storage.stream/1` reports a missing or unreadable
+  object before it yields a byte.
 
   The bytes are streamed in chunks through `Kanban.Attachments.Storage` and
   never read whole into memory, and every 200 carries the headers from
-  `KanbanWeb.AttachmentResponse`. `fetch_for_download/2` emits
+  `KanbanWeb.AttachmentResponse` and a `content-length` of the recorded
+  `byte_size`. No more than that is sent. A body that falls short after the
+  headers are out (a storage failure mid-stream, or a blob shorter than its
+  row) raises `KanbanWeb.AttachmentController.IncompleteTransfer`, so the
+  server closes the connection and the client sees an incomplete download,
+  never a finished response that passes for the whole file. `fetch_for_download/2` emits
   `[:kanban, :attachment, :downloaded]` once access is authorized, so a
   preview refused for its type or a missing object still counts; this
   controller adds no telemetry of its own.
@@ -40,6 +45,20 @@ defmodule KanbanWeb.AttachmentController do
   alias KanbanWeb.IdParams
 
   require Logger
+
+  defmodule IncompleteTransfer do
+    @moduledoc """
+    Raised after the headers of a 200 are sent when the body fell short of
+    the declared `content-length`, so the server closes the connection
+    instead of finishing a response that would pass for the whole file.
+    Carries the attachment id only, never the storage key or the file name.
+    """
+    defexception [:attachment_id]
+
+    @impl true
+    def message(%{attachment_id: id}),
+      do: "attachment #{id} ended before its recorded size; the response was aborted"
+  end
 
   def download(conn, %{"id" => id}), do: serve(conn, id, :attachment)
 
@@ -58,8 +77,10 @@ defmodule KanbanWeb.AttachmentController do
   defp send_attachment(conn, attachment, disposition, chunks) do
     conn
     |> put_headers(AttachmentResponse.response_headers(attachment, disposition))
+    |> put_resp_header("content-length", Integer.to_string(attachment.byte_size))
     |> send_chunked(200)
-    |> stream_chunks(attachment.id, chunks)
+    |> stream_chunks(attachment, chunks)
+    |> finish(attachment.id)
   end
 
   # The id is parsed here because fetch_for_download/2 takes an integer: a
@@ -96,24 +117,57 @@ defmodule KanbanWeb.AttachmentController do
   end
 
   # Enumerated here, in the process that called Storage.stream/1, as the S3
-  # stream requires. A client that goes away ends the loop quietly. A storage
-  # failure after the headers are sent cannot become a 404 any more, so it is
-  # logged and the response ends where it stopped instead of crashing.
-  defp stream_chunks(conn, attachment_id, chunks) do
-    Enum.reduce_while(chunks, conn, fn data, conn ->
-      case chunk(conn, data) do
-        {:ok, conn} -> {:cont, conn}
-        {:error, _closed} -> {:halt, conn}
-      end
-    end)
+  # stream requires. At most the recorded byte_size is sent, the length the
+  # headers declared. Returns {:done | :closed | :overlong, conn} or
+  # {:short, reason}.
+  defp stream_chunks(conn, attachment, chunks) do
+    expected = attachment.byte_size
+
+    case Enum.reduce_while(chunks, {:sending, conn, 0}, &send_within(&1, &2, expected)) do
+      {:sending, conn, ^expected} -> {:done, conn}
+      {:sending, _conn, _sent} -> {:short, :incomplete}
+      ended -> ended
+    end
   rescue
-    exception ->
-      log_failure(attachment_id, stream_reason(exception))
-      conn
+    exception -> {:short, stream_reason(exception)}
   catch
-    :exit, _reason ->
-      log_failure(attachment_id, :stream_failed)
-      conn
+    :exit, _reason -> {:short, :stream_failed}
+  end
+
+  defp send_within(_data, {:sending, conn, expected}, expected), do: {:halt, {:overlong, conn}}
+
+  defp send_within(data, {:sending, conn, sent}, expected) do
+    {part, cut?} = within(IO.iodata_to_binary(data), expected - sent)
+
+    conn |> chunk(part) |> sent_chunk(conn, cut?, sent + byte_size(part))
+  end
+
+  defp sent_chunk({:ok, conn}, _before, true, _sent), do: {:halt, {:overlong, conn}}
+  defp sent_chunk({:ok, conn}, _before, false, sent), do: {:cont, {:sending, conn, sent}}
+  defp sent_chunk({:error, _closed}, conn, _cut?, _sent), do: {:halt, {:closed, conn}}
+
+  # The part of data that fits in the room left, and whether any was cut.
+  defp within(data, room) when byte_size(data) > room, do: {binary_part(data, 0, room), true}
+  defp within(data, _room), do: {data, false}
+
+  # A client that went away ends quietly. A blob longer than its row was cut
+  # at the declared length, so the client got a whole-looking file of the
+  # recorded size: logged, not aborted. A body that fell short — a storage
+  # failure after the headers, or a blob shorter than its row — cannot become
+  # a 404 any more, and a finished response would pass for the whole file,
+  # so it is logged and the connection is aborted: the client sees fewer
+  # bytes than the declared content-length and knows the file is incomplete.
+  defp finish({:done, conn}, _attachment_id), do: conn
+  defp finish({:closed, conn}, _attachment_id), do: conn
+
+  defp finish({:overlong, conn}, attachment_id) do
+    log_failure(attachment_id, :size_mismatch)
+    conn
+  end
+
+  defp finish({:short, reason}, attachment_id) do
+    log_failure(attachment_id, reason)
+    raise IncompleteTransfer, attachment_id: attachment_id
   end
 
   # File.Error's message holds the path, which is the storage key, so only

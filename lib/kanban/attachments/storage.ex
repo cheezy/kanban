@@ -53,7 +53,12 @@ defmodule Kanban.Attachments.Storage do
   @doc "Stores `source` under `key`, replacing any object already there."
   @callback put(key(), source(), keyword()) :: :ok | {:error, reason()}
 
-  @doc "Returns the bytes stored under `key` as an enumerable of binaries."
+  @doc """
+  Returns the bytes stored under `key` as an enumerable of binaries.
+
+  A missing or unreadable object must be an error here, before the
+  enumerable is returned: callers send a 200 as soon as they hold it.
+  """
   @callback stream(key()) :: {:ok, Enumerable.t()} | {:error, reason()}
 
   @doc "Removes the object stored under `key`. A missing object is not an error."

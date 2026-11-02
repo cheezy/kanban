@@ -78,6 +78,31 @@ defmodule Kanban.Attachments.Storage.LocalTest do
     assert read_all(stream) == ""
   end
 
+  # The controller sends a 200 the moment stream/1 returns, so a file it
+  # cannot read must be refused here, not when the first chunk is read.
+  test "a file the app cannot read is unavailable before any byte is read", %{root: root} do
+    assert :ok = Local.put(@key, {:binary, "secret"}, [])
+    path = Path.join(root, @key)
+    File.chmod!(path, 0o000)
+
+    # A superuser reads any file, so there is nothing to refuse.
+    if match?({:error, :eacces}, File.read(path)) do
+      log = capture_log(fn -> assert {:error, :storage_unavailable} = Local.stream(@key) end)
+      assert log =~ "attachment storage read failed: :eacces"
+      refute log =~ @key
+    end
+  end
+
+  test "the stream reads the file it opened, even once the file is removed", %{root: root} do
+    bytes = :crypto.strong_rand_bytes(200_000)
+    assert :ok = Local.put(@key, {:binary, bytes}, [])
+
+    assert {:ok, stream} = Local.stream(@key)
+    root |> Path.join(@key) |> File.rm!()
+
+    assert read_all(stream) == bytes
+  end
+
   test "a put replaces the object already under the key" do
     assert :ok = Local.put(@key, {:binary, "first"}, [])
     assert :ok = Local.put(@key, {:binary, "second"}, [])

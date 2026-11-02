@@ -19,6 +19,7 @@ defmodule KanbanWeb.AttachmentControllerTest do
   alias Kanban.Attachments.Storage.Local
   alias Kanban.Boards
   alias Kanban.Tasks.Comments
+  alias KanbanWeb.AttachmentController
 
   @moduletag :tmp_dir
 
@@ -113,6 +114,8 @@ defmodule KanbanWeb.AttachmentControllerTest do
     assert conn.status == 200
     assert conn.state == :chunked
     assert conn.resp_body == bytes
+    # The recorded size is declared, so a client can tell a cut-off file.
+    assert header(conn, "content-length") == ["200000"]
     assert header(conn, "content-type") == ["application/pdf"]
 
     assert header(conn, "content-disposition") ==
@@ -149,6 +152,7 @@ defmodule KanbanWeb.AttachmentControllerTest do
 
       assert conn.status == 200
       assert conn.resp_body == "bytes of #{type}"
+      assert header(conn, "content-length") == ["#{byte_size("bytes of #{type}")}"]
       assert header(conn, "content-type") == [type]
       assert [disposition] = header(conn, "content-disposition")
       assert String.starts_with?(disposition, "inline; filename=")
@@ -262,25 +266,41 @@ defmodule KanbanWeb.AttachmentControllerTest do
     refute log =~ unavailable.storage_key
   end
 
-  test "a stream that fails after the headers are sent ends the response without raising",
-       %{conn: conn} = ctx do
+  test "a blob the app cannot read is a 404, not an empty 200", %{conn: conn} = ctx do
+    png = stored(ctx.task, %{filename: "shot.png", content_type: "image/png"}, "png bytes")
+    path = Path.join(Local.root(), png.storage_key)
+    File.chmod!(path, 0o000)
+
+    # A superuser reads any file, so there is nothing to refuse.
+    if match?({:error, :eacces}, File.read(path)) do
+      log =
+        capture_log(fn ->
+          assert_not_found(download(conn, ctx.reader, png.id))
+          assert_not_found(preview(build_conn(), ctx.reader, png.id))
+        end)
+
+      assert log =~ "attachment_id=#{png.id} reason=:storage_unavailable"
+      refute log =~ png.storage_key
+    end
+  end
+
+  # Once the headers are out the status cannot change, so a body that falls
+  # short of the declared length must end the connection rather than finish
+  # the response: a finished response would read as the whole file.
+  test "a stream that fails after the headers are sent aborts the response", ctx do
     attachment = stored(ctx.task, %{}, "bytes")
     secret_path = "boards/1/" <> attachment.storage_key
 
     failing =
       Stream.concat(
-        ["first"],
+        ["by"],
         Stream.map([:next], fn _ ->
           raise File.Error, reason: :enoent, action: "stream", path: secret_path
         end)
       )
 
-    Process.put(:stream_result, {:ok, failing})
-    log = capture_log(fn -> assert download(conn, ctx.reader, attachment.id).status == 200 end)
-    assert log =~ "attachment_id=#{attachment.id} reason=:enoent"
-    refute log =~ attachment.storage_key
-
     for {stream, reason} <- [
+          {failing, ":enoent"},
           {Stream.map([:next], fn _ -> raise ArgumentError, "boom" end), ":stream_failed"},
           {Stream.map([:next], fn _ -> exit(:closed) end), ":stream_failed"}
         ] do
@@ -288,11 +308,47 @@ defmodule KanbanWeb.AttachmentControllerTest do
 
       log =
         capture_log(fn ->
-          assert download(build_conn(), ctx.reader, attachment.id).status == 200
+          assert_raise AttachmentController.IncompleteTransfer, fn ->
+            download(build_conn(), ctx.reader, attachment.id)
+          end
         end)
 
-      assert log =~ "reason=#{reason}"
+      assert log =~ "attachment_id=#{attachment.id} reason=#{reason}"
+      refute log =~ attachment.storage_key
     end
+  end
+
+  test "a blob shorter than its recorded size aborts the response", %{conn: conn} = ctx do
+    attachment = stored(ctx.task, %{}, "bytes")
+    Process.put(:stream_result, {:ok, ["by", "te"]})
+
+    log =
+      capture_log(fn ->
+        error =
+          assert_raise AttachmentController.IncompleteTransfer, fn ->
+            download(conn, ctx.reader, attachment.id)
+          end
+
+        assert Exception.message(error) =~ "attachment #{attachment.id}"
+        refute Exception.message(error) =~ attachment.storage_key
+      end)
+
+    assert log =~ "attachment_id=#{attachment.id} reason=:incomplete"
+  end
+
+  test "a blob longer than its recorded size is cut at that size", %{conn: conn} = ctx do
+    attachment = stored(ctx.task, %{}, "bytes")
+    Process.put(:stream_result, {:ok, ["byt", "es and more", " still more"]})
+
+    log =
+      capture_log(fn ->
+        conn = download(conn, ctx.reader, attachment.id)
+        assert conn.status == 200
+        assert conn.resp_body == "bytes"
+        assert header(conn, "content-length") == ["5"]
+      end)
+
+    assert log =~ "attachment_id=#{attachment.id} reason=:size_mismatch"
   end
 
   test "a signed-out visitor is sent to log in", %{conn: conn} = ctx do

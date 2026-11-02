@@ -43,9 +43,13 @@ defmodule Kanban.Attachments.Storage.Local do
   Keys arrive already validated by `Kanban.Attachments.Storage`, so they
   hold no `..`, no leading slash and no empty segment.
 
-  `stream/1` checks the file and then opens it lazily, when the stream is
-  first enumerated. A file swapped for a link in between would be read, but
-  only the app's own user can write under the checked root to do that.
+  `stream/1` checks the file and opens it before it returns, so a file that
+  is gone or unreadable is an error the caller can still answer with a 404,
+  and the stream reads the file it opened even if the path is replaced or
+  removed afterwards. Enumerate it once, in the calling process: the file is
+  closed when the stream ends or that process exits. A file swapped for a
+  link between the check and the open would be read, but only the app's own
+  user can write under the checked root to do that.
   """
 
   @behaviour Kanban.Attachments.Storage
@@ -101,7 +105,40 @@ defmodule Kanban.Attachments.Storage.Local do
 
     with :ok <- readable_tree(root, key),
          :ok <- servable(path, root),
-         do: {:ok, File.stream!(path, @chunk_bytes)}
+         {:ok, device} <- open_for_read(path),
+         do: {:ok, chunks(device)}
+  end
+
+  # Opened here, before stream/1 returns, so a file that is gone or that the
+  # app may not read is refused while the caller can still answer 404. The
+  # stream then reads the file it opened, whatever happens to the path.
+  defp open_for_read(path) do
+    case File.open(path, [:read, :binary, :raw]) do
+      {:ok, device} -> {:ok, device}
+      {:error, reason} when reason in [:enoent, :enotdir, :eisdir] -> {:error, :not_found}
+      {:error, reason} -> unavailable(:read, reason)
+    end
+  end
+
+  # A read error mid-stream raises a File.Error, as File.stream!/2 does,
+  # whose path is the storage key: callers keep only its reason.
+  defp chunks(device) do
+    Stream.resource(
+      fn -> device end,
+      fn device ->
+        case :file.read(device, @chunk_bytes) do
+          {:ok, data} ->
+            {[data], device}
+
+          :eof ->
+            {:halt, device}
+
+          {:error, reason} ->
+            raise File.Error, reason: reason, action: "stream", path: "attachment"
+        end
+      end,
+      &File.close/1
+    )
   end
 
   @impl true

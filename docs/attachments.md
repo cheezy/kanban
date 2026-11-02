@@ -258,6 +258,10 @@ the error message.
   deletes happen at once.
 - **Deleting.** **Delete** asks you to confirm, and a deleted file cannot be
   brought back. Deleting a task deletes its files.
+- **Downloading.** A download declares the file's recorded size. A file whose
+  stored bytes are gone or cannot be read is "not found". If the bytes end
+  early, the download fails, so the browser never saves part of a file as
+  if it were whole. The server logs the attachment id with the reason.
 
 Who can do what follows the board's access, checked on every request:
 
