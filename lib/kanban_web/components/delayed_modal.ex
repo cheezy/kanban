@@ -83,7 +83,7 @@ defmodule KanbanWeb.DelayedModal do
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"
-                  class="-m-3 flex-none p-3 text-base-content opacity-20 hover:opacity-40"
+                  class="-m-3 flex-none p-3 text-[var(--ink-3)] hover:text-[var(--ink)]"
                   aria-label="close"
                 >
                   <span class={["hero-x-mark-solid", "size-5"]} />

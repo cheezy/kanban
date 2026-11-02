@@ -37,6 +37,28 @@ defmodule KanbanWeb.DelayedModalTest do
       assert html =~ "Hello"
     end
 
+    # The X is the close control's only visible part, so it must clear 3:1.
+    # At opacity-20 it was close to invisible in the light theme, and an
+    # opacity is invisible to mix dark_mode.contrast (D214).
+    test "draws its close control in a gated ink token, not a faded opacity" do
+      html =
+        render_component(&DelayedModal.delayed_modal/1,
+          id: "close-modal",
+          label: "Task",
+          inner_block: simple_inner("Body")
+        )
+
+      [class] =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query(~s(#close-modal button[aria-label="close"]))
+        |> LazyHTML.attribute("class")
+
+      assert class =~ "text-[var(--ink-3)]"
+      assert class =~ "hover:text-[var(--ink)]"
+      refute class =~ "opacity-"
+    end
+
     test "names the dialog with its label and points at no missing elements" do
       html =
         render_component(&DelayedModal.delayed_modal/1,

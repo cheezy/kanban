@@ -97,11 +97,11 @@ defmodule KanbanWeb.CoreComponents do
         </div>
         <button
           type="button"
-          class="group self-start cursor-pointer"
+          class="self-start cursor-pointer text-[var(--ink-3)] hover:text-[var(--ink)]"
           aria-label={gettext("close")}
-          style="flex-shrink: 0; color: var(--ink);"
+          style="flex-shrink: 0;"
         >
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+          <.icon name="hero-x-mark" class="size-5" />
         </button>
       </div>
     </div>
@@ -657,7 +657,7 @@ defmodule KanbanWeb.CoreComponents do
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"
-                  class="-m-3 flex-none p-3 opacity-20 hover:opacity-40"
+                  class="-m-3 flex-none p-3 text-[var(--ink-3)] hover:text-[var(--ink)]"
                   aria-label={gettext("close")}
                 >
                   <.icon name="hero-x-mark-solid" class="h-5 w-5" />

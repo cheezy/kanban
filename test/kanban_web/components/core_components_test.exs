@@ -88,6 +88,48 @@ defmodule KanbanWeb.CoreComponentsTest do
       # Dismissing by click still works.
       assert html =~ "lv:clear-flash"
     end
+
+    # The X is the close control's only visible part, so it must clear 3:1.
+    # At opacity-40 it measured 2.50:1 in the light theme; an opacity is
+    # invisible to mix dark_mode.contrast (D214), so it takes a gated token.
+    test "draws its close control in a gated ink token, not a faded opacity" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:error}>Nope</CoreComponents.flash>
+        """)
+
+      assert_close_control_uses_ink(html, ~s(button[aria-label="close"]))
+    end
+  end
+
+  describe "modal/1" do
+    test "draws its close control in a gated ink token, not a faded opacity" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.modal id="m" label="Confirm">Body</CoreComponents.modal>
+        """)
+
+      assert_close_control_uses_ink(html, ~s(#m button[aria-label="close"]))
+    end
+  end
+
+  defp assert_close_control_uses_ink(html, selector) do
+    doc = LazyHTML.from_fragment(html)
+    [class] = doc |> LazyHTML.query(selector) |> LazyHTML.attribute("class")
+    assert class =~ "text-[var(--ink-3)]"
+    assert class =~ "hover:text-[var(--ink)]"
+    refute class =~ "opacity-"
+
+    [icon_class] =
+      doc
+      |> LazyHTML.query(selector <> " .hero-x-mark, " <> selector <> " .hero-x-mark-solid")
+      |> LazyHTML.attribute("class")
+
+    refute icon_class =~ "opacity-"
   end
 
   describe "auto_dismiss_hook/1" do
