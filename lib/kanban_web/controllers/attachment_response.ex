@@ -19,7 +19,11 @@ defmodule KanbanWeb.AttachmentResponse do
       builds an ASCII fallback with nothing but letters, digits, `.`, `_`,
       `-` and spaces, and `filename_star/1` builds the RFC 5987 `filename*`
       value with control and bidi format characters removed, then
-      percent-encoded. Neither can carry a quote, a CR or an LF.
+      percent-encoded. Neither can carry a quote, a CR or an LF. Like
+      `Kanban.Attachments.Filename`, `filename*` keeps U+200C and U+200D, so
+      an emoji sequence or a Persian name is saved under the name it was
+      stored with. A name that is only an extension (`.txt`) keeps it after
+      the base name `attachment`.
     * `security_headers/0` adds `nosniff`, a `default-src 'none'; sandbox`
       policy that replaces the page CSP for this response, `private,
       no-store` caching and a `same-origin` resource policy.
@@ -32,13 +36,22 @@ defmodule KanbanWeb.AttachmentResponse do
   @fallback "attachment"
   @octet_stream "application/octet-stream"
 
-  # The ASCII fallback is capped in characters (all ASCII, so also bytes);
-  # the filename* value is capped in characters before percent-encoding.
+  # Both values are capped in code points (the ASCII fallback is all ASCII,
+  # so also in bytes); filename* is capped before percent-encoding. Code
+  # points, not graphemes, so one grapheme with thousands of combining marks
+  # cannot grow the header.
   @max_ascii_length 150
   @max_encoded_length 255
 
   # An "extension" longer than this is part of the name, not an extension.
   @max_extension_length 20
+
+  # Control and format characters, which the served names never carry. The
+  # zero-width non-joiner and joiner are kept in filename*, exactly as
+  # Kanban.Attachments.Filename keeps them; the ASCII fallback would turn
+  # them into "_" anyway, so it drops every format character.
+  @invisible ~r/[\p{Cc}\p{Cf}]/u
+  @invisible_but_joiners ~r/(?![\x{200C}\x{200D}])[\p{Cc}\p{Cf}]/u
 
   @security_headers [
     {"x-content-type-options", "nosniff"},
@@ -50,11 +63,12 @@ defmodule KanbanWeb.AttachmentResponse do
   @doc """
   The ASCII `filename` value for `Content-Disposition`.
 
-  Every character other than `A-Z`, `a-z`, `0-9`, `.`, `_`, `-` and a space
-  becomes `_`, leading dots and spaces are dropped, and the name is cut to
-  #{@max_ascii_length} characters, keeping its extension. A name that is
-  empty afterwards, is not valid UTF-8 or is not a string becomes
-  `"#{@fallback}"`.
+  Control and format characters are removed, every other character than
+  `A-Z`, `a-z`, `0-9`, `.`, `_`, `-` and a space becomes `_`, leading dots
+  and spaces are dropped (a name that was only an extension gets the base
+  `"#{@fallback}"`), and the name is cut to #{@max_ascii_length} characters,
+  keeping its extension. A name that is empty afterwards, is not valid UTF-8
+  or is not a string becomes `"#{@fallback}"`.
 
   ## Examples
 
@@ -68,8 +82,9 @@ defmodule KanbanWeb.AttachmentResponse do
   @spec safe_filename(term()) :: String.t()
   def safe_filename(name) when is_binary(name) do
     if String.valid?(name) do
-      ~r/[^A-Za-z0-9._ -]/u
-      |> Regex.replace(name, "_")
+      ascii = Regex.replace(~r/[^A-Za-z0-9._ -]/u, Regex.replace(@invisible, name, ""), "_")
+
+      ascii
       |> trim_name()
       |> truncate(@max_ascii_length)
       |> or_fallback()
@@ -85,10 +100,12 @@ defmodule KanbanWeb.AttachmentResponse do
   prefix).
 
   Control (`Cc`) and format (`Cf`, which includes the bidi overrides such as
-  U+202E) characters are removed, `/` and `\\` become `_`, leading dots and
-  spaces are dropped, and the name is cut to #{@max_encoded_length}
-  characters, keeping its extension, before every byte outside the URI
-  unreserved set is percent-encoded. A name that is empty afterwards, is not
+  U+202E) characters are removed except the zero-width non-joiner and joiner
+  (U+200C, U+200D), which `Kanban.Attachments.Filename` keeps too. `/` and
+  `\\` become `_`, leading dots and spaces are dropped (a name that was only
+  an extension gets the base `"#{@fallback}"`), and the name is cut to
+  #{@max_encoded_length} code points, keeping its extension, before every
+  byte outside the URI unreserved set is percent-encoded. A name that is empty afterwards, is not
   valid UTF-8 or is not a string becomes `"#{@fallback}"`.
 
   ## Examples
@@ -100,7 +117,7 @@ defmodule KanbanWeb.AttachmentResponse do
   @spec filename_star(term()) :: String.t()
   def filename_star(name) when is_binary(name) do
     if String.valid?(name) do
-      ~r/[\p{Cc}\p{Cf}]/u
+      @invisible_but_joiners
       |> Regex.replace(name, "")
       |> String.replace(["/", "\\"], "_")
       |> trim_name()
@@ -164,20 +181,34 @@ defmodule KanbanWeb.AttachmentResponse do
   end
 
   # Drops leading dots and spaces (a hidden or blank-looking name) and
-  # trailing spaces.
-  defp trim_name(name), do: Regex.replace(~r/\A[ .]+|[ ]+\z/, name, "")
+  # trailing spaces. A name that was only an extension (".txt", "...png")
+  # would lose the type hint it consists of, so it gets a base name instead.
+  defp trim_name(name) do
+    rest = Regex.replace(~r/\A[ .]+/, name, "")
+    leading = binary_part(name, 0, byte_size(name) - byte_size(rest))
+    rest = String.trim_trailing(rest, " ")
+
+    if rest != "" and String.contains?(leading, ".") and not String.contains?(rest, "."),
+      do: @fallback <> "." <> rest,
+      else: rest
+  end
 
   defp truncate(name, max) do
-    if String.length(name) <= max, do: name, else: cut(name, max, Path.extname(name))
+    if codepoint_length(name) <= max, do: name, else: cut(name, max, Path.extname(name))
   end
 
   defp cut(name, max, extension) do
-    ext_length = String.length(extension)
+    ext_length = codepoint_length(extension)
 
     if ext_length in 1..@max_extension_length,
-      do: String.slice(name, 0, max - ext_length) <> extension,
-      else: String.slice(name, 0, max)
+      do: take_codepoints(name, max - ext_length) <> extension,
+      else: take_codepoints(name, max)
   end
+
+  defp codepoint_length(name), do: name |> String.codepoints() |> length()
+
+  defp take_codepoints(name, count),
+    do: name |> String.codepoints() |> Enum.take(count) |> Enum.join()
 
   defp or_fallback(""), do: @fallback
   defp or_fallback(name), do: name

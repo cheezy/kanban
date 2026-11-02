@@ -277,8 +277,9 @@ User-uploaded bytes must never run as part of the Stride origin. There are two s
 
 `KanbanWeb.AttachmentResponse` builds the filenames:
 
-- the ASCII fallback replaces anything outside `A-Za-z0-9._ -` with `_`, trims leading dots, caps the name at 150 characters keeping the extension, and falls back to `attachment` when nothing is left;
-- the `filename*` value drops control and format characters, turns `/` and `\` into `_`, and is percent-encoded.
+- the ASCII fallback drops control and format characters, replaces anything else outside `A-Za-z0-9._ -` with `_`, trims leading dots, caps the name at 150 characters keeping the extension, and falls back to `attachment` when nothing is left;
+- the `filename*` value drops control and format characters except U+200C and U+200D (which the stored name keeps, see the upload rules), turns `/` and `\` into `_`, caps the name at 255 code points keeping the extension, and is percent-encoded;
+- in both, a name that is only an extension (`.txt`) keeps it after the base name `attachment` (`attachment.txt`), instead of losing the type hint it consists of. Found by the G489 exploratory session, 2026-11-02.
 
 Control characters never reach a header. Logs carry the attachment id and a reason atom only, never the storage key, filename or contents.
 
