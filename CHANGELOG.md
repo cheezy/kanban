@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Attaching to comments and new tasks.** **Attach files** in the comment box stores files on the comment once it is posted, and the new-task form stores its files once the task is saved.
 - **Who can do what.** The board's owner and members with modify access can upload; every member, read-only included, can see and download; the uploader or the board's owner can delete. Someone who is not a member of the board sees no files, and is told that only members can see them.
 - **Limits and types.** Each file can be up to 25 MiB, a task can hold 20 files, counting the files on its comments, and an Organization's files share 10 GiB; an operator can change all three. PNG, JPEG, GIF, WebP, PDF, plain text, Markdown, CSV and JSON files are accepted; SVG, HTML and zip files are refused, and every file's contents are checked against its type.
+- **Archived tasks' files.** The Archive page lists an archived task's files under its row, read-only, with **Download**.
 - **Organization plan.** While plans are enforced, a free board shows Attachments as a locked feature, and any files it already has stay hidden until it moves into an Organization.
 
 [Attachments](docs/attachments.md) covers using attachments and, for operators, storage, configuration and limits. The Resources section has a new guide, *Attaching Files to Tasks and Comments*.

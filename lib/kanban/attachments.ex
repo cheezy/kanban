@@ -154,6 +154,34 @@ defmodule Kanban.Attachments do
   def list_comment_attachments(_scope, _comment), do: {:error, :not_found}
 
   @doc """
+  Lists the attachments of several tasks on `board_id` at once, task-level
+  and comment-level together, as a map from task id to its files oldest
+  first; a task with no files has no key. A task is included only when its
+  column is on `board_id`, so a task id from another board returns nothing.
+  `:uploaded_by` is preloaded. The checks are those of
+  `list_task_attachments/2`, run once for the board. Used by the board's
+  archive page, which lists many tasks in one read.
+  """
+  @spec list_attachments_by_task(term(), term(), [integer()]) ::
+          {:ok, %{integer() => [TaskAttachment.t()]}} | {:error, error()}
+  def list_attachments_by_task(scope, board_id, task_ids)
+      when is_integer(board_id) and is_list(task_ids) do
+    with {:ok, _viewer} <- gate(scope, board_id, :read) do
+      {:ok,
+       TaskAttachment
+       |> join(:inner, [a], t in assoc(a, :task))
+       |> join(:inner, [_a, t], col in assoc(t, :column))
+       |> where([a, _t, col], col.board_id == ^board_id and a.task_id in ^task_ids)
+       |> oldest_first()
+       |> preload(:uploaded_by)
+       |> Repo.all()
+       |> Enum.group_by(& &1.task_id)}
+    end
+  end
+
+  def list_attachments_by_task(_scope, _board_id, _task_ids), do: {:error, :not_found}
+
+  @doc """
   Authorizes a download of the attachment with `attachment_id` and returns
   it. Any board member, `:read_only` included, may download; a non-member or
   an unknown or non-integer id gets `:not_found`. Emits

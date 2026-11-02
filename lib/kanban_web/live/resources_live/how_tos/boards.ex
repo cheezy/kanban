@@ -201,7 +201,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Boards do
           %{
             title: "The Archive Page",
             content:
-              "The **Archive** tab lists the board's archived tasks. Anyone who can open the board can open it.\n\n- **Total archived** and **Completed** count them.\n- Tasks are grouped under their goal, and the rest are under **Tasks Without Goals**. **Collapse all** and **Expand all** fold the groups.\n- **Back to Board** returns to the board.",
+              "The **Archive** tab lists the board's archived tasks. Anyone who can open the board can open it.\n\n- **Total archived** and **Completed** count them.\n- Tasks are grouped under their goal, and the rest are under **Tasks Without Goals**. **Collapse all** and **Expand all** fold the groups.\n- **Back to Board** returns to the board.\n\nA task with files shows how many under its row; click it to see them and **Download** one. Files can't be uploaded or deleted on an archived task, and like everywhere else only board members see them.",
             image: "/images/resources/guides/archiving-tasks-step-2.png",
             image_width: 1198,
             image_height: 434

@@ -8,16 +8,26 @@ defmodule KanbanWeb.ArchiveLive.Index do
   footer hint. All data reads route through `Kanban.Archives` per the
   project rule against Ecto in LiveViews.
 
+  Each row with files shows them read-only (`KanbanWeb.ArchiveLive.RowWithMenu`),
+  loaded in one read by `Kanban.Attachments.list_attachments_by_task/3` and
+  re-read when a file changes on the board. A free board while plans are
+  enforced, or a viewer who is not a member, gets no file lists.
+
   Filter changes re-derive `:rows` from `:all_rows` in memory rather
   than re-querying — mirrors the filter-tab pattern in
   `KanbanWeb.AgentsLive`.
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.ArchiveLive.RowWithMenu, only: [row_with_menu: 1]
+
   alias Kanban.Archives
+  alias Kanban.Attachments
   alias Kanban.Boards
+  alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.ArchiveLive.Filters
+  alias KanbanWeb.IdParams
 
   @impl true
   def mount(%{"id" => board_id}, _session, socket) do
@@ -194,6 +204,9 @@ defmodule KanbanWeb.ArchiveLive.Index do
     {:noreply, reload(socket)}
   end
 
+  def handle_info({Kanban.Attachments, :attachment_changed, _payload}, socket),
+    do: {:noreply, assign_attachments(socket)}
+
   @impl true
   def handle_info(_msg, socket), do: {:noreply, socket}
 
@@ -218,6 +231,7 @@ defmodule KanbanWeb.ArchiveLive.Index do
     |> assign(:stats, stats)
     |> assign(:menu_open_for, nil)
     |> assign(:collapsed_goal_groups, MapSet.new())
+    |> assign_attachments()
   end
 
   # The reset state for every filter dimension — reason, assignee (and its
@@ -243,7 +257,26 @@ defmodule KanbanWeb.ArchiveLive.Index do
     |> assign(:all_rows, all_rows)
     |> recompute_rows()
     |> assign(:stats, load_stats(board_id))
+    |> assign_attachments()
     |> close_menu()
+  end
+
+  # The files of every archived task, read once for the board. Checking the
+  # plan first keeps a free board's page from recording a feature refusal on
+  # every load; a non-member's refusal leaves the map empty.
+  defp assign_attachments(socket) do
+    %{board: board, all_rows: rows, current_scope: scope} = socket.assigns
+
+    by_task =
+      with true <- Plans.board_unlocked?(board.id),
+           {:ok, by_task} <-
+             Attachments.list_attachments_by_task(scope, board.id, Enum.map(rows, & &1.id)) do
+        by_task
+      else
+        _hidden -> %{}
+      end
+
+    assign(socket, :attachments_by_task, by_task)
   end
 
   defp load_rows(board_id), do: Archives.list_archived_for_board(board_id)
@@ -345,86 +378,6 @@ defmodule KanbanWeb.ArchiveLive.Index do
       else: MapSet.put(set, member)
   end
 
-  # --- Row rendering -------------------------------------------------------
-
-  # One archived row plus its kebab action-menu overlay. Passing the toggle_*
-  # attrs makes the row's leading cell render a chevron (used for a goal's own
-  # row); omitting them renders the row exactly as a plain archived row.
-  attr :task, :map, required: true
-  attr :menu_open_for, :string, default: nil
-  attr :can_modify, :boolean, default: false
-  attr :toggle_event, :string, default: nil
-  attr :toggle_group_key, :string, default: nil
-  attr :expanded, :boolean, default: true
-
-  defp row_with_menu(assigns) do
-    ~H"""
-    <div data-archive-row-wrapper style="position: relative;">
-      <KanbanWeb.ArchiveRow.archive_row
-        task={@task}
-        on_action_menu="open_archive_menu"
-        toggle_event={@toggle_event}
-        toggle_group_key={@toggle_group_key}
-        expanded={@expanded}
-      />
-
-      <div
-        :if={@menu_open_for == to_string(@task.id)}
-        data-archive-row-menu
-        phx-click-away="close_archive_menu"
-        style={[
-          "position: absolute; right: 14px; top: 32px; z-index: 10;",
-          "background: var(--surface);",
-          "border: 1px solid var(--line); border-radius: 6px;",
-          "box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);",
-          "display: flex; flex-direction: column;",
-          "min-width: 160px;"
-        ]}
-      >
-        <button
-          :if={@can_modify}
-          type="button"
-          data-archive-menu-restore
-          phx-click="unarchive"
-          phx-value-id={@task.id}
-          style={[
-            "padding: 8px 12px; border: 0; background: transparent;",
-            "text-align: left; font: inherit; font-size: 12px;",
-            "color: var(--ink); cursor: pointer;"
-          ]}
-        >
-          {gettext("Restore")}
-        </button>
-
-        <button
-          :if={@can_modify}
-          type="button"
-          data-archive-menu-delete
-          phx-click="delete"
-          phx-value-id={@task.id}
-          data-confirm={gettext("Are you sure you want to delete this task?")}
-          style={[
-            "padding: 8px 12px; border: 0; background: transparent;",
-            "text-align: left; font: inherit; font-size: 12px;",
-            "color: var(--st-blocked); cursor: pointer;",
-            "border-top: 1px solid var(--line);"
-          ]}
-        >
-          {gettext("Delete forever")}
-        </button>
-
-        <span
-          :if={not @can_modify}
-          data-archive-menu-read-only
-          style="padding: 8px 12px; font-size: 11.5px; color: var(--ink-3); font-style: italic;"
-        >
-          {gettext("Read-only access")}
-        </span>
-      </div>
-    </div>
-    """
-  end
-
   # --- Mutations -----------------------------------------------------------
 
   defp perform_bulk_archive(socket) do
@@ -510,32 +463,13 @@ defmodule KanbanWeb.ArchiveLive.Index do
   end
 
   defp lookup_archived_task(socket, raw_id) do
-    with {:ok, id} <- parse_id(raw_id),
+    with {:ok, id} <- IdParams.parse(raw_id),
          %{} = task <- Tasks.get_archived_task_for_board(id, socket.assigns.board.id) do
       {:ok, task}
     else
       _ -> {:error, :not_found}
     end
   end
-
-  # Postgres bigint ceiling. Integer.parse/1 is unbounded and LiveView params are
-  # JSON-decoded, so both "9223372036854775808" (a string) and 9223372036854775808
-  # (a JSON number) reach parse_id/1 and would raise DBConnection.EncodeError when
-  # Ecto tried to encode them as a bigint parameter. Ids are positive serials, so
-  # 0 and negatives are rejected here too — every out-of-range value falls through
-  # to the catch-all :error clause and lands in the existing not-found branch.
-  @max_bigint 0x7FFFFFFFFFFFFFFF
-
-  defp parse_id(id) when is_integer(id) and id in 1..@max_bigint, do: {:ok, id}
-
-  defp parse_id(id) when is_binary(id) do
-    case Integer.parse(id) do
-      {n, ""} when n in 1..@max_bigint -> {:ok, n}
-      _ -> :error
-    end
-  end
-
-  defp parse_id(_), do: :error
 
   defp subscribe_to_board_updates(socket, board_id) do
     if connected?(socket) do

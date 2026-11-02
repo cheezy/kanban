@@ -334,7 +334,7 @@ msgstr "在制品限制"
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "在制品限制。设置为0表示无限制。"
 
-#: lib/kanban_web/live/archive_live/index.ex:405
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:75
 #: lib/kanban_web/live/board_live/show.html.heex:372
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
@@ -353,8 +353,8 @@ msgstr "列"
 msgid "Create a new task"
 msgstr "创建新任务"
 
-#: lib/kanban_web/live/archive_live/index.ex:474
-#: lib/kanban_web/live/archive_live/index.ex:499
+#: lib/kanban_web/live/archive_live/index.ex:427
+#: lib/kanban_web/live/archive_live/index.ex:452
 #: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
@@ -371,7 +371,7 @@ msgstr "保存任务"
 msgid "Task created successfully"
 msgstr "任务创建成功"
 
-#: lib/kanban_web/live/archive_live/index.ex:470
+#: lib/kanban_web/live/archive_live/index.ex:423
 #: lib/kanban_web/live/board_live/task_actions.ex:309
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -1894,7 +1894,7 @@ msgstr "完整的 API 文档"
 #: lib/kanban_web/components/board_filter_bar.ex:169
 #: lib/kanban_web/components/goal_progress_header.ex:69
 #: lib/kanban_web/components/task_metadata_grid.ex:85
-#: lib/kanban_web/live/archive_live/index.html.heex:270
+#: lib/kanban_web/live/archive_live/index.html.heex:271
 #: lib/kanban_web/live/goal_live/show.ex:241
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:56
@@ -2039,8 +2039,8 @@ msgstr "删除"
 msgid "Failed to archive task"
 msgstr "归档任务失败"
 
-#: lib/kanban_web/live/archive_live/index.ex:461
-#: lib/kanban_web/live/archive_live/index.ex:495
+#: lib/kanban_web/live/archive_live/index.ex:414
+#: lib/kanban_web/live/archive_live/index.ex:448
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
 msgstr "取消归档任务失败"
@@ -2050,7 +2050,7 @@ msgstr "取消归档任务失败"
 msgid "Task archived successfully"
 msgstr "任务归档成功"
 
-#: lib/kanban_web/live/archive_live/index.ex:457
+#: lib/kanban_web/live/archive_live/index.ex:410
 #, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
 msgstr "已成功取消归档任务"
@@ -2744,7 +2744,7 @@ msgid "tasks completed"
 msgstr "任务已完成"
 
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
-#: lib/kanban_web/live/archive_live/index.ex:33
+#: lib/kanban_web/live/archive_live/index.ex:43
 #: lib/kanban_web/live/board_live/form.ex:133
 #: lib/kanban_web/live/board_live/index.ex:240
 #: lib/kanban_web/live/board_live/params.ex:44
@@ -3076,13 +3076,13 @@ msgstr "无论您是在探索 AI 辅助开发、现代化现有系统,还是构�
 msgid "While many large organizations attempt to improve outcomes by measuring productivity, our experience shows that true gains come from"
 msgstr "尽管许多大型组织试图通过衡量生产力来改进成果,但我们的经验显示,真正的收益来自:"
 
-#: lib/kanban_web/live/archive_live/index.ex:164
+#: lib/kanban_web/live/archive_live/index.ex:174
 #: lib/kanban_web/live/board_live/show.ex:168
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "您没有权限在此看板归档任务"
 
-#: lib/kanban_web/live/archive_live/index.ex:490
+#: lib/kanban_web/live/archive_live/index.ex:443
 #: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -3107,7 +3107,7 @@ msgstr "您没有权限在此看板移动任务"
 msgid "You do not have permission to promote goals on this board"
 msgstr "您没有权限在此看板提升目标"
 
-#: lib/kanban_web/live/archive_live/index.ex:482
+#: lib/kanban_web/live/archive_live/index.ex:435
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr "您没有权限在此看板取消归档任务"
@@ -5252,13 +5252,13 @@ msgstr "未知"
 msgid "Archived"
 msgstr "已归档"
 
-#: lib/kanban_web/live/archive_live/index.ex:413
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:83
 #, elixir-autogen, elixir-format
 msgid "Delete forever"
 msgstr "永久删除"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:11
-#: lib/kanban_web/live/archive_live/index.html.heex:317
+#: lib/kanban_web/live/archive_live/index.html.heex:319
 #: lib/kanban_web/live/org_live/audit_log.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Export CSV"
@@ -5274,12 +5274,12 @@ msgstr "没有归档任务匹配此筛选条件。"
 msgid "Outcome"
 msgstr "结果"
 
-#: lib/kanban_web/live/archive_live/index.ex:421
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:91
 #, elixir-autogen, elixir-format
 msgid "Read-only access"
 msgstr "只读访问"
 
-#: lib/kanban_web/live/archive_live/index.ex:396
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:66
 #, elixir-autogen, elixir-format
 msgid "Restore"
 msgstr "恢复"
@@ -6163,17 +6163,17 @@ msgstr "归档所有 30 天前已完成的任务？"
 msgid "Archive old (30d+)"
 msgstr "归档旧任务（30天+）"
 
-#: lib/kanban_web/live/archive_live/index.ex:449
+#: lib/kanban_web/live/archive_live/index.ex:402
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} completed tasks older than 30 days."
 msgstr "已归档 %{count} 个 30 天前完成的任务。"
 
-#: lib/kanban_web/live/archive_live/index.ex:445
+#: lib/kanban_web/live/archive_live/index.ex:398
 #, elixir-autogen, elixir-format
 msgid "Archived 1 completed task older than 30 days."
 msgstr "已归档 1 个 30 天前完成的任务。"
 
-#: lib/kanban_web/live/archive_live/index.ex:441
+#: lib/kanban_web/live/archive_live/index.ex:394
 #, elixir-autogen, elixir-format
 msgid "No completed tasks older than 30 days were found."
 msgstr "未找到 30 天前已完成的任务。"
@@ -7209,13 +7209,13 @@ msgstr "对比前 %{count} 天"
 msgid "last %{count} days"
 msgstr "最近 %{count} 天"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:273
+#: lib/kanban_web/live/archive_live/index.html.heex:274
 #, elixir-autogen, elixir-format
 msgid "Tasks Without Goals"
 msgstr "无目标的任务"
 
 #: lib/kanban_web/components/archive_row.ex:153
-#: lib/kanban_web/live/archive_live/index.html.heex:227
+#: lib/kanban_web/live/archive_live/index.html.heex:228
 #, elixir-autogen, elixir-format
 msgid "Toggle group"
 msgstr "切换分组"
@@ -7226,7 +7226,7 @@ msgstr "切换分组"
 msgid "All assignees"
 msgstr "分配给"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:304
+#: lib/kanban_web/live/archive_live/index.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "Archived tasks stay searchable and in the audit log, and can be restored or deleted at any time by users with edit access."
 msgstr "已归档的任务仍可搜索并保留在审计日志中，拥有编辑权限的用户可以随时恢复或删除它们。"
@@ -13961,3 +13961,9 @@ msgstr "只有看板成员才能查看此任务的文件。"
 #, elixir-autogen, elixir-format
 msgid "Attachments are available to boards in an Organization."
 msgstr "附件适用于组织中的看板。"
+
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:106
+#, elixir-autogen, elixir-format
+msgid "1 file"
+msgid_plural "%{count} files"
+msgstr[0] "%{count} 个文件"

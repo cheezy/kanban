@@ -200,6 +200,7 @@
               task={goal_group.goal_row}
               menu_open_for={@menu_open_for}
               can_modify={@can_modify}
+              attachments={Map.get(@attachments_by_task, goal_group.goal_row.id, [])}
               toggle_event={if goal_group.child_rows != [], do: "toggle_goal_group"}
               toggle_group_key={if goal_group.child_rows != [], do: goal_group.key}
               expanded={group_expanded?(@collapsed_goal_groups, goal_group.key)}
@@ -285,6 +286,7 @@
                 task={task}
                 menu_open_for={@menu_open_for}
                 can_modify={@can_modify}
+                attachments={Map.get(@attachments_by_task, task.id, [])}
               />
             <% end %>
           <% end %>

@@ -506,6 +506,63 @@ defmodule Kanban.AttachmentsTest do
     end
   end
 
+  describe "list_attachments_by_task/3" do
+    test "groups the files of the named tasks on the board, comment files included, oldest first",
+         ctx do
+      other_task = ctx.board |> column_fixture() |> task_fixture()
+      first = attachment_fixture(ctx.task, %{uploaded_by: ctx.owner})
+      comment = comment_by(ctx.owner, ctx.task)
+      on_comment = attachment_fixture(ctx.task, %{uploaded_by: ctx.owner, comment: comment})
+      elsewhere = attachment_fixture(other_task, %{uploaded_by: ctx.owner})
+
+      assert {:ok, by_task} =
+               ctx.reader
+               |> scope()
+               |> Attachments.list_attachments_by_task(ctx.board.id, [ctx.task.id, other_task.id])
+
+      assert Enum.map(by_task[ctx.task.id], & &1.id) == [first.id, on_comment.id]
+      assert Enum.map(by_task[other_task.id], & &1.id) == [elsewhere.id]
+      assert %Kanban.Accounts.User{} = hd(by_task[ctx.task.id]).uploaded_by
+    end
+
+    test "leaves out tasks that were not named and tasks on another board", ctx do
+      unnamed = ctx.board |> column_fixture() |> task_fixture()
+      attachment_fixture(unnamed, %{uploaded_by: ctx.owner})
+      foreign = ctx.personal_board |> column_fixture() |> task_fixture()
+      attachment_fixture(foreign, %{uploaded_by: ctx.owner})
+
+      assert {:ok, by_task} =
+               ctx.owner
+               |> scope()
+               |> Attachments.list_attachments_by_task(ctx.board.id, [ctx.task.id, foreign.id])
+
+      assert by_task == %{}
+    end
+
+    test "refuses a non-member and a free board the way every list does", ctx do
+      attachment_fixture(ctx.task, %{uploaded_by: ctx.owner})
+
+      assert {:error, :not_found} =
+               ctx.stranger
+               |> scope()
+               |> Attachments.list_attachments_by_task(ctx.board.id, [ctx.task.id])
+
+      assert {:ok, %{}} =
+               ctx.owner |> scope() |> Attachments.list_attachments_by_task(ctx.board.id, [])
+
+      free_task = ctx.personal_board |> column_fixture() |> task_fixture()
+      enforce_plans()
+
+      assert ctx.owner
+             |> scope()
+             |> Attachments.list_attachments_by_task(ctx.personal_board.id, [free_task.id]) ==
+               {:error, {:plan_required, :attachments}}
+
+      assert {:error, :not_found} =
+               ctx.owner |> scope() |> Attachments.list_attachments_by_task("1", [ctx.task.id])
+    end
+  end
+
   describe "fetch_for_download/2" do
     test "fetch_for_download allows a read_only member and returns not_found for a non-member",
          ctx do

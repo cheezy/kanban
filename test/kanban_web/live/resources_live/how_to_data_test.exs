@@ -2034,6 +2034,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       archive = boards_content(["archiving-tasks"])
       archiving = File.read!("lib/kanban/tasks/archiving.ex")
       index = File.read!("lib/kanban_web/live/archive_live/index.ex")
+      row = File.read!("lib/kanban_web/live/archive_live/row_with_menu.ex")
       export = File.read!("lib/kanban_web/controllers/archive_export_controller.ex")
 
       # Archive old: completed more than 30 days ago, in any column.
@@ -2044,9 +2045,15 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       # Restore and Delete forever: owner and modify.
       assert index =~ "assign(:can_modify, user_access in [:owner, :modify])"
-      assert index =~ ~s|gettext("Restore")|
-      assert index =~ ~s|gettext("Delete forever")|
+      assert row =~ ~s|gettext("Restore")|
+      assert row =~ ~s|gettext("Delete forever")|
       assert archive =~ "The board's owner and members with modify access see both."
+
+      # Files: listed read-only (no can_delete), members only.
+      assert row =~ "<AttachmentItems.attachment_list"
+      refute row =~ "can_delete"
+      assert index =~ "Attachments.list_attachments_by_task"
+      assert archive =~ "Files can't be uploaded or deleted on an archived task"
 
       # Restore goes to the bottom of the column and drops a lost assignee.
       assert archiving =~ "Positioning.get_next_position_locked(column)"

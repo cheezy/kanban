@@ -263,6 +263,10 @@ the error message.
   deletes happen at once.
 - **Deleting.** **Delete** asks you to confirm, and a deleted file cannot be
   brought back. Deleting a task deletes its files.
+- **Archived tasks.** The board's **Archive** page shows how many files an
+  archived task has under its row, comment files included; open it to
+  download them. No file can be uploaded or deleted there. A task's files
+  can be deleted again once it is restored.
 - **Downloading.** A download declares the file's recorded size. A file whose
   stored bytes are gone or cannot be read is "not found". If the bytes end
   early, the download fails, so the browser never saves part of a file as

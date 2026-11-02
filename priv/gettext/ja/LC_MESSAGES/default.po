@@ -334,7 +334,7 @@ msgstr "WIP制限"
 msgid "Work In Progress limit. Set to 0 for no limit."
 msgstr "進行中作業の制限。制限なしの場合は0に設定します。"
 
-#: lib/kanban_web/live/archive_live/index.ex:405
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:75
 #: lib/kanban_web/live/board_live/show.html.heex:372
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this task?"
@@ -353,8 +353,8 @@ msgstr "列"
 msgid "Create a new task"
 msgstr "新しいタスクを作成"
 
-#: lib/kanban_web/live/archive_live/index.ex:474
-#: lib/kanban_web/live/archive_live/index.ex:499
+#: lib/kanban_web/live/archive_live/index.ex:427
+#: lib/kanban_web/live/archive_live/index.ex:452
 #: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
@@ -371,7 +371,7 @@ msgstr "タスクを保存"
 msgid "Task created successfully"
 msgstr "タスクが正常に作成されました"
 
-#: lib/kanban_web/live/archive_live/index.ex:470
+#: lib/kanban_web/live/archive_live/index.ex:423
 #: lib/kanban_web/live/board_live/task_actions.ex:309
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -1894,7 +1894,7 @@ msgstr "包括的なAPIドキュメント"
 #: lib/kanban_web/components/board_filter_bar.ex:169
 #: lib/kanban_web/components/goal_progress_header.ex:69
 #: lib/kanban_web/components/task_metadata_grid.ex:85
-#: lib/kanban_web/live/archive_live/index.html.heex:270
+#: lib/kanban_web/live/archive_live/index.html.heex:271
 #: lib/kanban_web/live/goal_live/show.ex:241
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:56
@@ -2039,8 +2039,8 @@ msgstr "削除"
 msgid "Failed to archive task"
 msgstr "タスクのアーカイブに失敗しました"
 
-#: lib/kanban_web/live/archive_live/index.ex:461
-#: lib/kanban_web/live/archive_live/index.ex:495
+#: lib/kanban_web/live/archive_live/index.ex:414
+#: lib/kanban_web/live/archive_live/index.ex:448
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
 msgstr "タスクのアーカイブ解除に失敗しました"
@@ -2050,7 +2050,7 @@ msgstr "タスクのアーカイブ解除に失敗しました"
 msgid "Task archived successfully"
 msgstr "タスクをアーカイブしました"
 
-#: lib/kanban_web/live/archive_live/index.ex:457
+#: lib/kanban_web/live/archive_live/index.ex:410
 #, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
 msgstr "タスクのアーカイブを解除しました"
@@ -2744,7 +2744,7 @@ msgid "tasks completed"
 msgstr "タスク完了"
 
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
-#: lib/kanban_web/live/archive_live/index.ex:33
+#: lib/kanban_web/live/archive_live/index.ex:43
 #: lib/kanban_web/live/board_live/form.ex:133
 #: lib/kanban_web/live/board_live/index.ex:240
 #: lib/kanban_web/live/board_live/params.ex:44
@@ -3076,13 +3076,13 @@ msgstr "AI支援開発の探求、既存システムの近代化、まったく�
 msgid "While many large organizations attempt to improve outcomes by measuring productivity, our experience shows that true gains come from"
 msgstr "多くの大組織が生産性を測ることで成果を改善しようとしますが、私たちの経験では真の成果は次から生まれます:"
 
-#: lib/kanban_web/live/archive_live/index.ex:164
+#: lib/kanban_web/live/archive_live/index.ex:174
 #: lib/kanban_web/live/board_live/show.ex:168
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "このボードでタスクをアーカイブする権限がありません"
 
-#: lib/kanban_web/live/archive_live/index.ex:490
+#: lib/kanban_web/live/archive_live/index.ex:443
 #: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -3107,7 +3107,7 @@ msgstr "このボードでタスクを移動する権限がありません"
 msgid "You do not have permission to promote goals on this board"
 msgstr "このボードでゴールをプロモートする権限がありません"
 
-#: lib/kanban_web/live/archive_live/index.ex:482
+#: lib/kanban_web/live/archive_live/index.ex:435
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr "このボードでタスクを復元する権限がありません"
@@ -5252,13 +5252,13 @@ msgstr "不明"
 msgid "Archived"
 msgstr "アーカイブ済み"
 
-#: lib/kanban_web/live/archive_live/index.ex:413
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:83
 #, elixir-autogen, elixir-format
 msgid "Delete forever"
 msgstr "完全に削除"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:11
-#: lib/kanban_web/live/archive_live/index.html.heex:317
+#: lib/kanban_web/live/archive_live/index.html.heex:319
 #: lib/kanban_web/live/org_live/audit_log.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Export CSV"
@@ -5274,12 +5274,12 @@ msgstr "このフィルターに一致するアーカイブ済みタスクはあ
 msgid "Outcome"
 msgstr "結果"
 
-#: lib/kanban_web/live/archive_live/index.ex:421
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:91
 #, elixir-autogen, elixir-format
 msgid "Read-only access"
 msgstr "読み取り専用アクセス"
 
-#: lib/kanban_web/live/archive_live/index.ex:396
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:66
 #, elixir-autogen, elixir-format
 msgid "Restore"
 msgstr "復元"
@@ -6163,17 +6163,17 @@ msgstr "30日以上前に完了したすべてのタスクをアーカイブし�
 msgid "Archive old (30d+)"
 msgstr "古いものをアーカイブ (30日+)"
 
-#: lib/kanban_web/live/archive_live/index.ex:449
+#: lib/kanban_web/live/archive_live/index.ex:402
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} completed tasks older than 30 days."
 msgstr "30日以上前に完了したタスクを%{count}件アーカイブしました。"
 
-#: lib/kanban_web/live/archive_live/index.ex:445
+#: lib/kanban_web/live/archive_live/index.ex:398
 #, elixir-autogen, elixir-format
 msgid "Archived 1 completed task older than 30 days."
 msgstr "30日以上前に完了したタスクを1件アーカイブしました。"
 
-#: lib/kanban_web/live/archive_live/index.ex:441
+#: lib/kanban_web/live/archive_live/index.ex:394
 #, elixir-autogen, elixir-format
 msgid "No completed tasks older than 30 days were found."
 msgstr "30日以上前に完了したタスクは見つかりませんでした。"
@@ -7206,13 +7206,13 @@ msgstr "前%{count}日比"
 msgid "last %{count} days"
 msgstr "過去%{count}日"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:273
+#: lib/kanban_web/live/archive_live/index.html.heex:274
 #, elixir-autogen, elixir-format
 msgid "Tasks Without Goals"
 msgstr "ゴールのないタスク"
 
 #: lib/kanban_web/components/archive_row.ex:153
-#: lib/kanban_web/live/archive_live/index.html.heex:227
+#: lib/kanban_web/live/archive_live/index.html.heex:228
 #, elixir-autogen, elixir-format
 msgid "Toggle group"
 msgstr "グループの切り替え"
@@ -7223,7 +7223,7 @@ msgstr "グループの切り替え"
 msgid "All assignees"
 msgstr "担当者"
 
-#: lib/kanban_web/live/archive_live/index.html.heex:304
+#: lib/kanban_web/live/archive_live/index.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "Archived tasks stay searchable and in the audit log, and can be restored or deleted at any time by users with edit access."
 msgstr "アーカイブされたタスクは検索可能で監査ログにも残り、編集権限を持つユーザーがいつでも復元または削除できます。"
@@ -13958,3 +13958,9 @@ msgstr "このタスクのファイルはボードのメンバーだけが閲覧
 #, elixir-autogen, elixir-format
 msgid "Attachments are available to boards in an Organization."
 msgstr "添付ファイルは組織内のボードで利用できます。"
+
+#: lib/kanban_web/live/archive_live/row_with_menu.ex:106
+#, elixir-autogen, elixir-format
+msgid "1 file"
+msgid_plural "%{count} files"
+msgstr[0] "%{count} 件のファイル"
