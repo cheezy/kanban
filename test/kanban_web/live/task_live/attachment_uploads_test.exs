@@ -206,6 +206,13 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
                AttachmentUploads.error_message(:type_not_allowed)
     end
 
+    # Matches the locked-feature prompt ("Available to organizations") and the
+    # guides, which speak of Organizations, not of a paid plan.
+    test "a lapsed plan is explained in terms of Organizations" do
+      assert AttachmentUploads.error_message({:plan_required, :attachments}) ==
+               "Attachments are available to boards in an Organization."
+    end
+
     test "the file-count sentence is pluralised" do
       put_limits(max_files_per_task: 1)
       assert AttachmentUploads.error_message(:too_many_files) == "A task can hold at most 1 file."

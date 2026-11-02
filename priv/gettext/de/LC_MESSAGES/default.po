@@ -13814,11 +13814,6 @@ msgstr "Sind Sie sicher, dass Sie diesen Anhang löschen möchten?"
 msgid "Attachment deleted"
 msgstr "Anhang gelöscht"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
-#, elixir-autogen, elixir-format
-msgid "Attachments need a paid plan."
-msgstr "Anhänge erfordern einen kostenpflichtigen Plan."
-
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:351
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
@@ -14033,3 +14028,8 @@ msgstr "%{number} MB"
 #, elixir-autogen, elixir-format
 msgid "Only board members can see this task's files."
 msgstr "Nur Board-Mitglieder können die Dateien dieser Aufgabe sehen."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
+#, elixir-autogen, elixir-format
+msgid "Attachments are available to boards in an Organization."
+msgstr "Anhänge sind für Boards in einer Organisation verfügbar."

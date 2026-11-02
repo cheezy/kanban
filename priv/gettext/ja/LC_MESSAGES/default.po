@@ -13742,11 +13742,6 @@ msgstr "この添付ファイルを削除してもよろしいですか？"
 msgid "Attachment deleted"
 msgstr "添付ファイルを削除しました"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
-#, elixir-autogen, elixir-format
-msgid "Attachments need a paid plan."
-msgstr "添付ファイルには有料プランが必要です。"
-
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:351
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
@@ -13958,3 +13953,8 @@ msgstr "%{number} MB"
 #, elixir-autogen, elixir-format
 msgid "Only board members can see this task's files."
 msgstr "このタスクのファイルはボードのメンバーだけが閲覧できます。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
+#, elixir-autogen, elixir-format
+msgid "Attachments are available to boards in an Organization."
+msgstr "添付ファイルは組織内のボードで利用できます。"

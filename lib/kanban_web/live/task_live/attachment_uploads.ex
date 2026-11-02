@@ -368,7 +368,7 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
     do: gettext("The upload failed. Please try again.")
 
   def error_message({:plan_required, :attachments}),
-    do: gettext("Attachments need a paid plan.")
+    do: gettext("Attachments are available to boards in an Organization.")
 
   def error_message(:unauthorized),
     do: gettext("You are not allowed to change attachments on this task.")

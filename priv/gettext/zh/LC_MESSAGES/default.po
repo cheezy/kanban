@@ -13745,11 +13745,6 @@ msgstr "确定要删除此附件吗？"
 msgid "Attachment deleted"
 msgstr "附件已删除"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
-#, elixir-autogen, elixir-format
-msgid "Attachments need a paid plan."
-msgstr "附件需要付费套餐。"
-
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:351
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
@@ -13961,3 +13956,8 @@ msgstr "%{number} MB"
 #, elixir-autogen, elixir-format
 msgid "Only board members can see this task's files."
 msgstr "只有看板成员才能查看此任务的文件。"
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
+#, elixir-autogen, elixir-format
+msgid "Attachments are available to boards in an Organization."
+msgstr "附件适用于组织中的看板。"

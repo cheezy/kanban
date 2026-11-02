@@ -13764,11 +13764,6 @@ msgstr "Voulez-vous vraiment supprimer cette pièce jointe ?"
 msgid "Attachment deleted"
 msgstr "Pièce jointe supprimée"
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
-#, elixir-autogen, elixir-format
-msgid "Attachments need a paid plan."
-msgstr "Les pièces jointes nécessitent un forfait payant."
-
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:351
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
@@ -13983,3 +13978,8 @@ msgstr "%{number} Mo"
 #, elixir-autogen, elixir-format
 msgid "Only board members can see this task's files."
 msgstr "Seuls les membres du tableau peuvent voir les fichiers de cette tâche."
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
+#, elixir-autogen, elixir-format
+msgid "Attachments are available to boards in an Organization."
+msgstr "Les pièces jointes sont disponibles pour les tableaux d’une organisation."

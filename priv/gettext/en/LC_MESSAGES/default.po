@@ -13725,11 +13725,6 @@ msgstr ""
 msgid "Attachment deleted"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
-#, elixir-autogen, elixir-format
-msgid "Attachments need a paid plan."
-msgstr ""
-
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:351
 #, elixir-autogen, elixir-format
 msgid "Cancel upload of %{name}"
@@ -13943,4 +13938,9 @@ msgstr ""
 #: lib/kanban_web/live/task_live/attachments_component.ex:332
 #, elixir-autogen, elixir-format
 msgid "Only board members can see this task's files."
+msgstr ""
+
+#: lib/kanban_web/live/task_live/attachment_uploads.ex:371
+#, elixir-autogen, elixir-format
+msgid "Attachments are available to boards in an Organization."
 msgstr ""
