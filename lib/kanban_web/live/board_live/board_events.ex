@@ -20,7 +20,8 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   open task form re-read the plan. A column
   change re-renders every column. A deleted task that is open in the task view
   or an edit form closes it, with a flash when the delete came from elsewhere. Comment changes go straight to the open
-  comment thread. Attachment changes refresh the open task's Attachments
+  comment thread, and refresh the Attachments section too, since a deleted
+  comment takes its files with it. Attachment changes refresh the open task's Attachments
   section and its comment thread, which lists each comment's files; the
   board columns render no attachments, so they are not reloaded.
 
@@ -98,9 +99,12 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   # view and task edit modals does, so forward the change to it. refresh/1
   # targets the thread component directly (never ViewComponent, whose
   # permission assigns a partial send_update would reset) and skips a thread
-  # that is not open.
+  # that is not open. Deleting a comment deletes its files with no attachment
+  # broadcast of its own, and those files count toward the task's limit, so
+  # the Attachments section recounts its room as well.
   def handle({Kanban.Tasks.Comments, :comment_changed, payload}, socket) do
     CommentThreadComponent.refresh(payload)
+    AttachmentsComponent.refresh(payload)
     {:noreply, socket}
   end
 

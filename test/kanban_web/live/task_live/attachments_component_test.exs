@@ -606,6 +606,26 @@ defmodule KanbanWeb.TaskLive.AttachmentsComponentTest do
                "A task can hold at most 1 file. Delete a file to upload another."
     end
 
+    # Deleting a comment deletes its files, and only a comment broadcast
+    # follows, so the section must recount its room on that broadcast too.
+    test "deleting a comment that held files gives the drop zone back",
+         %{conn: conn, user: owner} do
+      put_limits(max_files_per_task: 2)
+      {board, task} = board_with_task(owner)
+      attachment_fixture(task, %{uploaded_by: owner})
+      scope = Scope.for_user(owner)
+      {:ok, comment} = Comments.create_comment(scope, task, %{"content" => "see file"})
+      attachment_fixture(task, %{comment: comment, filename: "on-comment.txt"})
+      view = open_task_view(conn, board, task)
+      assert has_element?(view, section(task) <> "-full")
+
+      {:ok, _deleted} = Comments.delete_comment(scope, comment)
+      :timer.sleep(100)
+
+      refute has_element?(view, section(task) <> "-full")
+      assert has_element?(view, upload_form(task) <> " label[phx-drop-target]")
+    end
+
     test "a file stored elsewhere for the last slot blocks the staged one at once",
          %{conn: conn, user: owner} do
       put_limits(max_files_per_task: 2)
