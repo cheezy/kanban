@@ -245,6 +245,31 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
       assert count(html, "#upload-entry-2 .hero-document") == 1
     end
 
+    # The bar alone cannot carry the progress: in the light theme its fill is
+    # under 3:1 against its own track, so the percentage is shown as text too.
+    test "shows each staged entry's progress as text beside its size" do
+      html = render_entries(upload([entry(%{ref: "7", client_name: "a.txt", progress: 42})]))
+
+      assert html
+             |> doc()
+             |> LazyHTML.query("#upload-entry-7-progress")
+             |> LazyHTML.text()
+             |> String.trim() ==
+               "42%"
+
+      assert attr(html, "#upload-entry-7-progress", "aria-hidden") == ["true"]
+      assert attr(html, "#upload-entry-7 progress", "value") == ["42"]
+    end
+
+    test "draws the progress fill in the gated brand accent" do
+      html = render_entries(upload([entry(%{ref: "8", client_name: "b.txt"})]))
+
+      [class] = attr(html, "#upload-entry-8 progress", "class")
+      refute class =~ "progress-primary"
+      assert [style] = attr(html, "#upload-entry-8 progress", "style")
+      assert style =~ "color: var(--stride-orange)"
+    end
+
     test "shows the translated error and no preview for a rejected staged image" do
       rejected = entry(%{ref: "3", client_name: "huge.png", valid?: false})
       html = render_entries(upload([rejected], [{"3", :too_large}]))

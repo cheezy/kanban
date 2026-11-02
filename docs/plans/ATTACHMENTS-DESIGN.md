@@ -219,7 +219,7 @@ All UI text is translated in every locale with no fuzzy entries, and every new s
 - **`KanbanWeb.TaskLive.AttachmentUploads`** wraps `allow_upload`, with the accepted extensions, file size and entry count taken from G488's allow-list and limits. It stores consumed entries through `Kanban.Attachments` and maps upload and context errors to translated messages.
 - **`KanbanWeb.TaskLive.Components.AttachmentItems`** renders an attachment list and the staged uploads:
   - each attachment shows a type icon, filename, human-readable size, uploader (or *Unknown*), relative date, a download link and an optional delete button with a confirmation;
-  - each staged upload shows its progress bar, a cancel control and its errors.
+  - each staged upload shows its progress as a bar and as a percentage beside its size (the bar alone falls under 3:1 against its track in the light theme), a cancel control and its errors.
 
 ### 6.2 Task detail view (W2511)
 

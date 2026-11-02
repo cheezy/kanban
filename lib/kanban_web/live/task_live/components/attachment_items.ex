@@ -323,6 +323,13 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           <span style="font-size: 12px; color: var(--ink-2);">
             {Exports.format_bytes(entry.client_size)}
           </span>
+          <span
+            id={"upload-entry-#{entry.ref}-progress"}
+            aria-hidden="true"
+            style="font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums;"
+          >
+            {entry.progress}%
+          </span>
           <.button
             type="button"
             class="btn btn-ghost btn-xs"
@@ -339,7 +346,8 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           value={entry.progress}
           max="100"
           aria-label={gettext("Upload progress for %{name}", name: name)}
-          class="progress progress-primary w-full"
+          class="progress w-full"
+          style="color: var(--stride-orange);"
         >
           {entry.progress}%
         </progress>
