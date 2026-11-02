@@ -145,6 +145,33 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
     end
   end
 
+  describe "format_size/1" do
+    test "shows a byte count with one decimal, dropping a whole number's .0" do
+      assert AttachmentUploads.format_size(12) == "12 B"
+      assert AttachmentUploads.format_size(2048) == "2 KB"
+      assert AttachmentUploads.format_size(1_572_864) == "1.5 MB"
+      assert AttachmentUploads.format_size(26_214_400) == "25 MB"
+      assert AttachmentUploads.format_size(10 * 1024 * 1024 * 1024) == "10 GB"
+      assert AttachmentUploads.format_size(nil) == "—"
+    end
+
+    test "uses the locale's decimal separator and unit symbols" do
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert AttachmentUploads.format_size(1_572_864) == "1,5 MB"
+      end)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "fr", fn ->
+        assert AttachmentUploads.format_size(1_572_864) == "1,5 Mo"
+        assert AttachmentUploads.format_size(12) == "12 o"
+        assert AttachmentUploads.error_message(:too_large) =~ "25 Mo"
+      end)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+        assert AttachmentUploads.format_size(1_572_864) == "1.5 MB"
+      end)
+    end
+  end
+
   describe "error_message/1" do
     test "error_message translates every upload and context error" do
       put_limits(max_file_bytes: 2048, max_files_per_task: 7)
@@ -172,7 +199,7 @@ defmodule KanbanWeb.TaskLive.AttachmentUploadsTest do
         assert is_binary(message) and message != "", "no message for #{inspect(reason)}"
       end
 
-      assert AttachmentUploads.error_message(:too_large) =~ "2.0 KB"
+      assert AttachmentUploads.error_message(:too_large) =~ "2 KB"
       assert AttachmentUploads.error_message(:too_many_files) =~ "7"
 
       assert AttachmentUploads.error_message(:not_accepted) ==

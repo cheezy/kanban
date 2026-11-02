@@ -36,7 +36,6 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
   alias KanbanWeb.AttachmentResponse
   alias KanbanWeb.TaskLive.AttachmentUploads
   alias KanbanWeb.TimeAgo
-  alias KanbanWeb.WorkspaceLive.Exports
 
   @doc """
   Lists `attachments`, or "No attachments yet" when there are none.
@@ -90,7 +89,9 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
             {attachment.filename}
           </div>
           <div style="font-size: 12px; color: var(--ink-2);">
-            {Exports.format_bytes(attachment.byte_size)} · {uploader_name(attachment.uploaded_by)} · {TimeAgo.format_age(
+            {AttachmentUploads.format_size(attachment.byte_size)} · {uploader_name(
+              attachment.uploaded_by
+            )} · {TimeAgo.format_age(
               to_utc(attachment.inserted_at),
               :coarse
             )}
@@ -332,7 +333,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
             {name}
           </span>
           <span style="font-size: 12px; color: var(--ink-2);">
-            {Exports.format_bytes(entry.client_size)}
+            {AttachmentUploads.format_size(entry.client_size)}
           </span>
           <span
             id={"upload-entry-#{entry.ref}-progress"}

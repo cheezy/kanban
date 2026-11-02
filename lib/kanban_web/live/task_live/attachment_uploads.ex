@@ -30,7 +30,6 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   alias Kanban.Attachments.Limits
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
-  alias KanbanWeb.WorkspaceLive.Exports
 
   @doc """
   `true` when the upload `name` is registered on `socket` and not disallowed.
@@ -272,6 +271,13 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   # space after it.
   @unspaced_locales ~w(ja zh)
 
+  # Languages that write a decimal comma.
+  @decimal_comma_locales ~w(de es fr pt)
+
+  @kib 1024
+  @mib 1024 * 1024
+  @gib 1024 * 1024 * 1024
+
   @doc """
   Joins translated sentences, dropping `nil`s, the way the current locale
   spaces them: a space between sentences, none in Japanese or Chinese. Use
@@ -282,9 +288,43 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
     sentences |> Enum.reject(&is_nil/1) |> Enum.join(sentence_gap())
   end
 
-  defp sentence_gap do
+  defp sentence_gap, do: if(language() in @unspaced_locales, do: "", else: " ")
+
+  defp language do
     [language | _region] = KanbanWeb.Gettext |> Gettext.get_locale() |> String.split(["_", "-"])
-    if language in @unspaced_locales, do: "", else: " "
+    language
+  end
+
+  @doc """
+  A byte count as the attachment UI shows it, in the current locale: binary
+  units (1 KB is 1024 bytes), at most one decimal and none for a whole
+  number, the locale's decimal separator, and its unit symbols (French
+  writes o, Ko, Mo, Go). Anything but a non-negative integer is "—".
+  """
+  @spec format_size(term()) :: String.t()
+  def format_size(bytes) when is_integer(bytes) and bytes >= 0 and bytes < @kib,
+    do: gettext("%{number} B", number: bytes)
+
+  def format_size(bytes) when is_integer(bytes) and bytes >= 0 and bytes < @mib,
+    do: gettext("%{number} KB", number: decimal(bytes / @kib))
+
+  def format_size(bytes) when is_integer(bytes) and bytes >= 0 and bytes < @gib,
+    do: gettext("%{number} MB", number: decimal(bytes / @mib))
+
+  def format_size(bytes) when is_integer(bytes) and bytes >= 0,
+    do: gettext("%{number} GB", number: decimal(bytes / @gib))
+
+  def format_size(_bytes), do: "—"
+
+  defp decimal(value) do
+    rounded = Float.round(value, 1)
+
+    text =
+      if rounded == Float.round(rounded),
+        do: rounded |> trunc() |> Integer.to_string(),
+        else: :erlang.float_to_binary(rounded, decimals: 1)
+
+    if language() in @decimal_comma_locales, do: String.replace(text, ".", ","), else: text
   end
 
   @doc """
@@ -295,7 +335,7 @@ defmodule KanbanWeb.TaskLive.AttachmentUploads do
   @spec error_message(term()) :: String.t()
   def error_message(:too_large) do
     gettext("This file is larger than the %{size} limit.",
-      size: Exports.format_bytes(Limits.max_file_bytes())
+      size: format_size(Limits.max_file_bytes())
     )
   end
 

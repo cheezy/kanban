@@ -196,6 +196,16 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
       assert attr(html, ~s(button[phx-value-id="4"]), "aria-label") == ["Delete shot.png"]
     end
 
+    test "shows each size in the viewer's locale" do
+      Gettext.with_locale(KanbanWeb.Gettext, "fr", fn ->
+        html = render_list([attachment(%{id: 8, byte_size: 1_572_864})])
+        assert html =~ "1,5 Mo"
+
+        staged = render_entries(upload([entry(%{client_size: 2048})]))
+        assert staged =~ "2 Ko"
+      end)
+    end
+
     test "escapes a crafted filename in the alt text and labels" do
       html = render_list([attachment(%{id: 6, filename: ~s("><script>x</script>.png)})])
 
