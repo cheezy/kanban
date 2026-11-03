@@ -418,6 +418,32 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
     assert Enum.all?(lengths, &(&1 <= max))
   end
 
+  test "archive names are printed with their control characters escaped", ctx do
+    ctx = seed_workspace(ctx)
+    path = export_archive(ctx)
+    delete_source(ctx)
+    files = raw_archive(path)
+    name = "Evil\e]0;owned\a ws"
+
+    manifest =
+      files["manifest.json"]
+      |> Jason.decode!()
+      |> put_in(["workspace", "name"], name)
+      |> Jason.encode!()
+
+    output =
+      import!([
+        "--file",
+        rezip(ctx, Map.put(files, "manifest.json", manifest)),
+        "--org-admin-email",
+        ctx.org_admin.email
+      ])
+
+    assert output =~ ~S(workspace "Evil\e]0;owned\x07 ws")
+    refute output =~ ~r/[\e\a]/
+    assert imported_workspace(name).name == name
+  end
+
   test "a disabled account is never matched", ctx do
     ctx = seed_workspace(ctx)
     path = export_archive(ctx)
@@ -595,6 +621,32 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
         end)
       end
 
+      assert counts() == before
+    end
+
+    test "a refused row's archive name reaches the error with its controls escaped", ctx do
+      ctx = seed_workspace(ctx)
+      path = export_archive(ctx)
+      files = raw_archive(path)
+
+      boards =
+        files["boards.json"]
+        |> Jason.decode!()
+        |> Enum.map(&Map.merge(&1, %{"name" => "Evil\e[2J board", "read_only" => "nope"}))
+        |> Jason.encode!()
+
+      bad = rezip(ctx, Map.put(files, "boards.json", boards))
+      before = counts()
+
+      error =
+        assert_raise Mix.Error, fn ->
+          capture_io(fn ->
+            ImportWorkspace.run(["--file", bad, "--org-admin-email", ctx.org_admin.email])
+          end)
+        end
+
+      assert error.message =~ ~S("Evil\e[2J board")
+      refute error.message =~ "\e"
       assert counts() == before
     end
 

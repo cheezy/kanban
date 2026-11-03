@@ -51,6 +51,11 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   is skipped and named under "Skipped", as is each file the export itself
   left out. A dry run verifies the files and stores none.
 
+  Names in the archive are printed as given, except that a control character
+  (such as the ESC that starts a terminal escape sequence) is shown as a
+  visible escape like `\\e`, so a crafted archive cannot send control
+  sequences to your terminal. The imported names themselves are unchanged.
+
   It starts only the database connection (`Ecto.Migrator.with_repo/2`) and
   the HTTP client attachment storage may need, not the application, so no
   job, broadcast or notification runs during an import. In a production release, where Mix is not available, call
@@ -61,6 +66,7 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
 
   alias Kanban.Repo
   alias Kanban.Workspaces.Export.Importer
+  alias Kanban.Workspaces.Export.Importer.Refs
 
   @switches [file: :string, org_admin_email: :string, dry_run: :boolean]
   @usage "mix kanban.import_workspace --file PATH --org-admin-email EMAIL [--dry-run]"
@@ -117,16 +123,16 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   end
 
   defp handle({:error, reason}),
-    do: Mix.raise("Import failed: #{message(reason)} Nothing was written.")
+    do:
+      "Import failed: #{message(reason)} Nothing was written." |> Refs.printable() |> Mix.raise()
 
   defp report_header(report) do
-    shell = Mix.shell()
     verb = if report.dry_run, do: "Would import", else: "Imported"
-    shell.info(~s(#{verb} workspace "#{report.workspace_name}":))
+    say(~s(#{verb} workspace "#{report.workspace_name}":))
 
     report.counts
     |> Enum.sort()
-    |> Enum.each(fn {entity, count} -> shell.info("  #{entity}: #{count}") end)
+    |> Enum.each(fn {entity, count} -> say("  #{entity}: #{count}") end)
   end
 
   defp report_changes(report) do
@@ -145,11 +151,11 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   end
 
   defp report_reattributed(count) when count > 0,
-    do: Mix.shell().info("Reattributed to the importing org-admin: #{count}")
+    do: say("Reattributed to the importing org-admin: #{count}")
 
   defp report_reattributed(_count), do: :ok
 
-  defp report_dry_run(true), do: Mix.shell().info("Dry run: nothing was written.")
+  defp report_dry_run(true), do: say("Dry run: nothing was written.")
   defp report_dry_run(_dry_run), do: :ok
 
   defp skipped_line({entity, why}), do: "#{entity}: #{why}"
@@ -159,9 +165,13 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   defp report_list(_title, []), do: :ok
 
   defp report_list(title, items) do
-    Mix.shell().info(title)
-    Enum.each(items, &Mix.shell().info("  #{&1}"))
+    say(title)
+    Enum.each(items, &say("  #{&1}"))
   end
+
+  # Every printed line carries archive text, so control characters in it are
+  # shown as visible escapes rather than reaching the terminal.
+  defp say(line), do: line |> Refs.printable() |> Mix.shell().info()
 
   defp message(:not_org_admin),
     do: "that email does not belong to an enabled org-admin on this instance."

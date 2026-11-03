@@ -94,6 +94,13 @@ mix kanban.import_workspace --file PATH --org-admin-email admin@example.com
 - Users are matched by email and never created. Anyone with no account on the
   instance, a disabled account, or an account outside the Organization is
   left unattributed and listed in the report, so you can invite them.
+- The report and any error print names from the archive (workspace, board,
+  column, label and file names, task identifiers and emails) as given,
+  except that a control character is shown as a visible escape: ESC as `\e`,
+  newline as `\n`, other control bytes as `\x07` and the like, and
+  bidirectional controls as `\u{202E}` and the like. A crafted archive
+  cannot send control sequences to your terminal this way. The imported
+  names themselves are not changed.
 
 ### Attachments in an import
 
