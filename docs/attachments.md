@@ -210,6 +210,12 @@ without touching the file, so the job can never remove a file that a live
 attachment points to. A file the store cannot delete is retried with a
 growing delay, up to one day apart, counted from the moment it was tried.
 
+Each run logs how many entries it handled and how many are still due, and
+stores that last number as the `kanban.attachment.blob_cleanup_completed.left`
+metric, so a queue that keeps growing (a store that keeps refusing deletes)
+shows in the metrics history; see
+[Attachment events](telemetry.md#attachment-events).
+
 Each run takes at most 200 entries and stops taking new ones after 10
 minutes, leaving the rest for the next run, and Oban ends a run outright at
 30 minutes. That keeps a run against a store that hangs well inside Oban's

@@ -2,7 +2,9 @@ defmodule Kanban.Telemetry.Catalog.AttachmentEvents do
   @moduledoc """
   The attachment events in `Kanban.Telemetry.Catalog`.
 
-  `Kanban.Attachments` emits all four. Metadata carries ids, sizes and the
+  `Kanban.Attachments` emits the first four, and
+  `Kanban.Attachments.BlobCleanupWorker` emits `blob_cleanup_completed` once
+  per run, with counts only. Metadata carries ids, sizes and the
   refusal reason only, never a filename, the file's contents or its hash.
   `uploaded` and `upload_refused` also carry `source`: `:upload` for a
   person's upload. `:import` is reserved for the Jira import's
@@ -65,6 +67,18 @@ defmodule Kanban.Telemetry.Catalog.AttachmentEvents do
       metrics: [counter: :count],
       persist: false,
       tags: [:reason, :source]
+    },
+    %{
+      name: [:kanban, :attachment, :blob_cleanup_completed],
+      kind: :event,
+      domain: :attachment,
+      measurements: [:deleted, :in_use, :invalid, :failed, :skipped, :deferred, :left],
+      metadata: [],
+      description:
+        "A blob cleanup run finished. Each measurement counts tombstones: deleted (blob removed or already gone), in_use (a live attachment still names the key), invalid (key failed validation), failed (storage refused; retried later), skipped (handled by another run), deferred (left because the run's time budget ran out) and left (still due when the run ended). A left that grows from run to run means blobs are not being removed.",
+      legacy: false,
+      metrics: [sum: :left, sum: :deleted, sum: :failed, sum: :invalid],
+      persist: true
     }
   ]
 

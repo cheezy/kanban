@@ -217,6 +217,8 @@ A run also has a time budget. It stops claiming once `max_run_seconds` (default 
 
 The worker only deletes keys the database wrote, and those keys still pass the facade's validation, so it cannot be steered to delete arbitrary paths. It accepts a `now` job argument for tests, as `Export.CleanupWorker` does.
 
+Each run emits `[:kanban, :attachment, :blob_cleanup_completed]` with its tombstone counts (`deleted`, `in_use`, `invalid`, `failed`, `skipped`, `deferred`, `left`) and no metadata. `kanban.attachment.blob_cleanup_completed.left` is stored, one row per run, so a backlog that keeps growing is visible without reading logs (decided 2026-11-02, after the G488 campaign found the worker emitted no telemetry).
+
 ---
 
 ## 6. Board UI (G489)

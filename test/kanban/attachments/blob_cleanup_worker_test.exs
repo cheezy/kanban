@@ -10,6 +10,7 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Attachments.BlobCleanupWorker
   alias Kanban.Attachments.BlobDeletion
@@ -20,6 +21,7 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
   @moduletag :tmp_dir
 
   @now ~U[2026-11-01 12:00:00.000000Z]
+  @run_event [:kanban, :attachment, :blob_cleanup_completed]
 
   defmodule ResultAdapter do
     @moduledoc false
@@ -289,6 +291,55 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       log = capture_log([level: :info], fn -> assert :ok = run() end)
       assert log =~ "1 deleted"
       assert log =~ "0 left for the next run"
+    end
+
+    test "emits blob_cleanup_completed with the run's counts and nothing else" do
+      attach_telemetry(@run_event)
+      Application.put_env(:kanban, BlobCleanupWorker, batch_size: 3)
+      task = user_fixture() |> board_fixture() |> column_fixture() |> task_fixture()
+      live = stored_blob()
+      attachment_fixture(task, storage_key: live)
+
+      tombstone(stored_blob(), minutes(-4))
+      tombstone(live, minutes(-3))
+      tombstone("../outside", minutes(-2))
+      past_the_batch = tombstone(stored_blob(), minutes(-1))
+
+      capture_log(fn -> assert :ok = run() end)
+
+      assert_received {:telemetry_event, @run_event, measurements, metadata}
+
+      assert measurements == %{
+               deleted: 1,
+               in_use: 1,
+               invalid: 1,
+               failed: 0,
+               skipped: 0,
+               deferred: 0,
+               left: 1
+             }
+
+      assert metadata == %{}
+      refute inspect(measurements) =~ live
+
+      Process.put(:delete_result, {:error, :storage_unavailable})
+      capture_log(fn -> assert :ok = run() end)
+
+      assert_received {:telemetry_event, @run_event, %{failed: 1, deleted: 0, left: 0}, _}
+      assert %BlobDeletion{attempts: 1} = reload(past_the_batch)
+    end
+
+    test "kanban.attachment.blob_cleanup_completed.left is the stored metric" do
+      [first | rest] =
+        Enum.filter(
+          KanbanWeb.Telemetry.metrics(),
+          &(Enum.take(&1.name, 3) == [:kanban, :attachment, :blob_cleanup_completed])
+        )
+
+      assert first.name == @run_event ++ [:left]
+      assert %Telemetry.Metrics.Sum{} = first
+      assert KanbanWeb.Telemetry.MetricsStorage.__persist__?(first)
+      refute Enum.any?(rest, &KanbanWeb.Telemetry.MetricsStorage.__persist__?/1)
     end
 
     test "processes at most batch_size rows per run, oldest first" do

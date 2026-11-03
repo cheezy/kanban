@@ -53,7 +53,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   is why that adapter is for a single machine only.
 
   Logs carry counts, tombstone ids and reason atoms, never a storage key or a
-  credential. Settings come from
+  credential. Each run also emits `[:kanban, :attachment, :blob_cleanup_completed]`
+  with the same counts, so a backlog that keeps growing (a store that keeps
+  refusing deletes) shows up in metrics, not only in the log. Settings come from
   `config :kanban, Kanban.Attachments.BlobCleanupWorker`. A `"now"` ISO 8601
   job argument replaces the current time, for tests.
   """
@@ -114,7 +116,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
         Map.update!(acc, outcome(tombstone, clock, budget_ms), &(&1 + 1))
       end)
 
-    counts |> Map.put(:left, due_count(clock.now)) |> log_counts()
+    counts = Map.put(counts, :left, due_count(clock.now))
+    log_counts(counts)
+    Kanban.Telemetry.emit([:kanban, :attachment, :blob_cleanup_completed], counts, %{})
     Storage.sweep(@sweep_after_seconds)
   end
 

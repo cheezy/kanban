@@ -817,11 +817,12 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
 W2508 added these. They are declared in
 `Kanban.Telemetry.Catalog.AttachmentEvents`
 (`lib/kanban/telemetry/catalog/attachment_events.ex`) and emitted by the
-attachments context, `Kanban.Attachments`. The board UI (uploads, deletes,
+attachments context, `Kanban.Attachments`, except `blob_cleanup_completed`,
+which `Kanban.Attachments.BlobCleanupWorker` emits. The board UI (uploads, deletes,
 and the `/attachments/:id/download` and `/preview` routes) calls it, so it
 produces these events; the REST API and MCP are not wired to it yet. A file
 removed with its comment, task or board goes through the database cascade
-and emits no `deleted` event. Every event measures `count: 1`;
+and emits no `deleted` event. The first four measure `count: 1`;
 `uploaded`, `downloaded` and `deleted` also measure the file's `byte_size`.
 
 | Event | Metadata | Emitted by |
@@ -830,6 +831,7 @@ and emits no `deleted` event. Every event measures `count: 1`;
 | `[:kanban, :attachment, :upload_refused]` | `reason`, `source`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.create_attachment/4`, when a limit, the file or storage refuses the upload |
 | `[:kanban, :attachment, :downloaded]` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | `Kanban.Attachments.fetch_for_download/3`, once the download, preview or `HEAD` is authorized |
 | `[:kanban, :attachment, :deleted]` | `attachment_id`, `task_id`, `board_id`, `user_id` | `Kanban.Attachments.delete_attachment/2`, after the row is deleted |
+| `[:kanban, :attachment, :blob_cleanup_completed]` | none | `Kanban.Attachments.BlobCleanupWorker`, once per run |
 
 - **Ids, sizes and reason codes only.** The filename, the file's contents and
   its sha256 are never sent, in telemetry or in the audit event below.
@@ -859,7 +861,15 @@ and emits no `deleted` event. Every event measures `count: 1`;
 - **`user_id` is the actor.** On `uploaded` and `upload_refused` it is the
   uploader, on `downloaded` the member who downloads, and on `deleted` the
   person who deleted the file. `comment_id` is `nil` for a task-level file.
-- **None of them is persisted.** They are charted live only.
+- **`blob_cleanup_completed` counts a cleanup run.** It carries no metadata;
+  its measurements are the run's tombstone counts: `deleted`, `in_use`,
+  `invalid`, `failed`, `skipped`, `deferred` and `left`, the tombstones still
+  due when the run ended. A `left` that grows from run to run means blobs
+  are not being removed, for example because the store keeps refusing
+  deletes. Its first metric, `kanban.attachment.blob_cleanup_completed.left`,
+  is stored, one row per run (every 15 minutes), so the backlog can be read
+  back over time; its `deleted`, `failed` and `invalid` sums are live only.
+- **The other four are not persisted.** They are charted live only.
 - **Other side effects.** A create or delete also broadcasts
   `{Kanban.Attachments, :attachment_changed, %{task_id: _, board_id: _}}` on
   `"board:<board_id>"`, counted by `[:kanban, :pubsub, :broadcast]` with
@@ -1037,7 +1047,10 @@ Stored today:
 - since W2416, `announcement.fanout_completed`, one row per real service
   announcement run, whose `count` is the number of jobs that run added. A dry
   run emits nothing, and the per-recipient `announcement.email_sent` is not
-  stored.
+  stored;
+- since 2026-11-02, `attachment.blob_cleanup_completed.left`, one row per
+  attachment blob cleanup run, whose value is the number of tombstones still
+  due when the run ended.
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
@@ -1249,6 +1262,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :attachment, :downloaded]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id`, `via` | A board member was authorized to fetch an attachment. via is :download when they download it, :preview when a thumbnail or the lightbox shows it, and :head for a HEAD request, which sends no body. The filename, contents and hash are never sent. |
 | `[:kanban, :attachment, :deleted]` | event | `count`, `byte_size` | `attachment_id`, `task_id`, `board_id`, `user_id` | An attachment was deleted through Kanban.Attachments; its blob is queued for removal. user_id is the person who deleted it. The filename is never sent. |
 | `[:kanban, :attachment, :upload_refused]` | event | `count` | `reason`, `source`, `task_id`, `board_id`, `user_id` | An upload was refused. reason is :too_large, :type_not_allowed, :type_mismatch, :empty, :too_many_files, :quota_exceeded or :storage_unavailable, or :invalid_file for a file refused for anything else, such as an unusable name; source is :upload or :import. A plan refusal is plan.feature_refused instead. |
+| `[:kanban, :attachment, :blob_cleanup_completed]` | event | `deleted`, `in_use`, `invalid`, `failed`, `skipped`, `deferred`, `left` | none | A blob cleanup run finished. Each measurement counts tombstones: deleted (blob removed or already gone), in_use (a live attachment still names the key), invalid (key failed validation), failed (storage refused; retried later), skipped (handled by another run), deferred (left because the run's time budget ran out) and left (still due when the run ended). A left that grows from run to run means blobs are not being removed. |
 
 ### Domain `audit`
 
