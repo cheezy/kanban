@@ -78,6 +78,9 @@ defmodule Kanban.Repo.Migrations.CreateTaskAttachments do
     """
   end
 
+  # Rolling back drops attachment_blob_deletions too, so every stored blob is
+  # left in the store with nothing to remove it. docs/attachments.md ("When
+  # attachment files are deleted") says how to reconcile the store afterwards.
   def down do
     execute "DROP TRIGGER IF EXISTS task_attachments_queue_blob_deletion_rows ON task_attachments"
     execute "DROP FUNCTION IF EXISTS task_attachments_queue_blob_deletion()"

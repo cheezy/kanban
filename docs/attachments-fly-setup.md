@@ -31,6 +31,11 @@ deploy.
    Both `kanban-prod` and `kanban-review` must appear.
 2. Work from the repository root, on a commit that contains the attachment
    storage code (`lib/kanban/attachments/storage/s3.ex` exists).
+3. Use the keys `fly storage create` sets. If you make your own access key
+   instead, let it list the bucket as well as read, write and delete its
+   objects. A key that cannot list gets `403 AccessDenied` for a file that is
+   gone, which the app logs as a storage failure (see
+   [S3-compatible storage](attachments.md#s3-compatible-storage)).
 
 ## Set up the review app (`kanban-review`)
 

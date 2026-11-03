@@ -393,6 +393,12 @@ For someone in an Organization, Stride first checks two things:
 Deletion is also refused while they own a board other people use, until they
 transfer its ownership or remove the others.
 
+Files they attached to tasks or comments on boards that stay are kept with
+those boards, without their name: the file is part of the board's work, so
+it stays with the task, and only the link to the uploader is removed. Files
+on the boards deleted with the account are deleted with them (see
+[When attachment files are deleted](attachments.md#when-attachment-files-are-deleted)).
+
 When they confirm, Stride deletes the account and with it their API tokens
 (board and workspace tokens), their board memberships, their Organization
 membership and their workspace memberships, and signs them out everywhere.

@@ -91,6 +91,17 @@ bucket that does not exist, or from an endpoint that is not the store, is a
 storage failure: the cleanup job keeps its queue entry and tries again, and
 a download logs a warning instead of looking like a missing file.
 
+Give the access key permission to list the bucket (`s3:ListBucket` on the
+bucket), as well as to read, write and delete its objects (`s3:GetObject`,
+`s3:PutObject` and `s3:DeleteObject`). Without the list permission, S3
+answers a request for an object that does not exist with `403 AccessDenied`
+rather than `404 NoSuchKey`, because it will not tell a key that cannot list
+whether the object exists. The app cannot tell that 403 from a real
+permissions problem, so it treats it as a storage failure: the person still
+gets a not-found page, but the log shows
+`attachment storage get failed with status 403 (AccessDenied)`, which reads
+like an outage.
+
 ### Limits
 
 | Variable | Default | Meaning |
@@ -191,9 +202,25 @@ minutes, leaving the rest for the next run, and Oban ends a run outright at
 one-hour Lifeline rescue, which would otherwise start a second run beside
 it.
 
-The trigger fires for `DELETE` statements only. Never empty
-`task_attachments` with `TRUNCATE`, which skips row triggers and would leave
-every stored file in place.
+The trigger fires for `DELETE` statements only. Three things a database
+operator can do skip it and leave stored files that nothing will remove:
+
+- emptying `task_attachments` with `TRUNCATE`, which skips row triggers;
+- deleting rows in a session with `session_replication_role = replica`,
+  which skips ordinary triggers;
+- rolling back the migration that creates the attachment tables
+  (`20261101181554_create_task_attachments`), which drops both tables, the
+  queue included, and leaves every stored file behind.
+
+None of these can happen through the app. If one has happened, reconcile the
+store: list the keys under `boards/` in the bucket or the local root, and
+for each key that no `task_attachments` row names, insert a row into
+`attachment_blob_deletions` with that `storage_key` (its `delete_after`
+defaults to now). The next cleanup run removes those files, and it skips any
+key an attachment row still names, so a key listed by mistake is safe. After
+a rollback the tables are gone, so every stored file is left over: run the
+migration again and queue every key, or empty the bucket or the root
+directly.
 
 ## Fly with Tigris
 
