@@ -70,12 +70,7 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
   """
   @spec import_all(map()) :: map()
   def import_all(%{rows: %{attachments: rows}} = ctx) do
-    {items, ctx} =
-      rows
-      |> Enum.sort_by(& &1["id"])
-      |> Enum.reduce({[], ctx}, &resolve/2)
-
-    items = Enum.reverse(items)
+    {items, ctx} = resolve_all(rows, ctx)
     check_per_task(items)
     check_quota(ctx, items)
     count = with_scratch(fn scratch -> store_all(ctx, items, scratch) end)
@@ -84,6 +79,16 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
   end
 
   def import_all(ctx), do: ctx
+
+  # The rows in id order, each resolved to its imported task and comment.
+  defp resolve_all(rows, ctx) do
+    {items, ctx} =
+      rows
+      |> Enum.sort_by(& &1["id"])
+      |> Enum.reduce({[], ctx}, &resolve/2)
+
+    {Enum.reverse(items), ctx}
+  end
 
   @doc """
   Runs `fun` with a fresh reference for `track/2` and returns its result.
@@ -208,7 +213,9 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
   defp check_quota(ctx, items) do
     needed = items |> Enum.map(& &1.byte_size) |> Enum.sum()
 
-    if Usage.bytes_used(quota_scope(ctx)) + needed > Limits.organization_quota_bytes(),
+    used = ctx |> quota_scope() |> Usage.bytes_used()
+
+    if used + needed > Limits.organization_quota_bytes(),
       do: Repo.rollback(:quota_exceeded),
       else: :ok
   end
