@@ -64,17 +64,37 @@ defmodule Kanban.Workspaces.Export.Importer.ArchiveBlob do
     end
   end
 
-  # Stored data is never larger than its output; deflate grows incompressible
-  # data by at most a few bytes per 16 KiB block.
+  # Stored data is never larger than its output. Deflated data can be: this
+  # check only spares reading an entry no allowed output could come from, and
+  # the inflate below holds the real output to max_bytes whatever the entry
+  # declares, so the bound is generous rather than tight.
   defp check_comp_size(0, comp_size, max_bytes) when comp_size > max_bytes,
     do: {:error, :archive_too_large}
 
-  defp check_comp_size(8, comp_size, max_bytes)
-       when comp_size > max_bytes + div(max_bytes, 1000) + 1024,
-       do: {:error, :archive_too_large}
+  defp check_comp_size(8, comp_size, max_bytes) when comp_size > max_bytes,
+    do: if(comp_size > deflate_bound(max_bytes), do: {:error, :archive_too_large}, else: :ok)
 
   defp check_comp_size(method, _comp_size, _max_bytes) when method in [0, 8], do: :ok
   defp check_comp_size(_method, _comp_size, _max_bytes), do: {:error, :invalid_archive}
+
+  @doc """
+  The most bytes deflate can turn `max_bytes` bytes into: zlib's
+  conservative `deflateBound`, which holds for any window and memory
+  settings, plus room for the flushes a writer may make between chunks.
+
+  Erlang's `:zip`, which writes Stride's own exports, grows incompressible
+  data by about 0.12%: a full 25 MiB file deflates to about 32 KB more than
+  it holds. A tighter bound refused those archives.
+  """
+  @spec deflate_bound(non_neg_integer()) :: non_neg_integer()
+  def deflate_bound(max_bytes) when is_integer(max_bytes) and max_bytes >= 0 do
+    max_bytes + Bitwise.bsr(max_bytes + 7, 3) + Bitwise.bsr(max_bytes + 63, 6) + 5 +
+      flush_room(max_bytes)
+  end
+
+  # An empty stored block (at most 6 bytes) per flush, a flush per KiB at
+  # the most often any writer flushes.
+  defp flush_room(max_bytes), do: 6 * (div(max_bytes, 1024) + 1)
 
   defp open_dest(dest) do
     case File.open(dest, [:write, :exclusive, :binary, :raw]) do

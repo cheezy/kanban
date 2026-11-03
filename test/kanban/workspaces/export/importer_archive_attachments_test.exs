@@ -475,6 +475,34 @@ defmodule Kanban.Workspaces.Export.ImporterArchiveAttachmentsTest do
 
       assert size == byte_size(ctx.data)
     end
+
+    test "extracts an incompressible blob of exactly the limit, which :zip deflates larger",
+         ctx do
+      # A full-size file of a type that does not compress (a PDF, a PNG):
+      # :zip grows it by about 0.12%, past a bound of 0.1% + 1 KiB.
+      noise = :crypto.strong_rand_bytes(8_388_608)
+      path = zip_entries(ctx, [{"attachments/9", noise}])
+      entry = entry(path, "attachments/9")
+      assert entry.comp_size > byte_size(noise) + div(byte_size(noise), 1000) + 1024
+
+      assert ArchiveBlob.extract(path, entry, Path.join(ctx.dir, "g"), byte_size(noise)) ==
+               {:ok, %{byte_size: byte_size(noise), sha256: sha256_hex(noise)}}
+
+      # The real output is still held to the limit.
+      assert ArchiveBlob.extract(path, entry, Path.join(ctx.dir, "h"), byte_size(noise) - 1) ==
+               {:error, :archive_too_large}
+    end
+  end
+
+  describe "ArchiveBlob.deflate_bound/1" do
+    test "allows zlib's conservative growth and flush room, and grows with the limit" do
+      assert ArchiveBlob.deflate_bound(0) == 0 + 0 + 0 + 5 + 6
+      assert ArchiveBlob.deflate_bound(1024) == 1024 + 128 + 16 + 5 + 12
+
+      full = 26_214_400
+      assert ArchiveBlob.deflate_bound(full) > full + div(full, 100)
+      assert ArchiveBlob.deflate_bound(full) < full * 2
+    end
   end
 
   describe "Serializer blob entry names" do
