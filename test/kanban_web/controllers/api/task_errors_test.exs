@@ -153,4 +153,53 @@ defmodule KanbanWeb.API.TaskErrorsTest do
       assert Jason.decode!(conn.resp_body) == %{"error" => "Task not found"}
     end
   end
+
+  describe "error_body/1 and render_error/2 — attachment download (W2517)" do
+    test "translates the attachment download reasons to their exact status, code and body" do
+      assert TaskErrors.error_body({:plan_required, :attachments}) ==
+               {:forbidden, :plan_required,
+                %{
+                  error: "plan_required",
+                  feature: "attachments",
+                  message: "Attachments are available to boards in an Organization."
+                }}
+
+      assert TaskErrors.error_body(:attachment_not_found) ==
+               {:not_found, :attachment_not_found, %{error: "Attachment not found"}}
+
+      assert TaskErrors.error_body({:rate_limited, 1500}) ==
+               {:too_many_requests, :rate_limited, %{error: "Too many requests"}}
+
+      assert TaskErrors.error_body(:attachment_storage_unavailable) ==
+               {:service_unavailable, :attachment_storage_unavailable,
+                %{error: "Attachment storage is unavailable. Try again later."}}
+    end
+
+    test "only the attachments feature has a plan_required body" do
+      # Built at runtime: a literal would be flagged by the type checker.
+      other_feature = String.to_existing_atom("sso")
+
+      assert_raise FunctionClauseError, fn ->
+        TaskErrors.error_body({:plan_required, other_feature})
+      end
+    end
+
+    test "render_error/2 sends a 429 with a retry-after rounded up to whole seconds" do
+      conn = :get |> conn("/") |> TaskErrors.render_error({:rate_limited, 1500})
+
+      assert conn.status == 429
+      assert Plug.Conn.get_resp_header(conn, "retry-after") == ["2"]
+      assert Jason.decode!(conn.resp_body) == %{"error" => "Too many requests"}
+
+      conn = :get |> conn("/") |> TaskErrors.render_error({:rate_limited, 0})
+      assert Plug.Conn.get_resp_header(conn, "retry-after") == ["1"]
+    end
+
+    test "render_error/2 sends no retry-after for any other reason" do
+      conn = :get |> conn("/") |> TaskErrors.render_error(:attachment_storage_unavailable)
+
+      assert conn.status == 503
+      assert Plug.Conn.get_resp_header(conn, "retry-after") == []
+    end
+  end
 end

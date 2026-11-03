@@ -1,8 +1,8 @@
 defmodule Kanban.RateLimit do
   @moduledoc """
   Rate-limiting policy for abuse-prone authentication surfaces, the org-admin
-  audit log export, email invitations, the locked-feature click metric, and
-  the audit rows of refused API board gates.
+  audit log export, email invitations, the locked-feature click metric, the
+  audit rows of refused API board gates, and API attachment downloads.
 
   Wraps the low-level `Kanban.RateLimiter` (Hammer/ETS) with per-surface
   thresholds and a two-key strategy: every check is evaluated against both a
@@ -29,6 +29,7 @@ defmodule Kanban.RateLimit do
     * `:invite`    — 1 h / 20 / —           (identity-only, per invitation email)
     * `:account_delete` — 5 min / 5 / —     (identity-only, per attempt)
     * `:api_denied_audit` — 5 min / 1 / —   (identity-only, per audit row)
+    * `:attachment_download` — 1 min / 60 / — (identity-only, per download)
     * `:sso`       — 1 min  / — / 60        (IP-only, per request)
     * `:scim`      — 1 min  / 10 / 100      (failure-counted)
 
@@ -93,11 +94,19 @@ defmodule Kanban.RateLimit do
   written, so a token repeating a refused request writes one row per window
   instead of one per request. The request is refused either way.
 
+  `:attachment_download` counts API attachment downloads
+  (`GET /api/tasks/:id/attachments/:attachment_id`, through
+  `KanbanWeb.API.AttachmentActions`) per API token (`identity: "token:<id>"`,
+  no IP), with `check/2` after the plan gate and before any lookup, so a
+  leaked token cannot pull a board's files in bulk. A task holds at most 20
+  files, so the limit leaves room to fetch several whole tasks a minute.
+
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
-      `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`).
+      `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`,
+      `:attachment_download`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
       `:scim`)
@@ -124,6 +133,7 @@ defmodule Kanban.RateLimit do
     invite: %{scale_ms: 3_600_000, id_limit: 20},
     account_delete: %{scale_ms: 300_000, id_limit: 5},
     api_denied_audit: %{scale_ms: 300_000, id_limit: 1},
+    attachment_download: %{scale_ms: 60_000, id_limit: 60},
     sso: %{scale_ms: 60_000, ip_limit: 60},
     scim: %{scale_ms: 60_000, id_limit: 10, ip_limit: 100}
   }
@@ -141,6 +151,7 @@ defmodule Kanban.RateLimit do
           | :invite
           | :account_delete
           | :api_denied_audit
+          | :attachment_download
           | :sso
           | :scim
   @type opts :: [ip: term(), identity: String.t() | nil]

@@ -19,7 +19,7 @@ defmodule KanbanWeb.AttachmentControllerTest do
   alias Kanban.Attachments.Storage.Local
   alias Kanban.Boards
   alias Kanban.Tasks.Comments
-  alias KanbanWeb.AttachmentController
+  alias KanbanWeb.AttachmentStream
 
   @moduletag :tmp_dir
 
@@ -443,7 +443,7 @@ defmodule KanbanWeb.AttachmentControllerTest do
 
       log =
         capture_log(fn ->
-          assert_raise AttachmentController.IncompleteTransfer, fn ->
+          assert_raise AttachmentStream.IncompleteTransfer, fn ->
             download(build_conn(), ctx.reader, attachment.id)
           end
         end)
@@ -460,7 +460,7 @@ defmodule KanbanWeb.AttachmentControllerTest do
     log =
       capture_log(fn ->
         error =
-          assert_raise AttachmentController.IncompleteTransfer, fn ->
+          assert_raise AttachmentStream.IncompleteTransfer, fn ->
             download(conn, ctx.reader, attachment.id)
           end
 

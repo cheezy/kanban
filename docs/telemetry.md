@@ -1236,6 +1236,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :api, :task_listed]` | event, legacy | `count` | `count`, `board_id`, `user_id`, `path`, `method` | An agent listed tasks. |
 | `[:kanban, :api, :comments_listed]` | event, legacy | `count` | `task_id`, `count`, `board_id`, `user_id`, `path`, `method` | An agent listed a task's comments. |
 | `[:kanban, :api, :comment_created]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent added a comment to a task. |
+| `[:kanban, :api, :attachment_downloaded]` | event, legacy | `count` | `task_id`, `attachment_id`, `board_id`, `user_id`, `path`, `method` | An agent downloaded a task attachment's bytes through the REST API. Emitted once the stored file is open, before the first byte; a HEAD is not counted. |
 | `[:kanban, :api, :task_created]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent created a task. |
 | `[:kanban, :api, :goal_created]` | event, legacy | `count` | `goal_id`, `child_task_count`, `batch`, `batch_index`, `board_id`, `user_id`, `path`, `method` | An agent created a goal with its child tasks. |
 | `[:kanban, :api, :batch_goals_created]` | event, legacy | `count` | `total_goals`, `board_id`, `user_id`, `path`, `method` | An agent created goals in one batch. |

@@ -211,6 +211,34 @@ defmodule Kanban.Attachments do
     do: {:error, :not_found}
 
   @doc """
+  Like `fetch_for_download/3`, but finds the attachment only among the files
+  of `task`, task-level and comment-level alike. The board comes from the
+  task, and an attachment of another task, on this board or any other, is
+  `:not_found`, the same as a missing id. The downloaded event is emitted
+  only for an attachment of `task`, so a refused id never counts as a
+  download. The REST download route uses it.
+  """
+  @spec fetch_for_download_on_task(term(), Task.t(), term(), :download | :preview | :head) ::
+          {:ok, TaskAttachment.t()} | {:error, error()}
+  def fetch_for_download_on_task(scope, task, attachment_id, via \\ :download)
+
+  def fetch_for_download_on_task(scope, %Task{id: task_id}, attachment_id, via)
+      when is_integer(task_id) and is_integer(attachment_id) and via in @download_vias,
+      do: download_on_task(scope, task_id, attachment_id, via)
+
+  def fetch_for_download_on_task(_scope, _task, _attachment_id, via) when via in @download_vias,
+    do: {:error, :not_found}
+
+  defp download_on_task(scope, task_id, attachment_id, via) do
+    with {:ok, board_id} <- board_id_for_task(task_id),
+         {:ok, viewer} <- gate(scope, board_id, :read),
+         {:ok, attachment} <- fetch_on_task(attachment_id, task_id) do
+      emit_downloaded(attachment, board_id, viewer, via)
+      {:ok, attachment}
+    end
+  end
+
+  @doc """
   Deletes `attachment`. The uploader (while still a member) or the board
   owner may delete; another member gets `:unauthorized`. The row is re-read,
   so the caller's struct is used for its id only.
@@ -320,6 +348,9 @@ defmodule Kanban.Attachments do
   end
 
   defp fetch(attachment_id), do: TaskAttachment |> Repo.get(attachment_id) |> found()
+
+  defp fetch_on_task(attachment_id, task_id),
+    do: TaskAttachment |> Repo.get_by(id: attachment_id, task_id: task_id) |> found()
 
   defp found(nil), do: {:error, :not_found}
   defp found(value), do: {:ok, value}

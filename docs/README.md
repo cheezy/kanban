@@ -56,6 +56,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [GET /api/tasks/:id](api/get_tasks_id.md) — Fetch one task.
 - [GET /api/tasks/next](api/get_tasks_next.md) — Find the next task an agent can claim.
 - [GET /api/tasks/:id/comments](api/get_tasks_id_comments.md) — List a task's comments.
+- [GET /api/tasks/:id/attachments/:attachment_id](api/get_tasks_id_attachments_attachment_id.md) — Download a task attachment's bytes.
 - [GET /api/tasks/:id/dependencies](api/get_tasks_id_dependencies.md) — List the tasks a task depends on.
 - [GET /api/tasks/:id/dependents](api/get_tasks_id_dependents.md) — List the tasks that depend on a task.
 - [GET /api/tasks/:id/tree](api/get_tasks_id_tree.md) — Fetch a goal or task with its children.

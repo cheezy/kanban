@@ -23,6 +23,8 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:task_listed, [:count], "An agent listed tasks."},
     {:comments_listed, [:task_id, :count], "An agent listed a task's comments."},
     {:comment_created, [:task_id], "An agent added a comment to a task."},
+    {:attachment_downloaded, [:task_id, :attachment_id],
+     "An agent downloaded a task attachment's bytes through the REST API. Emitted once the stored file is open, before the first byte; a HEAD is not counted."},
     {:task_created, [:task_id], "An agent created a task."},
     {:goal_created, [:goal_id, :child_task_count, :batch, :batch_index],
      "An agent created a goal with its child tasks."},

@@ -777,6 +777,93 @@ defmodule Kanban.AttachmentsTest do
     end
   end
 
+  describe "fetch_for_download_on_task/4" do
+    test "returns an attachment of the task to a read_only member and emits downloaded", ctx do
+      attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier, byte_size: 7})
+      attach_telemetry(@downloaded)
+
+      assert {:ok, fetched} =
+               ctx.reader
+               |> scope()
+               |> Attachments.fetch_for_download_on_task(ctx.task, attachment.id)
+
+      assert fetched.id == attachment.id
+
+      assert_received {:telemetry_event, @downloaded, %{count: 1, byte_size: 7}, metadata}
+
+      assert metadata == %{
+               attachment_id: attachment.id,
+               task_id: ctx.task.id,
+               board_id: ctx.board.id,
+               user_id: ctx.reader.id,
+               via: :download
+             }
+    end
+
+    test "finds an attachment on a comment of the task and records the via", ctx do
+      comment = comment_by(ctx.modifier, ctx.task)
+      attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier, comment: comment})
+      attach_telemetry(@downloaded)
+
+      assert {:ok, %TaskAttachment{comment_id: comment_id}} =
+               ctx.reader
+               |> scope()
+               |> Attachments.fetch_for_download_on_task(ctx.task, attachment.id, :head)
+
+      assert comment_id == comment.id
+      assert_received {:telemetry_event, @downloaded, _, %{via: :head}}
+    end
+
+    test "an attachment of another task on the same board is not_found and emits nothing", ctx do
+      other_task = ctx.board |> column_fixture() |> task_fixture()
+      attachment = attachment_fixture(other_task, %{uploaded_by: ctx.modifier})
+      attach_telemetry(@downloaded)
+
+      assert {:error, :not_found} =
+               ctx.reader
+               |> scope()
+               |> Attachments.fetch_for_download_on_task(ctx.task, attachment.id)
+
+      refute_received {:telemetry_event, @downloaded, _, _}
+    end
+
+    test "a non-member, a missing id and a non-integer id are not_found", ctx do
+      attachment = attachment_fixture(ctx.task, %{uploaded_by: ctx.modifier})
+      attach_telemetry(@downloaded)
+
+      assert {:error, :not_found} =
+               ctx.stranger
+               |> scope()
+               |> Attachments.fetch_for_download_on_task(ctx.task, attachment.id)
+
+      reader = scope(ctx.reader)
+      assert {:error, :not_found} = Attachments.fetch_for_download_on_task(reader, ctx.task, -1)
+
+      assert {:error, :not_found} =
+               Attachments.fetch_for_download_on_task(reader, ctx.task, "#{attachment.id}")
+
+      assert {:error, :not_found} =
+               Attachments.fetch_for_download_on_task(reader, %Task{}, attachment.id)
+
+      refute_received {:telemetry_event, @downloaded, _, _}
+    end
+
+    test "a free board under enforcement is plan_required with one context refusal", ctx do
+      task = ctx.personal_board |> column_fixture() |> task_fixture()
+      attachment = attachment_fixture(task, %{uploaded_by: ctx.owner})
+      enforce_plans()
+      attach_telemetry([:kanban, :plan, :feature_refused])
+
+      assert ctx.owner |> scope() |> Attachments.fetch_for_download_on_task(task, attachment.id) ==
+               {:error, {:plan_required, :attachments}}
+
+      assert_received {:telemetry_event, [:kanban, :plan, :feature_refused], _,
+                       %{feature: :attachments, surface: :context}}
+
+      refute_received {:telemetry_event, [:kanban, :plan, :feature_refused], _, _}
+    end
+  end
+
   describe "delete_attachment/2" do
     test "delete_attachment lets the uploader delete and queues the blob for deletion", ctx do
       attach_telemetry([@deleted, @owner_delete])

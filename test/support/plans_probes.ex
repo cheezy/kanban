@@ -7,7 +7,8 @@ defmodule KanbanWeb.PlansProbes do
 
     * `:unlocked` - the action took effect.
     * `:locked` - it did not, and the entry point said why: a flash with a
-      `:live_view` refusal event, a REST `warnings` list, the JSON-RPC
+      `:live_view` refusal event, a REST `warnings` list or `plan_required`
+      403 with a `:rest` refusal event, the JSON-RPC
       `plan_required` error, a `{:plan_required, feature}` tuple, or a job
       that left its row or endpoint untouched.
     * `:neither` - it did not take effect and nothing said why.
@@ -25,6 +26,7 @@ defmodule KanbanWeb.PlansProbes do
   use Oban.Testing, repo: Kanban.Repo
 
   import Ecto.Query
+  import Kanban.AttachmentsFixtures
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
   import Phoenix.ConnTest
@@ -32,6 +34,7 @@ defmodule KanbanWeb.PlansProbes do
   import Plug.Conn, only: [put_req_header: 3]
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Attachments.Storage
   alias Kanban.Notifications
   alias Kanban.Notifications.DigestFanoutWorker
   alias Kanban.Notifications.DigestWorker
@@ -81,7 +84,8 @@ defmodule KanbanWeb.PlansProbes do
     digest_fanout: "DigestFanoutWorker's weekly recipient list",
     digest_worker: "DigestWorker for the board's weekly activity",
     webhook_events: "Webhooks.Events.emit/3 for a board event",
-    delivery_worker: "Webhooks.DeliveryWorker for a delivery queued before enforcement"
+    delivery_worker: "Webhooks.DeliveryWorker for a delivery queued before enforcement",
+    rest_attachment_download: "REST attachment download"
   ]
 
   @doc "Every probe as `{name, description}`, in the order the suite runs them."
@@ -247,6 +251,25 @@ defmodule KanbanWeb.PlansProbes do
     [
       initialize: outcome(Map.has_key?(init, "result"), plan_required?(init)),
       tools_call: outcome(claimed?, plan_required?(claim))
+    ]
+  end
+
+  def probe(:rest_attachment_download, %{token: token, task: task}) do
+    attachment = attachment_fixture(task, %{byte_size: 5})
+    :ok = Storage.put(attachment.storage_key, {:binary, "probe"})
+    attach_telemetry(@refused)
+
+    conn =
+      token
+      |> api_conn("*/*")
+      |> get(~p"/api/tasks/#{task.id}/attachments/#{attachment.id}")
+
+    :ok = Storage.delete(attachment.storage_key)
+    refused? = conn.status == 403 and Jason.decode!(conn.resp_body)["error"] == "plan_required"
+
+    [
+      download:
+        outcome(conn.status == 200 and conn.resp_body == "probe", refused? and refused_on?(:rest))
     ]
   end
 

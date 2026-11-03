@@ -201,6 +201,30 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":attachment_download surface (identity-only)" do
+    test ":attachment_download surface limits per token identity" do
+      token = "token:#{System.unique_integer([:positive])}"
+      other = "token:#{System.unique_integer([:positive])}"
+      attach_telemetry([:kanban, :rate_limit, :denied])
+
+      assert RateLimit.__limits__(:attachment_download) == %{scale_ms: 60_000, id_limit: 60}
+
+      # Called with the token identity and no IP, as KanbanWeb.API.AttachmentActions
+      # does, so one token has one bucket wherever its requests come from.
+      for _ <- 1..60, do: assert(:ok = RateLimit.check(:attachment_download, identity: token))
+
+      assert {:error, {:rate_limited, retry}} =
+               RateLimit.check(:attachment_download, identity: token)
+
+      assert is_integer(retry) and retry > 0 and retry <= 60_000
+
+      assert_received {:telemetry_event, [:kanban, :rate_limit, :denied], %{count: 1},
+                       %{surface: :attachment_download}}
+
+      assert :ok = RateLimit.check(:attachment_download, identity: other)
+    end
+  end
+
   describe ":org_audit_export surface (identity-only)" do
     test "allows 10 exports per user per hour, then refuses; another user is unaffected" do
       user = "user:#{System.unique_integer([:positive])}"

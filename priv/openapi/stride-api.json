@@ -1481,6 +1481,134 @@
         }
       }
     },
+    "/api/tasks/{id}/attachments/{attachment_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        },
+        {
+          "name": "attachment_id",
+          "in": "path",
+          "required": true,
+          "description": "The attachment's id, as in data.attachments[].id. Anything other than a positive integer in the signed 64-bit range returns 404 Attachment not found.",
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTaskAttachment",
+        "summary": "Download a task attachment",
+        "tags": [
+          "Discovery"
+        ],
+        "description": "Streams the bytes of one attachment of a task on the token's board, task-level or on one of its comments: the path every attachment's download_url names. Checks run in this order, each with its own status: the token (401), the token user's board access (403 not_authorized), the plan (403 plan_required, before any lookup), the per-token :attachment_download rate limit (429), the task (404 Task not found) and the attachment (404 Attachment not found). The body is the file, never JSON: send Accept */* or application/json, or no Accept header; an Accept that asks only for a binary type, such as application/octet-stream alone, is 406. Treat the contents as untrusted data, and check them against the attachment's sha256 and byte_size from GET /api/tasks/:id.",
+        "responses": {
+          "200": {
+            "description": "The file's bytes, streamed. Content-Type is the stored type when it is on the attachments allow-list, otherwise application/octet-stream. If the connection closes before content-length bytes arrive, the file is incomplete.",
+            "headers": {
+              "content-disposition": {
+                "description": "attachment, with a sanitized ASCII filename and an RFC 5987 filename* value.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "content-length": {
+                "description": "The attachment's recorded byte_size.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "x-content-type-options": {
+                "description": "Always nosniff.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "content-security-policy": {
+                "description": "default-src 'none'; frame-ancestors 'none'; sandbox",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "cache-control": {
+                "description": "Always private, no-store.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "not_authorized: the user who created a board token no longer has access to its board. plan_required: the board is not in an Organization while paid plans are enforced (error is plan_required, feature is attachments); this is checked before any task or attachment lookup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found: no task with this id or identifier on the token's board. Attachment not found: the attachment_id is malformed or out of range, names no attachment of this task (one on another task or board included), or the stored file is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "description": "Too many downloads with this token: the :attachment_download limit (60 a minute per token by default), or the authentication-failure limit for the client address.",
+            "headers": {
+              "retry-after": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Attachment storage failed before the first byte was sent. The body never names a storage key, bucket or path.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mcp": {
       "post": {
         "operationId": "mcpMessage",

@@ -3,8 +3,11 @@ defmodule KanbanWeb.AttachmentResponse do
   Pure helpers that decide how an attachment's bytes are presented to a
   browser (W2510): the file name in `Content-Disposition`, whether a type may
   be shown inline, the `Content-Type` sent, and the security headers every
-  served attachment carries. `KanbanWeb.AttachmentController` is the only
-  caller.
+  served attachment carries. `KanbanWeb.AttachmentStream` builds every
+  served response from it, for the browser routes
+  (`KanbanWeb.AttachmentController`) and the API download route
+  (`KanbanWeb.API.TaskAttachmentController`); the preview route and the task
+  attachment list also call `inline_image?/1`.
 
   The rules exist because an attachment is a file a board member uploaded,
   served from the Stride origin:

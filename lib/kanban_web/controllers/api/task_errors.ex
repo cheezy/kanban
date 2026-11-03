@@ -11,7 +11,7 @@ defmodule KanbanWeb.API.TaskErrors do
   suite, so they must not drift.
   """
 
-  import Plug.Conn, only: [put_status: 2]
+  import Plug.Conn, only: [put_resp_header: 3, put_status: 2]
   import Phoenix.Controller, only: [json: 2]
 
   alias KanbanWeb.API.ErrorDocs
@@ -31,7 +31,16 @@ defmodule KanbanWeb.API.TaskErrors do
   rendering point shared by every REST error path that goes through
   `error_body/1`, so the MCP tools (W2231) and the REST actions cannot drift.
   """
-  def render_error(conn, reason) do
+  def render_error(conn, {:rate_limited, retry_after_ms} = reason)
+      when is_integer(retry_after_ms) and retry_after_ms >= 0 do
+    conn
+    |> put_resp_header("retry-after", Integer.to_string(div(retry_after_ms, 1000) + 1))
+    |> render_body(reason)
+  end
+
+  def render_error(conn, reason), do: render_body(conn, reason)
+
+  defp render_body(conn, reason) do
     {status, _code, body} = error_body(reason)
 
     conn
@@ -215,6 +224,35 @@ defmodule KanbanWeb.API.TaskErrors do
       "You can only complete tasks that you are assigned to",
       :not_authorized_to_complete
     )
+  end
+
+  # W2517: a free board under plan enforcement, refused before any lookup.
+  # `error` is a stable code so a client can tell it from the not_authorized
+  # 403 without matching message text.
+  def error_body({:plan_required, :attachments}) do
+    {:forbidden, :plan_required,
+     %{
+       error: "plan_required",
+       feature: "attachments",
+       message: "Attachments are available to boards in an Organization."
+     }}
+  end
+
+  # A malformed, out-of-range, missing or other task's attachment id, or a
+  # stored object that is gone: one body, so ids reveal nothing.
+  def error_body(:attachment_not_found),
+    do: {:not_found, :attachment_not_found, %{error: "Attachment not found"}}
+
+  # The body the token-authentication rate limit sends. `render_error/2` adds
+  # the retry-after header.
+  def error_body({:rate_limited, retry_after_ms})
+      when is_integer(retry_after_ms) and retry_after_ms >= 0,
+      do: {:too_many_requests, :rate_limited, %{error: "Too many requests"}}
+
+  # Fixed text: never the storage key, bucket or path.
+  def error_body(:attachment_storage_unavailable) do
+    {:service_unavailable, :attachment_storage_unavailable,
+     %{error: "Attachment storage is unavailable. Try again later."}}
   end
 
   def error_body({:invalid_param, message}) when is_binary(message),

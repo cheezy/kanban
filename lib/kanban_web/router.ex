@@ -209,6 +209,7 @@ defmodule KanbanWeb.Router do
     get "/tasks/:id/after_goal_status", TaskController, :after_goal_status
     get "/tasks/:id/comments", TaskCommentController, :index
     post "/tasks/:id/comments", TaskCommentController, :create
+    get "/tasks/:id/attachments/:attachment_id", TaskAttachmentController, :download
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 

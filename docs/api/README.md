@@ -336,6 +336,7 @@ a filter it simply matches nothing.
 | GET | `/api/tasks/:id/dependencies` | Get task dependencies | No |
 | GET | `/api/tasks/:id/dependents` | Get dependent tasks | No |
 | GET | `/api/tasks/:id/comments` | List task comments | No |
+| GET | `/api/tasks/:id/attachments/:attachment_id` | Download a task attachment | No |
 | POST | `/api/tasks` | Create a task | No |
 | POST | `/api/tasks/batch` | Create multiple goals | No |
 | POST | `/api/tasks/claim` | Claim a task | `before_doing` |
@@ -503,6 +504,12 @@ retry-after: 42
 `retry-after` is the number of seconds to wait. Requests with a valid token are
 never counted, so normal traffic does not hit this limit. If you see it, check
 that every client on that address sends a working token.
+
+Attachment downloads have a limit of their own:
+[GET /api/tasks/:id/attachments/:attachment_id](get_tasks_id_attachments_attachment_id.md)
+counts every download request that passes the plan check, 60 a minute per
+token, including a `HEAD` and one that ends in a `404` or `503`, and past that
+answers with the same `429` body and a `retry-after` header.
 
 ### 404 for out-of-range numeric IDs
 
