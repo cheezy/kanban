@@ -103,7 +103,9 @@ anything is kept:
   rules, the same allowed types, and the file's contents must match its type.
 - The files must fit in the Organization's storage quota
   (`ATTACHMENTS_ORG_QUOTA_GB`). This is checked before any file is written,
-  and a task may hold no more files than `ATTACHMENTS_MAX_FILES_PER_TASK`.
+  and again just before the import commits, counting files uploaded to the
+  Organization meanwhile. Uploads are not held up while the import runs. A
+  task may hold no more files than `ATTACHMENTS_MAX_FILES_PER_TASK`.
 - `--dry-run` checks every file the same way and stores none.
 - If the import is refused or fails after some files were stored, every file
   it stored is deleted again.

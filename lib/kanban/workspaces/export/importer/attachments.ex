@@ -15,10 +15,13 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
 
   Then, before any blob is written, the whole import is refused with
   `:quota_exceeded` when the files would take the Organization past
-  `Kanban.Attachments.Limits.organization_quota_bytes/0`, checked under the
-  quota scope's advisory lock (`Kanban.Attachments.Usage.lock_quota/1`) so a
-  concurrent upload cannot take the same room; and a task given more than
-  `Kanban.Attachments.Limits.max_files_per_task/0` files is refused.
+  `Kanban.Attachments.Limits.organization_quota_bytes/0`, and a task given
+  more than `Kanban.Attachments.Limits.max_files_per_task/0` files is
+  refused. The quota is checked again once every row is inserted, under the
+  quota scope's advisory lock (`Kanban.Attachments.Usage.lock_quota/1`), so
+  a concurrent upload cannot take the same room. The lock is taken only
+  then, never while blobs are extracted and stored, so uploads into the
+  Organization do not wait behind a long import.
 
   Each blob is then extracted, one at a time, into an owner-only file in an
   unpredictable scratch directory (`Kanban.Workspaces.Export.Writer.create_tmp_dir/1`)
@@ -76,6 +79,7 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
     check_per_task(items)
     check_quota(ctx, items)
     count = with_scratch(fn scratch -> store_all(ctx, items, scratch) end)
+    recheck_quota(ctx, items)
     Importer.put_count(ctx, :attachments, count)
   end
 
@@ -196,19 +200,36 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
     end
   end
 
-  # Before any blob is written. The rows are not inserted yet, so they are
-  # not in bytes_used/1.
+  # Before any blob is extracted, without the lock, so an archive that cannot
+  # fit is refused before the slow part. The rows are not inserted yet, so
+  # they are not in bytes_used/1.
   defp check_quota(_ctx, []), do: :ok
 
   defp check_quota(ctx, items) do
-    scope = {:organization, ctx.organization_id}
-    :ok = Usage.lock_quota(scope)
     needed = items |> Enum.map(& &1.byte_size) |> Enum.sum()
 
-    if Usage.bytes_used(scope) + needed > Limits.organization_quota_bytes(),
+    if Usage.bytes_used(quota_scope(ctx)) + needed > Limits.organization_quota_bytes(),
       do: Repo.rollback(:quota_exceeded),
       else: :ok
   end
+
+  # After every row is inserted, under the quota scope's advisory lock, which
+  # the transaction then holds only until it commits. Taking it before the
+  # blobs were extracted and stored held it for the whole import, and every
+  # upload into the Organization waited behind it until its query timed out.
+  # This transaction sees its own rows, so bytes_used/1 now counts them.
+  defp recheck_quota(_ctx, []), do: :ok
+
+  defp recheck_quota(ctx, _items) do
+    scope = quota_scope(ctx)
+    :ok = Usage.lock_quota(scope)
+
+    if Usage.bytes_used(scope) > Limits.organization_quota_bytes(),
+      do: Repo.rollback(:quota_exceeded),
+      else: :ok
+  end
+
+  defp quota_scope(ctx), do: {:organization, ctx.organization_id}
 
   defp with_scratch(fun) do
     case Writer.create_tmp_dir(System.tmp_dir!()) do

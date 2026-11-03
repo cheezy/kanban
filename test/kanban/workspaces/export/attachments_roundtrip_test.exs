@@ -108,6 +108,13 @@ defmodule Kanban.Workspaces.Export.AttachmentsRoundtripTest do
 
   defp attachment_count, do: Repo.aggregate(TaskAttachment, :count)
 
+  # The two-key advisory locks this connection holds.
+  defp advisory_locks do
+    Repo.query!(
+      "SELECT classid::bigint, objid::bigint FROM pg_locks WHERE locktype = 'advisory' AND objsubid = 2 AND pid = pg_backend_pid()"
+    ).rows
+  end
+
   # Rewrites the archive at `path` with `fun` applied to its decoded
   # attachments.json rows.
   defp with_rows(ctx, path, fun) do
@@ -367,6 +374,58 @@ defmodule Kanban.Workspaces.Export.AttachmentsRoundtripTest do
       # Exactly at the quota fits.
       put_env(Limits, organization_quota_bytes: used + needed)
       assert {:ok, _report} = Importer.import_archive(path, ctx.org_admin.email)
+    end
+
+    test "the quota lock is not held while blobs are stored", ctx do
+      path = archive_path(ctx)
+      use_hook_storage()
+      test_pid = self()
+
+      Process.put(:on_put, fn key, source, opts ->
+        send(test_pid, {:locks_during_put, advisory_locks()})
+        Kanban.Attachments.Storage.Local.put(key, source, opts)
+      end)
+
+      assert {:ok, _report} = Importer.import_archive(path, ctx.org_admin.email)
+      assert_received {:locks_during_put, during}
+
+      # Under the test sandbox the import's transaction is a savepoint, so the
+      # lock it took before committing is still held here: present now, and
+      # absent while the blobs were stored.
+      taken_after = advisory_locks() -- during
+      assert Enum.any?(taken_after, fn [_namespace, id] -> id == ctx.organization.id end)
+      refute Enum.any?(during, fn [_namespace, id] -> id == ctx.organization.id end)
+    end
+
+    test "the quota is checked again after the blobs, counting usage that appeared meanwhile",
+         ctx do
+      path = archive_path(ctx)
+      used = Usage.bytes_used({:organization, ctx.organization.id})
+      needed = ctx.notes.byte_size + ctx.shot.byte_size
+      put_env(Limits, organization_quota_bytes: used + needed + 10)
+      use_hook_storage()
+      before = attachment_count()
+
+      # While the import stores its blobs, an upload into the Organization
+      # takes 11 bytes of the room the first check saw.
+      Process.put(:on_put, fn key, source, opts ->
+        if Process.delete(:upload_once) == nil do
+          Process.put(:upload_once, :done)
+          attachment_fixture(ctx.first, %{byte_size: 11})
+        end
+
+        Kanban.Attachments.Storage.Local.put(key, source, opts)
+      end)
+
+      assert Importer.import_archive(path, ctx.org_admin.email) == {:error, :quota_exceeded}
+
+      # Every blob the import stored is deleted again. (Under the test
+      # sandbox the upload's row shares the import's transaction and is
+      # rolled back with it.)
+      keys = put_keys()
+      assert keys != []
+      for key <- keys, do: assert_received({:storage_deleted, ^key})
+      assert attachment_count() == before
     end
 
     test "a task given more files than the per-task limit is refused", ctx do
