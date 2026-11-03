@@ -162,7 +162,10 @@ format's signature, so a PDF renamed to `.png` is refused. A text file is
 refused when it starts with another format's signature or when any byte of
 the whole file is a NUL byte, so a zip archive or an executable hidden
 behind a text prefix is refused too. Text does not have to be UTF-8, so
-Latin-1 CSV exports are accepted. UTF-16 text is refused: always when it
+Latin-1 CSV exports are accepted, except JSON: a `.json` file must be valid
+UTF-8, as the JSON standard (RFC 8259) requires, and it is served as
+`application/json; charset=utf-8`. Other text files are served with no
+charset, so the browser or the program that opens them decides. UTF-16 text is refused: always when it
 starts with a byte-order mark, and otherwise whenever a character in it
 encodes with a NUL byte, as every ASCII character, space and newline does.
 UTF-16 text with neither, such as a few words of Chinese with no spaces and

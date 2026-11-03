@@ -214,6 +214,49 @@ defmodule Kanban.Attachments.TaskAttachmentTest do
       assert %{content_type: ["must be checked against the whole file"]} = errors(head_only)
     end
 
+    test "refuses JSON that is not UTF-8 but keeps accepting a Latin-1 CSV" do
+      latin1_json = ~s({"city": "Montr) <> <<0xE9>> <> ~s(al"})
+
+      refused =
+        text_changeset(
+          %{"filename" => "data.json", "content_type" => "application/json"},
+          latin1_json
+        )
+
+      assert %{content_type: ["does not match the file contents"]} = errors(refused)
+
+      assert text_changeset(
+               %{"filename" => "data.json", "content_type" => "application/json"},
+               ~s({"city": "Montréal"})
+             ).valid?
+
+      assert text_changeset(
+               %{"filename" => "data.csv", "content_type" => "text/csv"},
+               <<"city\nMontr", 0xE9, "al\n">>
+             ).valid?
+    end
+
+    @tag :tmp_dir
+    test "checks JSON from a file across chunk boundaries", %{tmp_dir: tmp_dir} do
+      # A two-byte character straddling the first 64 KiB read boundary.
+      body = ~s({"pad": ") <> String.duplicate("a", 65_536 - 10) <> "é" <> ~s("})
+      path = Path.join(tmp_dir, "data.json")
+      File.write!(path, body)
+
+      json_attrs = %{
+        "filename" => "data.json",
+        "content_type" => "application/json",
+        "byte_size" => byte_size(body)
+      }
+
+      assert changeset(json_attrs, {:file, path}).valid?
+
+      File.write!(path, binary_part(body, 0, byte_size(body) - 3) <> <<0xC3>> <> ~s("}))
+
+      assert %{content_type: ["does not match the file contents"]} =
+               errors(changeset(json_attrs, {:file, path}))
+    end
+
     @tag :tmp_dir
     test "reads the contents from a file", %{tmp_dir: tmp_dir} do
       text = Path.join(tmp_dir, "notes.txt")

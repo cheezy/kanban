@@ -231,6 +231,48 @@ defmodule Kanban.Attachments.ContentTypeTest do
     end
   end
 
+  describe "utf8_text_body?/1" do
+    test "accepts valid UTF-8, including a character split across chunks" do
+      assert ContentType.utf8_text_body?([])
+      assert ContentType.utf8_text_body?([~s({"name": "café"})])
+      assert ContentType.utf8_text_body?([<<0xEF, 0xBB, 0xBF>> <> "{}"])
+
+      <<first::binary-size(2), rest::binary>> = "🙂"
+      assert ContentType.utf8_text_body?([~s({"a": "x), first, rest, ~s("})])
+      assert ContentType.utf8_text_body?(["é" |> binary_part(0, 1), "é" |> binary_part(1, 1)])
+    end
+
+    test "refuses Latin-1, invalid sequences, a NUL byte and a body cut inside a character" do
+      refused = [
+        [<<"caf", 0xE9>>],
+        [<<"caf", 0xE9, "x">>],
+        [<<0xC0, 0xAF>>],
+        [<<0xED, 0xA0, 0x80>>],
+        [<<0xF4, 0x90, 0x80, 0x80>>],
+        ["{}", <<0>>],
+        ["ok", <<0xF0, 0x9F>>]
+      ]
+
+      for chunks <- refused do
+        refute ContentType.utf8_text_body?(chunks), "expected #{inspect(chunks)} refused"
+      end
+    end
+  end
+
+  describe "body_matches?/2" do
+    test "holds JSON to UTF-8 and every other text type to the NUL rule only" do
+      latin1 = [<<"name;city\nRen", 0xE9, ";Montr", 0xE9, "al\n">>]
+
+      refute ContentType.body_matches?("application/json", [~s({"a": "caf) <> <<0xE9>> <> ~s("})])
+      assert ContentType.body_matches?("application/json", [~s({"a": "café"})])
+
+      for type <- ["text/plain", "text/markdown", "text/csv"] do
+        assert ContentType.body_matches?(type, latin1), "expected #{type} to accept Latin-1"
+        refute ContentType.body_matches?(type, ["a", <<0>>])
+      end
+    end
+  end
+
   describe "extension_matches?/2" do
     test "accepts the type's own extensions, case-insensitively, and a name with none" do
       assert ContentType.extension_matches?("image/png", "a.png")

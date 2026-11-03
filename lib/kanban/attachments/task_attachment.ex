@@ -153,13 +153,13 @@ defmodule Kanban.Attachments.TaskAttachment do
   defp check_head(changeset, type, head, sniff) do
     cond do
       not ContentType.matches?(type, head) -> add_error(changeset, :content_type, @mismatch)
-      ContentType.text?(type) -> check_text_body(changeset, sniff)
+      ContentType.text?(type) -> check_text_body(changeset, type, sniff)
       true -> changeset
     end
   end
 
-  defp check_text_body(changeset, sniff) do
-    case text_body(sniff, get_field(changeset, :byte_size)) do
+  defp check_text_body(changeset, type, sniff) do
+    case text_body(type, sniff, get_field(changeset, :byte_size)) do
       :ok -> changeset
       :binary -> add_error(changeset, :content_type, @mismatch)
       :partial -> add_error(changeset, :content_type, "must be checked against the whole file")
@@ -179,15 +179,15 @@ defmodule Kanban.Attachments.TaskAttachment do
 
   defp read_head(_sniff), do: :error
 
-  defp text_body(sniff, size) when is_binary(sniff) and byte_size(sniff) == size,
-    do: text_verdict([sniff])
+  defp text_body(type, sniff, size) when is_binary(sniff) and byte_size(sniff) == size,
+    do: text_verdict(type, [sniff])
 
-  defp text_body(sniff, _size) when is_binary(sniff), do: :partial
+  defp text_body(_type, sniff, _size) when is_binary(sniff), do: :partial
 
-  defp text_body({:file, path}, size) do
+  defp text_body(type, {:file, path}, size) do
     case File.stat(path) do
       {:ok, %File.Stat{type: :regular, size: ^size}} ->
-        text_verdict(File.stream!(path, @chunk_bytes))
+        text_verdict(type, File.stream!(path, @chunk_bytes))
 
       {:ok, %File.Stat{type: :regular}} ->
         :partial
@@ -197,5 +197,6 @@ defmodule Kanban.Attachments.TaskAttachment do
     end
   end
 
-  defp text_verdict(chunks), do: if(ContentType.text_body?(chunks), do: :ok, else: :binary)
+  defp text_verdict(type, chunks),
+    do: if(ContentType.body_matches?(type, chunks), do: :ok, else: :binary)
 end

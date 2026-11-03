@@ -52,13 +52,16 @@ defmodule Kanban.Attachments.ContentType do
       executables are caught by the NUL rule instead, since their headers
       contain NUL bytes. UTF-16 text is refused: always when it starts with
       a byte-order mark, and otherwise when any character encodes with a NUL
-      byte, as every ASCII character (a space, a newline) does. UTF-16 text
+      byte, as every ASCII character (a space, a newline) does. JSON is the
+      exception: it must be UTF-8 (see `body_matches?/2`). UTF-16 text
       with no byte-order mark and no such character is not recognised and
       is stored as text.
       So is a `.txt` file whose content starts with `%PDF-`, an accepted
       trade-off.
     * The head alone cannot see a binary behind a long text prefix, so a
-      text type is also checked over its whole body with `text_body?/1`.
+      text type is also checked over its whole body with `body_matches?/2`:
+      `text_body?/1` for every text type, and for `application/json` also
+      valid UTF-8 (`utf8_text_body?/1`).
 
   ## The extension
 
@@ -198,6 +201,40 @@ defmodule Kanban.Attachments.ContentType do
   """
   @spec text_body?(Enumerable.t()) :: boolean()
   def text_body?(chunks), do: not Enum.any?(chunks, &String.contains?(&1, <<0>>))
+
+  @doc """
+  Whether the whole body, given as chunks, is right for the text `type`.
+  `application/json` must be valid UTF-8 with no NUL byte
+  (`utf8_text_body?/1`), since RFC 8259 requires UTF-8 for JSON exchanged
+  between systems. Every other text type is held only to `text_body?/1`, so a
+  Latin-1 CSV is still accepted.
+  """
+  @spec body_matches?(String.t(), Enumerable.t()) :: boolean()
+  def body_matches?("application/json", chunks), do: utf8_text_body?(chunks)
+  def body_matches?(type, chunks) when type in @text_types, do: text_body?(chunks)
+
+  @doc """
+  Whether the chunks, joined, are valid UTF-8 with no NUL byte. A character
+  split across two chunks is joined before it is checked, and a body that
+  ends partway through a character is refused. Surrogates, overlong forms and
+  code points past U+10FFFF are refused, as `:unicode` refuses them.
+  """
+  @spec utf8_text_body?(Enumerable.t()) :: boolean()
+  def utf8_text_body?(chunks), do: Enum.reduce_while(chunks, <<>>, &utf8_chunk/2) == <<>>
+
+  defp utf8_chunk(chunk, pending) do
+    if String.contains?(chunk, <<0>>), do: {:halt, :invalid}, else: utf8_step(pending <> chunk)
+  end
+
+  # :incomplete is a body that so far ends inside a character; its tail (at
+  # most 3 bytes) is carried into the next chunk.
+  defp utf8_step(data) do
+    case :unicode.characters_to_binary(data) do
+      valid when is_binary(valid) -> {:cont, <<>>}
+      {:incomplete, _valid, rest} -> {:cont, rest}
+      {:error, _valid, _rest} -> {:halt, :invalid}
+    end
+  end
 
   @doc """
   Whether `filename`'s extension agrees with `type`, so a stored file is never

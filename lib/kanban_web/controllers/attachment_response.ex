@@ -14,7 +14,9 @@ defmodule KanbanWeb.AttachmentResponse do
       SVG, HTML and PDF can carry script, so they always download.
     * A stored type outside the attachments allow-list
       (`Kanban.Attachments.ContentType.allowed?/1`) is sent as
-      `application/octet-stream` (`served_content_type/1`).
+      `application/octet-stream` (`served_content_type/1`). JSON, which an
+      upload must store as UTF-8, is sent as `application/json; charset=utf-8`;
+      other text types carry no charset, since they may be Latin-1.
     * The file name is user input and goes into a header. `safe_filename/1`
       builds an ASCII fallback with nothing but letters, digits, `.`, `_`,
       `-` and spaces, and `filename_star/1` builds the RFC 5987 `filename*`
@@ -158,9 +160,12 @@ defmodule KanbanWeb.AttachmentResponse do
 
   @doc """
   The `Content-Type` to send: the stored type when it is on the attachments
-  allow-list, else `#{@octet_stream}`.
+  allow-list, with `; charset=utf-8` for `application/json`, else
+  `#{@octet_stream}`.
   """
   @spec served_content_type(term()) :: String.t()
+  def served_content_type("application/json"), do: "application/json; charset=utf-8"
+
   def served_content_type(content_type) do
     if ContentType.allowed?(content_type), do: content_type, else: @octet_stream
   end

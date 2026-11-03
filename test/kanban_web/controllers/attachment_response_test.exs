@@ -165,9 +165,12 @@ defmodule KanbanWeb.AttachmentResponseTest do
 
   describe "served_content_type/1 and headers" do
     test "serves a type outside the allow-list as application/octet-stream" do
-      for type <- ContentType.allowed() do
+      for type <- ContentType.allowed() -- ["application/json"] do
         assert AttachmentResponse.served_content_type(type) == type
       end
+
+      assert AttachmentResponse.served_content_type("application/json") ==
+               "application/json; charset=utf-8"
 
       for type <- ["image/svg+xml", "text/html", "application/x-msdownload", nil] do
         assert AttachmentResponse.served_content_type(type) == "application/octet-stream"
