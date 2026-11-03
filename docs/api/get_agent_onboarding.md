@@ -257,7 +257,8 @@ plus a list of every `/api` route in the router, organized in three groups
 (a test fails when a route is missing):
 
 - Discovery endpoints (this onboarding payload, the OpenAPI spec, boards, and
-  reading tasks, their trees, dependencies, dependents and comments)
+  reading tasks, their trees, dependencies, dependents and comments, and
+  downloading a task's attachments)
 - Management endpoints (claim, complete, review, after_goal, comments and the
   MCP server)
 - Creation endpoints (create tasks and goals, and update a task)
