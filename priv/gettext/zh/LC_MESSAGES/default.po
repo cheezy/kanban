@@ -12995,11 +12995,6 @@ msgstr "阅读指南：跨看板查看你的工作"
 msgid "Send board events to Slack, Discord or your own service"
 msgstr "将看板事件发送到 Slack、Discord 或你自己的服务"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:471
-#, elixir-autogen, elixir-format
-msgid "Stride's MCP server gives an agent the task loop as six tools: get the next task, claim it, read a task, list tasks, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
-msgstr "Stride 的 MCP 服务器以六个工具的形式为代理提供任务循环：获取下一个任务、认领任务、读取任务、列出任务、添加评论和完成工作。它使用与 REST API 相同的 API 令牌。用你自己的地址和令牌将其添加到 Claude Code："
-
 #: lib/kanban_web/controllers/page_html/product.html.heex:348
 #, elixir-autogen, elixir-format
 msgid "The Stride My Work page with assigned tasks grouped by board, the most urgent first"
@@ -13396,11 +13391,6 @@ msgstr "直接从插件的代码仓库安装。"
 #, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr "使用插件代码仓库中的安装脚本安装。"
-
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
-#, elixir-autogen, elixir-format
-msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as six tools, using the same API token as the REST API. MCP is part of the paid plans."
-msgstr "你的工具没有插件？Stride 的 MCP 服务器以六个工具的形式，为任意 MCP 客户端提供同样的任务循环，使用与 REST API 相同的 API 令牌。MCP 属于付费方案。"
 
 #: lib/kanban_web/controllers/page_html.ex:277
 #, elixir-autogen, elixir-format
@@ -13972,3 +13962,13 @@ msgstr[0] "%{count} 个文件"
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here: its attachments take %{board}, but this Organization has %{available} of attachment storage left, so it is %{shortfall} short. Delete attachments from the board or from this Organization's other boards, then move it."
 msgstr "该看板无法移到这里：它的附件占用 %{board}，但此组织只剩 %{available} 的附件存储空间，还差 %{shortfall}。请从该看板或此组织的其他看板中删除附件，然后再移动。"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
+#, elixir-autogen, elixir-format
+msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as seven tools, using the same API token as the REST API. MCP is part of the paid plans."
+msgstr "你的工具没有插件？Stride 的 MCP 服务器以七个工具的形式，为任意 MCP 客户端提供同样的任务循环，使用与 REST API 相同的 API 令牌。MCP 属于付费方案。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:471
+#, elixir-autogen, elixir-format
+msgid "Stride's MCP server gives an agent the task loop as seven tools: get the next task, claim it, read a task, list tasks, read an attachment, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
+msgstr "Stride 的 MCP 服务器以七个工具的形式为代理提供任务循环：获取下一个任务、认领任务、读取任务、列出任务、读取附件、添加评论和完成工作。它使用与 REST API 相同的 API 令牌。用你自己的地址和令牌将其添加到 Claude Code："

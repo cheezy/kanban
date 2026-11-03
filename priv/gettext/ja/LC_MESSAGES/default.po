@@ -12992,11 +12992,6 @@ msgstr "ガイドを読む:ボードをまたいだ自分の作業"
 msgid "Send board events to Slack, Discord or your own service"
 msgstr "ボードのイベントを Slack、Discord、または独自のサービスに送る"
 
-#: lib/kanban_web/controllers/page_html/product.html.heex:471
-#, elixir-autogen, elixir-format
-msgid "Stride's MCP server gives an agent the task loop as six tools: get the next task, claim it, read a task, list tasks, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
-msgstr "Stride の MCP サーバーは、タスクのサイクルを6つのツールとしてエージェントに提供します。次のタスクの取得、タスクの引き受け、タスクの参照、タスクの一覧、コメントの追加、作業の完了です。REST API と同じ API トークンを使います。ご自身のアドレスとトークンで Claude Code に追加してください:"
-
 #: lib/kanban_web/controllers/page_html/product.html.heex:348
 #, elixir-autogen, elixir-format
 msgid "The Stride My Work page with assigned tasks grouped by board, the most urgent first"
@@ -13393,11 +13388,6 @@ msgstr "プラグインのリポジトリから直接インストールします
 #, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr "プラグインのリポジトリにあるセットアップスクリプトでインストールします。"
-
-#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
-#, elixir-autogen, elixir-format
-msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as six tools, using the same API token as the REST API. MCP is part of the paid plans."
-msgstr "お使いのツール向けのプラグインがない場合は、Stride の MCP サーバーが、任意の MCP クライアントに同じタスクループを 6 つのツールとして提供します。REST API と同じ API トークンを使います。MCP は有料プランに含まれます。"
 
 #: lib/kanban_web/controllers/page_html.ex:277
 #, elixir-autogen, elixir-format
@@ -13969,3 +13959,13 @@ msgstr[0] "%{count} 件のファイル"
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here: its attachments take %{board}, but this Organization has %{available} of attachment storage left, so it is %{shortfall} short. Delete attachments from the board or from this Organization's other boards, then move it."
 msgstr "このボードはここに移動できません: 添付ファイルが %{board} ありますが、この組織に残っている添付ファイルの容量は %{available} で、%{shortfall} 不足しています。ボードまたはこの組織のほかのボードから添付ファイルを削除してから移動してください。"
+
+#: lib/kanban_web/controllers/page_html/workflows.html.heex:729
+#, elixir-autogen, elixir-format
+msgid "No plugin for your tool? Stride's MCP server gives any MCP client the same task loop as seven tools, using the same API token as the REST API. MCP is part of the paid plans."
+msgstr "お使いのツール向けのプラグインがない場合は、Stride の MCP サーバーが、任意の MCP クライアントに同じタスクループを 7 つのツールとして提供します。REST API と同じ API トークンを使います。MCP は有料プランに含まれます。"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex:471
+#, elixir-autogen, elixir-format
+msgid "Stride's MCP server gives an agent the task loop as seven tools: get the next task, claim it, read a task, list tasks, read an attachment, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
+msgstr "Stride の MCP サーバーは、タスクのサイクルを7つのツールとしてエージェントに提供します。次のタスクの取得、タスクの引き受け、タスクの参照、タスクの一覧、添付ファイルの参照、コメントの追加、作業の完了です。REST API と同じ API トークンを使います。ご自身のアドレスとトークンで Claude Code に追加してください:"
