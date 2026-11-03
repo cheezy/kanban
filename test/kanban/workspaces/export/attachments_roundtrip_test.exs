@@ -163,22 +163,51 @@ defmodule Kanban.Workspaces.Export.AttachmentsRoundtripTest do
       assert read_archive(path)["manifest.json"]["counts"]["attachments"] == 0
     end
 
-    test "export fails with export_failed when a blob is missing from storage", ctx do
+    test "a blob missing from storage is left out, and the manifest lists it", ctx do
       :ok = Storage.delete(ctx.shot.storage_key)
 
-      export = export_archive(ctx)
+      path = archive_path(ctx)
+      files = read_archive(path)
+      manifest = files["manifest.json"]
 
-      assert export.status == "failed"
-      assert export.error == "export_failed"
-      assert export.file_path == nil
+      assert manifest["skipped_attachments"] == [%{"id" => ctx.shot.id, "reason" => "missing"}]
+      assert manifest["counts"]["attachments"] == 1
+      assert Enum.map(files["attachments.json"], & &1["id"]) == [ctx.notes.id]
+
+      assert path |> zip_names() |> Enum.sort() ==
+               Enum.sort(Serializer.file_names() ++ [Serializer.blob_entry_name(ctx.notes.id)])
+
+      assert files[Serializer.blob_entry_name(ctx.notes.id)] == @text
       assert ctx.dir |> Path.join("*/.tmp-*") |> Path.wildcard() == []
-      assert ctx.dir |> Path.join(".tmp-*") |> Path.wildcard() == []
     end
 
-    test "a blob that no longer matches its row fails the export with export_failed", ctx do
+    test "a blob that no longer matches its row is left out as changed", ctx do
       :ok = Storage.put(ctx.notes.storage_key, {:binary, "changed"})
 
-      assert %WorkspaceExport{status: "failed", error: "export_failed"} = export_archive(ctx)
+      files = ctx |> archive_path() |> read_archive()
+
+      assert files["manifest.json"]["skipped_attachments"] ==
+               [%{"id" => ctx.notes.id, "reason" => "changed"}]
+
+      assert Enum.map(files["attachments.json"], & &1["id"]) == [ctx.shot.id]
+      refute Map.has_key?(files, Serializer.blob_entry_name(ctx.notes.id))
+    end
+
+    test "an export that leaves nothing out writes no skipped_attachments key", ctx do
+      manifest = ctx |> archive_path() |> read_archive() |> Map.fetch!("manifest.json")
+      refute Map.has_key?(manifest, "skipped_attachments")
+    end
+
+    test "every blob left out still exports the rest of the workspace", ctx do
+      :ok = Storage.delete(ctx.notes.storage_key)
+      :ok = Storage.delete(ctx.shot.storage_key)
+
+      files = ctx |> archive_path() |> read_archive()
+
+      assert files["attachments.json"] == []
+      assert files["manifest.json"]["counts"]["attachments"] == 0
+      assert length(files["manifest.json"]["skipped_attachments"]) == 2
+      assert files["manifest.json"]["counts"]["tasks"] > 0
     end
 
     test "a storage outage while copying blobs fails the export with storage_unavailable",
@@ -218,7 +247,9 @@ defmodule Kanban.Workspaces.Export.AttachmentsRoundtripTest do
       do: Map.take(attachment, [:id, :storage_key, :byte_size, :sha256])
 
     test "copies each blob into an owner-only attachments directory", ctx do
-      assert {:ok, names} = AttachmentBlobs.copy([blob_of(ctx.notes)], ctx.scratch)
+      assert {:ok, %{names: names, skipped: []}} =
+               AttachmentBlobs.copy([blob_of(ctx.notes)], ctx.scratch)
+
       assert names == [Serializer.blob_entry_name(ctx.notes.id)]
 
       dir = Path.join(ctx.scratch, "attachments")
@@ -229,20 +260,39 @@ defmodule Kanban.Workspaces.Export.AttachmentsRoundtripTest do
     end
 
     test "creates nothing for no blobs", ctx do
-      assert AttachmentBlobs.copy([], ctx.scratch) == {:ok, []}
+      assert AttachmentBlobs.copy([], ctx.scratch) == {:ok, %{names: [], skipped: []}}
       refute ctx.scratch |> Path.join("attachments") |> File.exists?()
     end
 
-    test "names a missing, a changed or an unwritable blob", ctx do
-      missing = %{blob_of(ctx.notes) | storage_key: unique_storage_key(1)}
-      assert AttachmentBlobs.copy([missing], ctx.scratch) == {:error, :not_found}
+    test "leaves out a missing or a changed blob and copies the rest, in order", ctx do
+      missing = %{blob_of(ctx.notes) | id: 1, storage_key: unique_storage_key(1)}
+      unusable = %{blob_of(ctx.notes) | id: 2, storage_key: "../escape"}
+      changed = %{blob_of(ctx.notes) | id: 3, byte_size: 1}
 
-      changed = %{blob_of(ctx.notes) | byte_size: 1}
-      other = Path.join(ctx.dir, "other")
-      File.mkdir_p!(other)
-      assert AttachmentBlobs.copy([changed], other) == {:error, :blob_mismatch}
+      assert {:ok, %{names: names, skipped: skipped}} =
+               AttachmentBlobs.copy(
+                 [missing, blob_of(ctx.shot), unusable, changed, blob_of(ctx.notes)],
+                 ctx.scratch
+               )
 
-      # The attachments directory already exists: refused, never reused.
+      assert names == Enum.map([ctx.shot, ctx.notes], &Serializer.blob_entry_name(&1.id))
+
+      assert skipped == [
+               %{id: 1, reason: :missing},
+               %{id: 2, reason: :missing},
+               %{id: 3, reason: :changed}
+             ]
+
+      # The changed blob's partial copy is removed, so the directory holds
+      # exactly the blobs the archive will list.
+      assert ctx.scratch |> Path.join("attachments") |> File.ls!() |> Enum.sort() ==
+               Enum.sort(["#{ctx.shot.id}", "#{ctx.notes.id}"])
+    end
+
+    test "refuses a scratch directory that already holds an attachments directory", ctx do
+      ctx.scratch |> Path.join("attachments") |> File.mkdir_p!()
+
+      # Refused, never reused.
       assert AttachmentBlobs.copy([blob_of(ctx.notes)], ctx.scratch) == {:error, :eexist}
     end
   end
@@ -428,14 +478,31 @@ defmodule Kanban.Workspaces.Export.AttachmentsRoundtripTest do
       assert attachment_count() == before
     end
 
-    test "a task given more files than the per-task limit is refused", ctx do
+    test "a task given more files than the per-task limit keeps its first, in id order", ctx do
       path = archive_path(ctx)
       put_env(Limits, max_files_per_task: 1)
 
-      assert {:error, {:invalid_row, :attachments, ref, %{task_id: _}}} =
-               Importer.import_archive(path, ctx.org_admin.email)
+      assert {:ok, report} = Importer.import_archive(path, ctx.org_admin.email)
 
-      assert ref == ctx.first.identifier
+      assert report.counts.attachments == 1
+      assert [kept] = imported_attachments(report.workspace_name)
+      assert kept.filename == ctx.notes.filename
+
+      assert [text] = Keyword.get_values(report.skipped, :attachments)
+      assert text =~ ~s("screenshot.png")
+      assert text =~ "task #{ctx.first.identifier} already has the most files allowed (1)"
+    end
+
+    test "an import names each file the export left out", ctx do
+      :ok = Storage.delete(ctx.shot.storage_key)
+      path = archive_path(ctx)
+
+      assert {:ok, report} = Importer.import_archive(path, ctx.org_admin.email)
+
+      assert report.counts.attachments == 1
+
+      assert {:attachments,
+              "attachment #{ctx.shot.id}: left out by the export (its file was missing from storage)"} in report.skipped
     end
 
     test "a version 1 archive without attachments still imports", ctx do

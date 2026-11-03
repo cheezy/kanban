@@ -319,7 +319,9 @@ defmodule Kanban.Workspaces.Export.ImporterArchiveAttachmentsTest do
                import_files(ctx, zero)
     end
 
-    test "refuses a row whose content type is outside the allow-list", ctx do
+    # A row today's upload checks refuse is skipped and named, and the rest
+    # of the archive imports (decided 2026-11-03).
+    test "skips a row whose content type is outside the allow-list", ctx do
       files =
         ctx
         |> export_files()
@@ -330,14 +332,75 @@ defmodule Kanban.Workspaces.Export.ImporterArchiveAttachmentsTest do
 
       before = attachment_count()
 
-      assert {:error, {:invalid_row, :attachments, _ref, %{content_type: [_ | _]}}} =
-               assert_nothing_written(before, fn -> import_files(ctx, files) end)
+      assert {:ok, report} = assert_nothing_written(before, fn -> import_files(ctx, files) end)
+
+      assert report.counts.attachments == 0
+      assert report.counts.tasks > 0
+      assert [text] = Keyword.get_values(report.skipped, :attachments)
+
+      assert text ==
+               ~s|attachment "tool.exe", id #{ctx.notes.id}: content_type is not an allowed type|
 
       # The contents must match the type too.
       png = files |> update_attachment(%{"filename" => "x.png", "content_type" => "image/png"})
 
-      assert {:error, {:invalid_row, :attachments, _ref, %{content_type: [_ | _]}}} =
-               import_files(ctx, png)
+      assert {:ok, %{counts: %{attachments: 0}} = report} = import_files(ctx, png)
+      assert [text] = Keyword.get_values(report.skipped, :attachments)
+
+      assert text =~ "content_type does not match the file contents"
+    end
+
+    test "skips a file kept from before today's checks and imports the others", ctx do
+      # A PNG whose image data fails its checksum, as a file uploaded before
+      # the contents were checked can be.
+      good = tiny_png()
+
+      bad =
+        binary_part(good, 0, byte_size(good) - 13) <>
+          <<0, 0, 0, 0>> <> binary_part(good, byte_size(good) - 12, 12)
+
+      second =
+        stored_attachment_fixture(ctx.first, good, %{
+          filename: "shot.png",
+          content_type: "image/png"
+        })
+
+      files = export_files(ctx)
+
+      rows =
+        files
+        |> rows(:attachments)
+        |> Enum.map(fn
+          %{"id" => id} = row when id == second.id ->
+            Map.merge(row, %{
+              "byte_size" => byte_size(bad),
+              "sha256" => :sha256 |> :crypto.hash(bad) |> Base.encode16(case: :lower)
+            })
+
+          row ->
+            row
+        end)
+
+      files =
+        files
+        |> put_rows(:attachments, rows)
+        |> Map.put(Serializer.blob_entry_name(second.id), bad)
+
+      before = attachment_count()
+
+      assert {:ok, report} = import_files(ctx, files)
+
+      assert report.counts.attachments == 1
+      assert attachment_count() == before + 1
+      assert [text] = Keyword.get_values(report.skipped, :attachments)
+      assert text =~ ~s|attachment "shot.png", id #{second.id}:|
+      assert text =~ "content_type does not match the file contents"
+    end
+
+    test "still refuses a row whose size or digest differs from its blob", ctx do
+      files = ctx |> export_files() |> update_attachment(%{"byte_size" => 1})
+
+      assert {:error, {:invalid_row, :attachments, _ref, _errors}} = import_files(ctx, files)
     end
 
     test "imports stored (uncompressed) blob entries too", ctx do

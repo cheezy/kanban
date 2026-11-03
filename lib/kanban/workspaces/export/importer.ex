@@ -75,8 +75,10 @@ defmodule Kanban.Workspaces.Export.Importer do
   alias Kanban.Workspaces.Export.Importer.Archive
   alias Kanban.Workspaces.Export.Importer.Attachments
   alias Kanban.Workspaces.Export.Importer.Refs
+  alias Kanban.Workspaces.Export.Importer.RowErrors
   alias Kanban.Workspaces.Export.Importer.Tasks
   alias Kanban.Workspaces.Export.Importer.Users
+  alias Kanban.Workspaces.Export.Serializer
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -164,6 +166,7 @@ defmodule Kanban.Workspaces.Export.Importer do
       organization_id: organization_id,
       rows: rows,
       archive: Map.take(archive, [:path, :blobs]),
+      export_skipped: Serializer.skipped_attachments(archive.manifest),
       dry_run?: dry_run?,
       stored_keys: keys,
       skipped: [],
@@ -474,23 +477,10 @@ defmodule Kanban.Workspaces.Export.Importer do
   end
 
   @doc false
-  def fail(entity, ref, %Ecto.Changeset{} = changeset) do
-    errors =
-      Ecto.Changeset.traverse_errors(changeset, fn {message, opts} ->
-        Enum.reduce(opts, message, fn {key, value}, acc ->
-          String.replace(acc, "%{#{key}}", fn _ -> interpolation(value) end)
-        end)
-      end)
-
-    Repo.rollback({:invalid_row, entity, Refs.ref(ref), errors})
-  end
+  def fail(entity, ref, %Ecto.Changeset{} = changeset),
+    do: Repo.rollback({:invalid_row, entity, Refs.ref(ref), RowErrors.errors(changeset)})
 
   def fail(entity, ref, reason), do: Repo.rollback({:invalid_row, entity, Refs.ref(ref), reason})
-
-  defp interpolation(value) when is_binary(value) or is_number(value) or is_atom(value),
-    do: to_string(value)
-
-  defp interpolation(value), do: inspect(value)
 
   @doc false
   def skip(ctx, entity, reason), do: %{ctx | skipped: [{entity, reason} | ctx.skipped]}

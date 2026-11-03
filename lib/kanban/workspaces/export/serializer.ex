@@ -282,10 +282,20 @@ defmodule Kanban.Workspaces.Export.Serializer do
     |> Map.new(fn field -> {Atom.to_string(field), dump(field, Map.fetch!(row, field))} end)
   end
 
-  @doc "Encodes the manifest for `workspace_name` with per-entity `counts`."
-  @spec encode_manifest(String.t(), %{atom() => non_neg_integer()}, DateTime.t()) :: iodata()
-  def encode_manifest(workspace_name, counts, %DateTime{} = exported_at) do
-    Jason.encode_to_iodata!(%{
+  @doc """
+  Encodes the manifest for `workspace_name` with per-entity `counts`. When
+  the export left attachments out (`skipped`, `%{id, reason}` maps from
+  `Kanban.Workspaces.Export.AttachmentBlobs.copy/2`), it lists them under
+  `"skipped_attachments"`; otherwise the key is absent.
+  """
+  @spec encode_manifest(
+          String.t(),
+          %{atom() => non_neg_integer()},
+          DateTime.t(),
+          [%{id: pos_integer(), reason: :missing | :changed}]
+        ) :: iodata()
+  def encode_manifest(workspace_name, counts, %DateTime{} = exported_at, skipped \\ []) do
+    %{
       "format" => @format,
       "format_version" => @format_version,
       "exported_at" => DateTime.to_iso8601(exported_at),
@@ -293,8 +303,40 @@ defmodule Kanban.Workspaces.Export.Serializer do
       "workspace" => %{"name" => workspace_name},
       "counts" => Map.new(@entities, &{Atom.to_string(&1), Map.get(counts, &1, 0)}),
       "files" => Enum.map(@entities, &file_name/1)
-    })
+    }
+    |> put_skipped(skipped)
+    |> Jason.encode_to_iodata!()
   end
+
+  # Only an export that left attachments out carries the key.
+  defp put_skipped(manifest, []), do: manifest
+
+  defp put_skipped(manifest, skipped) do
+    Map.put(
+      manifest,
+      "skipped_attachments",
+      Enum.map(skipped, &%{"id" => &1.id, "reason" => Atom.to_string(&1.reason)})
+    )
+  end
+
+  @skip_reasons %{"missing" => :missing, "changed" => :changed}
+
+  @doc """
+  The attachments a manifest says its export left out
+  (`"skipped_attachments"`), as `%{id, reason}` maps with `reason`
+  `:missing` or `:changed`. The manifest is untrusted, so an entry of any
+  other shape is ignored, and a manifest without the key has none.
+  """
+  @spec skipped_attachments(map()) :: [%{id: pos_integer(), reason: :missing | :changed}]
+  def skipped_attachments(%{"skipped_attachments" => entries}) when is_list(entries) do
+    for %{"id" => id, "reason" => reason} <- entries,
+        is_integer(id) and id > 0,
+        Map.has_key?(@skip_reasons, reason),
+        uniq: true,
+        do: %{id: id, reason: Map.fetch!(@skip_reasons, reason)}
+  end
+
+  def skipped_attachments(_manifest), do: []
 
   @doc """
   Decodes and checks a manifest. The format must be this one and the version

@@ -44,10 +44,12 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   gets an "(imported)" suffix when that name is taken in the Organization.
 
   Attachments in the archive are checked and restored too: every blob is
-  verified against its row (size and sha256) and re-checked like an upload
-  (file name, content type, contents), the Organization's storage quota is
-  checked before any file is written, and a refused or failed import deletes
-  every file it stored. A dry run verifies the files and stores none.
+  verified against its row (size and sha256), the Organization's storage
+  quota is checked before any file is written, and a refused or failed import
+  deletes every file it stored. A file that fails an upload's checks (file
+  name, content type, contents), or that is beyond the per-task file limit,
+  is skipped and named under "Skipped", as is each file the export itself
+  left out. A dry run verifies the files and stores none.
 
   It starts only the database connection (`Ecto.Migrator.with_repo/2`) and
   the HTTP client attachment storage may need, not the application, so no

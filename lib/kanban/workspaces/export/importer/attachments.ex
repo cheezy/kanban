@@ -13,12 +13,17 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
     * has its uploader attributed like any other user reference
       (`Kanban.Workspaces.Export.Importer.Users.attributed/2`).
 
+  Every file the export left out (the manifest's `skipped_attachments`,
+  `Kanban.Workspaces.Export.Serializer.skipped_attachments/1`) is named in
+  the report, and a task keeps no more than
+  `Kanban.Attachments.Limits.max_files_per_task/0` files, its first in id
+  order; the rest are skipped and named.
+
   Then, before any blob is written, the whole import is refused with
   `:quota_exceeded` when the files would take the Organization past
-  `Kanban.Attachments.Limits.organization_quota_bytes/0`, and a task given
-  more than `Kanban.Attachments.Limits.max_files_per_task/0` files is
-  refused. The quota is checked again once every row is inserted, under the
-  quota scope's advisory lock (`Kanban.Attachments.Usage.lock_quota/1`), so
+  `Kanban.Attachments.Limits.organization_quota_bytes/0`. The quota is
+  checked again once every row is inserted, under the quota scope's
+  advisory lock (`Kanban.Attachments.Usage.lock_quota/1`), so
   a concurrent upload cannot take the same room. The lock is taken only
   then, never while blobs are extracted and stored, so uploads into the
   Organization do not wait behind a long import.
@@ -32,9 +37,11 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
   `Kanban.Attachments.TaskAttachment.create_changeset/3` — filename rules,
   the content-type allow-list, the extension and the file's contents — like
   any upload, under a new storage key (`Kanban.Attachments.Pipeline.storage_key/1`);
-  nothing from the archive becomes a key, a path or a scratch file name.
-  Finally the blob is stored, unless this is a dry run, which verifies every
-  blob and stores none.
+  nothing from the archive becomes a key, a path or a scratch file name. A
+  row the changeset refuses, such as a file uploaded before a check existed,
+  is skipped and named in the report, with neither a row nor a blob kept
+  (decided 2026-11-03). Finally the blob is stored, unless this is a dry
+  run, which verifies every blob and stores none.
 
   Storage is not transactional, so every key this import stores is tracked
   outside the transaction (`with_stored_keys/1`), and any outcome but a
@@ -55,6 +62,8 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
   alias Kanban.Repo
   alias Kanban.Workspaces.Export.Importer
   alias Kanban.Workspaces.Export.Importer.Archive
+  alias Kanban.Workspaces.Export.Importer.Refs
+  alias Kanban.Workspaces.Export.Importer.RowErrors
   alias Kanban.Workspaces.Export.Importer.Users
   alias Kanban.Workspaces.Export.Writer
 
@@ -70,15 +79,31 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
   """
   @spec import_all(map()) :: map()
   def import_all(%{rows: %{attachments: rows}} = ctx) do
-    {items, ctx} = resolve_all(rows, ctx)
-    check_per_task(items)
+    {items, ctx} = rows |> resolve_all(report_export_skips(ctx)) |> within_task_limit()
     check_quota(ctx, items)
-    count = with_scratch(fn scratch -> store_all(ctx, items, scratch) end)
+    {count, ctx} = with_scratch(fn scratch -> store_all(ctx, items, scratch) end)
     recheck_quota(ctx, items)
     Importer.put_count(ctx, :attachments, count)
   end
 
   def import_all(ctx), do: ctx
+
+  # The files the export itself left out, as its manifest lists them, so the
+  # report names every file the archive does not bring.
+  defp report_export_skips(%{export_skipped: [_ | _] = skipped} = ctx) do
+    Enum.reduce(skipped, ctx, fn %{id: id, reason: reason}, ctx ->
+      Importer.skip(
+        ctx,
+        :attachments,
+        "attachment #{id}: left out by the export (#{export_reason(reason)})"
+      )
+    end)
+  end
+
+  defp report_export_skips(ctx), do: ctx
+
+  defp export_reason(:missing), do: "its file was missing from storage"
+  defp export_reason(:changed), do: "its file no longer matched its record"
 
   # The rows in id order, each resolved to its imported task and comment.
   defp resolve_all(rows, ctx) do
@@ -188,22 +213,39 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
       else: Importer.fail(:attachments, ref, %{byte_size: ["is invalid"]})
   end
 
-  defp check_per_task(items) do
+  # A task keeps its first files, in id order, up to this server's limit;
+  # the rest are skipped and named (decided 2026-11-03).
+  defp within_task_limit({items, ctx}) do
     max = Limits.max_files_per_task()
-
-    items
-    |> Enum.group_by(& &1.task.id)
-    |> Enum.find(fn {_task_id, list} -> length(list) > max end)
-    |> case do
-      nil ->
-        :ok
-
-      {_task_id, [item | _]} ->
-        Importer.fail(:attachments, item.task.identifier, %{
-          task_id: ["has more than #{max} files"]
-        })
-    end
+    {kept, over} = split_per_task(items, max)
+    {kept, Enum.reduce(over, ctx, &skip_over_limit(&2, &1, max))}
   end
+
+  # Each task's first `max` items and the rest, both in the items' order.
+  defp split_per_task(items, max) do
+    {kept, over} =
+      items
+      |> Enum.with_index()
+      |> Enum.group_by(fn {item, _index} -> item.task.id end)
+      |> Enum.map(fn {_task_id, list} -> Enum.split(list, max) end)
+      |> Enum.unzip()
+
+    {in_order(kept), in_order(over)}
+  end
+
+  defp in_order(lists),
+    do: lists |> Enum.concat() |> Enum.sort_by(&elem(&1, 1)) |> Enum.map(&elem(&1, 0))
+
+  defp skip_over_limit(ctx, item, max),
+    do:
+      skip_item(
+        ctx,
+        item,
+        "task #{item.task.identifier} already has the most files allowed (#{max})"
+      )
+
+  defp skip_item(ctx, item, why),
+    do: Importer.skip(ctx, :attachments, "attachment #{Refs.ref(item.ref)}: #{why}")
 
   # Before any blob is extracted, without the lock, so an archive that cannot
   # fit is refused before the slow part. The rows are not inserted yet, so
@@ -252,29 +294,38 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
     end
   end
 
-  defp store_all(_ctx, [], _scratch), do: 0
+  defp store_all(ctx, [], _scratch), do: {0, ctx}
 
   defp store_all(ctx, items, scratch) do
     boards = boards_by_column(items)
 
-    {count, _budget} =
+    {count, _budget, ctx} =
       items
       |> Enum.with_index()
       |> Enum.reduce(
-        {0, Archive.max_attachment_bytes()},
-        &store_next(ctx, {boards, scratch}, &1, &2)
+        {0, Archive.max_attachment_bytes(), ctx},
+        &store_next({boards, scratch}, &1, &2)
       )
 
-    count
+    {count, ctx}
   end
 
   # Each blob is extracted under what is left of the archive's budget.
-  defp store_next(ctx, {boards, scratch}, {item, index}, {count, budget}) do
-    dest = Path.join(scratch, "blob-#{index}")
-    size = store(ctx, item, Map.fetch!(boards, item.task.column_id), dest, budget)
-    File.rm(dest)
-    {count + 1, budget - size}
+  defp store_next(where, {item, index}, {count, budget, ctx}) do
+    ctx |> store_at(item, where, {index, budget}) |> tally({count, budget}, ctx, item)
   end
+
+  defp store_at(ctx, item, {boards, scratch}, {index, budget}) do
+    dest = Path.join(scratch, "blob-#{index}")
+    result = store(ctx, item, Map.fetch!(boards, item.task.column_id), dest, budget)
+    File.rm(dest)
+    result
+  end
+
+  defp tally({:stored, size}, {count, budget}, ctx, _item), do: {count + 1, budget - size, ctx}
+
+  defp tally({:skipped, size, why}, {count, budget}, ctx, item),
+    do: {count, budget - size, skip_item(ctx, item, why)}
 
   defp boards_by_column(items) do
     column_ids = items |> Enum.map(& &1.task.column_id) |> Enum.uniq()
@@ -289,9 +340,15 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
     blob = extract!(ctx.archive.path, entry, dest, min(Limits.max_file_bytes(), budget))
     check_matches!(item, blob)
     key = Pipeline.storage_key(board_id)
-    record = insert_row!(item, key, blob, dest)
-    put!(ctx, key, dest, record.content_type)
-    blob.byte_size
+    changeset = row_changeset(item, key, blob, dest)
+
+    if changeset.valid? do
+      record = Importer.insert!(changeset, :attachments, item.ref)
+      put!(ctx, key, dest, record.content_type)
+      {:stored, blob.byte_size}
+    else
+      {:skipped, blob.byte_size, RowErrors.text(changeset)}
+    end
   end
 
   defp extract!(path, entry, dest, max_bytes) do
@@ -316,7 +373,10 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
     end
   end
 
-  defp insert_row!(item, key, blob, dest) do
+  # Today's upload checks: a row they refuse (a file kept from before a
+  # check existed, or a name or type this server no longer allows) is
+  # skipped and named rather than refusing the whole archive.
+  defp row_changeset(item, key, blob, dest) do
     %TaskAttachment{
       task_id: item.task.id,
       comment_id: item.comment_id,
@@ -333,7 +393,7 @@ defmodule Kanban.Workspaces.Export.Importer.Attachments do
       {:file, dest}
     )
     |> Importer.cast_timestamps(item.row, ["inserted_at"])
-    |> Importer.insert!(:attachments, item.ref)
+    |> Importer.validate_int4()
   end
 
   # Tracked before the put, so even a put that fails part-way is cleaned up.

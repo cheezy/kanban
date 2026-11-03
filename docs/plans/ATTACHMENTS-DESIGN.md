@@ -359,7 +359,7 @@ The object is documented in SchemaDoc under a new `response_objects` key and as 
 
 ### 8.4 Workspace export and import (W2519)
 
-- **Export:** the archive moves to manifest `format_version` 2, with `attachments.json` (allow-listed fields only, never a storage key) and one `attachments/<id>` blob entry per row. A blob missing from storage fails the export with `export_failed`.
+- **Export:** the archive moves to manifest `format_version` 2, with `attachments.json` (allow-listed fields only, never a storage key) and one `attachments/<id>` blob entry per row. A blob missing from storage fails the export with `export_failed`. (Changed 2026-11-03: a blob missing from storage, or no longer matching its row, is left out with its row and listed in the manifest's `skipped_attachments`; the import names each such file, and skips and names a row that fails today's upload checks or is beyond the per-task limit. See [workspace export](../workspace-export.md).)
 - **Import:** archives are untrusted input.
   - Blob entries must be named `attachments/<positive integer>`; directories, traversal, duplicates, and a row without a blob (or a blob without a row) make the archive `invalid_archive`.
   - Each blob is inflated against a running per-file and total budget, so a zip bomb is never fully inflated (`archive_too_large`). Byte size and sha256 are recomputed, and filename and type are re-validated through G488's changeset.

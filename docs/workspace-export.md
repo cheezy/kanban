@@ -47,8 +47,22 @@ key of its own. See [attachments](attachments.md) for the files themselves.
 Attachments make an archive about as large as the files attached to the
 workspace's tasks, because most attachments (images, PDFs) are compressed
 already and barely shrink in the zip. A workspace with gigabytes of
-attachments gives a download of gigabytes. If a file is missing from storage
-when the export runs, the export fails rather than leaving the file out.
+attachments gives a download of gigabytes.
+
+One lost file does not stop the rest of the workspace from being exported.
+A file that is missing from storage when the export runs (deleted after the
+export started, or lost), or that no longer matches its size and sha256, is
+left out together with its `attachments.json` row. The manifest counts only
+the attachments the archive holds, and lists each one left out under
+`skipped_attachments`, by id, with the reason `missing` or `changed`:
+
+```json
+"skipped_attachments": [{"id": 412, "reason": "missing"}]
+```
+
+An export that left nothing out has no `skipped_attachments` key. A storage
+outage while the files are copied still fails the export, as
+`storage_unavailable`, so a retry can get every file.
 
 The archive never contains anything that signs anyone in: no password or token
 hashes, no session or invitation tokens, no API tokens and no webhook secrets.
@@ -98,14 +112,24 @@ anything is kept:
   measured as it is decompressed, so a file that grows past a limit despite
   smaller declared sizes is refused as too large without being decompressed
   in full.
-- Each file's size and sha256 are recomputed and must match its row. Its file
-  name and content type are checked like an upload's: the same file-name
-  rules, the same allowed types, and the file's contents must match its type.
+- Each file's size and sha256 are recomputed and must match its row, or the
+  archive is refused.
+- Each file's name and content type are checked like an upload's: the same
+  file-name rules, the same allowed types, and the file's contents must match
+  its type. A file that fails these checks, such as one uploaded before a
+  check existed, is skipped and named in the report, and the rest of the
+  archive imports.
 - The files must fit in the Organization's storage quota
   (`ATTACHMENTS_ORG_QUOTA_GB`). This is checked before any file is written,
   and again just before the import commits, counting files uploaded to the
-  Organization meanwhile. Uploads are not held up while the import runs. A
-  task may hold no more files than `ATTACHMENTS_MAX_FILES_PER_TASK`.
+  Organization meanwhile. Uploads are not held up while the import runs. The
+  first check counts every file in the archive, including any later skipped.
+- A task keeps no more files than `ATTACHMENTS_MAX_FILES_PER_TASK`: the
+  first ones, in id order. Each file beyond the limit is skipped and named
+  in the report.
+- Each file the export left out (its manifest's `skipped_attachments`) is
+  named in the report too, so the report lists every file the new workspace
+  does not have.
 - `--dry-run` checks every file the same way and stores none.
 - If the import is refused or fails after some files were stored, every file
   it stored is deleted again.

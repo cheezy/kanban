@@ -21,12 +21,16 @@ defmodule Kanban.Workspaces.Export.Writer do
   scratch directory after the snapshot transaction has ended, so slow
   storage never holds a read transaction open
   (`Kanban.Workspaces.Export.AttachmentBlobs`), and zipped as
-  `attachments/<id>` entries beside the JSON files.
+  `attachments/<id>` entries beside the JSON files. A file deleted after the
+  snapshot, missing from storage, or no longer matching its row is left out
+  rather than failing the export (decided 2026-11-03): its row is dropped
+  from `attachments.json`, the manifest counts what the archive holds, and
+  the manifest's `skipped_attachments` lists each id left out with its
+  reason, `"missing"` or `"changed"`.
 
   Errors come back as one of two codes and never as a message or a path:
   `:storage_unavailable` when the disk or attachment storage refused a read
-  or a write, `:export_failed` for anything else, including a blob missing
-  from storage or no longer matching its row.
+  or a write, `:export_failed` for anything else.
   """
 
   import Ecto.Query, warn: false
@@ -138,11 +142,28 @@ defmodule Kanban.Workspaces.Export.Writer do
     end
   end
 
-  # The snapshot transaction first; the blobs are copied once it has ended.
+  # The snapshot transaction first; the blobs are copied once it has ended,
+  # and the manifest is written last, once the attachments left out are known.
   defp write_contents(workspace, tmp_dir) do
-    with {:ok, {counts, blobs}} <- write_files(workspace, tmp_dir),
-         {:ok, blob_names} <- AttachmentBlobs.copy(blobs, tmp_dir),
-         do: {:ok, {counts, blob_names}}
+    with {:ok, {counts, blobs, exported_at}} <- write_files(workspace, tmp_dir),
+         {:ok, %{names: blob_names, skipped: skipped}} <- AttachmentBlobs.copy(blobs, tmp_dir) do
+      counts = drop_skipped(tmp_dir, counts, skipped)
+      write_manifest(tmp_dir, workspace.name, counts, {exported_at, skipped})
+      {:ok, {counts, blob_names}}
+    end
+  end
+
+  # A blob left out of the archive takes its attachments.json row with it,
+  # so every row still has its blob. The rows are small metadata, so the
+  # file is read back whole.
+  defp drop_skipped(_tmp_dir, counts, []), do: counts
+
+  defp drop_skipped(tmp_dir, counts, skipped) do
+    path = Path.join(tmp_dir, Serializer.file_name(:attachments))
+    ids = MapSet.new(skipped, & &1.id)
+    rows = path |> File.read!() |> Jason.decode!() |> Enum.reject(&MapSet.member?(ids, &1["id"]))
+    write_file!(path, Jason.encode_to_iodata!(rows))
+    Map.put(counts, :attachments, length(rows))
   end
 
   # Zips the scratch directory into the final path, restricts the archive to
@@ -171,10 +192,11 @@ defmodule Kanban.Workspaces.Export.Writer do
     Repo.transaction(fn -> write_snapshot(workspace, tmp_dir) end, timeout: :infinity)
   end
 
-  # Runs inside the transaction: every entity file, then the manifest. Returns
-  # the counts and the blobs to copy once the transaction has ended.
+  # Runs inside the transaction: every entity file. Returns the counts, the
+  # blobs to copy once the transaction has ended and the snapshot's time.
   defp write_snapshot(workspace, tmp_dir) do
     snapshot()
+    exported_at = DateTime.utc_now()
     board_ids = board_ids(workspace.id)
     {counts, user_ids, blobs} = write_board_entities(tmp_dir, board_ids)
     {member_count, user_ids} = write_members(tmp_dir, workspace.id, user_ids)
@@ -183,8 +205,7 @@ defmodule Kanban.Workspaces.Export.Writer do
     counts =
       counts |> Map.put(:workspace_members, member_count) |> Map.put(:users, user_count)
 
-    write_manifest(tmp_dir, workspace.name, counts)
-    {counts, Enum.reverse(blobs)}
+    {counts, Enum.reverse(blobs), exported_at}
   end
 
   defp write_board_entities(tmp_dir, board_ids) do
@@ -194,8 +215,8 @@ defmodule Kanban.Workspaces.Export.Writer do
     end)
   end
 
-  defp write_manifest(tmp_dir, workspace_name, counts) do
-    manifest = Serializer.encode_manifest(workspace_name, counts, DateTime.utc_now())
+  defp write_manifest(tmp_dir, workspace_name, counts, {exported_at, skipped}) do
+    manifest = Serializer.encode_manifest(workspace_name, counts, exported_at, skipped)
     path = Path.join(tmp_dir, Serializer.file_name(:manifest))
     write_file!(path, manifest)
   end
