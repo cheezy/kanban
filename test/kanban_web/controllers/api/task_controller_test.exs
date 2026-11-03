@@ -2256,10 +2256,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       # Pinned against the untouched GET /api/tasks/:id view, so this cannot
       # pass by both the index row and the fixture shrinking together.
+      # W2516: the show alone adds data.attachments, so it is set aside here.
       show = json_response(get(conn, ~p"/api/tasks/#{task1.id}"), 200)["data"]
       row = Enum.find(absent["data"], &(&1["id"] == task1.id))
 
-      assert row |> Map.keys() |> Enum.sort() == show |> Map.keys() |> Enum.sort()
+      refute Map.has_key?(row, "attachments")
+
+      assert row |> Map.keys() |> Enum.sort() ==
+               show |> Map.delete("attachments") |> Map.keys() |> Enum.sort()
     end
 
     test "the full index row still carries every fat field, including the review fields", %{
@@ -6990,8 +6994,12 @@ defmodule KanbanWeb.API.TaskControllerTest do
       # Pinned against the unchanged show/1 view rather than only against each
       # other, so a future edit that quietly slims the DEFAULT response fails
       # here instead of passing because both sides shrank together.
+      # W2516: the show alone adds data.attachments, so it is set aside here.
       shown = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
-      assert Map.keys(absent["data"]) |> Enum.sort() == Map.keys(shown) |> Enum.sort()
+      refute Map.has_key?(absent["data"], "attachments")
+
+      assert Map.keys(absent["data"]) |> Enum.sort() ==
+               shown |> Map.delete("attachments") |> Map.keys() |> Enum.sort()
     end
 
     test "an unrecognised response_view falls back to the full echo",
@@ -8498,10 +8506,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       # Pinned against the untouched GET /api/tasks/:id view, so this cannot
       # pass by both sides shrinking together.
+      # W2516: the show alone adds data.attachments, so it is set aside here.
       show = json_response(get(conn, ~p"/api/tasks/#{goal.id}"), 200)["data"]
 
+      refute Map.has_key?(absent["data"]["task"], "attachments")
+
       assert absent["data"]["task"] |> Map.keys() |> Enum.sort() ==
-               show |> Map.keys() |> Enum.sort()
+               show |> Map.delete("attachments") |> Map.keys() |> Enum.sort()
     end
 
     test "response_view=slim on a leaf task keeps the root full and children empty", %{

@@ -470,7 +470,32 @@ defmodule KanbanWeb.API.OpenApiContractTest do
     end
 
     test "Task lists exactly the keys of the full task render", %{spec: spec, task: task} do
-      assert rendered_keys(TaskJSON.show(%{task: task}).data) == schema_keys(spec, "Task")
+      rendered = TaskJSON.show(%{task: task, attachments: []}).data
+      assert rendered_keys(rendered) == schema_keys(spec, "Task")
+    end
+
+    test "TaskAttachment lists exactly the keys of TaskAttachmentJSON.attachment/1 (W2516)", %{
+      spec: spec,
+      task: task
+    } do
+      attachment = %Kanban.Attachments.TaskAttachment{
+        id: 1,
+        task_id: task.id,
+        inserted_at: ~N[2026-11-01 12:00:00]
+      }
+
+      assert rendered_keys(KanbanWeb.API.TaskAttachmentJSON.attachment(attachment)) ==
+               schema_keys(spec, "TaskAttachment")
+
+      assert spec["components"]["schemas"]["TaskAttachment"]["required"] |> MapSet.new() ==
+               schema_keys(spec, "TaskAttachment")
+
+      task_schema = spec["components"]["schemas"]["Task"]
+
+      assert task_schema["properties"]["attachments"]["items"] ==
+               %{"$ref" => "#/components/schemas/TaskAttachment"}
+
+      refute "attachments" in task_schema["required"]
     end
 
     test "TaskLabel matches the rendered label shape and the label colours (W2239)", %{

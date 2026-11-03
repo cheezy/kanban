@@ -93,7 +93,8 @@ Returns the claimed task and the `before_doing` hook metadata:
     "assigned_to_id": 5,
     "dependencies": [],
     "inserted_at": "2025-12-28T10:00:00Z",
-    "updated_at": "2025-12-28T10:30:00Z"
+    "updated_at": "2025-12-28T10:30:00Z",
+    "attachments": []
   },
   "hook": {
     "name": "before_doing",
@@ -119,6 +120,11 @@ Returns the claimed task and the `before_doing` hook metadata:
   "current_skills_version": "1.0"
 }
 ```
+
+`data.attachments` lists the task's attachments, the same objects, in the same
+order, as the full [GET /api/tasks/:id](get_tasks_id.md#success-200-ok) view.
+Read it here rather than with a second request. It is an empty list when the
+task has none, or when paid plans are enforced and the board is not unlocked.
 
 ### Unauthorized (401)
 

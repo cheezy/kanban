@@ -3,6 +3,7 @@ defmodule KanbanWeb.API.TaskJSON do
   alias KanbanWeb.API.ErrorDocs
   alias KanbanWeb.API.LockedTaskFields
   alias KanbanWeb.API.SkillsVersion
+  alias KanbanWeb.API.TaskAttachmentJSON
   alias KanbanWeb.API.TaskNestedJSON
 
   @doc """
@@ -60,6 +61,9 @@ defmodule KanbanWeb.API.TaskJSON do
   `:slim`-carrying assigns map just as happily, so those clauses must come
   first. The `hook`/`hooks` clauses serve claim/complete responses, which
   never thread `response_view` or `fields`.
+
+  `data.attachments` (W2516) appears only where `TaskActions` threads an
+  `attachments` assign: the full show and the claim, over REST and MCP.
   """
   def show(%{task: task, fields: fields}) when is_list(fields) do
     %{data: task |> projectable_data() |> Map.take(fields)}
@@ -78,6 +82,7 @@ defmodule KanbanWeb.API.TaskJSON do
 
   def show(%{task: task, hook: hook} = assigns) do
     %{data: data(task), hook: hook}
+    |> maybe_add_attachments(assigns)
     |> maybe_add_skills_version(assigns)
   end
 
@@ -92,6 +97,7 @@ defmodule KanbanWeb.API.TaskJSON do
   # complete — and the slim and fields views are untouched.
   def show(%{task: task} = assigns) do
     %{data: data(task)}
+    |> maybe_add_attachments(assigns)
     |> maybe_add_skills_version(assigns)
     |> maybe_add_comment_count(assigns)
     |> LockedTaskFields.put_warnings(assigns)
@@ -101,6 +107,16 @@ defmodule KanbanWeb.API.TaskJSON do
     do: Map.put(body, :comment_count, count)
 
   defp maybe_add_comment_count(body, _assigns), do: body
+
+  # W2516: inside data, unlike comment_count; TaskActions decided visibility.
+  defp maybe_add_attachments(%{data: data} = body, %{attachments: attachments})
+       when is_list(attachments),
+       do: %{
+         body
+         | data: Map.put(data, :attachments, TaskAttachmentJSON.attachments(attachments))
+       }
+
+  defp maybe_add_attachments(body, _assigns), do: body
 
   @doc """
   Task tree view. Under `response_view=slim` (W2057) the children render as
@@ -279,6 +295,10 @@ defmodule KanbanWeb.API.TaskJSON do
   would silently expose future fields, and this list is the security
   boundary for the projection: only names already served by the full show
   response may appear here.
+
+  `attachments` (W2516) is deliberately absent, so `fields=attachments` keeps
+  the unknown-field 422: it is a plan-gated association, not scalar task
+  state, and the fields path applies no plan gate, so it is never projected.
   """
   def projectable_field_names, do: @projectable_field_names
 

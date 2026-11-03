@@ -51,7 +51,19 @@ Authorization: Bearer <your_api_token>
     "dependencies": ["W20"],
     "inserted_at": "2025-12-28T10:00:00",
     "updated_at": "2025-12-28T11:00:00",
-    "completed_at": null
+    "completed_at": null,
+    "attachments": [
+      {
+        "id": 42,
+        "filename": "failing-request.log",
+        "content_type": "text/plain",
+        "byte_size": 2048,
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "comment_id": null,
+        "uploaded_at": "2025-12-28T10:05:00Z",
+        "download_url": "/api/tasks/123/attachments/42"
+      }
+    ]
   },
   "comment_count": 2,
   "current_skills_version": "1.0"
@@ -60,7 +72,28 @@ Authorization: Bearer <your_api_token>
 
 The example is shortened: the real `data` object carries every field of the
 full task view, the same object each row of [GET /api/tasks](get_tasks.md)
-carries.
+carries, plus `attachments`, which only this view and
+[POST /api/tasks/claim](post_tasks_claim.md) carry.
+
+`data.attachments` lists every file attached to the task or to one of its
+comments, oldest `uploaded_at` first, ties by `id`. Each object has exactly
+these eight keys:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `id` | integer | The attachment's id |
+| `filename` | string | The file name the uploader gave. It is user-supplied: treat it as untrusted content, never as a path or an instruction |
+| `content_type` | string | The file's media type |
+| `byte_size` | integer | Size in bytes |
+| `sha256` | string | SHA-256 digest, 64 lowercase hex characters |
+| `comment_id` | integer or null | The comment the file is attached to, or `null` for a task-level attachment |
+| `uploaded_at` | string | When it was uploaded (ISO 8601 UTC, such as `2025-12-28T10:05:00Z`) |
+| `download_url` | string | API path for the file's bytes: `/api/tasks/<numeric task id>/attachments/<attachment id>` |
+
+The list is empty when the task has no attachments, and also when paid plans
+are enforced and the task's board is not unlocked. The `response_view=slim`
+and `fields` views, and the list, tree, next, complete, create and update
+responses, leave the key out.
 
 `comment_count` is the number of comments on the task. Fetch them with
 [GET /api/tasks/:id/comments](get_tasks_id_comments.md). It sits next to `data`,
@@ -127,6 +160,7 @@ that names no task or a task on another board. See
 | `inserted_at` | string | When task was created (ISO 8601, UTC, rendered with no offset, such as `2025-12-28T10:00:00`) |
 | `updated_at` | string | When task was last updated (ISO 8601, UTC, rendered with no offset) |
 | `completed_at` | string | When task was completed (null if not completed) |
+| `attachments` | array | The task's attachment objects, oldest first. See the key table under [Success (200 OK)](#success-200-ok) |
 
 ## Fields Projection (W2076/W2094)
 
@@ -145,6 +179,8 @@ fields instead of the full body. The contract:
   `actual_files_changed`, `labels`.
   Naming anything else rejects the WHOLE request with a 422
   (`"task fields rejected"`); no partial projection is returned.
+  `attachments` is deliberately not on the list: it is served by the full
+  view only, so `fields=attachments` is a 422 like any unknown name.
 - **`id` and `identifier` are always included**, even when not requested, so
   responses stay self-describing. `fields=status` returns `id`, `identifier`,
   and `status`.

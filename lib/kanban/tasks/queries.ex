@@ -8,6 +8,7 @@ defmodule Kanban.Tasks.Queries do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Attachments.TaskAttachment
   alias Kanban.Repo
   alias Kanban.Tasks.BoardFilters
   alias Kanban.Tasks.Task
@@ -168,7 +169,8 @@ defmodule Kanban.Tasks.Queries do
             order_by: [desc: h.inserted_at, desc: h.id],
             preload: [:from_user, :to_user]
           ),
-        comments: comments_with_author_query(asc: :inserted_at)
+        comments: comments_with_author_query(asc: :inserted_at),
+        attachments: attachments_oldest_first_query()
       ])
 
     if task.type == :goal do
@@ -202,7 +204,8 @@ defmodule Kanban.Tasks.Queries do
                 order_by: [desc: h.inserted_at, desc: h.id],
                 preload: [:from_user, :to_user]
               ),
-            comments: comments_with_author_query(asc: :inserted_at)
+            comments: comments_with_author_query(asc: :inserted_at),
+            attachments: attachments_oldest_first_query()
           ])
 
         if task.type == :goal do
@@ -240,7 +243,8 @@ defmodule Kanban.Tasks.Queries do
               order_by: [desc: h.inserted_at, desc: h.id],
               preload: [:from_user, :to_user]
             ),
-          comments: comments_with_author_query(asc: :inserted_at)
+          comments: comments_with_author_query(asc: :inserted_at),
+          attachments: attachments_oldest_first_query()
         ])
     end
   end
@@ -315,6 +319,13 @@ defmodule Kanban.Tasks.Queries do
   # author's name without an N+1 query per comment.
   defp comments_with_author_query(order_by) do
     from(c in TaskComment, order_by: ^order_by, preload: [:author])
+  end
+
+  # Every attachment of the task, task-level and comment-level alike (each
+  # row carries task_id), oldest first. Rows sharing an inserted_at second
+  # are ordered by id, so the list is stable across reads.
+  defp attachments_oldest_first_query do
+    from(a in TaskAttachment, order_by: [asc: a.inserted_at, asc: a.id])
   end
 
   @doc """

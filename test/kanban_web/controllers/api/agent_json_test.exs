@@ -34,7 +34,7 @@ defmodule KanbanWeb.API.AgentJSONTest do
   @api_schema_keys ~w(
     description request_formats hook_result_format explorer_result_format
     reviewer_result_format workflow_steps_format task_fields embedded_objects
-    plugin_versions validation_modes valid_capabilities
+    response_objects plugin_versions validation_modes valid_capabilities
   )
 
   describe "GET /api/agent/onboarding" do

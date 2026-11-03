@@ -24,6 +24,7 @@ defmodule KanbanWeb.API.TaskActions do
   alias Kanban.ApiTokens
   alias Kanban.Columns
   alias Kanban.Hooks.Validator
+  alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.API.AgentAttribution
   alias KanbanWeb.API.BoardWriteAccess
@@ -102,7 +103,13 @@ defmodule KanbanWeb.API.TaskActions do
       specific_task: !!identifier
     })
 
-    {:ok, :show, [task: task, hook: hook_info, agent_skills_version: agent.skills_version]}
+    {:ok, :show,
+     [
+       task: task,
+       hook: hook_info,
+       agent_skills_version: agent.skills_version,
+       attachments: visible_attachments(conn, task)
+     ]}
   end
 
   defp claim_result({:error, :no_tasks_available}, _conn, _agent, identifier),
@@ -214,9 +221,19 @@ defmodule KanbanWeb.API.TaskActions do
   def get_task(conn, id_or_identifier, params) do
     with {:ok, task} <- fetch_task(id_or_identifier, conn.assigns.current_board) do
       {:ok, :show,
-       [task: task, response_view: view_for(params), comment_count: length(task.comments)]}
+       [
+         task: task,
+         response_view: view_for(params),
+         comment_count: length(task.comments),
+         attachments: visible_attachments(conn, task)
+       ]}
     end
   end
+
+  # W2516: board_unlocked?/1, never check_board/3 -- reading a task is not a
+  # request for the paid feature, so a locked board gets [] and no telemetry.
+  defp visible_attachments(conn, task),
+    do: if(Plans.board_unlocked?(conn.assigns.current_board), do: task.attachments, else: [])
 
   @doc """
   One page of the token's board tasks (`GET /api/tasks` in paginated mode,

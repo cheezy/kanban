@@ -291,6 +291,11 @@ endpoints, split into `task_fields` (scalar/array fields) and
 `embedded_objects` (structured fields like `key_files`, `verification_steps`,
 and `testing_strategy`).
 
+`response_objects` describes objects the API returns but never accepts. Today
+that is `attachment`: the eight keys of each entry in `data.attachments` on
+[GET /api/tasks/:id](get_tasks_id.md#success-200-ok) and
+[POST /api/tasks/claim](post_tasks_claim.md#success-200-ok).
+
 Among the `task_fields`/`embedded_objects` is `technical_details` — an
 **optional free-form JSON object** for arbitrary technical information. Unlike
 `testing_strategy`, it has **no fixed `valid_keys`**: any keys and values
