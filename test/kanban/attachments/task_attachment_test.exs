@@ -42,6 +42,18 @@ defmodule Kanban.Attachments.TaskAttachmentTest do
   defp text_changeset(overrides, body),
     do: changeset(Map.put(overrides, "byte_size", byte_size(body)), body)
 
+  # A PNG whose IHDR (1x1) and IDAT chunks carry valid CRCs, the IDAT
+  # `idat_bytes` long, so the structure check reads well-formed chunks.
+  defp png_with_idat(idat_bytes) do
+    chunk = fn type, data ->
+      <<byte_size(data)::32>> <> type <> data <> <<:erlang.crc32(type <> data)::32>>
+    end
+
+    <<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A>> <>
+      chunk.("IHDR", <<1::32, 1::32, 8, 0, 0, 0, 0>>) <>
+      chunk.("IDAT", String.duplicate(<<0>>, idat_bytes)) <> chunk.("IEND", "")
+  end
+
   defp errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {message, _opts} -> message end)
   end
@@ -286,8 +298,15 @@ defmodule Kanban.Attachments.TaskAttachmentTest do
                errors(changeset(hidden_attrs, {:file, hidden}))
 
       png = Path.join(tmp_dir, "diagram.png")
-      File.write!(png, @png <> String.duplicate(<<0>>, 2_000))
-      assert changeset(%{"byte_size" => 2_016}, {:file, png}).valid?
+      png_bytes = png_with_idat(2_000)
+      File.write!(png, png_bytes)
+      assert changeset(%{"byte_size" => byte_size(png_bytes)}, {:file, png}).valid?
+
+      not_png = Path.join(tmp_dir, "not.png")
+      File.write!(not_png, @png <> String.duplicate(<<0>>, 2_000))
+
+      assert %{content_type: ["does not match the file contents"]} =
+               errors(changeset(%{"byte_size" => 2_016}, {:file, not_png}))
 
       pdf = Path.join(tmp_dir, "fake.png")
       File.write!(pdf, @pdf)

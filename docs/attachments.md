@@ -158,7 +158,15 @@ type (`.md`, `.csv`, `.json`, `.log`).
 
 Stride also checks the first bytes of every file against its type
 (`Kanban.Attachments.ContentType`). An image or PDF must begin with that
-format's signature, so a PDF renamed to `.png` is refused. A text file is
+format's signature, so a PDF renamed to `.png` is refused. An image must
+also have its format's structure in its first 512 bytes: a PNG's first
+chunk is a valid `IHDR` and its chunks' checksums match, a JPEG is a chain
+of marker segments, a GIF's screen descriptor is followed by a real block,
+and a WebP's first chunk is an image chunk. So a PNG signature followed by
+a web page is refused. Bytes after the first 512 are not checked, so markup
+appended to a larger image, or hidden inside one of its chunks, is still
+stored; it is never run, because downloads tell the browser not to guess
+the type and forbid scripts. A text file is
 refused when it starts with another format's signature or when any byte of
 the whole file is a NUL byte, so a zip archive or an executable hidden
 behind a text prefix is refused too. Text does not have to be UTF-8, so

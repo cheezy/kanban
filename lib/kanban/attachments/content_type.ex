@@ -44,7 +44,9 @@ defmodule Kanban.Attachments.ContentType do
     * A binary type needs its own signature: PNG, JPEG, GIF87a/GIF89a,
       RIFF....WEBP, or `%PDF-`. A head shorter than the signature cannot
       match, so callers pass the first 512 bytes, or the whole file when it is
-      smaller.
+      smaller. An image type also needs the format's structure after the
+      signature (`Kanban.Attachments.ContentType.ImageStructure`), so a PNG
+      signature followed by HTML is not an image.
     * A text type is contradicted only by a NUL byte in the head or by a
       known binary signature (the five above, or a zip). Text is never
       required to be UTF-8, because Latin-1 CSV exports are common. A text
@@ -69,6 +71,8 @@ defmodule Kanban.Attachments.ContentType do
   the type, so excluded content cannot be stored under an allowed type and
   then opened by its name (`report.html` declared `text/plain`).
   """
+
+  alias Kanban.Attachments.ContentType.ImageStructure
 
   @allowed [
     "image/png",
@@ -175,10 +179,19 @@ defmodule Kanban.Attachments.ContentType do
   """
   @spec matches?(String.t() | nil, binary()) :: boolean()
   def matches?(type, head) when type in @text_types and is_binary(head), do: text_head?(head)
-  def matches?("image/png", head) when is_binary(head), do: png?(head)
-  def matches?("image/jpeg", head) when is_binary(head), do: jpeg?(head)
-  def matches?("image/gif", head) when is_binary(head), do: gif?(head)
-  def matches?("image/webp", head) when is_binary(head), do: webp?(head)
+
+  def matches?("image/png", head) when is_binary(head),
+    do: png?(head) and ImageStructure.png?(head)
+
+  def matches?("image/jpeg", head) when is_binary(head),
+    do: jpeg?(head) and ImageStructure.jpeg?(head)
+
+  def matches?("image/gif", head) when is_binary(head),
+    do: gif?(head) and ImageStructure.gif?(head)
+
+  def matches?("image/webp", head) when is_binary(head),
+    do: webp?(head) and ImageStructure.webp?(head)
+
   def matches?("application/pdf", head) when is_binary(head), do: pdf?(head)
   def matches?(_type, head) when is_binary(head), do: false
 
