@@ -338,8 +338,8 @@ board is not in an Organization.
 
 Download a file from
 [GET /api/tasks/:id/attachments/:attachment_id](get_tasks_id_attachments_attachment_id.md):
-prefix `download_url` with the API base URL, send your Bearer token, and send
-`Accept: */*`, `Accept: application/json` or no `Accept` header. Then check the
+prefix `download_url` with the API base URL and send your Bearer token. Any
+`Accept` header is served, `application/octet-stream` included. Then check the
 file's size against `byte_size` and its SHA-256 digest against `sha256`, and
 discard a file that does not match. The route answers `403` for a token whose
 user lost board access or a board that needs an Organization, `404` for an
@@ -463,7 +463,9 @@ naming the field and are documented on the endpoint's page.
 
 The API only serves `application/json`. A request whose `Accept` header asks
 for something else, such as `text/html`, `application/xml` or `image/png`,
-gets a `406` on every `/api` route:
+gets a `406` on every `/api` route except the attachment download,
+[GET /api/tasks/:id/attachments/:attachment_id](get_tasks_id_attachments_attachment_id.md),
+which serves any `Accept` header because its body is the file itself:
 
 ```http
 HTTP/1.1 406 Not Acceptable

@@ -43,6 +43,8 @@ defmodule KanbanWeb.API.NotAcceptableTest do
     plain_token
   end
 
+  @any_accept_route {:get, "/api/tasks/1/attachments/1"}
+
   defp api_routes do
     for %{path: "/api" <> _ = path, verb: verb} <- KanbanWeb.Router.__routes__() do
       {verb, String.replace(path, ~r/:\w+/, "1")}
@@ -192,7 +194,7 @@ defmodule KanbanWeb.API.NotAcceptableTest do
 
   describe "every /api route returns 406 for Accept: text/html" do
     test "the format pin covers every route in both API pipelines", %{conn: conn} do
-      routes = api_routes()
+      routes = api_routes() -- [@any_accept_route]
 
       # 2 public + 18 authenticated today; guard against the list going empty.
       assert length(routes) >= 20
@@ -203,6 +205,19 @@ defmodule KanbanWeb.API.NotAcceptableTest do
           "#{verb |> Atom.to_string() |> String.upcase()} #{path}"
         )
       end
+    end
+  end
+
+  describe "the attachment download answers any Accept" do
+    # The body is the file's own bytes, so this route does not negotiate the
+    # header (KanbanWeb.Plugs.AttachmentDownloadAccept); its errors stay JSON.
+    test "text/html reaches authentication instead of a 406", %{conn: conn} do
+      {:get, path} = @any_accept_route
+      assert @any_accept_route in api_routes()
+
+      conn = conn |> with_accept("text/html") |> get(path)
+
+      assert %{"error" => _} = json_response(conn, 401)
     end
   end
 

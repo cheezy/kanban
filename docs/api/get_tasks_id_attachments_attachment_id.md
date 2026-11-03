@@ -33,13 +33,11 @@ A board token needs nothing else. A workspace token must name the board in the
 
 ### The Accept header
 
-The API serves JSON, and the `Accept` check runs before this route. Send
-`Accept: */*` (curl's default) or `Accept: application/json`, or no `Accept`
-header. `application/*`, and a list that includes `*/*`, `application/*` or
-`application/json` among other types, are accepted too. A header that asks only
-for a binary type, such as `Accept: application/octet-stream` on its own, gets
-the API's [406 Not Acceptable](README.md#406-not-acceptable) even though the
-file is binary.
+This route answers whatever `Accept` header you send, or none:
+`Accept: application/octet-stream`, the file's own type such as `image/png`, and
+`*/*` all get the file. Unlike the rest of the API it does not negotiate the
+header, because the body is the file's own bytes. Errors are still the API's
+JSON bodies.
 
 ## Checks, in order
 
@@ -156,8 +154,9 @@ ID exists elsewhere.
 
 ### Not Acceptable (406)
 
-The `Accept` header asks for a format the API does not serve. See
-[The Accept header](#the-accept-header).
+Only a `_format` query parameter that names a format other than `json` gets
+the API's [406 Not Acceptable](README.md#406-not-acceptable) here. The
+`Accept` header never does; see [The Accept header](#the-accept-header).
 
 ### Too Many Requests (429)
 
@@ -191,7 +190,6 @@ names a storage key, bucket or path:
 
 ```bash
 curl -H "Authorization: Bearer <your_api_token>" \
-  -H "Accept: */*" \
   -o report.pdf \
   "https://www.stridelikeaboss.com/api/tasks/123/attachments/42"
 

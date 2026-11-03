@@ -360,14 +360,41 @@ defmodule KanbanWeb.API.TaskAttachmentControllerTest do
       refute_received {:telemetry_event, @refused, _, _}
     end
 
-    test "returns 406 for Accept application/octet-stream", ctx do
+    test "serves the file whatever the Accept header names", ctx do
+      attachment = stored(ctx.task, %{}, "bytes")
+
+      for accept <- ["application/octet-stream", "text/plain", "image/png", "text/html", ""] do
+        conn = ctx.plain |> api_conn(accept) |> get(download_path(ctx.task, attachment.id))
+
+        assert conn.status == 200, accept
+        assert conn.resp_body == "bytes"
+        assert header(conn, "content-type") == ["text/plain"]
+      end
+    end
+
+    test "errors stay JSON whatever the Accept header names", ctx do
+      conn = ctx.plain |> api_conn("text/html") |> get(download_path(ctx.task, 0))
+
+      assert conn.status == 404
+      assert [content_type] = header(conn, "content-type")
+      assert content_type =~ "application/json"
+      assert Jason.decode!(conn.resp_body) == @not_found_body
+
+      conn =
+        "not-a-token" |> api_conn("application/octet-stream") |> get(download_path(ctx.task, 0))
+
+      assert conn.status == 401
+      assert %{"error" => _message} = Jason.decode!(conn.resp_body)
+    end
+
+    test "an explicit _format other than json is still 406", ctx do
       attachment = stored(ctx.task, %{}, "bytes")
 
       assert {406, _headers, _body} =
                assert_error_sent(406, fn ->
                  ctx.plain
-                 |> api_conn("application/octet-stream")
-                 |> get(download_path(ctx.task, attachment.id))
+                 |> api_conn()
+                 |> get(download_path(ctx.task, attachment.id) <> "?_format=html")
                end)
     end
   end

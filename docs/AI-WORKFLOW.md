@@ -245,11 +245,11 @@ The list is empty when the task has no attachments, and also when paid plans are
 **Downloading a file** uses [GET /api/tasks/:id/attachments/:attachment_id](api/get_tasks_id_attachments_attachment_id.md):
 
 1. Prefix `download_url` with the API base URL and send your Bearer token. A workspace token also names the board in the `X-Stride-Board` header, as on every task route.
-2. Send `Accept: */*` (curl's default), `Accept: application/json`, or no `Accept` header. An `Accept` that names only a binary type, such as `application/octet-stream`, gets `406`; see [The Accept header](api/get_tasks_id_attachments_attachment_id.md#the-accept-header).
+2. Any `Accept` header works, or none: `application/octet-stream`, the file's own type and `*/*` all get the file, and errors are still JSON; see [The Accept header](api/get_tasks_id_attachments_attachment_id.md#the-accept-header).
 3. Check the file's size against `byte_size` and its SHA-256 digest against `sha256`. Discard a file that does not match, and download it again.
 
 ```bash
-curl -H "Authorization: Bearer <token>" -H "Accept: */*" -o report.pdf \
+curl -H "Authorization: Bearer <token>" -o report.pdf \
   "https://www.stridelikeaboss.com/api/tasks/123/attachments/42"
 shasum -a 256 report.pdf
 ```

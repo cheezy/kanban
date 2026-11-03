@@ -209,8 +209,20 @@ defmodule KanbanWeb.Router do
     get "/tasks/:id/after_goal_status", TaskController, :after_goal_status
     get "/tasks/:id/comments", TaskCommentController, :index
     post "/tasks/:id/comments", TaskCommentController, :create
-    get "/tasks/:id/attachments/:attachment_id", TaskAttachmentController, :download
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
+  end
+
+  # The attachment download serves the file's own bytes, so it answers any
+  # Accept header rather than :api's JSON-only negotiation, while its errors
+  # stay JSON. Authentication is the same :api pipeline, which must come after.
+  pipeline :attachment_download_accept do
+    plug KanbanWeb.Plugs.AttachmentDownloadAccept
+  end
+
+  scope "/api", KanbanWeb.API, as: :api do
+    pipe_through [:api_json, :attachment_download_accept, :api]
+
+    get "/tasks/:id/attachments/:attachment_id", TaskAttachmentController, :download
   end
 
   # Lets a workspace token's MCP discovery request (initialize, ping,
