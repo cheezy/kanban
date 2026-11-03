@@ -5,7 +5,7 @@ defmodule KanbanWeb.Plugs.AttachmentDownloadAcceptTest do
 
   alias KanbanWeb.Plugs.AttachmentDownloadAccept
 
-  defp call(accepts, params \\ %{}) do
+  defp call(accepts, params) do
     conn = conn(:get, "/api/tasks/1/attachments/2")
     conn = Enum.reduce(accepts, conn, &Plug.Conn.put_req_header(&2, "accept", &1))
 
