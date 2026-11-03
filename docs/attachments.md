@@ -222,6 +222,13 @@ minutes, leaving the rest for the next run, and Oban ends a run outright at
 one-hour Lifeline rescue, which would otherwise start a second run beside
 it.
 
+Both limits are settings:
+`config :kanban, Kanban.Attachments.BlobCleanupWorker, batch_size: 200, max_run_seconds: 600`.
+The app refuses to start when `batch_size` is not a positive integer, or
+when `max_run_seconds` is not a positive integer below 1800 (the 30-minute
+timeout), and the error names the setting. The queue's `attempts` column
+has a check constraint that keeps it at 0 or above.
+
 The trigger fires for `DELETE` statements only. Three things a database
 operator can do skip it and leave stored files that nothing will remove:
 

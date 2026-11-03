@@ -29,9 +29,9 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   Each key is claimed before its blob is touched. In one short transaction
   the worker locks every tombstone for the key, checks again that no row
-  names it, and records the try: `attempts` goes up by one (from at least 0
-  and never past the column's limit, so a row written by hand with a
-  negative or maximal count cannot crash every run at its claim) and a due
+  names it, and records the try: `attempts` goes up by one (never past the
+  column's limit, so a row written by hand at the maximum cannot crash every
+  run at its claim; a check constraint refuses a negative count) and a due
   tombstone's `delete_after` moves out by the backoff, so a run that crashes
   after the claim only repeats an idempotent delete later. An upload commits
   its row only by removing its own pending tombstone while `attempts` is
@@ -55,9 +55,10 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   Logs carry counts, tombstone ids and reason atoms, never a storage key or a
   credential. Each run also emits `[:kanban, :attachment, :blob_cleanup_completed]`
   with the same counts, so a backlog that keeps growing (a store that keeps
-  refusing deletes) shows up in metrics, not only in the log. Settings come from
-  `config :kanban, Kanban.Attachments.BlobCleanupWorker`. A `"now"` ISO 8601
-  job argument replaces the current time, for tests.
+  refusing deletes) shows up in metrics, not only in the log. Settings, their
+  boot check and the run's clock (a `"now"` ISO 8601 job argument, honoured
+  only in the test environment) are in
+  `Kanban.Attachments.BlobCleanupWorker.Settings`.
   """
 
   # Unlike the hourly export cleanup, a crashed run is retried before the
@@ -80,6 +81,7 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Attachments.BlobCleanupWorker.Settings
   alias Kanban.Attachments.BlobDeletion
   alias Kanban.Attachments.Storage
   alias Kanban.Attachments.TaskAttachment
@@ -87,7 +89,6 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   require Logger
 
-  @default_batch_size 200
   @max_backoff_minutes 24 * 60
   # 2^11 minutes already exceeds one day, so larger exponents are never needed.
   @max_backoff_exponent 11
@@ -96,40 +97,30 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
   # Leftovers of unfinished writes (a Local temp file whose process died
   # mid-write) are swept once they are as old as an upload's grace period.
   @sweep_after_seconds 3_600
-  @default_max_run_seconds 600
-  @timeout_minutes 30
   @outcomes %{deleted: 0, in_use: 0, invalid: 0, failed: 0, skipped: 0, deferred: 0}
 
   @impl Oban.Worker
-  def timeout(_job), do: :timer.minutes(@timeout_minutes)
+  def timeout(_job), do: Settings.timeout_ms()
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
     settings = Application.get_env(:kanban, __MODULE__, [])
-    clock = %{now: run_time(args), started: System.monotonic_time(:millisecond)}
-    budget_ms = budget_ms(settings)
-
-    counts =
-      clock.now
-      |> due_tombstones(batch_size(settings))
-      |> Enum.reduce(@outcomes, fn tombstone, acc ->
-        Map.update!(acc, outcome(tombstone, clock, budget_ms), &(&1 + 1))
-      end)
-
-    counts = Map.put(counts, :left, due_count(clock.now))
+    now = Settings.run_time(args, Application.get_env(:kanban, :env))
+    clock = %{now: now, started: System.monotonic_time(:millisecond)}
+    counts = clock |> run_batch(settings) |> Map.put(:left, due_count(now))
     log_counts(counts)
     Kanban.Telemetry.emit([:kanban, :attachment, :blob_cleanup_completed], counts, %{})
     Storage.sweep(@sweep_after_seconds)
   end
 
-  defp batch_size(settings),
-    do: settings |> Keyword.get(:batch_size, @default_batch_size) |> positive_or_default()
+  defp run_batch(clock, settings) do
+    budget_ms = Settings.budget_ms(settings)
 
-  defp budget_ms(settings) do
-    settings
-    |> Keyword.get(:max_run_seconds, @default_max_run_seconds)
-    |> positive_or(@default_max_run_seconds)
-    |> Kernel.*(1000)
+    clock.now
+    |> due_tombstones(Settings.batch_size(settings))
+    |> Enum.reduce(@outcomes, fn tombstone, acc ->
+      Map.update!(acc, outcome(tombstone, clock, budget_ms), &(&1 + 1))
+    end)
   end
 
   # Once the budget is spent the rest of the batch is left as it is.
@@ -236,10 +227,11 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
     {:ok, {:claimed, due_ids, attempts}}
   end
 
-  # attempts is an int4 with no check constraint. One more than the highest
-  # count, at least 1 so a claimed key's pending tombstone never reads 0
-  # (which would let its upload commit), and never past the column's limit,
-  # where the update raised and aborted every run at the same row.
+  # attempts is an int4 that a check constraint keeps at 0 or above. One
+  # more than the highest count, at least 1 so a claimed key's pending
+  # tombstone never reads 0 (which would let its upload commit), and never
+  # past the column's limit, where the update raised and aborted every run at
+  # the same row.
   defp next_attempt(highest), do: highest |> max(0) |> Kernel.+(1) |> min(@max_attempts)
 
   defp key_in_use?(key) do
@@ -292,23 +284,4 @@ defmodule Kanban.Attachments.BlobCleanupWorker do
 
   defp reason_code(reason),
     do: reason |> Atom.to_string() |> String.slice(0, @last_error_max_length)
-
-  defp positive_or_default(size), do: positive_or(size, @default_batch_size)
-
-  defp positive_or(value, _default) when is_integer(value) and value > 0, do: value
-  defp positive_or(_value, default), do: default
-
-  # delete_after is a microsecond column, so the run time keeps microsecond
-  # precision.
-  defp run_time(%{"now" => iso}) when is_binary(iso) do
-    case DateTime.from_iso8601(iso) do
-      {:ok, datetime, _offset} -> usec(datetime)
-      _error -> usec(DateTime.utc_now())
-    end
-  end
-
-  defp run_time(_args), do: usec(DateTime.utc_now())
-
-  defp usec(%DateTime{microsecond: {value, _precision}} = datetime),
-    do: %{datetime | microsecond: {value, 6}}
 end

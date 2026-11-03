@@ -38,6 +38,10 @@ defmodule Kanban.Application do
 
     Kanban.Plans.BootReport.log_enforcement()
 
+    :kanban
+    |> Application.get_env(Kanban.Attachments.BlobCleanupWorker, [])
+    |> Kanban.Attachments.BlobCleanupWorker.Settings.check!()
+
     children
     |> Supervisor.start_link(opts)
     |> start_audit_log_boot_check()

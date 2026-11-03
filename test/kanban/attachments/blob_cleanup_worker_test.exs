@@ -249,7 +249,6 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
       info_logs()
       Process.put(:delete_result, {:error, :storage_unavailable})
       maximal = tombstone(key(), minutes(-30), %{attempts: 2_147_483_647})
-      negative = tombstone(key(), minutes(-20), %{attempts: -5})
       behind = tombstone(stored_blob(), minutes(-10))
 
       log =
@@ -257,18 +256,32 @@ defmodule Kanban.Attachments.BlobCleanupWorkerTest do
           assert :ok = run()
         end)
 
-      # Clamped at the int4 limit, and a negative count claims as attempt 1.
+      # Clamped at the int4 limit.
       assert %BlobDeletion{attempts: 2_147_483_647} = reload(maximal)
-      assert %BlobDeletion{attempts: 1} = updated = reload(negative)
-      assert DateTime.compare(updated.delete_after, minutes(2)) == :eq
       assert %BlobDeletion{attempts: 1} = reload(behind)
-      assert log =~ "3 failed"
+      assert log =~ "2 failed"
+    end
+
+    test "the database refuses a negative attempts count" do
+      assert_raise Ecto.ConstraintError,
+                   ~r/attachment_blob_deletions_attempts_non_negative/,
+                   fn ->
+                     tombstone(key(), minutes(-1), %{attempts: -1})
+                   end
+
+      row = tombstone(key(), minutes(-1))
+
+      assert_raise Ecto.ConstraintError, fn ->
+        row |> Ecto.Changeset.change(attempts: -1) |> Repo.update!()
+      end
+
+      assert %BlobDeletion{attempts: 0} = tombstone(key(), minutes(-1), %{attempts: 0})
     end
 
     test "a claim never leaves a pending tombstone at 0, whatever its count was" do
       key = key()
       Process.put(:delete_result, {:error, :storage_unavailable})
-      _due = tombstone(key, minutes(-5), %{attempts: -1})
+      _due = tombstone(key, minutes(-5), %{attempts: 0})
       pending = tombstone(key, minutes(60))
 
       capture_log(fn -> assert :ok = run() end)
