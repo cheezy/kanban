@@ -429,11 +429,18 @@ defmodule Kanban.Attachments.Storage.S3 do
   end
 
   # Only the operation and the error's kind are logged: an exception struct
-  # can carry request details, so it is never inspected whole.
+  # can carry request details, so it is never inspected whole. A transport or
+  # HTTP error adds its reason when that is a bare atom (:timeout,
+  # :econnrefused, :closed, ...), which names the failure and holds nothing
+  # from the request; a tuple reason (a TLS alert, say) is left out.
   defp log_failure(operation, reason) do
     Logger.warning("attachment storage #{operation} failed: #{failure_kind(reason)}")
     {:error, :storage_unavailable}
   end
+
+  defp failure_kind(%struct{reason: reason})
+       when struct in [Req.TransportError, Req.HTTPError] and is_atom(reason),
+       do: "#{inspect(struct)} (#{inspect(reason)})"
 
   defp failure_kind(%{__exception__: true, __struct__: struct}), do: inspect(struct)
   defp failure_kind(reason) when is_atom(reason), do: inspect(reason)

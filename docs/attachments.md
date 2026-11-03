@@ -84,8 +84,11 @@ file on a slow link takes as long as it takes. Redirects are never followed, so 
 endpoint cannot send a signed request to another host. When the store
 refuses a request, the app log shows only the operation, the HTTP status
 and the store's error code, such as
-`attachment storage delete failed with status 404 (NoSuchBucket)`; it never
-shows a header, a signed URL, a response body or a credential. Only a 404
+`attachment storage delete failed with status 404 (NoSuchBucket)`. When the
+store could not be reached at all, it shows the kind of error and, when it
+is a single word, its reason, such as
+`attachment storage put failed: Req.TransportError (:econnrefused)`. It
+never shows a header, a signed URL, a response body or a credential. Only a 404
 with the code `NoSuchKey` counts as a file that is already gone. A 404 for a
 bucket that does not exist, or from an endpoint that is not the store, is a
 storage failure: the cleanup job keeps its queue entry and tries again, and

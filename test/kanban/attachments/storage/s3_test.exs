@@ -254,8 +254,21 @@ defmodule Kanban.Attachments.Storage.S3Test do
         assert {:error, :storage_unavailable} = S3.exists(@key)
       end)
 
-    assert log =~ "Req.TransportError"
+    assert log =~ "attachment storage put failed: Req.TransportError (:econnrefused)"
+    assert log =~ "attachment storage head failed: Req.TransportError (:econnrefused)"
     refute log =~ "test-secret-access-key"
+  end
+
+  test "a transport error whose reason is not an atom logs only its kind" do
+    Req.Test.stub(S3, &Req.Test.transport_error(&1, {:tls_alert, {:handshake_failure, ~c"x"}}))
+
+    log =
+      capture_log(fn ->
+        assert {:error, :storage_unavailable} = S3.put(@key, {:binary, "x"}, [])
+      end)
+
+    assert log =~ "attachment storage put failed: Req.TransportError\n"
+    refute log =~ "tls_alert"
   end
 
   test "retries a transient failure on every operation, streaming the retried response" do
