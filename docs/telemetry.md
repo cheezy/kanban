@@ -793,7 +793,9 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
   counts each user at most once per feature in any 7 days, and a request the
   browser marks as cross-site (`Sec-Fetch-Site` of `cross-site` or
   `same-site`) is not counted, so a third-party page cannot record clicks
-  through a visitor's session. In both cases the redirect still happens. A row
+  through a visitor's session. Nothing is counted while paid-plan enforcement
+  is off, since no prompt is shown then and a visit can only be a typed URL.
+  In every case the redirect still happens. A row
   is therefore one user wanting one feature in a week, so a weekly count is
   close to the number of distinct users who asked for it. The last counted
   click per user and feature is kept in the `locked_feature_clicks` table, so
@@ -1413,7 +1415,7 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :plan, :feature_refused]` | event | `count` | `feature`, `surface` | A plan check refused a paid feature because plans are enforced and the board or user is on the free plan. feature is one of Kanban.Plans.features/0 and surface names the entry point, never a board or user. |
-| `[:kanban, :plan, :locked_feature_clicked]` | event | `count` | `feature` | A signed-in user followed a locked feature's Available to organizations prompt. feature is one of Kanban.Plans.features/0; the user is never sent, each user counts at most once per feature a week, and cross-site requests are not counted. |
+| `[:kanban, :plan, :locked_feature_clicked]` | event | `count` | `feature` | A signed-in user followed a locked feature's Available to organizations prompt. feature is one of Kanban.Plans.features/0; the user is never sent, each user counts at most once per feature a week, and cross-site requests and visits while plan enforcement is off are not counted. |
 
 ### Domain `pubsub`
 

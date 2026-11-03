@@ -33,7 +33,7 @@ defmodule Kanban.Telemetry.Catalog.PlanEvents do
       measurements: [:count],
       metadata: [:feature],
       description:
-        "A signed-in user followed a locked feature's Available to organizations prompt. feature is one of Kanban.Plans.features/0; the user is never sent, each user counts at most once per feature a week, and cross-site requests are not counted.",
+        "A signed-in user followed a locked feature's Available to organizations prompt. feature is one of Kanban.Plans.features/0; the user is never sent, each user counts at most once per feature a week, and cross-site requests and visits while plan enforcement is off are not counted.",
       legacy: false,
       metrics: [counter: :count],
       persist: true,

@@ -243,10 +243,12 @@ click on a locked feature's prompt stores one `metrics_events` row named
 feature in any 7 days, so a weekly count is close to the number of distinct
 users who asked for that feature.
 
-No lock prompt is shown while enforcement is off, but the click route does not
-check the flag: a signed-in user who opens `/locked/<feature>` directly before
-launch still records a row. Count from the moment the flag was turned on by
-adding `AND recorded_at >= '<launch time>'` to the query.
+No lock prompt is shown while enforcement is off, and the click route counts
+nothing then either: a signed-in user who opens `/locked/<feature>` directly
+before launch is redirected but records no row. Rows recorded before
+2026-11-02, when the route did not yet check the flag, can include such
+visits; add `AND recorded_at >= '<launch time>'` to the query to leave them
+out.
 
 ```sql
 SELECT date_trunc('week', recorded_at) AS week,

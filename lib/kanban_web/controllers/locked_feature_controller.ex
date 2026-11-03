@@ -14,6 +14,9 @@ defmodule KanbanWeb.LockedFeatureController do
   The redirect always happens, but the click is counted only when it can be
   demand:
 
+    * paid-plan enforcement is on (`Kanban.Plans.enforced?/0`). With it off no
+      prompt is rendered, so the only visits are typed or bookmarked URLs,
+      which say nothing about a locked feature,
     * the browser marks the request as same-origin or user-initiated
       (`Sec-Fetch-Site` of `same-origin` or `none`, or no header at all), so a
       third-party page cannot record clicks through a visitor's session, and
@@ -32,10 +35,12 @@ defmodule KanbanWeb.LockedFeatureController do
         redirect(conn, to: ~p"/pricing")
 
       feature ->
-        if same_origin?(conn), do: record_click(conn.assigns.current_scope.user, feature)
+        if countable?(conn), do: record_click(conn.assigns.current_scope.user, feature)
         redirect(conn, to: ~p"/pricing" <> "#contact")
     end
   end
+
+  defp countable?(conn), do: Plans.enforced?() and same_origin?(conn)
 
   # Browsers send Sec-Fetch-Site on every navigation; a request without it
   # comes from an older browser or a client outside one, which still needs the

@@ -1,6 +1,9 @@
 defmodule KanbanWeb.LockedFeatureControllerTest do
-  use KanbanWeb.ConnCase, async: true
+  # async: false - clicks are counted only while the global :plans_enforced
+  # application env is on, which Kanban.PlansHelpers switches per test.
+  use KanbanWeb.ConnCase, async: false
 
+  import Kanban.PlansHelpers
   import Kanban.TelemetryHelpers
 
   alias Kanban.Plans
@@ -9,7 +12,7 @@ defmodule KanbanWeb.LockedFeatureControllerTest do
   @event [:kanban, :plan, :locked_feature_clicked]
 
   describe "GET /locked/:feature signed in" do
-    setup :register_and_log_in_user
+    setup [:register_and_log_in_user, :enforce_plans]
 
     test "emits locked_feature_clicked with only the feature and redirects to /pricing#contact",
          %{conn: conn} do
@@ -46,6 +49,23 @@ defmodule KanbanWeb.LockedFeatureControllerTest do
     end
   end
 
+  describe "GET /locked/:feature with plan enforcement off" do
+    setup :register_and_log_in_user
+
+    test "redirects to /pricing#contact but counts nothing", %{conn: conn, user: user} do
+      refute Plans.enforced?()
+      attach_telemetry(@event)
+
+      conn = get(conn, ~p"/locked/audit")
+
+      assert redirected_to(conn) == "/pricing#contact"
+      refute_received {:telemetry_event, @event, _measurements, _metadata}
+
+      enforce_plans()
+      assert :counted = Kanban.Plans.LockedFeatureClicks.count_click(user, :audit)
+    end
+  end
+
   describe "GET /locked/:feature signed out" do
     test "sends the visitor to log in and emits nothing", %{conn: conn} do
       attach_telemetry(@event)
@@ -60,7 +80,7 @@ defmodule KanbanWeb.LockedFeatureControllerTest do
   # The once-a-week record is in the database (Kanban.Plans.LockedFeatureClicks),
   # so it applies in every environment, with or without Kanban.RateLimit.
   describe "GET /locked/:feature once per user and feature a week" do
-    setup :register_and_log_in_user
+    setup [:register_and_log_in_user, :enforce_plans]
 
     test "a repeat click on the same feature is not counted but still redirects", %{conn: conn} do
       attach_telemetry(@event)
@@ -113,7 +133,7 @@ defmodule KanbanWeb.LockedFeatureControllerTest do
   end
 
   describe "GET /locked/:feature cross-site requests" do
-    setup :register_and_log_in_user
+    setup [:register_and_log_in_user, :enforce_plans]
 
     test "a cross-site or same-site navigation redirects but is not counted", %{conn: conn} do
       attach_telemetry(@event)
