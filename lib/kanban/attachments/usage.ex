@@ -9,12 +9,13 @@ defmodule Kanban.Attachments.Usage do
       `Kanban.Attachments.Limits.organization_quota_bytes/0`. A board in an
       Organization counts every file on every board of that Organization; a
       board outside one (possible only while plans are not enforced) is
-      counted on its own. The sum follows each board's current workspace, so
-      files on a board that left its Organization stop counting there and
-      count again once it moves back.
+      counted on its own. The sum follows each file's task to its column's
+      board and that board's current workspace, so files on a board that left
+      its Organization stop counting there and count again once it moves
+      back, and a file always counts where its task is.
     * `check_limits/3` — both limits for one more file of a given size.
-    * `lock_for_upload/2` — key-share locks the uploader, board and comment
-      rows the insert will reference, then locks the task row, then takes a
+    * `lock_for_upload/2` — key-share locks the uploader, the task's board
+      and the comment rows, then locks the task row, then takes a
       transaction-scoped advisory lock on the quota scope, always in that
       order, so two uploads cannot both pass the re-check inside the insert
       transaction and an upload never deadlocks with a deletion.
@@ -29,6 +30,7 @@ defmodule Kanban.Attachments.Usage do
   alias Kanban.Attachments.Limits
   alias Kanban.Attachments.TaskAttachment
   alias Kanban.Boards.Board
+  alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
@@ -72,17 +74,28 @@ defmodule Kanban.Attachments.Usage do
   @doc "The total `byte_size` of every attachment in the quota scope, as an integer."
   @spec bytes_used(quota_scope()) :: non_neg_integer()
   def bytes_used({:organization, organization_id}) do
-    TaskAttachment
-    |> join(:inner, [a], b in Board, on: b.id == a.board_id)
-    |> join(:inner, [_a, b], w in assoc(b, :workspace))
-    |> where([_a, _b, w], w.organization_id == ^organization_id)
-    |> select([a], type(coalesce(sum(a.byte_size), 0), :integer))
-    |> Repo.one()
+    with_board()
+    |> join(:inner, [_a, _t, c], b in Board, on: b.id == c.board_id)
+    |> join(:inner, [_a, _t, _c, b], w in assoc(b, :workspace))
+    |> where([_a, _t, _c, _b, w], w.organization_id == ^organization_id)
+    |> sum_bytes()
   end
 
   def bytes_used({:board, board_id}) do
+    with_board()
+    |> where([_a, _t, c], c.board_id == ^board_id)
+    |> sum_bytes()
+  end
+
+  # An attachment's board is its task's column's board; a row stores none.
+  defp with_board do
     TaskAttachment
-    |> where([a], a.board_id == ^board_id)
+    |> join(:inner, [a], t in Task, on: t.id == a.task_id)
+    |> join(:inner, [_a, t], c in Column, on: c.id == t.column_id)
+  end
+
+  defp sum_bytes(query) do
+    query
     |> select([a], type(coalesce(sum(a.byte_size), 0), :integer))
     |> Repo.one()
   end
@@ -109,24 +122,29 @@ defmodule Kanban.Attachments.Usage do
   end
 
   @doc """
-  Inside a transaction: takes `FOR KEY SHARE` locks on the rows the new
-  attachment will reference, then locks the task row `FOR UPDATE`, then takes
+  Inside a transaction: takes `FOR KEY SHARE` locks on the rows the upload
+  depends on, then locks the task row `FOR UPDATE`, then takes
   the advisory lock of the task's quota scope, and returns
   `{:ok, quota_scope}`. Returns `{:error, :not_found}` when the task, its
   column, or any referenced row is gone.
 
-  `refs` names the rows the insert references besides the task:
-  `:uploaded_by_id`, `:board_id` and `:comment_id` (each optional; `nil` is
-  skipped). They are key-share locked first, in that order (uploader, board,
-  comment), which is the order a deletion reaches them: account deletion
+  `refs` names the rows the upload depends on besides the task:
+  `:uploaded_by_id`, `:board_id` (the task's board, which the row does not
+  store) and `:comment_id` (each optional; `nil` is skipped). They are
+  key-share locked first, in that order (uploader, board, comment), which is
+  the order a deletion reaches them: account deletion
   locks the user before deleting their boards, and a board deletion locks the
   board before its cascade reaches the task. Without these locks the insert
-  would only take them through its foreign-key checks, after it holds the
-  task row, so a board, account or comment deletion that started in between
-  deadlocked with the upload (Postgres error 40P01). With them, a deletion
-  either finishes first (and this returns `:not_found`) or waits for the
-  upload to commit, then cascades to the new row, whose blob the trigger
-  queues.
+  would take the uploader and comment locks only through its foreign-key
+  checks, after it holds the task row, so an account or comment deletion
+  that started in between deadlocked with the upload (Postgres error 40P01),
+  as a board deletion did while the row still referenced its board. With
+  them, a deletion either finishes first (and this returns `:not_found`) or
+  waits for the upload to commit, then cascades to the new row, whose blob
+  the trigger queues. The board row, which the row no longer references,
+  would otherwise not be locked at all: its key-share lock is also what
+  makes a board move into an Organization (`check_board_move/2`) wait for
+  an upload to that board, or the upload wait for the move.
 
   The task row lock serializes uploads to one task, so the count re-check
   holds; the advisory lock serializes uploads across the scope, so the quota

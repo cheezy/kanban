@@ -83,8 +83,8 @@ defmodule Kanban.Attachments do
 
   `upload` is `%{path: temp_path, filename: name, content_type: type}`. The
   file's size comes from `File.stat` and its sha256 from reading it, never
-  from the client. `task_id`, `board_id`, `uploaded_by_id` and the storage
-  key are set by the server.
+  from the client. `task_id`, `uploaded_by_id` and the storage key are set by
+  the server. The row stores no board: its board is always the task's.
 
   Options:
 
@@ -105,9 +105,9 @@ defmodule Kanban.Attachments do
   def create_attachment(scope, task, upload, opts \\ [])
 
   def create_attachment(scope, %Task{id: task_id}, upload, opts) when is_integer(task_id) do
-    with {:ok, base} <- authorize_upload(scope, task_id, Keyword.get(opts, :comment)),
-         {:ok, attachment} <- Pipeline.create(base, upload, source: :upload) do
-      broadcast(task_id, base.board_id)
+    with {:ok, base, board_id} <- authorize_upload(scope, task_id, Keyword.get(opts, :comment)),
+         {:ok, attachment} <- Pipeline.create(base, board_id, upload, source: :upload) do
+      broadcast(task_id, board_id)
       {:ok, attachment}
     end
   end
@@ -243,18 +243,14 @@ defmodule Kanban.Attachments do
   end
 
   # Resolves and checks everything an upload needs, and returns the base
-  # struct with the server-set ids.
+  # struct with the server-set ids and the task's board.
   defp authorize_upload(scope, task_id, comment) do
     with {:ok, board_id} <- board_id_for_task(task_id),
          {:ok, viewer} <- gate(scope, board_id, :upload),
          {:ok, comment_id} <- comment_for_upload(viewer, task_id, comment) do
       {:ok,
-       %TaskAttachment{
-         task_id: task_id,
-         board_id: board_id,
-         comment_id: comment_id,
-         uploaded_by_id: viewer.user_id
-       }}
+       %TaskAttachment{task_id: task_id, comment_id: comment_id, uploaded_by_id: viewer.user_id},
+       board_id}
     end
   end
 

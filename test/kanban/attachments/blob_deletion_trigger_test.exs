@@ -103,8 +103,8 @@ defmodule Kanban.Attachments.BlobDeletionTriggerTest do
 
     Repo.delete!(board)
 
-    # A row reached through both board_id and its task's cascade is still
-    # deleted once, so each key is queued exactly once.
+    # Each row is reached through boards -> columns -> tasks, and each key is
+    # queued exactly once.
     assert tombstones(keys) == Enum.sort(keys)
     assert BlobDeletion |> where([d], d.storage_key in ^keys) |> Repo.aggregate(:count) == 3
     refute Enum.any?(attachments, &attachment_exists?/1)
@@ -160,11 +160,7 @@ defmodule Kanban.Attachments.BlobDeletionTriggerTest do
     end
 
     changeset =
-      %TaskAttachment{
-        task_id: task.id,
-        board_id: attachment.board_id,
-        storage_key: attachment.storage_key
-      }
+      %TaskAttachment{task_id: task.id, storage_key: attachment.storage_key}
       |> TaskAttachment.create_changeset(
         %{
           "filename" => "dup.txt",
@@ -185,15 +181,18 @@ defmodule Kanban.Attachments.BlobDeletionTriggerTest do
     end
   end
 
-  test "create_changeset/3 inserts a row the trigger later queues", %{task: task, user: user} do
+  test "create_changeset/3 inserts a row the trigger later queues", %{
+    task: task,
+    user: user,
+    board: board
+  } do
     attachment = attachment_fixture(task)
 
     {:ok, inserted} =
       %TaskAttachment{
         task_id: task.id,
-        board_id: attachment.board_id,
         uploaded_by_id: user.id,
-        storage_key: unique_storage_key(attachment.board_id)
+        storage_key: unique_storage_key(board.id)
       }
       |> TaskAttachment.create_changeset(
         %{
@@ -244,10 +243,41 @@ defmodule Kanban.Attachments.BlobDeletionTriggerTest do
     assert Enum.map(loaded_comment.attachments, & &1.id) == [on_comment.id]
 
     attachment =
-      TaskAttachment |> Repo.get!(on_comment.id) |> Repo.preload([:task, :comment, :board])
+      TaskAttachment |> Repo.get!(on_comment.id) |> Repo.preload([:task, :comment])
 
     assert attachment.task.id == task.id
     assert attachment.comment.id == comment.id
-    assert attachment.board.id == attachment.board_id
+  end
+
+  test "a file follows its task: deleting the task's old board keeps it, deleting its new board removes it",
+       %{user: user, board: board, task: task} do
+    attachment = attachment_fixture(task)
+    new_board = board_fixture(user)
+    new_column = column_fixture(new_board)
+
+    {1, _} =
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [column_id: new_column.id])
+
+    Repo.delete!(board)
+    assert attachment_exists?(attachment)
+    assert tombstones([attachment.storage_key]) == []
+
+    Repo.delete!(new_board)
+    refute attachment_exists?(attachment)
+    assert tombstones([attachment.storage_key]) == [attachment.storage_key]
+  end
+
+  test "a row stores no board of its own" do
+    refute :board_id in TaskAttachment.__schema__(:fields)
+    refute :board in TaskAttachment.__schema__(:associations)
+
+    %{rows: rows} =
+      Repo.query!(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'task_attachments'"
+      )
+
+    refute ["board_id"] in rows
   end
 end

@@ -65,6 +65,27 @@ defmodule Kanban.Attachments.UsageTest do
     assert Usage.bytes_used({:board, board_fixture(user).id}) === 0
   end
 
+  test "a file counts where its task is now, not where it was uploaded" do
+    user = user_fixture()
+    organization = organization_fixture()
+    org_board = user |> board_fixture() |> move_board_to_organization(organization)
+    personal = board_fixture(user)
+    task = board_task(personal)
+    attachment_fixture(task, %{byte_size: 25})
+
+    assert Usage.bytes_used({:board, personal.id}) == 25
+    assert Usage.bytes_used({:organization, organization.id}) == 0
+
+    {1, _} =
+      Kanban.Tasks.Task
+      |> Ecto.Query.where([t], t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: [column_id: column_fixture(org_board).id])
+
+    assert Usage.bytes_used({:board, personal.id}) == 0
+    assert Usage.bytes_used({:board, org_board.id}) == 25
+    assert Usage.bytes_used({:organization, organization.id}) == 25
+  end
+
   test "count_for_task counts task-level and comment-level files on that task only" do
     board = board_fixture(user_fixture())
     task = board_task(board)

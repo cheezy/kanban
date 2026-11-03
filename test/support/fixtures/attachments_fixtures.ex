@@ -13,7 +13,8 @@ defmodule Kanban.AttachmentsFixtures do
   alias Kanban.Repo
 
   @doc """
-  Inserts an attachment on `task`. `board_id` is taken from the task's column.
+  Inserts an attachment on `task`. The storage key's prefix is the task's
+  board, taken from its column; the row itself stores no board.
 
   Options in `attrs`:
 
@@ -29,7 +30,6 @@ defmodule Kanban.AttachmentsFixtures do
 
     defaults = %{
       task_id: task.id,
-      board_id: board_id,
       comment_id: attrs |> Map.get(:comment) |> id_or_nil(),
       uploaded_by_id: attrs |> Map.get(:uploaded_by) |> id_or_nil(),
       filename: "file-#{unique}.txt",

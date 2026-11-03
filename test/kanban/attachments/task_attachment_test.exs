@@ -20,7 +20,7 @@ defmodule Kanban.Attachments.TaskAttachmentTest do
     end)
   end
 
-  defp attachment, do: %TaskAttachment{task_id: 1, board_id: 2, storage_key: "boards/2/abc"}
+  defp attachment, do: %TaskAttachment{task_id: 1, storage_key: "boards/2/abc"}
 
   defp attrs(overrides \\ %{}) do
     Map.merge(
@@ -360,22 +360,22 @@ defmodule Kanban.Attachments.TaskAttachmentTest do
       changeset = changeset(forged)
       assert changeset.valid?
 
-      for field <- [:task_id, :board_id, :comment_id, :uploaded_by_id, :storage_key] do
+      for field <- [:task_id, :comment_id, :uploaded_by_id, :storage_key] do
         refute Map.has_key?(changeset.changes, field)
       end
 
+      refute Map.has_key?(changeset.changes, :board_id)
       assert Ecto.Changeset.get_field(changeset, :task_id) == 1
-      assert Ecto.Changeset.get_field(changeset, :board_id) == 2
       assert Ecto.Changeset.get_field(changeset, :comment_id) == nil
       assert Ecto.Changeset.get_field(changeset, :uploaded_by_id) == nil
       assert Ecto.Changeset.get_field(changeset, :storage_key) == "boards/2/abc"
     end
 
-    test "requires the server-set task_id, board_id and storage_key on the struct" do
+    test "requires the server-set task_id and storage_key on the struct" do
       refused = TaskAttachment.create_changeset(%TaskAttachment{}, attrs(), @png)
       errors = errors(refused)
 
-      for field <- [:task_id, :board_id, :storage_key] do
+      for field <- [:task_id, :storage_key] do
         assert errors[field] == ["can't be blank"]
       end
     end

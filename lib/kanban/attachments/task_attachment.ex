@@ -38,7 +38,6 @@ defmodule Kanban.Attachments.TaskAttachment do
 
     belongs_to :task, Kanban.Tasks.Task
     belongs_to :comment, Kanban.Tasks.TaskComment
-    belongs_to :board, Kanban.Boards.Board
     belongs_to :uploaded_by, Kanban.Accounts.User
 
     timestamps()
@@ -54,13 +53,17 @@ defmodule Kanban.Attachments.TaskAttachment do
   A changeset for a new attachment.
 
   Only `:filename`, `:content_type`, `:byte_size` and `:sha256` are cast from
-  `attrs`. `:task_id`, `:comment_id`, `:board_id`, `:uploaded_by_id` and
-  `:storage_key` are server-set: the caller puts them on the struct
-  (`%TaskAttachment{task_id: task.id, board_id: ..., storage_key: ...}`), so a
-  client-supplied value can never attach a file to another board's task or
-  point a row at someone else's blob, even if a future caller forgets to
-  overwrite it. `validate_required` still asserts the struct carries
-  `task_id`, `board_id` and `storage_key`.
+  `attrs`. `:task_id`, `:comment_id`, `:uploaded_by_id` and `:storage_key`
+  are server-set: the caller puts them on the struct
+  (`%TaskAttachment{task_id: task.id, storage_key: ...}`), so a
+  client-supplied value can never attach a file to another task or point a
+  row at someone else's blob, even if a future caller forgets to overwrite
+  it. `validate_required` still asserts the struct carries `task_id` and
+  `storage_key`.
+
+  A row stores no board: an attachment's board is always its task's board,
+  found through the task's column, so it can never disagree with where the
+  task is.
 
   The checks:
 
@@ -88,7 +91,7 @@ defmodule Kanban.Attachments.TaskAttachment do
       when is_binary(sniff) or (is_tuple(sniff) and elem(sniff, 0) == :file) do
     attachment
     |> cast(attrs, [:filename, :content_type, :byte_size, :sha256])
-    |> validate_required([:filename, :byte_size, :sha256, :task_id, :board_id, :storage_key])
+    |> validate_required([:filename, :byte_size, :sha256, :task_id, :storage_key])
     |> put_filename()
     |> ChangesetText.validate_visible([:filename])
     |> put_content_type()
@@ -102,7 +105,6 @@ defmodule Kanban.Attachments.TaskAttachment do
     |> unique_constraint(:storage_key)
     |> foreign_key_constraint(:task_id)
     |> foreign_key_constraint(:comment_id)
-    |> foreign_key_constraint(:board_id)
     |> foreign_key_constraint(:uploaded_by_id)
   end
 

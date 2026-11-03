@@ -5,6 +5,10 @@ defmodule Kanban.Attachments.Pipeline do
   # `import_attachment/4`. It never authorizes and never broadcasts: the
   # caller has already resolved the board through the task's column, checked
   # access and the plan, and built the base struct with the server-set ids.
+  # The board id comes alongside, not on the struct: a row stores no board,
+  # and the board is used only for the storage key's prefix, the quota
+  # pre-check, the board row's key-share lock and telemetry. Inside the
+  # insert transaction the quota scope is derived again from the locked task.
   #
   # The steps, in order (docs/plans/ATTACHMENTS-DESIGN.md §4.2):
   #
@@ -49,7 +53,7 @@ defmodule Kanban.Attachments.Pipeline do
   @pending_grace_seconds 3_600
   @chunk_bytes 65_536
   @not_allowed "is not an allowed type"
-  @fk_fields [:task_id, :comment_id, :board_id, :uploaded_by_id]
+  @fk_fields [:task_id, :comment_id, :uploaded_by_id]
 
   @refusal_reasons [
     :too_large,
@@ -69,29 +73,29 @@ defmodule Kanban.Attachments.Pipeline do
   def refusal_reasons, do: @refusal_reasons
 
   @doc false
-  @spec create(TaskAttachment.t(), term(), [{:source, source()}]) ::
+  @spec create(TaskAttachment.t(), integer(), term(), [{:source, source()}]) ::
           {:ok, TaskAttachment.t()} | {:error, atom() | Changeset.t()}
-  def create(%TaskAttachment{} = base, upload, opts) do
+  def create(%TaskAttachment{} = base, board_id, upload, opts) when is_integer(board_id) do
     source = Keyword.fetch!(opts, :source)
 
     base
-    |> run(upload)
-    |> report(base, source)
+    |> run(board_id, upload)
+    |> report(base, board_id, source)
   end
 
-  defp run(base, upload) do
+  defp run(base, board_id, upload) do
     with {:ok, file, attrs} <- read_upload(upload, base.task_id) do
       try do
-        prepare_and_store(base, attrs, file)
+        prepare_and_store(base, board_id, attrs, file)
       after
         remove_snapshot(file.path)
       end
     end
   end
 
-  defp prepare_and_store(base, attrs, file) do
-    with {:ok, changeset, key} <- prepare(base, attrs, file) do
-      store(changeset, key, file)
+  defp prepare_and_store(base, board_id, attrs, file) do
+    with {:ok, changeset, key} <- prepare(base, board_id, attrs, file) do
+      store(changeset, key, file, board_id)
     end
   end
 
@@ -167,7 +171,7 @@ defmodule Kanban.Attachments.Pipeline do
 
   # Everything that can refuse the file before it is stored: the changeset,
   # then the quota.
-  defp prepare(%TaskAttachment{board_id: board_id} = base, attrs, file) do
+  defp prepare(%TaskAttachment{} = base, board_id, attrs, file) do
     key = storage_key(board_id)
 
     with {:ok, changeset} <- build_changeset(base, key, attrs, file),
@@ -271,13 +275,13 @@ defmodule Kanban.Attachments.Pipeline do
     end
   end
 
-  defp store(changeset, key, file) do
+  defp store(changeset, key, file, board_id) do
     park_tombstone!(key)
     content_type = Changeset.get_field(changeset, :content_type)
 
     case Storage.put(key, {:file, file.path}, content_type: content_type) do
       :ok ->
-        changeset |> insert(key, file.size) |> discard_on_error(key)
+        changeset |> insert(key, file.size, board_id) |> discard_on_error(key)
 
       {:error, _reason} ->
         discard(key)
@@ -293,11 +297,11 @@ defmodule Kanban.Attachments.Pipeline do
     |> Repo.insert!()
   end
 
-  defp insert(changeset, key, size) do
+  defp insert(changeset, key, size, board_id) do
     task_id = Changeset.get_field(changeset, :task_id)
 
     Repo.transact(fn ->
-      with {:ok, scope} <- Usage.lock_for_upload(task_id, upload_refs(changeset)),
+      with {:ok, scope} <- Usage.lock_for_upload(task_id, upload_refs(changeset, board_id)),
            :ok <- Usage.check_limits(task_id, scope, size),
            {:ok, attachment} <- changeset |> Repo.insert() |> map_insert_error(),
            :ok <- release_pending_tombstone(key) do
@@ -322,11 +326,17 @@ defmodule Kanban.Attachments.Pipeline do
     end
   end
 
-  # The rows the insert references besides the task, in the order
-  # Usage.lock_for_upload/2 key-share locks them.
-  defp upload_refs(changeset) do
-    for field <- [:uploaded_by_id, :board_id, :comment_id],
-        do: {field, Changeset.get_field(changeset, field)}
+  # The rows the upload depends on besides the task, in the order
+  # Usage.lock_for_upload/2 key-share locks them. The board row is locked
+  # although the row does not reference it: a board deletion locks it before
+  # its cascade reaches the task, and a board move into an Organization locks
+  # it FOR UPDATE (Kanban.Workspaces.BoardMoves), so this serializes with both.
+  defp upload_refs(changeset, board_id) do
+    [
+      uploaded_by_id: Changeset.get_field(changeset, :uploaded_by_id),
+      board_id: board_id,
+      comment_id: Changeset.get_field(changeset, :comment_id)
+    ]
   end
 
   # A task, comment or uploader deleted between the checks and the insert
@@ -363,14 +373,14 @@ defmodule Kanban.Attachments.Pipeline do
     Repo.delete_all(query)
   end
 
-  defp report({:ok, attachment} = result, _base, source) do
+  defp report({:ok, attachment} = result, _base, board_id, source) do
     Kanban.Telemetry.emit(
       [:kanban, :attachment, :uploaded],
       %{count: 1, byte_size: attachment.byte_size},
       %{
         attachment_id: attachment.id,
         task_id: attachment.task_id,
-        board_id: attachment.board_id,
+        board_id: board_id,
         comment_id: attachment.comment_id,
         user_id: attachment.uploaded_by_id,
         source: source
@@ -380,19 +390,20 @@ defmodule Kanban.Attachments.Pipeline do
     result
   end
 
-  defp report({:error, {:invalid_file, changeset}}, base, source) do
-    emit_refused(:invalid_file, base, source)
+  defp report({:error, {:invalid_file, changeset}}, base, board_id, source) do
+    emit_refused(:invalid_file, base, board_id, source)
     {:error, changeset}
   end
 
-  defp report({:error, reason} = result, base, source) when reason in @refusal_reasons do
-    emit_refused(reason, base, source)
+  defp report({:error, reason} = result, base, board_id, source)
+       when reason in @refusal_reasons do
+    emit_refused(reason, base, board_id, source)
     result
   end
 
-  defp report(result, _base, _source), do: result
+  defp report(result, _base, _board_id, _source), do: result
 
-  defp emit_refused(reason, base, source) do
+  defp emit_refused(reason, base, board_id, source) do
     Kanban.Telemetry.emit(
       [:kanban, :attachment, :upload_refused],
       %{count: 1},
@@ -400,7 +411,7 @@ defmodule Kanban.Attachments.Pipeline do
         reason: reason,
         source: source,
         task_id: base.task_id,
-        board_id: base.board_id,
+        board_id: board_id,
         user_id: base.uploaded_by_id
       }
     )

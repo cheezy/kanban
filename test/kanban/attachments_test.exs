@@ -151,7 +151,60 @@ defmodule Kanban.AttachmentsTest do
       Board |> where([b], b.id == ^board.id) |> Repo.update_all(set: [workspace_id: workspace_id])
   end
 
+  # Every query the test process runs inside `fun`, as {sql, params}, in order.
+  defp capture_queries(fun) do
+    test_pid = self()
+    handler_id = {__MODULE__, :queries, make_ref()}
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, %{query: query, params: params}, _config ->
+        if self() == test_pid, do: send(test_pid, {handler_id, query, params})
+      end,
+      nil
+    )
+
+    try do
+      result = fun.()
+      {result, drain_queries(handler_id, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp drain_queries(handler_id, acc) do
+    receive do
+      {^handler_id, query, params} -> drain_queries(handler_id, [{query, params} | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
   describe "create_attachment/4" do
+    test "key-share locks the task's board before the task row, though the row stores no board",
+         ctx do
+      {result, queries} =
+        capture_queries(fn ->
+          ctx.modifier |> scope() |> Attachments.create_attachment(ctx.task, text_upload(ctx))
+        end)
+
+      assert {:ok, _attachment} = result
+
+      board_lock =
+        Enum.find_index(queries, fn {sql, params} ->
+          sql =~ ~s(FROM "boards") and sql =~ "FOR KEY SHARE" and ctx.board.id in params
+        end)
+
+      task_lock =
+        Enum.find_index(queries, fn {sql, _params} ->
+          sql =~ ~s(FROM "tasks") and sql =~ "FOR UPDATE"
+        end)
+
+      assert is_integer(board_lock) and is_integer(task_lock)
+      assert board_lock < task_lock
+    end
+
     test "create_attachment stores the blob and inserts the row for a modify member", ctx do
       bytes = "hello attachment\n"
       file = ctx |> text_upload(bytes) |> Map.put(:byte_size, 999_999)
@@ -160,7 +213,7 @@ defmodule Kanban.AttachmentsTest do
                ctx.modifier |> scope() |> Attachments.create_attachment(ctx.task, file)
 
       assert attachment.task_id == ctx.task.id
-      assert attachment.board_id == ctx.board.id
+      assert String.starts_with?(attachment.storage_key, "boards/#{ctx.board.id}/")
       assert attachment.uploaded_by_id == ctx.modifier.id
       assert attachment.comment_id == nil
       assert attachment.filename == "notes.txt"
