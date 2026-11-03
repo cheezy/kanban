@@ -950,5 +950,37 @@ defmodule Kanban.PlansTest do
         assert runtime_flag(:prod) == false, "expected #{inspect(value)} to leave it off"
       end
     end
+
+    test "config/runtime.exs warns, without the value, when it is set but not true or false" do
+      for value <- ["TRUE", "True", "1", "yes", " true", "true\n", "on-sentinel"] do
+        System.put_env(@env_var, value)
+        stderr = runtime_stderr(:prod)
+
+        assert stderr =~ "STRIDE_PLANS_ENFORCED is set but is not exactly true or false",
+               "expected a warning for #{inspect(value)}"
+
+        refute stderr =~ "sentinel"
+      end
+    end
+
+    test "config/runtime.exs is silent about it when it is true, false, empty or unset" do
+      for value <- ["true", "false", "", nil] do
+        if value, do: System.put_env(@env_var, value), else: System.delete_env(@env_var)
+
+        for env <- [:dev, :prod] do
+          refute runtime_stderr(env) =~ "STRIDE_PLANS_ENFORCED",
+                 "expected no warning for #{inspect(value)} in #{env}"
+        end
+      end
+    end
+
+    defp runtime_stderr(env) do
+      {_config, stderr} =
+        ExUnit.CaptureIO.with_io(:stderr, fn ->
+          Config.Reader.read!(@runtime, env: env, target: :host)
+        end)
+
+      stderr
+    end
   end
 end

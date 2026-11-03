@@ -36,6 +36,8 @@ defmodule Kanban.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Kanban.Supervisor]
 
+    Kanban.Plans.BootReport.log_enforcement()
+
     children
     |> Supervisor.start_link(opts)
     |> start_audit_log_boot_check()

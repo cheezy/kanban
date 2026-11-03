@@ -73,8 +73,21 @@ config :kanban, :strict_completion_validation, strict_completion_validation
 # default: it stays false in every environment, prod included, until launch day
 # sets STRIDE_PLANS_ENFORCED=true and restarts. Only the exact string "true"
 # turns it on; "TRUE", "1", an empty string or an unset variable leave it off.
-# Rollback is unsetting the variable and restarting.
-config :kanban, :plans_enforced, System.get_env("STRIDE_PLANS_ENFORCED") == "true"
+# Rollback is unsetting the variable and restarting. A value that is set but
+# is neither "true" nor "false" is almost always a typo for one of them, so it
+# prints a warning (without the value); Kanban.Plans.BootReport then logs
+# whether enforcement is on.
+plans_enforced_value = System.get_env("STRIDE_PLANS_ENFORCED")
+config :kanban, :plans_enforced, plans_enforced_value == "true"
+
+if plans_enforced_value not in [nil, "", "true", "false"] do
+  IO.warn(
+    "STRIDE_PLANS_ENFORCED is set but is not exactly true or false, so paid-plan " <>
+      "enforcement is off. Only the exact string true turns it on " <>
+      "(see docs/organizations-launch-runbook.md).",
+    []
+  )
+end
 
 # Where workspace export archives are written (W2222). Set only when
 # EXPORT_DIR is, so config/test.exs keeps its own directory. Without it,

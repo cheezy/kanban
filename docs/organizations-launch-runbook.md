@@ -38,8 +38,11 @@ below are placeholders.
 
 - **What the flag does.** `STRIDE_PLANS_ENFORCED` is read by
   `config/runtime.exs` at boot. Only the exact string `true` turns
-  enforcement on; any other value, or no value, leaves it off. Because it is
-  read at boot, a change takes effect only after a restart.
+  enforcement on; any other value, or no value, leaves it off. A value that
+  is set but is neither `true` nor `false` (such as `TRUE` or `1`) prints a
+  warning at boot, which does not show the value, and every boot logs
+  `Paid-plan enforcement is on` or `Paid-plan enforcement is off`. Because it
+  is read at boot, a change takes effect only after a restart.
   `Kanban.Plans.enforced?/0` is the only reader, and every lock and the member
   cap go through `Kanban.Plans`.
 
@@ -202,7 +205,9 @@ below are placeholders.
 
 4. **Turn enforcement on.** Set `STRIDE_PLANS_ENFORCED=true` in the
    deployment environment and restart the app. The flag takes effect only
-   after the restart.
+   after the restart. Check that the boot log says
+   `Paid-plan enforcement is on` and shows no `STRIDE_PLANS_ENFORCED`
+   warning.
 
 5. **Run the verification checklist.**
 
@@ -218,8 +223,8 @@ below are placeholders.
 
 ## Rollback
 
-Unset `STRIDE_PLANS_ENFORCED` (or set it to anything other than `true`) and
-restart the app. Every lock and the member cap switch off at once.
+Unset `STRIDE_PLANS_ENFORCED` (or set it to `false`) and restart the app,
+then check that the boot log says `Paid-plan enforcement is off`. Every lock and the member cap switch off at once.
 
 **No data needs restoring,** because locks never delete data: webhook
 endpoints keep their configuration, hidden notification rows reappear, and
