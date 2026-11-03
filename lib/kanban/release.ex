@@ -246,6 +246,8 @@ defmodule Kanban.Release do
           {:ok, Importer.report()} | {:error, term()}
   def import_workspace(path, org_admin_email, opts \\ []) do
     load_app()
+    # The S3 attachment adapter's HTTP pool belongs to :req.
+    {:ok, _apps} = Application.ensure_all_started(:req)
 
     {:ok, result, _} =
       Ecto.Migrator.with_repo(Repo, fn _repo ->

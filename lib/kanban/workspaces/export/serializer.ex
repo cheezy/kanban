@@ -23,14 +23,24 @@ defmodule Kanban.Workspaces.Export.Serializer do
     * webhook endpoints, notifications, workspace invitations, claim-expiry
       reports, metrics and audit events, and earlier exports.
 
+  Each attachment's bytes travel as their own zip entry,
+  `attachments/<archive attachment id>` (`blob_entry_name/1`), beside the
+  `attachments.json` rows that describe them. A row never holds the blob's
+  storage key: the importer stores every blob under a key of its own.
+
   Rows keep their source ids so the importer can remap every reference; the
   importer never reuses one. `format_version/0` changes whenever a field is
-  removed or changes meaning; the importer refuses any version it does not
-  know.
+  removed or changes meaning, or an entity is added. Version 2 added
+  attachments; the importer still reads version 1 archives, which have no
+  `attachments.json` and no blob entries, and refuses any version it does
+  not know.
   """
 
   @format "stride-workspace-export"
-  @format_version 1
+  @format_version 2
+  @versions [1, 2]
+  @blob_prefix "attachments/"
+  @blob_entry_name ~r/\Aattachments\/([1-9][0-9]{0,17})\z/
 
   @entities [
     :boards,
@@ -40,10 +50,13 @@ defmodule Kanban.Workspaces.Export.Serializer do
     :task_labels,
     :comments,
     :task_history,
+    :attachments,
     :board_users,
     :workspace_members,
     :users
   ]
+
+  @added_in %{attachments: 2}
 
   @fields %{
     boards: [
@@ -155,6 +168,17 @@ defmodule Kanban.Workspaces.Export.Serializer do
       :to_user_id,
       :inserted_at
     ],
+    attachments: [
+      :id,
+      :task_id,
+      :comment_id,
+      :uploaded_by_id,
+      :filename,
+      :content_type,
+      :byte_size,
+      :sha256,
+      :inserted_at
+    ],
     board_users: [:board_id, :user_id, :access, :inserted_at, :updated_at],
     workspace_members: [:user_id, :role, :inserted_at, :updated_at],
     users: [:id, :email, :name]
@@ -178,22 +202,65 @@ defmodule Kanban.Workspaces.Export.Serializer do
   @spec format() :: String.t()
   def format, do: @format
 
-  @doc "The archive format version this code writes and reads."
+  @doc "The archive format version this code writes."
   @spec format_version() :: pos_integer()
   def format_version, do: @format_version
+
+  @doc "Every archive format version this code reads."
+  @spec format_versions() :: [pos_integer()]
+  def format_versions, do: @versions
 
   @doc "The entities in an archive, in the order they are written and imported."
   @spec entities() :: [atom()]
   def entities, do: @entities
+
+  @doc "The entities an archive of format `version` holds, in import order."
+  @spec entities(pos_integer()) :: [atom()]
+  def entities(version) when version in @versions,
+    do: Enum.filter(@entities, &(Map.get(@added_in, &1, 1) <= version))
 
   @doc "The archive file name of `entity`, or of the manifest."
   @spec file_name(atom()) :: String.t()
   def file_name(:manifest), do: "manifest.json"
   def file_name(entity) when entity in @entities, do: "#{entity}.json"
 
-  @doc "Every file name an archive may hold: the manifest and one per entity."
+  @doc """
+  The JSON file names an archive of the current format holds: the manifest
+  and one per entity. Blob entries (`blob_entry_name/1`) come on top.
+  """
   @spec file_names() :: [String.t()]
-  def file_names, do: [file_name(:manifest) | Enum.map(@entities, &file_name/1)]
+  def file_names, do: file_names(@format_version)
+
+  @doc "The JSON file names an archive of format `version` holds."
+  @spec file_names(pos_integer()) :: [String.t()]
+  def file_names(version) when version in @versions,
+    do: [file_name(:manifest) | version |> entities() |> Enum.map(&file_name/1)]
+
+  @doc """
+  The zip entry name of the blob of the attachment with archive id `id`:
+  `attachments/<id>`, the id in decimal with no leading zero.
+  """
+  @spec blob_entry_name(pos_integer()) :: String.t()
+  def blob_entry_name(id) when is_integer(id) and id > 0,
+    do: @blob_prefix <> Integer.to_string(id)
+
+  @doc "True when the zip entry `name` lies under the blob prefix, valid or not."
+  @spec blob_entry?(String.t()) :: boolean()
+  def blob_entry?(name) when is_binary(name), do: String.starts_with?(name, @blob_prefix)
+
+  @doc """
+  The attachment id a blob entry `name` stands for, or `:error` unless the
+  name is exactly `attachments/` and a positive decimal integer with no
+  leading zero — so a directory, a nested path, `..` or an absolute path is
+  never a blob entry.
+  """
+  @spec parse_blob_entry_name(String.t()) :: {:ok, pos_integer()} | :error
+  def parse_blob_entry_name(name) when is_binary(name) do
+    case Regex.run(@blob_entry_name, name, capture: :all_but_first) do
+      [digits] -> {:ok, String.to_integer(digits)}
+      nil -> :error
+    end
+  end
 
   @doc "The allow-listed fields of `entity`, in archive order."
   @spec fields(atom()) :: [atom()]
@@ -231,14 +298,16 @@ defmodule Kanban.Workspaces.Export.Serializer do
 
   @doc """
   Decodes and checks a manifest. The format must be this one and the version
-  one this code knows, before any other file is read.
+  one this code knows (`format_versions/0`), before any other file is read;
+  the counts must cover that version's entities.
   """
   @spec decode_manifest(binary()) ::
           {:ok, map()} | {:error, :invalid_manifest | {:unsupported_format_version, term()}}
   def decode_manifest(binary) when is_binary(binary) do
     case Jason.decode(binary) do
-      {:ok, %{"format" => @format, "format_version" => @format_version} = manifest} ->
-        validate_manifest(manifest)
+      {:ok, %{"format" => @format, "format_version" => version} = manifest}
+      when version in @versions ->
+        validate_manifest(manifest, version)
 
       {:ok, %{"format" => @format, "format_version" => version}} ->
         {:error, {:unsupported_format_version, version}}
@@ -248,14 +317,17 @@ defmodule Kanban.Workspaces.Export.Serializer do
     end
   end
 
-  defp validate_manifest(%{"counts" => counts, "workspace" => %{"name" => name}} = manifest)
+  defp validate_manifest(
+         %{"counts" => counts, "workspace" => %{"name" => name}} = manifest,
+         version
+       )
        when is_map(counts) and is_binary(name) do
-    if Enum.all?(@entities, &non_neg_integer?(Map.get(counts, Atom.to_string(&1)))),
+    if version |> entities() |> Enum.all?(&non_neg_integer?(Map.get(counts, Atom.to_string(&1)))),
       do: {:ok, manifest},
       else: {:error, :invalid_manifest}
   end
 
-  defp validate_manifest(_manifest), do: {:error, :invalid_manifest}
+  defp validate_manifest(_manifest, _version), do: {:error, :invalid_manifest}
 
   defp non_neg_integer?(value), do: is_integer(value) and value >= 0
 

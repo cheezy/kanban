@@ -17,14 +17,22 @@ defmodule Kanban.Workspaces.Export.Writer do
   path beforehand: an existing directory or symlink there fails the export
   instead of being written through. It is always removed.
 
+  Attachment blobs are copied from `Kanban.Attachments.Storage` into the
+  scratch directory after the snapshot transaction has ended, so slow
+  storage never holds a read transaction open
+  (`Kanban.Workspaces.Export.AttachmentBlobs`), and zipped as
+  `attachments/<id>` entries beside the JSON files.
+
   Errors come back as one of two codes and never as a message or a path:
-  `:storage_unavailable` when the disk refused a write, `:export_failed` for
-  anything else.
+  `:storage_unavailable` when the disk or attachment storage refused a read
+  or a write, `:export_failed` for anything else, including a blob missing
+  from storage or no longer matching its row.
   """
 
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.User
+  alias Kanban.Attachments.TaskAttachment
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Columns.Column
@@ -34,6 +42,7 @@ defmodule Kanban.Workspaces.Export.Writer do
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.Workspaces.Export.AttachmentBlobs
   alias Kanban.Workspaces.Export.Serializer
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
@@ -49,6 +58,7 @@ defmodule Kanban.Workspaces.Export.Writer do
     :task_labels,
     :comments,
     :task_history,
+    :attachments,
     :board_users
   ]
   @task_user_fields [
@@ -120,18 +130,25 @@ defmodule Kanban.Workspaces.Export.Writer do
 
   defp build_archive(workspace, tmp_dir, final) do
     with :ok <- final |> Path.dirname() |> mkdir(),
-         {:ok, counts} <- write_files(workspace, tmp_dir),
-         {:ok, size} <- finish_archive(tmp_dir, final) do
+         {:ok, {counts, blob_names}} <- write_contents(workspace, tmp_dir),
+         {:ok, size} <- finish_archive(tmp_dir, final, blob_names) do
       {:ok, %{path: final, byte_size: size, counts: counts}}
     else
       {:error, reason} -> {:error, error_code(reason)}
     end
   end
 
+  # The snapshot transaction first; the blobs are copied once it has ended.
+  defp write_contents(workspace, tmp_dir) do
+    with {:ok, {counts, blobs}} <- write_files(workspace, tmp_dir),
+         {:ok, blob_names} <- AttachmentBlobs.copy(blobs, tmp_dir),
+         do: {:ok, {counts, blob_names}}
+  end
+
   # Zips the scratch directory into the final path, restricts the archive to
   # its owner and returns its size.
-  defp finish_archive(tmp_dir, final) do
-    with :ok <- zip(tmp_dir, final),
+  defp finish_archive(tmp_dir, final, blob_names) do
+    with :ok <- zip(tmp_dir, final, blob_names),
          :ok <- restrict(final, 0o600),
          {:ok, %File.Stat{size: size}} <- File.stat(final) do
       {:ok, size}
@@ -154,11 +171,12 @@ defmodule Kanban.Workspaces.Export.Writer do
     Repo.transaction(fn -> write_snapshot(workspace, tmp_dir) end, timeout: :infinity)
   end
 
-  # Runs inside the transaction: every entity file, then the manifest.
+  # Runs inside the transaction: every entity file, then the manifest. Returns
+  # the counts and the blobs to copy once the transaction has ended.
   defp write_snapshot(workspace, tmp_dir) do
     snapshot()
     board_ids = board_ids(workspace.id)
-    {counts, user_ids} = write_board_entities(tmp_dir, board_ids)
+    {counts, user_ids, blobs} = write_board_entities(tmp_dir, board_ids)
     {member_count, user_ids} = write_members(tmp_dir, workspace.id, user_ids)
     user_count = write_users(tmp_dir, user_ids)
 
@@ -166,13 +184,13 @@ defmodule Kanban.Workspaces.Export.Writer do
       counts |> Map.put(:workspace_members, member_count) |> Map.put(:users, user_count)
 
     write_manifest(tmp_dir, workspace.name, counts)
-    counts
+    {counts, Enum.reverse(blobs)}
   end
 
   defp write_board_entities(tmp_dir, board_ids) do
-    Enum.reduce(@board_entities, {%{}, MapSet.new()}, fn entity, {counts, user_ids} ->
-      {count, user_ids} = write_entity(tmp_dir, entity, board_ids, user_ids)
-      {Map.put(counts, entity, count), user_ids}
+    Enum.reduce(@board_entities, {%{}, MapSet.new(), []}, fn entity, {counts, user_ids, blobs} ->
+      {count, user_ids, blobs} = write_entity(tmp_dir, entity, board_ids, {user_ids, blobs})
+      {Map.put(counts, entity, count), user_ids, blobs}
     end)
   end
 
@@ -200,19 +218,21 @@ defmodule Kanban.Workspaces.Export.Writer do
     |> Repo.all()
   end
 
-  defp write_entity(tmp_dir, entity, board_ids, user_ids) do
+  defp write_entity(tmp_dir, entity, board_ids, {user_ids, blobs}) do
     path = Path.join(tmp_dir, Serializer.file_name(entity))
 
     open_array!(path, fn io ->
-      Enum.reduce(board_ids, {0, user_ids}, fn board_id, acc ->
-        entity
-        |> board_query(board_id)
-        |> Repo.stream(max_rows: @max_rows)
-        |> Enum.reduce(acc, fn row, {count, ids} ->
-          write_row!(io, entity, row, count)
-          {count + 1, collect_user_ids(entity, row, ids)}
-        end)
-      end)
+      Enum.reduce(board_ids, {0, user_ids, blobs}, &write_board_rows(io, entity, &1, &2))
+    end)
+  end
+
+  defp write_board_rows(io, entity, board_id, acc) do
+    entity
+    |> board_query(board_id)
+    |> Repo.stream(max_rows: @max_rows)
+    |> Enum.reduce(acc, fn row, {count, ids, blobs} ->
+      write_row!(io, entity, row, count)
+      {count + 1, collect_user_ids(entity, row, ids), collect_blob(entity, row, blobs)}
     end)
   end
 
@@ -290,6 +310,7 @@ defmodule Kanban.Workspaces.Export.Writer do
 
   defp board_query(:comments, board_id), do: task_child_query(TaskComment, board_id)
   defp board_query(:task_history, board_id), do: task_child_query(TaskHistory, board_id)
+  defp board_query(:attachments, board_id), do: task_child_query(TaskAttachment, board_id)
 
   defp task_child_query(schema, board_id) do
     from r in schema,
@@ -312,8 +333,17 @@ defmodule Kanban.Workspaces.Export.Writer do
   defp collect_user_ids(:task_history, history, ids),
     do: ids |> MapSet.put(history.from_user_id) |> MapSet.put(history.to_user_id)
 
+  defp collect_user_ids(:attachments, attachment, ids),
+    do: MapSet.put(ids, attachment.uploaded_by_id)
+
   defp collect_user_ids(:board_users, board_user, ids), do: MapSet.put(ids, board_user.user_id)
   defp collect_user_ids(_entity, _row, ids), do: ids
+
+  # The storage key leaves the transaction only in this list, never in a row.
+  defp collect_blob(:attachments, attachment, blobs),
+    do: [Map.take(attachment, [:id, :storage_key, :byte_size, :sha256]) | blobs]
+
+  defp collect_blob(_entity, _row, blobs), do: blobs
 
   defp open_array!(path, fun) do
     # No :delayed_write: a disk-full error then surfaces on the write itself,
@@ -349,9 +379,11 @@ defmodule Kanban.Workspaces.Export.Writer do
     end
   end
 
-  defp zip(tmp_dir, final) do
+  # Files only, never the attachments directory itself, so the zip holds no
+  # directory entry for the importer to refuse.
+  defp zip(tmp_dir, final, blob_names) do
     tmp_zip = Path.join(tmp_dir, "archive.zip")
-    files = Enum.map(Serializer.file_names(), &String.to_charlist/1)
+    files = Enum.map(Serializer.file_names() ++ blob_names, &String.to_charlist/1)
 
     zip_name = String.to_charlist(tmp_zip)
     cwd = String.to_charlist(tmp_dir)
@@ -364,6 +396,7 @@ defmodule Kanban.Workspaces.Export.Writer do
   @storage_errors [:eacces, :enospc, :erofs, :enoent, :enotdir, :eisdir, :edquot, :eperm, :eexist]
 
   defp error_code(reason) when reason in @storage_errors, do: :storage_unavailable
+  defp error_code(:storage_unavailable), do: :storage_unavailable
   defp error_code(%File.Error{}), do: :storage_unavailable
   defp error_code(_reason), do: :export_failed
 end

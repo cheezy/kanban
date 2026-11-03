@@ -8,6 +8,7 @@ defmodule Kanban.AttachmentsFixtures do
   adapter.
   """
 
+  alias Kanban.Attachments.Storage
   alias Kanban.Attachments.TaskAttachment
   alias Kanban.Columns.Column
   alias Kanban.Repo
@@ -43,6 +44,41 @@ defmodule Kanban.AttachmentsFixtures do
 
     TaskAttachment |> struct(fields) |> Repo.insert!()
   end
+
+  @doc """
+  Like `attachment_fixture/2`, but first stores `bytes` under a fresh key
+  through `Kanban.Attachments.Storage`, and gives the row their real size
+  and sha256, so the attachment has a blob that matches it.
+  """
+  def stored_attachment_fixture(task, bytes, attrs \\ %{}) when is_binary(bytes) do
+    board_id = Repo.get!(Column, task.column_id).board_id
+    key = unique_storage_key(board_id)
+    :ok = Storage.put(key, {:binary, bytes})
+
+    attachment_fixture(
+      task,
+      Map.merge(
+        %{storage_key: key, byte_size: byte_size(bytes), sha256: sha256_hex(bytes)},
+        Map.new(attrs)
+      )
+    )
+  end
+
+  @doc "The lowercase hex sha256 of `bytes`, as a row stores it."
+  def sha256_hex(bytes), do: :sha256 |> :crypto.hash(bytes) |> Base.encode16(case: :lower)
+
+  @doc """
+  A minimal well-formed 1x1 PNG, which the attachment content checks accept
+  as `image/png`.
+  """
+  def tiny_png do
+    signature = <<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A>>
+    ihdr = png_chunk("IHDR", <<1::32, 1::32, 8, 0, 0, 0, 0>>)
+    signature <> ihdr <> png_chunk("IDAT", <<120, 1, 0, 0, 0, 255, 255>>) <> png_chunk("IEND", "")
+  end
+
+  defp png_chunk(type, data),
+    do: <<byte_size(data)::32>> <> type <> data <> <<:erlang.crc32(type <> data)::32>>
 
   @doc "A fresh storage key valid under `Kanban.Attachments.Storage` rules."
   def unique_storage_key(board_id) do

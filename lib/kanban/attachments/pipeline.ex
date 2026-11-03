@@ -222,7 +222,14 @@ defmodule Kanban.Attachments.Pipeline do
     File.Error -> {:error, :unreadable}
   end
 
-  defp storage_key(board_id), do: "boards/#{board_id}/#{Ecto.UUID.generate()}"
+  @doc """
+  A new, unguessable storage key for a blob on the board with id `board_id`:
+  `boards/<board_id>/<uuid>`. Every stored attachment gets its key here,
+  including one restored by a workspace import, so keys have one format.
+  """
+  @spec storage_key(integer()) :: String.t()
+  def storage_key(board_id) when is_integer(board_id),
+    do: "boards/#{board_id}/#{Ecto.UUID.generate()}"
 
   # The changeset sniffs `{:file, path}` itself: its own head for a binary
   # type, and the whole body for a text type, which a fixed-size head could

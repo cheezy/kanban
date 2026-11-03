@@ -292,7 +292,7 @@ defmodule Kanban.Workspaces.ExportTest do
       assert files |> Map.keys() |> Enum.sort() == Enum.sort(Serializer.file_names())
 
       manifest = files["manifest.json"]
-      assert manifest["format_version"] == 1
+      assert manifest["format_version"] == 2
       assert manifest["format"] == "stride-workspace-export"
       assert manifest["workspace"] == %{"name" => ctx.workspace.name}
 
@@ -314,7 +314,9 @@ defmodule Kanban.Workspaces.ExportTest do
       ctx = seed_workspace(ctx)
       files = ctx |> run_export() |> Map.fetch!(:file_path) |> read_archive()
 
-      for entity <- Serializer.entities() do
+      # seed_workspace stores no blobs, so attachments are checked in
+      # attachments_roundtrip_test.exs instead.
+      for entity <- Serializer.entities() -- [:attachments] do
         rows = Map.fetch!(files, Serializer.file_name(entity))
         expected = entity |> Serializer.fields() |> Enum.map(&Atom.to_string/1) |> Enum.sort()
 
@@ -475,7 +477,7 @@ defmodule Kanban.Workspaces.ExportTest do
       manifest =
         "W" |> Serializer.encode_manifest(%{}, DateTime.utc_now()) |> IO.iodata_to_binary()
 
-      assert {:ok, %{"format_version" => 1}} = Serializer.decode_manifest(manifest)
+      assert {:ok, %{"format_version" => 2}} = Serializer.decode_manifest(manifest)
 
       future = manifest |> Jason.decode!() |> Map.put("format_version", 99) |> Jason.encode!()
       assert Serializer.decode_manifest(future) == {:error, {:unsupported_format_version, 99}}

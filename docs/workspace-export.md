@@ -32,10 +32,23 @@ kind of record. It holds the workspace's boards and what is on them:
 
 - boards, columns and labels
 - tasks, comments and task history
+- task attachments: their details in `attachments.json` and each file's bytes
+  as its own `attachments/<id>` entry
 - board and workspace memberships, including guests
 
 Users appear only by id, email and name, and only when something in the
 archive refers to them.
+
+An attachment's row in `attachments.json` holds its id, task, comment,
+uploader, file name, content type, size, sha256 and upload time. It never
+holds where the file is stored: an import stores every file again under a
+key of its own. See [attachments](attachments.md) for the files themselves.
+
+Attachments make an archive about as large as the files attached to the
+workspace's tasks, because most attachments (images, PDFs) are compressed
+already and barely shrink in the zip. A workspace with gigabytes of
+attachments gives a download of gigabytes. If a file is missing from storage
+when the export runs, the export fails rather than leaving the file out.
 
 The archive never contains anything that signs anyone in: no password or token
 hashes, no session or invitation tokens, no API tokens and no webhook secrets.
@@ -67,6 +80,38 @@ mix kanban.import_workspace --file PATH --org-admin-email admin@example.com
 - Users are matched by email and never created. Anyone with no account on the
   instance, a disabled account, or an account outside the Organization is
   left unattributed and listed in the report, so you can invite them.
+
+### Attachments in an import
+
+The archive is treated as untrusted, so its attachments are checked before
+anything is kept:
+
+- Each file must be an entry named `attachments/<id>`, with one entry for
+  every `attachments.json` row and one row for every entry. Directory
+  entries, other names under `attachments/`, duplicates, a row with no file
+  and a file with no row are all refused as an invalid archive.
+- Each file may be at most the per-file limit (`ATTACHMENTS_MAX_FILE_MB`,
+  25 MiB by default), and all the files together at most 10 GiB. That budget
+  is separate from the 1 GiB limit on the JSON files. An archive whose zip
+  headers declare sizes past a limit is refused before anything is
+  decompressed. The headers are not trusted, though: each file is also
+  measured as it is decompressed, so a file that grows past a limit despite
+  smaller declared sizes is refused as too large without being decompressed
+  in full.
+- Each file's size and sha256 are recomputed and must match its row. Its file
+  name and content type are checked like an upload's: the same file-name
+  rules, the same allowed types, and the file's contents must match its type.
+- The files must fit in the Organization's storage quota
+  (`ATTACHMENTS_ORG_QUOTA_GB`). This is checked before any file is written,
+  and a task may hold no more files than `ATTACHMENTS_MAX_FILES_PER_TASK`.
+- `--dry-run` checks every file the same way and stores none.
+- If the import is refused or fails after some files were stored, every file
+  it stored is deleted again.
+
+An archive from before attachments were exported (`format_version` 1) still
+imports, with no attachments. An archive this version writes
+(`format_version` 2) cannot be imported by an older Stride instance, which
+refuses the unknown version; upgrade the instance first.
 
 In a production release, where Mix is not available, call
 `Kanban.Release.import_workspace/3` with `bin/kanban eval` instead.

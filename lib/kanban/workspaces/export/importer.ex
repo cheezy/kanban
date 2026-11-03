@@ -13,6 +13,9 @@ defmodule Kanban.Workspaces.Export.Importer do
 
   Everything is then written in one transaction, so an import either lands
   whole or not at all; a dry run does all the work and rolls it back.
+  Attachments come last (`Kanban.Workspaces.Export.Importer.Attachments`):
+  their blobs are verified and stored inside the transaction, and deleted
+  again on any outcome but a commit.
 
   Every row goes through its schema's changeset — imported content is
   untrusted — but not through the context functions that broadcast, notify,
@@ -70,6 +73,7 @@ defmodule Kanban.Workspaces.Export.Importer do
   alias Kanban.Repo
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Export.Importer.Archive
+  alias Kanban.Workspaces.Export.Importer.Attachments
   alias Kanban.Workspaces.Export.Importer.Refs
   alias Kanban.Workspaces.Export.Importer.Tasks
   alias Kanban.Workspaces.Export.Importer.Users
@@ -114,8 +118,11 @@ defmodule Kanban.Workspaces.Export.Importer do
   end
 
   defp transact(archive, admin, organization_id, dry_run?) do
-    fn -> run(archive, admin, organization_id, dry_run?) end
-    |> Repo.transaction(timeout: :infinity)
+    fn keys ->
+      fn -> run(archive, admin, organization_id, {dry_run?, keys}) end
+      |> Repo.transaction(timeout: :infinity)
+    end
+    |> Attachments.with_stored_keys()
     |> transaction_result()
   end
 
@@ -133,17 +140,10 @@ defmodule Kanban.Workspaces.Export.Importer do
     end
   end
 
-  defp run(%{manifest: manifest, rows: rows}, admin, organization_id, dry_run?) do
-    ctx =
-      %{
-        admin: admin,
-        organization_id: organization_id,
-        rows: rows,
-        skipped: [],
-        repaired: [],
-        reattributed: 0,
-        granted: []
-      }
+  defp run(%{manifest: manifest} = archive, admin, organization_id, {dry_run?, keys}) do
+    report =
+      archive
+      |> new_context(admin, organization_id, {dry_run?, keys})
       |> Users.match()
       |> create_workspace(manifest["workspace"]["name"])
       |> insert_members()
@@ -152,8 +152,29 @@ defmodule Kanban.Workspaces.Export.Importer do
       |> insert_columns()
       |> insert_labels()
       |> Tasks.import_all()
+      |> Attachments.import_all()
+      |> report(dry_run?)
 
-    report = %{
+    if dry_run?, do: Repo.rollback({:dry_run, report}), else: report
+  end
+
+  defp new_context(%{rows: rows} = archive, admin, organization_id, {dry_run?, keys}) do
+    %{
+      admin: admin,
+      organization_id: organization_id,
+      rows: rows,
+      archive: Map.take(archive, [:path, :blobs]),
+      dry_run?: dry_run?,
+      stored_keys: keys,
+      skipped: [],
+      repaired: [],
+      reattributed: 0,
+      granted: []
+    }
+  end
+
+  defp report(ctx, dry_run?) do
+    %{
       dry_run: dry_run?,
       workspace_name: ctx.workspace.name,
       counts: ctx.counts,
@@ -164,8 +185,6 @@ defmodule Kanban.Workspaces.Export.Importer do
       reattributed: ctx.reattributed,
       board_access: Enum.reverse(ctx.granted)
     }
-
-    if dry_run?, do: Repo.rollback({:dry_run, report}), else: report
   end
 
   @doc false

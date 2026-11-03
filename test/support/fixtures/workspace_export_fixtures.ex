@@ -204,10 +204,31 @@ defmodule Kanban.WorkspaceExportFixtures do
     Path.expand(dir)
   end
 
-  @doc "Reads a written archive into a map of file name => decoded JSON."
+  @doc """
+  Reads a written archive into a map of file name => decoded JSON. Attachment
+  blob entries (`attachments/<id>`) are kept as raw bytes.
+  """
   def read_archive(path) do
     {:ok, files} = path |> String.to_charlist() |> :zip.unzip([:memory])
-    Map.new(files, fn {name, data} -> {List.to_string(name), Jason.decode!(data)} end)
+    Map.new(files, fn {name, data} -> decode_entry(List.to_string(name), data) end)
+  end
+
+  defp decode_entry("attachments/" <> _id = name, data), do: {name, data}
+  defp decode_entry(name, data), do: {name, Jason.decode!(data)}
+
+  @doc """
+  Writes `files` (name => raw bytes, as `raw_archive/1` returns them) as a
+  zip in `dir` and returns its path. Entries are written in name order, and
+  `opts` go to `:zip.create/3` (for example `uncompress: :all`).
+  """
+  def write_raw_archive(dir, files, opts \\ []) do
+    path = Path.join(dir, "raw-#{System.unique_integer([:positive])}.zip")
+
+    entries =
+      files |> Enum.sort() |> Enum.map(fn {name, data} -> {String.to_charlist(name), data} end)
+
+    {:ok, _} = path |> String.to_charlist() |> :zip.create(entries, opts)
+    path
   end
 
   @doc "Reads a written archive into a map of file name => raw bytes."

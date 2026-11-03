@@ -43,9 +43,15 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   longer knows are dropped from a task. The workspace keeps the archive's name, or
   gets an "(imported)" suffix when that name is taken in the Organization.
 
-  It starts only the database connection (`Ecto.Migrator.with_repo/2`), not
-  the application, so no job, broadcast or notification runs during an
-  import. In a production release, where Mix is not available, call
+  Attachments in the archive are checked and restored too: every blob is
+  verified against its row (size and sha256) and re-checked like an upload
+  (file name, content type, contents), the Organization's storage quota is
+  checked before any file is written, and a refused or failed import deletes
+  every file it stored. A dry run verifies the files and stores none.
+
+  It starts only the database connection (`Ecto.Migrator.with_repo/2`) and
+  the HTTP client attachment storage may need, not the application, so no
+  job, broadcast or notification runs during an import. In a production release, where Mix is not available, call
   `Kanban.Release.import_workspace/3` with `bin/kanban eval`; it starts the
   database connection the same way.
   """
@@ -88,6 +94,9 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   defp required_opts(_opts, _file, _email), do: :error
 
   defp import_with_repo(file, email, opts) do
+    # The S3 attachment adapter's HTTP pool belongs to :req.
+    {:ok, _apps} = Application.ensure_all_started(:req)
+
     {:ok, result, _apps} =
       Ecto.Migrator.with_repo(Repo, fn _repo ->
         Importer.import_archive(file, email, dry_run: Keyword.get(opts, :dry_run, false))
@@ -170,6 +179,12 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
 
   defp message({:invalid_row, entity, ref, errors}),
     do: "a #{entity} row (#{ref}) was refused: #{inspect(errors)}."
+
+  defp message(:quota_exceeded),
+    do: "the archive's attachments do not fit in the Organization's storage quota."
+
+  defp message(:storage_unavailable),
+    do: "attachment storage is unavailable, so the archive's attachments could not be stored."
 
   defp message(other), do: inspect(other) <> "."
 end

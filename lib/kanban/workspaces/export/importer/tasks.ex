@@ -27,6 +27,11 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   workspace, a comment on a task that is not in it — is skipped and reported,
   never guessed. A task, label link, comment or history row that fails its
   changeset for any other reason rolls the whole import back, naming it.
+
+  Each imported comment is remembered in `ctx.comments`, source comment id
+  => `{new comment id, new task id}`, so attachments can be linked to the
+  comment and checked against its task. A source id two comments share maps
+  to `:repeated`, since an attachment naming it could mean either.
   """
 
   alias Kanban.ChangesetText
@@ -262,6 +267,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
 
     ctx
     |> put_in([:rows, :comments], rows)
+    |> Map.put(:comments, %{})
     |> insert_task_children(:comments, &comment_changeset(ctx, &1, &2))
   end
 
@@ -331,13 +337,22 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   defp insert_task_child(row, {count, ctx}, entity, build) do
     case Map.fetch(ctx.tasks, row["task_id"]) do
       {:ok, task} ->
-        row |> build.(task) |> Importer.insert!(entity, task.identifier)
-        {count + 1, ctx}
+        record = row |> build.(task) |> Importer.insert!(entity, task.identifier)
+        {count + 1, remember(ctx, entity, row, record)}
 
       :error ->
         {count, Importer.skip(ctx, entity, "task not in the archive")}
     end
   end
+
+  defp remember(ctx, :comments, row, comment) do
+    value =
+      if Map.has_key?(ctx.comments, row["id"]), do: :repeated, else: {comment.id, comment.task_id}
+
+    put_in(ctx, [:comments, row["id"]], value)
+  end
+
+  defp remember(ctx, _entity, _row, _record), do: ctx
 
   defp mentioned(ctx, ids) when is_list(ids) do
     ids |> Enum.map(&Users.attributed(ctx, &1)) |> Enum.reject(&is_nil/1) |> Enum.uniq()

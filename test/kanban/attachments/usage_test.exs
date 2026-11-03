@@ -215,4 +215,27 @@ defmodule Kanban.Attachments.UsageTest do
       assert [41_001, organization_id] in rows
     end
   end
+
+  describe "lock_quota/1" do
+    defp advisory_locks do
+      %{rows: rows} =
+        Kanban.Repo.query!(
+          "SELECT classid::int, objid::int FROM pg_locks " <>
+            "WHERE locktype = 'advisory' AND objsubid = 2 AND pid = pg_backend_pid()"
+        )
+
+      rows
+    end
+
+    test "takes the same advisory lock an upload into the scope takes" do
+      organization_id = organization_fixture().id
+      board_id = board_fixture(user_fixture()).id
+
+      assert Usage.lock_quota({:organization, organization_id}) == :ok
+      assert Usage.lock_quota({:board, board_id}) == :ok
+
+      assert [41_001, organization_id] in advisory_locks()
+      assert [41_002, board_id] in advisory_locks()
+    end
+  end
 end

@@ -210,6 +210,16 @@ defmodule Kanban.Attachments.Usage do
     end
   end
 
+  @doc """
+  Inside a transaction: takes the advisory lock of `scope`, the lock an
+  upload into that scope and a board move into an Organization take, so a
+  caller that checks the quota and then writes files under it (a workspace
+  import) cannot race them for the last of the quota.
+  """
+  @spec lock_quota(quota_scope()) :: :ok
+  def lock_quota({kind, id} = scope) when kind in [:organization, :board] and is_integer(id),
+    do: advisory_lock(scope)
+
   defp key_share(_schema, nil), do: :ok
 
   defp key_share(schema, id) when is_integer(id) do
