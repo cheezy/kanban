@@ -373,6 +373,7 @@ defmodule Kanban.Tasks.Comments do
     metadata =
       [
         user_id: user_id,
+        organization_id: organization_id(board_id),
         board_id: board_id,
         task_id: deleted.task_id,
         comment_id: deleted.id,
@@ -384,6 +385,16 @@ defmodule Kanban.Tasks.Comments do
   end
 
   defp maybe_audit_owner_delete(_scope, _deleted, _board_id), do: :ok
+
+  # The Organization of the board's workspace, so the row is listed in that
+  # Organization's audit log; nil for a board outside any Organization.
+  defp organization_id(board_id) do
+    Board
+    |> join(:inner, [b], w in assoc(b, :workspace))
+    |> where([b], b.id == ^board_id)
+    |> select([_b, w], w.organization_id)
+    |> Repo.one()
+  end
 
   defp broadcast(task_id, board_id) do
     payload = %{task_id: task_id, board_id: board_id}

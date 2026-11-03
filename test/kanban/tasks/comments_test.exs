@@ -10,9 +10,12 @@ defmodule Kanban.Tasks.CommentsTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.AuditLog
   alias Kanban.Boards
   alias Kanban.Tasks
   alias Kanban.Tasks.Comments
@@ -309,6 +312,42 @@ defmodule Kanban.Tasks.CommentsTest do
       assert metadata.author_user_id == reader.id
       refute Map.has_key?(metadata, :content)
       refute metadata |> Map.values() |> Enum.any?(&(&1 == "bye"))
+    end
+
+    test "an owner delete on a board outside any Organization records no organization_id",
+         %{user: owner, comment: comment} do
+      assert {:ok, _} = owner |> scope() |> Comments.delete_comment(comment)
+
+      assert_receive {:audit, _, metadata}
+      refute Map.has_key?(metadata, :organization_id)
+
+      assert [event] = AuditLog.list_events(action: :comment_deleted_by_owner)
+      assert event.organization_id == nil
+    end
+
+    test "an owner delete on an Organization board is listed in that Organization's audit log",
+         %{user: owner, board: board, task: task, reader: reader} do
+      organization = organization_fixture()
+      board = move_board_to_organization(board, organization)
+      join_board_organization(board, owner)
+      join_board_organization(board, reader)
+
+      {:ok, comment} =
+        reader |> scope() |> Comments.create_comment(task, %{"content" => "org"})
+
+      assert {:ok, _} = owner |> scope() |> Comments.delete_comment(comment)
+
+      assert_receive {:audit, _, metadata}
+      assert metadata.organization_id == organization.id
+
+      assert [event] =
+               AuditLog.list_events(
+                 organization_id: organization.id,
+                 action: :comment_deleted_by_owner
+               )
+
+      assert event.actor_user_id == owner.id
+      assert event.organization_id == organization.id
     end
 
     test "audit-logs the owner deleting a legacy authorless comment", %{user: owner, task: task} do

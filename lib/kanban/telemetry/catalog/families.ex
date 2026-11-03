@@ -57,8 +57,9 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:api_token_created, [:user_id, :board_id, :workspace_id, :organization_id, :token_id],
      "An API token was created."},
     {:api_token_revoked, [:user_id, :token_id, :organization_id], "An API token was revoked."},
-    {:comment_deleted_by_owner, [:user_id, :board_id, :task_id, :comment_id, :author_user_id],
-     "A board owner deleted someone else's comment."},
+    {:comment_deleted_by_owner,
+     [:user_id, :organization_id, :board_id, :task_id, :comment_id, :author_user_id],
+     "A board owner deleted someone else's comment. organization_id is set when the board is in an Organization, so the row is listed in that Organization's audit log."},
     {:attachment_deleted_by_owner,
      [
        :user_id,
