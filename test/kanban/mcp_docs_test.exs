@@ -26,7 +26,7 @@ defmodule Kanban.McpDocsTest do
         |> List.flatten()
         |> Enum.sort()
 
-      assert length(served) == 6
+      assert length(served) == 7
       assert documented == served
     end
 

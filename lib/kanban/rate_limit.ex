@@ -95,7 +95,8 @@ defmodule Kanban.RateLimit do
   instead of one per request. The request is refused either way.
 
   `:attachment_download` counts API attachment downloads
-  (`GET /api/tasks/:id/attachments/:attachment_id`, through
+  (`GET /api/tasks/:id/attachments/:attachment_id` and the MCP
+  `stride_get_attachment` tool, both through
   `KanbanWeb.API.AttachmentActions`) per API token (`identity: "token:<id>"`,
   no IP), with `check/2` after the plan gate and before any lookup, so a
   leaked token cannot pull a board's files in bulk. A task holds at most 20

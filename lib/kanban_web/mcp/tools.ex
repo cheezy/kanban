@@ -25,11 +25,15 @@ defmodule KanbanWeb.MCP.Tools do
   (with the same filters) reaches every task. The slim view and the REST
   endpoint are never cut and their bodies are unchanged.
 
-  The read tools (`stride_next_task`, `stride_get_task`, `stride_list_tasks`)
-  first re-check the token user's live access to the board through
-  `KanbanWeb.API.BoardReadAccess.authorize/1`, the check the REST read actions
-  run, so a board token whose user lost access gets the REST `403` as an
-  `isError` result. The write tools keep the checks their shared path applies.
+  The read tools (`stride_next_task`, `stride_get_task`, `stride_list_tasks`,
+  `stride_get_attachment`) first re-check the token user's live access to the
+  board through `KanbanWeb.API.BoardReadAccess.authorize/1`, the check the
+  REST read actions run, so a board token whose user lost access gets the REST
+  `403` as an `isError` result. The write tools keep the checks their shared path applies.
+
+  `stride_get_attachment` runs in `KanbanWeb.MCP.AttachmentTool`, which shares
+  the REST download route's checks and lookup
+  (`KanbanWeb.API.AttachmentActions`) and inlines a small text file's contents.
   """
 
   alias KanbanWeb.API.BoardReadAccess
@@ -38,14 +42,20 @@ defmodule KanbanWeb.MCP.Tools do
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
   alias KanbanWeb.API.TaskListParams
+  alias KanbanWeb.MCP.AttachmentTool
   alias KanbanWeb.MCP.SchemaValidator
   alias KanbanWeb.MCP.ToolSchemas
 
   # Integer arguments the shared REST parsing reads as query-string text.
-  @stringified_args ["id", "limit", "assigned_to_id", "column_id"]
+  @stringified_args ["id", "attachment_id", "limit", "assigned_to_id", "column_id"]
 
   # Tools that only read the board; each re-checks live board-read access.
-  @read_tools ["stride_next_task", "stride_get_task", "stride_list_tasks"]
+  @read_tools [
+    "stride_next_task",
+    "stride_get_task",
+    "stride_list_tasks",
+    "stride_get_attachment"
+  ]
 
   # The most encoded task JSON (bytes) one full-view stride_list_tasks page
   # returns. ToolSchemas and docs/MCP.md state the same figure.
@@ -145,6 +155,8 @@ defmodule KanbanWeb.MCP.Tools do
     args = Map.put_new(args, "response_view", "slim")
     conn |> TaskActions.list_page(args) |> render_list()
   end
+
+  defp run("stride_get_attachment", args, conn), do: AttachmentTool.call(conn, args)
 
   defp run("stride_add_comment", args, conn) do
     case TaskActions.add_comment(conn, args["id"], args["content"], args["agent_name"]) do

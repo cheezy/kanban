@@ -2808,7 +2808,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         Regex.scan(~r/"name" => "(stride_[a-z_]+)"/, tools, capture: :all_but_first)
         |> List.flatten()
 
-      assert length(names) == 6
+      assert length(names) == 7
 
       for name <- names do
         assert content =~ "`#{name}`", "the MCP guide doesn't name the #{name} tool"

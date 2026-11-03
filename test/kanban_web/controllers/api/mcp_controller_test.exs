@@ -236,7 +236,7 @@ defmodule KanbanWeb.API.McpControllerTest do
       assert response(conn, 202) == ""
     end
 
-    test "tools/list returns the six tools with JSON Schema inputs", %{conn: conn} do
+    test "tools/list returns the seven tools with JSON Schema inputs", %{conn: conn} do
       tools = conn |> rpc("tools/list") |> json_response(200) |> get_in(["result", "tools"])
 
       assert Enum.map(tools, & &1["name"]) == [
@@ -245,7 +245,8 @@ defmodule KanbanWeb.API.McpControllerTest do
                "stride_complete_task",
                "stride_get_task",
                "stride_list_tasks",
-               "stride_add_comment"
+               "stride_add_comment",
+               "stride_get_attachment"
              ]
 
       for tool <- tools do

@@ -150,7 +150,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.NotificationsAndIntegrations do
           %{
             title: "What the MCP Server Offers",
             content:
-              "Stride's MCP server gives an agent the same claim and complete loop as the REST API, as six tools: `stride_next_task`, `stride_claim_task`, `stride_complete_task`, `stride_get_task`, `stride_list_tasks` and `stride_add_comment`. Your hooks still run on your machine, as [Understanding Claim/Complete Workflow](/resources/claim-complete-workflow) explains.\n\nEverything else, such as creating tasks and goals, stays on the REST API.",
+              "Stride's MCP server gives an agent the same claim and complete loop as the REST API, as seven tools: `stride_next_task`, `stride_claim_task`, `stride_complete_task`, `stride_get_task`, `stride_list_tasks`, `stride_add_comment` and `stride_get_attachment`, which reads a file attached to a task. Your hooks still run on your machine, as [Understanding Claim/Complete Workflow](/resources/claim-complete-workflow) explains.\n\nEverything else, such as creating tasks and goals, stays on the REST API.",
             image: nil
           },
           %{
@@ -174,7 +174,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.NotificationsAndIntegrations do
           %{
             title: "Checking the Connection",
             content:
-              "In Claude Code, run `/mcp`: Stride should be connected with six tools.\n\nOther clients work if they speak Streamable HTTP and can send an `Authorization` header. The server answers each POST with JSON and offers no event stream, so a client that needs one won't connect. The [MCP reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/MCP.md) has the details.",
+              "In Claude Code, run `/mcp`: Stride should be connected with seven tools.\n\nOther clients work if they speak Streamable HTTP and can send an `Authorization` header. The server answers each POST with JSON and offers no event stream, so a client that needs one won't connect. The [MCP reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/MCP.md) has the details.",
             image: nil
           }
         ]

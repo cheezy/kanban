@@ -53,7 +53,8 @@ Each refusal has its own status, and the checks run in this order:
    lookup, so a locked board learns nothing about its ids.
 4. The download limit: `429` after 60 requests a minute with one token. Every
    request that passes the plan check counts, including a `HEAD` and one that
-   ends in a `404` or `503`.
+   ends in a `404` or `503`. Calls to the MCP `stride_get_attachment` tool
+   count toward the same limit.
 5. The task: `404` Task not found when no task with this ID or identifier is
    on your token's board.
 6. The attachment: `404` Attachment not found when the attachment is not one
@@ -218,4 +219,5 @@ Compare the digest with the attachment's `sha256`, and the file size with its
 
 - [GET /api/tasks/:id](get_tasks_id.md) - Get task details, including `data.attachments`
 - [Attachments](../attachments.md) - Where files are stored, which types are allowed, and the limits
+- [MCP Server](../MCP.md#attachment-content) - The `stride_get_attachment` tool, which inlines a small text file's contents
 - [API reference](README.md) - Errors and rate limits shared by every route

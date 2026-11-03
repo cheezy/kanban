@@ -2,7 +2,8 @@ defmodule KanbanWeb.API.TaskAttachmentJSON do
   @moduledoc """
   The attachment object that `GET /api/tasks/:id` (full view), `POST
   /api/tasks/claim` and the MCP `stride_get_task` and `stride_claim_task`
-  tools carry in `data.attachments`.
+  tools carry in `data.attachments`, and the MCP `stride_get_attachment` tool
+  returns as its `data`.
 
   Each object has exactly eight keys: `id`, `filename`, `content_type`,
   `byte_size`, `sha256`, `comment_id` (`nil` for a task-level attachment),

@@ -3,8 +3,9 @@ defmodule KanbanWeb.API.AttachmentActions do
   The checks and lookup behind an API attachment download, used today by the
   REST route `GET /api/tasks/:id/attachments/:attachment_id`
   (`KanbanWeb.API.TaskAttachmentController`). It takes the plan surface as an
-  argument so a later MCP attachment tool can share it and refuse the same
-  requests with the same reasons.
+  argument so the MCP `stride_get_attachment` tool
+  (`KanbanWeb.MCP.AttachmentTool`, surface `:mcp`) shares it and refuses the
+  same requests with the same reasons.
 
   `fetch_attachment/4` runs, in this fixed order, after the token pipeline
   and `KanbanWeb.API.BoardReadAccess` have checked the token and its user's

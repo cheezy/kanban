@@ -39,7 +39,7 @@ defmodule KanbanWeb.MCP.ServerTest do
 
     test "tools/list returns the tool definitions" do
       %{result: %{tools: tools}} = handle("tools/list")
-      assert length(tools) == 6
+      assert length(tools) == 7
     end
 
     test "an unknown method is -32601" do
