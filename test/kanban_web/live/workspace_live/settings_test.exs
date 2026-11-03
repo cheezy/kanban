@@ -6,9 +6,12 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
   import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
+  import Kanban.AttachmentsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
+  import Kanban.TasksFixtures
   import Kanban.WorkspacesFixtures
 
   alias Kanban.AuditLog
@@ -274,6 +277,34 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
 
       assert html =~ "That board can&#39;t be moved here: Olive Outsider aren&#39;t members"
       refute Repo.get!(Board, board.id).workspace_id == ctx.workspace.id
+    end
+
+    test "a board whose attachments do not fit the Organization's quota is refused, naming the sizes",
+         ctx do
+      previous = Application.get_env(:kanban, Kanban.Attachments.Limits)
+
+      on_exit(fn ->
+        if previous,
+          do: Application.put_env(:kanban, Kanban.Attachments.Limits, previous),
+          else: Application.delete_env(:kanban, Kanban.Attachments.Limits)
+      end)
+
+      Application.put_env(:kanban, Kanban.Attachments.Limits, organization_quota_bytes: 2048)
+      board = board_fixture(ctx.org_admin, %{name: "Heavy roadmap"})
+      attachment_fixture(board |> column_fixture() |> task_fixture(), %{byte_size: 3072})
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=boards")
+
+      html =
+        view
+        |> form("#move-board-form", %{"move" => %{"board_id" => Integer.to_string(board.id)}})
+        |> render_submit()
+
+      assert html =~
+               "its attachments take 3 KB, but this Organization has 2 KB of attachment storage left, so it is 1 KB short."
+
+      refute Repo.get!(Board, board.id).workspace_id == ctx.workspace.id
+      assert has_element?(view, "#move-board-form")
     end
   end
 

@@ -18,6 +18,9 @@ defmodule Kanban.Attachments.Usage do
       transaction-scoped advisory lock on the quota scope, always in that
       order, so two uploads cannot both pass the re-check inside the insert
       transaction and an upload never deadlocks with a deletion.
+    * `check_board_move/2` — whether a board's files fit in what an
+      Organization has left, under the same advisory lock, for
+      `Kanban.Workspaces.BoardMoves`.
   """
 
   import Ecto.Query, warn: false
@@ -139,6 +142,53 @@ defmodule Kanban.Attachments.Usage do
       scope = quota_scope(board_id)
       advisory_lock(scope)
       {:ok, scope}
+    end
+  end
+
+  @doc """
+  Inside a board move's transaction: takes the advisory lock of the
+  Organization with id `organization_id`, the lock an upload into it takes,
+  then checks that the files on the board with id `board_id` fit in what the
+  Organization has left. While the move holds the lock, no upload into the
+  Organization can pass its quota re-check, so the two cannot both use the
+  last of the quota.
+
+  Returns `:ok`, or `{:error, {:quota_exceeded, sizes}}` where `sizes` holds
+  `:board_bytes` (the board's files), `:available_bytes` (what the
+  Organization has left, 0 when it is already at or over its quota) and
+  `:shortfall_bytes` (how much more room the move needs). A board without
+  files always fits, even into an Organization at or over its quota, so a
+  move that brings no files is never refused for storage.
+
+  The board must not be in the Organization yet: its files are counted on
+  their own and added to the Organization's.
+  """
+  @spec check_board_move(integer(), integer()) ::
+          :ok
+          | {:error,
+             {:quota_exceeded,
+              %{
+                board_bytes: pos_integer(),
+                available_bytes: non_neg_integer(),
+                shortfall_bytes: pos_integer()
+              }}}
+  def check_board_move(board_id, organization_id) do
+    advisory_lock({:organization, organization_id})
+
+    board_bytes = bytes_used({:board, board_id})
+    used = bytes_used({:organization, organization_id})
+    quota = Limits.organization_quota_bytes()
+
+    if board_bytes == 0 or used + board_bytes <= quota do
+      :ok
+    else
+      {:error,
+       {:quota_exceeded,
+        %{
+          board_bytes: board_bytes,
+          available_bytes: max(quota - used, 0),
+          shortfall_bytes: used + board_bytes - quota
+        }}}
     end
   end
 

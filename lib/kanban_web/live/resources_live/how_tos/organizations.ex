@@ -120,7 +120,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Organizations do
           %{
             title: "Moving a Board Here",
             content:
-              "On **Boards**, an org-admin sees every board in the workspace and the **Move a board here** card. Choose one of your personal boards and click **Move here**.\n\nYou can move a board only if you own it and everyone on it already belongs to the Organization. If someone doesn't, Stride names them, so you can remove them from the board or invite them to the workspace first. The members keep their access, and the board becomes paid. A board can't be moved back, or from one workspace to another.",
+              "On **Boards**, an org-admin sees every board in the workspace and the **Move a board here** card. Choose one of your personal boards and click **Move here**.\n\nYou can move a board only if you own it and everyone on it already belongs to the Organization. If someone doesn't, Stride names them, so you can remove them from the board or invite them to the workspace first. The board's attachments must also fit in the Organization's remaining file storage; if they don't, Stride says how much is missing, so you can delete some files first. The members keep their access, and the board becomes paid. A board can't be moved back, or from one workspace to another.",
             image: "/images/resources/guides/working-in-a-workspace-step-5.png",
             image_width: 981,
             image_height: 335

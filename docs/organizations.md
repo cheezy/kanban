@@ -282,6 +282,15 @@ The move has these rules:
   moved here: … aren't members of this Organization. Remove them from the
   board, or invite them to this workspace, then move it." The move never adds
   anyone to the Organization.
+- **The board's files must fit in the Organization's attachment storage.**
+  If the board holds attachments, they must fit in what is left of the
+  Organization's storage (10 GiB by default, shared by all its boards).
+  Otherwise the move is refused, naming the board's attachment size, what the
+  Organization has left and how much is missing: "That board can't be moved
+  here: its attachments take …, but this Organization has … of attachment
+  storage left, so it is … short." Delete attachments from the board or from
+  the Organization's other boards, then move it. A board without attachments
+  is never refused for storage.
 - **Members keep their access.** Every board membership stays as it was.
 - **Open invitations to the board are revoked.** An invitation sent from a
   free board gives board access without joining the Organization, so the move

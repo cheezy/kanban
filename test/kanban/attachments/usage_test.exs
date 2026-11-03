@@ -124,4 +124,74 @@ defmodule Kanban.Attachments.UsageTest do
     assert lock.(comment_id: -1) == {:error, :not_found}
     assert {:ok, _scope} = lock.(uploaded_by_id: nil, board_id: nil, comment_id: nil)
   end
+
+  describe "check_board_move/2" do
+    setup do
+      user = user_fixture()
+      organization = organization_fixture()
+      member_board = user |> board_fixture() |> move_board_to_organization(organization)
+      attachment_fixture(board_task(member_board), %{byte_size: 60})
+      %{user: user, organization: organization}
+    end
+
+    test "lets a board in when its files fit, up to the quota exactly", ctx do
+      put_limits(organization_quota_bytes: 100)
+      board = board_fixture(ctx.user)
+      attachment_fixture(board_task(board), %{byte_size: 30})
+      attachment_fixture(board_task(board), %{byte_size: 10})
+
+      assert Usage.check_board_move(board.id, ctx.organization.id) == :ok
+    end
+
+    test "refuses a board one byte past the quota, naming its bytes, what is left and the shortfall",
+         ctx do
+      put_limits(organization_quota_bytes: 100)
+      board = board_fixture(ctx.user)
+      attachment_fixture(board_task(board), %{byte_size: 41})
+
+      assert Usage.check_board_move(board.id, ctx.organization.id) ==
+               {:error,
+                {:quota_exceeded, %{board_bytes: 41, available_bytes: 40, shortfall_bytes: 1}}}
+    end
+
+    test "reports nothing left when the Organization is already over its quota", ctx do
+      put_limits(organization_quota_bytes: 50)
+      board = board_fixture(ctx.user)
+      attachment_fixture(board_task(board), %{byte_size: 5})
+
+      assert Usage.check_board_move(board.id, ctx.organization.id) ==
+               {:error,
+                {:quota_exceeded, %{board_bytes: 5, available_bytes: 0, shortfall_bytes: 15}}}
+    end
+
+    test "always lets in a board without files, even into an Organization over its quota", ctx do
+      put_limits(organization_quota_bytes: 50)
+
+      assert Usage.check_board_move(board_fixture(ctx.user).id, ctx.organization.id) == :ok
+    end
+
+    test "counts only the board's own files, not its owner's other personal boards", ctx do
+      put_limits(organization_quota_bytes: 100)
+      board = board_fixture(ctx.user)
+      attachment_fixture(board_task(board), %{byte_size: 40})
+      attachment_fixture(board_task(board_fixture(ctx.user)), %{byte_size: 1_000})
+
+      assert Usage.check_board_move(board.id, ctx.organization.id) == :ok
+    end
+
+    test "holds the Organization's upload advisory lock until the transaction ends", ctx do
+      board = board_fixture(ctx.user)
+      organization_id = ctx.organization.id
+
+      assert Usage.check_board_move(board.id, organization_id) == :ok
+
+      %{rows: rows} =
+        Kanban.Repo.query!(
+          "SELECT classid::int, objid::int FROM pg_locks " <>
+            "WHERE locktype = 'advisory' AND objsubid = 2 AND pid = pg_backend_pid()"
+        )
+
+      assert [41_001, organization_id] in rows
+    end
+  end
 end

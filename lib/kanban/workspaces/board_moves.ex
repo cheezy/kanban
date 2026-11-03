@@ -32,6 +32,13 @@ defmodule Kanban.Workspaces.BoardMoves do
       transaction (`Kanban.Webhooks.pause_outside_endpoints/2`), so the
       board's events stop reaching a URL an outsider chose. The owner can
       re-enable it, which makes them its creator.
+    * The board's attachments must fit in what the target Organization has
+      left of its attachment quota, or the move is refused with
+      `{:error, {:quota_exceeded, sizes}}` naming the board's bytes, what is
+      left and the shortfall (`Kanban.Attachments.Usage.check_board_move/2`).
+      A board without attachments is never refused for storage. Without this
+      check a move took an Organization past its quota, and every upload into
+      it was then refused (G488 exploratory campaign, decided 2026-11-02).
     * There is no move back to a personal workspace, and none between org
       workspaces (no downgrade).
 
@@ -46,6 +53,15 @@ defmodule Kanban.Workspaces.BoardMoves do
   then removes the moved board's row with the others. An owner's add to the
   board waits on the board lock, so it is seen by the check or refused as
   `:board_moved`.
+
+  The quota check takes the target Organization's attachment advisory lock
+  last, after every row lock, as an upload takes it last after its own row
+  locks. So a move and an upload into another board of the Organization
+  serialize on that lock without waiting on each other's rows, and the quota
+  re-check of whichever comes second sees the other's bytes. An upload to the
+  board being moved key-share locks the board row, which the move locks FOR
+  UPDATE, so it either commits first (and its bytes are counted) or waits and
+  then counts against the Organization.
 
     * The actor needs their own `board_users` **owner** row on the board.
       Owning the personal workspace the board sits in is not enough: the W2217
@@ -64,6 +80,7 @@ defmodule Kanban.Workspaces.BoardMoves do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.User
+  alias Kanban.Attachments.Usage
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations
@@ -78,7 +95,16 @@ defmodule Kanban.Workspaces.BoardMoves do
   @max_bigint 9_223_372_036_854_775_807
 
   @type error ::
-          :not_found | :not_owner | :not_in_personal_workspace | {:non_members, [User.t()]}
+          :not_found
+          | :not_owner
+          | :not_in_personal_workspace
+          | {:non_members, [User.t()]}
+          | {:quota_exceeded,
+             %{
+               board_bytes: pos_integer(),
+               available_bytes: non_neg_integer(),
+               shortfall_bytes: pos_integer()
+             }}
 
   @doc """
   Moves `board` into the org workspace `workspace`. Both are structs or ids and
@@ -94,6 +120,9 @@ defmodule Kanban.Workspaces.BoardMoves do
       personal workspace (for example it is already in an org workspace).
     * `{:error, {:non_members, users}}` — these users, ordered by id, hold a
       row on the board but are not members of the target Organization.
+    * `{:error, {:quota_exceeded, sizes}}` — the board's attachments
+      (`sizes.board_bytes`) do not fit in what the Organization has left
+      (`sizes.available_bytes`); `sizes.shortfall_bytes` is the difference.
 
   A successful move revokes the board's open board-only invitations and
   disables its endpoints created outside the Organization. A refusal changes
@@ -118,12 +147,20 @@ defmodule Kanban.Workspaces.BoardMoves do
 
   defp move_locked(actor, board_id, workspace_id) do
     with {:ok, board, target} <- lock_move(actor, board_id, workspace_id),
-         :ok <- check_members_in_organization(board, target),
+         :ok <- check_move(board, target),
          {:ok, moved} <- place_board(board, target) do
       moved
     else
       {:error, reason} -> Repo.rollback(reason)
     end
+  end
+
+  # Members first, then storage: a board with outsiders is refused for them.
+  # The storage check takes the Organization's attachment advisory lock, so it
+  # comes after every row lock.
+  defp check_move(board, target) do
+    with :ok <- check_members_in_organization(board, target),
+         do: Usage.check_board_move(board.id, target.organization_id)
   end
 
   # Invitations, Organization, board, target workspace: the lock order the

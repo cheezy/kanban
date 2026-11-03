@@ -4,11 +4,16 @@ defmodule Kanban.Workspaces.BoardMovesTest do
 
   import Ecto.Query, only: [where: 3]
   import Kanban.AccountsFixtures
+  import Kanban.AttachmentsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
+  import Kanban.TasksFixtures
   import Kanban.WorkspacesFixtures
 
+  alias Kanban.Attachments.Limits
+  alias Kanban.Attachments.Usage
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
@@ -221,6 +226,77 @@ defmodule Kanban.Workspaces.BoardMovesTest do
     for board <- [999_999_999, "x", nil] do
       assert Workspaces.move_board_to_workspace(ctx.org_admin, board, ctx.workspace) ==
                {:error, :not_found}
+    end
+  end
+
+  describe "attachment quota" do
+    setup ctx do
+      previous = Application.get_env(:kanban, Limits)
+
+      on_exit(fn ->
+        if previous,
+          do: Application.put_env(:kanban, Limits, previous),
+          else: Application.delete_env(:kanban, Limits)
+      end)
+
+      Application.put_env(:kanban, Limits, organization_quota_bytes: 100)
+
+      org_board =
+        ctx.org_admin |> board_fixture() |> move_board_to_organization(ctx.organization)
+
+      attachment_fixture(org_board |> column_fixture() |> task_fixture(), %{byte_size: 70})
+      :ok
+    end
+
+    defp attach(board, byte_size),
+      do: attachment_fixture(board |> column_fixture() |> task_fixture(), %{byte_size: byte_size})
+
+    test "refuses a board whose attachments do not fit, naming the sizes, and changes nothing",
+         ctx do
+      attach(ctx.board, 20)
+      attach(ctx.board, 25)
+      invitation = board_invitation!(ctx.board, ctx.org_admin)
+      personal_workspace_id = workspace_id(ctx.board)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+
+      assert Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace) ==
+               {:error,
+                {:quota_exceeded, %{board_bytes: 45, available_bytes: 30, shortfall_bytes: 15}}}
+
+      assert workspace_id(ctx.board) == personal_workspace_id
+      assert is_nil(reload(invitation).revoked_at)
+      assert Usage.bytes_used({:organization, ctx.organization.id}) == 70
+      refute_receive {Kanban.Boards, :members_changed, _board_id}
+    end
+
+    test "moves a board whose attachments fill the quota exactly, and counts them there", ctx do
+      attach(ctx.board, 30)
+
+      assert {:ok, %Board{}} =
+               Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+      assert Usage.bytes_used({:organization, ctx.organization.id}) == 100
+    end
+
+    test "moves a board without attachments into an Organization over its quota", ctx do
+      Application.put_env(:kanban, Limits, organization_quota_bytes: 10)
+
+      assert {:ok, %Board{workspace_id: workspace_id}} =
+               Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+      assert workspace_id == ctx.workspace.id
+    end
+
+    test "checks members first: a board with outsiders is refused for them, not for storage",
+         ctx do
+      attach(ctx.board, 99)
+      outsider = user_fixture()
+      grant(ctx.board, outsider, :read_only)
+
+      assert {:error, {:non_members, [%{id: outsider_id}]}} =
+               Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+      assert outsider_id == outsider.id
     end
   end
 end
