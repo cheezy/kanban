@@ -289,7 +289,10 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
 
       assert log =~ "user_id=#{failing.id}): permanent_failure"
       refute log =~ failing.email
-      refute log =~ "550"
+      # The SMTP reply text, not its bare code: "550" alone also matches the
+      # generated user ids the log line embeds (seen failing in W2516 after_doing).
+      refute log =~ "550 no such mailbox"
+      refute log =~ "no such mailbox"
 
       assert_email_sent(to: [{"", other.email}])
       other_id = other.id

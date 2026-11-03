@@ -60,7 +60,10 @@ defmodule KanbanWeb.BoardLive.BoardTaskDeletedTest do
 
     delete_elsewhere(task)
 
-    assert_patch(view, ~p"/boards/#{board}")
+    # The patch is pushed from the view's handle_info for the deletion
+    # broadcast. assert_patch's default 100 ms window missed it under
+    # full-suite load (W2516 after_doing), so wait as long as a slow run needs.
+    assert_patch(view, ~p"/boards/#{board}", 2_000)
     refute has_element?(view, section(:form, task))
     assert render(view) =~ "This task was deleted."
   end
