@@ -5,7 +5,7 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.1.0] - 2026-11-08
 
 ### Added
 
@@ -24,10 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **The column-scoped task edit URL.** `/boards/:id/columns/:column_id/tasks/:task_id/edit` is gone. Nothing in Stride linked to it, and its form lacked the Attachments and Comments sections. A task is edited at `/boards/:id/tasks/:task_id/edit`.
-
-### Internal
-
-- **Internal: `Kanban.Tasks.AgentWorkflow` split along its seams.** Claiming, completion, review and the helpers they share moved into `Kanban.Tasks.AgentWorkflow.Claiming`, `Kanban.Tasks.AgentWorkflow.Completion`, `Kanban.Tasks.AgentWorkflow.Review` and `Kanban.Tasks.AgentWorkflow.Support`, leaving `Kanban.Tasks.AgentWorkflow` as a thin facade with the same public functions. No behaviour or API change.
 
 ## [3.0.0] - 2026-10-25
 

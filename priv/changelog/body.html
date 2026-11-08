@@ -3,7 +3,7 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
-          [Unreleased]
+          [3.1.0] - 2026-11-08
         </h2>
 
         <div class="mb-8">
@@ -49,7 +49,7 @@
                 with modify access can upload; every member, read-only
                 included, can see and download; the uploader or the board's
                 owner can delete. Someone who is not a member of the board sees
-                no files.
+                no files, and is told that only members can see them.
               </li>
               <li>
                 <strong>Limits and types.</strong> Each file can be up to
@@ -59,6 +59,11 @@
                 WebP, PDF, plain text, Markdown, CSV and JSON files are
                 accepted; SVG, HTML and zip files are refused, and every file's
                 contents are checked against its type.
+              </li>
+              <li>
+                <strong>Archived tasks' files.</strong> The Archive page lists
+                an archived task's files under its row, read-only, with
+                <strong>Download</strong>.
               </li>
               <li>
                 <strong>Organization plan.</strong> While plans are enforced, a
@@ -74,6 +79,28 @@
               <em>Attaching Files to Tasks and Comments</em>.
             </p>
           </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Removed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>The column-scoped task edit URL.</strong>
+              <code>/boards/:id/columns/:column_id/tasks/:task_id/edit</code>
+              is gone. Nothing in Stride linked to it, and its form lacked the
+              Attachments and Comments sections. A task is edited at
+              <code>/boards/:id/tasks/:task_id/edit</code>.
+            </li>
+          </ul>
         </div>
       </section>
 
