@@ -270,15 +270,16 @@ All hooks receive these environment variables:
 
 ### Goal Information (after_goal only)
 
-The `after_goal` entry in a `hooks` list carries the same fourteen variables as the other hooks, describing the **child task** whose completion finished the goal, with `HOOK_NAME` set to `after_goal`. The goal's own details come from [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md), whose `env` object holds:
+The `after_goal` entry in a `hooks` list carries the same fourteen variables as the other hooks, describing the **child task** whose completion finished the goal, with `HOOK_NAME` set to `after_goal`. It also carries four variables describing the **goal** itself:
 
 - `GOAL_ID` - The goal's numeric ID, the `:id` to report against
 - `GOAL_IDENTIFIER` - The goal's identifier (e.g., `G10`)
 - `GOAL_TITLE` - The goal's title
-- `GOAL_DESCRIPTION` - The goal's description
-- `BOARD_ID` - Board ID
-- `BOARD_NAME` - Board name
-- `HOOK_NAME` - Always `after_goal`
+- `GOAL_DESCRIPTION` - The goal's description (an empty string when the goal has none)
+
+The same four, with `BOARD_ID`, `BOARD_NAME` and `HOOK_NAME`, are in the `env` object of [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md), which answers whether a completion armed `after_goal` without repeating the completion response.
+
+Servers before 2026-11-08 sent the `after_goal` entry without the four `GOAL_*` variables. A hook that may meet one of them can take the goal's ID from the completed task's `parent_id` in the same response, which is what the Stride plugin does when `GOAL_ID` is missing.
 
 **Platform Note:** In bash, access variables with `$VARIABLE_NAME`. In PowerShell, use `$env:VARIABLE_NAME`.
 

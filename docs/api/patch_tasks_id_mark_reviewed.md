@@ -127,11 +127,20 @@ When the task was the last open child of a goal, a second entry follows `after_r
 ```json
 {
   "name": "after_goal",
-  "env": { "...": "...", "HOOK_NAME": "after_goal" },
+  "env": {
+    "...": "...",
+    "GOAL_ID": "4521",
+    "GOAL_IDENTIFIER": "G12",
+    "GOAL_TITLE": "Add user notifications",
+    "GOAL_DESCRIPTION": "Notify users when their tasks change",
+    "HOOK_NAME": "after_goal"
+  },
   "timeout": 600000,
   "blocking": true
 }
 ```
+
+Its `env` holds the child task's variables plus the goal's `GOAL_ID`, `GOAL_IDENTIFIER`, `GOAL_TITLE` and `GOAL_DESCRIPTION`. `GOAL_ID` is the `:id` to report the hook's result against.
 
 **If changes requested or rejected** - Task moves back to Doing column. The response has no `hooks` list: nothing in it asks you to run `after_review`, and you should not have run it before the call either:
 

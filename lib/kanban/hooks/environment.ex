@@ -40,6 +40,33 @@ defmodule Kanban.Hooks.Environment do
     |> Map.merge(context_vars)
   end
 
+  @doc """
+  Builds the `GOAL_*` environment variables for the `after_goal` hook.
+
+  The four keys are the ones the Stride plugin's `export_after_goal_env`
+  reads: `GOAL_ID`, `GOAL_IDENTIFIER`, `GOAL_TITLE` and `GOAL_DESCRIPTION`.
+  Values are strings; a missing identifier, title or description is `""`.
+
+  ## Examples
+
+      iex> goal_env_vars(%Task{id: 7, identifier: "G7", title: "Ship it", description: nil})
+      %{
+        "GOAL_ID" => "7",
+        "GOAL_IDENTIFIER" => "G7",
+        "GOAL_TITLE" => "Ship it",
+        "GOAL_DESCRIPTION" => ""
+      }
+  """
+  @spec goal_env_vars(Task.t()) :: %{String.t() => String.t()}
+  def goal_env_vars(%Task{} = goal) do
+    %{
+      "GOAL_ID" => to_string(goal.id),
+      "GOAL_IDENTIFIER" => goal.identifier || "",
+      "GOAL_TITLE" => goal.title || "",
+      "GOAL_DESCRIPTION" => goal.description || ""
+    }
+  end
+
   defp task_env_vars(task) do
     %{
       "TASK_ID" => to_string(task.id),

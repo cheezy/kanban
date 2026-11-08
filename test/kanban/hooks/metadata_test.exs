@@ -136,6 +136,61 @@ defmodule Kanban.Hooks.MetadataTest do
       assert after_goal.env["HOOK_NAME"] == "after_goal"
       assert after_goal.env["TASK_IDENTIFIER"] == child.identifier
     end
+
+    test "carries the parent goal's GOAL_* keys on the completion path", %{
+      board: board,
+      goal: goal,
+      child: child
+    } do
+      hooks = Metadata.build_completion_hooks(child, board, @agent_name, last_child?: true)
+      after_goal = Enum.find(hooks, &(&1.name == "after_goal"))
+
+      assert after_goal.env["GOAL_ID"] == to_string(goal.id)
+      assert after_goal.env["GOAL_IDENTIFIER"] == goal.identifier
+      assert after_goal.env["GOAL_TITLE"] == goal.title
+      assert after_goal.env["GOAL_DESCRIPTION"] == (goal.description || "")
+    end
+
+    test "carries the parent goal's GOAL_* keys on the mark_reviewed path", %{
+      board: board,
+      goal: goal,
+      child: child
+    } do
+      hooks = Metadata.build_mark_reviewed_hooks(child, board, @agent_name, last_child?: true)
+      after_goal = Enum.find(hooks, &(&1.name == "after_goal"))
+
+      assert after_goal.env["GOAL_ID"] == to_string(goal.id)
+      assert after_goal.env["GOAL_IDENTIFIER"] == goal.identifier
+      assert after_goal.env["GOAL_TITLE"] == goal.title
+    end
+
+    test "carries the goal's description", %{board: board, column: column} do
+      goal = task_fixture(column, %{title: "G2", type: :goal, description: "Goal description"})
+      child = task_fixture(column, %{title: "C2", parent_id: goal.id})
+
+      hooks = Metadata.build_completion_hooks(child, board, @agent_name, last_child?: true)
+      after_goal = Enum.find(hooks, &(&1.name == "after_goal"))
+
+      assert after_goal.env["GOAL_DESCRIPTION"] == "Goal description"
+    end
+
+    test "only after_goal gets GOAL_* keys", %{board: board, child: child} do
+      hooks = Metadata.build_completion_hooks(child, board, @agent_name, last_child?: true)
+
+      for hook <- hooks, hook.name != "after_goal" do
+        refute Map.has_key?(hook.env, "GOAL_ID"), "#{hook.name} must not carry GOAL_ID"
+      end
+    end
+
+    test "a task with no parent gets no GOAL_* keys", %{board: board, column: column} do
+      orphan = task_fixture(column, %{title: "No parent"})
+
+      hooks = Metadata.build_completion_hooks(orphan, board, @agent_name, last_child?: true)
+      after_goal = Enum.find(hooks, &(&1.name == "after_goal"))
+
+      refute Map.has_key?(after_goal.env, "GOAL_ID")
+      assert after_goal.env["HOOK_NAME"] == "after_goal"
+    end
   end
 
   describe "after_goal delivery telemetry" do

@@ -27,6 +27,8 @@ defmodule Kanban.Hooks.Metadata do
 
   alias Kanban.Boards.Board
   alias Kanban.Hooks
+  alias Kanban.Hooks.Environment
+  alias Kanban.Repo
   alias Kanban.Tasks.Task
 
   @doc """
@@ -92,6 +94,7 @@ defmodule Kanban.Hooks.Metadata do
 
   defp maybe_append_after_goal(hooks, task, board, agent_name, true) do
     {:ok, after_goal} = Hooks.get_hook_info(task, board, "after_goal", agent_name)
+    after_goal = Map.update!(after_goal, :env, &Map.merge(&1, goal_env(task)))
 
     # No telemetry here: the hook list is also built for completions and
     # approvals that send no API response (the review queue), and inside the
@@ -99,5 +102,20 @@ defmodule Kanban.Hooks.Metadata do
     # by KanbanWeb.API.TaskActions.emit_after_goal_delivered/3 when a
     # response actually carries the after_goal hook.
     hooks ++ [after_goal]
+  end
+
+  # The after_goal hook runs for the goal, not for the child whose completion
+  # armed it, so its env carries the goal's GOAL_* keys (the same ones
+  # GET /api/tasks/:id/after_goal_status serves). The TASK_* keys stay: they
+  # name the child that finished the goal. A child with no parent, or whose
+  # parent is gone, gets no GOAL_* keys, and the plugin falls back to
+  # data.parent_id.
+  defp goal_env(%Task{parent_id: nil}), do: %{}
+
+  defp goal_env(%Task{parent_id: parent_id}) do
+    case Repo.get(Task, parent_id) do
+      %Task{} = goal -> Environment.goal_env_vars(goal)
+      nil -> %{}
+    end
   end
 end

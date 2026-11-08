@@ -1,4 +1,5 @@
 defmodule KanbanWeb.API.TaskJSON do
+  alias Kanban.Hooks.Environment
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.ErrorDocs
   alias KanbanWeb.API.LockedTaskFields
@@ -363,15 +364,13 @@ defmodule KanbanWeb.API.TaskJSON do
   # GOAL_DESCRIPTION), plus BOARD_* and HOOK_NAME. Values are strings — the hook
   # sources them into a shell env.
   defp after_goal_env(goal, board) do
-    %{
-      "GOAL_ID" => to_string(goal.id),
-      "GOAL_IDENTIFIER" => goal.identifier || "",
-      "GOAL_TITLE" => goal.title || "",
-      "GOAL_DESCRIPTION" => goal.description || "",
+    goal
+    |> Environment.goal_env_vars()
+    |> Map.merge(%{
       "BOARD_ID" => to_string(board.id),
       "BOARD_NAME" => board.name,
       "HOOK_NAME" => "after_goal"
-    }
+    })
   end
 
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize

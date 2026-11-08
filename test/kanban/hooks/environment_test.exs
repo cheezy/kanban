@@ -102,4 +102,32 @@ defmodule Kanban.Hooks.EnvironmentTest do
       assert env["COLUMN_NAME"] == ""
     end
   end
+
+  describe "goal_env_vars/1" do
+    test "renders exactly the four GOAL_* keys as strings" do
+      goal = %Task{id: 7, identifier: "G7", title: "Ship it", description: "Why it matters"}
+
+      assert Environment.goal_env_vars(goal) == %{
+               "GOAL_ID" => "7",
+               "GOAL_IDENTIFIER" => "G7",
+               "GOAL_TITLE" => "Ship it",
+               "GOAL_DESCRIPTION" => "Why it matters"
+             }
+    end
+
+    test "falls back to empty strings for a nil identifier, title and description" do
+      env = Environment.goal_env_vars(%Task{id: 7, identifier: nil, title: nil, description: nil})
+
+      assert env["GOAL_ID"] == "7"
+      assert env["GOAL_IDENTIFIER"] == ""
+      assert env["GOAL_TITLE"] == ""
+      assert env["GOAL_DESCRIPTION"] == ""
+    end
+
+    test "keeps a multi-line description verbatim" do
+      env = Environment.goal_env_vars(%Task{id: 7, description: "line one\nline two"})
+
+      assert env["GOAL_DESCRIPTION"] == "line one\nline two"
+    end
+  end
 end

@@ -140,8 +140,9 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       after_goal = Enum.find(body["hooks"] || [], &(&1["name"] == "after_goal"))
       assert after_goal, "after_goal hook entry must survive the slim view"
       assert after_goal["env"], "the hook's env block must survive"
+      assert_goal_env(after_goal["env"], goal)
 
-      # The GOAL_ID fallback path the hook uses when env omits it.
+      # The GOAL_ID fallback the plugin keeps for older servers.
       assert body["data"]["parent_id"] == goal.id
     end
 
@@ -182,12 +183,14 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
 
     test "the full view still carries the after_goal entry too", ctx do
       %{conn: conn} = ctx
-      %{child: child} = create_goal_with_single_child(ctx)
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
 
       conn = patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
       body = json_response(conn, 200)
 
-      assert Enum.find(body["hooks"] || [], &(&1["name"] == "after_goal"))
+      after_goal = Enum.find(body["hooks"] || [], &(&1["name"] == "after_goal"))
+      assert after_goal
+      assert_goal_env(after_goal["env"], goal)
       # ... and still echoes the full task, unchanged.
       assert Map.has_key?(body["data"], "completion_summary")
     end
@@ -521,18 +524,34 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
           "reviewed_at" => DateTime.utc_now()
         })
 
-      patch(conn, ~p"/api/tasks/#{child.id}/mark_reviewed", %{
-        "after_review_result" => %{
-          "exit_code" => 0,
-          "output" => "deployed",
-          "duration_ms" => 100
-        }
-      })
+      conn =
+        patch(conn, ~p"/api/tasks/#{child.id}/mark_reviewed", %{
+          "after_review_result" => %{
+            "exit_code" => 0,
+            "output" => "deployed",
+            "duration_ms" => 100
+          }
+        })
 
       reloaded_goal = Tasks.get_task!(goal.id)
       assert reloaded_goal.after_goal_status == :pending
       assert_enqueued(worker: GraceWorker, args: %{"goal_id" => goal.id})
+
+      body = json_response(conn, 200)
+      after_goal = Enum.find(body["hooks"] || [], &(&1["name"] == "after_goal"))
+      assert after_goal, "the approving mark_reviewed response must carry after_goal"
+      assert_goal_env(after_goal["env"], goal)
     end
+  end
+
+  # The after_goal hook's env names the goal it runs for: the four GOAL_* keys
+  # the plugin's export_after_goal_env reads.
+  defp assert_goal_env(env, goal) do
+    assert env["GOAL_ID"] == to_string(goal.id)
+    assert env["GOAL_IDENTIFIER"] == goal.identifier
+    assert env["GOAL_TITLE"] == goal.title
+    assert env["GOAL_DESCRIPTION"] == (goal.description || "")
+    assert env["HOOK_NAME"] == "after_goal"
   end
 
   defp create_goal_with_two_children(ctx) do

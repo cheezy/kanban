@@ -384,7 +384,7 @@ Returns the completed task and hook metadata. The hooks list depends on the task
 **If `needs_review=false`** (task goes directly to Done):
 
 - Returns `[after_doing, before_review, after_review]`. `after_doing` and `before_review` were already executed; `after_review` still needs execution.
-- Appends a fourth entry, `after_goal`, when this task was the last open child of a goal. Run the `## after_goal` section and report its result with [`PATCH /api/tasks/:id/after_goal`](patch_tasks_id_after_goal.md).
+- Appends a fourth entry, `after_goal`, when this task was the last open child of a goal. Its `env` adds the goal's `GOAL_ID`, `GOAL_IDENTIFIER`, `GOAL_TITLE` and `GOAL_DESCRIPTION` to this task's variables. Run the `## after_goal` section and report its result with [`PATCH /api/tasks/:id/after_goal`](patch_tasks_id_after_goal.md), using `GOAL_ID` as `:id`.
 
 The example below is a `needs_review=true` response.
 
