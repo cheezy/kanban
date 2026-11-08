@@ -2,11 +2,11 @@
 
 This roadmap describes what we are considering for Stride next. What has already shipped is in the [CHANGELOG](CHANGELOG.md). Plans can change as we learn, so treat everything here as a direction rather than a promise.
 
-**Status key:** 🚧 In progress · 🔜 Planned · 💡 Under consideration · 🔄 Ongoing
+**Status key:** ✅ Complete · 🚧 In progress · 🔜 Planned · 💡 Under consideration · 🔄 Ongoing
 
 ---
 
-## 🚧 In progress
+## ✅ Complete
 
 - **Attachments**
 
