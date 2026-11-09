@@ -18,6 +18,14 @@ This roadmap describes what we are considering for Stride next. What has already
 
   Bring boards and tasks across with their titles, descriptions, comments, labels and status, so a team can move without losing its history.
 
+- **Audit log streaming**
+
+  Send the audit log to a security tool such as Splunk, Datadog or a SIEM, and sign audit exports.
+
+- **Retention and legal hold**
+
+  Set how long archived tasks are kept, and hold them when a legal matter requires it.
+
 ## 💡 Import from other tools
 
 Bring more of a team's existing work into Stride instead of starting from an empty board.
@@ -98,10 +106,6 @@ Meet more of what larger organisations ask for.
 
   Buy the Organization plan online, manage seats and download invoices.
 
-- **Audit log streaming**
-
-  Send the audit log to a security tool such as Splunk, Datadog or a SIEM, and sign audit exports.
-
 - **IP allowlists**
 
   Limit sign-in and API tokens to the networks you choose.
@@ -109,10 +113,6 @@ Meet more of what larger organisations ask for.
 - **Passkeys and security keys**
 
   Use a passkey or a hardware security key as a second factor.
-
-- **Retention and legal hold**
-
-  Set how long archived tasks are kept, and hold them when a legal matter requires it.
 
 - **Custom roles**
 
