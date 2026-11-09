@@ -5,6 +5,16 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Agent plugins download attachments.** On 2026-11-09 the Stride agent plugins began downloading a claimed task's attachments for the agent working it: stride 1.88.0, stride-codex 1.42.0, stride-opencode 1.43.0, stride-pi 1.23.0, stride-gemini 1.54.0 and stride-copilot 2.45.0. No port has yet been run end to end against a live board. On a default Gemini CLI install, its `respectGitIgnore` setting is expected to stop `read_file` from opening `.stride/attachments`, and whether Copilot and Codex can read images and PDFs is not yet confirmed.
+
+### Changed
+
+- **Attachments on the plan pages.** The Pricing page lists Attachments among the Organization plan's features, and the product page and the *Free and Paid Boards* guide name attachments among the features that need a paid board.
+
 ## [3.1.0] - 2026-11-08
 
 ### Added
@@ -17,9 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Who can do what.** The board's owner and members with modify access can upload; every member, read-only included, can see and download; the uploader or the board's owner can delete. Someone who is not a member of the board sees no files, and is told that only members can see them.
 - **Limits and types.** Each file can be up to 25 MiB, a task can hold 20 files, counting the files on its comments, and an Organization's files share 10 GiB; an operator can change all three. PNG, JPEG, GIF, WebP, PDF, plain text, Markdown, CSV and JSON files are accepted; SVG, HTML and zip files are refused, and every file's contents are checked against its type.
 - **Archived tasks' files.** The Archive page lists an archived task's files under its row, read-only, with **Download**.
+- **Attachments for agents.** A task's JSON from `GET /api/tasks/:id` and from a claim carries `attachments`, each file's details with its download path. `GET /api/tasks/:id/attachments/:attachment_id` returns a file, and the MCP tool `stride_get_attachment` returns a file's details, with the contents inline for a text file of up to 256 KiB. Agents read files; they cannot upload or delete them.
+- **Workspace export.** A workspace export archive carries the workspace's attachments, and a self-hosted import restores them.
 - **Organization plan.** While plans are enforced, a free board shows Attachments as a locked feature, and any files it already has stay hidden until it moves into an Organization.
 
-[Attachments](docs/attachments.md) covers using attachments and, for operators, storage, configuration and limits. The Resources section has a new guide, *Attaching Files to Tasks and Comments*.
+[Attachments](docs/attachments.md) covers using attachments and, for operators, storage, configuration and limits. The Resources section has a new guide, *Attaching Files to Tasks and Comments*, and [AI Workflow](docs/AI-WORKFLOW.md#task-attachments) covers reading attachments from an agent.
 
 ### Removed
 

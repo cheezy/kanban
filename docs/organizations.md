@@ -67,9 +67,10 @@ The pricing page names two plans:
   month for up to 250 users; an Organization with more than 250 users contacts
   Stride for pricing. It is everything in Free with no user or board limits,
   plus notifications, the Organization audit log, single sign-on (SSO),
-  workspaces, bulk actions, integrations (webhooks), task telemetry fields and
-  MCP access. Each Organization also gets its own Slack support channel that
-  only it can see, where support questions get a response within 24 hours.
+  workspaces, bulk actions, integrations (webhooks), task telemetry fields,
+  MCP access and attachments. Each Organization also gets its own Slack
+  support channel that only it can see, where support questions get a
+  response within 24 hours.
   For every 100 users, or part of 100, it may add 2 people to that channel:
   60 users get 2 people, and 110 users get 4.
 
@@ -95,7 +96,7 @@ selecting it leads to the pricing page.
 | Integrations | Free boards | Webhook, Slack and Discord endpoints are paused. See [Webhooks on a free board](#webhooks-on-a-free-board). |
 | Telemetry | Free boards | The task fields `telemetry_event` and `metrics_to_track` are accepted but not stored. The task form shows the lock in their place, and an API response that dropped them carries a `warnings` list saying so. |
 | MCP | Free boards | A request to the MCP server for a free board gets a JSON-RPC `-32001` error whose `error.data.feature` is `"mcp"`, and no tool runs. The REST API is not affected. See [Stride MCP Server](MCP.md#errors). |
-| Attachments | Free boards | Files cannot be added, listed, previewed or downloaded. Files already on a board that left its Organization are kept, and reappear if it moves back into one. |
+| Attachments | Free boards | Files cannot be added, listed, previewed, downloaded or deleted. Files a free board already holds, such as ones uploaded before plans were enforced, stay stored and hidden, and show again once the board moves into an Organization. |
 
 The Organization audit log is also a paid feature, but there is no locked
 prompt for it: it exists only for an Organization's org-admins (see

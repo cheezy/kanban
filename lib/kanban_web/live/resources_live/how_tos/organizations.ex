@@ -52,7 +52,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Organizations do
           %{
             title: "Locked Features on a Board",
             content:
-              "On a free board, some features show a lock and **Available to organizations** instead of working:\n\n- **Bulk actions**: selecting several tasks to move, label or archive them at once.\n- **Telemetry**: the telemetry fields in a task's Observability section.\n- **MCP**: AI clients that connect to the board over MCP get a plan-required error instead of an answer.\n\nIntegrations are locked too (next step). Tasks, columns and members work as usual.",
+              "On a free board, some features show a lock and **Available to organizations** instead of working:\n\n- **Bulk actions**: selecting several tasks to move, label or archive them at once.\n- **Telemetry**: the telemetry fields in a task's Observability section.\n- **MCP**: AI clients that connect to the board over MCP get a plan-required error instead of an answer.\n- **Attachments**: files can't be added to tasks or comments, and files the board already has stay hidden until it moves into an Organization.\n\nIntegrations are locked too (next step). Tasks, columns and members work as usual.",
             image: "/images/resources/guides/free-and-paid-boards-step-4.png",
             image_width: 1132,
             image_height: 114
@@ -68,7 +68,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Organizations do
           %{
             title: "Getting Organization Features",
             content:
-              "Click **Available to organizations** next to any lock to reach **Get Stride for your organization** on the [Pricing](/pricing) page, where **Talk to us** emails the Stride team. Stride's admins set up Organizations, so there is no button for you to create one.\n\nOnce you belong to an Organization, single sign-on and workspaces unlock for you. Bulk actions, integrations, telemetry, MCP and notifications also depend on the board, so they stay locked on the boards in your personal workspace.",
+              "Click **Available to organizations** next to any lock to reach **Get Stride for your organization** on the [Pricing](/pricing) page, where **Talk to us** emails the Stride team. Stride's admins set up Organizations, so there is no button for you to create one.\n\nOnce you belong to an Organization, single sign-on and workspaces unlock for you. Bulk actions, integrations, telemetry, MCP, attachments and notifications also depend on the board, so they stay locked on the boards in your personal workspace.",
             image: nil
           },
           %{

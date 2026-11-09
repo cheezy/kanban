@@ -1,8 +1,8 @@
 # Task Attachments — Implementation Design
 
-**Roadmap item:** *Attachments* — "Add files such as screenshots, logs and designs to tasks and comments." ([ROADMAP](../../ROADMAP.md), under *In progress*).
+**Roadmap item:** *Attachments* — "Add files such as screenshots, logs and designs to tasks and comments." ([ROADMAP](../../ROADMAP.md), now under *✅ Complete*).
 
-**Status:** planned. Nothing in this document is built yet. It brings together the four Stride goals that deliver the feature, as they stood on 2026-10-28:
+**Status:** shipped. Goals G488–G490 shipped in Stride 3.1.0 on 2026-11-08 (see the [CHANGELOG](../../CHANGELOG.md)), and G491's plugin downloads shipped on 2026-11-09, starting with stride 1.88.0. The rest of this document is kept as the design record. It brings together the four Stride goals that deliver the feature, and the table shows them as they stood on 2026-10-28, when it was written:
 
 | Goal | Title | Tasks | State on 2026-10-28 |
 | --- | --- | --- | --- |
@@ -497,8 +497,8 @@ These were the places where the goals disagreed with each other or with the curr
 
 1. **Can a free board still read its files?** Settled on 2026-11-01: **no.** Attachments are only for Organization boards, so a free board under enforcement cannot list, download or delete files either ([§4.3](#43-plan-gate)). G489's and G490's tasks already follow this rule. G488's do not: its acceptance criteria, W2507 and W2508 keep files readable and deletable on a board that left its Organization, so they must be changed to gate every `Kanban.Attachments` function before they are claimed.
 2. **MB or MiB.** Settled on 2026-11-01: **25 MiB everywhere.** The server's per-file limit stays 26,214,400 bytes. The plugin contract states every cap in bytes ([§9.1](#91-the-contract-w2521)), so a plugin never skips a file the server stored, and the UI text that W2511 and W2515 write names the limit as 25 MiB.
-3. **ROADMAP placement.** Settled on 2026-11-01: the Attachments bullet is now in the *🚧 In progress* section, so W2515's ROADMAP step only checks that it is still there and still accurate.
-4. **ROADMAP wording.** Settled on 2026-11-01: **the roadmap text changes, not the scope.** The entry now says people drag a file onto a task or comment or browse for one, that agents read a task's files through the API, and that attachments are for Organization boards. Pasting screenshots and agent uploads stay out of scope.
+3. **ROADMAP placement.** Settled on 2026-11-01: the Attachments bullet is now in the *🚧 In progress* section, so W2515's ROADMAP step only checks that it is still there and still accurate. Since the feature shipped, it is in the *✅ Complete* section.
+4. **ROADMAP wording.** Settled on 2026-11-01: **the roadmap text changes, not the scope.** The entry says people drag a file onto a task or comment or browse for one, that agents read a task's files through the API, and that attachments are for Organization boards. Pasting screenshots and agent uploads stay out of scope.
 5. **Shipped shape before plugin work.** G491's tasks require re-checking the shipped `data.attachments` shape before coding, and any difference from the contract must be followed and named in the completion notes.
 6. **The download contract has a second user.** Settled on 2026-11-01: **W2521's contract defines the rewrite case** in a section of its own, as [§9.1](#91-the-contract-w2521) summarises under *Rewrite downloads*. The Jira import's `stride-import` plugin ([Import from Jira](IMPORT-FROM-JIRA-DESIGN.md#6a5-how-a-rewrite-runs)) follows that section rather than listing its own exceptions. It covers the layout, the manifest's `rewrite` field and `jira_key`, identity by the bundle hash, the curl guard (no exemption while the plugin downloads through its own script), cleanup after the draft is submitted, and the caps: 25 MiB per file, 20 files per Jira issue, and 500 MiB per rewrite within 600 s.
 7. **What the import adds to G488.** Settled on 2026-11-01. The Jira import builds these itself, on top of G488:

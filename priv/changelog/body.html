@@ -3,6 +3,63 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [Unreleased]
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Agent plugins download attachments.</strong> On
+              2026-11-09 the Stride agent plugins began downloading a claimed
+              task's attachments for the agent working it: stride 1.88.0,
+              stride-codex 1.42.0, stride-opencode 1.43.0, stride-pi 1.23.0,
+              stride-gemini 1.54.0 and stride-copilot 2.45.0. No port has yet
+              been run end to end against a live board. On a default Gemini
+              CLI install, its <code>respectGitIgnore</code> setting is
+              expected to stop <code>read_file</code> from opening
+              <code>.stride/attachments</code>, and whether Copilot and Codex
+              can read images and PDFs is not yet confirmed.
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Changed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Attachments on the plan pages.</strong> The Pricing page
+              lists Attachments among the Organization plan's features, and the
+              product page and the <em>Free and Paid Boards</em> guide name
+              attachments among the features that need a paid board.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [3.1.0] - 2026-11-08
         </h2>
 
@@ -66,6 +123,21 @@
                 <strong>Download</strong>.
               </li>
               <li>
+                <strong>Attachments for agents.</strong> A task's JSON from
+                <code>GET /api/tasks/:id</code> and from a claim carries
+                <code>attachments</code>, each file's details with its download
+                path. <code>GET /api/tasks/:id/attachments/:attachment_id</code>
+                returns a file, and the MCP tool
+                <code>stride_get_attachment</code> returns a file's details,
+                with the contents inline for a text file of up to 256 KiB.
+                Agents read files; they cannot upload or delete them.
+              </li>
+              <li>
+                <strong>Workspace export.</strong> A workspace export archive
+                carries the workspace's attachments, and a self-hosted import
+                restores them.
+              </li>
+              <li>
                 <strong>Organization plan.</strong> While plans are enforced, a
                 free board shows Attachments as a locked feature, and any files
                 it already has stay hidden until it moves into an Organization.
@@ -76,7 +148,9 @@
               Attachments (<code>docs/attachments.md</code>) covers using
               attachments and, for operators, storage, configuration and
               limits. The Resources section has a new guide,
-              <em>Attaching Files to Tasks and Comments</em>.
+              <em>Attaching Files to Tasks and Comments</em>, and AI Workflow
+              (<code>docs/AI-WORKFLOW.md</code>) covers reading attachments
+              from an agent.
             </p>
           </div>
         </div>

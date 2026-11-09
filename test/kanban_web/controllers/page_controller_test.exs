@@ -591,7 +591,7 @@ defmodule KanbanWeb.PageControllerTest do
       refute organization =~ "#stride-support"
     end
 
-    test "the Organization plan lists the eight paid features and a contact call to action",
+    test "the Organization plan lists the nine paid features and a contact call to action",
          %{conn: conn} do
       document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
       organization = LazyHTML.query(document, "#plan-organization")
@@ -605,7 +605,8 @@ defmodule KanbanWeb.PageControllerTest do
             "Bulk actions",
             "Integrations (webhooks)",
             "Task telemetry fields",
-            "MCP access"
+            "MCP access",
+            "Attachments"
           ] do
         assert text =~ feature
       end
@@ -615,6 +616,31 @@ defmodule KanbanWeb.PageControllerTest do
       assert organization
              |> LazyHTML.query("a[href='mailto:enterprise@letstango.ca']")
              |> LazyHTML.text() =~ "Talk to us"
+    end
+
+    # The Attachments item reuses the "Attachments" msgid, so each locale must
+    # render its translation as one item of its own, not fall back to English.
+    for {locale, expected} <- %{
+          "de" => "Anhänge",
+          "es" => "Archivos adjuntos",
+          "fr" => "Pièces jointes",
+          "ja" => "添付ファイル",
+          "pt" => "Anexos",
+          "zh" => "附件"
+        } do
+      test "the Organization plan lists Attachments translated under #{locale}", %{conn: conn} do
+        items =
+          conn
+          |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+          |> get(~p"/pricing")
+          |> html_response(200)
+          |> LazyHTML.from_document()
+          |> LazyHTML.query("#plan-organization li")
+          |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+
+        assert unquote(expected) in items
+        refute "Attachments" in items
+      end
     end
 
     test "the Organization plan costs $12 CAD per user a month for up to 250 users",

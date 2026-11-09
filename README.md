@@ -147,6 +147,9 @@ Stride is a kanban board application designed from the ground up for seamless hu
 - **Review workflow** to approve or request changes on AI work
 - **Task dependencies** with automatic blocking
 - **Hierarchical tasks** (Goals → Tasks)
+- **[Attachments](docs/attachments.md)**: screenshots, logs and other
+  files on tasks and comments, with image previews; an Organization
+  feature once paid plans are enforced
 - **Mobile responsive** with modern Tailwind CSS v4 design
 
 ### For AI Agents
@@ -155,6 +158,9 @@ Stride is a kanban board application designed from the ground up for seamless hu
 - **MCP server** at `POST /api/mcp`, using the same Bearer token, for
   agents that speak the Model Context Protocol
   ([Stride MCP Server](docs/MCP.md))
+- **Read-only attachments**: an agent reads a task's files through
+  `data.attachments`, the attachment download endpoint and the
+  `stride_get_attachment` MCP tool, and cannot upload or delete them
 - **Bearer token authentication** with a board token or a
   [workspace token](docs/AUTHENTICATION.md#workspace-tokens); the
   token's capabilities decide which tasks it is offered
@@ -195,8 +201,9 @@ Stride is a kanban board application designed from the ground up for seamless hu
   turning on paid plans
 - **[Workspace export](docs/workspace-export.md)**: an org-admin can
   download a zip of an Organization workspace (boards, columns, labels,
-  tasks, comments, task history and memberships) from the Export section
-  of the workspace settings. Each archive stays downloadable for 7 days.
+  tasks, comments, attachments, task history and memberships) from the
+  Export section of the workspace settings. Each archive stays downloadable
+  for 7 days.
   Personal workspaces have no export
 - **[Webhooks, Slack and Discord](docs/webhooks.md)**: send a board's
   task events to your own systems or a chat channel
@@ -209,9 +216,9 @@ Stride is a kanban board application designed from the ground up for seamless hu
 
 The Organization plan's paid features are notifications, the
 Organization audit log, single sign-on, workspaces, bulk actions,
-integrations (webhooks, Slack and Discord), the task telemetry fields
-and the MCP server. Workspaces, single sign-on and the audit log always
-need an Organization, because they belong to one. The others are
+integrations (webhooks, Slack and Discord), the task telemetry fields,
+attachments and the MCP server. Workspaces, single sign-on and the audit
+log always need an Organization, because they belong to one. The others are
 open to everyone until a deployment sets `STRIDE_PLANS_ENFORCED=true`;
 from then on they need an Organization, and a board gets them only when
 it is in an Organization workspace. The hosted service at
