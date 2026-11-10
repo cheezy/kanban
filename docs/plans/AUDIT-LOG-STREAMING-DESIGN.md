@@ -1410,28 +1410,34 @@ task that first emits it, which also refreshes the event reference in
 ### 13.2 New audit actions
 
 Added to `@audit_actions` in `Kanban.Telemetry.Catalog.Families`, with labels
-in `KanbanWeb.AuditLogActions` translated into every locale. The keys declared
-in `@audit_actions` are what reach telemetry. The stored row can carry more:
-its metadata holds every key the caller passes, after sanitising.
+in `KanbanWeb.AuditLogActions` translated into every locale.
 
-| Action | Telemetry keys (declared) | Also stored in the row |
+**Every key passed to `AuditLog.event/2` is declared.** The telemetry call-site
+test in `test/kanban/telemetry_test.exs` fails on any key a call passes that
+its `@audit_actions` entry does not declare. A key that is stored in the row
+but must not reach telemetry is declared **and** added to
+`@telemetry_omitted_keys` in `Kanban.AuditLog` (`lib/kanban/audit_log.ex`) and
+to `@audit_omitted_keys` in the test, as `:email`, `:ip` and `:filters` are.
+The destination's name and host use the specific keys `destination_name` and
+`url_host`, so that omitting them affects no other action.
+
+| Action | Keys | Kept out of telemetry |
 | --- | --- | --- |
-| `audit_stream_destination_created` | `destination_id`, `kind`, `start_from`, `include_personal_data` | `name`, `url_host` |
-| `audit_stream_destination_updated` | `destination_id`, `kind` | `changed` (field names only), `name`, `url_host` |
-| `audit_stream_destination_paused`, `_resumed`, `_deleted` | `destination_id`, `kind` | `name` |
-| `audit_stream_signing_secret_rotated` | `destination_id` | |
-| `audit_stream_batch_skipped` | `destination_id`, `kind`, `events`, `http_status` | `first_event_id`, `last_event_id` |
-| `audit_stream_test_sent` | `destination_id`, `outcome` | |
-| `audit_stream_failing`, `audit_stream_recovered` | `destination_id`, `kind`, `reason` (no actor: recorded by the system) | |
-| `audit_stream_gap` | `destination_id`, `events`, `reason` | `from`, `to` |
-| `audit_stream_gap_dismissed` | `destination_id` | `gap_id` |
-| `audit_stream_cursors_reseeded` | `destinations` (no actor: recorded by an operator's release command) | |
+| `audit_stream_destination_created` | `destination_id`, `kind`, `start_from`, `include_personal_data`, `destination_name`, `url_host` | `destination_name`, `url_host` |
+| `audit_stream_destination_updated` | `destination_id`, `kind`, `changed` (field names only), `destination_name`, `url_host` | `destination_name`, `url_host` |
+| `audit_stream_destination_paused`, `_resumed`, `_deleted` | `destination_id`, `kind`, `destination_name` | `destination_name` |
+| `audit_stream_signing_secret_rotated` | `destination_id` | — |
+| `audit_stream_batch_skipped` | `destination_id`, `kind`, `events`, `http_status`, `first_event_id`, `last_event_id` | — |
+| `audit_stream_test_sent` | `destination_id`, `outcome` | — |
+| `audit_stream_failing`, `audit_stream_recovered` | `destination_id`, `kind`, `reason` (no actor: recorded by the system) | — |
+| `audit_stream_gap` | `destination_id`, `events`, `reason`, `from`, `to` | — |
+| `audit_stream_gap_dismissed` | `destination_id`, `gap_id` | — |
+| `audit_stream_cursors_reseeded` | `destinations` (no actor: recorded by an operator's release command) | — |
 
 Every action also carries `user_id` and `organization_id`, as every
 Organization audit action already does. `org_audit_log_exported` gains
-`signed` in its declared keys, and `key_id` and `sha256` in its stored
-metadata. C3 adds `:signed` to its entry in `families.ex`, or telemetry would
-drop the key.
+`signed`, `key_id` and `sha256` in its declared keys. C3 adds them to its entry
+in `families.ex`, or the call-site test fails.
 
 ### 13.3 Emails
 
@@ -1503,7 +1509,7 @@ emails do. They are sent when:
 | Worker | With Oban `testing: :disabled` in the race partition, because Oban only applies uniqueness then: one job per destination plus at most one follow-up; the lease stops a second run; a run whose lease expired cannot move the cursor; no transaction is open during the POST. Also: the cursor moves only on 2xx; a retry resends exactly the pending batch; `next_attempt_at` holds the backoff, Retry-After and the cap against the sweep; a halted destination is never swept; draining and catch-up pacing; state moves Healthy → Retrying → Failing → Healthy with the right emails; a `txid` lower than the cursor's halts the destination |
 | Retention | A destination behind the cutoff records a gap with the right count, including a paused one; a refused purge records none; a pending batch that loses events is discarded and the next batch has a new `batch_id`; a second loss extends the open gap without a new email; a lease that can't be taken skips the Organization; retention still purges |
 | Re-seed | `reseed_audit_stream_cursors/0` sets `(0, 0)` and `not_before`, clears `txid_reset`, and the next batch starts at the last delivered event's time |
-| Security | `UrlGuard` refusals at save and send time; secrets never appear in rendered HTML, logs, telemetry or audit metadata; `name` and `url_host` never reach telemetry; a non-org-admin, and an org-admin of another Organization, get nothing; a reserved header name is refused; `audit_stream_*` cannot be excluded; the test-event limit is per Organization and its result is coarse |
+| Security | `UrlGuard` refusals at save and send time; secrets never appear in rendered HTML, logs, telemetry or audit metadata; `destination_name` and `url_host` never reach telemetry; a non-org-admin, and an org-admin of another Organization, get nothing; a reserved header name is refused; `audit_stream_*` cannot be excluded; the test-event limit is per Organization and its result is coarse |
 | UI | The LiveViews in every supported locale (de, en, es, fr, ja, pt, zh), including plural forms; write-only secret fields, the limit of 3, the one-org-admin warning, gaps and **Dismiss**, confirmations, and light and dark mode |
 | Emails | Each email kind in a recipient's locale, the throttles, and the catch-up subject |
 | Signed exports | The zip's contents; the manifest's SHA-256 matches the file; `truncated` from the stream; the signature verifies with `:crypto` and with the `openssl` command in the README, in a test tagged to run only where OpenSSL 3 or later is installed; a changed byte fails verification; the key endpoint's JWKS, the single-key PEM by `kid`, 404 for a revoked key, and the cache header; boot refuses a malformed key and warns on a missing one |
