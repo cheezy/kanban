@@ -2,6 +2,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   use ExUnit.Case, async: true
 
   alias KanbanWeb.ResourcesLive.HowToData
+  alias KanbanWeb.ResourcesLive.HowTos.AgentPlugins
 
   @getting_started_ids [
     "creating-your-first-board",
@@ -97,6 +98,13 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "connecting-an-mcp-client"
   ]
 
+  @agent_plugins_ids ["installing-the-stride-plugin"]
+
+  # The GitHub repositories the plugin guides may link to. The guides copy
+  # their commands from these READMEs; no test reads them, because the plugin
+  # repositories are not checked out in CI.
+  @plugin_repos ~w(stride stride-copilot stride-gemini stride-codex stride-opencode stride-pi stride-lite stride-copilot-lite stride-opencode-lite)
+
   # Column names are board data, not translated strings, so a bolded column
   # name is also checked against the AI board's column list.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -123,7 +131,9 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   # Guides that name no UI label, and must keep naming none.
   @no_bold_guides [
     # Its steps are commands and config files, shown as code.
-    "connecting-an-mcp-client"
+    "connecting-an-mcp-client",
+    # Its steps are install and update commands for each runtime, shown as code.
+    "installing-the-stride-plugin"
   ]
 
   describe "every guide" do
@@ -260,6 +270,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "getting-started" in tags
       assert "beginner" in tags
     end
+
+    test "every guide's tags are in all_tags" do
+      for guide <- HowToData.all_how_tos(), tag <- guide.tags do
+        assert tag in HowToData.all_tags(), "#{guide.id} uses #{tag}, which isn't in all_tags"
+      end
+    end
   end
 
   describe "get_how_to/1" do
@@ -334,12 +350,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "developer guides content" do
-    test "all 5 developer guides exist" do
+    test "all 6 developer guides exist" do
       developer_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("developer" in &1.tags))
 
-      assert length(developer_guides) == 5
+      assert length(developer_guides) == 6
 
       guide_ids = Enum.map(developer_guides, & &1.id)
       assert "setting-up-hooks" in guide_ids
@@ -347,6 +363,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "claim-complete-workflow" in guide_ids
       assert "debugging-hooks" in guide_ids
       assert "connecting-an-mcp-client" in guide_ids
+      assert "installing-the-stride-plugin" in guide_ids
     end
 
     test "setting-up-hooks guide has complete content" do
@@ -1265,6 +1282,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       end
     end
 
+    test "includes the agent-plugins tags" do
+      for tag <- ~w(developer ai-agents automation) do
+        assert tag in HowToData.all_tags()
+      end
+
+      for id <- @agent_plugins_ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          tag <- guide.tags do
+        assert tag in HowToData.all_tags(), "#{id} uses #{tag}, which isn't in all_tags"
+      end
+    end
+
     test "includes the agents-and-planning tags" do
       for tag <- ~w(planning ai-agents monitoring workflow) do
         assert tag in HowToData.all_tags()
@@ -1279,8 +1308,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 43 guides" do
-      assert length(HowToData.all_how_tos()) == 43
+    test "has all 44 guides" do
+      assert length(HowToData.all_how_tos()) == 44
     end
 
     test "every guide id is unique across the area modules" do
@@ -2822,6 +2851,158 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       # A placeholder, never a real-looking token.
       refute content =~ ~r/stride_(dev|live)?_?[A-Za-z0-9]{20,}/
       assert content =~ ~s|export STRIDE_API_TOKEN="paste-your-token-here"|
+    end
+  end
+
+  describe "agent plugins guides" do
+    defp agent_plugins_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    # Fenced blocks and inline code are shown as written, so only the prose
+    # around them has to stay inside the renderer's markdown subset.
+    defp prose_outside_code(content) do
+      content
+      |> String.replace(~r/```\w*\n[\s\S]*?```/, "")
+      |> String.replace(~r/`[^`]+`/, "")
+    end
+
+    test "the agent-plugins guides exist with their tags and steps" do
+      expected = [
+        {"installing-the-stride-plugin", "Installing the Stride Plugin",
+         ["developer", "ai-agents", "automation"], 10}
+      ]
+
+      assert Enum.map(AgentPlugins.how_tos(), & &1.id) == @agent_plugins_ids
+
+      for {id, title, tags, min_steps} <- expected do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert guide.tags == tags
+        assert guide.content_type == "guide"
+        assert guide.created_at == ~D[2026-11-10]
+        assert length(guide.steps) >= min_steps, "#{id} lost steps"
+
+        for step <- guide.steps do
+          assert step.image == nil,
+                 "#{id} step #{step.title} shows a screenshot of a terminal step"
+        end
+
+        for tag <-
+              ~w(getting-started non-developer best-practices security boards organizations metrics collaboration planning) do
+          refute tag in guide.tags, "#{id} would join the #{tag} chain or its count"
+        end
+      end
+    end
+
+    test "installing-the-stride-plugin uses only supported markdown and has at least three steps" do
+      {:ok, guide} = HowToData.get_how_to("installing-the-stride-plugin")
+      assert length(guide.steps) >= 3
+
+      for step <- guide.steps do
+        content = step.content
+        fences = Regex.scan(~r/```/, content) |> length()
+        assert rem(fences, 2) == 0, "#{step.title} leaves a code fence open"
+
+        assert length(Regex.scan(~r/```\w*\n[\s\S]*?```/, content)) * 2 == fences,
+               "#{step.title} opens a fence the renderer doesn't recognise"
+
+        prose = prose_outside_code(content)
+
+        refute prose =~ ~r/^\s*#/m, "#{step.title} uses a heading"
+        refute prose =~ ~r/^\s*\d+\.\s/m, "#{step.title} uses a numbered list"
+        refute prose =~ ~r/\*\*/, "#{step.title} bolds text"
+        refute prose =~ ~r/(?<![\w*])\*[^*\s][^*\n]*\*(?![\w*])/, "#{step.title} uses italics"
+        refute prose =~ ~r/(?<!\w)_[^_\s][^_\n]*_(?!\w)/, "#{step.title} uses italics"
+        refute content =~ "<", "#{step.title} has text the page would show escaped"
+      end
+    end
+
+    test "installing-the-stride-plugin is wired into prev/next navigation" do
+      {:ok, guide} = HowToData.get_how_to("installing-the-stride-plugin")
+      assert {nil, %{id: "setting-up-hooks"}} = HowToData.get_navigation(guide)
+
+      {:ok, hooks} = HowToData.get_how_to("setting-up-hooks")
+
+      assert {%{id: "installing-the-stride-plugin"}, %{id: "api-authentication"}} =
+               HowToData.get_navigation(hooks)
+
+      developer_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("developer" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert developer_chain ==
+               ~w(installing-the-stride-plugin setting-up-hooks api-authentication claim-complete-workflow debugging-hooks connecting-an-mcp-client)
+
+      # Its ai-agents tag puts it in that filter without moving the guides
+      # that lead with ai-agents.
+      {:ok, watching} = HowToData.get_how_to("watching-your-agents")
+      assert {%{id: "writing-tasks-for-ai"}, nil} = HowToData.get_navigation(watching)
+    end
+
+    test "installing-the-stride-plugin links resolve" do
+      content = agent_plugins_content(@agent_plugins_ids)
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\(([^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+      assert links != []
+      assert "/resources/api-authentication" in links
+      assert "/resources/setting-up-hooks" in links
+
+      for link <- links do
+        case link do
+          "/resources/" <> id ->
+            assert id in ids, "the plugin guide links to the missing guide #{id}"
+
+          "https://github.com/cheezy/" <> repo ->
+            assert repo in @plugin_repos, "#{link} is not one of the Stride plugin repositories"
+
+          other ->
+            flunk("#{other} is neither a Resources guide nor a Stride plugin repository")
+        end
+      end
+    end
+
+    test "installing-the-stride-plugin gives each runtime's install and update commands" do
+      content = agent_plugins_content(@agent_plugins_ids)
+
+      # Copied from each plugin's README when the guide was written.
+      for command <- [
+            "/plugin marketplace add cheezy/stride-marketplace\n/plugin install stride@stride-marketplace",
+            "copilot plugin marketplace add cheezy/stride-copilot-marketplace\ncopilot plugin install stride-copilot",
+            "gemini extensions install https://github.com/cheezy/stride-gemini",
+            "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash\n",
+            "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project\n",
+            "irm https://raw.githubusercontent.com/cheezy/stride-codex/main/install.ps1 | iex",
+            ~s("plugin": ["github:cheezy/stride-opencode"]),
+            "git clone https://github.com/cheezy/stride-opencode.git /tmp/stride-opencode",
+            "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh | bash\n",
+            "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh | bash -s -- --project\n",
+            "/plugin install stride-lite@stride-marketplace",
+            "copilot plugin install https://github.com/cheezy/stride-copilot-lite",
+            "github:cheezy/stride-opencode-lite",
+            "/plugin update stride`",
+            "copilot plugin update stride-copilot`",
+            "copilot plugin update stride-copilot-lite",
+            "gemini extensions update stride-gemini",
+            "codex plugin update stride-codex",
+            "github:cheezy/stride-opencode#vX.Y.Z"
+          ] do
+        assert content =~ command, "the plugin guide lost #{inspect(command)}"
+      end
+
+      assert content =~ "Gemini CLI, Codex CLI and Pi have no lite plugin."
+
+      # Only the marketplace that exists today; the community listing isn't approved.
+      refute content =~ "claude-community"
+
+      # A placeholder at most, never a real-looking token.
+      refute content =~ ~r/stride_(dev|live|test)_[A-Za-z0-9]/
     end
   end
 

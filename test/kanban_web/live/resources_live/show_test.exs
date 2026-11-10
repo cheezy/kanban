@@ -3,6 +3,7 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
 
   import Phoenix.LiveViewTest
 
+  alias KanbanWeb.ResourcesLive.HowToData
   alias KanbanWeb.ResourcesLive.Show
 
   describe "GET /resources/:id" do
@@ -304,6 +305,42 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       for target <- ~w(api-authentication claim-complete-workflow free-and-paid-boards) do
         assert mcp =~ ~s(href="/resources/#{target}")
       end
+    end
+
+    test "renders the installing-the-stride-plugin guide", %{conn: conn} do
+      id = "installing-the-stride-plugin"
+      assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
+      {:ok, guide} = HowToData.get_how_to(id)
+
+      {:ok, _view, html} = live(conn, ~p"/resources/installing-the-stride-plugin")
+
+      assert html =~ "Installing the Stride Plugin"
+
+      for step <- guide.steps do
+        assert html =~ step.title, "the plugin guide doesn't show the step #{step.title}"
+      end
+
+      refute html =~ "&lt;", "the plugin guide renders escaped HTML"
+      refute html =~ "**", "the plugin guide renders a literal **"
+      assert html =~ "<pre"
+      assert html =~ "<li>"
+      # Long inline commands wrap on a phone instead of pushing the page sideways.
+      assert html =~ "break-words"
+      assert html =~ "/plugin install stride@stride-marketplace"
+
+      # Every step is a terminal step, so the guide shows no screenshot.
+      refute html =~ ~s(src="/images/resources/guides/#{id})
+
+      # A link in the guide's own text, not the previous/next navigation,
+      # which also links to setting-up-hooks.
+      for target <- ~w(api-authentication setting-up-hooks claim-complete-workflow) do
+        assert html =~ ~s|href="/resources/#{target}" class="text-[var(--ink)]|
+      end
+
+      assert html =~ ~s|href="https://github.com/cheezy/stride-lite" class="text-[var(--ink)]|
+      # The Next link, not the step 2 link, leads on to the next guide in the
+      # developer chain.
+      assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
     end
 
     test "renders each agents-and-planning guide with its links and screenshots", %{conn: conn} do

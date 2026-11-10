@@ -3,7 +3,8 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Developer do
   Developer guides: hooks, API authentication, the claim/complete workflow and debugging hooks.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
-  in order, into the Resources catalog.
+  in order, into the Resources catalog. It sits after `HowTos.AgentPlugins`,
+  so the developer chain reaches these guides from installing the plugin.
   """
 
   @doc "The guides in this group, in display order."

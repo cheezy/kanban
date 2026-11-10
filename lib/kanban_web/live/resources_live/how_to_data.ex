@@ -24,6 +24,7 @@ defmodule KanbanWeb.ResourcesLive.HowToData do
              HowTos.Account.how_tos() ++
              HowTos.Organizations.how_tos() ++
              HowTos.OrgAdmin.how_tos() ++
+             HowTos.AgentPlugins.how_tos() ++
              HowTos.Developer.how_tos() ++
              HowTos.WorkingWithTasks.how_tos() ++
              HowTos.TaskDetails.how_tos() ++

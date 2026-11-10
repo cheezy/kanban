@@ -9,8 +9,9 @@ defmodule KanbanWeb.ResourcesLive.HowTos.NotificationsAndIntegrations do
 
   The notifications and integrations guides lead with their own tags and
   carry each other's, so they navigate as a pair. The MCP guide leads with
-  `developer`, so it ends that chain: setting up hooks → API authentication →
-  the claim/complete workflow → debugging hooks → connecting an MCP client.
+  `developer`, so it ends that chain: installing the plugin → setting up
+  hooks → API authentication → the claim/complete workflow → debugging hooks
+  → connecting an MCP client.
 
   The guides follow `KanbanWeb.NotificationBell`, `KanbanWeb.NotificationLive.Index`,
   `KanbanWeb.UserLive.NotificationPreferences`, `Kanban.Notifications`, the
