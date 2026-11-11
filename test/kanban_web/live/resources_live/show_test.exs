@@ -264,7 +264,7 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       {:ok, _view, details} = live(conn, ~p"/resources/reading-a-tasks-details")
 
       for target <-
-            ~w(managing-board-settings free-and-paid-boards reviewing-completed-work commenting-and-mentioning) do
+            ~w(managing-board-settings free-and-paid-boards reviewing-completed-work commenting-and-mentioning reviewing-changes-for-security) do
         assert details =~ ~s(href="/resources/#{target}")
       end
 
@@ -390,6 +390,58 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       # The Previous and Next links lead along the ai-agents chain.
       assert html =~ ~s|href="/resources/installing-the-stride-plugin" data-phx-link="redirect"|
       assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
+    end
+
+    test "renders the reviewing-changes-for-security guide", %{conn: conn} do
+      id = "reviewing-changes-for-security"
+      assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
+      {:ok, guide} = HowToData.get_how_to(id)
+
+      {:ok, _view, html} = live(conn, ~p"/resources/reviewing-changes-for-security")
+
+      assert html =~ "Reviewing Changes for Security"
+
+      for step <- guide.steps do
+        assert html =~ step.title, "the Security Review guide doesn't show the step #{step.title}"
+      end
+
+      refute html =~ "&lt;", "the Security Review guide renders escaped HTML"
+      refute html =~ "**", "the Security Review guide renders a literal **"
+      assert html =~ "<strong>Review queue</strong>"
+      assert html =~ "<strong>Security considerations</strong>"
+      assert html =~ "<strong>Mitigated</strong>"
+      assert html =~ "<pre"
+      assert html =~ "<li>"
+      assert html =~ "<code"
+      # Long inline commands wrap on a phone instead of pushing the page sideways.
+      assert html =~ "break-words"
+      assert html =~ "/plugin install stride-security-review@stride-marketplace"
+      assert html =~ "/stride-security-review:security-review"
+      assert html =~ "Pi has no Security Review port."
+
+      # Only steps 7 and 8 show the Stride app; the terminal steps show no screenshot.
+      assert html =~ ~s(src="/images/resources/guides/#{id}-step-7.png")
+      assert html =~ ~s(src="/images/resources/guides/#{id}-step-8.png")
+
+      assert length(
+               Regex.scan(
+                 ~r{src="/images/resources/guides/reviewing-changes-for-security-step-},
+                 html
+               )
+             ) ==
+               2
+
+      # Links in the guide's own text, not the previous/next navigation.
+      for target <-
+            ~w(installing-the-stride-plugin api-authentication reviewing-completed-work reading-a-tasks-details) do
+        assert html =~ ~s|href="/resources/#{target}" class="text-[var(--ink)]|
+      end
+
+      assert html =~
+               ~s|href="https://github.com/cheezy/stride-security-review" class="text-[var(--ink)]|
+
+      # The Next link leads along the reviewing chain; it opens that chain.
+      assert html =~ ~s|href="/resources/reviewing-completed-work" data-phx-link="redirect"|
     end
 
     test "renders the working-with-goals guide", %{conn: conn} do

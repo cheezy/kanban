@@ -71,7 +71,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.TaskDetails do
           %{
             title: "What the Agent Reported",
             content:
-              "Once a task reaches Review, it shows what the agent reported:\n\n- **Explorer result**: whether the agent sent a helper to read the code before starting (**Dispatched** or **Not dispatched**), how long it took, and what it found or why it was skipped.\n- **Review report**: the agent reviewer's summary and its issues under **Critical**, **Important** and **Minor**, or **No issues**.\n- **Workflow steps**: each step of the agent's workflow, whether it ran, and how long it took.\n\nWhen the task needs review, **Review status** shows whether it was approved, by whom and when, with any notes the reviewer left.",
+              "Once a task reaches Review, it shows what the agent reported:\n\n- **Explorer result**: whether the agent sent a helper to read the code before starting (**Dispatched** or **Not dispatched**), how long it took, and what it found or why it was skipped.\n- **Review report**: the agent reviewer's summary and its issues under **Critical**, **Important** and **Minor**, or **No issues**. A **Security** issue can come from Stride Security Review, which checks the task's security considerations, as [Reviewing Changes for Security](/resources/reviewing-changes-for-security) explains.\n- **Workflow steps**: each step of the agent's workflow, whether it ran, and how long it took.\n\nWhen the task needs review, **Review status** shows whether it was approved, by whom and when, with any notes the reviewer left.",
             image: "/images/resources/guides/reading-a-tasks-details-step-6.png",
             image_width: 721,
             image_height: 776

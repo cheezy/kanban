@@ -109,6 +109,25 @@ dev VM with `project_eval`:
   `whsec_EXAMPLE_not_a_real_secret_000000000000`, before capturing, so no
   reader mistakes the image for a leaked secret.
 
+### Security review shot
+
+The seeded Review task, "Move the order summary above the fold", has a
+passing security considerations verdict but no row for each consideration,
+because only Stride Security Review writes those rows. Add them in the page,
+never in the data:
+
+- Open `/review` and select the task.
+- In the dev VM, render the rows with `project_eval`: load the task, put a
+  `"considerations"` list on an in-memory copy of its `reviewer_result`
+  (one `"mitigated"` entry for its one consideration, with a `file:line` from
+  its seeded diff as `"evidence"`, and a one-line `"note"` for the section),
+  and pass that copy to
+  `KanbanWeb.CodeReviewPanel.security_considerations_breakdown/1` through
+  `Phoenix.LiveViewTest.rendered_to_string/1`. Never save the copy.
+- Append the rendered list to `[data-review-security-considerations]` with a
+  `browser.eval` script, and the note as a paragraph after its pill, then
+  capture. Reload the page afterwards, which removes them.
+
 ## 2. Sign in to photograph
 
 The best option is to sign in as `maya.chen@example.test` in a private window,
@@ -246,6 +265,8 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp,
 | `working-with-goals-step-4.png` | working-with-goals / 4 The Goal Card | `/boards/<Checkout>` | Board scrolled so the G1 card ("1/3 children complete"), W10 below it and W9 in Doing show | Ready and Doing columns around the G1 card, no header or sidebar |
 | `working-with-goals-step-5.png` | working-with-goals / 5 The Goal Page | `/boards/<Checkout>/goals/<G1>` | Header, **Hierarchy**, **Progress**, **Time** and **History** | Everything right of the sidebar, below the breadcrumb bar |
 | `turning-an-idea-into-tasks-step-8.png` | turning-an-idea-into-tasks / 8 The Tasks Land in Backlog | `/boards/<Checkout>` | Board as seeded, from the top: Backlog with W1, W2 and D1, Ready down to the G1 card | Backlog and Ready columns, no header or sidebar |
+| `reviewing-changes-for-security-step-7.png` | reviewing-changes-for-security / 7 What a Reviewer Sees | `/review` | "Move the order summary above the fold" selected, with the in-page Mitigated row and note from "Security review shot" | The Security considerations section of the detail column only |
+| `reviewing-changes-for-security-step-8.png` | reviewing-changes-for-security / 8 On the Task Detail Page | `/boards/<Checkout>` | "Move the order summary above the fold" opened from its card, as seeded, scrolled to **Review report** | The Review report heading and panel only |
 | `reading-a-tasks-details-step-2.png` | reading-a-tasks-details / 2 The Top and the Side Panel | `/boards/<Checkout>`, "Add a delivery estimate to the order summary" card clicked | First turn on, as Maya, the Field visibility toggles Context, Key Files, Verification Steps, Pitfalls, Security Considerations, Testing Strategy, Behaviour/Test Matrix and Observability, and turn them off again after the last details shot. Capture this one before or after the toggles (only Acceptance Criteria shows), hiding the main-column sections from **Actual vs estimated** down in the page so the side panel shows through **Edit task** | The modal's content box |
 | `reading-a-tasks-details-step-3.png` | reading-a-tasks-details / 3 What Was Asked | same task | Scrolled so **Acceptance criteria** is at the top | From **Acceptance criteria** to the end of **Verification steps**, main column only |
 | `reading-a-tasks-details-step-4.png` | reading-a-tasks-details / 4 The Behaviour/Test Matrix | same task | Scrolled to **Behaviour/Test Matrix** | The matrix, main column only |

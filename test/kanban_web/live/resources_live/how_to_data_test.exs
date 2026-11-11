@@ -100,16 +100,23 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "connecting-an-mcp-client"
   ]
 
-  @agent_plugins_ids ["installing-the-stride-plugin", "turning-an-idea-into-tasks"]
+  @agent_plugins_ids [
+    "installing-the-stride-plugin",
+    "turning-an-idea-into-tasks",
+    "reviewing-changes-for-security"
+  ]
 
   # The Stride Ideation plugin and its ports. Pi has none.
   @ideation_repos ~w(stride-ideation stride-copilot-ideation stride-codex-ideation stride-gemini-ideation stride-opencode-ideation)
+
+  # The Stride Security Review plugin and its ports. Pi has none.
+  @security_review_repos ~w(stride-security-review stride-copilot-security-review stride-codex-security-review stride-gemini-security-review stride-opencode-security-review)
 
   # The GitHub repositories the plugin guides may link to. The guides copy
   # their commands from these READMEs; no test reads them, because the plugin
   # repositories are not checked out in CI.
   @plugin_repos ~w(stride stride-copilot stride-gemini stride-codex stride-opencode stride-pi stride-lite stride-copilot-lite stride-opencode-lite) ++
-                  @ideation_repos
+                  @ideation_repos ++ @security_review_repos
 
   # Column names are board data, not translated strings, so a bolded column
   # name is also checked against the AI board's column list.
@@ -1515,7 +1522,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     end
 
     test "includes the agent-plugins tags" do
-      for tag <- ~w(developer ai-agents automation) do
+      for tag <- ~w(developer ai-agents automation reviewing workflow) do
         assert tag in HowToData.all_tags()
       end
 
@@ -1540,8 +1547,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 46 guides" do
-      assert length(HowToData.all_how_tos()) == 46
+    test "has all 47 guides" do
+      assert length(HowToData.all_how_tos()) == 47
     end
 
     test "every guide id is unique across the area modules" do
@@ -3110,7 +3117,9 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         {"installing-the-stride-plugin", "Installing the Stride Plugin",
          ["developer", "ai-agents", "automation"], 10, []},
         {"turning-an-idea-into-tasks", "Turning an Idea Into Tasks",
-         ["ai-agents", "tasks", "automation"], 9, [8]}
+         ["ai-agents", "tasks", "automation"], 9, [8]},
+        {"reviewing-changes-for-security", "Reviewing Changes for Security",
+         ["reviewing", "automation", "workflow"], 8, [7, 8]}
       ]
 
       assert Enum.map(AgentPlugins.how_tos(), & &1.id) == @agent_plugins_ids
@@ -3453,6 +3462,262 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       # --continue commits a new document rather than editing the old one.
       assert content =~ "commits the refined version as a new document"
+    end
+  end
+
+  describe "reviewing-changes-for-security guide" do
+    defp security_review_guide do
+      {:ok, guide} = HowToData.get_how_to("reviewing-changes-for-security")
+      guide
+    end
+
+    defp security_review_content,
+      do: agent_plugins_content(["reviewing-changes-for-security"])
+
+    test "reviewing-changes-for-security exists with its tags and steps" do
+      guide = security_review_guide()
+
+      assert guide.title == "Reviewing Changes for Security"
+      assert guide.tags == ["reviewing", "automation", "workflow"]
+      assert guide.content_type == "guide"
+      assert guide.created_at == ~D[2026-11-10]
+      assert guide.reading_time in 2..10
+      assert length(guide.steps) >= 8
+
+      # Joining any of these would move a pinned chain or count.
+      for tag <-
+            ~w(getting-started developer non-developer best-practices security boards organizations metrics collaboration planning ai-agents) do
+        refute tag in guide.tags,
+               "reviewing-changes-for-security would join the #{tag} chain or its count"
+      end
+
+      for {step, n} <- Enum.with_index(guide.steps, 1), step.image do
+        assert step.image ==
+                 "/images/resources/guides/reviewing-changes-for-security-step-#{n}.png",
+               "step #{n} #{step.title} points at another step's screenshot"
+      end
+
+      # Only the two steps that show the Stride app have a screenshot.
+      assert Enum.count(guide.steps, & &1.image) == 2
+      assert Enum.at(guide.steps, 6).title == "What a Reviewer Sees"
+      assert Enum.at(guide.steps, 6).image
+      assert Enum.at(guide.steps, 7).title == "On the Task Detail Page"
+      assert Enum.at(guide.steps, 7).image
+      assert Enum.any?(guide.steps, &is_nil(&1.image))
+    end
+
+    test "reviewing-changes-for-security uses only supported markdown and has at least three steps" do
+      guide = security_review_guide()
+      assert length(guide.steps) >= 3
+
+      for step <- guide.steps do
+        content = step.content
+        fences = Regex.scan(~r/```/, content) |> length()
+        assert rem(fences, 2) == 0, "#{step.title} leaves a code fence open"
+
+        assert length(Regex.scan(~r/```\w*\n[\s\S]*?```/, content)) * 2 == fences,
+               "#{step.title} opens a fence the renderer doesn't recognise"
+
+        prose = prose_outside_code(content)
+
+        refute prose =~ ~r/^\s*#/m, "#{step.title} uses a heading"
+        refute prose =~ ~r/^\s*\d+\.\s/m, "#{step.title} uses a numbered list"
+        refute prose =~ ~r/(?<![\w*])\*[^*\s][^*\n]*\*(?![\w*])/, "#{step.title} uses italics"
+        refute prose =~ ~r/(?<!\w)_[^_\s][^_\n]*_(?!\w)/, "#{step.title} uses italics"
+        refute content =~ "<", "#{step.title} has text the page would show escaped"
+      end
+    end
+
+    test "reviewing-changes-for-security is wired into prev/next navigation" do
+      guide = security_review_guide()
+
+      assert {nil, %{id: "reviewing-completed-work"}} = HowToData.get_navigation(guide)
+
+      reviewing_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("reviewing" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert reviewing_chain ==
+               ~w(reviewing-changes-for-security reviewing-completed-work reading-a-tasks-details)
+
+      # Leading with reviewing moves no other guide: the guides that lead with
+      # ai-agents, developer and non-developer keep their neighbours.
+      {:ok, ideation} = HowToData.get_how_to("turning-an-idea-into-tasks")
+
+      assert {%{id: "installing-the-stride-plugin"}, %{id: "setting-up-hooks"}} =
+               HowToData.get_navigation(ideation)
+
+      ai_agents_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("ai-agents" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert ai_agents_chain ==
+               ~w(using-stride-with-a-team installing-the-stride-plugin turning-an-idea-into-tasks setting-up-hooks writing-tasks-for-ai watching-your-agents)
+
+      {:ok, reviewing} = HowToData.get_how_to("reviewing-completed-work")
+
+      assert {%{id: "monitoring-task-progress"}, %{id: "reading-a-tasks-details"}} =
+               HowToData.get_navigation(reviewing)
+
+      {:ok, installing} = HowToData.get_how_to("installing-the-stride-plugin")
+      assert {nil, %{id: "setting-up-hooks"}} = HowToData.get_navigation(installing)
+    end
+
+    test "reviewing-changes-for-security links resolve" do
+      content = security_review_content()
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\(([^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+
+      for id <-
+            ~w(installing-the-stride-plugin api-authentication reviewing-completed-work reading-a-tasks-details) do
+        assert "/resources/#{id}" in links, "the Security Review guide no longer links to #{id}"
+      end
+
+      for link <- links do
+        case link do
+          "/resources/" <> id ->
+            assert id in ids, "the Security Review guide links to the missing guide #{id}"
+
+          "https://github.com/cheezy/" <> repo ->
+            assert repo in @security_review_repos,
+                   "#{link} is not one of the Stride Security Review repositories"
+
+          other ->
+            flunk("#{other} is neither a Resources guide nor a Stride Security Review repository")
+        end
+      end
+
+      for repo <- @security_review_repos do
+        assert "https://github.com/cheezy/#{repo}" in links,
+               "the Security Review guide doesn't link #{repo}"
+      end
+
+      # Reading a Task's Details links here where it describes the review.
+      {:ok, details} = HowToData.get_how_to("reading-a-tasks-details")
+      reported = Enum.find(details.steps, &(&1.title == "What the Agent Reported"))
+      assert reported.content =~ "(/resources/reviewing-changes-for-security)"
+    end
+
+    test "reviewing-changes-for-security gives each port's install and says Pi has none" do
+      content = security_review_content()
+
+      # Copied from each port's README when the guide was written; no test
+      # reads those READMEs, because the plugin repositories aren't in CI.
+      piped_installs = [
+        "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-security-review/main/install.sh | bash",
+        "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-security-review/main/install.sh | bash -s -- --project",
+        "irm https://raw.githubusercontent.com/cheezy/stride-codex-security-review/main/install.ps1 | iex"
+      ]
+
+      for command <- [
+            "/plugin marketplace add cheezy/stride-marketplace\n/plugin install stride-security-review@stride-marketplace",
+            "/stride-security-review:security-review",
+            "built-in `/security-review`",
+            "copilot plugin install https://github.com/cheezy/stride-copilot-security-review",
+            "`security-review-essentials`",
+            "gemini extensions install https://github.com/cheezy/stride-gemini-security-review",
+            "--include-directories",
+            "the `stride-security-review` skill",
+            "git clone https://github.com/cheezy/stride-opencode-security-review.git\n./stride-opencode-security-review/install.sh",
+            "--global",
+            "--full"
+            | piped_installs
+          ] do
+        assert content =~ command, "the Security Review guide lost #{inspect(command)}"
+      end
+
+      assert content =~ "Pi has no Security Review port."
+      refute content =~ "stride-pi-security-review"
+
+      # A script piped into a shell must be one copied from a port's README.
+      for [line] <- Regex.scan(~r/(?:curl|irm) [^\n`]*\|\s*(?:bash|iex)[^\n`]*/, content) do
+        assert line in piped_installs,
+               "#{line} pipes a script that isn't from a Security Review README"
+      end
+
+      # Only the marketplace that exists today; the community listing isn't approved.
+      refute content =~ "claude-community"
+
+      # A placeholder at most, never a real-looking token.
+      refute content =~ ~r/stride_(dev|live|test)_[A-Za-z0-9]/
+    end
+
+    test "the reviewing-changes-for-security facts match the code" do
+      content = security_review_content()
+
+      # The Review queue shows the section verdict and one row per consideration.
+      review_page = File.read!("lib/kanban_web/live/review_live.html.heex")
+      assert review_page =~ ~s|gettext("Security considerations")|
+      assert review_page =~ "<CodeReviewPanel.security_considerations_breakdown"
+
+      assert review_page =~
+               "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
+
+      panel = File.read!("lib/kanban_web/components/code_review_panel.ex")
+
+      for label <- ~w(Mitigated Partial Unmitigated) do
+        assert panel =~ ~s|gettext("#{label}")|
+        assert content =~ "**#{label}**"
+      end
+
+      helpers = File.read!("lib/kanban_web/review_report_helpers.ex")
+
+      for verdict <- ["passed", "failed", "not assessed"] do
+        assert helpers =~ ~s|gettext("#{verdict}")|
+      end
+
+      assert content =~ "passed or failed"
+      assert content =~ "not assessed"
+
+      # The task's own page has the review report but no per-consideration rows.
+      view = File.read!("lib/kanban_web/live/task_live/view_component.ex")
+      refute view =~ "security_considerations_breakdown"
+      assert view =~ ~s|gettext("Review report")|
+
+      assert content =~
+               "The task's own page doesn't show the verdict for each consideration; the Review queue does."
+
+      report_panel = File.read!("lib/kanban_web/components/review_report_panel.ex")
+      assert report_panel =~ ~s|category_label("security"), do: gettext("Security")|
+      assert report_panel =~ "Incomplete review — the task specified these sections"
+      assert content =~ "starts with **Security**"
+
+      # The task's own list of considerations is hidden until its toggle is on.
+      refute Map.get(%Kanban.Boards.Board{}.field_visibility, "security_considerations", false)
+
+      assert File.read!("lib/kanban_web/live/board_live/settings_form_component.ex") =~
+               ~s|{"security_considerations", gettext("Security Considerations")}|
+
+      assert content =~ "**Security Considerations** toggle is on under **Field visibility**"
+
+      # The server checks that a partial or unmitigated verdict fails the section.
+      assert File.read!("lib/kanban/tasks/completion_validation/task_consistency.ex") =~
+               ~s|when status in ["partial", "unmitigated"]|
+
+      assert content =~ "blocks the task from being completed"
+
+      # Diff mode runs git diff HEAD, so a file git doesn't track isn't reviewed.
+      assert content =~ "a new file you haven't added isn't reviewed"
+
+      assert File.read!("lib/kanban_web/components/review_report_panel.ex") =~
+               ~s|gettext("No issues")|
+
+      assert content =~ "**Request changes**"
+
+      assert File.read!("lib/kanban_web/components/review_detail_header.ex") =~
+               ~s|gettext("Request changes")|
+
+      # Advice for a person to check, never a guarantee.
+      assert content =~ "Its findings are advice."
+      assert content =~ "not as proof that the change is safe"
+      refute content =~ ~r/guarantee/i
+
+      # The token file stays private.
+      assert content =~ "`.gitignore`"
+      assert content =~ "never commit it"
     end
   end
 

@@ -3,7 +3,8 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
   Guides for the Stride plugins that drive a coding agent: installing the
   plugin in each runtime (Claude Code, GitHub Copilot CLI, Gemini CLI,
   Codex CLI, OpenCode and Pi), the lite plugins, keeping a plugin up to
-  date, and turning an idea into tasks with the Stride Ideation plugin.
+  date, turning an idea into tasks with the Stride Ideation plugin, and
+  reviewing changes with the Stride Security Review plugin.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog. It sits after `HowTos.OrgAdmin` and
@@ -13,16 +14,25 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
   hooks → connecting an MCP client. The Ideation guide leads with
   `ai-agents` instead, so it stays out of that chain and its count: in the
   `ai-agents` chain it sits between installing the plugin and setting up
-  hooks, and no guide that leads with `ai-agents` changes neighbours.
+  hooks, and no guide that leads with `ai-agents` changes neighbours. The
+  Security Review guide leads with `reviewing`, so it opens that chain,
+  before Reviewing Completed Work and Reading a Task's Details. It carries
+  neither `ai-agents` (which would move the Ideation guide's Next link) nor
+  `security` nor `developer`, so no other guide changes neighbours.
 
   The guides follow the README of each plugin repository: cheezy/stride,
   stride-copilot, stride-gemini, stride-codex, stride-opencode, stride-pi,
-  stride-lite, stride-copilot-lite and stride-opencode-lite, and for
+  stride-lite, stride-copilot-lite and stride-opencode-lite; for
   Ideation stride-ideation (with its `commands/ideate.md` and
   `commands/stridify.md`), stride-copilot-ideation, stride-gemini-ideation,
-  stride-codex-ideation and stride-opencode-ideation. Re-read them when a
-  plugin's install or update command changes; no test reads them, because
-  they are not checked out in CI.
+  stride-codex-ideation and stride-opencode-ideation; and for Security
+  Review stride-security-review (with its `commands/security-review.md` and
+  `agents/security-reviewer.md`), stride-copilot-security-review,
+  stride-codex-security-review, stride-gemini-security-review and
+  stride-opencode-security-review, plus the Stride workflow's
+  `skills/stride-workflow/optional-security-review.md` for the automatic
+  review. Re-read them when a plugin's install or update command changes;
+  no test reads them, because they are not checked out in CI.
   """
 
   @doc "The guides in this group, in display order."
@@ -165,6 +175,70 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
             content:
               "[Writing Effective Tasks for AI Agents](/resources/writing-tasks-for-ai) describes what a task needs for an agent to succeed: acceptance criteria, key files, patterns to follow, pitfalls and a testing strategy. Ideation drafts its tasks with those fields, from what you said in the interview. Use that guide as the checklist when you read the tasks in Backlog: fix anything thin or wrong on the board before you move a task to Ready.\n\nA new board hides several of the fields Ideation fills in, such as key files, pitfalls and verification steps. To see and edit them, turn them on under **Field visibility** in the board's settings. [Reading a Task's Details](/resources/reading-a-tasks-details) shows where.",
             image: nil
+          }
+        ]
+      },
+      %{
+        id: "reviewing-changes-for-security",
+        title: "Reviewing Changes for Security",
+        description:
+          "Check a change for likely security problems with Stride Security Review, by hand or automatically when a task lists security considerations, and read the verdicts a reviewer sees, in Claude Code, GitHub Copilot CLI, Gemini CLI, Codex CLI or OpenCode.",
+        tags: ["reviewing", "automation", "workflow"],
+        content_type: "guide",
+        reading_time: 7,
+        created_at: ~D[2026-11-10],
+        steps: [
+          %{
+            title: "What Stride Security Review Does",
+            content:
+              "Stride Security Review is a companion plugin that checks a change, or a set of files, for likely security problems: injection, gaps in authentication and authorization, data exposure such as secrets in logs, weak cryptography, missing input validation, cross-site scripting and code execution, insecure configuration, and supply-chain risks such as unpinned dependencies. In code that calls an LLM or an agent, it also looks for prompt injection and tool abuse. It reasons about what the code does rather than matching patterns, and leaves out low-impact noise.\n\nYou can use it two ways: run it yourself on what you've changed, or let the Stride workflow run it for a task that lists security considerations. It is separate from the Stride plugin that works tasks, which [Installing the Stride Plugin](/resources/installing-the-stride-plugin) covers, and the automatic review needs both.\n\nIts findings are advice. It reports likely issues for a person to check: it can miss a problem, and it can flag one that isn't there. The [stride-security-review repository](https://github.com/cheezy/stride-security-review) is the full reference, and the commands in this guide are copied from it and from each port's README.",
+            image: nil
+          },
+          %{
+            title: "Installing in Claude Code",
+            content:
+              "In Claude Code, add the Stride marketplace if you haven't already, then install the plugin from it:\n\n```text\n/plugin marketplace add cheezy/stride-marketplace\n/plugin install stride-security-review@stride-marketplace\n```\n\nIts command is `/stride-security-review:security-review`. Type the full name: Claude Code has a built-in `/security-review` of its own, a simpler review that ignores this plugin's options.",
+            image: nil
+          },
+          %{
+            title: "Installing in Other Runtimes",
+            content:
+              "Four other runtimes have a Security Review port. In GitHub Copilot CLI, install the plugin from its repository:\n\n```bash\ncopilot plugin install https://github.com/cheezy/stride-copilot-security-review\n```\n\nCopilot has skills rather than commands: ask it to activate `security-review-essentials` ([stride-copilot-security-review](https://github.com/cheezy/stride-copilot-security-review)).\n\nIn Gemini CLI, install the extension with `gemini extensions install https://github.com/cheezy/stride-gemini-security-review`, then run `/security-review`. Its README explains starting Gemini CLI with `--include-directories` so the reviewer can read its rule files ([stride-gemini-security-review](https://github.com/cheezy/stride-gemini-security-review)).\n\nThe Codex CLI port comes with an installer script. To install it for every project, or into the current project only:\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-security-review/main/install.sh | bash\ncurl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-security-review/main/install.sh | bash -s -- --project\n```\n\nOn Windows, run `irm https://raw.githubusercontent.com/cheezy/stride-codex-security-review/main/install.ps1 | iex` in PowerShell. Read a script before you pipe it into a shell. Codex has no slash commands: ask it to activate the `stride-security-review` skill ([stride-codex-security-review](https://github.com/cheezy/stride-codex-security-review)).\n\nFor OpenCode, clone the repository and run its installer from your project, adding `--global` to install it for every project:\n\n```bash\ngit clone https://github.com/cheezy/stride-opencode-security-review.git\n./stride-opencode-security-review/install.sh\n```\n\nThen run `/security-review` ([stride-opencode-security-review](https://github.com/cheezy/stride-opencode-security-review)).\n\nPi has no Security Review port.",
+            image: nil
+          },
+          %{
+            title: "Running a Review by Hand",
+            content:
+              "With no arguments, the command reviews your uncommitted changes, staged or not, against the last commit. It only sees files git already tracks: a new file you haven't added isn't reviewed, so run `git add` on it first. Name files or folders to review only those, or pass `--full` to review every tracked file, which suits a first look at an existing project but takes longer:\n\n```text\n/stride-security-review:security-review\n/stride-security-review:security-review lib/auth.ex\n/stride-security-review:security-review --full\n```\n\nIn Gemini CLI and OpenCode, put the same arguments after `/security-review`. In Copilot and Codex, give them when you ask for the skill.\n\nRun it before you push or open a pull request, and especially on a change that touches signing in, permissions, user input, secrets, database queries or shell commands.",
+            image: nil
+          },
+          %{
+            title: "Reading the Report",
+            content:
+              "The report opens with the number of findings and a count for each severity:\n\n```text\nSecurity review — 1 finding across 2 files\nCritical: 0   High: 1   Medium: 0   Low: 0   Info: 0\n```\n\nThe findings follow, most severe first. Each one names its kind, such as injection or data exposure, the file and line, how confident the reviewer is (high, medium or low), the CWE and OWASP entries when there are any, what is wrong, and a suggested fix. When there is nothing to review it says no security-relevant changes were detected, and a clean review says `No findings.` with the number of files it read.\n\nThe command shows every finding its reviewer returns and leaves the decision to you. Check each one against the code before you change anything, and read a clean report as nothing found, not as proof that the change is safe.",
+            image: nil
+          },
+          %{
+            title: "When the Stride Workflow Runs It",
+            content:
+              "When the Stride plugin works a task whose **Security considerations** list isn't empty, and Security Review is installed in the same runtime, the workflow runs it during the review before the task is completed. A list that holds only a placeholder such as None doesn't count. This works in Claude Code, GitHub Copilot CLI, Gemini CLI, Codex CLI and OpenCode.\n\nThe security reviewer gets the change and each consideration, and answers mitigated, partial or unmitigated for each one, with its evidence. Then:\n\n- a consideration that isn't mitigated, or a finding of medium severity or higher, becomes a security issue in the review\n- a security issue fails the review's security considerations verdict and sends the agent back to fix the change and review it again, so a partial or unmitigated consideration blocks the task from being completed\n- low and info findings go in the task's completion notes instead\n- a missing or unreadable answer counts as not mitigated, never as a pass\n\nWithout the plugin, the agent's own reviewer still gives a verdict on the considerations, without a separate answer for each one.\n\nThe Stride plugin reads your API token from `.stride_auth.md`: add it to `.gitignore` and never commit it, as [Configuring API Authentication](/resources/api-authentication) shows.",
+            image: nil
+          },
+          %{
+            title: "What a Reviewer Sees",
+            content:
+              "Open the **Review queue** and select the task. Its **Security considerations** section shows the review's verdict, passed or failed, with the reviewer's note. If the task listed considerations but the review recorded no verdict, the section says they were not assessed.\n\nWhen Security Review ran, each consideration has its own row, marked **Mitigated**, **Partial** or **Unmitigated**, with the evidence beneath it, often a file and line. A task reviewed without the plugin shows the verdict with no rows.\n\nBecause a partial or unmitigated consideration sends the agent back, a task waiting in the queue normally shows every row **Mitigated**. If you see **Partial** or **Unmitigated**, or not assessed, use **Request changes**. A **Mitigated** row is the reviewer's judgement, not proof: check its evidence in the diff before you approve, as [Reviewing Completed Work](/resources/reviewing-completed-work) describes.\n\nIn the picture, the task's one consideration is **Mitigated**, with the file and line that show it.",
+            image: "/images/resources/guides/reviewing-changes-for-security-step-7.png",
+            image_width: 700,
+            image_height: 170
+          },
+          %{
+            title: "On the Task Detail Page",
+            content:
+              "The task's own page doesn't show the verdict for each consideration; the Review queue does.\n\nIts **Review report** lists the review's issues under **Critical**, **Important** and **Minor**, and an issue the security review raised starts with **Security**. If the task listed considerations but the review didn't assess them, a warning at the top of the report names **Security considerations**.\n\nThe task's own list of security considerations shows when its **Security Considerations** toggle is on under **Field visibility** in the board's settings. [Reading a Task's Details](/resources/reading-a-tasks-details) shows where.\n\nIn the picture, the review report of a task with one security consideration shows the review's summary and **No issues**, and no verdict for the consideration.",
+            image: "/images/resources/guides/reviewing-changes-for-security-step-8.png",
+            image_width: 722,
+            image_height: 158
           }
         ]
       }
