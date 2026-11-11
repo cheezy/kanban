@@ -51,8 +51,10 @@ defmodule Kanban.RateLimit do
   `:org_audit_export` counts Organization audit log downloads
   (`GET /org/audit/export`) per org-admin (`identity: "user:<id>"`, the id from
   `current_scope`, never a request param, and no IP), with `check/2` before the
-  export is audited or streamed. A refused request therefore opens no stream
-  and writes no audit row. Like `:two_factor` it has no IP ceiling, so
+  export is audited, built or streamed. A refused request therefore opens no
+  stream and writes no audit row. Signed (`signed=true`) and unsigned exports
+  are counted together; a signed request refused because the instance has no
+  signing key is not counted. Like `:two_factor` it has no IP ceiling, so
   org-admins behind one office NAT do not block each other.
 
   `:invite` counts invitation emails per inviter (`identity: "user:<id>"`, the

@@ -12,15 +12,17 @@ This roadmap describes what we are considering for Stride next. What has already
 
   Add files such as screenshots, logs and designs to tasks and comments on Organization boards. Drag a file onto a task or a comment, or browse for one, and images show a preview inline. Agents working a task can read its files through the API, such as a screenshot of the bug or the log that shows it, so they start from the same evidence people see. Attachments follow the board's existing access rules, so only people who can see a task can open its files.
 
+🚧 In progress
+
+- **Audit log streaming**
+
+  Send the audit log to a security tool such as Splunk, Datadog or a SIEM, and sign audit exports.
+
 ## 🔜 Planned
 
 - **Import from Jira**
 
   Bring boards and tasks across with their titles, descriptions, comments, labels and status, so a team can move without losing its history.
-
-- **Audit log streaming**
-
-  Send the audit log to a security tool such as Splunk, Datadog or a SIEM, and sign audit exports.
 
 - **Retention and legal hold**
 

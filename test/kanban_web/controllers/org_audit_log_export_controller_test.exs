@@ -1,6 +1,7 @@
 defmodule KanbanWeb.OrgAuditLogExportControllerTest do
   # async: false — the row-cap and rate-limit tests change application env
-  # (Kanban.RateLimit and this controller's max_rows).
+  # (Kanban.RateLimit and this controller's max_rows), and the signed-export
+  # tests change Kanban.AuditLog.SignedExport's and Kanban.AuditLog.Signing's.
   use KanbanWeb.ConnCase, async: false
 
   import Kanban.AccountsFixtures
@@ -9,6 +10,10 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
 
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
+  alias Kanban.AuditLog.Export
+  alias Kanban.AuditLog.SignedExport
+  alias Kanban.AuditLog.Signing
+  alias Kanban.Organizations
   alias Kanban.Repo
 
   @refusal "You must be an org-admin of an Organization to access this page."
@@ -107,6 +112,24 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       assert event.metadata["filters"] == %{"action" => "org_admin_appointed"}
       assert event.metadata["format"] == "json"
       assert event.metadata["organization_id"] == org_a.id
+    end
+
+    test "the unsigned export event carries signed false and no key or hash", %{conn: conn} do
+      for query <- ["", "?format=json", "?signed=false", "?signed=1", "?signed=TRUE"] do
+        conn = get(conn, "/org/audit/export" <> query)
+
+        assert [content_type] = get_resp_header(conn, "content-type")
+        refute content_type =~ "zip"
+        assert response(conn, 200)
+      end
+
+      assert [_, _, _, _, _] = events = AuditLog.list_events(action: :org_audit_log_exported)
+
+      for event <- events do
+        assert event.metadata["signed"] == false
+        refute Map.has_key?(event.metadata, "key_id")
+        refute Map.has_key?(event.metadata, "sha256")
+      end
     end
 
     test "a recorded export belongs to the Organization and appears in its next export",
@@ -496,6 +519,732 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
 
       assert conn |> get(~p"/org/audit/export?format=json") |> response(200)
       assert export_events() |> length() == 1
+    end
+  end
+
+  ## Signed exports
+
+  defp signed_setup(%{tmp_dir: tmp_dir}) do
+    saved = Enum.map([SignedExport, Signing], &{&1, Application.fetch_env(:kanban, &1)})
+    Application.put_env(:kanban, SignedExport, tmp_root: tmp_dir)
+    on_exit(fn -> Enum.each(saved, &restore_env/1) end)
+
+    %{root: tmp_dir}
+  end
+
+  defp restore_env({module, {:ok, config}}), do: Application.put_env(:kanban, module, config)
+  defp restore_env({module, :error}), do: Application.delete_env(:kanban, module)
+
+  defp unzip(conn) do
+    {:ok, entries} = conn |> response(200) |> :zip.unzip([:memory])
+    Map.new(entries, fn {name, bytes} -> {List.to_string(name), bytes} end)
+  end
+
+  defp sha256(bytes), do: :sha256 |> :crypto.hash(bytes) |> Base.encode16(case: :lower)
+
+  defp unsigned_file(organization, format, max_rows) do
+    [organization_id: organization.id]
+    |> Export.export_stream(format, max_rows: max_rows, redact_actors_outside: organization.id)
+    |> Enum.join()
+  end
+
+  # The signature over the manifest verifies with the published key, and the
+  # manifest's hash and size are those of the file beside it.
+  defp assert_verifies(entries, file_name) do
+    manifest_bytes = entries["manifest.json"]
+    manifest = Jason.decode!(manifest_bytes)
+    signature = entries["manifest.json.sig"]
+
+    assert byte_size(signature) == 64
+    assert Signing.verify(manifest_bytes, signature, manifest["key_id"])
+    assert_describes(manifest["file"], file_name, entries[file_name])
+
+    manifest
+  end
+
+  defp assert_describes(described, file_name, bytes) do
+    assert described["name"] == file_name
+    assert described["sha256"] == sha256(bytes)
+    assert described["bytes"] == byte_size(bytes)
+  end
+
+  # Runs `fun` in the request's process when the export's audit event is
+  # emitted: after the zip is built and before the first byte is sent.
+  defp on_export_recorded(fun) do
+    handler_id = "signed-export-recorded-#{System.unique_integer([:positive])}"
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :audit, :org_audit_log_exported],
+      fn _event, _measurements, metadata, _config -> fun.(metadata) end,
+      nil
+    )
+
+    on_exit(fn -> :telemetry.detach(handler_id) end)
+  end
+
+  defp build_dirs(root), do: root |> File.ls!() |> Enum.map(&Path.join(root, &1))
+
+  defp zip_in(dir), do: Path.join(dir, "export.zip")
+
+  # Runs `fun` once with the build's directory, in the test process, when the
+  # build issues its first read of audit_events: the directory exists by then.
+  # Returns the counter that says whether it ran.
+  defp on_build_first_read(root, fun) do
+    test_pid = self()
+    handler_id = "signed-export-first-read-#{System.unique_integer([:positive])}"
+    fired = :counters.new(1, [])
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, metadata, _config ->
+        with true <- self() == test_pid,
+             %{source: "audit_events", query: "SELECT" <> _rest} <- metadata,
+             [dir] <- build_dirs(root),
+             0 <- :counters.get(fired, 1) do
+          :counters.add(fired, 1, 1)
+          fun.(dir)
+        end
+      end,
+      nil
+    )
+
+    on_exit(fn -> :telemetry.detach(handler_id) end)
+
+    fired
+  end
+
+  describe "signed export" do
+    @describetag :tmp_dir
+    setup [:org_admin_setup, :signed_setup]
+
+    test "signed=true returns an application/zip attachment",
+         %{conn: conn, org_a: org_a, org_admin: org_admin, root: root} do
+      expected_file = unsigned_file(org_a, :csv, 50_000)
+
+      conn = get(conn, ~p"/org/audit/export?signed=true")
+
+      assert [content_type] = get_resp_header(conn, "content-type")
+      assert content_type =~ "application/zip"
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+
+      assert disposition =~
+               ~r/\Aattachment; filename="org_audit_log_\d{4}-\d{2}-\d{2}_signed\.zip"\z/
+
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      assert get_resp_header(conn, "x-export-truncated") == []
+
+      entries = unzip(conn)
+
+      assert entries |> Map.keys() |> Enum.sort() ==
+               ~w(README.txt audit_log.csv manifest.json manifest.json.sig)
+
+      manifest = assert_verifies(entries, "audit_log.csv")
+
+      # Byte for byte the unsigned file for the same events, and only this
+      # Organization's.
+      assert entries["audit_log.csv"] == expected_file
+      assert entries["audit_log.csv"] =~ ",organization_updated,"
+      refute entries["audit_log.csv"] =~ "organization_created"
+      refute entries["audit_log.csv"] =~ "login_failed"
+
+      assert manifest["schema"] == "stride.audit-export.v1"
+      assert manifest["instance"] == KanbanWeb.Endpoint.host()
+      assert manifest["organization"] == %{"id" => org_a.id, "name" => org_a.name}
+      assert manifest["generated_by"] == %{"user_id" => org_admin.id, "email" => org_admin.email}
+      assert manifest["filters"] == %{"action" => nil, "from" => nil, "to" => nil}
+      assert manifest["rows"] == 2
+      assert manifest["truncated"] == false
+
+      # The temporary directory is gone once the response has been sent.
+      assert File.ls!(root) == []
+    end
+
+    test "the README's key URL serves the key that verifies the signature", %{conn: conn} do
+      entries = conn |> get(~p"/org/audit/export?signed=true") |> unzip()
+      manifest = Jason.decode!(entries["manifest.json"])
+
+      assert [_line, key_url] =
+               Regex.run(~r/^curl -fsS "([^"]+)" -o stride-audit\.pem$/m, entries["README.txt"])
+
+      uri = URI.parse(key_url)
+      assert uri.host == KanbanWeb.Endpoint.host()
+      assert URI.decode_query(uri.query) == %{"format" => "pem", "kid" => manifest["key_id"]}
+
+      pem = build_conn() |> get(uri.path <> "?" <> uri.query) |> response(200)
+      {:ok, %{public_key: public_key}} = Signing.find_published(manifest["key_id"])
+      assert pem == Signing.public_key_pem(public_key)
+
+      assert :crypto.verify(
+               :eddsa,
+               :none,
+               entries["manifest.json"],
+               entries["manifest.json.sig"],
+               [
+                 public_key,
+                 :ed25519
+               ]
+             )
+    end
+
+    test "format=json puts audit_log.json in the zip", %{conn: conn, org_a: org_a} do
+      expected_file = unsigned_file(org_a, :json, 50_000)
+
+      entries = conn |> get(~p"/org/audit/export?signed=true&format=json") |> unzip()
+
+      assert entries |> Map.keys() |> Enum.sort() ==
+               ~w(README.txt audit_log.json manifest.json manifest.json.sig)
+
+      manifest = assert_verifies(entries, "audit_log.json")
+      assert manifest["file"]["format"] == "json"
+      assert entries["audit_log.json"] == expected_file
+    end
+
+    test "the signed export records one event with signed, key_id and sha256 matching the manifest",
+         %{conn: conn, org_a: org_a, org_admin: org_admin} do
+      conn =
+        get(conn, ~p"/org/audit/export?signed=true&format=json&action=org_admin_appointed")
+
+      manifest = conn |> unzip() |> assert_verifies("audit_log.json")
+
+      assert [event] = AuditLog.list_events(action: :org_audit_log_exported)
+      assert event.actor_user_id == org_admin.id
+      assert event.organization_id == org_a.id
+      assert event.metadata["user_id"] == org_admin.id
+      assert event.metadata["organization_id"] == org_a.id
+      assert event.metadata["signed"] == true
+      assert event.metadata["key_id"] == manifest["key_id"]
+      assert event.metadata["key_id"] == Signing.current_key().key_id
+      assert event.metadata["sha256"] == manifest["file"]["sha256"]
+      assert event.metadata["truncated"] == manifest["truncated"]
+      assert event.metadata["format"] == "json"
+      assert event.metadata["filters"] == %{"action" => "org_admin_appointed"}
+
+      assert manifest["filters"] ==
+               %{"action" => "org_admin_appointed", "from" => nil, "to" => nil}
+    end
+
+    test "the event is emitted while the zip is still on disk, before anything is sent",
+         %{conn: conn, root: root} do
+      test_pid = self()
+
+      on_export_recorded(fn _metadata ->
+        zips = root |> build_dirs() |> Enum.map(&zip_in/1)
+        send(test_pid, {:recorded, Enum.map(zips, &File.regular?/1)})
+      end)
+
+      conn = get(conn, ~p"/org/audit/export?signed=true")
+
+      assert_received {:recorded, [true]}
+      assert response(conn, 200)
+      assert File.ls!(root) == []
+    end
+
+    test "a signed file never holds its own event; the next one holds the first one's",
+         %{conn: conn} do
+      first = conn |> get(~p"/org/audit/export?signed=true&format=json") |> unzip()
+
+      assert first["audit_log.json"] |> Jason.decode!() |> Enum.map(& &1["action"]) ==
+               ["org_admin_appointed", "organization_updated"]
+
+      second = conn |> get(~p"/org/audit/export?signed=true&format=json") |> unzip()
+
+      assert [%{"action" => "org_audit_log_exported", "metadata" => metadata} | _] =
+               Jason.decode!(second["audit_log.json"])
+
+      assert metadata["sha256"] == sha256(first["audit_log.json"])
+      assert metadata["signed"] == true
+    end
+
+    test "organization_id and actor_email params cannot widen or probe a signed export",
+         %{conn: conn, org_a: org_a, org_b: org_b} do
+      site_admin = admin_fixture()
+
+      Repo.insert!(%AuditEvent{
+        action: "organization_updated",
+        organization_id: org_a.id,
+        actor_user_id: site_admin.id,
+        ip: "203.0.113.9",
+        inserted_at: ~U[2026-10-05 00:00:00.000000Z],
+        metadata: %{"user_id" => site_admin.id, "ip" => "203.0.113.9"}
+      })
+
+      params = %{
+        "signed" => "true",
+        "format" => "json",
+        "organization_id" => org_b.id,
+        "actor_email" => site_admin.email
+      }
+
+      entries = conn |> get(~p"/org/audit/export?#{params}") |> unzip()
+      manifest = assert_verifies(entries, "audit_log.json")
+
+      assert entries["audit_log.json"] |> Jason.decode!() |> Enum.map(& &1["action"]) ==
+               ["organization_updated", "org_admin_appointed", "organization_updated"]
+
+      # The site admin's row is there, without their email, IP or id.
+      for {_name, bytes} <- entries do
+        refute bytes =~ site_admin.email
+        refute bytes =~ "203.0.113.9"
+      end
+
+      assert manifest["organization"]["id"] == org_a.id
+      assert manifest["filters"] == %{"action" => nil, "from" => nil, "to" => nil}
+      assert [event] = AuditLog.list_events(action: :org_audit_log_exported)
+      assert event.metadata["filters"] == %{}
+    end
+
+    test "an org-admin of another Organization gets only their own events", %{org_b: org_b} do
+      other_admin = user_fixture()
+      organization_member_fixture(org_b, other_admin, :org_admin)
+
+      entries =
+        build_conn()
+        |> log_in_user(other_admin)
+        |> get(~p"/org/audit/export?signed=true&format=json")
+        |> unzip()
+
+      manifest = assert_verifies(entries, "audit_log.json")
+
+      assert entries["audit_log.json"] |> Jason.decode!() |> Enum.map(& &1["action"]) ==
+               ["organization_created"]
+
+      assert manifest["organization"]["id"] == org_b.id
+      assert manifest["generated_by"]["email"] == other_admin.email
+    end
+
+    test "a non-org-admin is refused and nothing is built or recorded", %{root: root} do
+      member = user_fixture()
+      organization_member_fixture(organization_fixture(), member, :member)
+
+      for user <- [member, user_fixture(), admin_fixture()] do
+        conn = build_conn() |> log_in_user(user) |> get(~p"/org/audit/export?signed=true")
+
+        assert redirected_to(conn) == ~p"/boards"
+      end
+
+      assert build_conn() |> get(~p"/org/audit/export?signed=true") |> redirected_to() ==
+               ~p"/users/log-in"
+
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+      assert File.ls!(root) == []
+    end
+
+    test "signed with an unsupported format is refused as any other", %{conn: conn, root: root} do
+      conn = get(conn, ~p"/org/audit/export?signed=true&format=pdf")
+
+      assert redirected_to(conn) == ~p"/org/audit"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Unsupported export format."
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+      assert File.ls!(root) == []
+    end
+
+    test "audit telemetry carries signed, key_id and sha256 but no filters or ip, and the export span has format zip",
+         %{conn: conn} do
+      attach_telemetry([
+        [:kanban, :audit, :org_audit_log_exported],
+        [:kanban, :export, :start],
+        [:kanban, :export, :stop]
+      ])
+
+      conn = get(conn, ~p"/org/audit/export?signed=true&format=json&action=org_admin_appointed")
+      manifest = conn |> unzip() |> assert_verifies("audit_log.json")
+
+      assert_receive {:telemetry_event, [:kanban, :audit, :org_audit_log_exported], _, metadata}
+      assert metadata.signed == true
+      assert metadata.key_id == manifest["key_id"]
+      assert metadata.sha256 == manifest["file"]["sha256"]
+      assert metadata.truncated == false
+      assert metadata.format == "json"
+      refute Map.has_key?(metadata, :filters)
+      refute Map.has_key?(metadata, :ip)
+
+      assert_receive {:telemetry_event, [:kanban, :export, :start], _, start}
+      assert_receive {:telemetry_event, [:kanban, :export, :stop], %{duration: _}, stop}
+
+      for metadata <- [start, stop] do
+        assert Map.delete(metadata, :telemetry_span_context) == %{
+                 kind: :org_audit_log,
+                 format: :zip
+               }
+      end
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+
+    test "two signed exports at once each get their own temp dir and both verify",
+         %{org_a: org_a, org_admin: org_admin, root: root} do
+      test_pid = self()
+
+      # Holds each request after its zip is built and its event recorded, so
+      # both temporary directories exist at the same moment.
+      on_export_recorded(fn _metadata ->
+        send(test_pid, {:built, self()})
+
+        receive do
+          :release -> :ok
+        after
+          10_000 -> :ok
+        end
+      end)
+
+      formats = ["csv", "json"]
+
+      tasks =
+        for format <- formats do
+          conn = log_in_user(build_conn(), org_admin)
+          Task.async(fn -> get(conn, ~p"/org/audit/export?signed=true&format=#{format}") end)
+        end
+
+      assert_receive {:built, first}, 10_000
+      assert_receive {:built, second}, 10_000
+
+      assert [dir_a, dir_b] = build_dirs(root)
+      assert dir_a != dir_b
+      assert dir_a |> zip_in() |> File.regular?()
+      assert dir_b |> zip_in() |> File.regular?()
+
+      for pid <- [first, second], do: send(pid, :release)
+      conns = Task.await_many(tasks, 30_000)
+
+      manifests =
+        for {conn, format} <- Enum.zip(conns, formats) do
+          conn |> unzip() |> assert_verifies("audit_log.#{format}")
+        end
+
+      assert Enum.all?(manifests, &(&1["organization"]["id"] == org_a.id))
+
+      assert [_, _] = events = AuditLog.list_events(action: :org_audit_log_exported)
+
+      assert events |> Enum.map(& &1.metadata["sha256"]) |> Enum.sort() ==
+               manifests |> Enum.map(& &1["file"]["sha256"]) |> Enum.sort()
+
+      assert File.ls!(root) == []
+    end
+
+    test "signing off refuses with the flash and records nothing", %{conn: conn, root: root} do
+      attach_telemetry([[:kanban, :export, :start]])
+      Application.put_env(:kanban, Signing, [])
+
+      conn = get(conn, ~p"/org/audit/export?signed=true")
+
+      assert redirected_to(conn) == ~p"/org/audit"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Signed exports are not set up on this server."
+
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+      assert File.ls!(root) == []
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+
+    test "a build failure redirects with a flash, records no event and leaves no temp dir",
+         %{conn: conn, root: root} do
+      attach_telemetry([[:kanban, :export, :stop]])
+
+      # A regular file where the temporary root should be: nothing can be
+      # created under it.
+      blocked = Path.join(root, "not-a-directory")
+      File.write!(blocked, "")
+      Application.put_env(:kanban, SignedExport, tmp_root: blocked)
+
+      {conn, log} =
+        ExUnit.CaptureLog.with_log(fn -> get(conn, ~p"/org/audit/export?signed=true") end)
+
+      assert redirected_to(conn) == ~p"/org/audit"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "The signed export could not be built. Try again."
+
+      refute Phoenix.Flash.get(conn.assigns.flash, :error) =~ root
+      refute log =~ root
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+      assert File.ls!(root) == ["not-a-directory"]
+
+      # A failed build still ends the export span.
+      assert_receive {:telemetry_event, [:kanban, :export, :stop], _,
+                      %{kind: :org_audit_log, format: :zip}}
+    end
+
+    test "a build that fails part-way leaves no temp dir and records nothing",
+         %{conn: conn, root: root} do
+      # A directory planted where manifest.json goes makes that write fail.
+      fired =
+        on_build_first_read(root, fn dir ->
+          dir |> Path.join("manifest.json") |> File.mkdir!()
+        end)
+
+      {conn, _log} =
+        ExUnit.CaptureLog.with_log(fn -> get(conn, ~p"/org/audit/export?signed=true") end)
+
+      assert :counters.get(fired, 1) == 1
+      assert redirected_to(conn) == ~p"/org/audit"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "The signed export could not be built. Try again."
+
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+      assert File.ls!(root) == []
+    end
+
+    test "a key removed during the build refuses with the signing-off flash and records nothing",
+         %{conn: conn, root: root} do
+      fired = on_build_first_read(root, fn _dir -> Application.put_env(:kanban, Signing, []) end)
+
+      conn = get(conn, ~p"/org/audit/export?signed=true")
+
+      assert :counters.get(fired, 1) == 1
+      assert redirected_to(conn) == ~p"/org/audit"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "Signed exports are not set up on this server."
+
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+      assert File.ls!(root) == []
+    end
+
+    test "an org-admin removed during the build gets no file and is refused as by the gate",
+         %{conn: conn, org_a: org_a, org_admin: org_admin, root: root} do
+      organization_member_fixture(org_a, user_fixture(), :org_admin)
+      site_admin = admin_fixture()
+
+      fired =
+        on_build_first_read(root, fn _dir ->
+          {:ok, _membership} = Organizations.remove_org_admin(site_admin, org_a, org_admin)
+        end)
+
+      conn = get(conn, ~p"/org/audit/export?signed=true")
+
+      assert :counters.get(fired, 1) == 1
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/boards"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == @refusal
+      assert get_resp_header(conn, "content-disposition") == []
+
+      assert AuditLog.list_events(action: :org_audit_log_exported) == []
+
+      assert [event] =
+               AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)
+
+      assert event.metadata["gate"] == "require_org_admin"
+      assert File.ls!(root) == []
+    end
+
+    test "a send that fails still removes the temp dir, and the event stays recorded",
+         %{conn: conn, root: root} do
+      # The zip disappears between the audit row and the send, as a stand-in
+      # for a download that dies: sending it raises.
+      on_export_recorded(fn _metadata ->
+        [dir] = build_dirs(root)
+        dir |> zip_in() |> File.rm!()
+      end)
+
+      assert_raise File.Error, fn -> get(conn, ~p"/org/audit/export?signed=true") end
+
+      assert File.ls!(root) == []
+      assert [event] = AuditLog.list_events(action: :org_audit_log_exported)
+      assert event.metadata["signed"] == true
+    end
+
+    for {locale, signing_off, build_failed} <- [
+          {"ja", "このサーバーでは署名付きエクスポートが設定されていません。", "署名付きエクスポートを作成できませんでした。もう一度お試しください。"},
+          {"zh", "此服务器未设置签名导出。", "无法生成签名导出，请重试。"}
+        ] do
+      test "the refusal flashes are translated under #{locale}", %{conn: conn, root: root} do
+        conn = Plug.Test.init_test_session(conn, %{"locale" => unquote(locale)})
+
+        blocked = Path.join(root, "not-a-directory")
+        File.write!(blocked, "")
+        Application.put_env(:kanban, SignedExport, tmp_root: blocked)
+
+        {failed, _log} =
+          ExUnit.CaptureLog.with_log(fn -> get(conn, ~p"/org/audit/export?signed=true") end)
+
+        assert Phoenix.Flash.get(failed.assigns.flash, :error) == unquote(build_failed)
+
+        Application.put_env(:kanban, Signing, [])
+        refused = get(conn, ~p"/org/audit/export?signed=true")
+
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == unquote(signing_off)
+      end
+    end
+  end
+
+  describe "signed export limits" do
+    @describetag :tmp_dir
+    setup [:limits_setup, :signed_setup]
+
+    test "truncated comes from the stream: false at exactly the cap, true past it, with no header",
+         %{conn: conn, organization: organization} do
+      insert_cap_events!(organization, @max_rows)
+      path = ~p"/org/audit/export?signed=true&format=json&action=organization_updated"
+
+      # Exactly the cap. The signed file holds no audit row of its own, so
+      # nothing else takes a place.
+      at_cap = get(conn, path)
+
+      assert get_resp_header(at_cap, "x-export-truncated") == []
+      manifest = at_cap |> unzip() |> assert_verifies("audit_log.json")
+
+      assert manifest["truncated"] == false
+      assert manifest["rows"] == @max_rows
+      assert [%{metadata: %{"truncated" => false}}] = export_events()
+
+      # One more row than the cap.
+      insert_cap_events!(organization, 1)
+      cut = get(conn, path)
+
+      assert get_resp_header(cut, "x-export-truncated") == []
+      entries = unzip(cut)
+      manifest = assert_verifies(entries, "audit_log.json")
+
+      assert manifest["truncated"] == true
+      assert manifest["rows"] == @max_rows
+      assert entries["audit_log.json"] |> Jason.decode!() |> length() == @max_rows
+
+      assert export_events() |> Enum.map(& &1.metadata["truncated"]) |> Enum.sort() ==
+               [false, true]
+    end
+
+    test "signed and unsigned exports share the limit", %{conn: conn} do
+      attach_telemetry([[:kanban, :rate_limit, :denied]])
+
+      assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
+      assert conn |> get(~p"/org/audit/export?format=json") |> response(200)
+      assert length(export_events()) == @rate_limit
+
+      for query <- ["?signed=true", "?signed=true&format=json", ""] do
+        refused = get(conn, "/org/audit/export" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) ==
+                 "Too many exports. Try again later."
+
+        assert_receive {:telemetry_event, [:kanban, :rate_limit, :denied], _,
+                        %{surface: :org_audit_export}}
+      end
+
+      assert length(export_events()) == @rate_limit
+    end
+
+    test "signing off refuses with the flash, records nothing and is not charged",
+         %{conn: conn} do
+      attach_telemetry([[:kanban, :rate_limit, :denied]])
+      {:ok, signing} = Application.fetch_env(:kanban, Signing)
+      Application.put_env(:kanban, Signing, [])
+
+      for _ <- 1..5 do
+        refused = get(conn, ~p"/org/audit/export?signed=true")
+
+        assert redirected_to(refused) == ~p"/org/audit"
+
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) ==
+                 "Signed exports are not set up on this server."
+      end
+
+      assert export_events() == []
+      refute_received {:telemetry_event, [:kanban, :rate_limit, :denied], _, _}
+
+      # The whole allowance is still there once signing is back.
+      Application.put_env(:kanban, Signing, signing)
+
+      for _ <- 1..@rate_limit do
+        assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
+      end
+
+      assert length(export_events()) == @rate_limit
+    end
+
+    test "an unsupported format on a signed request is not charged", %{conn: conn} do
+      for _ <- 1..5 do
+        refused = get(conn, ~p"/org/audit/export?signed=true&format=pdf")
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == "Unsupported export format."
+      end
+
+      assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
+      assert length(export_events()) == 1
+    end
+  end
+
+  describe "HEAD" do
+    @describetag :tmp_dir
+    setup [:limits_setup, :signed_setup]
+
+    test "a signed HEAD sends the zip headers and builds, charges and records nothing",
+         %{conn: conn, root: root} do
+      attach_telemetry([:kanban, :export, :start])
+
+      for _ <- 1..(@rate_limit + 1) do
+        answered = head(conn, ~p"/org/audit/export?signed=true")
+
+        assert response(answered, 200) == ""
+        assert [content_type] = get_resp_header(answered, "content-type")
+        assert content_type =~ "application/zip"
+
+        assert [disposition] = get_resp_header(answered, "content-disposition")
+
+        assert disposition =~
+                 ~r/\Aattachment; filename="org_audit_log_\d{4}-\d{2}-\d{2}_signed\.zip"\z/
+
+        assert get_resp_header(answered, "cache-control") == ["no-store"]
+      end
+
+      assert export_events() == []
+      assert File.ls!(root) == []
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+
+      # The whole allowance is still there for a GET.
+      for _ <- 1..@rate_limit do
+        assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
+      end
+
+      assert length(export_events()) == @rate_limit
+    end
+
+    test "an unsigned HEAD sends the file headers and charges and records nothing", %{conn: conn} do
+      for {path, type, name} <- [
+            {~p"/org/audit/export", "text/csv", "csv"},
+            {~p"/org/audit/export?format=json&signed=1", "application/json", "json"}
+          ] do
+        answered = head(conn, path)
+
+        assert response(answered, 200) == ""
+        assert [content_type] = get_resp_header(answered, "content-type")
+        assert content_type =~ type
+
+        assert [disposition] = get_resp_header(answered, "content-disposition")
+
+        assert disposition =~
+                 ~r/\Aattachment; filename="org_audit_log_\d{4}-\d{2}-\d{2}\.#{name}"\z/
+
+        assert get_resp_header(answered, "cache-control") == ["no-store"]
+        assert get_resp_header(answered, "x-export-truncated") == []
+      end
+
+      assert export_events() == []
+
+      for _ <- 1..@rate_limit do
+        assert conn |> get(~p"/org/audit/export") |> response(200)
+      end
+    end
+
+    test "a HEAD is refused as a GET is for an unsupported format and for signing off",
+         %{conn: conn} do
+      refused = head(conn, ~p"/org/audit/export?signed=true&format=pdf")
+      assert redirected_to(refused) == ~p"/org/audit"
+      assert Phoenix.Flash.get(refused.assigns.flash, :error) == "Unsupported export format."
+
+      Application.put_env(:kanban, Signing, [])
+
+      refused = head(conn, ~p"/org/audit/export?signed=true")
+      assert redirected_to(refused) == ~p"/org/audit"
+
+      assert Phoenix.Flash.get(refused.assigns.flash, :error) ==
+               "Signed exports are not set up on this server."
+
+      assert export_events() == []
     end
   end
 end

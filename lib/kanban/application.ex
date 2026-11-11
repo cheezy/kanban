@@ -18,6 +18,9 @@ defmodule Kanban.Application do
       # Fault-isolated supervisor for fire-and-forget background work, e.g.
       # off-request auth-email delivery (Kanban.Accounts.UserNotifier, D134).
       {Task.Supervisor, name: Kanban.TaskSupervisor},
+      # Removes, at boot and every 15 minutes, the temporary directories a VM
+      # killed during a signed audit export left behind.
+      {Kanban.AuditLog.SignedExport.Sweeper, name: Kanban.AuditLog.SignedExport.Sweeper},
       KanbanWeb.AgentsPresence,
       # Oban runs the after_goal grace-window worker (W493). The queue
       # depth is set deliberately low — these are one-shot timer jobs,

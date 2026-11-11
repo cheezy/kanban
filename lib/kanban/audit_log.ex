@@ -65,6 +65,9 @@ defmodule Kanban.AuditLog do
   `Kanban.AuditLog.Export` (keyset-batched CSV/JSON exports, with the total
   row cap). `export_stream/3` and `export_truncated?/3` are delegated to
   `Kanban.AuditLog.Export`, so callers use this module's API only.
+  `Kanban.AuditLog.SignedExport` builds the signed zip of an Organization's
+  export, reached through `with_signed_export/3` and
+  `signed_export_available?/0`; `Kanban.AuditLog.Signing` holds the key.
 
   ## Example
 
@@ -77,6 +80,7 @@ defmodule Kanban.AuditLog do
   alias Kanban.AuditLog.Export
   alias Kanban.AuditLog.OrganizationScope
   alias Kanban.AuditLog.Query
+  alias Kanban.AuditLog.SignedExport
   alias Kanban.Repo
 
   require Logger
@@ -222,6 +226,19 @@ defmodule Kanban.AuditLog do
   `Kanban.AuditLog.Export.export_stream/3` for the options.
   """
   defdelegate export_stream(filters, format, opts \\ []), to: Export
+
+  @doc """
+  Whether this instance can sign an audit export. See
+  `Kanban.AuditLog.SignedExport.available?/0`.
+  """
+  defdelegate signed_export_available?(), to: SignedExport, as: :available?
+
+  @doc """
+  Builds the signed zip of an Organization's audit export, calls `fun` with it
+  and removes the temporary directory. See
+  `Kanban.AuditLog.SignedExport.with_archive/3` for the options and errors.
+  """
+  defdelegate with_signed_export(parsed, opts, fun), to: SignedExport, as: :with_archive
 
   defp redact(events, opts) do
     case Keyword.get(opts, :redact_actors_outside) do

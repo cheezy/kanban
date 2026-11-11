@@ -314,12 +314,15 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   `:audit_log` (site-admin audit log), `:org_audit_log` (an org-admin's
   Organization audit log) or `:workspace_export` (an org-admin downloading a
   workspace export archive). `format` is `:csv`, `:pdf`, `:xlsx`, `:json` or
-  `:zip`. The export id, the workspace and the archive's path never appear. The stop event
+  `:zip`. A signed Organization audit log export is `:org_audit_log` with
+  `format: :zip`, whichever file the zip holds, and its span covers building
+  the zip as well as sending it. The export id, the workspace and the archive's path never appear. The stop event
   also measures `row_count` for `:archive_csv`, the number of archived tasks
   exported; the other exports have no row count to report. A board, its
   name, the metric filters and the audit-log filters never appear, nor the
   admin's or org-admin's IP address. A failed metrics report that redirects with an error
-  still ends with a stop event; only an exception produces the exception
+  still ends with a stop event, and so does a signed Organization audit log
+  export whose build fails; only an exception produces the exception
   event.
 - **On an exception**, `:telemetry` replaces `kind` with the error class
   (`:error`, `:exit` or `:throw`) and adds `reason` and `stacktrace`; `format`
@@ -733,8 +736,20 @@ change emits nothing. Every event measures `count: 1`.
   Organization or the acceptance was refused.
   An org-admin downloading their Organization's audit log records
   `:org_audit_log_exported` with `organization_id`, the org-admin as
-  `user_id`, and `truncated`, a boolean that is `true` when the export's row
-  cap cut the file. A download refused by the per-org-admin export limit
+  `user_id`, `truncated`, a boolean that is `true` when the export's row
+  cap cut the file, and `signed`, a boolean that is `true` for a signed zip
+  (`?signed=true`) and `false` for a plain CSV or JSON file. A signed export
+  also carries `key_id`, the id of the key that signed it, and `sha256`, the
+  SHA-256 of the CSV or JSON file inside the zip, which equals `file.sha256`
+  in the zip's manifest; an unsigned export carries neither. `format` is the
+  file's format, `csv` or `json`, for both. The unsigned export records the
+  event before it reads any row, with `truncated` from a count taken then.
+  The signed export records it after the zip is built and before the first
+  byte is sent, with `truncated` as the build saw it, so a signed file never
+  holds its own event. A signed request made while the instance has no
+  signing key, and a signed export whose build fails, record nothing. A
+  download refused by the per-org-admin export limit, which signed and
+  unsigned exports share,
   records nothing here; it emits `[:kanban, :rate_limit, :denied]` with
   `surface: :org_audit_export`. An audit event whose `organization_id` is a
   positive integer naming an existing Organization also stores it in the
@@ -1287,7 +1302,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate`, `organization_id` | A user was refused access by a permission gate. organization_id is set when the gate knows the Organization, such as a refused API token's. |
 | `[:kanban, :audit, :sudo_mode_entered]` | event, legacy | `count` | `user_id` | A recently authenticated user passed a sudo-mode check. |
 | `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
-| `[:kanban, :audit, :org_audit_log_exported]` | event, legacy | `count` | `user_id`, `organization_id`, `format`, `truncated` | An org-admin exported their Organization's audit log. user_id is the org-admin; truncated is true when the row cap cut the file. |
+| `[:kanban, :audit, :org_audit_log_exported]` | event, legacy | `count` | `user_id`, `organization_id`, `format`, `truncated`, `signed`, `key_id`, `sha256` | An org-admin exported their Organization's audit log. user_id is the org-admin; truncated is true when the row cap cut the file. signed is true for a signed zip, which also carries key_id, the signing key's id, and sha256, the SHA-256 of the export file inside the zip. |
 | `[:kanban, :audit, :organization_created]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin created an Organization. user_id is the site admin. |
 | `[:kanban, :audit, :organization_updated]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin changed an Organization's details. user_id is the site admin. |
 | `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `account_created` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment. |

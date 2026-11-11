@@ -1152,8 +1152,17 @@ holding:
 Erlang's `:zip` cannot write to a streaming response. So the export is written
 to a temporary file first, as the workspace export does
 (`lib/kanban/workspaces/export/writer.ex`), and the zip is built from it and
-sent. The temporary file is deleted when the response ends or fails. Memory
-stays bounded at the 50,000-row cap.
+sent. The temporary file is deleted when the response ends or fails. A guard
+process deletes it when the request process is killed instead, and a sweep at
+boot and every 15 minutes deletes what a killed VM left behind, once it is an
+hour old (`lib/kanban/audit_log/signed_export/scratch.ex` and `sweeper.ex`). A
+deletion the operating system refuses is logged. The files are written under
+the system temporary directory, in a `stride-signed-exports` directory that
+only the application's user can read, and that is used only when that user
+owns it.
+`config :kanban, Kanban.AuditLog.SignedExport, tmp_root: path` names another
+directory, which must hold nothing else. Memory stays bounded at the
+50,000-row cap.
 
 The plain **Export CSV** and **Export JSON** stay as they are. A signed export
 counts towards the same rate limit (10 an hour per org-admin) and the same
@@ -1174,22 +1183,24 @@ audit log shows which signed file was issued.
   "file": {"name": "audit_log.csv", "format": "csv", "bytes": 482113,
            "sha256": "9f2c…"},
   "rows": 1834,
-  "oldest_event": {"id": 1720044, "inserted_at": "2026-10-01T00:03:12Z"},
-  "newest_event": {"id": 1849230, "inserted_at": "2026-10-31T23:58:40Z"},
+  "oldest_event": {"id": 1720044, "inserted_at": "2026-10-01T00:03:12.481920Z"},
+  "newest_event": {"id": 1849230, "inserted_at": "2026-10-31T23:58:40.007311Z"},
   "truncated": false,
   "key_id": "k1-3f9a1c0d2e4b5a67"
 }
 ```
 
 - **Field names follow the file.** `inserted_at` and integer `id`s, as in the
-  export's columns. The file lists events newest first, so `newest_event` is
-  its first row and `oldest_event` its last.
+  export's columns, so `inserted_at` carries microseconds exactly as the
+  file's own row does (`generated_at` is to the second). The file lists events
+  newest first, so `newest_event` is its first row and `oldest_event` its
+  last. Both are `null` when the export has no rows.
 - **`truncated` is decided while streaming.** The export reads one row past
   the cap. `truncated` is `true` only when that extra row exists, and the
-  extra row is not written. It can differ from the pre-count in the
-  `org_audit_log_exported` event, which is taken before streaming. The signed
-  zip does not send the `x-export-truncated` header; the manifest is the
-  record.
+  extra row is not written. A signed export's `org_audit_log_exported` event
+  is recorded after the build and carries this same value. Only an unsigned
+  export records a count taken before streaming. The signed zip does not send
+  the `x-export-truncated` header; the manifest is the record.
 - **One read.** The file's SHA-256 is computed while it is written, so
   producing a signed export reads the events only once. The manifest is
   written last, signed, and added to the zip.

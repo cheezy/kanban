@@ -1073,5 +1073,49 @@ defmodule KanbanWeb.UserAuthTest do
       assert conn.halted
       assert redirected_to(conn) == ~p"/users/log-in"
     end
+
+    test "recheck_conn/1 is :ok while the user is still an enabled org-admin", %{
+      conn: conn,
+      organization: organization,
+      user: user
+    } do
+      organization_member_fixture(organization, user, :org_admin)
+
+      conn = run_org_admin_plug(conn, user)
+
+      assert OrgAdminGate.recheck_conn(conn) == :ok
+      assert AuditLog.list_events(action: :permission_denied, actor_user_id: user.id) == []
+    end
+
+    test "recheck_conn/1 refuses an org-admin removed or disabled since the request began", %{
+      conn: conn,
+      organization: organization,
+      user: user
+    } do
+      membership = organization_member_fixture(organization, user, :org_admin)
+      disabled = user_fixture()
+      organization_member_fixture(organization, disabled, :org_admin)
+
+      removed_conn = run_org_admin_plug(conn, user)
+      disabled_conn = run_org_admin_plug(conn, disabled)
+
+      Repo.delete!(membership)
+      disabled |> Accounts.User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      for {conn, refused} <- [{removed_conn, user}, {disabled_conn, disabled}] do
+        assert {:refused, conn} = OrgAdminGate.recheck_conn(conn)
+
+        assert conn.halted
+        assert redirected_to(conn) == ~p"/boards"
+
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+                 "You must be an org-admin of an Organization to access this page."
+
+        assert [event] =
+                 AuditLog.list_events(action: :permission_denied, actor_user_id: refused.id)
+
+        assert event.metadata["gate"] == "require_org_admin"
+      end
+    end
   end
 end

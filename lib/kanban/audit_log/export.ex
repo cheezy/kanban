@@ -10,10 +10,13 @@ defmodule Kanban.AuditLog.Export do
 
   ## Reading
 
-  `export_stream/3` walks the table newest first in keyset batches of
-  `:batch_size` rows (never by offset) and stops at the optional TOTAL
-  `:max_rows` cap. `export_truncated?/3` tells the caller beforehand whether
-  that cap will cut the file.
+  `batches/2` walks the table newest first in keyset batches of `:batch_size`
+  rows (never by offset) and stops at the optional TOTAL `:max_rows` cap.
+  `export_stream/3` encodes those batches. The signed export
+  (`Kanban.AuditLog.SignedExport`) reads the same batches and encodes them
+  with the same encoders, so its file matches an unsigned export byte for
+  byte. `export_truncated?/3` tells the caller beforehand whether that cap
+  will cut the file.
 
   ## Encoding
 
@@ -47,18 +50,34 @@ defmodule Kanban.AuditLog.Export do
   response is being sent. Events inserted after the export starts are newer
   than its first batch and are therefore not included.
 
+  `opts` are those of `batches/2`.
+  """
+  @spec export_stream(keyword(), :csv | :json, keyword()) :: Enumerable.t()
+  def export_stream(filters, format, opts \\ []) when format in [:csv, :json] do
+    filters
+    |> batches(opts)
+    |> encode_stream(format)
+  end
+
+  @doc """
+  A lazy stream of event batches (lists of `Kanban.AuditLog.AuditEvent`, never
+  empty) for every event matching `filters`, newest first, with the actor
+  preloaded. This is the one reader behind `export_stream/3` and the signed
+  export.
+
   `opts` (any other key raises `ArgumentError`):
 
     * `:batch_size` — rows fetched per round trip (default #{@default_batch_size}).
-    * `:max_rows` — the TOTAL number of rows the export may hold (default
+    * `:max_rows` — the TOTAL number of rows the stream may hold (default
       `:infinity`), applied before encoding, so a capped file is still
       well-formed. `Kanban.AuditLog.stream_events/2` has no such option; its
       per-round-trip size is `:batch_size`, as here.
     * `:redact_actors_outside` — an Organization id; see
-      `Kanban.AuditLog.list_events_page/2`.
+      `Kanban.AuditLog.list_events_page/2`. The redaction is applied to each
+      batch before it leaves the stream.
   """
-  @spec export_stream(keyword(), :csv | :json, keyword()) :: Enumerable.t()
-  def export_stream(filters, format, opts \\ []) when format in [:csv, :json] do
+  @spec batches(keyword(), keyword()) :: Enumerable.t()
+  def batches(filters, opts \\ []) do
     opts =
       Keyword.validate!(opts,
         batch_size: @default_batch_size,
@@ -69,7 +88,6 @@ defmodule Kanban.AuditLog.Export do
     {nil, opts[:max_rows]}
     |> Stream.unfold(&next_batch(filters, &1, opts[:batch_size]))
     |> Stream.map(&redact(&1, opts[:redact_actors_outside]))
-    |> encode_stream(format)
   end
 
   @doc """

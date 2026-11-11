@@ -373,6 +373,16 @@ id.
 filters, newest first, up to 50,000 events per download by default. Each
 org-admin can export 10 times an hour.
 
+An export can also be downloaded as a signed zip, from
+`/org/audit/export?signed=true` (add `&format=json` for JSON, and the same
+filter parameters as the page uses). The zip holds the same CSV or JSON file,
+a `manifest.json` that describes it, an Ed25519 signature over the manifest,
+and a `README.txt` with the three commands that verify them. A signed export
+counts towards the same 10 an hour and the same 50,000 events. On a Stride
+instance with no signing key, the request is refused with a message and is
+not counted. An org-admin who is removed or disabled while a signed export is
+being built is refused when it is ready, and gets no file.
+
 Events are kept forever unless the Organization sets an audit retention
 period; see [Audit retention](organization-security-policies.md#audit-retention).
 No one can edit an audit event.

@@ -9255,7 +9255,7 @@ msgid "To (UTC)"
 msgstr ""
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:60
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:147
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr ""
@@ -10528,7 +10528,7 @@ msgstr ""
 #: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:220
-#: lib/kanban_web/user_auth/org_admin_gate.ex:132
+#: lib/kanban_web/user_auth/org_admin_gate.ex:156
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr ""
@@ -10946,7 +10946,7 @@ msgstr ""
 msgid "This account is disabled, so it can't be added to the board."
 msgstr ""
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:63
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:150
 #, elixir-autogen, elixir-format
 msgid "Too many exports. Try again later."
 msgstr ""
@@ -13977,4 +13977,14 @@ msgstr ""
 #: lib/kanban_web/components/layouts.ex:259
 #, elixir-autogen, elixir-format
 msgid "Theme"
+msgstr ""
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:153
+#, elixir-autogen, elixir-format
+msgid "Signed exports are not set up on this server."
+msgstr ""
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:156
+#, elixir-autogen, elixir-format
+msgid "The signed export could not be built. Try again."
 msgstr ""

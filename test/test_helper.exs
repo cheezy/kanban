@@ -29,7 +29,13 @@ ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)
 # Kanban.Tasks.ChangedFilesAudit that many review-bound-task tests trigger)
 # while preserving the logs as failure diagnostics. Individual tests that
 # assert on log output continue to use ExUnit.CaptureLog.capture_log/1.
-ExUnit.start(capture_log: true)
+#
+# The tests tagged :openssl3 run the `openssl pkeyutl` command a signed audit
+# export's README gives. They need OpenSSL 3.0 or later; LibreSSL, the openssl
+# that ships with macOS, cannot verify Ed25519. Where there is none the tag is
+# excluded (Kanban.OpenSSL3). `mix test --only openssl3` still runs them, and
+# they then fail with a message naming what is missing.
+ExUnit.start(capture_log: true, exclude: Kanban.OpenSSL3.exclusions())
 
 # Attachment blobs. A stored file's row rolls back with the test's sandbox,
 # but Kanban.Attachments.Storage.Local has already written its bytes, so

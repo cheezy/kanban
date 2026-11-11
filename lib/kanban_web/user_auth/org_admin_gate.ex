@@ -21,6 +21,10 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
   attaches a `handle_params` hook that re-reads the role from the database on
   every patch, so an org-admin removed or disabled while a page is open is
   refused on their next click instead of only on their next reload.
+
+  A request that takes long enough for the role to change before it answers
+  asks again with `recheck_conn/1`, as the signed audit export does once its
+  file is built.
   """
   use KanbanWeb, :verified_routes
   use Gettext, backend: KanbanWeb.Gettext
@@ -115,17 +119,37 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
         assign(conn, :current_organization, organization)
 
       nil ->
-        Kanban.AuditLog.event(:permission_denied,
-          user_id: user_id(scope),
-          ip: conn.remote_ip,
-          gate: @gate
-        )
-
-        conn
-        |> put_flash(:error, refusal_message())
-        |> redirect(to: ~p"/boards")
-        |> halt()
+        refuse_conn(conn, scope)
     end
+  end
+
+  @doc """
+  Asks again, for a request `authorize_conn/1` let through: `:ok` while the
+  signed-in user is still an enabled org-admin of `current_organization`, read
+  from the database rather than the scope loaded when the request began;
+  otherwise records the refusal and returns `{:refused, conn}`, the halted
+  redirect to `/boards`.
+  """
+  @spec recheck_conn(Plug.Conn.t()) :: :ok | {:refused, Plug.Conn.t()}
+  def recheck_conn(conn) do
+    %{current_scope: scope, current_organization: organization} = conn.assigns
+
+    if Organizations.org_admin?(scope.user, organization.id),
+      do: :ok,
+      else: {:refused, refuse_conn(conn, scope)}
+  end
+
+  defp refuse_conn(conn, scope) do
+    Kanban.AuditLog.event(:permission_denied,
+      user_id: user_id(scope),
+      ip: conn.remote_ip,
+      gate: @gate
+    )
+
+    conn
+    |> put_flash(:error, refusal_message())
+    |> redirect(to: ~p"/boards")
+    |> halt()
   end
 
   defp refusal_message,

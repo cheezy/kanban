@@ -78,6 +78,80 @@ defmodule Kanban.AuditLog.ExportTest do
     end
   end
 
+  describe "batches/2" do
+    test "yields non-empty lists of events, newest first, with the actor preloaded" do
+      user = user_fixture()
+      for i <- 1..5, do: insert_event!("export_test", i, %{actor_user_id: user.id})
+
+      batches = [action: "export_test"] |> Export.batches(batch_size: 2) |> Enum.to_list()
+
+      assert Enum.map(batches, &length/1) == [2, 2, 1]
+
+      assert batches |> List.flatten() |> Enum.map(& &1.inserted_at) ==
+               for(i <- 5..1//-1, do: DateTime.add(@base, i))
+
+      assert %AuditEvent{actor_user: %{email: email}} = batches |> hd() |> hd()
+      assert email == user.email
+    end
+
+    test ":max_rows is a TOTAL cap across batches" do
+      for i <- 1..5, do: insert_event!("export_test", i)
+
+      batches =
+        [action: "export_test"] |> Export.batches(max_rows: 3, batch_size: 2) |> Enum.to_list()
+
+      assert Enum.map(batches, &length/1) == [2, 1]
+    end
+
+    test "yields nothing when no event matches" do
+      assert [action: "export_test"] |> Export.batches() |> Enum.to_list() == []
+    end
+
+    test ":redact_actors_outside is applied to each batch" do
+      organization = organization_fixture()
+      outsider = user_fixture()
+
+      insert_event!("export_test", 1, %{
+        organization_id: organization.id,
+        actor_user_id: outsider.id,
+        actor_in_organization: false,
+        ip: "203.0.113.7",
+        metadata: %{"user_id" => outsider.id}
+      })
+
+      assert [[redacted]] =
+               [action: "export_test"]
+               |> Export.batches(redact_actors_outside: organization.id)
+               |> Enum.to_list()
+
+      assert redacted.ip == nil
+      assert redacted.actor_user_id == nil
+
+      assert [[%AuditEvent{ip: "203.0.113.7"}]] =
+               [action: "export_test"] |> Export.batches() |> Enum.to_list()
+    end
+
+    test "export_stream/3 is the encoding of batches/2" do
+      for i <- 1..3, do: insert_event!("export_test", i)
+      opts = [max_rows: 2, batch_size: 1]
+
+      for format <- [:csv, :json] do
+        encoded =
+          [action: "export_test"]
+          |> Export.batches(opts)
+          |> Export.encode_stream(format)
+          |> Enum.join()
+
+        assert encoded ==
+                 [action: "export_test"] |> Export.export_stream(format, opts) |> Enum.join()
+      end
+    end
+
+    test "rejects an unknown option" do
+      assert_raise ArgumentError, fn -> Export.batches([], max_row: 1) end
+    end
+  end
+
   describe "export_truncated?/3" do
     test "is true only when the cap would omit a matching row" do
       for i <- 1..3, do: insert_event!("export_test", i)

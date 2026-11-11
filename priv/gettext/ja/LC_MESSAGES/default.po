@@ -9278,7 +9278,7 @@ msgid "To (UTC)"
 msgstr "終了日 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:60
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:147
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "サポートされていないエクスポート形式です。"
@@ -10547,7 +10547,7 @@ msgstr "読み取り専用です。変更はサイト管理者に依頼してく
 #: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:220
-#: lib/kanban_web/user_auth/org_admin_gate.ex:132
+#: lib/kanban_web/user_auth/org_admin_gate.ex:156
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "このページにアクセスするには、組織の組織管理者である必要があります。"
@@ -10964,7 +10964,7 @@ msgstr "未確認"
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "このアカウントは無効化されているため、ボードに追加できません。"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:63
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:150
 #, elixir-autogen, elixir-format
 msgid "Too many exports. Try again later."
 msgstr "エクスポートの回数が多すぎます。しばらくしてからもう一度お試しください。"
@@ -13991,3 +13991,13 @@ msgstr "システム"
 #, elixir-autogen, elixir-format
 msgid "Theme"
 msgstr "テーマ"
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:153
+#, elixir-autogen, elixir-format
+msgid "Signed exports are not set up on this server."
+msgstr "このサーバーでは署名付きエクスポートが設定されていません。"
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:156
+#, elixir-autogen, elixir-format
+msgid "The signed export could not be built. Try again."
+msgstr "署名付きエクスポートを作成できませんでした。もう一度お試しください。"
