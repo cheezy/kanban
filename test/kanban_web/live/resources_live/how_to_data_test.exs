@@ -5,6 +5,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   alias KanbanWeb.ResourcesLive.HowToData
   alias KanbanWeb.ResourcesLive.HowTos.AgentPlugins
 
+  require Phoenix.LiveViewTest
+
   @getting_started_ids [
     "creating-your-first-board",
     "understanding-columns",
@@ -885,13 +887,9 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         refute tag in guide.tags, "the guide would join the #{tag} chain or its count"
       end
 
-      assert [
-               %{image: "/images/resources/guides/choosing-your-language-and-theme-step-1.png"}
-               | rest
-             ] =
-               guide.steps
-
-      assert Enum.all?(rest, &is_nil(&1.image))
+      images = Enum.map(guide.steps, & &1.image)
+      shot = &"/images/resources/guides/choosing-your-language-and-theme-step-#{&1}.png"
+      assert images == [shot.(1), shot.(2), nil, nil, shot.(5)]
     end
 
     test "choosing-your-language-and-theme uses only supported markdown and has at least three steps" do
@@ -957,36 +955,52 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert names == ~w(English Français Español Português Deutsch 日本語 中文)
       assert content =~ Enum.map_join(names, "\n", &"- #{&1}")
 
-      # The only live language menu is the marketing top bar's, hidden below md.
-      marketing = File.read!("lib/kanban_web/components/marketing_components.ex")
-      assert marketing =~ ~s|class="relative hidden md:block js-mobile-menu group"|
-      assert marketing =~ ~s|action={~p"/locale/\#{locale.code}"}|
-      assert content =~ "at least 768 pixels wide"
+      # Signed in, the side menu's footer holds the theme switch, then the
+      # language menu, then the Settings and Log out row.
+      side_nav = File.read!("lib/kanban_web/components/side_nav.ex")
+      markers = ["<Layouts.theme_toggle", "<.language_menu", ~s|gettext("Log out")|]
+      order = for marker <- markers, do: :binary.match(side_nav, marker)
+      assert Enum.all?(order, &match?({_, _}, &1))
+      assert order == Enum.sort(order)
+      assert side_nav =~ "NavComponents.supported_locales()"
+      assert side_nav =~ ~s|action={~p"/locale/\#{locale.code}"}|
+      assert File.read!("lib/kanban_web/components/layouts.ex") =~ "<SideNav.side_nav"
+      assert content =~ "just above **Log out**"
+      assert content =~ "just above the language menu"
+      refute content =~ ~r/no (language menu|theme switch)/i
 
-      # No language menu or theme control inside the app: the app layout renders
-      # no marketing_nav, language_switcher has no caller and theme_toggle none.
-      refute File.read!("lib/kanban_web/components/layouts/app_chrome.html.heex") =~
-               "marketing_nav"
+      # The theme switch's three buttons, with the labels the guide bolds.
+      buttons =
+        Phoenix.LiveViewTest.render_component(&KanbanWeb.Layouts.theme_toggle/1, %{})
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("button")
 
+      assert Enum.flat_map(buttons, &LazyHTML.attribute(&1, "data-phx-theme")) ==
+               ~w(system light dark)
+
+      labels = Enum.flat_map(buttons, &LazyHTML.attribute(&1, "aria-label"))
+      assert labels == ~w(System Light Dark)
+      for label <- labels, do: assert(content =~ "**#{label}**")
+
+      # Only the theme switch dispatches the theme event, and a click on it
+      # leaves the phone drawer open.
       sources = Path.wildcard("lib/kanban_web/**/*.{ex,heex}")
 
-      # A call in any form: <.fn, <Layouts.fn, <KanbanWeb.Layouts.fn or Module.fn(.
-      call_site =
-        ~r/<[\w.]*\.(theme_toggle|language_switcher)\b|\b(Layouts|NavComponents)\.(theme_toggle|language_switcher)\(/
-
-      callers = Enum.filter(sources, &(File.read!(&1) =~ call_site))
-      assert callers == [], "a language or theme control is rendered now: #{inspect(callers)}"
-
-      # Only theme_toggle's own three buttons dispatch the theme event.
       dispatches =
         for path <- sources,
             n = length(Regex.scan(~r/JS\.dispatch\("phx:set-theme"/, File.read!(path))),
             n > 0,
             do: {path, n}
 
-      assert dispatches == [{"lib/kanban_web/components/layouts.ex", 3}]
-      assert content =~ "There is no language menu inside the app yet"
-      assert content =~ "There is no theme switch on screen yet"
+      assert dispatches == [{"lib/kanban_web/components/layouts.ex", 1}]
+      assert File.read!("assets/js/hooks/sidebar.js") =~ ~s|button:not([data-sidebar-stay-open])|
+      assert content =~ "the side menu stays open"
+
+      # The public pages' own menu is the marketing top bar's, hidden below md.
+      marketing = File.read!("lib/kanban_web/components/marketing_components.ex")
+      assert marketing =~ ~s|class="relative hidden md:block js-mobile-menu group"|
+      assert marketing =~ ~s|action={~p"/locale/\#{locale.code}"}|
+      assert content =~ "at least 768 pixels wide"
 
       # Saved to the account when signed in, kept across sign-in, cleared on sign-out.
       assert File.read!("lib/kanban_web/controllers/page_controller.ex") =~
@@ -1012,11 +1026,19 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert content =~ "account confirmation and password reset emails"
       refute content =~ "sign-in link"
 
-      # The theme follows the device, stored only in the browser.
-      root = File.read!("lib/kanban_web/components/layouts/root.html.heex")
-      assert root =~ ~s|window.matchMedia("(prefers-color-scheme: dark)")|
-      assert root =~ ~s|localStorage.setItem("phx:theme", choice)|
-      assert root =~ ~s|mql.addEventListener("change"|
+      # System follows the device; a choice is stored only in the browser, and
+      # the public pages' layouts read the same stored choice.
+      for layout <- ~w(root marketing app_chrome) do
+        src = File.read!("lib/kanban_web/components/layouts/#{layout}.html.heex")
+        assert src =~ ~s|window.matchMedia("(prefers-color-scheme: dark)")|
+        assert src =~ ~s|localStorage.setItem("phx:theme", choice)|
+        assert src =~ ~s|localStorage.removeItem("phx:theme")|
+        assert src =~ ~s|render(localStorage.getItem("phx:theme") \|\| "system")|
+        assert src =~ ~s|mql.addEventListener("change"|
+      end
+
+      assert content =~ "Stride's public pages use the same choice"
+      assert content =~ "Click System to follow your device again"
       assert content =~ "Nothing about the theme is saved to your account"
       refute content =~ ~r/theme (follows|is stored with) your account/i
       refute content =~ ~r/guides? (are|is) translated/i

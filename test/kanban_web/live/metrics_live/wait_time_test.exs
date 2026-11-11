@@ -235,7 +235,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"
@@ -248,7 +248,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       assert view
@@ -261,7 +261,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"exclude_weekends" => "true"})
 
       assert html =~ "checked"
@@ -278,7 +278,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => "Agent 1"})
 
       assert html =~ "Review by Agent 1"
@@ -296,7 +296,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => "Agent 1"})
 
       assert html =~ "Backlog by Agent 1"
@@ -323,7 +323,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Recent Review Task"
@@ -344,12 +344,12 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"agent_name" => "Agent 1"})
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => ""})
 
       assert html =~ "Task 1"
@@ -468,7 +468,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "today"})
 
       assert html =~ "Today Review"
@@ -483,7 +483,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_90_days"})
 
       assert html =~ "Recent Backlog"
@@ -502,7 +502,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "Ancient Backlog"
@@ -991,7 +991,7 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"

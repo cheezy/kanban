@@ -82,7 +82,7 @@ msgid "Log in"
 msgstr ""
 
 #: lib/kanban_web/components/nav_components.ex:143
-#: lib/kanban_web/components/side_nav.ex:140
+#: lib/kanban_web/components/side_nav.ex:148
 #: lib/kanban_web/live/workspace_live/invitation_accept.ex:140
 #, elixir-autogen, elixir-format
 msgid "Log out"
@@ -90,8 +90,8 @@ msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:152
 #: lib/kanban_web/components/nav_components.ex:138
-#: lib/kanban_web/components/side_nav.ex:115
-#: lib/kanban_web/components/side_nav.ex:116
+#: lib/kanban_web/components/side_nav.ex:123
+#: lib/kanban_web/components/side_nav.ex:124
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
 #: lib/kanban_web/live/user_live/settings_components.ex:33
 #, elixir-autogen, elixir-format
@@ -408,7 +408,7 @@ msgstr ""
 #: lib/kanban_web/components/layouts/root.html.heex:7
 #: lib/kanban_web/components/marketing_closing.ex:97
 #: lib/kanban_web/components/marketing_components.ex:56
-#: lib/kanban_web/components/side_nav.ex:66
+#: lib/kanban_web/components/side_nav.ex:72
 #, elixir-autogen, elixir-format
 msgid "Stride"
 msgstr ""
@@ -828,7 +828,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex:293
 #: lib/kanban_web/components/nav_components.ex:140
 #: lib/kanban_web/components/nav_components.ex:147
-#: lib/kanban_web/components/side_nav.ex:281
+#: lib/kanban_web/components/side_nav.ex:376
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -2192,7 +2192,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex:287
 #: lib/kanban_web/components/nav_components.ex:139
 #: lib/kanban_web/components/nav_components.ex:146
-#: lib/kanban_web/components/side_nav.ex:274
+#: lib/kanban_web/components/side_nav.ex:369
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -2268,7 +2268,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:134
-#: lib/kanban_web/components/side_nav.ex:239
+#: lib/kanban_web/components/side_nav.ex:334
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -3488,6 +3488,7 @@ msgid "not bots you babysit."
 msgstr ""
 
 #: lib/kanban_web/components/marketing_components.ex:210
+#: lib/kanban_web/components/side_nav.ex:192
 #, elixir-autogen, elixir-format
 msgid "Change language"
 msgstr ""
@@ -4117,7 +4118,7 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/side_nav.ex:211
+#: lib/kanban_web/components/side_nav.ex:306
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4175,7 +4176,7 @@ msgstr ""
 msgid "Active goals"
 msgstr "Active goals"
 
-#: lib/kanban_web/components/side_nav.ex:225
+#: lib/kanban_web/components/side_nav.ex:320
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4215,7 +4216,7 @@ msgstr "New goal"
 msgid "Pre-configured for AI workflow"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:44
+#: lib/kanban_web/components/side_nav.ex:46
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr ""
@@ -4226,7 +4227,7 @@ msgid "Promote children to Ready"
 msgstr ""
 
 #: lib/kanban_web/components/notifications_locked.ex:32
-#: lib/kanban_web/components/side_nav.ex:232
+#: lib/kanban_web/components/side_nav.ex:327
 #: lib/kanban_web/controllers/page_html/product.html.heex:221
 #: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
@@ -4241,12 +4242,12 @@ msgstr ""
 msgid "Start with a blank board"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:53
+#: lib/kanban_web/components/side_nav.ex:59
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride home"
 
-#: lib/kanban_web/components/side_nav.ex:75
+#: lib/kanban_web/components/side_nav.ex:81
 #: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
@@ -9587,7 +9588,7 @@ msgstr ""
 msgid "New task"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:86
+#: lib/kanban_web/components/side_nav.ex:92
 #, elixir-autogen, elixir-format
 msgid "Resources and information"
 msgstr ""
@@ -9831,7 +9832,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/kanban_web/components/notifications_locked.ex:41
-#: lib/kanban_web/components/side_nav.ex:218
+#: lib/kanban_web/components/side_nav.ex:313
 #: lib/kanban_web/emails/announcement_email.ex:158
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
@@ -10504,7 +10505,7 @@ msgstr ""
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:261
+#: lib/kanban_web/components/side_nav.ex:356
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:78
 #: lib/kanban_web/live/org_live/console.ex:74
 #, elixir-autogen, elixir-format
@@ -13956,4 +13957,24 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/product.html.heex:471
 #, elixir-autogen, elixir-format
 msgid "Stride's MCP server gives an agent the task loop as seven tools: get the next task, claim it, read a task, list tasks, read an attachment, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
+msgstr ""
+
+#: lib/kanban_web/components/layouts.ex:296
+#, elixir-autogen, elixir-format
+msgid "Dark"
+msgstr ""
+
+#: lib/kanban_web/components/layouts.ex:295
+#, elixir-autogen, elixir-format
+msgid "Light"
+msgstr ""
+
+#: lib/kanban_web/components/layouts.ex:294
+#, elixir-autogen, elixir-format
+msgid "System"
+msgstr ""
+
+#: lib/kanban_web/components/layouts.ex:259
+#, elixir-autogen, elixir-format
+msgid "Theme"
 msgstr ""

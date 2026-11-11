@@ -1655,6 +1655,62 @@ defmodule KanbanWeb.PageControllerTest do
       assert Kanban.Repo.get!(Kanban.Accounts.User, user.id).locale == "fr"
     end
 
+    test "set_locale from an app page saves users.locale and redirects back", %{conn: conn} do
+      user = Kanban.AccountsFixtures.user_fixture()
+      conn = log_in_user(conn, user)
+
+      # The signed-in app page renders the side nav's menu, posting to this route.
+      html = conn |> get(~p"/boards") |> html_response(200)
+      assert html =~ ~s(id="app-language-switcher")
+      assert html =~ ~s(action="/locale/de")
+
+      conn =
+        conn
+        |> put_req_header("referer", "http://localhost/boards")
+        |> post(~p"/locale/de")
+
+      assert redirected_to(conn) == "/boards"
+      assert get_session(conn, :locale) == "de"
+      assert Kanban.Repo.get!(Kanban.Accounts.User, user.id).locale == "de"
+
+      # An unsupported code posted from the same page changes nothing.
+      conn =
+        build_conn()
+        |> log_in_user(user)
+        |> put_req_header("referer", "http://localhost/boards")
+        |> post(~p"/locale/xx")
+
+      assert redirected_to(conn) == "/boards"
+      refute get_session(conn, :locale) == "xx"
+      assert Kanban.Repo.get!(Kanban.Accounts.User, user.id).locale == "de"
+    end
+
+    test "returns to the page with its query string, so a Settings section is kept", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("referer", "http://localhost/users/settings?section=password")
+        |> post(~p"/locale/fr")
+
+      assert redirected_to(conn) == "/users/settings?section=password"
+    end
+
+    test "falls back to the home page for a referer path Phoenix would refuse", %{conn: conn} do
+      for referer <- [
+            "http://localhost:4000//anything",
+            "http://localhost:4000//evil.example/boards?x=1",
+            "http://localhost:4000/boards\\evil"
+          ] do
+        conn =
+          conn
+          |> recycle()
+          |> put_req_header("referer", referer)
+          |> post(~p"/locale/pt")
+
+        assert redirected_to(conn) == "/", "#{referer} was not refused"
+        assert get_session(conn, :locale) == "pt"
+      end
+    end
+
     test "ignores an unsupported locale for a signed-in user", %{conn: conn} do
       user = Kanban.AccountsFixtures.user_fixture()
       {:ok, _} = Kanban.Accounts.update_user_locale(user, "de")

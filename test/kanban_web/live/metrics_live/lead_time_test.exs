@@ -195,7 +195,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"
@@ -208,7 +208,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       assert view
@@ -221,7 +221,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"exclude_weekends" => "true"})
 
       assert html =~ "checked"
@@ -238,7 +238,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => "Agent 1"})
 
       assert html =~ "Task by Agent 1"
@@ -260,7 +260,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Recent Task"
@@ -281,12 +281,12 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/lead-time")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"agent_name" => "Agent 1"})
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => ""})
 
       assert html =~ "Task 1"
@@ -312,7 +312,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "today"})
 
       assert html =~ "Today Task"
@@ -327,7 +327,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_90_days"})
 
       assert html =~ "Recent Task"
@@ -346,7 +346,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "Ancient Task"
@@ -778,7 +778,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "today"})
 
       assert html =~ "Today"
@@ -792,7 +792,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_90_days"})
 
       assert html =~ "Last 90 Days"
@@ -806,7 +806,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "All Time"
@@ -1117,7 +1117,7 @@ defmodule KanbanWeb.MetricsLive.LeadTimeTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"

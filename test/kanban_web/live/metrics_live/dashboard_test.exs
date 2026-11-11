@@ -162,7 +162,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"
@@ -176,7 +176,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       _html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => ""})
 
       assert view
@@ -189,7 +189,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"exclude_weekends" => "true"})
 
       assert html =~ "checked"
@@ -327,7 +327,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_90_days"})
 
       assert html =~ "Last 90 Days"
@@ -348,7 +348,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "All Time"
@@ -379,7 +379,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "today"})
 
       assert html =~ "Today"
@@ -402,7 +402,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       _html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       rendered = render(view)
@@ -437,12 +437,12 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"agent_name" => ""})
 
       assert html =~ "All Agents"
@@ -468,14 +468,14 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"exclude_weekends" => "true"})
 
       assert html =~ "checked"
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"exclude_weekends" => "false"})
 
       refute html =~ "checked"
@@ -501,7 +501,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"exclude_weekends" => "true"})
 
       html = render(view)
@@ -541,15 +541,15 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"time_range" => "last_7_days"})
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"agent_name" => "Claude Sonnet 4.5"})
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"exclude_weekends" => "true"})
 
       html = render(view)
@@ -569,16 +569,16 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics")
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"time_range" => "last_7_days"})
 
       view
-      |> element("form")
+      |> element("#metrics-filter-form")
       |> render_change(%{"time_range" => "last_90_days"})
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "all_time"})
 
       assert html =~ "All Time"
@@ -1040,7 +1040,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       assert html =~ "Last 7 Days"
@@ -1344,7 +1344,7 @@ defmodule KanbanWeb.MetricsLive.DashboardTest do
 
       html =
         view
-        |> element("form")
+        |> element("#metrics-filter-form")
         |> render_change(%{"time_range" => "last_7_days"})
 
       # The LiveView keeps polling Metrics on each filter change; the

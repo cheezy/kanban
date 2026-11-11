@@ -5,6 +5,9 @@
 const FOCUSABLE_SELECTOR =
   "a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])"
 const MD_BREAKPOINT_PX = 768
+// Following a link or pressing a button closes the drawer, except the theme
+// switch's buttons, which change the page in place so the result stays in view.
+const CLOSES_DRAWER_SELECTOR = "a, button:not([data-sidebar-stay-open])"
 
 const Sidebar = {
   mounted() {
@@ -35,7 +38,7 @@ const Sidebar = {
     this.backdrop?.addEventListener("click", this._onBackdropClick)
     document.addEventListener("keydown", this._onKeyDown)
     window.addEventListener("resize", this._onResize)
-    this.sidebar.querySelectorAll("a, button").forEach((el) => {
+    this.sidebar.querySelectorAll(CLOSES_DRAWER_SELECTOR).forEach((el) => {
       el.addEventListener("click", this._onNavClick)
     })
   },
@@ -45,7 +48,7 @@ const Sidebar = {
     this.backdrop?.removeEventListener("click", this._onBackdropClick)
     document.removeEventListener("keydown", this._onKeyDown)
     window.removeEventListener("resize", this._onResize)
-    this.sidebar?.querySelectorAll("a, button").forEach((el) => {
+    this.sidebar?.querySelectorAll(CLOSES_DRAWER_SELECTOR).forEach((el) => {
       el.removeEventListener("click", this._onNavClick)
     })
   },

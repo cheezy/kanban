@@ -37,7 +37,12 @@ defmodule KanbanWeb.WorkspaceSwitcherTest do
 
     assert html =~ ~s(<form action="/workspace/switch" method="post" id="workspace-switch-11">)
     assert html =~ ~s(<form action="/workspace/switch" method="post" id="workspace-switch-12">)
-    assert [_, _] = Regex.scan(~r/name="_csrf_token"/, html)
+    # Scoped to the switcher: the side nav's language menu has its own forms.
+    assert html
+           |> LazyHTML.from_fragment()
+           |> LazyHTML.query(~s(#workspace-switcher input[name="_csrf_token"]))
+           |> Enum.count() == 2
+
     assert html =~ ~s(name="workspace_id" value="11")
     assert html =~ ~r/title="Beta" aria-current="true"/
     refute html =~ ~r/title="Alpha" aria-current/

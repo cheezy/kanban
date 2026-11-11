@@ -14,10 +14,12 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
   two-factor guide follows the Settings → Two-factor screens, the sign-in
   challenge and the Organization requirement banner (W2241, W2242, W2347);
   `docs/TWO-FACTOR-AUTHENTICATION.md` is the technical reference behind it.
-  The language and theme guide follows the marketing top bar's language menu
-  (`MarketingComponents`, `PageController.set_locale/2`), the locale sync in
-  `UserAuth`, `Kanban.Notifications.AnnouncementWorker` and the theme script
-  in the root layouts; the app has no in-app language or theme control.
+  The language and theme guide follows the SideNav footer's language menu and
+  theme switch (`SideNav.language_menu/1`, `Layouts.theme_toggle/1`), the
+  marketing top bar's language menu (`MarketingComponents`,
+  `PageController.set_locale/2`), the locale sync in `UserAuth`,
+  `Kanban.Notifications.AnnouncementWorker` and the theme script in the root
+  layouts.
   """
 
   @doc "The guides in this group, in display order."
@@ -191,7 +193,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
         id: "choosing-your-language-and-theme",
         title: "Choosing Your Language and Theme",
         description:
-          "Switch Stride to one of its seven languages, see where the choice is saved and which emails use it, and how Stride picks light or dark.",
+          "Switch Stride to one of its seven languages, see where the choice is saved and which emails use it, and choose a light, dark or system theme.",
         tags: ["beginner", "non-developer"],
         content_type: "guide",
         reading_time: 4,
@@ -200,16 +202,18 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
           %{
             title: "Changing the Language",
             content:
-              "The language menu is in the top bar of Stride's public pages, such as the home page, Pricing, Product, Privacy and the sign-in and sign-up pages. It shows a flag and a two-letter code, such as `EN`, at the right of the bar. Click it and choose a language:\n\n- English\n- Français\n- Español\n- Português\n- Deutsch\n- 日本語\n- 中文\n\nThe page reloads in that language. The menu appears only when the window is at least 768 pixels wide, so on a phone, widen the screen or turn it sideways to reach it.",
+              "When you're signed in, the language menu is at the bottom of the side menu, just above **Log out**. The side menu is on your boards, in Settings, on this Resources page and on the rest of the app. It shows a flag and the name of the current language. Click it and choose a language:\n\n- English\n- Français\n- Español\n- Português\n- Deutsch\n- 日本語\n- 中文\n\nThe page reloads in that language, and Stride saves it to your account. On a phone the side menu is hidden: tap the three-line menu button at the top left of the page to open it.",
             image: "/images/resources/guides/choosing-your-language-and-theme-step-1.png",
-            image_width: 230,
-            image_height: 302
+            image_width: 169,
+            image_height: 330
           },
           %{
-            title: "Changing It While Signed In",
+            title: "Changing It Before You Sign In",
             content:
-              "There is no language menu inside the app yet: not on your boards, in Settings or on this Resources page. To change it while you're signed in, open the Stride home page, choose a language from the menu there, and click **Go to boards**. The app then shows the new language.\n\nResources guides are written in English only. The page around them, such as the menu and the buttons, follows your language.",
-            image: nil
+              "Stride's public pages, such as the home page, Pricing, Product, Privacy and the sign-in and sign-up pages, have their own language menu at the right of the top bar. It shows a flag and a two-letter code, such as `EN`, and lists the same seven languages. It appears only when the window is at least 768 pixels wide, so on a phone, widen the screen or turn it sideways to reach it.\n\nResources guides are written in English only. The page around them, such as the menu and the buttons, follows your language.",
+            image: "/images/resources/guides/choosing-your-language-and-theme-step-2.png",
+            image_width: 230,
+            image_height: 302
           },
           %{
             title: "Where Your Language Is Saved",
@@ -226,8 +230,10 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
           %{
             title: "Light and Dark Theme",
             content:
-              "Stride follows your device's appearance setting. When your computer or phone is set to dark mode, Stride is dark; when it is set to light, Stride is light. Change the setting and Stride switches straight away, without a reload.\n\nThere is no theme switch on screen yet, so to use a different theme in Stride, change your operating system's or your browser's appearance setting. Nothing about the theme is saved to your account, so each browser follows its own device.\n\nIf Stride stays light or dark whatever your device is set to, this browser still holds a theme chosen in an earlier version of Stride. Clearing this site's data in your browser's settings puts it back to following your device.\n\nFor your name, email and password, see [Managing Your Account](/resources/managing-your-account).",
-            image: nil
+              "The theme switch is at the bottom of the side menu, just above the language menu. It has three buttons:\n\n- **System**, the screen, follows your device's appearance setting. When your computer or phone is set to dark mode, Stride is dark; when it is set to light, Stride is light. Change the setting and Stride switches straight away.\n- **Light**, the sun, keeps Stride light.\n- **Dark**, the moon, keeps Stride dark.\n\nSystem is where everyone starts. A click changes the theme straight away, without a reload, and on a phone the side menu stays open so you can see it.\n\nYour choice is kept in this browser only. Nothing about the theme is saved to your account, so another browser or device starts on System until you choose there too. Stride's public pages use the same choice.\n\nIf Stride stays light or dark whatever your device is set to, this browser holds a Light or Dark choice, perhaps from an earlier version of Stride. Click System to follow your device again.\n\nFor your name, email and password, see [Managing Your Account](/resources/managing-your-account).",
+            image: "/images/resources/guides/choosing-your-language-and-theme-step-5.png",
+            image_width: 169,
+            image_height: 86
           }
         ]
       }

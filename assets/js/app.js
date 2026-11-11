@@ -34,6 +34,7 @@ import MentionAutocomplete from "./hooks/mention_autocomplete"
 import PasswordToggle from "./hooks/password_toggle"
 import Sidebar from "./hooks/sidebar"
 import SnapIndicator from "./hooks/snap_indicator"
+import ThemeToggle from "./hooks/theme_toggle"
 import topbar from "../vendor/topbar"
 import {install as installFocusAfterMove} from "./focus_after_move"
 import {install as installCopyToClipboard} from "./copy_to_clipboard"
@@ -51,6 +52,7 @@ const MyHooks = {
   PasswordToggle,
   Sidebar,
   SnapIndicator,
+  ThemeToggle,
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")

@@ -82,7 +82,7 @@ msgid "Log in"
 msgstr "登录"
 
 #: lib/kanban_web/components/nav_components.ex:143
-#: lib/kanban_web/components/side_nav.ex:140
+#: lib/kanban_web/components/side_nav.ex:148
 #: lib/kanban_web/live/workspace_live/invitation_accept.ex:140
 #, elixir-autogen, elixir-format
 msgid "Log out"
@@ -90,8 +90,8 @@ msgstr "退出"
 
 #: lib/kanban_web/components/board_tabs.ex:152
 #: lib/kanban_web/components/nav_components.ex:138
-#: lib/kanban_web/components/side_nav.ex:115
-#: lib/kanban_web/components/side_nav.ex:116
+#: lib/kanban_web/components/side_nav.ex:123
+#: lib/kanban_web/components/side_nav.ex:124
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
 #: lib/kanban_web/live/user_live/settings_components.ex:33
 #, elixir-autogen, elixir-format
@@ -408,7 +408,7 @@ msgstr "此列已达到在制品限制"
 #: lib/kanban_web/components/layouts/root.html.heex:7
 #: lib/kanban_web/components/marketing_closing.ex:97
 #: lib/kanban_web/components/marketing_components.ex:56
-#: lib/kanban_web/components/side_nav.ex:66
+#: lib/kanban_web/components/side_nav.ex:72
 #, elixir-autogen, elixir-format
 msgid "Stride"
 msgstr "Stride"
@@ -828,7 +828,7 @@ msgstr "此账户已确认。您可以登录。"
 #: lib/kanban_web/components/marketing_components.ex:293
 #: lib/kanban_web/components/nav_components.ex:140
 #: lib/kanban_web/components/nav_components.ex:147
-#: lib/kanban_web/components/side_nav.ex:281
+#: lib/kanban_web/components/side_nav.ex:376
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -2191,7 +2191,7 @@ msgstr "阅读更多"
 #: lib/kanban_web/components/marketing_components.ex:287
 #: lib/kanban_web/components/nav_components.ex:139
 #: lib/kanban_web/components/nav_components.ex:146
-#: lib/kanban_web/components/side_nav.ex:274
+#: lib/kanban_web/components/side_nav.ex:369
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -2266,7 +2266,7 @@ msgid "Could not find a user with that email address"
 msgstr "未找到使用该邮箱的用户"
 
 #: lib/kanban_web/components/board_tabs.ex:134
-#: lib/kanban_web/components/side_nav.ex:239
+#: lib/kanban_web/components/side_nav.ex:334
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -3485,6 +3485,7 @@ msgid "not bots you babysit."
 msgstr "不是要你照看的机器人。"
 
 #: lib/kanban_web/components/marketing_components.ex:210
+#: lib/kanban_web/components/side_nav.ex:192
 #, elixir-autogen, elixir-format
 msgid "Change language"
 msgstr "切换语言"
@@ -4113,7 +4114,7 @@ msgid "%{count} active"
 msgid_plural "%{count} active"
 msgstr[0] "%{count} 个活跃"
 
-#: lib/kanban_web/components/side_nav.ex:211
+#: lib/kanban_web/components/side_nav.ex:306
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4171,7 +4172,7 @@ msgstr "待办"
 msgid "Active goals"
 msgstr "活动目标"
 
-#: lib/kanban_web/components/side_nav.ex:225
+#: lib/kanban_web/components/side_nav.ex:320
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4211,7 +4212,7 @@ msgstr "新建目标"
 msgid "Pre-configured for AI workflow"
 msgstr "已为 AI 工作流预配置"
 
-#: lib/kanban_web/components/side_nav.ex:44
+#: lib/kanban_web/components/side_nav.ex:46
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "主导航"
@@ -4222,7 +4223,7 @@ msgid "Promote children to Ready"
 msgstr "将子项提升至「就绪」"
 
 #: lib/kanban_web/components/notifications_locked.ex:32
-#: lib/kanban_web/components/side_nav.ex:232
+#: lib/kanban_web/components/side_nav.ex:327
 #: lib/kanban_web/controllers/page_html/product.html.heex:221
 #: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
@@ -4237,12 +4238,12 @@ msgstr "审核队列"
 msgid "Start with a blank board"
 msgstr "从一个空白看板开始"
 
-#: lib/kanban_web/components/side_nav.ex:53
+#: lib/kanban_web/components/side_nav.ex:59
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride 首页"
 
-#: lib/kanban_web/components/side_nav.ex:75
+#: lib/kanban_web/components/side_nav.ex:81
 #: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
@@ -9613,7 +9614,7 @@ msgstr "登录尝试已过期,请重新登录。"
 msgid "New task"
 msgstr "新任务"
 
-#: lib/kanban_web/components/side_nav.ex:86
+#: lib/kanban_web/components/side_nav.ex:92
 #, elixir-autogen, elixir-format
 msgid "Resources and information"
 msgstr "资源与信息"
@@ -9855,7 +9856,7 @@ msgid_plural "%{count} tasks assigned to you"
 msgstr[0] "分配给你的 %{count} 个任务"
 
 #: lib/kanban_web/components/notifications_locked.ex:41
-#: lib/kanban_web/components/side_nav.ex:218
+#: lib/kanban_web/components/side_nav.ex:313
 #: lib/kanban_web/emails/announcement_email.ex:158
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
@@ -10526,7 +10527,7 @@ msgstr "该组织还没有成员。"
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
 msgstr "组织还有其他成员时，不能移除最后一位组织管理员。请先任命另一位组织管理员。"
 
-#: lib/kanban_web/components/side_nav.ex:261
+#: lib/kanban_web/components/side_nav.ex:356
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:78
 #: lib/kanban_web/live/org_live/console.ex:74
 #, elixir-autogen, elixir-format
@@ -13973,3 +13974,23 @@ msgstr "你的工具没有插件？Stride 的 MCP 服务器以七个工具的形
 #, elixir-autogen, elixir-format
 msgid "Stride's MCP server gives an agent the task loop as seven tools: get the next task, claim it, read a task, list tasks, read an attachment, add a comment and complete the work. It takes the same API token as the REST API. Add it to Claude Code with your own address and token:"
 msgstr "Stride 的 MCP 服务器以七个工具的形式为代理提供任务循环：获取下一个任务、认领任务、读取任务、列出任务、读取附件、添加评论和完成工作。它使用与 REST API 相同的 API 令牌。用你自己的地址和令牌将其添加到 Claude Code："
+
+#: lib/kanban_web/components/layouts.ex:296
+#, elixir-autogen, elixir-format
+msgid "Dark"
+msgstr "深色"
+
+#: lib/kanban_web/components/layouts.ex:295
+#, elixir-autogen, elixir-format
+msgid "Light"
+msgstr "浅色"
+
+#: lib/kanban_web/components/layouts.ex:294
+#, elixir-autogen, elixir-format
+msgid "System"
+msgstr "跟随系统"
+
+#: lib/kanban_web/components/layouts.ex:259
+#, elixir-autogen, elixir-format
+msgid "Theme"
+msgstr "主题"

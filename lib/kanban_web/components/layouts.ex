@@ -238,43 +238,62 @@ defmodule KanbanWeb.Layouts do
   end
 
   @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
+  The System / Light / Dark theme switch, rendered in the SideNav footer.
 
-  See <head> in root.html.heex which applies the theme before page load.
+  Each button dispatches `phx:set-theme`; the bootstrap in the three root
+  layouts' `<head>` stores light or dark in this browser's localStorage
+  (`phx:theme`), removes it for system, and paints before page load. Nothing
+  is sent to the server. `data-sidebar-stay-open` keeps the phone drawer open
+  on a click (assets/js/hooks/sidebar.js), so the change can be seen. The
+  `ThemeToggle` hook (assets/js/hooks/theme_toggle.js) marks the current
+  choice with `aria-pressed`, which the server cannot render.
   """
   def theme_toggle(assigns) do
+    assigns = assign(assigns, :choices, theme_choices())
+
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
+    <div
+      id="theme-toggle"
+      phx-hook="ThemeToggle"
+      role="group"
+      aria-label={gettext("Theme")}
+      class="relative flex flex-row items-center rounded-full"
+      style="background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--line);"
+    >
       <%!-- The indicator tracks the user's CHOICE (data-theme-choice), not the
             resolved data-theme: in "system" mode the bootstrap sets a concrete
             data-theme (light/dark) but keeps data-theme-choice="system", so the
-            pill stays on the system position. --%>
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme-choice=light]_&]:left-1/3 [[data-theme-choice=dark]_&]:left-2/3 transition-[left]" />
+            pill stays on the system position. An unknown stored value matches
+            neither variant, so it also sits on system, which is how it paints. --%>
+      <div
+        aria-hidden="true"
+        class="absolute w-1/3 h-full rounded-full left-0 [[data-theme-choice=light]_&]:left-1/3 [[data-theme-choice=dark]_&]:left-2/3 motion-safe:transition-[left]"
+        style="background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);"
+      />
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        :for={{choice, icon, label} <- @choices}
+        type="button"
+        class="relative flex flex-1 h-8 items-center justify-center cursor-pointer rounded-full text-[var(--ink-2)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="system"
+        phx-mounted={JS.ignore_attributes(["aria-pressed"])}
+        data-phx-theme={choice}
+        data-sidebar-stay-open
+        aria-label={label}
+        title={label}
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name={icon} class="size-4" />
       </button>
     </div>
     """
+  end
+
+  # The only values the bootstrap accepts; anything else would paint as system.
+  defp theme_choices do
+    [
+      {"system", "hero-computer-desktop-micro", gettext("System")},
+      {"light", "hero-sun-micro", gettext("Light")},
+      {"dark", "hero-moon-micro", gettext("Dark")}
+    ]
   end
 end

@@ -99,15 +99,21 @@ defmodule KanbanWeb.PageController do
 
   defp remember_locale(_scope, _locale), do: :ok
 
+  # Back to the page the language was chosen on, query string included, so a
+  # Settings ?section= link keeps its section. Only a path Phoenix accepts as
+  # local is used: one starting with "//" (protocol-relative) or carrying unsafe
+  # characters would make redirect/2 raise, so it falls back to the home page.
   defp get_redirect_path(conn) do
-    # Get the referer or default to home page
-    case get_req_header(conn, "referer") do
-      [referer] ->
-        uri = URI.parse(referer)
-        uri.path || "/"
-
-      _ ->
-        "/"
+    with [referer] <- get_req_header(conn, "referer"),
+         %URI{path: path, query: query} when is_binary(path) <- URI.parse(referer),
+         target = with_query(path, query),
+         :ok <- Phoenix.URL.classify_local_path(target) do
+      target
+    else
+      _ -> "/"
     end
   end
+
+  defp with_query(path, query) when query in [nil, ""], do: path
+  defp with_query(path, query), do: path <> "?" <> query
 end

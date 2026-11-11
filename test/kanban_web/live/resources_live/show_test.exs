@@ -520,14 +520,21 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
 
       refute html =~ "&lt;", "the language and theme guide renders escaped HTML"
       refute html =~ "**", "the language and theme guide renders a literal **"
-      assert html =~ "<strong>Go to boards</strong>"
+
+      for label <- ["Log out", "System", "Light", "Dark"] do
+        assert html =~ "<strong>#{label}</strong>"
+      end
+
       assert html =~ "<li>"
       assert html =~ "<code"
       assert html =~ "日本語"
 
-      # Only step 1 shows the Stride app.
-      assert html =~ ~s(src="/images/resources/guides/#{id}-step-1.png")
-      assert length(Regex.scan(~r{src="/images/resources/guides/#{id}-step-}, html)) == 1
+      # The in-app menu, the public pages' menu and the theme switch.
+      for step <- [1, 2, 5] do
+        assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
+      end
+
+      assert length(Regex.scan(~r{src="/images/resources/guides/#{id}-step-}, html)) == 3
 
       assert html =~ ~s|href="/resources/managing-your-account" class="text-[var(--ink)]|
 
