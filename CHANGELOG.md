@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Agent plugins download attachments.** On 2026-11-09 the Stride agent plugins began downloading a claimed task's attachments for the agent working it: stride 1.88.0, stride-codex 1.42.0, stride-opencode 1.43.0, stride-pi 1.23.0, stride-gemini 1.54.0 and stride-copilot 2.45.0. No port has yet been run end to end against a live board. On a default Gemini CLI install, its `respectGitIgnore` setting is expected to stop `read_file` from opening `.stride/attachments`, and whether Copilot and Codex can read images and PDFs is not yet confirmed.
 - **Language and theme inside the app.** The bottom of the side menu now has a language menu and a **System**, **Light** and **Dark** theme switch, on your boards, in Settings, in Resources and on the rest of the signed-in app. Before, signed-in users could change language only from the public pages, and there was no way to choose a theme: it followed the device, unless an earlier version of Stride had stored a choice in that browser. A language chosen there is saved to your account; the theme is kept in that browser only. On a phone both are in the side menu, which a theme click leaves open.
 - **Six new Resources guides** for features that had no help page:
   - *Installing the Stride Plugin* covers installing the plugin in Claude Code, GitHub Copilot CLI, Gemini CLI, Codex CLI, OpenCode and Pi, the lite plugins, and keeping it up to date.
@@ -20,10 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - *Choosing Your Language and Theme* covers the seven languages, where the language menus are, where your choice is saved and which emails use it, and the System, Light and Dark theme switch.
 
   The plugin guides sit together in the Resources catalog, and *Writing Effective Tasks for AI Agents* now links to the exploratory testing guide.
-
-### Changed
-
-- **Attachments on the plan pages.** The Pricing page lists Attachments among the Organization plan's features, and the product page and the *Free and Paid Boards* guide name attachments among the features that need a paid board.
 
 ## [3.1.0] - 2026-11-08
 
