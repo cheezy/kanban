@@ -100,12 +100,16 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "connecting-an-mcp-client"
   ]
 
-  @agent_plugins_ids ["installing-the-stride-plugin"]
+  @agent_plugins_ids ["installing-the-stride-plugin", "turning-an-idea-into-tasks"]
+
+  # The Stride Ideation plugin and its ports. Pi has none.
+  @ideation_repos ~w(stride-ideation stride-copilot-ideation stride-codex-ideation stride-gemini-ideation stride-opencode-ideation)
 
   # The GitHub repositories the plugin guides may link to. The guides copy
   # their commands from these READMEs; no test reads them, because the plugin
   # repositories are not checked out in CI.
-  @plugin_repos ~w(stride stride-copilot stride-gemini stride-codex stride-opencode stride-pi stride-lite stride-copilot-lite stride-opencode-lite)
+  @plugin_repos ~w(stride stride-copilot stride-gemini stride-codex stride-opencode stride-pi stride-lite stride-copilot-lite stride-opencode-lite) ++
+                  @ideation_repos
 
   # Column names are board data, not translated strings, so a bolded column
   # name is also checked against the AI board's column list.
@@ -1536,8 +1540,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 45 guides" do
-      assert length(HowToData.all_how_tos()) == 45
+    test "has all 46 guides" do
+      assert length(HowToData.all_how_tos()) == 46
     end
 
     test "every guide id is unique across the area modules" do
@@ -3100,14 +3104,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     end
 
     test "the agent-plugins guides exist with their tags and steps" do
+      # The step numbers that may show a screenshot: only a step that shows
+      # the Stride app, never a terminal step.
       expected = [
         {"installing-the-stride-plugin", "Installing the Stride Plugin",
-         ["developer", "ai-agents", "automation"], 10}
+         ["developer", "ai-agents", "automation"], 10, []},
+        {"turning-an-idea-into-tasks", "Turning an Idea Into Tasks",
+         ["ai-agents", "tasks", "automation"], 9, [8]}
       ]
 
       assert Enum.map(AgentPlugins.how_tos(), & &1.id) == @agent_plugins_ids
 
-      for {id, title, tags, min_steps} <- expected do
+      for {id, title, tags, min_steps, image_steps} <- expected do
         assert {:ok, guide} = HowToData.get_how_to(id)
         assert guide.title == title
         assert guide.tags == tags
@@ -3115,9 +3123,14 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         assert guide.created_at == ~D[2026-11-10]
         assert length(guide.steps) >= min_steps, "#{id} lost steps"
 
-        for step <- guide.steps do
-          assert step.image == nil,
-                 "#{id} step #{step.title} shows a screenshot of a terminal step"
+        for {step, n} <- Enum.with_index(guide.steps, 1) do
+          if n in image_steps do
+            assert step.image == "/images/resources/guides/#{id}-step-#{n}.png",
+                   "#{id} step #{n} #{step.title} is missing its screenshot"
+          else
+            assert step.image == nil,
+                   "#{id} step #{step.title} shows a screenshot of a terminal step"
+          end
         end
 
         for tag <-
@@ -3231,6 +3244,215 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       # A placeholder at most, never a real-looking token.
       refute content =~ ~r/stride_(dev|live|test)_[A-Za-z0-9]/
+    end
+  end
+
+  describe "turning-an-idea-into-tasks guide" do
+    defp ideation_guide do
+      {:ok, guide} = HowToData.get_how_to("turning-an-idea-into-tasks")
+      guide
+    end
+
+    defp ideation_content, do: agent_plugins_content(["turning-an-idea-into-tasks"])
+
+    test "turning-an-idea-into-tasks exists with its tags and steps" do
+      guide = ideation_guide()
+
+      assert guide.title == "Turning an Idea Into Tasks"
+      assert guide.tags == ["ai-agents", "tasks", "automation"]
+      assert guide.content_type == "guide"
+      assert guide.created_at == ~D[2026-11-10]
+      assert guide.reading_time in 2..10
+      assert length(guide.steps) >= 9
+
+      # Joining any of these would move a pinned chain or count.
+      for tag <-
+            ~w(getting-started developer non-developer best-practices security boards organizations metrics collaboration planning) do
+        refute tag in guide.tags,
+               "turning-an-idea-into-tasks would join the #{tag} chain or its count"
+      end
+
+      for {step, n} <- Enum.with_index(guide.steps, 1), step.image do
+        assert step.image == "/images/resources/guides/turning-an-idea-into-tasks-step-#{n}.png",
+               "step #{n} #{step.title} points at another step's screenshot"
+      end
+
+      assert Enum.count(guide.steps, & &1.image) == 1
+      assert Enum.any?(guide.steps, &is_nil(&1.image))
+    end
+
+    test "turning-an-idea-into-tasks uses only supported markdown and has at least three steps" do
+      guide = ideation_guide()
+      assert length(guide.steps) >= 3
+
+      for step <- guide.steps do
+        content = step.content
+        fences = Regex.scan(~r/```/, content) |> length()
+        assert rem(fences, 2) == 0, "#{step.title} leaves a code fence open"
+
+        assert length(Regex.scan(~r/```\w*\n[\s\S]*?```/, content)) * 2 == fences,
+               "#{step.title} opens a fence the renderer doesn't recognise"
+
+        prose = prose_outside_code(content)
+
+        refute prose =~ ~r/^\s*#/m, "#{step.title} uses a heading"
+        refute prose =~ ~r/^\s*\d+\.\s/m, "#{step.title} uses a numbered list"
+        refute prose =~ ~r/(?<![\w*])\*[^*\s][^*\n]*\*(?![\w*])/, "#{step.title} uses italics"
+        refute prose =~ ~r/(?<!\w)_[^_\s][^_\n]*_(?!\w)/, "#{step.title} uses italics"
+        refute content =~ "<", "#{step.title} has text the page would show escaped"
+      end
+    end
+
+    test "turning-an-idea-into-tasks is wired into prev/next navigation" do
+      guide = ideation_guide()
+
+      assert {%{id: "installing-the-stride-plugin"}, %{id: "setting-up-hooks"}} =
+               HowToData.get_navigation(guide)
+
+      ai_agents_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("ai-agents" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert ai_agents_chain ==
+               ~w(using-stride-with-a-team installing-the-stride-plugin turning-an-idea-into-tasks setting-up-hooks writing-tasks-for-ai watching-your-agents)
+
+      # Leading with ai-agents keeps it out of the developer chain, so the
+      # guides that lead with developer keep their neighbours.
+      {:ok, installing} = HowToData.get_how_to("installing-the-stride-plugin")
+      assert {nil, %{id: "setting-up-hooks"}} = HowToData.get_navigation(installing)
+
+      {:ok, watching} = HowToData.get_how_to("watching-your-agents")
+      assert {%{id: "writing-tasks-for-ai"}, nil} = HowToData.get_navigation(watching)
+
+      refute Enum.any?(HowToData.all_how_tos(), fn other ->
+               "developer" in other.tags and other.id == guide.id
+             end)
+    end
+
+    test "turning-an-idea-into-tasks links resolve" do
+      content = ideation_content()
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\(([^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+
+      for id <-
+            ~w(installing-the-stride-plugin writing-tasks-for-ai api-authentication working-with-goals) do
+        assert "/resources/#{id}" in links, "the Ideation guide no longer links to #{id}"
+      end
+
+      for link <- links do
+        case link do
+          "/resources/" <> id ->
+            assert id in ids, "the Ideation guide links to the missing guide #{id}"
+
+          "https://github.com/cheezy/" <> repo ->
+            assert repo in @ideation_repos,
+                   "#{link} is not one of the Stride Ideation repositories"
+
+          other ->
+            flunk("#{other} is neither a Resources guide nor a Stride Ideation repository")
+        end
+      end
+
+      for repo <- @ideation_repos do
+        assert "https://github.com/cheezy/#{repo}" in links,
+               "the Ideation guide doesn't link #{repo}"
+      end
+    end
+
+    test "turning-an-idea-into-tasks gives each Ideation port's install and says Pi has none" do
+      content = ideation_content()
+
+      # The onboarding page carries each port's install command too; the guide
+      # must not drift from it, and it has no Pi command to give.
+      for agent <- KanbanWeb.OnboardingPlugins.agents(), agent.ideation_command do
+        assert content =~ agent.ideation_command,
+               "the Ideation guide lost #{agent.label}'s install #{inspect(agent.ideation_command)}"
+      end
+
+      assert KanbanWeb.OnboardingPlugins.get("pi").ideation_command == nil
+      assert content =~ "Pi has no Ideation port."
+      refute content =~ "stride-pi-ideation"
+
+      # Copied from each port's README when the guide was written; no test
+      # reads those READMEs, because the plugin repositories aren't in CI.
+      piped_installs = [
+        "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-ideation/main/install.sh | bash",
+        "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-ideation/main/install.sh | bash -s -- --project",
+        "irm https://raw.githubusercontent.com/cheezy/stride-codex-ideation/main/install.ps1 | iex"
+      ]
+
+      for command <- [
+            "/stride-ideation:ideate",
+            "/stride-ideation:stridify",
+            "copilot plugin marketplace add cheezy/stride-copilot-marketplace\ncopilot plugin install stride-copilot-ideation",
+            "stride-ideation-ideate",
+            "stride-ideation-stridify",
+            "/ideate",
+            "/stridify",
+            "--global"
+            | piped_installs
+          ] do
+        assert content =~ command, "the Ideation guide lost #{inspect(command)}"
+      end
+
+      # A script piped into a shell must be one copied from a port's README.
+      for [line] <- Regex.scan(~r/(?:curl|irm) [^\n`]*\|\s*(?:bash|iex)[^\n`]*/, content) do
+        assert line in piped_installs, "#{line} pipes a script that isn't from an Ideation README"
+      end
+
+      # Only the marketplace that exists today; the community listing isn't approved.
+      refute content =~ "claude-community"
+
+      # A placeholder at most, never a real-looking token.
+      refute content =~ ~r/stride_(dev|live|test)_[A-Za-z0-9]/
+    end
+
+    test "the turning-an-idea-into-tasks facts match the code" do
+      content = ideation_content()
+
+      # The batch API puts what /stridify creates in Backlog, agents claim
+      # only from Ready, and the goal card promotes a goal's children.
+      assert content =~ "**Backlog**"
+      assert content =~ "**Ready**"
+      assert content =~ "**Promote children to Ready**"
+      assert content =~ "`POST /api/tasks/batch`"
+
+      assert File.read!("lib/kanban_web/controllers/api/task_creation.ex") =~
+               "backlog -> backlog.id"
+
+      assert File.read!("lib/kanban/tasks/agent_queries.ex") =~ ~s(where: c.name == "Ready")
+
+      assert File.read!("lib/kanban_web/components/goal_card.ex") =~
+               ~s|gettext("Promote children to Ready")|
+
+      assert File.read!("lib/kanban_web/router.ex") =~ ~s(post "/tasks/batch")
+
+      # What /stridify sends, and the token file it reads, stay private.
+      assert content =~ "`.gitignore`"
+      assert content =~ "never commit it"
+      assert content =~ "keep secrets out of it"
+
+      # /stridify creates the tasks; a person still moves them to Ready.
+      assert content =~ "Stridify creates the tasks; it doesn't start them."
+
+      # stridify sends no board selector, so only a board token knows where
+      # the tasks go; a workspace token is refused without one.
+      assert content =~ "Use a board token, not a workspace token"
+
+      assert File.read!("lib/kanban_web/plugs/authenticate_api_token.ex") =~
+               "defp without_selector(conn), do: halt_board_error(conn, :board_selector_missing)"
+
+      # A new board hides the fields Ideation fills in until they're turned on.
+      assert content =~ "**Field visibility**"
+
+      for field <- ~w(key_files pitfalls verification_steps) do
+        assert File.read!("lib/kanban/boards/board.ex") =~ ~s("#{field}" => false)
+      end
+
+      # --continue commits a new document rather than editing the old one.
+      assert content =~ "commits the refined version as a new document"
     end
   end
 

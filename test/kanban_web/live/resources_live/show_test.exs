@@ -344,6 +344,54 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
     end
 
+    test "renders the turning-an-idea-into-tasks guide", %{conn: conn} do
+      id = "turning-an-idea-into-tasks"
+      assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
+      {:ok, guide} = HowToData.get_how_to(id)
+
+      {:ok, _view, html} = live(conn, ~p"/resources/turning-an-idea-into-tasks")
+
+      assert html =~ "Turning an Idea Into Tasks"
+
+      for step <- guide.steps do
+        assert html =~ step.title, "the Ideation guide doesn't show the step #{step.title}"
+      end
+
+      refute html =~ "&lt;", "the Ideation guide renders escaped HTML"
+      refute html =~ "**", "the Ideation guide renders a literal **"
+      assert html =~ "<strong>Backlog</strong>"
+      assert html =~ "<strong>Promote children to Ready</strong>"
+      assert html =~ "<pre"
+      assert html =~ "<li>"
+      assert html =~ "<code"
+      # Long inline commands wrap on a phone instead of pushing the page sideways.
+      assert html =~ "break-words"
+      assert html =~ "/plugin install stride-ideation@stride-marketplace"
+
+      # Only step 8 shows the Stride app; the terminal steps show no screenshot.
+      assert html =~ ~s(src="/images/resources/guides/#{id}-step-8.png")
+
+      assert length(
+               Regex.scan(
+                 ~r{src="/images/resources/guides/turning-an-idea-into-tasks-step-},
+                 html
+               )
+             ) ==
+               1
+
+      # Links in the guide's own text, not the previous/next navigation.
+      for target <-
+            ~w(installing-the-stride-plugin writing-tasks-for-ai api-authentication working-with-goals) do
+        assert html =~ ~s|href="/resources/#{target}" class="text-[var(--ink)]|
+      end
+
+      assert html =~ ~s|href="https://github.com/cheezy/stride-ideation" class="text-[var(--ink)]|
+
+      # The Previous and Next links lead along the ai-agents chain.
+      assert html =~ ~s|href="/resources/installing-the-stride-plugin" data-phx-link="redirect"|
+      assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
+    end
+
     test "renders the working-with-goals guide", %{conn: conn} do
       id = "working-with-goals"
       assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
