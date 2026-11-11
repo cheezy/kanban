@@ -207,7 +207,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentsAndPlanning do
           %{
             title: "The Goal Page",
             content:
-              "Open a goal from its card on a board, from the target page, or from My Work. Members of the board can open it.\n\n- The header shows the goal's progress by column, and **Working on it** shows the people and agents involved.\n- **Hierarchy** lists the goal's tasks by column. Clicking one opens it for editing, which needs owner or modify access. A read-only member is sent back to the board with a message saying they don't have permission.\n- **Progress** and **Time** on the right sum up how it's going.\n- **History** records changes to the goal itself, such as **Assigned to**, **Reassigned** and **Priority changed**.\n\n**Back to Board** returns to the board.",
+              "Open a goal from its card on a board, from the target page, or from My Work. Members of the board can open it.\n\n- The header shows the goal's progress by column, and **Working on it** shows the people and agents involved.\n- **Hierarchy** lists the goal's tasks by column. Clicking one opens it for editing, which needs owner or modify access. A read-only member is sent back to the board with a message saying they don't have permission.\n- **Progress** and **Time** on the right sum up how it's going.\n- **History** records changes to the goal itself, such as **Assigned to**, **Reassigned** and **Priority changed**.\n\n**Back to Board** returns to the board. To create a goal and add its tasks, see [Working With Goals](/resources/working-with-goals).",
             image: "/images/resources/guides/planning-with-targets-step-9.png",
             image_width: 1219,
             image_height: 666

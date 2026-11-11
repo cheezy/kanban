@@ -1,6 +1,7 @@
 defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   use ExUnit.Case, async: true
 
+  alias Kanban.Tasks.Task.HierarchyValidations
   alias KanbanWeb.ResourcesLive.HowToData
   alias KanbanWeb.ResourcesLive.HowTos.AgentPlugins
 
@@ -17,7 +18,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "monitoring-task-progress",
     "reviewing-completed-work",
     "organizing-with-dependencies",
-    "using-complexity-priority"
+    "using-complexity-priority",
+    "working-with-goals"
   ]
 
   @developer_ids [
@@ -686,17 +688,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "best practices guides content" do
-    test "all 9 best-practices guides exist" do
+    test "all 10 best-practices guides exist" do
       best_practices_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("best-practices" in &1.tags))
 
-      assert length(best_practices_guides) == 9
+      assert length(best_practices_guides) == 10
 
       guide_ids = Enum.map(best_practices_guides, & &1.id)
       assert "using-stride-with-a-team" in guide_ids
       assert "organizing-with-dependencies" in guide_ids
       assert "using-complexity-priority" in guide_ids
+      assert "working-with-goals" in guide_ids
       assert "metrics-dashboard" in guide_ids
       assert "throughput-metrics" in guide_ids
       assert "cycle-time-metrics" in guide_ids
@@ -770,7 +773,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
             {"monitoring-task-progress", "Monitoring Task Progress", 5},
             {"reviewing-completed-work", "Reviewing Completed Work", 6},
             {"organizing-with-dependencies", "Organizing Tasks with Dependencies", 5},
-            {"using-complexity-priority", "Using Complexity and Priority Effectively", 5}
+            {"using-complexity-priority", "Using Complexity and Priority Effectively", 5},
+            {"working-with-goals", "Working With Goals", 9}
           ] do
         assert {:ok, guide} = HowToData.get_how_to(id)
         assert guide.title == title
@@ -836,6 +840,230 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert File.read!("docs/TASK-WRITING-GUIDE.md") =~
                "Small (< 1 hour), Medium (1-2 hours), Large (> 2 hours)"
+    end
+  end
+
+  describe "working-with-goals guide" do
+    defp goals_guide do
+      {:ok, guide} = HowToData.get_how_to("working-with-goals")
+      guide
+    end
+
+    defp goals_content, do: working_with_tasks_content(["working-with-goals"])
+
+    test "working-with-goals exists with its tags and steps" do
+      guide = goals_guide()
+
+      assert guide.title == "Working With Goals"
+      assert guide.tags == ["best-practices", "tasks", "workflow"]
+      assert guide.content_type == "guide"
+      assert guide.created_at == ~D[2026-11-10]
+      assert guide.reading_time in 2..10
+      assert length(guide.steps) >= 9
+
+      # Joining any of these would move a pinned chain or count.
+      for tag <-
+            ~w(getting-started developer non-developer security boards organizations metrics collaboration ai-agents planning) do
+        refute tag in guide.tags, "working-with-goals would join the #{tag} chain or its count"
+      end
+
+      for {step, n} <- Enum.with_index(guide.steps, 1), step.image do
+        assert step.image == "/images/resources/guides/working-with-goals-step-#{n}.png",
+               "step #{n} #{step.title} points at another step's screenshot"
+      end
+
+      assert Enum.count(guide.steps, & &1.image) == 3
+      assert Enum.any?(guide.steps, &is_nil(&1.image))
+    end
+
+    test "working-with-goals uses only supported markdown and has at least three steps" do
+      guide = goals_guide()
+      assert length(guide.steps) >= 3
+
+      for step <- guide.steps do
+        content = step.content
+        fences = Regex.scan(~r/```/, content) |> length()
+        assert rem(fences, 2) == 0, "#{step.title} leaves a code fence open"
+
+        prose = prose_outside_code(content)
+
+        refute prose =~ ~r/^\s*#/m, "#{step.title} uses a heading"
+        refute prose =~ ~r/^\s*\d+\.\s/m, "#{step.title} uses a numbered list"
+        refute prose =~ ~r/(?<![\w*])\*[^*\s][^*\n]*\*(?![\w*])/, "#{step.title} uses italics"
+        refute prose =~ ~r/(?<!\w)_[^_\s][^_\n]*_(?!\w)/, "#{step.title} uses italics"
+        refute content =~ "<", "#{step.title} has text the page would show escaped"
+      end
+    end
+
+    test "working-with-goals is wired into prev/next navigation" do
+      guide = goals_guide()
+
+      assert {%{id: "using-complexity-priority"}, %{id: "metrics-dashboard"}} =
+               HowToData.get_navigation(guide)
+
+      best_practices_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("best-practices" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert best_practices_chain ==
+               ~w(using-stride-with-a-team organizing-with-dependencies using-complexity-priority working-with-goals metrics-dashboard throughput-metrics cycle-time-metrics lead-time-metrics wait-time-metrics workspace-and-compliance-metrics)
+
+      {:ok, sizing} = HowToData.get_how_to("using-complexity-priority")
+      assert {_, %{id: "working-with-goals"}} = HowToData.get_navigation(sizing)
+
+      {:ok, dashboard} = HowToData.get_how_to("metrics-dashboard")
+      assert {%{id: "working-with-goals"}, _} = HowToData.get_navigation(dashboard)
+    end
+
+    test "working-with-goals links resolve" do
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+      links = Regex.scan(~r/\]\(([^)]+)\)/, goals_content(), capture: :all_but_first)
+      links = List.flatten(links)
+
+      assert links != []
+
+      for target <-
+            ~w(planning-with-targets organizing-with-dependencies using-stride-with-a-team setting-up-hooks archiving-tasks) do
+        assert "/resources/#{target}" in links, "working-with-goals no longer links to #{target}"
+      end
+
+      for link <- links do
+        case link do
+          "/resources/" <> id -> assert id in ids, "working-with-goals links to the missing #{id}"
+          other -> flunk("working-with-goals links to #{other}, which is not a Resources guide")
+        end
+      end
+
+      # The two guides that mention goals link back.
+      for id <- ["planning-with-targets", "organizing-with-dependencies"] do
+        {:ok, guide} = HowToData.get_how_to(id)
+        content = Enum.map_join(guide.steps, "\n", & &1.content)
+
+        assert content =~ "[Working With Goals](/resources/working-with-goals)",
+               "#{id} mentions goals but doesn't link to Working With Goals"
+      end
+    end
+
+    test "the working-with-goals facts match the code" do
+      content = goals_content()
+
+      # The two-level rule.
+      assert content =~ "A goal cannot contain another goal."
+
+      assert HierarchyValidations.nested_goal_message() =~
+               "a goal cannot contain another goal"
+
+      assert content =~ "can't hold tasks of its own"
+
+      assert HierarchyValidations.nested_tasks_message() =~
+               "tasks cannot be nested more than one level"
+
+      # Both claim paths offer only work tasks and defects.
+      assert content =~ "Agents never claim a goal itself."
+      agent_queries = File.read!("lib/kanban/tasks/agent_queries.ex")
+      assert length(String.split(agent_queries, "where: t.type in [:work, :defect]")) == 3
+
+      # New goal: modify access, the form preset to Goal, the first column.
+      board = File.read!("lib/kanban_web/live/board_live/show.html.heex")
+      assert content =~ "You see it if you own the board or have modify access."
+      assert board =~ ~r/:if=\{@can_modify\}\s+patch=\{~p"\/boards\/#\{@board\}\/goals\/new"\}/
+      assert content =~ "with **Type** already set to **Goal**"
+      assert board =~ "@live_action == :new_goal -> %Kanban.Tasks.Task{type: :goal}"
+      assert content =~ "**Column** starts at the board's first column"
+
+      assert File.read!("lib/kanban_web/live/board_live/params.ex") =~
+               "case List.first(columns) do"
+
+      assert content =~ "`POST /api/tasks/batch`"
+      assert File.read!("lib/kanban_web/router.ex") =~ ~s(post "/tasks/batch")
+
+      # Parent Goal lists unarchived goals as "G1 - Title".
+      assert content =~ "\"G1 - Saved payment methods\""
+
+      assert File.read!("lib/kanban_web/live/task_live/form/option_builders.ex") =~
+               ~S|{"#{identifier} - #{title}", id}|
+
+      assert File.read!("lib/kanban/tasks/queries.ex") =~
+               "where: t.type == :goal,\n      where: t.id != ^(exclude_task_id || 0),\n      where: is_nil(t.archived_at)"
+
+      # The form always sends an assignee, so a goal's assignee is never
+      # copied onto a task added through it.
+      assert content =~ "The form doesn't copy the goal's assignee"
+
+      assert File.read!("lib/kanban/tasks/creation_support.ex") =~
+               ~s|Map.has_key?(attrs, :assigned_to_id) or Map.has_key?(attrs, "assigned_to_id")|
+
+      assert File.read!("lib/kanban_web/live/task_live/form_component.html.heex") =~
+               ~s|prompt={gettext("Select a user")}|
+
+      # The goal card: progress from completed tasks, column from its tasks,
+      # and the promote button only for a Backlog goal with Backlog tasks.
+      goals = File.read!("lib/kanban_web/live/board_live/goals.ex")
+      target = File.read!("lib/kanban/tasks/goal_target_column.ex")
+      assert content =~ "Progress counts the tasks marked completed"
+      assert goals =~ "Enum.count(children, &(&1.status == :completed))"
+      assert content =~ "It sits in the leftmost column that holds one of them"
+      assert target =~ "pick_leftmost_child_column(goal_context)"
+      assert content =~ "a goal with no tasks stays in the column it was created in"
+      assert target =~ "if children_data == [] do\n      :error"
+      assert content =~ "When a goal in **Backlog** has tasks in **Backlog** too"
+      assert goals =~ ~s|Enum.find(columns, fn col -> col.name == "Backlog" end)|
+      assert goals =~ ~s|t.type == :goal and MapSet.member?(backlog_child_parent_ids, t.id)|
+
+      # The goal page: members only, and no assign control.
+      assert content =~ "Members of the board can open it."
+
+      assert File.read!("lib/kanban_web/live/goal_live/show.ex") =~
+               "Boards.get_board(board_id, user)"
+
+      assert File.read!("lib/kanban_web/router.ex") =~
+               ~s(live "/boards/:id/goals/:goal_id", GoalLive.Show, :show)
+
+      refute File.read!("lib/kanban_web/live/goal_live/show.ex") =~ "assigned_to_id"
+
+      # Assigning a goal cascades to its unfinished tasks.
+      assert content =~ "Every task in the goal that isn't completed gets the same assignee"
+      assert File.read!("lib/kanban/tasks/lifecycle.ex") =~ "where: t.status != :completed"
+
+      # Completion and the after_goal grace window.
+      assert content =~ "has reached **Done**, the goal moves to **Done** too"
+      assert target =~ "column_id == done_column.id or status == :completed"
+      # Marking a task Completed in the form doesn't re-place its goal, so the
+      # guide promises the move only for tasks that reach the Done column.
+      refute content =~ "marked completed, the goal moves"
+      assert content =~ "it moves back to the leftmost column that holds one of its tasks"
+
+      assert File.read!("lib/kanban/tasks/lifecycle.ex") =~
+               "a Done goal that gains a non-Done child is pulled back"
+
+      # The goal card shows no assignee avatar: the board never sets :author.
+      refute content =~ "avatar"
+      assert content =~ "with its title, priority, its description, and a progress bar"
+
+      assert File.read!("lib/kanban_web/components/goal_card.ex") =~
+               "Map.get(task, :summary) || Map.get(task, :description)"
+
+      refute File.read!("lib/kanban_web/live/board_live/task_card_data.ex") =~ "author:"
+      assert content =~ "a five-minute grace window ends"
+
+      assert File.read!("lib/kanban/after_goal.ex") =~
+               "Application.get_env(:kanban, :after_goal_grace_window_ms, 300_000)"
+
+      # Archiving a goal takes every unarchived task, finished or not.
+      archiving = File.read!("lib/kanban/tasks/archiving.ex")
+      assert content =~ "every task in it that isn't archived yet, finished or not"
+      assert archiving =~ "where: t.parent_id == ^goal_id and is_nil(t.archived_at)"
+      assert content =~ "Restoring the goal brings back the goal alone"
+
+      # unarchive_task touches only the task it is given, never its children.
+      [_, unarchive] = String.split(archiving, "def unarchive_task(%Task{} = task) do", parts: 2)
+      [unarchive | _] = String.split(unarchive, "\n  def")
+      refute unarchive =~ "parent_id"
+
+      for stale <- ["Create Goal", "archives its open", "Move goal and tasks to Ready"] do
+        refute content =~ stale, "working-with-goals says #{inspect(stale)}"
+      end
     end
   end
 
@@ -1308,8 +1536,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 44 guides" do
-      assert length(HowToData.all_how_tos()) == 44
+    test "has all 45 guides" do
+      assert length(HowToData.all_how_tos()) == 45
     end
 
     test "every guide id is unique across the area modules" do

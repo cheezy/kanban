@@ -1,6 +1,7 @@
 defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
   @moduledoc """
-  Guides for writing, monitoring, reviewing and organizing tasks.
+  Guides for writing, monitoring, reviewing and organizing tasks, and for
+  grouping them into goals.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog.
@@ -196,7 +197,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
           %{
             title: "Dependency Best Practices",
             content:
-              "Best practices:\n\n- Keep chains short: long chains slow work down\n- Group related work into a goal with the **New goal** button\n- Remove dependencies that are no longer needed",
+              "Best practices:\n\n- Keep chains short: long chains slow work down\n- Group related work into a goal with the **New goal** button, as [Working With Goals](/resources/working-with-goals) explains\n- Remove dependencies that are no longer needed",
             image: nil
           }
         ]
@@ -239,6 +240,78 @@ defmodule KanbanWeb.ResourcesLive.HowTos.WorkingWithTasks do
             title: "Adjusting Over Time",
             content:
               "Revisit complexity and priority as work progresses:\n\n- Raise the priority when something becomes urgent\n- Drag tasks within Ready to change the order of tasks with the same priority\n- Correct the complexity when an estimate was wrong\n- Lower the priority of tasks that matter less now\n\nKeep the board matching reality.",
+            image: nil
+          }
+        ]
+      },
+      %{
+        id: "working-with-goals",
+        title: "Working With Goals",
+        description:
+          "Learn how goals group related tasks, how their progress shows on the board, and what happens when the last task finishes.",
+        tags: ["best-practices", "tasks", "workflow"],
+        content_type: "guide",
+        reading_time: 6,
+        created_at: ~D[2026-11-10],
+        steps: [
+          %{
+            title: "What a Goal Is",
+            content:
+              "A goal groups related tasks into one larger piece of work, such as a feature that takes several tasks to build. Its identifier starts with G, as in G1, and it holds work tasks and defects.\n\nGoals have two levels and no more:\n\n- A goal cannot contain another goal. Stride refuses to save a goal that has a **Parent Goal**\n- A task inside a goal can't hold tasks of its own\n\nAgents never claim a goal itself. They claim its tasks, and the goal follows them across the board.",
+            image: nil
+          },
+          %{
+            title: "Creating a Goal",
+            content:
+              "Click **New goal** at the top of the board. You see it if you own the board or have modify access. It opens the task form with **Type** already set to **Goal**:\n\n- Give the goal a **Title**, and a **Description** that says why the work matters\n- Set its **Priority**, and **Assigned To** if one person owns it\n- Leave **Parent Goal** at **No parent goal**\n- **Column** starts at the board's first column, which is **Backlog** on an AI-optimized board\n\nClick **Save Task**.\n\nAgents create a goal and its tasks together, in one call to `POST /api/tasks/batch`.",
+            image: "/images/resources/guides/working-with-goals-step-2.png",
+            image_width: 1072,
+            image_height: 731
+          },
+          %{
+            title: "Adding Tasks to a Goal",
+            content:
+              "A goal's tasks are ordinary work tasks and defects with the goal picked in **Parent Goal**. The list shows each goal on the board that isn't archived, by identifier and title, such as \"G1 - Saved payment methods\".\n\n- For a new task, click the + at the top of a column, pick the goal in **Parent Goal** and click **Save Task**\n- For an existing task, open it with **Edit task**, pick the goal and click **Save Task**\n- To take a task out of its goal, set **Parent Goal** back to **No parent goal**\n\nThe form doesn't copy the goal's assignee, so pick one in **Assigned To** if the task needs it.",
+            image: nil
+          },
+          %{
+            title: "The Goal Card",
+            content:
+              "A goal shows on the board as a card marked **GOAL**, with its title, priority, its description, and a progress bar such as \"1/3 children complete · 33%\". Progress counts the tasks marked completed, out of all of the goal's tasks that aren't archived. Each of the goal's tasks names the goal at the bottom of its own card.\n\nA goal's column follows its tasks. It sits in the leftmost column that holds one of them, and a goal with no tasks stays in the column it was created in.\n\nWhen a goal in **Backlog** has tasks in **Backlog** too, its card shows **Promote children to Ready**. Click it to move the goal and those tasks to **Ready**, where agents can claim them.\n\nClick the card to open the goal's page.",
+            image: "/images/resources/guides/working-with-goals-step-4.png",
+            image_width: 568,
+            image_height: 330
+          },
+          %{
+            title: "The Goal Page",
+            content:
+              "The goal page lives at `/boards/:id/goals/:goal_id`. Members of the board can open it.\n\n- The header shows how many of the goal's tasks are complete, such as \"1 of 3 complete\", how many are in each column, and **Working on it** shows the people and agents involved\n- **Hierarchy** lists the goal's tasks, grouped by column. A goal with no tasks says \"This goal has no children yet.\"\n- **Progress** and **Time** on the right sum up how it's going\n- **History** records changes to the goal itself, such as **Assigned to**\n\n**Back to Board** returns to the board. [Planning With Targets](/resources/planning-with-targets) shows how the page fits with the target a goal belongs to.",
+            image: "/images/resources/guides/working-with-goals-step-5.png",
+            image_width: 1085,
+            image_height: 682
+          },
+          %{
+            title: "Assigning a Goal",
+            content:
+              "The goal page has no assign control. To assign a goal, click the pencil icon on its card to open **Edit task**, pick someone in **Assigned To** and click **Save Task**.\n\nEvery task in the goal that isn't completed gets the same assignee in the same step, and completed tasks keep theirs. [Using Stride With a Team](/resources/using-stride-with-a-team) covers handing a goal to someone else.",
+            image: nil
+          },
+          %{
+            title: "When a Goal Is Done",
+            content:
+              "A goal finishes on its own. Once every task in it that isn't archived has reached **Done**, the goal moves to **Done** too. If a finished goal later gets a new task that isn't done, it moves back to the leftmost column that holds one of its tasks.\n\nWhen an agent completes a goal's last task, Stride also asks it to run the `after_goal` hook and report the result:\n\n- A passing report moves the goal to **Done**\n- A failing report keeps the goal out of **Done** until a passing report arrives or a five-minute grace window ends\n- If no report arrives, Stride moves the goal to **Done** itself when the window ends\n\n[Setting Up Hook Execution](/resources/setting-up-hooks) explains the hooks.",
+            image: nil
+          },
+          %{
+            title: "Archiving a Goal",
+            content:
+              "Hover over the goal's card and click its archive icon. The goal and every task in it that isn't archived yet, finished or not, leave the board straight away, with no confirmation. The bulk bar's **Archive** skips goals.\n\nOn the **Archive** tab each of those tasks still shows the goal it belongs to. Restoring the goal brings back the goal alone, so restore each of its tasks you still need as well. [Archiving Tasks](/resources/archiving-tasks) has the details.",
+            image: nil
+          },
+          %{
+            title: "Goals, Targets and Dependencies",
+            content:
+              "Goals work with two other ways of planning:\n\n- To set the order of the tasks inside a goal, give them dependencies, as [Organizing Tasks with Dependencies](/resources/organizing-with-dependencies) explains\n- To track goals toward a date, add them to a target, as [Planning With Targets](/resources/planning-with-targets) explains\n\nTo share the work in a goal across a team, see [Using Stride With a Team](/resources/using-stride-with-a-team).",
             image: nil
           }
         ]

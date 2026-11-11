@@ -90,7 +90,8 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
             "monitoring-task-progress",
             "reviewing-completed-work",
             "organizing-with-dependencies",
-            "using-complexity-priority"
+            "using-complexity-priority",
+            "working-with-goals"
           ] do
         {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
 
@@ -341,6 +342,52 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       # The Next link, not the step 2 link, leads on to the next guide in the
       # developer chain.
       assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
+    end
+
+    test "renders the working-with-goals guide", %{conn: conn} do
+      id = "working-with-goals"
+      assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
+      {:ok, guide} = HowToData.get_how_to(id)
+
+      {:ok, _view, html} = live(conn, ~p"/resources/working-with-goals")
+
+      assert html =~ "Working With Goals"
+
+      for step <- guide.steps do
+        assert html =~ step.title, "the goals guide doesn't show the step #{step.title}"
+      end
+
+      refute html =~ "&lt;", "the goals guide renders escaped HTML"
+      refute html =~ "**", "the goals guide renders a literal **"
+      assert html =~ "<strong>New goal</strong>"
+      assert html =~ "<li>"
+      assert html =~ "<code"
+      # The long goal-page route in inline code wraps instead of pushing the page sideways.
+      assert html =~ "break-words"
+
+      # Steps 2, 4 and 5 show a screenshot; the steps with image: nil show none.
+      for n <- [2, 4, 5] do
+        assert html =~ ~s(src="/images/resources/guides/working-with-goals-step-#{n}.png")
+      end
+
+      assert length(Regex.scan(~r{src="/images/resources/guides/working-with-goals-step-}, html)) ==
+               3
+
+      # Links in the guide's own text, not the previous/next navigation.
+      for target <-
+            ~w(planning-with-targets organizing-with-dependencies using-stride-with-a-team setting-up-hooks archiving-tasks) do
+        assert html =~ ~s|href="/resources/#{target}" class="text-[var(--ink)]|
+      end
+
+      # The Previous and Next links lead along the best-practices chain.
+      assert html =~ ~s|href="/resources/using-complexity-priority" data-phx-link="redirect"|
+      assert html =~ ~s|href="/resources/metrics-dashboard" data-phx-link="redirect"|
+
+      # The guides that mention goals link back to this one.
+      for back <- ~w(planning-with-targets organizing-with-dependencies) do
+        {:ok, _view, back_html} = live(conn, ~p"/resources/#{back}")
+        assert back_html =~ ~s|href="/resources/working-with-goals" class="text-[var(--ink)]|
+      end
     end
 
     test "renders each agents-and-planning guide with its links and screenshots", %{conn: conn} do
