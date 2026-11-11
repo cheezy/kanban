@@ -262,8 +262,10 @@ defmodule Kanban.Attachments.Storage.S3Test do
   test "a transport error whose reason is not an atom logs only its kind" do
     Req.Test.stub(S3, &Req.Test.transport_error(&1, {:tls_alert, {:handshake_failure, ~c"x"}}))
 
+    # Colours off: the "\n" anchor proves nothing follows the kind, and an ANSI
+    # terminal would put "\e[0m" before the newline.
     log =
-      capture_log(fn ->
+      capture_log([colors: [enabled: false]], fn ->
         assert {:error, :storage_unavailable} = S3.put(@key, {:binary, "x"}, [])
       end)
 
@@ -443,8 +445,9 @@ defmodule Kanban.Attachments.Storage.S3Test do
       for body <- ["", "<html><body><h1>404 Not Found</h1></body></html>"] do
         stub(404, body)
 
+        # Colours off so the "\n" anchor below holds on an ANSI terminal too.
         log =
-          capture_log(fn ->
+          capture_log([colors: [enabled: false]], fn ->
             assert {:error, :storage_unavailable} = S3.stream(@key)
             assert {:error, :storage_unavailable} = S3.delete(@key)
           end)
@@ -458,7 +461,10 @@ defmodule Kanban.Attachments.Storage.S3Test do
       for code <- ["token=abc123 secret", "No Such<script>Bucket"] do
         stub(404, "<Error><Code>#{code}</Code></Error>")
 
-        log = capture_log(fn -> assert {:error, :storage_unavailable} = S3.delete(@key) end)
+        log =
+          capture_log([colors: [enabled: false]], fn ->
+            assert {:error, :storage_unavailable} = S3.delete(@key)
+          end)
 
         assert log =~ "attachment storage delete failed with status 404\n"
         refute log =~ "secret"
