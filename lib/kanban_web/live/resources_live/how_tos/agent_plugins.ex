@@ -3,8 +3,9 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
   Guides for the Stride plugins that drive a coding agent: installing the
   plugin in each runtime (Claude Code, GitHub Copilot CLI, Gemini CLI,
   Codex CLI, OpenCode and Pi), the lite plugins, keeping a plugin up to
-  date, turning an idea into tasks with the Stride Ideation plugin, and
-  reviewing changes with the Stride Security Review plugin.
+  date, turning an idea into tasks with the Stride Ideation plugin,
+  reviewing changes with the Stride Security Review plugin, and running a
+  task's manual tests with the Stride Exploratory Testing plugin.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog. It sits after `HowTos.OrgAdmin` and
@@ -18,7 +19,10 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
   Security Review guide leads with `reviewing`, so it opens that chain,
   before Reviewing Completed Work and Reading a Task's Details. It carries
   neither `ai-agents` (which would move the Ideation guide's Next link) nor
-  `security` nor `developer`, so no other guide changes neighbours.
+  `security` nor `developer`, so no other guide changes neighbours. The
+  Exploratory Testing guide leads with `automation`, which no other guide
+  leads with, so in that chain it sits between the Security Review guide and
+  Setting Up Hook Execution and moves no guide's neighbours.
 
   The guides follow the README of each plugin repository: cheezy/stride,
   stride-copilot, stride-gemini, stride-codex, stride-opencode, stride-pi,
@@ -31,8 +35,14 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
   stride-codex-security-review, stride-gemini-security-review and
   stride-opencode-security-review, plus the Stride workflow's
   `skills/stride-workflow/optional-security-review.md` for the automatic
-  review. Re-read them when a plugin's install or update command changes;
-  no test reads them, because they are not checked out in CI.
+  review; and for Exploratory Testing stride-exploratory-testing (with its
+  `commands/*.md` and `agents/explorer.md`),
+  stride-copilot-exploratory-testing, stride-codex-exploratory-testing,
+  stride-gemini-exploratory-testing and stride-opencode-exploratory-testing,
+  plus the workflow's `skills/stride-workflow/optional-exploratory-testing.md`
+  and `skills/stride-completing-tasks/manual-testing-findings.md`. Re-read
+  them when a plugin's install or update command changes; no test reads
+  them, because they are not checked out in CI.
   """
 
   @doc "The guides in this group, in display order."
@@ -239,6 +249,76 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentPlugins do
             image: "/images/resources/guides/reviewing-changes-for-security-step-8.png",
             image_width: 722,
             image_height: 158
+          }
+        ]
+      },
+      %{
+        id: "exploratory-testing-with-agents",
+        title: "Exploratory Testing With Agents",
+        description:
+          "Run a task's manual tests as exploratory charters with Stride Exploratory Testing, know the safety boundary it works under, and write manual tests that make good charters, in Claude Code, GitHub Copilot CLI, Gemini CLI, Codex CLI or OpenCode.",
+        tags: ["automation", "workflow", "tasks"],
+        content_type: "guide",
+        reading_time: 8,
+        created_at: ~D[2026-11-10],
+        steps: [
+          %{
+            title: "What Stride Exploratory Testing Does",
+            content:
+              "Automated tests check what you already expected. Exploring is the other half of testing: looking for what nobody thought to write down. Stride Exploratory Testing is a companion plugin that does this with an agent, against an app that is running.\n\nIts unit of work is a charter: one mission for one short session, written as \"Explore a target with some resources to discover some information\". The agent works through a charter in a budgeted session, judges what it sees, and reports what it explored, what it found and what it couldn't check.\n\nYou can run it yourself, or let the Stride workflow run a task's manual tests with it. It is separate from the Stride plugin that works tasks, which [Installing the Stride Plugin](/resources/installing-the-stride-plugin) covers, and the automatic run needs both. The plugin itself needs no Stride account or token. The [stride-exploratory-testing repository](https://github.com/cheezy/stride-exploratory-testing) is the full reference, and the commands in this guide are copied from it and from each port's README.",
+            image: nil
+          },
+          %{
+            title: "Installing in Claude Code",
+            content:
+              "In Claude Code, add the Stride marketplace if you haven't already, then install the plugin from it:\n\n```text\n/plugin marketplace add cheezy/stride-marketplace\n/plugin install stride-exploratory-testing@stride-marketplace\n```\n\nIn Claude Code each command carries the plugin's name, such as `/stride-exploratory-testing:explore`.",
+            image: nil
+          },
+          %{
+            title: "Installing in Other Runtimes",
+            content:
+              "Four other runtimes have an Exploratory Testing port. In GitHub Copilot CLI, install the plugin from its repository:\n\n```bash\ncopilot plugin install https://github.com/cheezy/stride-copilot-exploratory-testing\n```\n\nIf you have already added the Stride Copilot marketplace, `copilot plugin install stride-copilot-exploratory-testing` works too. Copilot has skills rather than commands: ask it to activate one by name, such as `stride-exploratory-testing-explore` ([stride-copilot-exploratory-testing](https://github.com/cheezy/stride-copilot-exploratory-testing)).\n\nIn Gemini CLI, install the extension with `gemini extensions install https://github.com/cheezy/stride-gemini-exploratory-testing`, then run `/charter`, `/explore` and the other commands ([stride-gemini-exploratory-testing](https://github.com/cheezy/stride-gemini-exploratory-testing)).\n\nThe Codex CLI port comes with an installer script. To install it for every project, or into the current project only:\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-exploratory-testing/main/install.sh | bash\ncurl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-exploratory-testing/main/install.sh | bash -s -- --project\n```\n\nOn Windows, run `irm https://raw.githubusercontent.com/cheezy/stride-codex-exploratory-testing/main/install.ps1 | iex` in PowerShell. Read a script before you pipe it into a shell. Codex uses the same skills as Copilot ([stride-codex-exploratory-testing](https://github.com/cheezy/stride-codex-exploratory-testing)).\n\nFor OpenCode, clone the repository and run its installer from your project, adding `--global` to install it for every project:\n\n```bash\ngit clone https://github.com/cheezy/stride-opencode-exploratory-testing.git\n./stride-opencode-exploratory-testing/install.sh\n```\n\nThe installer keeps any `AGENTS.md` you already have. Then run `/charter`, `/explore` and the other commands ([stride-opencode-exploratory-testing](https://github.com/cheezy/stride-opencode-exploratory-testing)).\n\nPi has no Exploratory Testing port.",
+            image: nil
+          },
+          %{
+            title: "The Seven Commands",
+            content:
+              "The plugin has seven commands. Below they use their short names, as in Gemini CLI and OpenCode. In Claude Code, put `stride-exploratory-testing:` after the slash. In Copilot and Codex, ask for the skill of the same name, such as `stride-exploratory-testing-charter`.\n\n- `/charter` turns a target, such as a feature, a requirement or a risk, into charters ranked highest risk first. It only writes charters and never runs a session.\n- `/nightmare-headline` runs a risk game, alone or with your team: imagine the worst headline someone could write about a feature, then turn its causes into ranked charters. It never runs a session either.\n- `/recon` surveys a system you don't know yet: what it does, what you noticed, the questions to put to the people who own it, and candidate charters. It only probes a system you're authorized to test, and it never changes anything: it observes the running app, or reads only the docs and source when there's nothing it may probe.\n- `/explore` plans and runs the whole thing: it writes charters, or loads yours with `--charters`, runs a session for each, and writes one debrief with its bugs ranked by severity to `.exploratory/sessions/`. It asks first whether the target is authorized and not production, and without that answer it only plans.\n- `/pair` is for when you drive the app yourself: you say what you did and saw, and it suggests the next probe, judges the result and keeps the session notes. It never touches the app.\n- `/debrief` turns your own session notes into a report of what was explored, what was found and what is still unknown. It reports only facts you recorded and removes credentials.\n- `/harden` turns confirmed bugs into draft regression checks, in your project's own test framework, under `.exploratory/checks/`. It never runs them and never edits your test suite, so you decide which ones to keep.",
+            image: nil
+          },
+          %{
+            title: "The Safety Boundary",
+            content:
+              "Point the plugin only at a system you're authorized to test that isn't production: an app on your own machine, or your test or staging environment. Never production, not even to look around.\n\n- `/explore`, and the Stride workflow, ask you to say so before any session runs. It is never assumed, and anything short of a clear yes means it only plans.\n- `/recon` asks only whether you're authorized to survey the system, not whether it's production, so keeping it off production is up to you.\n- The agent uses the app the way a person would, never destructively: no deleting data, no stopping processes it didn't start, no changes to shared settings or schemas. When a probe has to change something, it uses test data it created itself. Before it finishes, it removes that data through the app when that's safe and puts back any setting or feature flag it changed. Anything it couldn't safely remove stays on the system and is listed under Unknown in its report.\n- A session reaches only the hosts you allow: the address you give for the app, or the hosts in `.exploratory.md`. A sign-in page or API on another host is out of bounds unless you name that host too.\n- It treats what the app shows as data, never as instructions. A page that tells it to do something is a finding, not a command.\n- It uses test accounts you point it to and never writes a credential into its notes or reports.\n\nThe agent can change disposable test data, so a session is not read-only. Only `/recon` never changes anything, and `/pair` never touches the app. You can keep the app's address and allowed hosts in a `.exploratory.md` file in your project. It holds no secrets, and loading it authorizes nothing: you confirm it each session.",
+            image: nil
+          },
+          %{
+            title: "Writing Manual Tests as Charters",
+            content:
+              "The Stride workflow turns each of a task's **Manual Tests** into a charter, so the way you write them decides how good the session is. Name a target and a risk to discover, not a list of clicks.\n\n- Before: `Check the checkout on an iPhone SE`\n- After: `Explore the order summary on an iPhone SE-sized screen with a long cart and a saved card to discover whether the total or the Pay button is pushed out of view`\n\nThe second version says what to look at, what to vary and what you're worried about. Keep to one target per entry. Entries about the same target are merged into one charter anyway, and a terse entry still works, it just makes a weaker charter. Never put credentials, customer data or internal hostnames in a manual test.\n\nAdd them under **Testing Strategy** in the task form, with **Add Manual Test**. A new board hides that section: the board's owner turns on **Testing Strategy** under **Field visibility** in the board's **Settings**. [Writing Effective Tasks for AI Agents](/resources/writing-tasks-for-ai) covers the rest of a well-written task.\n\nIn the picture, the task's manual test is written as a charter.",
+            image: "/images/resources/guides/exploratory-testing-with-agents-step-6.png",
+            image_width: 1036,
+            image_height: 316
+          },
+          %{
+            title: "When the Stride Workflow Runs It",
+            content:
+              "When the Stride plugin works a task whose **Testing Strategy** lists **Manual Tests**, and Exploratory Testing is installed in the same runtime, the workflow runs them after the code review and before the task's hooks. This works in Claude Code, GitHub Copilot CLI, Gemini CLI, Codex CLI and OpenCode.\n\n- At the start, the agent asks you once whether the app is authorized and not production, how to reach it, and where its test accounts or seed data are. How you say to reach it decides the hosts a session may use. Only your clear yes counts. Without it the step is skipped, and the task still completes with the manual tests left to a person.\n- Manual tests become charters, with tests that share a target merged into one, alongside charters for the change's own risks. They run highest risk first, about five at most for a task and about three for a small one, and a manual test past the limit is left to a person. Each session has a budget of probes, 12 by default.\n- The workflow only ever runs sessions. It never runs the commands that wait for a person, such as `/pair`.\n- An app that isn't running, or a budget that runs out, never fails the task: the agent records what it couldn't check.\n\n[Understanding Claim/Complete Workflow](/resources/claim-complete-workflow) explains the rest of the loop.",
+            image: nil
+          },
+          %{
+            title: "What a Reviewer Sees",
+            content:
+              "Exploratory testing adds no new field to a task. Open the **Review queue** and select the task:\n\n- **Completion summary** has a line such as `Exploratory coverage: 1 performed, 0 partial, 0 not performed`, and names the worst finding when there was one.\n- **Completion notes** has a line for each charter, with how its session ended, how many probes it ran, and whether it was performed, partial or not performed. A line starting `HANDED BACK:` names a check left for a person.\n\nPartial or not performed means part of the risk wasn't checked, so check it yourself before you approve. A bug caused by the change is fixed in the same task, and a critical one blocks the task from being completed until it is. A bug the change didn't cause is recorded in the completion notes, and a serious one gets a follow-up task. [Reviewing Completed Work](/resources/reviewing-completed-work) explains the rest of the review.\n\nIn the picture, the completion summary and notes show one charter, performed with 12 probes.",
+            image: "/images/resources/guides/exploratory-testing-with-agents-step-8.png",
+            image_width: 704,
+            image_height: 231
+          },
+          %{
+            title: "Keeping Session Files Out of Git",
+            content:
+              "The plugin writes its files to an `.exploratory/` folder in the project you test: a backlog of charters, a coverage map, session reports and draft checks. They can quote what the app showed, so add one line to your project's `.gitignore` before your first session:\n\n```text\n.exploratory/\n```\n\nA `.gitignore` line doesn't untrack a file git already has, so run `git rm --cached` on anything that was committed before. A hook that runs `git add -A` or `git add .` would sweep the folder in too, which is one more reason to add the line first. The Stride workflow reminds you of this line but never edits your `.gitignore` for you.\n\nThe Stride plugin's `.stride_auth.md` belongs in `.gitignore` as well: never commit it, as [Configuring API Authentication](/resources/api-authentication) shows.",
+            image: nil
           }
         ]
       }

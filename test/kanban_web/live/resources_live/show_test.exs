@@ -444,6 +444,62 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert html =~ ~s|href="/resources/reviewing-completed-work" data-phx-link="redirect"|
     end
 
+    test "renders the exploratory-testing-with-agents guide", %{conn: conn} do
+      id = "exploratory-testing-with-agents"
+      assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
+      {:ok, guide} = HowToData.get_how_to(id)
+
+      {:ok, _view, html} = live(conn, ~p"/resources/exploratory-testing-with-agents")
+
+      assert html =~ "Exploratory Testing With Agents"
+
+      for step <- guide.steps do
+        assert html =~ step.title,
+               "the Exploratory Testing guide doesn't show the step #{step.title}"
+      end
+
+      refute html =~ "&lt;", "the Exploratory Testing guide renders escaped HTML"
+      refute html =~ "**", "the Exploratory Testing guide renders a literal **"
+      assert html =~ "<strong>Manual Tests</strong>"
+      assert html =~ "<strong>Testing Strategy</strong>"
+      assert html =~ "<strong>Review queue</strong>"
+      assert html =~ "<strong>Completion notes</strong>"
+      assert html =~ "<pre"
+      assert html =~ "<li>"
+      assert html =~ "<code"
+      # Long inline commands wrap on a phone instead of pushing the page sideways.
+      assert html =~ "break-words"
+      assert html =~ "/plugin install stride-exploratory-testing@stride-marketplace"
+      assert html =~ "Pi has no Exploratory Testing port."
+
+      # Only steps 6 and 8 show the Stride app; the terminal steps show no screenshot.
+      assert html =~ ~s(src="/images/resources/guides/#{id}-step-6.png")
+      assert html =~ ~s(src="/images/resources/guides/#{id}-step-8.png")
+
+      assert length(
+               Regex.scan(
+                 ~r{src="/images/resources/guides/exploratory-testing-with-agents-step-},
+                 html
+               )
+             ) ==
+               2
+
+      # Links in the guide's own text, not the previous/next navigation.
+      for target <-
+            ~w(installing-the-stride-plugin writing-tasks-for-ai claim-complete-workflow reviewing-completed-work api-authentication) do
+        assert html =~ ~s|href="/resources/#{target}" class="text-[var(--ink)]|
+      end
+
+      assert html =~
+               ~s|href="https://github.com/cheezy/stride-exploratory-testing" class="text-[var(--ink)]|
+
+      # Previous and Next lead along the automation chain.
+      assert html =~
+               ~s|href="/resources/reviewing-changes-for-security" data-phx-link="redirect"|
+
+      assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
+    end
+
     test "renders the working-with-goals guide", %{conn: conn} do
       id = "working-with-goals"
       assert id in Enum.map(HowToData.all_how_tos(), & &1.id)

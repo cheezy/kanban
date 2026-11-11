@@ -128,6 +128,29 @@ never in the data:
   `browser.eval` script, and the note as a paragraph after its pill, then
   capture. Reload the page afterwards, which removes them.
 
+### Exploratory testing shots
+
+The seeded Review task, "Move the order summary above the fold", has a
+terse manual test ("Check the checkout on an iPhone SE") and no exploratory
+record, because only Stride Exploratory Testing writes one. Change the page,
+never the data:
+
+- Step 6: as Maya, turn on **Testing Strategy** under **Field visibility** on
+  Checkout Revamp, and turn it off again after the shot. Open the task with
+  `/boards/<Checkout>/tasks/<id>/edit`, set the **Manual Tests** input's value
+  to the guide's "After" charter with a `browser.eval` script, capture, and
+  close the form without saving.
+- Step 8: open `/review` and select the task. With a `browser.eval` script,
+  add an `Exploratory coverage: 1 performed, 0 partial, 0 not performed` line
+  to the `<p>` inside the `[data-review-completion-summary]` section, and
+  replace the text of the `<p>` inside the seeded
+  `[data-review-completion-notes]` section (`[data-review-completion-notes] p`,
+  so the **Completion notes** heading stays) with a one-line
+  Explored/Found/Unknown summary and one `Exploratory charter r1: … |
+  stop_reason=charter_quiet | probes=12 | surfaces=browser |
+  outcome=performed` line, with no hostnames. Don't add a second section.
+  Capture, then reload the page, which puts the seeded text back.
+
 ## 2. Sign in to photograph
 
 The best option is to sign in as `maya.chen@example.test` in a private window,
@@ -267,6 +290,8 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp,
 | `turning-an-idea-into-tasks-step-8.png` | turning-an-idea-into-tasks / 8 The Tasks Land in Backlog | `/boards/<Checkout>` | Board as seeded, from the top: Backlog with W1, W2 and D1, Ready down to the G1 card | Backlog and Ready columns, no header or sidebar |
 | `reviewing-changes-for-security-step-7.png` | reviewing-changes-for-security / 7 What a Reviewer Sees | `/review` | "Move the order summary above the fold" selected, with the in-page Mitigated row and note from "Security review shot" | The Security considerations section of the detail column only |
 | `reviewing-changes-for-security-step-8.png` | reviewing-changes-for-security / 8 On the Task Detail Page | `/boards/<Checkout>` | "Move the order summary above the fold" opened from its card, as seeded, scrolled to **Review report** | The Review report heading and panel only |
+| `exploratory-testing-with-agents-step-6.png` | exploratory-testing-with-agents / 6 Writing Manual Tests as Charters | `/boards/<Checkout>/tasks/<id>/edit` | "Move the order summary above the fold" with Testing Strategy turned on and the in-page "After" charter from "Exploratory testing shots", never saved | From the Testing Strategy heading to **+ Add Manual Test** |
+| `exploratory-testing-with-agents-step-8.png` | exploratory-testing-with-agents / 8 What a Reviewer Sees | `/review` | The same task selected, with the in-page coverage line and replaced notes from "Exploratory testing shots" | The Completion summary and Completion notes sections only |
 | `reading-a-tasks-details-step-2.png` | reading-a-tasks-details / 2 The Top and the Side Panel | `/boards/<Checkout>`, "Add a delivery estimate to the order summary" card clicked | First turn on, as Maya, the Field visibility toggles Context, Key Files, Verification Steps, Pitfalls, Security Considerations, Testing Strategy, Behaviour/Test Matrix and Observability, and turn them off again after the last details shot. Capture this one before or after the toggles (only Acceptance Criteria shows), hiding the main-column sections from **Actual vs estimated** down in the page so the side panel shows through **Edit task** | The modal's content box |
 | `reading-a-tasks-details-step-3.png` | reading-a-tasks-details / 3 What Was Asked | same task | Scrolled so **Acceptance criteria** is at the top | From **Acceptance criteria** to the end of **Verification steps**, main column only |
 | `reading-a-tasks-details-step-4.png` | reading-a-tasks-details / 4 The Behaviour/Test Matrix | same task | Scrolled to **Behaviour/Test Matrix** | The matrix, main column only |

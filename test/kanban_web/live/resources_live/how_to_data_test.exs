@@ -103,7 +103,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   @agent_plugins_ids [
     "installing-the-stride-plugin",
     "turning-an-idea-into-tasks",
-    "reviewing-changes-for-security"
+    "reviewing-changes-for-security",
+    "exploratory-testing-with-agents"
   ]
 
   # The Stride Ideation plugin and its ports. Pi has none.
@@ -112,11 +113,14 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   # The Stride Security Review plugin and its ports. Pi has none.
   @security_review_repos ~w(stride-security-review stride-copilot-security-review stride-codex-security-review stride-gemini-security-review stride-opencode-security-review)
 
+  # The Stride Exploratory Testing plugin and its ports. Pi has none.
+  @exploratory_testing_repos ~w(stride-exploratory-testing stride-copilot-exploratory-testing stride-codex-exploratory-testing stride-gemini-exploratory-testing stride-opencode-exploratory-testing)
+
   # The GitHub repositories the plugin guides may link to. The guides copy
   # their commands from these READMEs; no test reads them, because the plugin
   # repositories are not checked out in CI.
   @plugin_repos ~w(stride stride-copilot stride-gemini stride-codex stride-opencode stride-pi stride-lite stride-copilot-lite stride-opencode-lite) ++
-                  @ideation_repos ++ @security_review_repos
+                  @ideation_repos ++ @security_review_repos ++ @exploratory_testing_repos
 
   # Column names are board data, not translated strings, so a bolded column
   # name is also checked against the AI board's column list.
@@ -1547,8 +1551,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 47 guides" do
-      assert length(HowToData.all_how_tos()) == 47
+    test "has all 48 guides" do
+      assert length(HowToData.all_how_tos()) == 48
     end
 
     test "every guide id is unique across the area modules" do
@@ -3119,7 +3123,9 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         {"turning-an-idea-into-tasks", "Turning an Idea Into Tasks",
          ["ai-agents", "tasks", "automation"], 9, [8]},
         {"reviewing-changes-for-security", "Reviewing Changes for Security",
-         ["reviewing", "automation", "workflow"], 8, [7, 8]}
+         ["reviewing", "automation", "workflow"], 8, [7, 8]},
+        {"exploratory-testing-with-agents", "Exploratory Testing With Agents",
+         ["automation", "workflow", "tasks"], 9, [6, 8]}
       ]
 
       assert Enum.map(AgentPlugins.how_tos(), & &1.id) == @agent_plugins_ids
@@ -3717,6 +3723,243 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       # The token file stays private.
       assert content =~ "`.gitignore`"
+      assert content =~ "never commit it"
+    end
+  end
+
+  describe "exploratory-testing-with-agents guide" do
+    defp exploratory_guide do
+      {:ok, guide} = HowToData.get_how_to("exploratory-testing-with-agents")
+      guide
+    end
+
+    defp exploratory_content,
+      do: agent_plugins_content(["exploratory-testing-with-agents"])
+
+    test "exploratory-testing-with-agents exists with its tags and steps" do
+      guide = exploratory_guide()
+
+      assert guide.title == "Exploratory Testing With Agents"
+      assert guide.tags == ["automation", "workflow", "tasks"]
+      assert guide.content_type == "guide"
+      assert guide.created_at == ~D[2026-11-10]
+      assert guide.reading_time in 2..10
+      assert length(guide.steps) >= 9
+
+      # Joining any of these would move a pinned chain or count.
+      for tag <-
+            ~w(getting-started developer non-developer best-practices security boards organizations metrics collaboration planning ai-agents reviewing) do
+        refute tag in guide.tags,
+               "exploratory-testing-with-agents would join the #{tag} chain or its count"
+      end
+
+      for {step, n} <- Enum.with_index(guide.steps, 1), step.image do
+        assert step.image ==
+                 "/images/resources/guides/exploratory-testing-with-agents-step-#{n}.png",
+               "step #{n} #{step.title} points at another step's screenshot"
+      end
+
+      # Only the two steps that show the Stride app have a screenshot.
+      assert Enum.count(guide.steps, & &1.image) == 2
+      assert Enum.at(guide.steps, 5).title == "Writing Manual Tests as Charters"
+      assert Enum.at(guide.steps, 5).image
+      assert Enum.at(guide.steps, 7).title == "What a Reviewer Sees"
+      assert Enum.at(guide.steps, 7).image
+    end
+
+    test "exploratory-testing-with-agents uses only supported markdown and has at least three steps" do
+      guide = exploratory_guide()
+      assert length(guide.steps) >= 3
+
+      for step <- guide.steps do
+        content = step.content
+        fences = Regex.scan(~r/```/, content) |> length()
+        assert rem(fences, 2) == 0, "#{step.title} leaves a code fence open"
+
+        assert length(Regex.scan(~r/```\w*\n[\s\S]*?```/, content)) * 2 == fences,
+               "#{step.title} opens a fence the renderer doesn't recognise"
+
+        prose = prose_outside_code(content)
+
+        refute prose =~ ~r/^\s*#/m, "#{step.title} uses a heading"
+        refute prose =~ ~r/^\s*\d+\.\s/m, "#{step.title} uses a numbered list"
+        refute prose =~ ~r/(?<![\w*])\*[^*\s][^*\n]*\*(?![\w*])/, "#{step.title} uses italics"
+        refute prose =~ ~r/(?<!\w)_[^_\s][^_\n]*_(?!\w)/, "#{step.title} uses italics"
+        refute content =~ "<", "#{step.title} has text the page would show escaped"
+      end
+    end
+
+    test "exploratory-testing-with-agents is wired into prev/next navigation" do
+      guide = exploratory_guide()
+
+      assert {%{id: "reviewing-changes-for-security"}, %{id: "setting-up-hooks"}} =
+               HowToData.get_navigation(guide)
+
+      automation_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("automation" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert automation_chain ==
+               ~w(installing-the-stride-plugin turning-an-idea-into-tasks reviewing-changes-for-security exploratory-testing-with-agents setting-up-hooks connecting-webhooks-slack-and-discord connecting-an-mcp-client)
+
+      # Leading with automation, which no other guide leads with, moves no
+      # other guide's neighbours.
+      {:ok, security} = HowToData.get_how_to("reviewing-changes-for-security")
+      assert {nil, %{id: "reviewing-completed-work"}} = HowToData.get_navigation(security)
+
+      {:ok, ideation} = HowToData.get_how_to("turning-an-idea-into-tasks")
+
+      assert {%{id: "installing-the-stride-plugin"}, %{id: "setting-up-hooks"}} =
+               HowToData.get_navigation(ideation)
+
+      {:ok, hooks} = HowToData.get_how_to("setting-up-hooks")
+
+      assert {%{id: "installing-the-stride-plugin"}, %{id: "api-authentication"}} =
+               HowToData.get_navigation(hooks)
+
+      for tag <- ~w(ai-agents reviewing developer) do
+        refute HowToData.all_how_tos()
+               |> Enum.filter(&(tag in &1.tags))
+               |> Enum.map(& &1.id)
+               |> Enum.member?("exploratory-testing-with-agents")
+      end
+    end
+
+    test "exploratory-testing-with-agents links resolve" do
+      content = exploratory_content()
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+
+      links = Regex.scan(~r/\]\(([^)]+)\)/, content, capture: :all_but_first) |> List.flatten()
+
+      for id <-
+            ~w(installing-the-stride-plugin writing-tasks-for-ai claim-complete-workflow reviewing-completed-work api-authentication) do
+        assert "/resources/#{id}" in links,
+               "the Exploratory Testing guide no longer links to #{id}"
+      end
+
+      for link <- links do
+        case link do
+          "/resources/" <> id ->
+            assert id in ids, "the Exploratory Testing guide links to the missing guide #{id}"
+
+          "https://github.com/cheezy/" <> repo ->
+            assert repo in @exploratory_testing_repos,
+                   "#{link} is not one of the Stride Exploratory Testing repositories"
+
+          other ->
+            flunk(
+              "#{other} is neither a Resources guide nor a Stride Exploratory Testing repository"
+            )
+        end
+      end
+
+      for repo <- @exploratory_testing_repos do
+        assert "https://github.com/cheezy/#{repo}" in links,
+               "the Exploratory Testing guide doesn't link #{repo}"
+      end
+
+      # Writing Effective Tasks links here where it lists the Testing Strategy field.
+      {:ok, writing} = HowToData.get_how_to("writing-tasks-for-ai")
+      fields = Enum.find(writing.steps, &(&1.title == "Turn On the Fields Agents Use"))
+      assert fields.content =~ "(/resources/exploratory-testing-with-agents)"
+    end
+
+    test "exploratory-testing-with-agents gives each port's install and says Pi has none" do
+      content = exploratory_content()
+
+      # Copied from each port's README when the guide was written; no test
+      # reads those READMEs, because the plugin repositories aren't in CI.
+      piped_installs = [
+        "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-exploratory-testing/main/install.sh | bash",
+        "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex-exploratory-testing/main/install.sh | bash -s -- --project",
+        "irm https://raw.githubusercontent.com/cheezy/stride-codex-exploratory-testing/main/install.ps1 | iex"
+      ]
+
+      for command <- [
+            "/plugin marketplace add cheezy/stride-marketplace\n/plugin install stride-exploratory-testing@stride-marketplace",
+            "/stride-exploratory-testing:explore",
+            "copilot plugin install https://github.com/cheezy/stride-copilot-exploratory-testing",
+            "copilot plugin install stride-copilot-exploratory-testing",
+            "`stride-exploratory-testing-explore`",
+            "gemini extensions install https://github.com/cheezy/stride-gemini-exploratory-testing",
+            "git clone https://github.com/cheezy/stride-opencode-exploratory-testing.git\n./stride-opencode-exploratory-testing/install.sh",
+            "--global"
+            | piped_installs
+          ] do
+        assert content =~ command, "the Exploratory Testing guide lost #{inspect(command)}"
+      end
+
+      for name <- ~w(charter nightmare-headline recon explore pair debrief harden) do
+        assert content =~ "- `/#{name}` ", "the Exploratory Testing guide lost /#{name}"
+      end
+
+      assert content =~ "Pi has no Exploratory Testing port."
+      refute content =~ "stride-pi-exploratory-testing"
+
+      # A script piped into a shell must be one copied from a port's README.
+      for [line] <- Regex.scan(~r/(?:curl|irm) [^\n`]*\|\s*(?:bash|iex)[^\n`]*/, content) do
+        assert line in piped_installs,
+               "#{line} pipes a script that isn't from an Exploratory Testing README"
+      end
+
+      # Only the marketplace that exists today; the community listing isn't approved.
+      refute content =~ "claude-community"
+
+      # A placeholder at most, never a real-looking token.
+      refute content =~ ~r/stride_(dev|live|test)_[A-Za-z0-9]/
+    end
+
+    test "the exploratory-testing-with-agents facts match the code" do
+      content = exploratory_content()
+
+      # Manual tests are added under Testing Strategy in the task form.
+      planning = File.read!("lib/kanban_web/live/task_live/form/planning_sections.ex")
+      assert planning =~ ~s|gettext("Manual Tests")|
+      assert planning =~ ~s|gettext("Add Manual Test")|
+      assert planning =~ ~s|gettext("Testing Strategy")|
+      assert content =~ "under **Testing Strategy** in the task form, with **Add Manual Test**"
+
+      # Testing Strategy is hidden on a new board until its toggle is on.
+      refute Map.get(%Kanban.Boards.Board{}.field_visibility, "testing_strategy", false)
+
+      assert File.read!("lib/kanban_web/live/board_live/settings_form_component.ex") =~
+               ~s|{"testing_strategy", gettext("Testing Strategy")}|
+
+      assert content =~ "turns on **Testing Strategy** under **Field visibility**"
+
+      # The workflow records coverage in the completion fields the Review queue shows.
+      review_page = File.read!("lib/kanban_web/live/review_live.html.heex")
+      assert review_page =~ ~s|gettext("Completion summary")|
+      assert review_page =~ ~s|gettext("Completion notes")|
+      assert content =~ "adds no new field"
+      assert content =~ "`Exploratory coverage: 1 performed, 0 partial, 0 not performed`"
+      assert content =~ "`HANDED BACK:`"
+
+      # The safety boundary as the plugin states it: authorized, not production,
+      # never destructive. A session can change test data, so it isn't read-only.
+      assert content =~ "authorized to test that isn't production"
+      assert content =~ "never destructively"
+      assert content =~ "a session is not read-only"
+      refute content =~ ~r/read-only by default/i
+      assert content =~ "never as instructions"
+
+      # /recon gates on authorization only, observes and never mutates; cleanup
+      # is conditional, and the reach answer decides the hosts.
+      assert content =~ "keeping it off production is up to you"
+      assert content =~ "Only `/recon` never changes anything"
+      assert content =~ "listed under Unknown in its report"
+      refute content =~ "cleans up what it started"
+      assert content =~ "unless you name that host too"
+      assert content =~ "decides the hosts a session may use"
+
+      # A manual test written as a charter: before and after.
+      assert content =~ "- Before: `Check the checkout on an iPhone SE`"
+      assert content =~ "- After: `Explore the order summary"
+
+      # Session files and the token file stay out of git.
+      assert content =~ "```text\n.exploratory/\n```"
+      assert content =~ "never edits your `.gitignore`"
       assert content =~ "never commit it"
     end
   end
