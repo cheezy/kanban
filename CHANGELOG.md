@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - *Choosing Your Language and Theme* covers the seven languages, where the language menus are, where your choice is saved and which emails use it, and the System, Light and Dark theme switch.
 
   The plugin guides sit together in the Resources catalog, and *Writing Effective Tasks for AI Agents* now links to the exploratory testing guide.
+- **An email for an existing account made org-admin.** When a site admin appoints an org-admin whose email address already has a Stride account, that person is now emailed that they are an org-admin of the Organization. Before, they were told nothing. Appointing someone who is already its org-admin sends nothing.
+
+### Changed
+
+- **Setup guides in the org-admin emails.** The email to a new org-admin's account and the email to an existing one now link four Resources guides, *Accepting an Invitation*, *Administering Your Organization*, *Setting Your Organization's Security Policy* and *Reading the Organization Audit Log*, and ask the org-admin to keep them for setting the Organization up.
+- **Guides in the sign-up email.** The email that asks a new user to confirm their account now links every *Getting started* guide in Resources, and has a *For developers* section linking every developer guide, from installing the Stride plugin to connecting an MCP client. The lists follow the Resources catalog, so a guide added to either group later is linked too.
 
 ## [3.1.0] - 2026-11-08
 

@@ -103,6 +103,9 @@ defmodule Kanban.OrganizationsTest do
     :ok
   end
 
+  defp appointed_subject(organization),
+    do: "You're now an org-admin of #{organization.name} on Stride"
+
   defp email_subjects do
     receive_subjects([])
   end
@@ -1089,7 +1092,7 @@ defmodule Kanban.OrganizationsTest do
       assert membership.user_id == user.id
       assert role_of(user) == {organization.id, :org_admin}
       assert Repo.aggregate(User, :count) == users_before
-      assert email_subjects() == []
+      assert email_subjects() == [appointed_subject(organization)]
       refute_received {:telemetry_event, @registration, _, _}
 
       assert_received {:telemetry_event, @member_added, %{count: 1}, metadata}
@@ -1113,6 +1116,53 @@ defmodule Kanban.OrganizationsTest do
                Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
 
       assert role_of(user) == {organization.id, :org_admin}
+      assert email_subjects() == [appointed_subject(organization)]
+    end
+
+    test "emails an existing account that it is now an org-admin, with the setup guides, after commit" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      test_pid = self()
+
+      flush_emails()
+
+      after_first_query(&membership_lookup?/1, fn ->
+        send(test_pid, {:emails_mid_transaction, email_subjects()})
+      end)
+
+      assert {:ok, %OrganizationMember{}} =
+               Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
+
+      assert_received {:emails_mid_transaction, []}
+
+      assert_email_sent(fn sent ->
+        assert sent.subject == appointed_subject(organization)
+        assert [{_name, to}] = sent.to
+        assert to == user.email
+        assert sent.html_body =~ "made you an org-admin of"
+        assert sent.html_body =~ "<strong>#{organization.name}</strong>"
+        refute sent.html_body =~ "/users/confirm/"
+        refute sent.html_body =~ "/users/reset-password/"
+        assert sent.html_body =~ "Save these guides."
+        assert sent.html_body =~ "/resources/organization-security-policy"
+      end)
+    end
+
+    test "does not email an existing org-admin who is appointed again" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+
+      assert {:ok, _membership} =
+               Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
+
+      flush_emails()
+
+      assert {:ok, %OrganizationMember{role: :org_admin}} =
+               Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
+
+      assert email_subjects() == []
     end
 
     test "refuses a disabled user with :user_disabled and changes nothing" do
@@ -1254,6 +1304,8 @@ defmodule Kanban.OrganizationsTest do
         assert sent.html_body =~ "https://stride.test/users/confirm/"
 
         assert sent.html_body =~ "you an org-admin of <strong>#{organization.name}</strong>"
+        assert sent.html_body =~ "Save these guides."
+        assert sent.html_body =~ "/resources/accepting-an-invitation"
 
         assert_no_password_shaped_string(sent.html_body, "https://stride.test/users/confirm/")
       end)
@@ -1420,7 +1472,7 @@ defmodule Kanban.OrganizationsTest do
       user = Accounts.get_user_by_email(email)
       assert membership.user_id == user.id
       assert email |> users_with_email() |> Repo.aggregate(:count) == 1
-      assert email_subjects() == []
+      assert email_subjects() == [appointed_subject(organization)]
 
       assert_received {:telemetry_event, @member_added, _, %{account_created: false}}
     end

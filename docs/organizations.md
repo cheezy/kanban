@@ -154,8 +154,16 @@ first org-admin by email address:
 
 - If the address has no Stride account, a new account is created and its
   owner is emailed instructions to confirm it and set a password.
+- If the address already has an account, its owner is emailed that they are
+  now an org-admin of the Organization. Appointing someone who is already its
+  org-admin sends nothing.
 - An address whose account is disabled, or that already belongs to another
   Organization, is refused.
+
+Both emails link the Resources guides for setting the Organization up, and
+ask the org-admin to keep them: Accepting an Invitation, Administering Your
+Organization, Setting Your Organization's Security Policy and Reading the
+Organization Audit Log.
 
 Only a site admin can change the Organization's details, appoint another
 org-admin or remove one. Org-admins see the details as read-only on the

@@ -117,6 +117,15 @@ config :swoosh, :api_client, false
 # key: dev data is not secret. Production reads ENCRYPTION_KEY in runtime.exs.
 config :kanban, Kanban.Encryption, key: "dev-only-encryption-key-32bytes!"
 
+# Key for Kanban.AuditLog.Signing (signed audit exports and batches). With no
+# AUDIT_SIGNING_KEY set, development generates an Ed25519 key on first use and
+# keeps it in tmp/audit_signing_key.pem, which git ignores, so signatures
+# still verify after a restart. Production reads AUDIT_SIGNING_KEY in
+# runtime.exs and never writes a key to disk.
+config :kanban, Kanban.AuditLog.Signing,
+  fallback: :dev_file,
+  dev_key_path: Path.expand("../tmp/audit_signing_key.pem", __DIR__)
+
 # Single sign-on (W2245): let an org-admin point a connection at a local
 # identity provider (such as Keycloak on localhost over http) in development.
 # Kanban.SSO checks every issuer and provider URL with

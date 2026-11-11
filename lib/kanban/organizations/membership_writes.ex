@@ -87,13 +87,21 @@ defmodule Kanban.Organizations.MembershipWrites do
     * `:account_created` - `true` when `user`'s account was created for this
       appointment, reported in the telemetry and audit event. Defaults to
       `false`.
+    * `:on_appointed` - a function of the membership, called once the
+      transaction has returned, and only when `user` became an org-admin: a
+      new membership or a promoted member, never an existing org-admin. It
+      runs after the commit only when this is not nested in an outer
+      transaction. Defaults to doing nothing.
   """
-  @spec appoint_org_admin(User.t(), integer(), User.t(), [{:account_created, boolean()}]) ::
+  @spec appoint_org_admin(User.t(), integer(), User.t(), [
+          {:account_created, boolean()} | {:on_appointed, (OrganizationMember.t() -> any())}
+        ]) ::
           {:ok, OrganizationMember.t()}
           | {:error,
              :already_in_another_organization | :user_disabled | :not_found | Ecto.Changeset.t()}
   def appoint_org_admin(%User{} = actor, organization_id, %User{} = user, opts \\ []) do
     account_created = Keyword.get(opts, :account_created, false)
+    on_appointed = Keyword.get(opts, :on_appointed, fn _membership -> :ok end)
 
     Repo.transact(fn ->
       with :ok <- lock_organization(organization_id),
@@ -103,6 +111,7 @@ defmodule Kanban.Organizations.MembershipWrites do
     end)
     |> notify(fn change, membership ->
       OrganizationTelemetry.org_admin_appointed(membership, change, actor, account_created)
+      on_appointed.(membership)
     end)
   end
 

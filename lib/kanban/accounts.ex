@@ -377,6 +377,8 @@ defmodule Kanban.Accounts do
               ),
               to: EmailConfirmation
 
+  defdelegate deliver_org_admin_appointed_notice(user, organization_name), to: UserNotifier
+
   ## Session
 
   @doc """

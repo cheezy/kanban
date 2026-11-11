@@ -2,6 +2,7 @@ defmodule Kanban.Accounts.UserNotifier do
   import Swoosh.Email
 
   alias Kanban.Mailer
+  alias KanbanWeb.ResourcesLive.HowToData
 
   require Logger
 
@@ -116,6 +117,8 @@ defmodule Kanban.Accounts.UserNotifier do
     address.
     </p>
 
+    #{new_user_guides_html()}
+
     <p>
     Do not forward this email to anyone.
     </p>
@@ -157,6 +160,8 @@ defmodule Kanban.Accounts.UserNotifier do
       Please click <a href="#{url}">here</a> to confirm your email address. A
       second email lets you choose your password.
       </p>
+
+      #{org_admin_guides_html()}
 
       <p>
       Do not forward this email to anyone.
@@ -207,6 +212,137 @@ defmodule Kanban.Accounts.UserNotifier do
     """)
   end
 
+  @doc """
+  Tells the holder of an existing account that a site admin has made them an
+  org-admin of `organization_name`, with the guides for setting it up.
+
+  An account created by the appointment gets
+  `deliver_org_admin_confirmation_instructions/3` instead, which carries the
+  same guides.
+  """
+  def deliver_org_admin_appointed_notice(user, organization_name) do
+    deliver(
+      user.email,
+      "You're now an org-admin of #{header_text(organization_name)} on Stride",
+      """
+      <div>
+      Hi #{escape_name(user.name)},
+
+      <p>
+      A Stride site admin has made you an org-admin of
+      <strong>#{escape_name(organization_name)}</strong>. As an org-admin you can
+      see your Organization's details, members and audit log in Stride.
+      </p>
+
+      <p>
+      Nothing changes about how you sign in: <a href="#{KanbanWeb.Endpoint.url()}/users/log-in">sign in</a>
+      with your existing account.
+      </p>
+
+      #{org_admin_guides_html()}
+
+      <p>
+      If you weren't expecting this, let your Stride site admin know.
+      </p>
+
+      Thank you,<br/>
+      Team at Stride
+      </div>
+      """
+    )
+  end
+
+  # The Resources guides an org-admin needs to set an Organization up. Each id
+  # must be a guide in KanbanWeb.ResourcesLive.HowToData, and
+  # user_notifier_test.exs checks that they are.
+  @org_admin_guides [
+    {"accepting-an-invitation", "Accepting an Invitation",
+     "what the people you invite do with their invitation email, and what to do when a link doesn't work."},
+    {"administering-your-organization", "Administering Your Organization",
+     "open the Organization console, see its details and members, and create workspaces."},
+    {"organization-security-policy", "Setting Your Organization's Security Policy",
+     "require two-factor authentication for every member and decide how long audit events are kept."},
+    {"reading-the-organization-audit-log", "Reading the Organization Audit Log",
+     "find your Organization's security events, filter them and export them."}
+  ]
+
+  @doc false
+  def org_admin_guide_ids, do: Enum.map(@org_admin_guides, &elem(&1, 0))
+
+  @doc """
+  The Resources guides the catalog labels Getting started (tagged
+  `getting-started`), in catalog order. The sign-up confirmation email and the
+  invitation email link them all, so a new guide with that tag is added to
+  them with no change here.
+  """
+  def getting_started_guides do
+    Enum.filter(HowToData.all_how_tos(), &("getting-started" in &1.tags))
+  end
+
+  @doc """
+  The Resources guides the catalog labels For developers: tagged `developer`
+  and not `getting-started`, in catalog order. The sign-up confirmation email
+  and the invitation email link them all.
+  """
+  def developer_guides do
+    Enum.filter(
+      HowToData.all_how_tos(),
+      &("developer" in &1.tags and "getting-started" not in &1.tags)
+    )
+  end
+
+  # The Getting started and For developers guides, for someone new to Stride:
+  # the sign-up confirmation email and the workspace or board invitation.
+  defp new_user_guides_html do
+    """
+    <p>
+    <strong>Getting started.</strong> These guides walk you through your first
+    board and its tasks:
+    </p>
+
+    <ul>
+    #{guide_links_html(getting_started_guides())}
+    </ul>
+
+    <p>
+    <strong>For developers.</strong> If you connect AI agents or your own tools
+    to Stride, these guides show you how:
+    </p>
+
+    <ul>
+    #{guide_links_html(developer_guides())}
+    </ul>
+    """
+  end
+
+  defp guide_links_html(how_tos) do
+    Enum.map_join(how_tos, "\n", fn how_to ->
+      ~s|<li><a href="#{resource_url(how_to.id)}">#{escape_name(how_to.title)}</a>: | <>
+        ~s|#{escape_name(how_to.description)}</li>|
+    end)
+  end
+
+  defp resource_url(id), do: "#{KanbanWeb.Endpoint.url()}/resources/#{id}"
+
+  defp org_admin_guides_html do
+    items =
+      Enum.map_join(@org_admin_guides, "\n", fn {id, title, purpose} ->
+        ~s|<li><a href="#{resource_url(id)}">#{title}</a>: #{purpose}</li>|
+      end)
+
+    """
+    <p>
+    <strong>Save these guides.</strong> Keep this email or bookmark the links
+    below. They walk you through setting up your Organization properly, and you
+    can come back to them whenever you need to:
+    </p>
+
+    <ul>
+    #{items}
+    </ul>
+    """
+  end
+
   # An Organization name goes into a Subject header, so line breaks are folded
   # into spaces before Swoosh encodes it.
   defp header_text(text) when is_binary(text), do: String.replace(text, ~r/[\r\n]+/, " ")
@@ -241,6 +377,8 @@ defmodule Kanban.Accounts.UserNotifier do
     Stride account yet, you can create one from that page with this email
     address. The link works once and expires in #{Kanban.Workspaces.Invitation.validity_days()} days.
     </p>
+
+    #{new_user_guides_html()}
 
     <p>
     Do not forward this email to anyone.

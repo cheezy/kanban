@@ -305,6 +305,176 @@ if attachment_limits != [] do
   config :kanban, Kanban.Attachments.Limits, attachment_limits
 end
 
+# Audit signing keys (W2696): the instance's Ed25519 key for signed audit
+# exports and signed streamed batches, used by Kanban.AuditLog.Signing.
+#
+#   AUDIT_SIGNING_KEY            the private key: the PKCS#8 PEM written by
+#                                `openssl genpkey -algorithm ed25519`, or
+#                                base64 of its 32-byte seed
+#   AUDIT_SIGNING_KEYS_PREVIOUS  retired public keys that stay published:
+#                                comma-separated, each base64url of the 32
+#                                raw public-key bytes
+#   AUDIT_SIGNING_KEYS_REVOKED   leaked public keys, in the same format, each
+#                                optionally followed by a colon and the date
+#                                it was revoked, such as 2026-11-11
+#
+# Like the attachments block, this runs in every environment and sets only the
+# keys whose variable is set, so the development key file and the per-run test
+# key (config/dev.exs, config/test.exs) stay in place. A value that is set but
+# does not parse stops the boot. Errors name the variable and never print its
+# value. Nothing here calls a Kanban module: each value is decoded into raw
+# bytes, and Kanban.AuditLog.Signing works on those.
+audit_signing_value = attachments_value
+
+# Entries of a comma-separated variable, trimmed, with empty ones dropped.
+audit_signing_entries = fn name ->
+  case audit_signing_value.(name) do
+    nil -> nil
+    value -> value |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+  end
+end
+
+# base64url of exactly 32 bytes; padding is accepted and not required.
+audit_signing_public_key = fn entry ->
+  case Base.url_decode64(entry, padding: false) do
+    {:ok, <<_::binary-size(32)>> = public_key} -> public_key
+    _other -> nil
+  end
+end
+
+# Only an Ed25519 PKCS#8 private key is read from a PEM: its DER is this
+# fixed 16-byte header followed by the 32-byte seed. An RSA or P-256 key, an
+# encrypted key or a public key has another header or another label, and is
+# refused rather than guessed at. A PEM pasted onto one line may carry the two
+# characters \n in place of each line break; they are turned back into line
+# breaks before the value is trimmed, so a trailing one does not hide the end
+# of the PEM.
+audit_signing_seed =
+  with value when is_binary(value) <- audit_signing_value.("AUDIT_SIGNING_KEY") do
+    header = Base.decode16!("302E020100300506032B657004220420")
+    pem = value |> String.replace(["\\r\\n", "\\n"], "\n") |> String.trim()
+
+    with [_pem, body] <-
+           Regex.run(~r/\A-----BEGIN PRIVATE KEY-----(.+)-----END PRIVATE KEY-----\z/s, pem),
+         {:ok, <<^header::binary-size(16), seed::binary-size(32)>>} <-
+           Base.decode64(body, ignore: :whitespace, padding: false) do
+      seed
+    else
+      nil ->
+        case Base.decode64(value, padding: false) do
+          {:ok, <<_::binary-size(32)>> = seed} -> seed
+          _other -> nil
+        end
+
+      _not_an_ed25519_key ->
+        nil
+    end ||
+      raise "AUDIT_SIGNING_KEY must be an Ed25519 private key: the PEM written by " <>
+              "`openssl genpkey -algorithm ed25519`, or base64 of its 32-byte seed. " <>
+              "Its value is not shown here."
+  end
+
+audit_signing_previous =
+  with entries when is_list(entries) <- audit_signing_entries.("AUDIT_SIGNING_KEYS_PREVIOUS") do
+    entries
+    |> Enum.map(fn entry ->
+      audit_signing_public_key.(entry) ||
+        raise "AUDIT_SIGNING_KEYS_PREVIOUS must be a comma-separated list of public keys, " <>
+                "each base64url of exactly 32 bytes. Its value is not shown here."
+    end)
+    |> Enum.uniq()
+  end
+
+audit_signing_revoked =
+  with entries when is_list(entries) <- audit_signing_entries.("AUDIT_SIGNING_KEYS_REVOKED") do
+    entries
+    |> Enum.map(fn entry ->
+      {key, revoked_on} =
+        case String.split(entry, ":", parts: 2) do
+          [key] -> {key, {:ok, nil}}
+          [key, date] -> {String.trim(key), date |> String.trim() |> Date.from_iso8601()}
+        end
+
+      with <<_::binary-size(32)>> = public_key <- audit_signing_public_key.(key),
+           {:ok, revoked_on} <- revoked_on do
+        {public_key, revoked_on}
+      else
+        _malformed ->
+          raise "AUDIT_SIGNING_KEYS_REVOKED must be a comma-separated list of public keys, " <>
+                  "each base64url of exactly 32 bytes and optionally followed by a colon " <>
+                  "and the date it was revoked, such as 2026-11-11. Its value is not shown here."
+      end
+    end)
+    |> Enum.uniq()
+  end
+
+# A revoked key has leaked. It must never stay published as a previous key
+# and must never keep signing.
+audit_signing_revoked_keys = Enum.map(audit_signing_revoked || [], &elem(&1, 0))
+
+if Enum.any?(audit_signing_previous || [], &(&1 in audit_signing_revoked_keys)) do
+  raise "A key is listed in both AUDIT_SIGNING_KEYS_PREVIOUS and AUDIT_SIGNING_KEYS_REVOKED. " <>
+          "A revoked key is no longer published: remove it from AUDIT_SIGNING_KEYS_PREVIOUS."
+end
+
+# AUDIT_SIGNING_KEY must be the private key. The same 32 bytes in either
+# list are a public key: anyone who reads the published keys could sign with
+# them, and a private key pasted into a list would be published.
+if audit_signing_seed &&
+     (audit_signing_seed in (audit_signing_previous || []) or
+        audit_signing_seed in audit_signing_revoked_keys) do
+  raise "AUDIT_SIGNING_KEY holds the same 32 bytes as a key listed in " <>
+          "AUDIT_SIGNING_KEYS_PREVIOUS or AUDIT_SIGNING_KEYS_REVOKED. Those lists hold " <>
+          "public keys: set AUDIT_SIGNING_KEY to the private key, and list only public " <>
+          "keys. No value is shown here."
+end
+
+if audit_signing_seed && audit_signing_revoked_keys != [] do
+  # A :crypto error is raised again as a fixed message, so the failed call's
+  # stack frames, and the seed they may carry, never reach the boot output.
+  audit_signing_current =
+    try do
+      {public_key, _private_key} = :crypto.generate_key(:eddsa, :ed25519, audit_signing_seed)
+      public_key
+    rescue
+      _error ->
+        raise "AUDIT_SIGNING_KEY could not be checked against AUDIT_SIGNING_KEYS_REVOKED: " <>
+                "this Erlang or OpenSSL build could not derive its Ed25519 public key. " <>
+                "Its value is not shown here."
+    end
+
+  if audit_signing_current in audit_signing_revoked_keys do
+    raise "AUDIT_SIGNING_KEY is a key that AUDIT_SIGNING_KEYS_REVOKED lists as revoked. " <>
+            "A revoked key must never sign: set AUDIT_SIGNING_KEY to a new key."
+  end
+end
+
+audit_signing_config =
+  Enum.reject(
+    [
+      private_key: audit_signing_seed,
+      previous: audit_signing_previous,
+      revoked: audit_signing_revoked
+    ],
+    fn {_key, value} -> is_nil(value) end
+  )
+
+if audit_signing_config != [] do
+  config :kanban, Kanban.AuditLog.Signing, audit_signing_config
+end
+
+# A production app without a signing key still boots, with signing off:
+# Kanban.AuditLog.Signing.enabled?/0 is false. Warn rather than fail, as the
+# attachments block does for local storage.
+if config_env() == :prod and is_nil(audit_signing_seed) do
+  IO.warn(
+    "AUDIT_SIGNING_KEY is not set, so this server cannot sign audit exports or streamed " <>
+      "audit batches. Generate a key with `openssl genpkey -algorithm ed25519` and set " <>
+      "AUDIT_SIGNING_KEY to turn signing on.",
+    []
+  )
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

@@ -161,6 +161,11 @@ config :kanban, Kanban.RateLimit, enabled: false
 # production reads ENCRYPTION_KEY in runtime.exs.
 config :kanban, Kanban.Encryption, key: "test-only-encryption-key-32byte!"
 
+# Key for Kanban.AuditLog.Signing (signed audit exports and batches). With no
+# AUDIT_SIGNING_KEY set, each test run generates its own Ed25519 key on first
+# use and keeps it for the whole run; nothing is written to disk.
+config :kanban, Kanban.AuditLog.Signing, fallback: :ephemeral
+
 # Telemetry strict mode (W2336). Kanban.Telemetry.emit/3 and span/3 raise on an
 # event or metadata key that Kanban.Telemetry.Catalog does not declare, so a
 # telemetry mistake fails the test that made it. This is set ONLY here: in dev

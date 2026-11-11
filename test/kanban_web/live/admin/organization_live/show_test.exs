@@ -241,7 +241,7 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
   describe "appoint event" do
     setup :register_and_log_in_admin
 
-    test "appoints an existing user without sending any email", %{conn: conn} do
+    test "appoints an existing user and emails them that they are now an org-admin", %{conn: conn} do
       organization = organization_fixture()
       user = user_fixture()
       {:ok, view, _html} = live(conn, ~p"/admin/organizations/#{organization}")
@@ -252,6 +252,12 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
       assert html =~ "Org-admin appointed."
       assert %OrganizationMember{role: :org_admin} = membership(user)
       assert has_element?(view, "#member-role-#{user.id}", "Org-admin")
+
+      assert_email_sent(fn sent ->
+        assert sent.subject == "You're now an org-admin of #{organization.name} on Stride"
+        assert sent.html_body =~ "/resources/administering-your-organization"
+      end)
+
       assert_no_email_sent()
       # The form is reset after a successful appointment.
       refute has_element?(view, ~s|#appoint-org-admin-form input[value="#{user.email}"]|)

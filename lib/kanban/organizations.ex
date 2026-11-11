@@ -36,8 +36,10 @@ defmodule Kanban.Organizations do
       member does; it never demotes.
     * `appoint_org_admin_by_email/4` appoints by email. An unknown email gets
       a new account in the same transaction as the membership, and the
-      confirmation and password-reset emails after it commits; a disabled
-      account is refused with `{:error, :user_disabled}`.
+      confirmation and password-reset emails after it commits. An existing
+      account that becomes an org-admin gets the
+      `Kanban.Organizations.OrgAdminNotice` email; a disabled account is
+      refused with `{:error, :user_disabled}`.
 
   ## Telemetry and audit events
 
@@ -59,6 +61,7 @@ defmodule Kanban.Organizations do
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Organizations.MembershipWrites
+  alias Kanban.Organizations.OrgAdminNotice
   alias Kanban.Organizations.OrgAdminProvisioning
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
@@ -377,8 +380,12 @@ defmodule Kanban.Organizations do
   `{:error, :unauthorized}` before the email is looked up. Surrounding
   whitespace is trimmed, and the lookup ignores case.
 
-    * An enabled account is appointed through `appoint_org_admin/3`, with the
-      same results. No account is created and no email is sent.
+    * An enabled account is appointed as `appoint_org_admin/3` appoints it,
+      with the same results. No account is created. Once a new or promoted
+      org-admin has committed, they are emailed that they are now an
+      org-admin, with the guides for setting the Organization up
+      (`Kanban.Organizations.OrgAdminNotice`); an existing org-admin is not
+      emailed again.
     * A disabled account is refused with `{:error, :user_disabled}`.
     * An unknown email gets a new, unconfirmed account with a random password
       that is never shown, created in one transaction with its `:org_admin`
@@ -486,8 +493,12 @@ defmodule Kanban.Organizations do
   defp appoint_existing_account(_actor, _organization, %User{disabled_at: %DateTime{}}),
     do: {:error, :user_disabled}
 
-  defp appoint_existing_account(actor, organization, %User{} = user),
-    do: appoint_org_admin(actor, organization, user)
+  # The actor was checked by appoint_org_admin_by_email/4.
+  defp appoint_existing_account(actor, organization, %User{} = user) do
+    MembershipWrites.appoint_org_admin(actor, organization_id(organization), user,
+      on_appointed: &OrgAdminNotice.deliver(user, &1)
+    )
+  end
 
   # Another write registered the email between the lookup and the insert, so
   # that account is appointed instead of creating a second one.
