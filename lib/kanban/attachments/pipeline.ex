@@ -10,7 +10,7 @@ defmodule Kanban.Attachments.Pipeline do
   # pre-check, the board row's key-share lock and telemetry. Inside the
   # insert transaction the quota scope is derived again from the locked task.
   #
-  # The steps, in order (docs/plans/ATTACHMENTS-DESIGN.md §4.2):
+  # The steps, in order:
   #
   #   1. Pre-check the per-task count, which needs no file IO.
   #   2. Refuse an empty or too large temp file from File.stat (never a
