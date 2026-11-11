@@ -2130,7 +2130,7 @@ msgstr "すべてのフィルターをクリア"
 
 #: lib/kanban_web/components/board_filter_bar.ex:152
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:47
-#: lib/kanban_web/live/org_live/audit_log.html.heex:46
+#: lib/kanban_web/live/org_live/audit_log.html.heex:123
 #: lib/kanban_web/live/resources_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
@@ -6335,7 +6335,7 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:76
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
-#: lib/kanban_web/live/org_live/audit_log.html.heex:75
+#: lib/kanban_web/live/org_live/audit_log.html.heex:152
 #: lib/kanban_web/live/org_live/console.ex:390
 #: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
@@ -9192,14 +9192,14 @@ msgstr "リクエストを完了できませんでした。前のページに戻
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:30
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
-#: lib/kanban_web/live/org_live/audit_log.html.heex:36
-#: lib/kanban_web/live/org_live/audit_log.html.heex:62
+#: lib/kanban_web/live/org_live/audit_log.html.heex:113
+#: lib/kanban_web/live/org_live/audit_log.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "アクション"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:68
-#: lib/kanban_web/live/org_live/audit_log.html.heex:67
+#: lib/kanban_web/live/org_live/audit_log.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "実行者"
@@ -9210,7 +9210,7 @@ msgid "Actor email"
 msgstr "実行者のメールアドレス"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:31
-#: lib/kanban_web/live/org_live/audit_log.html.heex:37
+#: lib/kanban_web/live/org_live/audit_log.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "All actions"
 msgstr "すべてのアクション"
@@ -9225,7 +9225,7 @@ msgid "Audit Log"
 msgstr "監査ログ"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:84
-#: lib/kanban_web/live/org_live/audit_log.html.heex:83
+#: lib/kanban_web/live/org_live/audit_log.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Audit log pages"
 msgstr "監査ログのページ"
@@ -9237,25 +9237,25 @@ msgid "Export JSON"
 msgstr "JSONをエクスポート"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
-#: lib/kanban_web/live/org_live/audit_log.html.heex:40
+#: lib/kanban_web/live/org_live/audit_log.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "From (UTC)"
 msgstr "開始日 (UTC)"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:71
-#: lib/kanban_web/live/org_live/audit_log.html.heex:70
+#: lib/kanban_web/live/org_live/audit_log.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "IP"
 msgstr "IP"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:53
-#: lib/kanban_web/live/org_live/audit_log.html.heex:52
+#: lib/kanban_web/live/org_live/audit_log.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "No audit events match these filters."
 msgstr "これらのフィルターに一致する監査イベントはありません。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:99
-#: lib/kanban_web/live/org_live/audit_log.html.heex:98
+#: lib/kanban_web/live/org_live/audit_log.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Older events"
 msgstr "古いイベント"
@@ -9266,13 +9266,13 @@ msgid "Security events recorded on this instance, newest first. Times are in UTC
 msgstr "このインスタンスで記録されたセキュリティイベント（新しい順）。時刻はUTCです。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
-#: lib/kanban_web/live/org_live/audit_log.html.heex:57
+#: lib/kanban_web/live/org_live/audit_log.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Time (UTC)"
 msgstr "日時 (UTC)"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
-#: lib/kanban_web/live/org_live/audit_log.html.heex:41
+#: lib/kanban_web/live/org_live/audit_log.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "To (UTC)"
 msgstr "終了日 (UTC)"
@@ -9284,7 +9284,7 @@ msgid "Unsupported export format."
 msgstr "サポートされていないエクスポート形式です。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:107
+#: lib/kanban_web/live/org_live/audit_log.ex:134
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "ユーザー #%{id}（削除済み）"
@@ -9396,14 +9396,14 @@ msgid "unclaimed"
 msgstr "クレーム解除"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:109
+#: lib/kanban_web/live/org_live/audit_log.ex:136
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
 msgstr "なし"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:92
-#: lib/kanban_web/live/org_live/audit_log.html.heex:91
+#: lib/kanban_web/live/org_live/audit_log.html.heex:168
 #, elixir-autogen, elixir-format
 msgctxt "audit log pages"
 msgid "Newest"
@@ -10576,7 +10576,7 @@ msgid "Back to Organization"
 msgstr "組織に戻る"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
-#: lib/kanban_web/live/org_live/audit_log.ex:45
+#: lib/kanban_web/live/org_live/audit_log.ex:52
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Organization audit log"
@@ -10592,7 +10592,7 @@ msgstr "%{name} について記録されたセキュリティイベント（新�
 msgid "Organization administrators"
 msgstr "組織の管理者"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:100
+#: lib/kanban_web/live/org_live/audit_log.ex:127
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "組織外のユーザー"
@@ -13993,6 +13993,7 @@ msgid "Theme"
 msgstr "テーマ"
 
 #: lib/kanban_web/controllers/org_audit_log_export_controller.ex:153
+#: lib/kanban_web/live/org_live/audit_log.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Signed exports are not set up on this server."
 msgstr "このサーバーでは署名付きエクスポートが設定されていません。"
@@ -14001,3 +14002,39 @@ msgstr "このサーバーでは署名付きエクスポートが設定されて
 #, elixir-autogen, elixir-format
 msgid "The signed export could not be built. Try again."
 msgstr "署名付きエクスポートを作成できませんでした。もう一度お試しください。"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:29
+#: lib/kanban_web/live/org_live/audit_log.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Export signed (.zip)"
+msgstr "署名付きでエクスポート (.zip)"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Fingerprint (SHA-256)"
+msgstr "フィンガープリント (SHA-256)"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Key ID"
+msgstr "鍵 ID"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Public key set"
+msgstr "公開鍵セット"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Signed exports are signed with this key. Record its fingerprint somewhere outside Stride, so you can later confirm that the key that verifies an export is this one."
+msgstr "署名付きエクスポートはこの鍵で署名されます。エクスポートの検証に使う鍵がこの鍵であることを後で確認できるよう、この鍵のフィンガープリントを Stride の外部に記録してください。"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Signing key"
+msgstr "署名鍵"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "This key as PEM"
+msgstr "この鍵 (PEM 形式)"

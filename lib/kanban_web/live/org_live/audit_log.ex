@@ -20,6 +20,12 @@ defmodule KanbanWeb.OrgLive.AuditLog do
 
   Params are parsed strictly by `Kanban.AuditLog.Filters`; every query lives in
   the `Kanban.AuditLog` context.
+
+  The signed export button and the signing key panel read the current key
+  through `Kanban.AuditLog.Signing` once, in `mount/3`. Only the key id and
+  fingerprint reach the socket, never the raw public key and never anything
+  from the private seed. With signing off the button is disabled, a note says
+  so and the panel is not rendered.
   """
   use KanbanWeb, :live_view
 
@@ -33,6 +39,7 @@ defmodule KanbanWeb.OrgLive.AuditLog do
 
   alias Kanban.AuditLog
   alias Kanban.AuditLog.Filters
+  alias Kanban.AuditLog.Signing
 
   @page_size 50
 
@@ -44,7 +51,8 @@ defmodule KanbanWeb.OrgLive.AuditLog do
      socket
      |> assign(:page_title, gettext("Organization audit log"))
      |> assign(:organization, organization)
-     |> assign(:actions, AuditLog.list_actions(organization_id: organization.id))}
+     |> assign(:actions, AuditLog.list_actions(organization_id: organization.id))
+     |> assign(:signing_key, signing_key())}
   end
 
   @impl true
@@ -92,6 +100,25 @@ defmodule KanbanWeb.OrgLive.AuditLog do
 
   defp export_path(params, format),
     do: ~p"/org/audit/export?#{Map.put(params, "format", format)}"
+
+  # The signed export is a CSV in a zip. Like the other export links it
+  # carries only the filters on screen, never the page cursor.
+  defp signed_export_path(params),
+    do: ~p"/org/audit/export?#{params |> Map.put("format", "csv") |> Map.put("signed", "true")}"
+
+  defp signing_keys_path, do: ~p"/.well-known/stride-audit-signing-keys"
+
+  defp signing_key_pem_path(%{key_id: key_id}),
+    do: ~p"/.well-known/stride-audit-signing-keys?#{%{"format" => "pem", "kid" => key_id}}"
+
+  # Public key material only: the raw public key bytes are not needed to
+  # render the panel, so they never enter the socket.
+  defp signing_key do
+    case Signing.current_key() do
+      %{key_id: key_id, fingerprint: fingerprint} -> %{key_id: key_id, fingerprint: fingerprint}
+      nil -> nil
+    end
+  end
 
   defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
 

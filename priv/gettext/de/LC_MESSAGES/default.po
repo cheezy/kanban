@@ -2131,7 +2131,7 @@ msgstr "Alle Filter löschen"
 
 #: lib/kanban_web/components/board_filter_bar.ex:152
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:47
-#: lib/kanban_web/live/org_live/audit_log.html.heex:46
+#: lib/kanban_web/live/org_live/audit_log.html.heex:123
 #: lib/kanban_web/live/resources_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
@@ -6374,7 +6374,7 @@ msgstr "Der Agent schreibt den Code, um die Aufgabe abzuschließen."
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:76
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
-#: lib/kanban_web/live/org_live/audit_log.html.heex:75
+#: lib/kanban_web/live/org_live/audit_log.html.heex:152
 #: lib/kanban_web/live/org_live/console.ex:390
 #: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
@@ -9258,14 +9258,14 @@ msgstr "Wir konnten Ihre Anfrage nicht abschließen. Bitte gehen Sie zurück und
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:30
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
-#: lib/kanban_web/live/org_live/audit_log.html.heex:36
-#: lib/kanban_web/live/org_live/audit_log.html.heex:62
+#: lib/kanban_web/live/org_live/audit_log.html.heex:113
+#: lib/kanban_web/live/org_live/audit_log.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "Aktion"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:68
-#: lib/kanban_web/live/org_live/audit_log.html.heex:67
+#: lib/kanban_web/live/org_live/audit_log.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "Akteur"
@@ -9276,7 +9276,7 @@ msgid "Actor email"
 msgstr "E-Mail des Akteurs"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:31
-#: lib/kanban_web/live/org_live/audit_log.html.heex:37
+#: lib/kanban_web/live/org_live/audit_log.html.heex:114
 #, elixir-autogen, elixir-format
 msgid "All actions"
 msgstr "Alle Aktionen"
@@ -9291,7 +9291,7 @@ msgid "Audit Log"
 msgstr "Audit-Protokoll"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:84
-#: lib/kanban_web/live/org_live/audit_log.html.heex:83
+#: lib/kanban_web/live/org_live/audit_log.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Audit log pages"
 msgstr "Seiten des Audit-Protokolls"
@@ -9303,25 +9303,25 @@ msgid "Export JSON"
 msgstr "JSON exportieren"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
-#: lib/kanban_web/live/org_live/audit_log.html.heex:40
+#: lib/kanban_web/live/org_live/audit_log.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "From (UTC)"
 msgstr "Von (UTC)"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:71
-#: lib/kanban_web/live/org_live/audit_log.html.heex:70
+#: lib/kanban_web/live/org_live/audit_log.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "IP"
 msgstr "IP"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:53
-#: lib/kanban_web/live/org_live/audit_log.html.heex:52
+#: lib/kanban_web/live/org_live/audit_log.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "No audit events match these filters."
 msgstr "Keine Audit-Ereignisse entsprechen diesen Filtern."
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:99
-#: lib/kanban_web/live/org_live/audit_log.html.heex:98
+#: lib/kanban_web/live/org_live/audit_log.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Older events"
 msgstr "Ältere Ereignisse"
@@ -9332,13 +9332,13 @@ msgid "Security events recorded on this instance, newest first. Times are in UTC
 msgstr "Auf dieser Instanz erfasste Sicherheitsereignisse, neueste zuerst. Zeiten in UTC."
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
-#: lib/kanban_web/live/org_live/audit_log.html.heex:57
+#: lib/kanban_web/live/org_live/audit_log.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Time (UTC)"
 msgstr "Zeit (UTC)"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
-#: lib/kanban_web/live/org_live/audit_log.html.heex:41
+#: lib/kanban_web/live/org_live/audit_log.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "To (UTC)"
 msgstr "Bis (UTC)"
@@ -9350,7 +9350,7 @@ msgid "Unsupported export format."
 msgstr "Nicht unterstütztes Exportformat."
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:107
+#: lib/kanban_web/live/org_live/audit_log.ex:134
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "Benutzer #%{id} (gelöscht)"
@@ -9462,14 +9462,14 @@ msgid "unclaimed"
 msgstr "freigegeben"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:109
+#: lib/kanban_web/live/org_live/audit_log.ex:136
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
 msgstr "Niemand"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:92
-#: lib/kanban_web/live/org_live/audit_log.html.heex:91
+#: lib/kanban_web/live/org_live/audit_log.html.heex:168
 #, elixir-autogen, elixir-format
 msgctxt "audit log pages"
 msgid "Newest"
@@ -10646,7 +10646,7 @@ msgid "Back to Organization"
 msgstr "Zurück zur Organisation"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
-#: lib/kanban_web/live/org_live/audit_log.ex:45
+#: lib/kanban_web/live/org_live/audit_log.ex:52
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Organization audit log"
@@ -10662,7 +10662,7 @@ msgstr "Für %{name} erfasste Sicherheitsereignisse, neueste zuerst. Zeiten in U
 msgid "Organization administrators"
 msgstr "Organisationsadministratoren"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:100
+#: lib/kanban_web/live/org_live/audit_log.ex:127
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "Außerhalb Ihrer Organisation"
@@ -14069,6 +14069,7 @@ msgid "Theme"
 msgstr "Design"
 
 #: lib/kanban_web/controllers/org_audit_log_export_controller.ex:153
+#: lib/kanban_web/live/org_live/audit_log.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Signed exports are not set up on this server."
 msgstr "Signierte Exporte sind auf diesem Server nicht eingerichtet."
@@ -14077,3 +14078,39 @@ msgstr "Signierte Exporte sind auf diesem Server nicht eingerichtet."
 #, elixir-autogen, elixir-format
 msgid "The signed export could not be built. Try again."
 msgstr "Der signierte Export konnte nicht erstellt werden. Bitte versuchen Sie es erneut."
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:29
+#: lib/kanban_web/live/org_live/audit_log.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Export signed (.zip)"
+msgstr "Signiert exportieren (.zip)"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Fingerprint (SHA-256)"
+msgstr "Fingerabdruck (SHA-256)"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Key ID"
+msgstr "Schlüssel-ID"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Public key set"
+msgstr "Öffentlicher Schlüsselsatz"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Signed exports are signed with this key. Record its fingerprint somewhere outside Stride, so you can later confirm that the key that verifies an export is this one."
+msgstr "Signierte Exporte werden mit diesem Schlüssel signiert. Notieren Sie seinen Fingerabdruck an einem Ort außerhalb von Stride, damit Sie später bestätigen können, dass der Schlüssel, mit dem Sie einen Export prüfen, dieser Schlüssel ist."
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:60
+#, elixir-autogen, elixir-format
+msgid "Signing key"
+msgstr "Signaturschlüssel"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:98
+#, elixir-autogen, elixir-format
+msgid "This key as PEM"
+msgstr "Dieser Schlüssel als PEM"

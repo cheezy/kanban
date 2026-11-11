@@ -1,5 +1,7 @@
 defmodule KanbanWeb.OrgLive.AuditLogTest do
-  use KanbanWeb.ConnCase, async: true
+  # async: false — the signing key tests replace the application config of
+  # Kanban.AuditLog.Signing, which is global.
+  use KanbanWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
@@ -7,6 +9,7 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
 
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
+  alias Kanban.AuditLog.Signing
   alias Kanban.Repo
 
   @refusal "You must be an org-admin of an Organization to access this page."
@@ -386,6 +389,191 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
       refute has_element?(view, "#events-#{foreign}")
       refute has_element?(view, "#audit-log-next-page")
       assert has_element?(view, "#audit-log-newest")
+    end
+  end
+
+  describe "the signed export and the signing key" do
+    setup :org_admin_setup
+
+    setup %{org_a: org_a} do
+      saved = Application.fetch_env(:kanban, Signing)
+
+      on_exit(fn ->
+        case saved do
+          {:ok, config} -> Application.put_env(:kanban, Signing, config)
+          :error -> Application.delete_env(:kanban, Signing)
+        end
+      end)
+
+      insert_event!("org_admin_appointed", org_a, ~U[2026-10-02 09:00:00.000000Z])
+      %{saved_signing: saved}
+    end
+
+    defp signed_href(view) do
+      [href] =
+        view
+        |> element("#audit-log-export-signed")
+        |> render()
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.attribute("href")
+
+      href
+    end
+
+    defp text_of(view, selector) do
+      view |> element(selector) |> render() |> LazyHTML.from_fragment() |> LazyHTML.text()
+    end
+
+    test "an org-admin sees Export signed (.zip) beside Export CSV and Export JSON", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert has_element?(view, "#audit-log-export-csv", "Export CSV")
+      assert has_element?(view, "#audit-log-export-json", "Export JSON")
+      assert has_element?(view, "a#audit-log-export-signed.btn", "Export signed (.zip)")
+      assert has_element?(view, "#audit-log-export-signed .hero-arrow-down-tray.size-4")
+      assert has_element?(view, "#audit-log-signing-key")
+      refute has_element?(view, "#audit-log-signing-off")
+    end
+
+    test "the signed button href carries the filters, format=csv and signed=true but no cursor",
+         %{conn: conn, org_a: org_a} do
+      base = ~U[2026-09-01 00:00:00.000000Z]
+      for n <- 1..51, do: insert_event!("organization_updated", org_a, DateTime.add(base, n))
+
+      {:ok, view, _html} = live(conn, ~p"/org/audit?action=organization_updated")
+      view |> element("#audit-log-next-page") |> render_click()
+
+      assert has_element?(view, "#audit-log-newest")
+
+      assert signed_href(view) ==
+               "/org/audit/export?action=organization_updated&format=csv&signed=true"
+    end
+
+    test "changing a filter updates the signed button href", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert signed_href(view) == "/org/audit/export?format=csv&signed=true"
+
+      view
+      |> form("#audit-log-filters", filters: %{action: "org_admin_appointed"})
+      |> render_change()
+
+      assert signed_href(view) ==
+               "/org/audit/export?action=org_admin_appointed&format=csv&signed=true"
+
+      render_patch(view, ~p"/org/audit?action=org_admin_appointed&from=2026-10-01&to=2026-10-03")
+
+      assert signed_href(view) ==
+               "/org/audit/export?action=org_admin_appointed&format=csv&from=2026-10-01&signed=true&to=2026-10-03"
+    end
+
+    test "the key panel shows the key id, the fingerprint and both links", %{conn: conn} do
+      %{key_id: key_id, fingerprint: fingerprint, public_key: public_key} = Signing.current_key()
+      assert fingerprint =~ ~r/\A[0-9a-f]{64}\z/
+
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert has_element?(view, "#audit-log-signing-key-title", "Signing key")
+      assert text_of(view, "#audit-log-signing-key-id") == key_id
+      assert text_of(view, "#audit-log-signing-key-fingerprint") == fingerprint
+      assert has_element?(view, "#audit-log-signing-key-fingerprint.break-all")
+      assert has_element?(view, "#audit-log-signing-key-advice", "outside Stride")
+
+      assert has_element?(
+               view,
+               ~s(#audit-log-signing-keys-link[href="/.well-known/stride-audit-signing-keys"])
+             )
+
+      assert has_element?(
+               view,
+               ~s(#audit-log-signing-key-pem-link[href="/.well-known/stride-audit-signing-keys?format=pem&kid=#{key_id}"])
+             )
+
+      # Public material only: the raw public key never reaches the page.
+      html = view |> element("#audit-log-signing-key") |> render()
+      refute html =~ Base.url_encode64(public_key, padding: false)
+      refute html =~ Base.encode64(public_key)
+    end
+
+    test "with signing off the button is disabled, the note shows and the panel is absent", %{
+      conn: conn,
+      saved_signing: saved
+    } do
+      Application.put_env(:kanban, Signing, [])
+      refute Signing.enabled?()
+
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert has_element?(
+               view,
+               "button#audit-log-export-signed[disabled]",
+               "Export signed (.zip)"
+             )
+
+      refute has_element?(view, "#audit-log-export-signed[href]")
+      refute has_element?(view, "a#audit-log-export-signed")
+
+      assert has_element?(
+               view,
+               "#audit-log-signing-off",
+               "Signed exports are not set up on this server."
+             )
+
+      refute has_element?(view, "#audit-log-signing-key")
+      refute has_element?(view, "#audit-log-signing-keys-link")
+      assert has_element?(view, "#audit-log-export-csv[href]")
+
+      # Signing back on: the next mount (a restart, or a reload) shows it again.
+      {:ok, config} = saved
+      Application.put_env(:kanban, Signing, config)
+
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert has_element?(view, "a#audit-log-export-signed[href]")
+      assert has_element?(view, "#audit-log-signing-key")
+      refute has_element?(view, "#audit-log-signing-off")
+    end
+
+    test "the new labels render translated in every supported locale", %{conn: conn} do
+      checks = [
+        {"#audit-log-export-signed", "Export signed (.zip)"},
+        {"#audit-log-signing-key-title", "Signing key"},
+        {"#audit-log-signing-key dl", "Key ID"},
+        {"#audit-log-signing-key dl", "Fingerprint (SHA-256)"},
+        {"#audit-log-signing-keys-link", "Public key set"},
+        {"#audit-log-signing-key-pem-link", "This key as PEM"},
+        {"#audit-log-signing-key-advice",
+         "Signed exports are signed with this key. Record its fingerprint somewhere outside Stride, so you can later confirm that the key that verifies an export is this one."}
+      ]
+
+      for locale <- ~w(de en es fr ja pt zh) do
+        {:ok, view, _html} =
+          conn
+          |> Plug.Test.init_test_session(%{"locale" => locale})
+          |> live(~p"/org/audit")
+
+        for {selector, msgid} <- checks do
+          translated =
+            Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+              Gettext.gettext(KanbanWeb.Gettext, msgid)
+            end)
+
+          if locale != "en", do: assert(translated != msgid, "#{locale} lacks #{msgid}")
+          assert has_element?(view, selector, translated), "#{locale}: #{msgid}"
+        end
+      end
+    end
+
+    test "two org-admins viewing at once see the same key id", %{conn: conn, org_a: org_a} do
+      second_admin = user_fixture()
+      organization_member_fixture(org_a, second_admin, :org_admin)
+      %{key_id: key_id} = Signing.current_key()
+
+      {:ok, first, _html} = live(conn, ~p"/org/audit")
+      {:ok, second, _html} = live(log_in_user(build_conn(), second_admin), ~p"/org/audit")
+
+      assert text_of(first, "#audit-log-signing-key-id") == key_id
+      assert text_of(second, "#audit-log-signing-key-id") == key_id
     end
   end
 
