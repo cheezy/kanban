@@ -103,6 +103,7 @@ plugins" in Multi-Agent Instructions, under Guides above).
 - [SCIM Provisioning](scim-provisioning.md) — Creating and removing an Organization's members from your identity provider.
 - [Organization Security Policies](organization-security-policies.md) — Requiring two-factor authentication for members and setting how long audit events are kept.
 - [Workspace Export](workspace-export.md) — Downloading an Organization workspace as a zip archive, and importing one into a self-hosted instance.
+- [Signed Audit Log Exports](audit-log-signed-exports.md) — Verifying a signed audit log export with OpenSSL 3 or Python, and setting up, rotating and revoking the signing key.
 
 ## Self-hosting operators
 
