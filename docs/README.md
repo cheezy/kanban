@@ -153,6 +153,7 @@ Stride plugin for the tool instead, as Multi-Agent Instructions describes.
 
 - [Audit Log Streaming: Implementation Design](plans/AUDIT-LOG-STREAMING-DESIGN.md) — Design for sending an Organization's audit log to a security tool such as Splunk, Datadog or a SIEM, and signing audit exports, written 2026-11-09 and revised 2026-11-10.
 - [Import from Jira: Implementation Design](plans/IMPORT-FROM-JIRA-DESIGN.md) — Design for bringing a team's existing Jira work into Stride, with not-started epics rewritten by an agent and checked for coverage, written 2026-10-28 and revised 2026-10-30.
+- [Native Mobile Apps, Phase 1: Implementation Design](plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md) — Design for the first release of the iOS, iPadOS and Android apps and the backend they need: device sign-in, the decisions inbox, review over the API with a phone size limit, and push, written 2026-11-11.
 - [Retention and Legal Hold: Implementation Design](plans/RETENTION-AND-LEGAL-HOLD-DESIGN.md) — Design for how long an Organization keeps archived tasks and for holding them when a legal matter requires it, written 2026-11-10.
 - [Teams and Google Chat Webhooks Evaluation](plans/TEAMS-AND-GOOGLE-CHAT-WEBHOOKS-EVALUATION.md) — Research into Microsoft Teams and Google Chat webhook support.
 

@@ -28,6 +28,10 @@ This roadmap describes what we are considering for Stride next. What has already
 
   Set how long archived tasks are kept, and hold them when a legal matter requires it.
 
+- **Native mobile apps**
+
+  iPhone, iPad and Android apps for the human side of the loop: hear when work is waiting on you, review with the verdicts first, approve with Face ID or a fingerprint, and keep Ready full.
+
 ## 💡 Import from other tools
 
 Bring more of a team's existing work into Stride instead of starting from an empty board.
