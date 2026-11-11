@@ -158,7 +158,11 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
     end
 
     test "renders each account guide without raw markup", %{conn: conn} do
-      for id <- ["managing-your-account", "two-factor-authentication"] do
+      for id <- [
+            "managing-your-account",
+            "two-factor-authentication",
+            "choosing-your-language-and-theme"
+          ] do
         {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
 
         refute html =~ "&lt;", "#{id} renders escaped HTML"
@@ -498,6 +502,38 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
                ~s|href="/resources/reviewing-changes-for-security" data-phx-link="redirect"|
 
       assert html =~ ~s|href="/resources/setting-up-hooks" data-phx-link="redirect"|
+    end
+
+    test "renders the choosing-your-language-and-theme guide", %{conn: conn} do
+      id = "choosing-your-language-and-theme"
+      assert id in Enum.map(HowToData.all_how_tos(), & &1.id)
+      {:ok, guide} = HowToData.get_how_to(id)
+
+      {:ok, _view, html} = live(conn, ~p"/resources/choosing-your-language-and-theme")
+
+      assert html =~ "Choosing Your Language and Theme"
+
+      for step <- guide.steps do
+        assert html =~ step.title,
+               "the language and theme guide doesn't show the step #{step.title}"
+      end
+
+      refute html =~ "&lt;", "the language and theme guide renders escaped HTML"
+      refute html =~ "**", "the language and theme guide renders a literal **"
+      assert html =~ "<strong>Go to boards</strong>"
+      assert html =~ "<li>"
+      assert html =~ "<code"
+      assert html =~ "日本語"
+
+      # Only step 1 shows the Stride app.
+      assert html =~ ~s(src="/images/resources/guides/#{id}-step-1.png")
+      assert length(Regex.scan(~r{src="/images/resources/guides/#{id}-step-}, html)) == 1
+
+      assert html =~ ~s|href="/resources/managing-your-account" class="text-[var(--ink)]|
+
+      # Previous and Next lead along the beginner chain.
+      assert html =~ ~s|href="/resources/two-factor-authentication" data-phx-link="redirect"|
+      assert html =~ ~s|href="/resources/accepting-an-invitation" data-phx-link="redirect"|
     end
 
     test "renders the working-with-goals guide", %{conn: conn} do

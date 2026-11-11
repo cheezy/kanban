@@ -40,7 +40,11 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "workspace-and-compliance-metrics"
   ]
 
-  @account_ids ["managing-your-account", "two-factor-authentication"]
+  @account_ids [
+    "managing-your-account",
+    "two-factor-authentication",
+    "choosing-your-language-and-theme"
+  ]
 
   @organization_ids ["free-and-paid-boards", "working-in-a-workspace", "accepting-an-invitation"]
 
@@ -622,12 +626,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "non-developer guides content" do
-    test "all 6 non-developer guides exist" do
+    test "all 7 non-developer guides exist" do
       non_dev_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("non-developer" in &1.tags))
 
-      assert length(non_dev_guides) == 6
+      assert length(non_dev_guides) == 7
 
       guide_ids = Enum.map(non_dev_guides, & &1.id)
       assert "writing-tasks-for-ai" in guide_ids
@@ -855,6 +859,167 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert File.read!("docs/TASK-WRITING-GUIDE.md") =~
                "Small (< 1 hour), Medium (1-2 hours), Large (> 2 hours)"
+    end
+  end
+
+  describe "choosing-your-language-and-theme guide" do
+    defp language_guide do
+      {:ok, guide} = HowToData.get_how_to("choosing-your-language-and-theme")
+      guide
+    end
+
+    defp language_content, do: account_content(["choosing-your-language-and-theme"])
+
+    test "choosing-your-language-and-theme exists with its tags and steps" do
+      guide = language_guide()
+
+      assert guide.title == "Choosing Your Language and Theme"
+      assert guide.tags == ["beginner", "non-developer"]
+      assert guide.content_type == "guide"
+      assert guide.created_at == ~D[2026-11-10]
+      assert guide.reading_time in 2..10
+      assert length(guide.steps) >= 5
+
+      # Joining any of these would move a pinned chain or count.
+      for tag <- ~w(security getting-started developer best-practices organizations) do
+        refute tag in guide.tags, "the guide would join the #{tag} chain or its count"
+      end
+
+      assert [
+               %{image: "/images/resources/guides/choosing-your-language-and-theme-step-1.png"}
+               | rest
+             ] =
+               guide.steps
+
+      assert Enum.all?(rest, &is_nil(&1.image))
+    end
+
+    test "choosing-your-language-and-theme uses only supported markdown and has at least three steps" do
+      guide = language_guide()
+      assert length(guide.steps) >= 3
+
+      for step <- guide.steps do
+        content = step.content
+        fences = Regex.scan(~r/```/, content) |> length()
+        assert rem(fences, 2) == 0, "#{step.title} leaves a code fence open"
+
+        prose = prose_outside_code(content)
+
+        refute prose =~ ~r/^\s*#/m, "#{step.title} uses a heading"
+        refute prose =~ ~r/^\s*\d+\.\s/m, "#{step.title} uses a numbered list"
+        refute prose =~ ~r/(?<![\w*])\*[^*\s][^*\n]*\*(?![\w*])/, "#{step.title} uses italics"
+        refute prose =~ ~r/(?<!\w)_[^_\s][^_\n]*_(?!\w)/, "#{step.title} uses italics"
+        refute content =~ "<", "#{step.title} has text the page would show escaped"
+      end
+    end
+
+    test "choosing-your-language-and-theme is wired into prev/next navigation" do
+      guide = language_guide()
+
+      assert {%{id: "two-factor-authentication"}, %{id: "accepting-an-invitation"}} =
+               HowToData.get_navigation(guide)
+
+      beginner_chain =
+        HowToData.all_how_tos()
+        |> Enum.filter(&("beginner" in &1.tags))
+        |> Enum.map(& &1.id)
+
+      assert Enum.take(beginner_chain, -3) ==
+               ~w(two-factor-authentication choosing-your-language-and-theme accepting-an-invitation)
+
+      # The account guides lead with security, so their own navigation is unchanged.
+      {:ok, two_factor} = HowToData.get_how_to("two-factor-authentication")
+
+      assert {%{id: "managing-your-account"}, %{id: "api-authentication"}} =
+               HowToData.get_navigation(two_factor)
+    end
+
+    test "choosing-your-language-and-theme links resolve" do
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+      links = Regex.scan(~r/\]\(([^)]+)\)/, language_content(), capture: :all_but_first)
+      links = List.flatten(links)
+
+      assert "/resources/managing-your-account" in links
+
+      for link <- links do
+        case link do
+          "/resources/" <> id -> assert id in ids, "the guide links to the missing #{id}"
+          other -> flunk("the guide links to #{other}, which is not a Resources guide")
+        end
+      end
+    end
+
+    test "the choosing-your-language-and-theme facts match the code" do
+      content = language_content()
+
+      # The seven languages, in the order the menu lists them.
+      names = Enum.map(KanbanWeb.NavComponents.supported_locales(), & &1.name)
+      assert names == ~w(English Français Español Português Deutsch 日本語 中文)
+      assert content =~ Enum.map_join(names, "\n", &"- #{&1}")
+
+      # The only live language menu is the marketing top bar's, hidden below md.
+      marketing = File.read!("lib/kanban_web/components/marketing_components.ex")
+      assert marketing =~ ~s|class="relative hidden md:block js-mobile-menu group"|
+      assert marketing =~ ~s|action={~p"/locale/\#{locale.code}"}|
+      assert content =~ "at least 768 pixels wide"
+
+      # No language menu or theme control inside the app: the app layout renders
+      # no marketing_nav, language_switcher has no caller and theme_toggle none.
+      refute File.read!("lib/kanban_web/components/layouts/app_chrome.html.heex") =~
+               "marketing_nav"
+
+      sources = Path.wildcard("lib/kanban_web/**/*.{ex,heex}")
+
+      # A call in any form: <.fn, <Layouts.fn, <KanbanWeb.Layouts.fn or Module.fn(.
+      call_site =
+        ~r/<[\w.]*\.(theme_toggle|language_switcher)\b|\b(Layouts|NavComponents)\.(theme_toggle|language_switcher)\(/
+
+      callers = Enum.filter(sources, &(File.read!(&1) =~ call_site))
+      assert callers == [], "a language or theme control is rendered now: #{inspect(callers)}"
+
+      # Only theme_toggle's own three buttons dispatch the theme event.
+      dispatches =
+        for path <- sources,
+            n = length(Regex.scan(~r/JS\.dispatch\("phx:set-theme"/, File.read!(path))),
+            n > 0,
+            do: {path, n}
+
+      assert dispatches == [{"lib/kanban_web/components/layouts.ex", 3}]
+      assert content =~ "There is no language menu inside the app yet"
+      assert content =~ "There is no theme switch on screen yet"
+
+      # Saved to the account when signed in, kept across sign-in, cleared on sign-out.
+      assert File.read!("lib/kanban_web/controllers/page_controller.ex") =~
+               "Accounts.update_user_locale(user, locale)"
+
+      user_auth = File.read!("lib/kanban_web/user_auth.ex")
+      assert user_auth =~ "defp sync_locale(conn, %User{locale: stored} = user)"
+      assert user_auth =~ "locale = user && get_session(conn, :locale)"
+      assert content =~ "Signing out returns the browser to English"
+
+      # Only the announcement email renders in the account's language.
+      with_locale =
+        Path.wildcard("lib/**/*.ex")
+        |> Enum.filter(&(File.read!(&1) =~ "Gettext.with_locale"))
+
+      assert with_locale == ["lib/kanban/notifications/announcement_worker.ex"]
+      assert content =~ "service announcements"
+
+      # The English emails it names are ones Stride sends.
+      notifier = File.read!("lib/kanban/accounts/user_notifier.ex")
+      assert notifier =~ "def deliver_confirmation_instructions("
+      assert notifier =~ "def deliver_reset_password_instructions("
+      assert content =~ "account confirmation and password reset emails"
+      refute content =~ "sign-in link"
+
+      # The theme follows the device, stored only in the browser.
+      root = File.read!("lib/kanban_web/components/layouts/root.html.heex")
+      assert root =~ ~s|window.matchMedia("(prefers-color-scheme: dark)")|
+      assert root =~ ~s|localStorage.setItem("phx:theme", choice)|
+      assert root =~ ~s|mql.addEventListener("change"|
+      assert content =~ "Nothing about the theme is saved to your account"
+      refute content =~ ~r/theme (follows|is stored with) your account/i
+      refute content =~ ~r/guides? (are|is) translated/i
     end
   end
 
@@ -1551,8 +1716,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 48 guides" do
-      assert length(HowToData.all_how_tos()) == 48
+    test "has all 49 guides" do
+      assert length(HowToData.all_how_tos()) == 49
     end
 
     test "every guide id is unique across the area modules" do

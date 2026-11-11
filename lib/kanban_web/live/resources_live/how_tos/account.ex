@@ -3,15 +3,21 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
   Guides for managing and securing your own Stride account.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
-  in order, into the Resources catalog. Both guides lead with the `security`
-  tag, so security navigation runs Managing Your Account → two-factor →
-  API authentication.
+  in order, into the Resources catalog. The first two guides lead with the
+  `security` tag, so security navigation runs Managing Your Account →
+  two-factor → API authentication. Choosing Your Language and Theme leads
+  with `beginner`, so beginner navigation runs two-factor → it → Accepting
+  an Invitation.
 
   The account guide follows the Settings screens (`UserLive.Settings`,
   `UserLive.SettingsComponents`, `UserLive.DangerZoneComponent`). The
   two-factor guide follows the Settings → Two-factor screens, the sign-in
   challenge and the Organization requirement banner (W2241, W2242, W2347);
   `docs/TWO-FACTOR-AUTHENTICATION.md` is the technical reference behind it.
+  The language and theme guide follows the marketing top bar's language menu
+  (`MarketingComponents`, `PageController.set_locale/2`), the locale sync in
+  `UserAuth`, `Kanban.Notifications.AnnouncementWorker` and the theme script
+  in the root layouts; the app has no in-app language or theme control.
   """
 
   @doc "The guides in this group, in display order."
@@ -177,6 +183,50 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
             title: "If a Code Is Refused",
             content:
               "- Check your device's clock. Codes depend on the time; turn on automatic time on your phone.\n- Use the newest code. Each code works once and only for about a minute and a half.\n- Too many attempts? After repeated wrong codes Stride stops accepting codes for a while: a few minutes at first, and up to a day after many failures. Recovery codes count toward the same limit, so wait, then try again.",
+            image: nil
+          }
+        ]
+      },
+      %{
+        id: "choosing-your-language-and-theme",
+        title: "Choosing Your Language and Theme",
+        description:
+          "Switch Stride to one of its seven languages, see where the choice is saved and which emails use it, and how Stride picks light or dark.",
+        tags: ["beginner", "non-developer"],
+        content_type: "guide",
+        reading_time: 4,
+        created_at: ~D[2026-11-10],
+        steps: [
+          %{
+            title: "Changing the Language",
+            content:
+              "The language menu is in the top bar of Stride's public pages, such as the home page, Pricing, Product, Privacy and the sign-in and sign-up pages. It shows a flag and a two-letter code, such as `EN`, at the right of the bar. Click it and choose a language:\n\n- English\n- Français\n- Español\n- Português\n- Deutsch\n- 日本語\n- 中文\n\nThe page reloads in that language. The menu appears only when the window is at least 768 pixels wide, so on a phone, widen the screen or turn it sideways to reach it.",
+            image: "/images/resources/guides/choosing-your-language-and-theme-step-1.png",
+            image_width: 230,
+            image_height: 302
+          },
+          %{
+            title: "Changing It While Signed In",
+            content:
+              "There is no language menu inside the app yet: not on your boards, in Settings or on this Resources page. To change it while you're signed in, open the Stride home page, choose a language from the menu there, and click **Go to boards**. The app then shows the new language.\n\nResources guides are written in English only. The page around them, such as the menu and the buttons, follows your language.",
+            image: nil
+          },
+          %{
+            title: "Where Your Language Is Saved",
+            content:
+              "- When you're signed in, Stride saves the language to your account.\n- If you choose a language before you sign in, Stride keeps it when you sign in and saves it to your account.\n- On a new browser or device, Stride uses your saved language as soon as you sign in.\n- Signing out returns the browser to English, so the next person to use a shared computer doesn't get your language. Your account keeps it for the next time you sign in.",
+            image: nil
+          },
+          %{
+            title: "Which Emails Use Your Language",
+            content:
+              "Stride's service announcements, the emails about changes to Stride itself, are sent in the language saved to your account. Other emails, such as task notifications, digests, account confirmation and password reset emails, are in English for now.",
+            image: nil
+          },
+          %{
+            title: "Light and Dark Theme",
+            content:
+              "Stride follows your device's appearance setting. When your computer or phone is set to dark mode, Stride is dark; when it is set to light, Stride is light. Change the setting and Stride switches straight away, without a reload.\n\nThere is no theme switch on screen yet, so to use a different theme in Stride, change your operating system's or your browser's appearance setting. Nothing about the theme is saved to your account, so each browser follows its own device.\n\nIf Stride stays light or dark whatever your device is set to, this browser still holds a theme chosen in an earlier version of Stride. Clearing this site's data in your browser's settings puts it back to following your device.\n\nFor your name, email and password, see [Managing Your Account](/resources/managing-your-account).",
             image: nil
           }
         ]
