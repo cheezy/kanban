@@ -2,7 +2,7 @@
 
 **Roadmap item:** *Audit log streaming*, under *Planned*: "Send the audit log to a security tool such as Splunk, Datadog or a SIEM, and sign audit exports." ([ROADMAP](../../ROADMAP.md))
 
-**Status:** Proposed design, not yet decomposed into tasks. Every decision in [§15](#15-decisions-needed) was settled on 2026-11-10: D1 to D8 before the exploratory review, and D9 to D15 after it.
+**Status:** Decomposed into goals G527, G528 and G529 on 2026-11-11. Every decision in [§15](#15-decisions-needed) is settled: D1 to D8 on 2026-11-10 before the exploratory review, D9 to D15 on 2026-11-10 after it, and D16 and D17, the two questions left open by the decomposition, on 2026-11-11.
 
 **Date:** 2026-11-09. Revised on 2026-11-10 to record the decisions, and again on 2026-11-10 to apply the corrections from an exploratory review of this document. That review's eight session reports and summary are kept outside the repo, in `.exploratory/audit-streaming-design/`. The main changes after the review:
 
@@ -649,8 +649,29 @@ cut only once the pending one has succeeded or been given up.
 One thing can change a pending batch: retention removing some of its events.
 The retention step then discards the pending batch and records the loss as a
 gap. The next run cuts a new batch, with a new `batch_id`, from the events that
-remain ([§8.6](#86-retention-and-a-destination-that-falls-behind)). A
-`batch_id` therefore always names the same events.
+remain ([§8.6](#86-retention-and-a-destination-that-falls-behind)).
+
+The other is an org-admin changing what the destination sends: its excluded
+actions or its **Include email and IP addresses** setting. Either change
+applies to events already waiting, so a retry that re-read the pending range
+with the new settings would send different events, or the same events with
+different content, under the old `batch_id`. Instead (D16):
+
+- the destination has a `filter_version`, which the context increases in the
+  same update that changes either setting;
+- the pending batch records the `filter_version` it was cut with;
+- a run whose pending batch has an older version discards it and cuts a new
+  batch, with a new `batch_id`, under the new settings. A send already in
+  flight is not interrupted: if it succeeds, the cursor moves past it as
+  usual, and those events were sent under the settings that held when they
+  were cut;
+- if the destination is halted with `rejected_batch`, saving such a change
+  also clears the halt and queues a run, because the rejected events may no
+  longer be in the batch. The change is itself audited and emailed
+  ([§12.3](#123-abuse-by-an-org-admin)), so it can't be used as a silent
+  **Skip this batch**.
+
+A `batch_id` therefore always names the same events with the same content.
 
 ### 8.4 Retries and failure
 
@@ -669,11 +690,13 @@ however often the sweep runs.
 | Permanent rejection (another 4xx for the whole batch, or 413 for one event) | The batch is retried 3 times over about 10 minutes in case it was transient. Then the destination is marked **Failing**, `halted_reason` is set to `rejected_batch`, its cursor stays where it is, and every org-admin is emailed. Nothing more is sent until an org-admin either fixes the cause at the tool's end and chooses **Retry now**, or chooses **Skip this batch** on the destination's page ([§10.4](#104-the-destinations-page)). Either clears `halted_reason`. A skip records an attempt with outcome `skipped` and an `audit_stream_batch_skipped` audit event naming the events skipped, then delivery carries on. Stride never skips a batch on its own ([§15](#15-decisions-needed), D3) |
 | Blocked address (`UrlGuard` refuses every address the host resolves to) | The destination is marked **Failing**, `halted_reason` is set to `blocked_address`, the reason is shown, and nothing is sent until the URL is changed, which clears it |
 | Transaction ids went backwards ([§8.8](#88-after-a-database-move)) | The destination is marked **Failing** with `halted_reason` `txid_reset`, and nothing is sent until an operator re-seeds the cursors |
+| Credentials can't be read (`ENCRYPTION_KEY` lost or replaced, [§12.2](#122-secrets)) | Nothing is sent and no attempt is recorded. The destination is marked **Failing** with `halted_reason` `credentials_unreadable` and the reason "Credentials can't be read. Enter them again.", and every org-admin is emailed. It clears once every secret the destination needs can be read again: the URL and credential re-entered on the edit form, and an HTTPS signing secret rotated (D17) |
 
 A destination is **Retrying** after its first failed attempt and **Failing**
 after 30 minutes without a success. It becomes Failing at once on an
-unauthorized answer, a configuration error, a blocked address or a `txid`
-reset, and after the third try of a permanently rejected batch.
+unauthorized answer, a configuration error, a blocked address, a `txid`
+reset or credentials that can't be read, and after the third try of a
+permanently rejected batch.
 Org-admins are emailed when it becomes Failing and when it recovers, at most
 once an hour each way. Nothing is ever turned off automatically. Events wait
 in the audit log, and a Failing destination resumes where it stopped. A
@@ -893,21 +916,22 @@ CREATE INDEX CONCURRENTLY audit_events_org_txid_id_index
 | `kind` | string | `splunk_hec`, `datadog`, `https` |
 | `name` | string, ≤ 80 | Chosen by the org-admin; unique per Organization |
 | `enabled` | boolean | `false` while paused by an org-admin |
-| `url` | `EncryptedBinary` | Splunk and HTTPS. Null for Datadog |
+| `url` | `TolerantEncryptedBinary` | Splunk and HTTPS. Null for Datadog. All four secret columns use this type ([§12.2](#122-secrets)) |
 | `url_host` | string | The host only, for display and audit metadata |
 | `url_hint` | string, 4 | The URL's last 4 characters, for HTTPS URLs that carry a token |
 | `settings` | map | Non-secret settings by type: Datadog site, service and tags; Splunk index and source type; HTTPS format and header name |
-| `credential` | `EncryptedBinary` | HEC token, Datadog API key or header value |
+| `credential` | `TolerantEncryptedBinary` | HEC token, Datadog API key or header value |
 | `credential_hint` | string, 4 | Last 4 characters, for display |
-| `signing_secret` | `EncryptedBinary` | HTTPS only |
-| `previous_signing_secret` | `EncryptedBinary` | During a rotation |
+| `signing_secret` | `TolerantEncryptedBinary` | HTTPS only |
+| `previous_signing_secret` | `TolerantEncryptedBinary` | During a rotation |
 | `previous_secret_expires_at` | utc_datetime | |
 | `include_personal_data` | boolean, default true | [§6](#6-the-event-payload) |
 | `excluded_actions` | `{:array, :string}` | Validated against the audit catalog. The `audit_stream_*` actions are refused ([§12.3](#123-abuse-by-an-org-admin)). Applied when a batch is cut, so a change also affects events already waiting |
+| `filter_version` | integer, default 1 | Increased whenever `excluded_actions` or `include_personal_data` changes, so a pending batch cut under the old settings is re-cut ([§8.3](#83-at-least-once-and-batch-identity), D16) |
 | `schema_version` | integer, default 1 | |
 | `state` | string | `healthy`, `retrying`, `failing` |
 | `state_reason` | string | Short, from Stride's own classification |
-| `halted_reason` | string, nullable | `rejected_batch`, `blocked_address` or `txid_reset`: the destination waits for a person ([§8.4](#84-retries-and-failure)) |
+| `halted_reason` | string, nullable | `rejected_batch`, `blocked_address`, `txid_reset` or `credentials_unreadable`: the destination waits for a person ([§8.4](#84-retries-and-failure)) |
 | `failing_since` | utc_datetime | |
 | `consecutive_failures` | integer | |
 | `last_success_at` | utc_datetime | |
@@ -930,6 +954,7 @@ conflict with an org-admin editing the settings.
 | `pending_batch_id` | uuid | [§8.3](#83-at-least-once-and-batch-identity) |
 | `pending_first_txid`, `pending_first_id`, `pending_last_txid`, `pending_last_id` | bigint | The pending batch's range |
 | `pending_attempts` | integer | |
+| `pending_filter_version` | integer, nullable | The destination's `filter_version` when the pending batch was cut ([§8.3](#83-at-least-once-and-batch-identity)) |
 | `next_attempt_at` | utc_datetime_usec, nullable | When the destination is next due ([§8.4](#84-retries-and-failure)) |
 | `lease_token` | uuid, nullable | The run holding the lease ([§8.1](#81-workers-and-scheduling)) |
 | `leased_until` | utc_datetime_usec, nullable | |
@@ -965,6 +990,7 @@ Index `[destination_id, started_at]`.
 | `Kanban.AuditStream.Retention` | The gap steps that `Retention.PurgeWorker` calls ([§8.6](#86-retention-and-a-destination-that-falls-behind)) |
 | `Kanban.Release.reseed_audit_stream_cursors/0` | [§8.8](#88-after-a-database-move) |
 | `Kanban.AuditLog.Signing` | [§11](#11-signed-audit-exports) |
+| `Kanban.Encryption.TolerantEncryptedBinary` | The Ecto type for destination secrets that loads an undecryptable value as `:unreadable` ([§12.2](#122-secrets)) |
 
 `Kanban.AuditStream` is a new context rather than part of `Kanban.AuditLog`,
 which is already large and has one job: recording and reading events.
@@ -1035,7 +1061,10 @@ A form, using the core `<.input>` and `<.button>` components:
    it ([§5](#5-destinations)).
 2. **Name**.
 3. The type's settings. Secret fields are write-only: an existing value shows
-   as "•••• 1a2b" with **Replace**, and is never sent back to the browser.
+   as "•••• 1a2b" with **Replace**, and is never sent back to the browser. A
+   URL or credential that can't be read ([§12.2](#122-secrets)) shows as
+   "Can't be read. Enter it again." with an empty field, and the form can't be
+   saved until each one has a new value.
 4. **Start from**: now, last 24 hours, last 7 days or everything the audit log
    holds. For Datadog, now or the last 17 hours. Shown only when creating, and
    a catch-up choice says that every org-admin will be told about it.
@@ -1083,6 +1112,12 @@ in the batch and their first and last times, and two buttons:
 For a Splunk 400 that named an `invalid-event-number`, the page adds that the
 events before that one may already be in Splunk. A configuration error shows
 its fix and no **Skip this batch** ([§5.1](#51-splunk-http-event-collector)).
+Credentials that can't be read show "Credentials can't be read. Enter them
+again." with a link to the edit form, and neither button.
+
+Saving a change to the excluded actions or to **Include email and IP
+addresses** while a batch is pending says that the waiting batch will be sent
+again under the new settings ([§8.3](#83-at-least-once-and-batch-identity)).
 
 ### 10.5 Confirmations
 
@@ -1294,8 +1329,30 @@ subject to an account's IP allow list.
 
 - URLs (for HTTPS and Splunk), tokens, API keys, header values and signing
   secrets are encrypted with `Kanban.Encryption` (AES-256-GCM, `ENCRYPTION_KEY`).
-  Losing `ENCRYPTION_KEY` makes them unreadable; destinations then show
-  **Failing** with "Credentials can't be read. Enter them again."
+- **A lost or replaced `ENCRYPTION_KEY`** makes them unreadable. With the
+  existing `EncryptedBinary` type, a row that can't be decrypted fails to load,
+  which would break every streaming page and the sweep. So destination secrets
+  use a new type, `Kanban.Encryption.TolerantEncryptedBinary` (D17):
+  - loading a value that can't be decrypted gives the atom `:unreadable`
+    instead of failing, so the row loads and the pages render;
+  - writing `:unreadable` is refused, so the marker can never be stored over
+    the ciphertext;
+  - the worker checks every secret the destination needs before it sends. If
+    any is `:unreadable`, it sends nothing, marks the destination **Failing**
+    with `halted_reason` `credentials_unreadable` and the reason
+    "Credentials can't be read. Enter them again.", and emails every
+    org-admin, once ([§8.4](#84-retries-and-failure));
+  - the edit form asks again for an unreadable URL or credential
+    ([§10.3](#103-adding-or-editing-a-destination)). An unreadable HTTPS
+    signing secret, which Stride generated, is replaced with **Rotate signing
+    secret**, with no 24-hour overlap, since the old one can't be used. A
+    previous signing secret that can't be read is dropped;
+  - the halt clears as soon as every secret the destination needs can be read
+    again. Events wait in the audit log meanwhile, and retention gaps still
+    apply ([§8.6](#86-retention-and-a-destination-that-falls-behind)).
+
+  The existing two-factor and SSO secrets keep `EncryptedBinary` and are not
+  changed by this item.
 - Secrets are write-only in the UI and never logged, put in telemetry, put in
   audit metadata or shown in errors. Audit metadata names a destination by its
   id, type, name and host only, and only the id, type and outcome reach
@@ -1453,7 +1510,8 @@ emails do. They are sent when:
   leaves out ([§12.3](#123-abuse-by-an-org-admin)). Each says by whom, which
   destination, its host and its credential hint;
 - a destination became Failing, and later recovered (at most once an hour
-  each);
+  each). When the reason is credentials that can't be read, the email asks an
+  org-admin to enter them again ([§12.2](#122-secrets));
 - a gap was opened, and while it grows, at most once every 7 days
   ([§8.6](#86-retention-and-a-destination-that-falls-behind));
 - transaction ids went backwards and an operator must re-seed
@@ -1506,7 +1564,8 @@ emails do. They are sent when:
 | Migration | Existing rows read `txid = 0`; new rows get a real transaction id; `AuditEvent` never casts `txid`. Under `AuditLogRoleHelper`, the hardened end state is checked: the owner is unchanged, the app role cannot alter the table, and `audit_log_status` still reports hardened |
 | Reader | In the sandbox, with the `:horizon` option set above the test's own transaction: Organization scoping, redaction of outside actors (keys removed from `metadata`), the personal-data switch removing `email` and `ip` keys at every depth, excluded actions, `not_before`, batch size and the byte limit |
 | Adapters | Each type's request (URL, headers, gzip body) against `Req.Test` stubs, and each response classified correctly. Splunk: every HEC code in [§5.1](#51-splunk-http-event-collector), including 200 with codes 24 and 25, and the path check. Datadog: the `date` field, the `message` with personal data off, the 17-hour cut-off, the tag limits, and 401 and 408. 413 splitting for each. HTTPS: the HMAC verifies with the webhook verifier on the inflated body, including both values during a rotation; the Ed25519 signature verifies, from the gzip bytes after inflation, against the published key chosen by `kid`, over `t`, the destination id and the body; a changed byte fails both; with no signing key, only the HMAC is sent |
-| Worker | With Oban `testing: :disabled` in the race partition, because Oban only applies uniqueness then: one job per destination plus at most one follow-up; the lease stops a second run; a run whose lease expired cannot move the cursor; no transaction is open during the POST. Also: the cursor moves only on 2xx; a retry resends exactly the pending batch; `next_attempt_at` holds the backoff, Retry-After and the cap against the sweep; a halted destination is never swept; draining and catch-up pacing; state moves Healthy → Retrying → Failing → Healthy with the right emails; a `txid` lower than the cursor's halts the destination |
+| Worker | With Oban `testing: :disabled` in the race partition, because Oban only applies uniqueness then: one job per destination plus at most one follow-up; the lease stops a second run; a run whose lease expired cannot move the cursor; no transaction is open during the POST. Also: the cursor moves only on 2xx; a retry resends exactly the pending batch; `next_attempt_at` holds the backoff, Retry-After and the cap against the sweep; a halted destination is never swept; draining and catch-up pacing; state moves Healthy → Retrying → Failing → Healthy with the right emails; a `txid` lower than the cursor's halts the destination; a pending batch whose `pending_filter_version` is older than the destination's is discarded and re-cut with a new `batch_id`, while a send already in flight completes normally; saving a filter change clears a `rejected_batch` halt; a destination whose secret loads as `:unreadable` sends nothing, records no attempt and halts with `credentials_unreadable`, and replacing the secret clears it |
+| Tolerant encrypted type | `TolerantEncryptedBinary` round-trips a value; a value written under another key loads as `:unreadable` instead of failing; dumping `:unreadable` is refused; a destination row with an unreadable secret loads, and the streaming pages render it |
 | Retention | A destination behind the cutoff records a gap with the right count, including a paused one; a refused purge records none; a pending batch that loses events is discarded and the next batch has a new `batch_id`; a second loss extends the open gap without a new email; a lease that can't be taken skips the Organization; retention still purges |
 | Re-seed | `reseed_audit_stream_cursors/0` sets `(0, 0)` and `not_before`, clears `txid_reset`, and the next batch starts at the last delivered event's time |
 | Security | `UrlGuard` refusals at save and send time; secrets never appear in rendered HTML, logs, telemetry or audit metadata; `destination_name` and `url_host` never reach telemetry; a non-org-admin, and an org-admin of another Organization, get nothing; a reserved header name is refused; `audit_stream_*` cannot be excluded; the test-event limit is per Organization and its result is coarse |
@@ -1545,6 +1604,8 @@ duplicated beyond what `id` resolves:
 | D13 | What do the batch signatures cover? | **Settled on 2026-11-10:** the decompressed body. The Ed25519 signature also covers the destination id, so a batch can't be passed off as meant for another destination ([§5.3](#53-any-https-endpoint)) |
 | D14 | Publish fixed egress addresses for collectors that only accept listed addresses? | **Settled on 2026-11-10: no**, not in this item. Such collectors are not supported, and the doc says so ([§12.1](#121-sending-to-the-internet-safely)) |
 | D15 | Production stops its last machine when idle (`min_machines_running = 0`), which stops the sweep. Keep one machine running? | **Settled on 2026-11-10: yes.** B8 sets `min_machines_running = 1` in `fly.production.toml` when streaming ships, at the cost of one always-on machine, so the sweep, retries and Failing alerts never wait for a visitor ([§8.1](#81-workers-and-scheduling)) |
+| D16 | An org-admin changes the excluded actions or the personal-data setting while a batch is pending. A retry would re-read the range under the new settings, so one `batch_id` would name different events. What happens? | **Settled on 2026-11-11: discard and re-cut.** The change increases the destination's `filter_version`; a run whose pending batch was cut under an older version discards it and cuts a new batch with a new `batch_id`. A send already in flight completes. Saving the change also clears a `rejected_batch` halt, and is audited and emailed as before ([§8.3](#83-at-least-once-and-batch-identity)). Snapshotting the old filter, or storing the batch's event ids, were rejected |
+| D17 | A lost or replaced `ENCRYPTION_KEY` makes destination secrets undecryptable, and `EncryptedBinary` then fails to load the whole row. How does a destination show it? | **Settled on 2026-11-11: a tolerant type and a halt.** Destination secrets use `Kanban.Encryption.TolerantEncryptedBinary`, which loads an undecryptable value as `:unreadable`. The worker halts the destination with `credentials_unreadable` and emails org-admins once, and re-entering or rotating the secrets clears it ([§12.2](#122-secrets)). Decrypting by hand in the context, or the two-factor precedent of an operator deleting rows, were rejected |
 
 ---
 
@@ -1587,7 +1648,7 @@ refreshes the event reference in `docs/telemetry.md` in the same task, or
 | B1 | Move the private `with_org_admin/2` from the four `OrgLive` pages into one shared module, with no change in behaviour | small | — |
 | B2 | Add the `/org/audit/streaming` list page with status, lag, hints, the one-org-admin warning and actions, and the buttons that link to it | medium | B1, **A12** |
 | B3 | Add the destination form for all three types, with write-only secrets, start point (Datadog's two), personal data and excluded actions | medium | B2, **A8**, **A9** |
-| B4 | Add the destination page with attempts, gaps and **Dismiss**, secret rotation, halted reasons, and **Retry now** and **Skip this batch** for a rejected batch | medium | B2, **A11**, **A13** |
+| B4 | Add the destination page with attempts, gaps and **Dismiss**, secret rotation, halted reasons, and **Retry now** and **Skip this batch** for a rejected batch | medium | B2, **A11**, **A12**, **A13** |
 | B5 | Add the org-admin emails through `Kanban.Notifications`: changes, catch-ups, failures, recoveries, gaps and the re-seed, with their throttles and translations | medium | **A6**, **A11**, **A13** |
 | B6 | Write `docs/audit-log-streaming.md`, and update `docs/organizations.md`, the prose in `docs/telemetry.md` and `docs/README.md` | medium | B3, B4, **C5** |
 | B7 | Add the Resources guide *Streaming your audit log to a security tool*, with screenshots in light and dark mode and translations | medium | B4 |
@@ -1610,10 +1671,10 @@ identifiers:
 
 1. **G-C first.** It depends on nothing.
 2. **G-A next**, with A7 depending on C1's identifier.
-3. **G-B last**, with these eleven edges:
+3. **G-B last**, with these twelve edges:
    - B2 → A12;
    - B3 → A8 and A9;
-   - B4 → A11 and A13;
+   - B4 → A11, A12 (which adds **Retry now** and **Skip this batch** to the context) and A13;
    - B5 → A6, A11 and A13;
    - B6 → C5;
    - B8 → C4.

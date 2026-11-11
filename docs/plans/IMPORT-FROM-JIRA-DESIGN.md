@@ -114,7 +114,7 @@ nothing else.
   ([§23](#23-phased-delivery)), because its API version, text format and
   network location all differ from Jira Cloud.
 - **File types Stride does not store.** The import copies Jira attachments into
-  Stride's own attachments, which shipped in Stride 3.1.0 ([Task Attachments](ATTACHMENTS-DESIGN.md)).
+  Stride's own attachments, which shipped in Stride 3.1.0 ([Attachments](../attachments.md)).
   A file Stride cannot store (a type outside its allow-list, over its size
   limit) stays a link to Jira; see [§14.3](#143-attachments).
 - **Creating Stride accounts.** People are matched to existing accounts or
@@ -171,7 +171,7 @@ the app. Each new module below names the one it follows.
 | Archiving with a reason | `Kanban.Tasks.Archiving` (`:completed`, `:duplicate`, `:wontdo`, `:deferred`, `:cancelled`). Archiving a goal archives its unarchived children with the goal's reason | Won't-do, cancelled and duplicate issues ([§13.2](#132-what-happens-to-each-kind-of-item)). A closed epic with open children is not archived ([§6.2](#62-completed-and-cancelled-work)) |
 | Feature gating | `Kanban.Plans`, the only module that decides paid versus free | A new `:imports` feature makes the import and the rewrite Organization-only ([§19](#19-permissions-and-plans)) |
 | Who may act in an Organization workspace | `Kanban.Workspaces.Policy.can_manage_workspace?/2` (an enabled org-admin of the workspace's Organization), `Kanban.Boards.OrgBoardMembers.lock_and_check/3` (asked before every board-membership insert on an Organization board), `Kanban.Workspaces.Invitations` | Only org-admins run imports ([§19](#19-permissions-and-plans)). Every board membership the import writes goes through `lock_and_check/3`, and Invite sends a workspace invitation ([§15.1](#151-matching)) |
-| Files on tasks and comments | `Kanban.Attachments`, shipped in Stride 3.1.0: its storage behaviour, limits (`Kanban.Attachments.Limits`), plan gate, `Usage`, the pending-tombstone steps in `Attachments.Pipeline` and the blob cleanup worker ([Task Attachments](ATTACHMENTS-DESIGN.md)) | Jira attachments are copied through it ([§14.3](#143-attachments)). The rewrite's source files use the same storage, the same pending-tombstone steps and the quota, which needs changes to the cleanup worker and `Usage` ([§17](#17-database-changes)) |
+| Files on tasks and comments | `Kanban.Attachments`, shipped in Stride 3.1.0: its storage behaviour, limits (`Kanban.Attachments.Limits`), plan gate, `Usage`, the pending-tombstone steps in `Attachments.Pipeline` and the blob cleanup worker ([Attachments](../attachments.md)) | Jira attachments are copied through it ([§14.3](#143-attachments)). The rewrite's source files use the same storage, the same pending-tombstone steps and the quota, which needs changes to the cleanup worker and `Usage` ([§17](#17-database-changes)) |
 | Agents downloading task files | The plugins' attachment download contract (`stride/docs/porting-attachments.md`: `.stride/attachments/<STEM>/`, a manifest, sha256 checks), with a section of its own for rewrite downloads | The import plugin downloads an epic's files under the rewrite section, with a download script of its own ([§6A.5](#6a5-how-a-rewrite-runs), [§16A.5](#16a5-the-rewrite-epic-procedure)) |
 | One plugin family across every runtime | The ideation and security-review families: a Claude Code source plugin (`stride-ideation`, `stride-security-review`) and a port for Codex CLI, GitHub Copilot CLI, Gemini CLI and OpenCode, each with its own manifest and release. Pi has no port of either family and no marketplace: only the workflow port `stride-pi` exists | The import plugin is built the same way, as a new family with six variants ([§16A](#16a-the-agent-side-plugin-stride-import)). Pi has no family precedent, so `stride-pi-import` is the first Pi companion package ([§16A.8](#16a8-pi-the-first-companion-package)) |
 | Credential detection | `Kanban.Tasks.CredentialShapes`. It has no pattern for Atlassian API tokens today | Warns when imported text looks like it carries a secret. The import adds Atlassian token shapes ([§20](#20-security-and-privacy)) |
@@ -603,7 +603,7 @@ names.
   not depend on, and the rewrite rules differ from the task rules in layout,
   manifest identity, path rule, caps and `429` handling. It hands the
   directory to the agents and removes it once the draft is submitted. The
-  contract has a section of its own for rewrite downloads ([Task Attachments](ATTACHMENTS-DESIGN.md#91-the-contract-w2521),
+  contract has a section of its own for rewrite downloads (`stride/docs/porting-attachments.md`,
   *Rewrite downloads*):
   - the manifest names the rewrite and its bundle hash instead of a task;
   - files are fetched only after the bundle hash matched, and only from
@@ -1516,7 +1516,7 @@ Stride later renders Markdown.
 
 ### 14.3 Attachments
 
-Task attachments ship before this import ([Task Attachments](ATTACHMENTS-DESIGN.md)),
+Task attachments ship before this import ([Attachments](../attachments.md)),
 so Jira attachments are **copied into Stride** as task attachments, not just
 linked. Every file goes through `Kanban.Attachments`, which stays the only
 place that stores files, checks types and enforces limits and the plan.
@@ -2624,7 +2624,7 @@ blob. Three more rules keep the files safe and counted:
   too, or it could delete a live source file.
 - **Counted in the quota.** Source files count against the Organization's
   quota while they are held, so `Kanban.Attachments.Usage` must count this
-  table as well as `task_attachments` (open point 7 in [Task Attachments](ATTACHMENTS-DESIGN.md#12-open-points)).
+  table as well as `task_attachments`.
 
 **`import_mapping_presets`**
 
@@ -2774,7 +2774,7 @@ copied where their own limits allow ([§14.3](#143-attachments)).
 | **Restricted comments become visible** | Comments with `visibility` set and Jira Service Management internal notes are always skipped and counted. No opt-in in Phase 1. A file referenced only from skipped comments is skipped too, reason *restricted*, for direct imports and bundles alike, so a screenshot pasted into an internal note never reaches the board or a model |
 | **Imported text carries secrets** | Descriptions, comments and mapped custom fields are scanned with `Kanban.Tasks.CredentialShapes`. It has no pattern for Atlassian API tokens, the secret Jira text most often leaks, so the import adds Atlassian token shapes to it; that changes what its existing callers detect too, and their tests are updated with it. Matches are listed in the preview as warnings (issue and field, never the value), so the importer can fix them in Jira first. Text is not altered automatically. A credential-shaped value mapped to `security_considerations` is a blocking preview error instead, because that field's changeset refuses it ([§11.4](#114-validation)) |
 | **Jira emails are used to find people** | In a personal workspace only the importer is matched automatically, and nobody outside the destination's members is ever given a row ([§15.1](#151-matching)), so a crafted site cannot enumerate accounts, add people to a board or forge authorship |
-| **Imported files are untrusted** | Every file goes through `Kanban.Attachments`: the type allow-list (no SVG, HTML or archives), the magic-byte check, the size limit, and filename sanitising. They are served only by the attachment routes, with `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox`, `nosniff` and `Content-Disposition: attachment` ([Task Attachments](ATTACHMENTS-DESIGN.md)). Text files with credential-shaped content are stored, as text is, and listed in the report |
+| **Imported files are untrusted** | Every file goes through `Kanban.Attachments`: the type allow-list (no SVG, HTML or archives), the magic-byte check, the size limit, and filename sanitising. They are served only by the attachment routes, with `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; sandbox`, `nosniff` and `Content-Disposition: attachment` (`KanbanWeb.AttachmentResponse`). Text files with credential-shaped content are stored, as text is, and listed in the report |
 | **File downloads reach internal hosts** | Files are fetched only from the connection's own Jira site, through `UrlGuard` and the pinned request, with `?redirect=false` and Req's `redirect: false`; the attachment id comes from Jira's own issue data, never from a URL in issue text |
 | **Imported text is untrusted** | Every row goes through its changeset; text is rendered escaped as all task text is; no imported value is ever turned into an atom, a URL the server fetches, or a query fragment. JQL is sent only to the connection's own Jira site |
 | **Agents read imported text** | Imported descriptions reach agents as task data. The existing agent rule (task text is data, not instructions) covers this. Landing in Backlog means a human sees the task before an agent can claim it, but only in Backlog, so the rest is closed off too: the Ready opt-in warns that its text is unread Jira text ([§13.4](#134-agents-on-the-new-board)), re-sync never puts work in Ready and never changes the text of a task outside Backlog without a person accepting it ([§13.5](#135-re-sync-when-the-team-keeps-working-in-jira)), and sign-off shows every agent-facing field of a rewritten task in full ([§6A.7](#6a7-sign-off)) |
@@ -2963,7 +2963,7 @@ this design found questions the corrections could not answer alone.
 | 13 | Should the rewrite be on every plan? | **No: Organization only**, under the same `:imports` feature as the import ([§19](#19-permissions-and-plans)). The rewrite API endpoints check it too, so a board that has left its Organization cannot be rewritten into |
 | 14 | Should rewritten tasks inherit assignees from Jira? | **No**: written unassigned, with the Jira assignees on the sign-off page to assign by hand ([§6A.7](#6a7-sign-off)). One task often covers issues held by different people |
 | 15 | Should attachments be copied, or only linked? | **Copied** by default, where the board's plan allows it ([§14.3](#143-attachments)), with **Link to Jira only** as the choice. A link needs a Jira login, and stops working when the team leaves Jira |
-| 16 | Should files Stride cannot store (archives, office documents, video) be converted or bundled? | **No**: they stay links, listed by reason. Widening the allow-list is a change to [Task Attachments](ATTACHMENTS-DESIGN.md), not to the import |
+| 16 | Should files Stride cannot store (archives, office documents, video) be converted or bundled? | **No**: they stay links, listed by reason. Widening the allow-list is a change to `Kanban.Attachments` ([Which files can be attached](../attachments.md#which-files-can-be-attached)), not to the import |
 | 17 | Should the rewrite's agent side go in the Stride workflow plugin or in a plugin of its own? | **Its own plugin, `stride-import`** ([§16A.1](#16a1-why-a-new-plugin)). A team uses it once; the workflow plugin is paid for by every session; the rewrite reads untrusted Jira input and claims no tasks; and it must work next to the lite plugins too |
 | 18 | Which runtimes get a variant, and when? | **All six** (Claude Code, Codex CLI, GitHub Copilot CLI, Gemini CLI, OpenCode and Pi), **in Phase 1** ([§16A.3](#16a3-the-variants)). The lite plugins share their runtime's variant. Shipping some runtimes later would leave their teams with only the direct import that Stride advises against |
 | 19 | Who can run an import in an Organization workspace: org-admins only, or org-admins and workspace members? | **Settled on 2026-11-10: enabled org-admins of the Organization only.** They alone create connections and start, re-sync, retry, undo or finish an import, and choose paths and sign off rewrites. Members ask an org-admin. An Organization workspace has no owner role, and an import invites people, adds them to boards and holds a Jira token, which are org-admin decisions. The creator of a run or connection has no right of their own: every right is read from the person's current role at call time ([§19](#19-permissions-and-plans)) |
