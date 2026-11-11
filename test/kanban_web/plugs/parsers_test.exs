@@ -59,6 +59,27 @@ defmodule KanbanWeb.Plugs.ParsersTest do
     refute Map.has_key?(conn.private, :phoenix_format)
   end
 
+  test "a signing-keys parse failure is re-raised with the json format pinned (W2697)" do
+    for path <- [
+          "/.well-known/stride-audit-signing-keys?format=pem&kid=%FF",
+          "/.well-known/stride-audit-signing-keys/?kid=%FF"
+        ] do
+      conn = conn(:get, path)
+
+      error = assert_raise Plug.Conn.WrapperError, fn -> Parsers.call(conn, @opts) end
+
+      assert %Plug.Conn.InvalidQueryError{} = error.reason
+      assert Phoenix.Controller.get_format(error.conn) == "json"
+      assert Plug.Exception.status(error.reason) == 400
+    end
+  end
+
+  test "another /.well-known path gets no pin (W2697)" do
+    conn = conn(:get, "/.well-known/security.txt?a=%FF")
+
+    assert_raise Plug.Conn.InvalidQueryError, fn -> Parsers.call(conn, @opts) end
+  end
+
   test "a non-/api parse failure is raised as-is, without a format" do
     conn = conn(:get, "/about?a=%FF")
 

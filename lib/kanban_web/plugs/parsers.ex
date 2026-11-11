@@ -19,11 +19,15 @@ defmodule KanbanWeb.Plugs.Parsers do
 
   The pin is applied only when parsing fails. A request that parses cleanly
   leaves this plug with no format set, so the router decides the format as
-  before, and an unrouted `/api` path still renders its HTML 404. Non-`/api`
-  paths are passed straight to `Plug.Parsers` and never get the pin.
+  before, and an unrouted `/api` path still renders its HTML 404. Every path
+  not named here is passed straight to `Plug.Parsers` and never gets the pin.
 
   `/scim` paths get the same treatment with the `scim` format, so their
   errors render as SCIM errors (`KanbanWeb.SCIM.ErrorJSON`, W2247).
+
+  The audit signing keys address, `/.well-known/stride-audit-signing-keys`,
+  gets the json pin too (W2697): curl and verifier libraries fetch it, and
+  its own refusals are JSON.
 
   One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
   raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
@@ -53,6 +57,19 @@ defmodule KanbanWeb.Plugs.Parsers do
     kind, reason ->
       conn
       |> Phoenix.Controller.put_format("scim")
+      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
+  end
+
+  # The audit signing keys address (W2697) is read by curl and verifier
+  # libraries, not by a browser, so a parse failure there (a kid that is not
+  # valid UTF-8, say) renders as JSON like the address's own 404, not as the
+  # HTML error page; the pin works as for /api above.
+  def call(%Plug.Conn{path_info: [".well-known", "stride-audit-signing-keys"]} = conn, opts) do
+    Plug.Parsers.call(conn, opts)
+  catch
+    kind, reason ->
+      conn
+      |> Phoenix.Controller.put_format("json")
       |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
   end
 

@@ -106,6 +106,24 @@ defmodule KanbanWeb.Router do
     delete "/Groups/:id", GroupController, :unsupported
   end
 
+  # The audit signing public keys (W2697): a public address an auditor or a
+  # batch receiver fetches with curl or a verifier library. So this pipeline
+  # fetches no session and checks no CSRF token (no cookie is ever set), has
+  # no :accepts (any Accept header works) and no authentication (the keys are
+  # public). It keeps the secure headers for nosniff on the JSON and PEM
+  # bodies; neither is a page, so the policy allows nothing at all.
+  pipeline :well_known do
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "default-src 'none'; frame-ancestors 'none'"
+    }
+  end
+
+  scope "/.well-known", KanbanWeb do
+    pipe_through :well_known
+
+    get "/stride-audit-signing-keys", AuditSigningKeysController, :show
+  end
+
   scope "/", KanbanWeb do
     pipe_through :browser
 
