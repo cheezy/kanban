@@ -84,9 +84,18 @@ defmodule Kanban.AuditStream.Adapter do
   @callback validate_credential(credential :: String.t() | nil, settings :: map()) ::
               :ok | {:error, keyword()}
 
-  @optional_callbacks describe_error: 2, validate_credential: 2
+  @doc """
+  Checks a URL being set on the destination for the kind's own rules, such
+  as the path a collector must have. Called by
+  `Kanban.AuditStream.Destination` only when the URL changes. Errors are
+  `Ecto.Changeset` errors, such as `[url: {"is invalid", validation: :path}]`,
+  and never carry the URL.
+  """
+  @callback validate_url(url :: String.t()) :: :ok | {:error, keyword()}
 
-  @adapters %{https: Adapters.Https}
+  @optional_callbacks describe_error: 2, validate_credential: 2, validate_url: 1
+
+  @adapters %{https: Adapters.Https, splunk_hec: Adapters.SplunkHec}
 
   @doc "The adapter module for `kind`, or nil when the kind has none yet."
   @spec module_for(atom() | nil) :: module() | nil

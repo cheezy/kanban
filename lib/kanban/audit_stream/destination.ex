@@ -137,9 +137,10 @@ defmodule Kanban.AuditStream.Destination do
 
   Validates the kind, the name (at most 80 characters, unique in the
   Organization), the secrets each kind needs, the settings keys for the kind,
-  the kind's own settings and credential rules (its
+  the kind's own settings, credential and URL rules (its
   `Kanban.AuditStream.Adapter`'s `validate/1` and optional
-  `validate_credential/2`, when the kind has an adapter) and
+  `validate_credential/2` and `validate_url/1`, when the kind has an
+  adapter) and
   `excluded_actions`, then derives `url_host`, `url_hint` and
   `credential_hint` from the plaintext.
   """
@@ -163,6 +164,7 @@ defmodule Kanban.AuditStream.Destination do
     |> validate_adapter_credential()
     |> validate_excluded_actions()
     |> validate_url()
+    |> validate_adapter_url()
     |> unique_constraint([:organization_id, :name], error_key: :name)
     |> foreign_key_constraint(:organization_id)
     |> put_hints()
@@ -326,6 +328,29 @@ defmodule Kanban.AuditStream.Destination do
   end
 
   defp check_credential(_adapter, _credential, _settings), do: :ok
+
+  # An adapter with rules for its URL, such as Splunk HEC's collector path,
+  # checks a URL that is being set. Only a change is checked, so a stored
+  # destination is never refused for an edit that leaves its URL alone, and
+  # a URL already refused here (not storable, no host) is not reported twice.
+  defp validate_adapter_url(changeset) do
+    case {fetch_change(changeset, :url), Keyword.has_key?(changeset.errors, :url)} do
+      {{:ok, url}, false} when is_binary(url) ->
+        changeset |> adapter() |> check_url(url) |> apply_errors(changeset)
+
+      _unchanged ->
+        changeset
+    end
+  end
+
+  defp check_url(adapter, url) do
+    if String.valid?(url) and url_check?(adapter), do: adapter.validate_url(url), else: :ok
+  end
+
+  defp url_check?(nil), do: false
+
+  defp url_check?(adapter),
+    do: Code.ensure_loaded?(adapter) and function_exported?(adapter, :validate_url, 1)
 
   defp credential_check?(nil), do: false
 

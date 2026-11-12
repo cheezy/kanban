@@ -14133,3 +14133,38 @@ msgstr "ストリーミング署名シークレットの更新"
 msgctxt "audit action"
 msgid "Streaming test event sent"
 msgstr "ストリーミングのテストイベント送信"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:329
+#, elixir-autogen, elixir-format
+msgid "Check this destination's Splunk HEC settings"
+msgstr "この送信先の Splunk HEC 設定を確認してください"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:326
+#, elixir-autogen, elixir-format
+msgid "Remove the token from the HEC URL and enter it as the HEC token"
+msgstr "HEC URL からトークンを削除し、HEC トークンとして入力してください"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:309
+#, elixir-autogen, elixir-format
+msgid "The token can't write to index %{index}"
+msgstr "このトークンはインデックス %{index} に書き込めません"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:312
+#, elixir-autogen, elixir-format
+msgid "The token can't write to its default index"
+msgstr "このトークンは既定のインデックスに書き込めません"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:143
+#, elixir-autogen, elixir-format
+msgid "This looks like the Splunk Cloud web address. The collector address starts with http-inputs."
+msgstr "これは Splunk Cloud の Web アドレスのようです。コレクターのアドレスは http-inputs で始まります。"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:317
+#, elixir-autogen, elixir-format
+msgid "Turn off indexer acknowledgement on this HEC token"
+msgstr "この HEC トークンのインデクサー確認応答をオフにしてください"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:321
+#, elixir-autogen, elixir-format
+msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
+msgstr "確認応答なしの HEC URL を使用してください。Stride はインデクサー確認応答を使用しません"

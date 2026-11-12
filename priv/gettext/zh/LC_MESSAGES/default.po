@@ -14136,3 +14136,38 @@ msgstr "已轮换流式传输签名密钥"
 msgctxt "audit action"
 msgid "Streaming test event sent"
 msgstr "已发送流式传输测试事件"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:329
+#, elixir-autogen, elixir-format
+msgid "Check this destination's Splunk HEC settings"
+msgstr "请检查此目标的 Splunk HEC 设置"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:326
+#, elixir-autogen, elixir-format
+msgid "Remove the token from the HEC URL and enter it as the HEC token"
+msgstr "请从 HEC URL 中移除令牌，并将其填写为 HEC 令牌"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:309
+#, elixir-autogen, elixir-format
+msgid "The token can't write to index %{index}"
+msgstr "该令牌无法写入索引 %{index}"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:312
+#, elixir-autogen, elixir-format
+msgid "The token can't write to its default index"
+msgstr "该令牌无法写入其默认索引"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:143
+#, elixir-autogen, elixir-format
+msgid "This looks like the Splunk Cloud web address. The collector address starts with http-inputs."
+msgstr "这看起来是 Splunk Cloud 的网页地址。收集器地址以 http-inputs 开头。"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:317
+#, elixir-autogen, elixir-format
+msgid "Turn off indexer acknowledgement on this HEC token"
+msgstr "请关闭此 HEC 令牌的索引器确认"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:321
+#, elixir-autogen, elixir-format
+msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
+msgstr "请使用不带确认的 HEC URL；Stride 不使用索引器确认"

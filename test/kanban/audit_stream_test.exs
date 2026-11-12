@@ -159,7 +159,7 @@ defmodule Kanban.AuditStreamTest do
             {:https, "metadata.example.com", :blocked_address},
             {:https, "nowhere.example.net", :unresolvable}
           ] do
-        attrs = destination_attrs(kind, %{url: "https://#{host}/collector/0123456789"})
+        attrs = destination_attrs(kind, %{url: "https://#{host}/services/collector"})
         assert {:error, changeset} = AuditStream.create_destination(ctx.scope, attrs)
         assert UrlGuard.error_message(reason) in errors_on(changeset).url
       end
@@ -378,14 +378,14 @@ defmodule Kanban.AuditStreamTest do
 
       assert {:error, changeset} =
                AuditStream.update_destination(ctx.scope, renamed, %{
-                 url: "https://internal.example.com/collector/0123456789"
+                 url: "https://internal.example.com/services/collector"
                })
 
       assert UrlGuard.error_message(:blocked_address) in errors_on(changeset).url
 
       assert {:ok, moved} =
                AuditStream.update_destination(ctx.scope, renamed, %{
-                 url: "https://collector.example.com/collector/0123456789"
+                 url: "https://collector.example.com/services/collector"
                })
 
       stored = reload(moved)
@@ -507,7 +507,7 @@ defmodule Kanban.AuditStreamTest do
       make_unreadable!(destination, :url)
       make_unreadable!(destination, :credential)
       halt!(destination, :credentials_unreadable)
-      url = "https://collector.example.com/services/collector/reentered"
+      url = "https://collector.example.com/services/collector/event"
 
       assert {:error, changeset} =
                AuditStream.update_destination(ctx.scope, destination, %{url: url})

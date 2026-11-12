@@ -14204,3 +14204,38 @@ msgstr "Secreto de firma de streaming rotado"
 msgctxt "audit action"
 msgid "Streaming test event sent"
 msgstr "Evento de prueba de streaming enviado"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:329
+#, elixir-autogen, elixir-format
+msgid "Check this destination's Splunk HEC settings"
+msgstr "Revisa la configuración de Splunk HEC de este destino"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:326
+#, elixir-autogen, elixir-format
+msgid "Remove the token from the HEC URL and enter it as the HEC token"
+msgstr "Quita el token de la URL de HEC e introdúcelo como token de HEC"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:309
+#, elixir-autogen, elixir-format
+msgid "The token can't write to index %{index}"
+msgstr "El token no puede escribir en el índice %{index}"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:312
+#, elixir-autogen, elixir-format
+msgid "The token can't write to its default index"
+msgstr "El token no puede escribir en su índice predeterminado"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:143
+#, elixir-autogen, elixir-format
+msgid "This looks like the Splunk Cloud web address. The collector address starts with http-inputs."
+msgstr "Parece la dirección web de Splunk Cloud. La dirección del recopilador empieza por http-inputs."
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:317
+#, elixir-autogen, elixir-format
+msgid "Turn off indexer acknowledgement on this HEC token"
+msgstr "Desactiva la confirmación del indexador en este token de HEC"
+
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:321
+#, elixir-autogen, elixir-format
+msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
+msgstr "Usa una URL de HEC sin confirmación; Stride no usa la confirmación del indexador"

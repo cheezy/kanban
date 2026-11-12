@@ -369,13 +369,13 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
       assert {"is invalid", [validation: :header_value]} = refused.errors[:credential]
       refute inspect(refused.errors) =~ "abcdefghijklmnop"
 
-      splunk =
+      datadog =
         Destination.changeset(
           %Destination{},
-          destination_attrs(:splunk_hec, %{credential: "token-é-1234567890"})
+          destination_attrs(:datadog, %{credential: "token-é-1234567890"})
         )
 
-      assert splunk.valid?
+      assert datadog.valid?
     end
 
     test "Destination.changeset refuses a half-configured header from either side" do
@@ -521,7 +521,7 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
 
     test "Destination.changeset skips a kind with no adapter yet" do
       changeset =
-        Destination.changeset(%Destination{}, destination_attrs(:splunk_hec, %{}))
+        Destination.changeset(%Destination{}, destination_attrs(:datadog, %{}))
 
       assert changeset.valid?
     end
@@ -550,12 +550,24 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
     test "max_event_age is :infinity" do
       assert Https.max_event_age() == :infinity
     end
+
+    test "validate_url/1 adds no rules of its own, so any path is kept" do
+      assert Https.validate_url("https://siem.example.org/any/path?token=abcd") == :ok
+
+      changeset =
+        Destination.changeset(
+          %Destination{},
+          destination_attrs(:https, %{url: "https://siem.example.org/services/collector/raw"})
+        )
+
+      assert changeset.valid?
+    end
   end
 
   describe "Adapter.module_for/1" do
     test "maps a kind to its adapter, and a kind without one to nil" do
       assert Adapter.module_for(:https) == Https
-      assert Adapter.module_for(:splunk_hec) == nil
+      assert Adapter.module_for(:splunk_hec) == Kanban.AuditStream.Adapters.SplunkHec
       assert Adapter.module_for(:datadog) == nil
       assert Adapter.module_for(nil) == nil
     end

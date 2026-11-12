@@ -10,7 +10,7 @@ defmodule Kanban.AuditStream.SchemasTest do
   alias Kanban.AuditStream.Gap
   alias Kanban.Encryption
 
-  @splunk_url "https://collector.example.com/services/collector/abcd1234"
+  @splunk_url "https://collector.example.com:8088/services/collector"
   @splunk_token "splunk-hec-token-wxyz"
   @datadog_key "datadog-api-key-9876"
   @https_url "https://siem.example.org/ingest?token=secret-path-token-5555"
@@ -414,7 +414,7 @@ defmodule Kanban.AuditStream.SchemasTest do
       destination = insert!(ctx, :splunk_hec)
 
       assert destination.url_host == "collector.example.com"
-      assert destination.url_hint == "1234"
+      assert destination.url_hint == "ctor"
       assert destination.credential_hint == "wxyz"
     end
 
@@ -453,11 +453,12 @@ defmodule Kanban.AuditStream.SchemasTest do
             {"long-credential-x" <> "a" <> family, nil},
             {"long-credential-xyz" <> "e\u0301", "yze\u0301"}
           ] do
-        changeset = changeset(ctx, %{attrs(:splunk_hec) | credential: credential})
+        # Datadog, because a Splunk HEC token must be one ASCII header word.
+        changeset = changeset(ctx, %{attrs(:datadog) | credential: credential})
         assert Ecto.Changeset.get_field(changeset, :credential_hint) == hint
       end
 
-      destination = insert!(ctx, :splunk_hec, %{credential: "long-credential-x" <> flag <> flag})
+      destination = insert!(ctx, :datadog, %{credential: "long-credential-x" <> flag <> flag})
       assert Repo.get!(Destination, destination.id).credential_hint == flag <> flag
     end
 
@@ -472,7 +473,7 @@ defmodule Kanban.AuditStream.SchemasTest do
     end
 
     test "takes the last 4 Unicode characters", ctx do
-      changeset = changeset(ctx, %{attrs(:splunk_hec) | credential: "a-long-tokén-ñüéß"})
+      changeset = changeset(ctx, %{attrs(:datadog) | credential: "a-long-tokén-ñüéß"})
       assert Ecto.Changeset.get_field(changeset, :credential_hint) == "ñüéß"
     end
 

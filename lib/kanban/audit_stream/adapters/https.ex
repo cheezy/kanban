@@ -107,6 +107,13 @@ defmodule Kanban.AuditStream.Adapters.Https do
   defp reserved_header?(name),
     do: String.downcase(name) in @reserved_headers or String.downcase(name) in @framing_headers
 
+  @doc """
+  An HTTPS endpoint has no URL rules of its own beyond the
+  `Kanban.Webhooks.UrlGuard` checks every destination gets.
+  """
+  @impl true
+  def validate_url(_url), do: :ok
+
   @impl true
   def validate_credential(credential, settings) when is_map(settings) do
     case credential_error(credential, header_name?(Map.get(settings, "header_name"))) do

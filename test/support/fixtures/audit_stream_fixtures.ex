@@ -23,7 +23,7 @@ defmodule Kanban.AuditStreamFixtures do
       %{
         kind: :splunk_hec,
         name: "Splunk #{n}",
-        url: "https://collector.example.com/services/collector/#{n}",
+        url: "https://collector.example.com/services/collector/event",
         credential: "splunk-hec-token-#{n}-wxyz",
         settings: %{"index" => "main"}
       },
