@@ -305,6 +305,25 @@ if attachment_limits != [] do
   config :kanban, Kanban.Attachments.Limits, attachment_limits
 end
 
+# Audit log streaming (W2704, design §5, D2): AUDIT_STREAM_MAX_DESTINATIONS is
+# the most destinations one Organization may have, a whole number from 1 to
+# 50. Unset (or blank, as attachments_value treats it) leaves
+# Kanban.AuditStream.Destination.max_destinations/0 at its default of 3. Any
+# other value stops the boot. The message names the variable and never prints
+# its value. Runs in every environment.
+case attachments_value.("AUDIT_STREAM_MAX_DESTINATIONS") do
+  nil ->
+    :ok
+
+  value ->
+    with true <- value =~ ~r/\A[0-9]+\z/,
+         count when count in 1..50//1 <- String.to_integer(value) do
+      config :kanban, Kanban.AuditStream, max_destinations: count
+    else
+      _invalid -> raise "AUDIT_STREAM_MAX_DESTINATIONS must be a whole number from 1 to 50."
+    end
+end
+
 # Audit signing keys (W2696): the instance's Ed25519 key for signed audit
 # exports and signed streamed batches, used by Kanban.AuditLog.Signing.
 #
