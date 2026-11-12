@@ -1033,10 +1033,19 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert File.read!("lib/kanban_web/live/user_live/login.ex") =~
                ~s|gettext("Keep me signed in on this device")|
 
-      # Only the announcement email renders in the account's language.
+      # Only the announcement email renders in the account's language. A
+      # file whose every with_locale call pins "en" (the audit stream payload,
+      # whose labels are English whatever the locale) renders in no account's
+      # language, so it is left out.
       with_locale =
         Path.wildcard("lib/**/*.ex")
         |> Enum.filter(&(File.read!(&1) =~ "Gettext.with_locale"))
+        |> Enum.reject(fn path ->
+          source = File.read!(path)
+
+          length(Regex.scan(~r/Gettext\.with_locale\(/, source)) ==
+            length(Regex.scan(~r/Gettext\.with_locale\(KanbanWeb\.Gettext, "en",/, source))
+        end)
 
       assert with_locale == ["lib/kanban/notifications/announcement_worker.ex"]
       assert content =~ "service announcements"

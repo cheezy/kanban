@@ -64,5 +64,43 @@ defmodule Kanban.Webhooks.SignerTest do
     assert Signer.verify(moved, @body, @secret, now: @now) == {:error, :invalid_signature}
   end
 
+  describe "sign_all/3" do
+    test "list-of-secrets sign emits one v1 per secret, old first" do
+      header = Signer.sign_all(@body, ["whsec_old", @secret], @now)
+
+      assert [_, old, new] =
+               Regex.run(~r/\At=#{@now},v1=([0-9a-f]{64}),v1=([0-9a-f]{64})\z/, header)
+
+      assert old == signature(Signer.sign(@body, "whsec_old", @now))
+      assert new == signature(Signer.sign(@body, @secret, @now))
+    end
+
+    test "verify/4 accepts the header with either secret" do
+      header = Signer.sign_all(@body, ["whsec_old", @secret], @now)
+
+      assert Signer.verify(header, @body, "whsec_old", now: @now) == :ok
+      assert Signer.verify(header, @body, @secret, now: @now) == :ok
+
+      assert Signer.verify(header, @body, "whsec_other", now: @now) ==
+               {:error, :invalid_signature}
+    end
+
+    test "with one secret it is exactly sign/3's header" do
+      assert Signer.sign_all(@body, [@secret], @now) == Signer.sign(@body, @secret, @now)
+    end
+
+    test "the timestamp defaults to now" do
+      header = Signer.sign_all(@body, [@secret])
+
+      assert Signer.verify(header, @body, @secret) == :ok
+    end
+
+    test "no secret, or one that is not a binary, is refused" do
+      for secrets <- [[], [nil]] do
+        assert_raise FunctionClauseError, fn -> Signer.sign_all(@body, secrets, @now) end
+      end
+    end
+  end
+
   defp signature(header), do: header |> String.split("v1=") |> List.last()
 end

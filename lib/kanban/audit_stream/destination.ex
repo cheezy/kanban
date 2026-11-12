@@ -44,6 +44,7 @@ defmodule Kanban.AuditStream.Destination do
   import Ecto.Changeset
 
   alias Kanban.Accounts.User
+  alias Kanban.AuditStream.Adapter
   alias Kanban.ChangesetText
   alias Kanban.Encryption.TolerantEncryptedBinary
   alias Kanban.Organizations.Organization
@@ -135,8 +136,11 @@ defmodule Kanban.AuditStream.Destination do
   `created_by` are set on the struct by the caller, never cast.
 
   Validates the kind, the name (at most 80 characters, unique in the
-  Organization), the secrets each kind needs, the settings keys for the kind
-  and `excluded_actions`, then derives `url_host`, `url_hint` and
+  Organization), the secrets each kind needs, the settings keys for the kind,
+  the kind's own settings and credential rules (its
+  `Kanban.AuditStream.Adapter`'s `validate/1` and optional
+  `validate_credential/2`, when the kind has an adapter) and
+  `excluded_actions`, then derives `url_host`, `url_hint` and
   `credential_hint` from the plaintext.
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
@@ -155,6 +159,8 @@ defmodule Kanban.AuditStream.Destination do
     |> validate_text()
     |> validate_kind_secrets()
     |> validate_settings()
+    |> validate_adapter_settings()
+    |> validate_adapter_credential()
     |> validate_excluded_actions()
     |> validate_url()
     |> unique_constraint([:organization_id, :name], error_key: :name)
@@ -282,6 +288,59 @@ defmodule Kanban.AuditStream.Destination do
     |> update_change(:settings, &stringify_keys/1)
     |> validate_required([:settings])
     |> validate_settings_shape()
+  end
+
+  # The kind's own settings rules come from its adapter. A kind with no
+  # adapter yet, or settings validate_settings/1 already refused as not a
+  # map, are left as they are.
+  defp validate_adapter_settings(changeset) do
+    changeset
+    |> adapter()
+    |> check_settings(get_field(changeset, :settings))
+    |> apply_errors(changeset)
+  end
+
+  defp check_settings(adapter, settings) when not is_nil(adapter) and is_map(settings),
+    do: adapter.validate(settings)
+
+  defp check_settings(_adapter, _settings), do: :ok
+
+  # An adapter that sends the credential in a header checks it with the
+  # settings: that it is sendable, so the transport never refuses it with an
+  # error that quotes the value, and that a header name and a credential come
+  # together. Checked on every change, not only the credential's, since the
+  # pair can be broken from either side. A credential that could not be
+  # decrypted is left to the update flow, which asks for a new one.
+  defp validate_adapter_credential(changeset) do
+    changeset
+    |> adapter()
+    |> check_credential(get_field(changeset, :credential), get_field(changeset, :settings))
+    |> apply_errors(changeset)
+  end
+
+  defp check_credential(adapter, credential, settings)
+       when is_map(settings) and (is_binary(credential) or is_nil(credential)) do
+    if credential_check?(adapter),
+      do: adapter.validate_credential(credential, settings),
+      else: :ok
+  end
+
+  defp check_credential(_adapter, _credential, _settings), do: :ok
+
+  defp credential_check?(nil), do: false
+
+  defp credential_check?(adapter),
+    do: Code.ensure_loaded?(adapter) and function_exported?(adapter, :validate_credential, 2)
+
+  defp adapter(changeset), do: changeset |> get_field(:kind) |> Adapter.module_for()
+
+  defp apply_errors({:error, errors}, changeset), do: add_errors(changeset, errors)
+  defp apply_errors(_valid_or_skipped, changeset), do: changeset
+
+  defp add_errors(changeset, errors) do
+    Enum.reduce(errors, changeset, fn {field, {message, keys}}, acc ->
+      add_error(acc, field, message, keys)
+    end)
   end
 
   defp stringify_keys(settings) when is_map(settings),

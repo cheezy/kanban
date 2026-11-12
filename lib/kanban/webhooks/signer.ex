@@ -22,6 +22,25 @@ defmodule Kanban.Webhooks.Signer do
   end
 
   @doc """
+  Returns a signature header value for `body` carrying one `v1` per secret in
+  `secrets`, in the order given, all signed at unix time `timestamp`.
+
+  Audit streaming (`Kanban.AuditStream.Adapters.Https`) uses it during a
+  rotation, passing the old secret first, so a receiver still holding either
+  secret verifies with `verify/4`. With one secret it returns exactly what
+  `sign/3` does. Webhook deliveries keep using `sign/3`.
+  """
+  @spec sign_all(binary(), [binary(), ...], integer()) :: String.t()
+  def sign_all(body, [_ | _] = secrets, timestamp \\ System.system_time(:second))
+      when is_binary(body) and is_integer(timestamp) do
+    signatures = Enum.map_join(secrets, ",", &"v1=#{digest_secret(body, &1, timestamp)}")
+    "t=#{timestamp},#{signatures}"
+  end
+
+  defp digest_secret(body, secret, timestamp) when is_binary(secret),
+    do: digest(body, secret, timestamp)
+
+  @doc """
   Checks a signature header against `body` and `secret`.
 
   Options: `:now` (unix seconds, defaults to the system clock) and

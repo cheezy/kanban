@@ -49,6 +49,7 @@ defmodule Kanban.AuditStream.SchemasTest do
       kind: "https",
       name: "Generic",
       url: @https_url,
+      credential: "https-header-value-0123456789",
       settings: %{"format" => "ndjson", "header_name" => "X-Api-Key"}
     }
   end
@@ -336,7 +337,8 @@ defmodule Kanban.AuditStream.SchemasTest do
     end
 
     test "accepts empty settings", ctx do
-      assert changeset(ctx, %{attrs(:https) | settings: %{}}).valid?
+      # No header name, so no header value either (W2707: they come together).
+      assert changeset(ctx, %{attrs(:https) | settings: %{}, credential: nil}).valid?
     end
 
     test "refuses nil settings without raising", ctx do
@@ -499,7 +501,12 @@ defmodule Kanban.AuditStream.SchemasTest do
 
       assert updated.credential_hint == "alue"
 
-      cleared = updated |> Destination.changeset(%{credential: nil}) |> Repo.update!()
+      # The header value goes with its name (W2707), so both are cleared.
+      cleared =
+        updated
+        |> Destination.changeset(%{credential: nil, settings: %{"format" => "ndjson"}})
+        |> Repo.update!()
+
       assert cleared.credential_hint == nil
     end
   end
