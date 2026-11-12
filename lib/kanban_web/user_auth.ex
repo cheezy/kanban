@@ -10,8 +10,10 @@ defmodule KanbanWeb.UserAuth do
   alias Kanban.Organizations
   alias Kanban.Plans
   alias Kanban.Workspaces.Current
+  alias KanbanWeb.UserAuth.LiveSessions
   alias KanbanWeb.UserAuth.OrgAdminGate
   alias KanbanWeb.UserAuth.SessionLocale
+  alias KanbanWeb.UserAuth.SessionReissue
 
   # Make the remember me cookie valid for 14 days. This should match
   # the session validity setting in UserToken.
@@ -22,15 +24,6 @@ defmodule KanbanWeb.UserAuth do
     max_age: @max_cookie_age_in_days * 24 * 60 * 60,
     same_site: "Lax"
   ]
-
-  # How old the session token should be before a new one is issued. When a request is made
-  # with a session token older than this value, then a new session token will be created
-  # and the session and remember-me cookies (if set) will be updated with the new token.
-  # Lowering this value will result in more tokens being created by active users. Increasing
-  # it will result in less time before a session token expires for a user to get issued a new
-  # token. This can be set to a value greater than `@max_cookie_age_in_days` to disable
-  # the reissuing of tokens completely.
-  @session_reissue_age_in_days 7
 
   @doc """
   Logs the user in.
@@ -84,8 +77,7 @@ defmodule KanbanWeb.UserAuth do
   when the conn has a current scope, and without one otherwise.
   """
   def log_out_user(conn) do
-    user_token = get_session(conn, :user_token)
-    user_token && Accounts.delete_user_session_token(user_token)
+    SessionReissue.revoke_on_log_out(conn)
 
     if live_socket_id = get_session(conn, :live_socket_id) do
       KanbanWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
@@ -107,7 +99,7 @@ defmodule KanbanWeb.UserAuth do
   def fetch_current_scope_for_user(conn, _opts) do
     with {token, conn} <- ensure_user_token(conn),
          {user, token_inserted_at} <- Accounts.get_user_by_session_token(token) do
-      put_current_user(conn, user, token_inserted_at)
+      put_current_user(conn, user, token, token_inserted_at)
     else
       nil -> assign(conn, :current_scope, Scope.for_user(nil))
     end
@@ -115,11 +107,12 @@ defmodule KanbanWeb.UserAuth do
 
   # A session restored from the remember-me cookie skips log_in_user/3, so the
   # account's saved language is loaded here when the session has none.
-  defp put_current_user(conn, user, token_inserted_at) do
+  defp put_current_user(conn, user, token, token_inserted_at) do
     conn
     |> assign(:current_scope, build_scope(user, get_session(conn, :current_workspace_id)))
     |> SessionLocale.load_saved(user)
-    |> maybe_reissue_user_session_token(user, token_inserted_at)
+    |> SessionReissue.confirm(token)
+    |> SessionReissue.maybe_reissue(user, token, token_inserted_at)
   end
 
   # The plug and every on_mount build the scope here, so both carry the user's
@@ -157,17 +150,13 @@ defmodule KanbanWeb.UserAuth do
     end
   end
 
-  # Reissue the session token if it is older than the configured reissue age.
-  defp maybe_reissue_user_session_token(conn, user, token_inserted_at) do
-    token_age =
-      DateTime.utc_now(:second)
-      |> DateTime.diff(token_inserted_at, :day)
-
-    if token_age >= @session_reissue_age_in_days do
-      create_or_extend_session(conn, user, %{})
-    else
-      conn
-    end
+  @doc false
+  # Puts a reissued session token in the session, and in the remember-me
+  # cookie when the session came from one (KanbanWeb.UserAuth.SessionReissue).
+  def put_reissued_token(conn, token) do
+    conn
+    |> put_token_in_session(token)
+    |> maybe_write_remember_me_cookie(token, %{}, get_session(conn, :user_remember_me))
   end
 
   # This function is the one responsible for creating session tokens
@@ -246,31 +235,14 @@ defmodule KanbanWeb.UserAuth do
   defp put_token_in_session(conn, token) do
     conn
     |> put_session(:user_token, token)
-    |> put_session(:live_socket_id, user_session_topic(token))
+    |> put_session(:live_socket_id, LiveSessions.topic(token))
   end
 
-  @doc """
-  Disconnects existing sockets for the given tokens.
+  @doc "See `KanbanWeb.UserAuth.LiveSessions.disconnect_sessions/1`."
+  defdelegate disconnect_sessions(tokens), to: LiveSessions
 
-  Emits `[:kanban, :user, :sessions_revoked]` with `count` set to the number of
-  tokens, which may be 0, and the `user_id` of the first token that has one.
-  """
-  def disconnect_sessions(tokens) do
-    disconnect_live_sessions(tokens)
-    emit_sessions_revoked(length(tokens), Enum.find_value(tokens, &Map.get(&1, :user_id)))
-  end
-
-  @doc """
-  Disconnects the open LiveView sockets of the given session tokens without
-  revoking them and without telemetry. Each reconnect re-checks its session, so
-  a user disabled in the meantime is signed out and a still-valid session
-  reconnects as before.
-  """
-  def disconnect_live_sessions(tokens) do
-    Enum.each(tokens, fn %{token: token} ->
-      KanbanWeb.Endpoint.broadcast(user_session_topic(token), "disconnect", %{})
-    end)
-  end
+  @doc "See `KanbanWeb.UserAuth.LiveSessions.disconnect_live_sessions/1`."
+  defdelegate disconnect_live_sessions(tokens), to: LiveSessions
 
   defp emit_logged_out(%Scope{user: %{id: user_id}}) do
     Kanban.Telemetry.emit([:kanban, :user, :logged_out], %{count: 1}, %{user_id: user_id})
@@ -279,18 +251,6 @@ defmodule KanbanWeb.UserAuth do
   defp emit_logged_out(_scope) do
     Kanban.Telemetry.emit([:kanban, :user, :logged_out], %{count: 1}, %{})
   end
-
-  defp emit_sessions_revoked(count, nil) do
-    Kanban.Telemetry.emit([:kanban, :user, :sessions_revoked], %{count: count}, %{})
-  end
-
-  defp emit_sessions_revoked(count, user_id) do
-    Kanban.Telemetry.emit([:kanban, :user, :sessions_revoked], %{count: count}, %{
-      user_id: user_id
-    })
-  end
-
-  defp user_session_topic(token), do: "users_sessions:#{Base.url_encode64(token)}"
 
   @doc """
   Handles mounting and authenticating the current_scope in LiveViews.

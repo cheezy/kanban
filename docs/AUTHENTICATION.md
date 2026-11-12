@@ -82,6 +82,39 @@ without a password and makes them a member of the Organization. Like
 two-factor, it covers the browser only: API tokens, and so agents, are not
 affected. See [Single Sign-On](single-sign-on.md).
 
+## User Accounts: Browser Sessions and Sign-Out
+
+A browser session lasts 14 days. **Keep me signed in on this device** also sets a
+remember-me cookie for the same 14 days. Once a session is 7 days old, the
+next request reissues it: the browser gets a new session token and cookie,
+and the user stays signed in.
+
+The token being replaced is not deleted on the spot. The reissuing response
+might never reach the browser, and a request sent at the same moment might
+still carry the old token. Instead, the old token is valid for at most one
+more hour, and it is linked to the new one. A request that presents the old
+token in that hour is handed the same new token, never another one, so a
+retried or parallel request cannot leave a second session behind.
+
+The old token is revoked as soon as one of these happens:
+
+- the browser makes a request with the new token, which shows the new cookie
+  arrived;
+- the user signs out;
+- the hour is nearly over (five minutes before the end).
+
+Each time, pages still open under the old token are disconnected. If the user
+is still signed in, they reconnect with the browser's new cookie and carry on.
+After sign-out, they go to the log-in page.
+
+Signing out ends the current session together with every token linked to it:
+the ones it replaced and any that replaced it, including one handed to a copy
+of the old cookie during the hour.
+A copy of an older cookie, whether left behind or stolen, cannot sign the
+account back in afterwards. Like two-factor, this covers the browser only. API
+tokens are revoked on the board's **Tokens** tab, or under **Workspace settings
+→ Tokens** for a workspace token; see [Token Revocation](#token-revocation).
+
 ## Authentication Method: Bearer Token
 
 All API requests require authentication using a Bearer token in the Authorization header:

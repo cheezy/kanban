@@ -511,6 +511,282 @@ defmodule KanbanWeb.UserAuthTest do
       assert get_session(conn, :user_token) != token
       refute_received {:telemetry_event, [:kanban, :user, :login], _measurements, _metadata}
     end
+
+    test "a reissue keeps the user signed in and gives the replaced token at most an hour", %{
+      conn: conn,
+      user: user
+    } do
+      logged_in_conn =
+        conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+
+      token = logged_in_conn.cookies[@remember_me_cookie]
+      %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
+      offset_user_token(token, -10, :day)
+
+      conn =
+        conn
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      refute conn.halted
+      assert conn.assigns.current_scope.user.id == user.id
+      new_token = get_session(conn, :user_token)
+      assert {%{id: user_id}, _inserted_at} = Accounts.get_user_by_session_token(new_token)
+      assert user_id == user.id
+      assert get_session(conn, :replaced_user_token) == token
+
+      assert {_user, replaced_inserted_at} = Accounts.get_user_by_session_token(token)
+      replaced_expires_at = DateTime.add(replaced_inserted_at, 14, :day)
+      assert DateTime.diff(replaced_expires_at, DateTime.utc_now(:second), :second) <= 3600
+    end
+
+    test "the first request presenting the reissued token revokes the replaced one", %{
+      conn: conn,
+      user: user
+    } do
+      token = Accounts.generate_user_session_token(user)
+      offset_user_token(token, -10, :day)
+
+      reissued_conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      new_token = get_session(reissued_conn, :user_token)
+      KanbanWeb.Endpoint.subscribe("users_sessions:#{Base.url_encode64(token)}")
+
+      next_conn =
+        conn
+        |> put_session(:user_token, new_token)
+        |> put_session(:replaced_user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert next_conn.assigns.current_scope.user.id == user.id
+      assert get_session(next_conn, :user_token) == new_token
+      refute get_session(next_conn, :replaced_user_token)
+      refute Accounts.get_user_by_session_token(token)
+      assert Accounts.get_user_by_session_token(new_token)
+      assert_received %Phoenix.Socket.Broadcast{event: "disconnect"}
+    end
+
+    test "a request still carrying the replaced token stays signed in on the same successor", %{
+      conn: conn,
+      user: user
+    } do
+      token = Accounts.generate_user_session_token(user)
+      offset_user_token(token, -10, :day)
+
+      first_conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      first_new_token = get_session(first_conn, :user_token)
+
+      # The reissuing response never reached the browser, or a parallel request
+      # was sent before it did: the next request still presents the old token.
+      {_user, inserted_at_after_first} = Accounts.get_user_by_session_token(token)
+
+      second_conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert second_conn.assigns.current_scope.user.id == user.id
+      # The replay is handed the successor already minted, never a new token.
+      assert get_session(second_conn, :user_token) == first_new_token
+      assert get_session(second_conn, :replaced_user_token) == token
+      assert Accounts.get_user_by_session_token(first_new_token)
+
+      # Presenting the replaced token again never extends its grace.
+      assert {_user, ^inserted_at_after_first} = Accounts.get_user_by_session_token(token)
+    end
+
+    test "signing out after a reissue revokes the replaced token too", %{conn: conn, user: user} do
+      logged_in_conn =
+        conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+
+      token = logged_in_conn.cookies[@remember_me_cookie]
+      %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
+      offset_user_token(token, -10, :day)
+
+      conn =
+        conn
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      new_token = get_session(conn, :user_token)
+      KanbanWeb.Endpoint.subscribe("users_sessions:#{Base.url_encode64(token)}")
+
+      conn |> fetch_cookies() |> UserAuth.log_out_user()
+
+      refute Accounts.get_user_by_session_token(token)
+      refute Accounts.get_user_by_session_token(new_token)
+      assert_received %Phoenix.Socket.Broadcast{event: "disconnect"}
+
+      replayed_conn =
+        build_conn()
+        |> Map.replace!(:secret_key_base, KanbanWeb.Endpoint.config(:secret_key_base))
+        |> init_test_session(%{})
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      refute replayed_conn.assigns.current_scope
+    end
+
+    test "a session-only reissue revokes the replaced token once its successor is presented", %{
+      conn: conn,
+      user: user
+    } do
+      token = Accounts.generate_user_session_token(user)
+      offset_user_token(token, -10, :day)
+
+      reissued_conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert reissued_conn.assigns.current_scope.user.id == user.id
+      assert new_token = get_session(reissued_conn, :user_token)
+      assert new_token != token
+      refute reissued_conn.resp_cookies[@remember_me_cookie]
+
+      reissued_conn
+      |> recycle()
+      |> Map.replace!(:secret_key_base, KanbanWeb.Endpoint.config(:secret_key_base))
+      |> init_test_session(%{user_token: new_token, replaced_user_token: token})
+      |> UserAuth.fetch_current_scope_for_user([])
+
+      refute Accounts.get_user_by_session_token(token)
+      assert Accounts.get_user_by_session_token(new_token)
+    end
+
+    test "two reissues in a row each revoke the token they replace", %{conn: conn, user: user} do
+      first_token = Accounts.generate_user_session_token(user)
+      offset_user_token(first_token, -10, :day)
+
+      first_conn =
+        conn
+        |> put_session(:user_token, first_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      second_token = get_session(first_conn, :user_token)
+      offset_user_token(second_token, -10, :day)
+
+      second_conn =
+        first_conn
+        |> recycle()
+        |> Map.replace!(:secret_key_base, KanbanWeb.Endpoint.config(:secret_key_base))
+        |> init_test_session(%{user_token: second_token, replaced_user_token: first_token})
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert second_conn.assigns.current_scope.user.id == user.id
+      third_token = get_session(second_conn, :user_token)
+      refute third_token in [first_token, second_token]
+      refute Accounts.get_user_by_session_token(first_token)
+      assert get_session(second_conn, :replaced_user_token) == second_token
+
+      second_conn
+      |> recycle()
+      |> Map.replace!(:secret_key_base, KanbanWeb.Endpoint.config(:secret_key_base))
+      |> init_test_session(%{user_token: third_token, replaced_user_token: second_token})
+      |> UserAuth.fetch_current_scope_for_user([])
+
+      refute Accounts.get_user_by_session_token(second_token)
+      assert Accounts.get_user_by_session_token(third_token)
+    end
+
+    test "after a reissue and sign-out, replaying the pre-reissue remember-me cookie redirects to sign-in",
+         %{conn: conn, user: user} do
+      logged_in_conn =
+        conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+
+      token = logged_in_conn.cookies[@remember_me_cookie]
+      %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
+      offset_user_token(token, -10, :day)
+
+      restored_conn =
+        build_conn() |> put_req_cookie(@remember_me_cookie, signed_token) |> get(~p"/boards")
+
+      assert html_response(restored_conn, 200)
+
+      next_conn = restored_conn |> recycle() |> get(~p"/boards")
+      assert html_response(next_conn, 200)
+      refute Accounts.get_user_by_session_token(token)
+
+      signed_out_conn = next_conn |> recycle() |> delete(~p"/users/log-out")
+      assert redirected_to(signed_out_conn) == ~p"/"
+
+      replayed_conn =
+        build_conn() |> put_req_cookie(@remember_me_cookie, signed_token) |> get(~p"/boards")
+
+      assert redirected_to(replayed_conn) == ~p"/users/log-in"
+    end
+
+    test "signing out straight after a reissue still stops the pre-reissue cookie", %{
+      conn: conn,
+      user: user
+    } do
+      logged_in_conn =
+        conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+
+      token = logged_in_conn.cookies[@remember_me_cookie]
+      %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
+      offset_user_token(token, -10, :day)
+
+      restored_conn =
+        build_conn() |> put_req_cookie(@remember_me_cookie, signed_token) |> get(~p"/boards")
+
+      signed_out_conn = restored_conn |> recycle() |> delete(~p"/users/log-out")
+      assert redirected_to(signed_out_conn) == ~p"/"
+
+      replayed_conn =
+        build_conn() |> put_req_cookie(@remember_me_cookie, signed_token) |> get(~p"/boards")
+
+      assert redirected_to(replayed_conn) == ~p"/users/log-in"
+    end
+
+    test "a grace-hour replay of the pre-reissue cookie does not outlive sign-out", %{
+      conn: conn,
+      user: user
+    } do
+      logged_in_conn =
+        conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+
+      token = logged_in_conn.cookies[@remember_me_cookie]
+      %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
+      offset_user_token(token, -10, :day)
+
+      browser_conn =
+        build_conn() |> put_req_cookie(@remember_me_cookie, signed_token) |> get(~p"/boards")
+
+      # A second cookie jar replays the same pre-reissue cookie within the hour.
+      copy_conn =
+        build_conn() |> put_req_cookie(@remember_me_cookie, signed_token) |> get(~p"/boards")
+
+      assert html_response(copy_conn, 200)
+      assert get_session(copy_conn, :user_token) == get_session(browser_conn, :user_token)
+      assert length(Accounts.list_session_tokens(user)) == 2
+
+      browser_conn |> recycle() |> delete(~p"/users/log-out")
+
+      assert Accounts.list_session_tokens(user) == []
+      assert redirected_to(copy_conn |> recycle() |> get(~p"/boards")) == ~p"/users/log-in"
+    end
+
+    test "a token younger than the reissue age is kept", %{conn: conn, user: user} do
+      token = Accounts.generate_user_session_token(user)
+      offset_user_token(token, -6, :day)
+
+      conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert get_session(conn, :user_token) == token
+      refute get_session(conn, :replaced_user_token)
+      assert Accounts.get_user_by_session_token(token)
+    end
   end
 
   describe "on_mount :mount_current_scope" do

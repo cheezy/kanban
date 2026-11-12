@@ -556,6 +556,42 @@ defmodule Kanban.AccountsTest do
     end
   end
 
+  describe "expire_user_session_token_within/2" do
+    test "leaves the token valid for at most the given time" do
+      user = user_fixture()
+      token = Accounts.generate_user_session_token(user)
+
+      assert Accounts.expire_user_session_token_within(token, 60 * 60) == :ok
+      assert {_user, inserted_at} = Accounts.get_user_by_session_token(token)
+
+      expires_at = DateTime.add(inserted_at, 14, :day)
+      assert DateTime.diff(expires_at, DateTime.utc_now(:second), :second) in 3590..3600
+    end
+
+    test "never extends a token due to expire sooner" do
+      user = user_fixture()
+      token = Accounts.generate_user_session_token(user)
+      Accounts.expire_user_session_token_within(token, 60)
+      {_user, inserted_at} = Accounts.get_user_by_session_token(token)
+
+      assert Accounts.expire_user_session_token_within(token, 60 * 60) == :ok
+      assert {_user, ^inserted_at} = Accounts.get_user_by_session_token(token)
+    end
+
+    test "a token shortened to zero no longer authenticates" do
+      user = user_fixture()
+      token = Accounts.generate_user_session_token(user)
+
+      assert Accounts.expire_user_session_token_within(token, 0) == :ok
+      refute Accounts.get_user_by_session_token(token)
+    end
+
+    test "returns :ok for an unknown token" do
+      unknown = :crypto.strong_rand_bytes(32)
+      assert Accounts.expire_user_session_token_within(unknown, 60) == :ok
+    end
+  end
+
   describe "inspect/2 for the User module" do
     test "does not include password" do
       refute inspect(%User{password: "123456"}) =~ "password: \"123456\""

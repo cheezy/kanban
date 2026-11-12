@@ -431,6 +431,18 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
+  Leaves the session token valid for at most `seconds` more, never longer than
+  it already had. Returns `:ok`, also when no such token exists.
+  """
+  def expire_user_session_token_within(token, seconds) do
+    token
+    |> UserToken.shorten_session_token_query(seconds)
+    |> Repo.update_all([])
+
+    :ok
+  end
+
+  @doc """
   Deletes the signed token with the given context.
   """
   def delete_user_session_token(token) do

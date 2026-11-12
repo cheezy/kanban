@@ -20,6 +20,8 @@ defmodule Kanban.Accounts.UserToken do
     field :sent_to, :string
     field :authenticated_at, :utc_datetime
     belongs_to :user, Kanban.Accounts.User
+    # D425: the session token that replaced this one at a reissue.
+    belongs_to :replaced_by, UserToken
 
     timestamps(type: :utc_datetime, updated_at: false)
   end
@@ -190,6 +192,21 @@ defmodule Kanban.Accounts.UserToken do
   single enforced value instead of hardcoding a copy of it (D136).
   """
   def reset_password_validity_in_minutes, do: @reset_password_validity_in_minutes
+
+  @doc """
+  Returns the query that shortens a session token's remaining life to at most
+  `seconds` from now, by moving its `inserted_at` back. A token already due to
+  expire sooner is left alone, so the query never extends a session.
+  """
+  def shorten_session_token_query(token, seconds) when is_integer(seconds) and seconds >= 0 do
+    cutoff =
+      DateTime.utc_now(:second)
+      |> DateTime.add(seconds - @session_validity_in_days * 24 * 60 * 60, :second)
+
+    from t in by_token_and_context_query(token, "session"),
+      where: t.inserted_at > ^cutoff,
+      update: [set: [inserted_at: ^cutoff]]
+  end
 
   defp by_token_and_context_query(token, context) do
     from UserToken, where: [token: ^token, context: ^context]
