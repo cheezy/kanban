@@ -31,6 +31,19 @@ defmodule Kanban.AuditLog.AuditEvent do
   Organization when the event was written. It is set only on events with both
   an actor and an Organization, and `nil` on rows recorded before the column
   existed. `Kanban.AuditLog.OrganizationScope` redacts from it.
+
+  `txid` is the id of the transaction that inserted the row, set by the
+  column's default (`pg_current_xact_id()`), so audit streaming can read rows
+  in (`txid`, `id`) order below its snapshot horizon without skipping a row
+  that commits late. That order is not commit order: a transaction that takes
+  its id early and commits last sorts first. Rows recorded before the column existed
+  read `0`. The field is `writable: :never` and `insert_changeset/1` never
+  casts it, so application code never writes it and an insert never names the
+  column; a struct returned by an insert therefore carries `txid: nil`, and
+  the stored value is read back from the database. The database itself does
+  not refuse a `txid` from the application role, whose `INSERT` right covers
+  every column — an accepted risk (D10 in
+  `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md`).
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -42,6 +55,9 @@ defmodule Kanban.AuditLog.AuditEvent do
     field :ip, :string
     field :metadata, :map, default: %{}
     field :actor_in_organization, :boolean
+
+    # Commit order, set only by the column's default (see the moduledoc).
+    field :txid, :integer, writable: :never
 
     # Set only on events read for an Organization's audit log whose actor is
     # not a member of that Organization (see Kanban.AuditLog.OrganizationScope).

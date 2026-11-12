@@ -168,6 +168,88 @@ the nullable boolean column `actor_in_organization` and updates no row. On a
 hardened database apply it through the admin path. A plain boolean column with
 no default calls no function, so `status/2` reports the same state afterwards.
 
+`20261112124501_add_txid_to_audit_events` and
+`20261112124502_add_audit_events_org_txid_id_index` are another pair, and the
+worked example of the procedure in both modes. The first adds the bigint
+`txid` column, NOT NULL with a constant default of `0`, which does not rewrite
+the table, so every older row reads `0`. It then sets the default to the
+inserting transaction's id, `pg_current_xact_id()::text::bigint`, so audit
+streaming can read rows in (`txid`, `id`) order below its snapshot horizon
+without skipping one that commits late. That order is not commit order: a
+transaction that takes its id early and commits last sorts first, which the
+horizon accounts for. It updates no row, because the
+append-only trigger rejects every update. Both statements run under a
+transaction-local `lock_timeout` of 10 seconds. The second builds
+`audit_events_org_txid_id_index` on `organization_id`, `txid` and `id` with
+`CREATE INDEX CONCURRENTLY`, outside a transaction. The new default calls only
+`pg_catalog` functions and the index calls none, so `status/2` reports the same
+state afterwards. Dev, test and CI migrate as a superuser.
+
+- **Degraded (Fly Managed Postgres, which is production today).** The app role
+  owns `audit_events`, so both migrations run through `release_command` as
+  usual. `harden_audit_log` still returns `{:error, :admin_not_superuser}`
+  there, as before.
+- **Hardened.** `release_command` fails on the first migration with
+  `insufficient_privilege`, and the deploy stops with nothing changed. Then:
+  1. From a one-off machine started from the new release image, run the
+     migrations with the admin URL as `DATABASE_URL` for that one command
+     only. Type it so it never lands in shell history or a file, never store
+     it with `fly secrets set`, and never log it:
+
+     ```bash
+     read -rs ADMIN_URL
+     DATABASE_URL="$ADMIN_URL" /app/bin/migrate
+     unset ADMIN_URL
+     ```
+
+     `HOST` and `DATABASE` must be the ones in the app's usual `DATABASE_URL`.
+     Do not connect as the app role and switch to the owner role with
+     `SET ROLE` instead: Ecto records each migration in `schema_migrations` on
+     the same connection, and the owner role has no rights there.
+  2. Redeploy, so `release_command` finds both migrations applied.
+  3. Run `Kanban.Release.harden_audit_log()` exactly as in
+     [One-time production provisioning](#one-time-production-provisioning),
+     with the admin URL supplied again as `AUDIT_LOG_ADMIN_DATABASE_URL` for
+     that one command only (without it the call returns
+     `{:error, :admin_url_missing}`), expecting `{:ok, :hardened}`:
+
+     ```bash
+     read -rs ADMIN_URL
+     AUDIT_LOG_ADMIN_DATABASE_URL="$ADMIN_URL" /app/bin/kanban eval 'Kanban.Release.harden_audit_log() |> IO.inspect()'
+     unset ADMIN_URL
+     ```
+
+     Then run `Kanban.Release.audit_log_status()`, which needs no admin URL,
+     expecting `:hardened` ([Checking the status](#checking-the-status)).
+- **`lock_not_available`.** Another transaction held a lock on `audit_events`
+  for more than 10 seconds, and the migration changed nothing. Run it again
+  when that transaction has ended. The timeout is there so the `ALTER`, which
+  needs an `ACCESS EXCLUSIVE` lock, never waits indefinitely behind a long
+  transaction with every audit insert queued behind it. It bounds that wait
+  rather than removing it: for up to 10 seconds, audit inserts queue behind
+  the waiting `ALTER` and hold their pool connections, so under heavy traffic
+  some can time out and be logged as `security_audit_persist_failed` instead
+  of stored. Apply these migrations when traffic is low.
+- **An `INVALID` index.** `CREATE INDEX CONCURRENTLY` also waits for every
+  transaction open when it starts. A failed or cancelled build leaves an
+  `INVALID` index and the migration unrecorded. If only the migrate command
+  was interrupted, the build can keep running on the server
+  (`pg_stat_activity` shows its `CREATE INDEX CONCURRENTLY`) and end with a
+  valid index that is still unrecorded. Either way a rerun fails with
+  `duplicate_table`. Once no build for it is running, drop that index with
+  `DROP INDEX CONCURRENTLY IF EXISTS audit_events_org_txid_id_index`, as the
+  role that ran the migration (the admin URL on a hardened database), then run
+  the migration again.
+- **Rehearsal.** Rehearse the hardened procedure on a local database hardened
+  with `harden_audit_log`, not on a review app: review apps run on Managed
+  Postgres, which cannot be hardened.
+- **What the database does not enforce.** Application code never sets
+  `txid`, but the database does not refuse one: the app role's `INSERT` right
+  covers every column, so a compromised app role could set a `txid` that hides
+  a row from streaming, just as it could leave the row out altogether.
+  Enforcing it would mean changing the append-only trigger and re-hardening,
+  and that risk is accepted ([D10](plans/AUDIT-LOG-STREAMING-DESIGN.md#15-decisions-needed)).
+
 ## Rollback
 
 There is no release command that undoes hardening. Three migrations take
