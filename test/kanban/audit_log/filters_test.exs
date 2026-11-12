@@ -152,6 +152,66 @@ defmodule Kanban.AuditLog.FiltersTest do
     end
   end
 
+  describe "parse_for_organization/2" do
+    test "the shared function drops an action not in the given list and keeps from/to" do
+      parsed =
+        Filters.parse_for_organization(
+          %{"action" => "bogus_action", "from" => "2026-10-01", "to" => "2026-10-02"},
+          ["organization_updated"]
+        )
+
+      assert parsed.filters[:action] == nil
+      assert parsed.filters[:since] == ~U[2026-10-01 00:00:00.000000Z]
+      assert parsed.filters[:until] == ~U[2026-10-03 00:00:00.000000Z]
+      assert parsed.params == %{"from" => "2026-10-01", "to" => "2026-10-02"}
+    end
+
+    test "the shared function keeps an action that is in the list" do
+      parsed =
+        Filters.parse_for_organization(%{"action" => "organization_updated"}, [
+          "org_admin_appointed",
+          "organization_updated"
+        ])
+
+      assert parsed.filters[:action] == "organization_updated"
+      assert parsed.params == %{"action" => "organization_updated"}
+    end
+
+    test "the shared function drops actor_email from filters and params" do
+      params = %{"actor_email" => "admin@example.com", "to" => "2026-10-02"}
+      parsed = Filters.parse_for_organization(params, [])
+
+      refute Keyword.has_key?(parsed.filters, :actor_email)
+      assert parsed.params == %{"to" => "2026-10-02"}
+      assert Filters.summary(parsed) == %{"to" => "2026-10-02"}
+
+      # No action param: the parse is otherwise exactly parse/1's.
+      plain = Filters.parse(params)
+      assert parsed.filters == Keyword.delete(plain.filters, :actor_email)
+      assert parsed.cursor == plain.cursor
+    end
+
+    test "the shared function keeps the cursor out of the summary but in the parse" do
+      cursor = Query.encode_cursor(%AuditEvent{id: 3, inserted_at: ~U[2026-10-01 00:00:00Z]})
+      parsed = Filters.parse_for_organization(%{"cursor" => cursor}, [])
+
+      assert {at, 3} = parsed.cursor
+      assert DateTime.compare(at, ~U[2026-10-01 00:00:00Z]) == :eq
+      assert Filters.summary(parsed) == %{}
+    end
+
+    test "the shared function treats non-map params as empty" do
+      for params <- [nil, "action=login_failed", [action: "login_failed"]] do
+        parsed = Filters.parse_for_organization(params, ["login_failed"])
+
+        assert parsed.params == %{}
+        assert parsed.cursor == nil
+        refute Keyword.has_key?(parsed.filters, :actor_email)
+        assert parsed.filters[:action] == nil
+      end
+    end
+  end
+
   describe "summary/1" do
     test "returns the applied filters without the cursor" do
       cursor = Query.encode_cursor(%AuditEvent{id: 1, inserted_at: ~U[2026-10-01 00:00:00Z]})

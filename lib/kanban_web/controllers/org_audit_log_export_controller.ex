@@ -12,12 +12,20 @@ defmodule KanbanWeb.OrgAuditLogExportController do
   member of the Organization, such as a site admin, is exported without that
   actor's id, email or IP address (`Kanban.AuditLog.OrganizationScope`).
 
-  Filter params are parsed strictly by `Kanban.AuditLog.Filters`; all querying
-  and encoding live in the `Kanban.AuditLog` context. The body is sent chunked
-  from `Kanban.AuditLog.export_stream/3`, which reads the table in keyset
-  batches. Every export is itself audited (`:org_audit_log_exported`, linked to
-  the Organization) before the first byte is sent, so even an aborted download
-  leaves a record.
+  Filter params are parsed by `Kanban.AuditLog.Filters.parse_for_organization/2`,
+  the same function the viewer uses, so the same URL params give the same rows
+  on the page and in the file. An action that no event of this Organization
+  holds is dropped, as on the page: the filter is not applied, the file holds
+  every event of the Organization up to the row cap, and neither the audit
+  row's filters nor a signed manifest records that action. The known actions
+  are read from the signed-in org-admin's own Organization, never a param, so
+  the drop reveals nothing about another Organization. The actor-email filter
+  is never applied (it would confirm a guessed email of a redacted outside
+  actor). All querying and encoding live in the `Kanban.AuditLog` context. The
+  body is sent chunked from `Kanban.AuditLog.export_stream/3`, which reads the
+  table in keyset batches. Every export is itself audited
+  (`:org_audit_log_exported`, linked to the Organization) before the first
+  byte is sent, so even an aborted download leaves a record.
 
   ## Signed exports
 
@@ -100,8 +108,12 @@ defmodule KanbanWeb.OrgAuditLogExportController do
     |> answer_export(conn, params)
   end
 
+  # The known actions come from the signed-in org-admin's own Organization,
+  # never from a param, read per request exactly as the page's handle_params/3
+  # reads them.
   defp answer_export({:ok, kind, format}, conn, params) do
-    parsed = params |> Filters.parse() |> without_actor_email()
+    known_actions = AuditLog.list_actions(organization_id: conn.assigns.current_organization.id)
+    parsed = Filters.parse_for_organization(params, known_actions)
     send_export(conn, kind, format, parsed)
   end
 
@@ -168,14 +180,6 @@ defmodule KanbanWeb.OrgAuditLogExportController do
 
   defp export_kind(_absent_or_other), do: {:ok, :plain}
 
-  # No actor-email filter: it matches before outside actors are redacted, so
-  # it would confirm a guessed email of a site admin.
-  defp without_actor_email(parsed) do
-    %{parsed | filters: Keyword.delete(parsed.filters, :actor_email)}
-  end
-
-  defp filter_summary(parsed), do: parsed |> Filters.summary() |> Map.delete("actor_email")
-
   defp send_head(conn, kind, format) do
     conn
     |> put_head_content_type(kind, format)
@@ -209,7 +213,7 @@ defmodule KanbanWeb.OrgAuditLogExportController do
       format: Atom.to_string(format),
       truncated: truncated,
       signed: false,
-      filters: filter_summary(parsed)
+      filters: Filters.summary(parsed)
     )
 
     # Timed as the [:kanban, :export] span. The telemetry copy carries only the
@@ -282,7 +286,7 @@ defmodule KanbanWeb.OrgAuditLogExportController do
       signed: true,
       key_id: archive.key_id,
       sha256: archive.sha256,
-      filters: filter_summary(parsed)
+      filters: Filters.summary(parsed)
     )
 
     send_zip(conn, archive.zip_path)

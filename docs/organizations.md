@@ -371,7 +371,10 @@ id.
 
 **Export CSV** and **Export JSON** download the events that match the current
 filters, newest first, up to 50,000 events per download by default. Each
-org-admin can export 10 times an hour.
+org-admin can export 10 times an hour. An export applies the URL's filters
+exactly as the page does: an `action` that no event of your Organization
+holds is ignored on both, so the file then holds every event rather than
+none.
 
 **Export signed (.zip)** downloads the same events as a signed zip, from
 `/org/audit/export?signed=true` (add `&format=json` for JSON, and the same

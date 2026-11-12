@@ -44,7 +44,7 @@ the export, or from a copy you recorded earlier, as
 | `organization` | The Organization's `id` and `name` |
 | `generated_at` | When the export was made, in UTC to the second, such as `2026-11-09T15:20:04Z` |
 | `generated_by` | The `user_id` and `email` of the org-admin who made it |
-| `filters` | The filters the export used: always the three keys `action`, `from` and `to`, each `null` when it was not set. `from` and `to` are dates, `YYYY-MM-DD` |
+| `filters` | The filters the export used: always the three keys `action`, `from` and `to`, each `null` when it was not set. `from` and `to` are dates, `YYYY-MM-DD`. An `action` that no event of the Organization holds is not applied, as on `/org/audit`, so it is recorded as `null` |
 | `file` | The events file: its `name` (`audit_log.csv` or `audit_log.json`), its `format` (`csv` or `json`), its size in `bytes`, and its `sha256` as 64 lowercase hex characters |
 | `rows` | The number of events in the file |
 | `oldest_event` | The `id` and `inserted_at` of the oldest event in the file, which is its last row. `null` when the file has no events |

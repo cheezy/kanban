@@ -101,6 +101,61 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       assert exported_actions(conn) == ["org_admin_appointed"]
     end
 
+    # /org/audit drops an action filter its Action select does not offer, so
+    # the same URL params must give the same rows in the export.
+    test "an unknown action is dropped from the unsigned CSV and JSON exports and from the recorded filters",
+         %{conn: conn} do
+      json = get(conn, ~p"/org/audit/export?format=json&action=bogus_action")
+
+      assert exported_actions(json) ==
+               ["org_audit_log_exported", "org_admin_appointed", "organization_updated"]
+
+      csv = conn |> get(~p"/org/audit/export?format=csv&action=bogus_action") |> response(200)
+      assert csv =~ ",org_audit_log_exported,"
+      assert csv =~ ",org_admin_appointed,"
+      assert csv =~ ",organization_updated,"
+
+      events = export_events()
+      assert length(events) == 2
+      assert Enum.all?(events, &(&1.metadata["filters"] == %{}))
+    end
+
+    test "an unknown action is dropped but the date filters still apply", %{conn: conn} do
+      conn =
+        get(conn, ~p"/org/audit/export?format=json&action=bogus_action&to=2026-10-01")
+
+      assert exported_actions(conn) == ["organization_updated"]
+      assert [event] = export_events()
+      assert event.metadata["filters"] == %{"to" => "2026-10-01"}
+    end
+
+    test "an action only another Organization holds is dropped from the export", %{conn: conn} do
+      # organization_created is an event of org_b only.
+      conn = get(conn, ~p"/org/audit/export?format=json&action=organization_created")
+
+      assert exported_actions(conn) ==
+               ["org_audit_log_exported", "org_admin_appointed", "organization_updated"]
+
+      assert [event] = export_events()
+      assert event.metadata["filters"] == %{}
+    end
+
+    test "org_audit_log_exported is dropped until the Organization has recorded one, as on the page",
+         %{conn: conn} do
+      first = get(conn, ~p"/org/audit/export?format=json&action=org_audit_log_exported")
+
+      assert exported_actions(first) ==
+               ["org_audit_log_exported", "org_admin_appointed", "organization_updated"]
+
+      # Now this Organization holds the action, so the filter is applied.
+      second = get(conn, ~p"/org/audit/export?format=json&action=org_audit_log_exported")
+
+      assert exported_actions(second) == ["org_audit_log_exported", "org_audit_log_exported"]
+
+      assert export_events() |> Enum.map(& &1.metadata["filters"]) |> Enum.sort() ==
+               [%{}, %{"action" => "org_audit_log_exported"}]
+    end
+
     test "records :org_audit_log_exported with organization_id before streaming",
          %{conn: conn, org_a: org_a, org_admin: org_admin} do
       get(conn, ~p"/org/audit/export?format=json&action=org_admin_appointed")
@@ -725,6 +780,31 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
                %{"action" => "org_admin_appointed", "from" => nil, "to" => nil}
     end
 
+    test "a signed export with an unknown action holds every event and its manifest records action null",
+         %{conn: conn, org_a: org_a} do
+      for {action, format, file_name} <- [
+            {"bogus_action", :csv, "audit_log.csv"},
+            {"organization_created", :json, "audit_log.json"}
+          ] do
+        expected_file = unsigned_file(org_a, format, 50_000)
+
+        entries =
+          conn
+          |> get(
+            ~p"/org/audit/export?#{%{"signed" => "true", "format" => Atom.to_string(format), "action" => action}}"
+          )
+          |> unzip()
+
+        manifest = assert_verifies(entries, file_name)
+
+        # The same file as no action param: every event of this Organization.
+        assert entries[file_name] == expected_file
+        assert manifest["filters"] == %{"action" => nil, "from" => nil, "to" => nil}
+      end
+
+      assert export_events() |> Enum.map(& &1.metadata["filters"]) == [%{}, %{}]
+    end
+
     test "the event is emitted while the zip is still on disk, before anything is sent",
          %{conn: conn, root: root} do
       test_pid = self()
@@ -1228,6 +1308,19 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       for _ <- 1..@rate_limit do
         assert conn |> get(~p"/org/audit/export") |> response(200)
       end
+    end
+
+    test "a HEAD with an unknown action still records nothing", %{conn: conn, root: root} do
+      for path <- [
+            ~p"/org/audit/export?action=bogus_action",
+            ~p"/org/audit/export?format=json&action=bogus_action",
+            ~p"/org/audit/export?signed=true&action=bogus_action"
+          ] do
+        assert conn |> head(path) |> response(200) == ""
+      end
+
+      assert export_events() == []
+      assert File.ls!(root) == []
     end
 
     test "a HEAD is refused as a GET is for an unsupported format and for signing off",

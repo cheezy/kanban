@@ -3,7 +3,8 @@ defmodule Kanban.AuditLog.Filters do
   Strict parsing of the untrusted query/form params the audit-log viewers and
   their exports accept, shared by `KanbanWeb.Admin.AuditLogLive.Index`,
   `KanbanWeb.AuditLogExportController`, `KanbanWeb.OrgLive.AuditLog` and
-  `KanbanWeb.OrgAuditLogExportController` so all apply identical filters.
+  `KanbanWeb.OrgAuditLogExportController` so all apply identical filters. The
+  two Organization callers share one step further, `parse_for_organization/2`.
 
   `organization_id` is deliberately never parsed: the org-admin viewer and
   export force it from the signed-in org-admin's membership, so no request
@@ -87,12 +88,48 @@ defmodule Kanban.AuditLog.Filters do
   def keep_known_action(parsed, _known_actions), do: parsed
 
   @doc """
+  Parses params for the Organization audit log, the one normalisation shared by
+  the viewer (`KanbanWeb.OrgLive.AuditLog`) and its export
+  (`KanbanWeb.OrgAuditLogExportController`), so the same URL params give the
+  same filters on the page and in every file it links to.
+
+  It runs `parse/1`, then `keep_known_action/2` against `known_actions`, then
+  drops the actor-email filter from both `filters` and `params`:
+
+    * `known_actions` must be the actions of the signed-in org-admin's own
+      Organization (`Kanban.AuditLog.list_actions(organization_id: id)`), never
+      a request param or the unscoped list. An action only another
+      Organization's events hold is then dropped, and whether a file comes back
+      empty reveals nothing about another Organization.
+    * The actor-email filter matches in SQL before outside actors are redacted,
+      so it would confirm a guessed email of a site admin. It is never applied
+      and never recorded.
+
+  `organization_id` is still not parsed: each caller forces it from its assigns.
+  """
+  @spec parse_for_organization(term(), [String.t()]) :: t()
+  def parse_for_organization(params, known_actions) when is_list(known_actions) do
+    params
+    |> parse()
+    |> keep_known_action(known_actions)
+    |> without_actor_email()
+  end
+
+  @doc """
   The applied filters as a plain map (no cursor), for recording in the
   `audit_log_exported` event. Keys are deliberately ones the audit-log
   sanitizer keeps.
   """
   @spec summary(t()) :: %{optional(String.t()) => String.t()}
   def summary(%{params: params}), do: Map.delete(params, "cursor")
+
+  defp without_actor_email(parsed) do
+    %{
+      parsed
+      | filters: Keyword.delete(parsed.filters, :actor_email),
+        params: Map.delete(parsed.params, "actor_email")
+    }
+  end
 
   defp to_filters(%{action: action, email: email, from: from, to: to}) do
     [

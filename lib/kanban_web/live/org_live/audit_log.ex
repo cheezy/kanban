@@ -18,8 +18,11 @@ defmodule KanbanWeb.OrgLive.AuditLog do
   not a member of the Organization, such as a site admin, shows no email or IP
   address (`Kanban.AuditLog.OrganizationScope`).
 
-  Params are parsed strictly by `Kanban.AuditLog.Filters`; every query lives in
-  the `Kanban.AuditLog` context.
+  Params are parsed strictly by `Kanban.AuditLog.Filters.parse_for_organization/2`,
+  the same function the export (`KanbanWeb.OrgAuditLogExportController`) uses,
+  so an action this Organization's events do not hold, and the actor-email
+  filter, are dropped on the page and in its exports alike. Every query lives
+  in the `Kanban.AuditLog` context.
 
   The signed export button and the signing key panel read the current key
   through `Kanban.AuditLog.Signing` once, in `mount/3`. Only the key id and
@@ -51,15 +54,18 @@ defmodule KanbanWeb.OrgLive.AuditLog do
      socket
      |> assign(:page_title, gettext("Organization audit log"))
      |> assign(:organization, organization)
-     |> assign(:actions, AuditLog.list_actions(organization_id: organization.id))
      |> assign(:signing_key, signing_key())}
   end
 
+  # The known actions are read on every handle_params/3, as the export reads
+  # them on every request, so a page left open while the Organization's action
+  # set changes still filters a patched URL exactly as its export links do.
   @impl true
   def handle_params(params, _url, socket) do
-    parsed = params |> Filters.parse() |> Filters.keep_known_action(socket.assigns.actions)
     organization_id = socket.assigns.organization.id
-    filters = parsed |> org_filters() |> Keyword.put(:organization_id, organization_id)
+    actions = AuditLog.list_actions(organization_id: organization_id)
+    parsed = Filters.parse_for_organization(params, actions)
+    filters = Keyword.put(parsed.filters, :organization_id, organization_id)
 
     page =
       AuditLog.list_events_page(filters,
@@ -68,10 +74,11 @@ defmodule KanbanWeb.OrgLive.AuditLog do
         redact_actors_outside: organization_id
       )
 
-    filter_params = org_summary(parsed)
+    filter_params = Filters.summary(parsed)
 
     {:noreply,
      socket
+     |> assign(:actions, actions)
      |> assign(:filter_params, filter_params)
      |> assign(:paged?, parsed.cursor != nil)
      |> assign(:next_cursor, page.next_cursor)
@@ -84,17 +91,17 @@ defmodule KanbanWeb.OrgLive.AuditLog do
   # cursor, so the patched URL drops it.
   @impl true
   def handle_event("filter", %{"filters" => filter_params}, socket) do
-    path = filter_params |> Filters.parse() |> org_summary() |> index_path()
+    path =
+      filter_params
+      |> Filters.parse_for_organization(socket.assigns.actions)
+      |> Filters.summary()
+      |> index_path()
+
     {:noreply, push_patch(socket, to: path)}
   end
 
   @impl true
   def handle_event("filter", _params, socket), do: {:noreply, socket}
-
-  # The actor-email filter is not offered here: it matches in SQL before
-  # outside actors are redacted, so it would confirm a guessed staff email.
-  defp org_filters(parsed), do: Keyword.delete(parsed.filters, :actor_email)
-  defp org_summary(parsed), do: parsed |> Filters.summary() |> Map.delete("actor_email")
 
   defp index_path(params), do: ~p"/org/audit?#{params}"
 

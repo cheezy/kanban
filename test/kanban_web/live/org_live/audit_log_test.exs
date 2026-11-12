@@ -277,6 +277,27 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
       end
     end
 
+    # The export reads the known actions per request, so the page must not keep
+    # the set it read at mount: a patched URL filters as its export does.
+    test "an action that first occurs after mount is applied when the URL is patched",
+         %{conn: conn, org_a: org_a, updated: updated} do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      exported = insert_event!("org_audit_log_exported", org_a, ~U[2026-10-05 09:00:00.000000Z])
+      render_patch(view, ~p"/org/audit?action=org_audit_log_exported")
+
+      assert has_element?(view, "#events-#{exported.id}")
+      refute has_element?(view, "#events-#{updated.id}")
+
+      assert has_element?(
+               view,
+               "#audit-log-filters option[selected][value=org_audit_log_exported]"
+             )
+
+      assert view |> element("#audit-log-export-json") |> render() =~
+               "action=org_audit_log_exported"
+    end
+
     test "a tampered cursor falls back to the newest page", %{conn: conn, appointed: appointed} do
       {:ok, view, _html} = live(conn, ~p"/org/audit?cursor=bm90LWEtY3Vyc29y")
 
