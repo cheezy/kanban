@@ -108,7 +108,25 @@ config :phoenix_live_view,
 
 # Use Oban's manual testing mode so jobs are inserted but not executed
 # until tests drain them explicitly via Oban.Testing helpers.
-config :kanban, Oban, testing: :manual
+#
+# The throwaway race database (MIX_TEST_PARTITION=_race) runs Oban with
+# testing :disabled instead: only then does a unique insert take Oban's
+# advisory lock, which keeps job uniqueness true under concurrent inserts,
+# and the audit stream worker's race tests (W2710) check it with committing
+# connections. No queue,
+# plugin, stager, leader or Postgres notifier runs there, so nothing executes
+# a job by itself and nothing queries the sandboxed pool in the background.
+if System.get_env("MIX_TEST_PARTITION") == "_race" do
+  config :kanban, Oban,
+    testing: :disabled,
+    queues: false,
+    plugins: false,
+    stager: false,
+    peer: false,
+    notifier: Oban.Notifiers.Isolated
+else
+  config :kanban, Oban, testing: :manual
+end
 
 # Workspace exports (W2222) write under tmp/ in tests, which is gitignored.
 # The sandbox nests every transaction inside its own, where the export's

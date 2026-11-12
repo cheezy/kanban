@@ -56,6 +56,7 @@ defmodule Kanban.AuditStream do
   alias Kanban.Accounts.Scope
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Destinations
+  alias Kanban.AuditStream.DispatchWorker
   alias Kanban.AuditStream.SigningSecrets
   alias Kanban.Repo
 
@@ -175,4 +176,16 @@ defmodule Kanban.AuditStream do
           | {:error, :unauthorized | :not_found | :not_https | Changeset.t()}
   def rotate_signing_secret(scope, %Destination{} = destination),
     do: Destinations.rotate(scope, destination)
+
+  @doc """
+  Queues a `Kanban.AuditStream.DispatchWorker` run for the destination
+  `destination_id`. For the worker and the sweep only, so it takes no scope
+  and checks nothing: the run itself ends at once for a paused, halted or
+  deleted destination. `opts` are `Oban.Worker.new/2` options, such as
+  `:scheduled_at`. A run already queued for the destination is kept, and
+  returned with `conflict?: true`, rather than queued twice.
+  """
+  @spec enqueue_dispatch(integer(), keyword()) :: {:ok, Oban.Job.t()} | {:error, term()}
+  def enqueue_dispatch(destination_id, opts \\ []) when is_integer(destination_id),
+    do: destination_id |> DispatchWorker.job(opts) |> Oban.insert()
 end

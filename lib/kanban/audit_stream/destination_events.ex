@@ -1,6 +1,7 @@
 defmodule Kanban.AuditStream.DestinationEvents do
   @moduledoc """
-  The audit events `Kanban.AuditStream.Destinations` records, with the keys
+  The audit events `Kanban.AuditStream.Destinations` and
+  `Kanban.AuditStream.DispatchWorker` record, with the keys
   `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §13.2 lists. Each is a literal
   `AuditLog.event/2` call so the telemetry call-site tests see it.
 
@@ -68,6 +69,31 @@ defmodule Kanban.AuditStream.DestinationEvents do
       destination_id: destination.id,
       kind: destination.kind,
       destination_name: destination.name
+    )
+  end
+
+  @doc """
+  Records `audit_stream_failing` with its fixed `reason`. Recorded by the
+  system, so no `user_id` is set.
+  """
+  def failing(destination, reason) do
+    AuditLog.event(:audit_stream_failing,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind,
+      reason: reason
+    )
+  end
+
+  @doc """
+  Records `audit_stream_recovered`. Recorded by the system, so no `user_id`
+  is set.
+  """
+  def recovered(destination) do
+    AuditLog.event(:audit_stream_recovered,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind
     )
   end
 

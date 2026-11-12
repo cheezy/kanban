@@ -10,7 +10,10 @@ defmodule Kanban.Webhooks.Transport do
       change between the check and the connection cannot reach another
       address.
     * **No redirects, no Req retries** (Oban owns retrying), no compression,
-      a 10 second receive timeout and a 5 second connect timeout.
+      a 10 second receive timeout and a 5 second connect timeout. The
+      receive timeout bounds each read, not the whole response, so a caller
+      that wants the response read within a deadline passes
+      `request_timeout:` to `post/4`; the audit stream worker does.
     * **A capped response body**: at most #{65_536} bytes are kept. Reading
       stops after the chunk that crosses the cap, and the rest of that chunk
       is dropped.
@@ -33,17 +36,34 @@ defmodule Kanban.Webhooks.Transport do
 
   @doc """
   POSTs `body` with `headers` to the address `resolved` (the result of
-  `UrlGuard.check/2`) approved. Returns the status and the capped body, or
-  the transport error.
+  `UrlGuard.check/2`) approved. Returns the status, the capped body and the
+  first `retry-after` response header (nil when there is none), or the
+  transport error. Webhook deliveries ignore `retry_after`; the audit stream
+  worker honours it.
+
+  Options: `:request_timeout`, the most milliseconds Finch waits for the
+  response once the body is sent (default: no limit). It is checked between
+  reads, so a response can run over it by up to one receive timeout, and it
+  covers neither connecting nor sending the body. A response over it returns
+  a `Req.TransportError` with reason `:timeout`.
   """
-  @spec post(%{uri: URI.t(), addresses: [:inet.ip_address()]}, iodata(), [
-          {String.t(), String.t()}
-        ]) ::
-          {:ok, %{status: integer(), body: binary()}} | {:error, Exception.t()}
-  def post(resolved, body, headers) do
-    case resolved |> request_options(body, headers) |> Req.post() do
-      {:ok, %Req.Response{status: status, body: response_body}} ->
-        {:ok, %{status: status, body: IO.iodata_to_binary(response_body)}}
+  @spec post(
+          %{uri: URI.t(), addresses: [:inet.ip_address()]},
+          iodata(),
+          [{String.t(), String.t()}],
+          keyword()
+        ) ::
+          {:ok, %{status: integer(), body: binary(), retry_after: String.t() | nil}}
+          | {:error, Exception.t()}
+  def post(resolved, body, headers, opts \\ []) do
+    case resolved |> request_options(body, headers, opts) |> Req.post() do
+      {:ok, %Req.Response{status: status, body: response_body} = response} ->
+        {:ok,
+         %{
+           status: status,
+           body: IO.iodata_to_binary(response_body),
+           retry_after: response |> Req.Response.get_header("retry-after") |> List.first()
+         }}
 
       {:error, exception} ->
         {:error, exception}
@@ -51,11 +71,12 @@ defmodule Kanban.Webhooks.Transport do
   end
 
   @doc """
-  The Req options for a request to the approved address. Pure, so the
-  pinning can be tested without a network.
+  The Req options for a request to the approved address, with the
+  `:request_timeout` of `opts` when one is given. Pure, so the pinning can be
+  tested without a network.
   """
-  @spec request_options(map(), iodata(), [{String.t(), String.t()}]) :: keyword()
-  def request_options(%{uri: %URI{} = uri, addresses: addresses}, body, headers) do
+  @spec request_options(map(), iodata(), [{String.t(), String.t()}], keyword()) :: keyword()
+  def request_options(%{uri: %URI{} = uri, addresses: addresses}, body, headers, opts \\ []) do
     [
       url: pinned_url(uri, pick_address(addresses)),
       body: body,
@@ -68,6 +89,7 @@ defmodule Kanban.Webhooks.Transport do
       receive_timeout: 10_000,
       into: &collect/2
     ]
+    |> Keyword.merge(Keyword.take(opts, [:request_timeout]))
     |> Keyword.merge(configured_options())
   end
 

@@ -56,6 +56,14 @@ defmodule Kanban.AuditStream.Reachability do
 
   def put_result(changeset, _result), do: changeset
 
+  @doc """
+  `UrlGuard.check/2` for a stored URL about to be sent to, over the configured
+  resolver (explicit `opts` win), so DNS is checked again at send time
+  (§12.1).
+  """
+  @spec check_url(String.t(), keyword()) :: {:ok, map()} | {:error, atom()}
+  def check_url(url, opts \\ []) when is_binary(url), do: UrlGuard.check(url, guard_opts(opts))
+
   defp add_error(changeset, {:ok, _resolved}), do: changeset
 
   defp add_error(changeset, {:error, reason}),

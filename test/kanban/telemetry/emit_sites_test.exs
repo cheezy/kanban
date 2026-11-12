@@ -20,14 +20,10 @@ defmodule Kanban.Telemetry.EmitSitesTest do
   # Each task that adds a call site removes its names here; the list is empty,
   # and can be deleted, once every one of them is emitted.
   @awaiting_emit_site [
-    [:kanban, :audit_stream, :batch_delivered],
-    [:kanban, :audit_stream, :batch_failed],
     [:kanban, :audit_stream, :lag_measured],
     [:kanban, :audit_stream, :gap_recorded],
     [:kanban, :audit, :audit_stream_batch_skipped],
     [:kanban, :audit, :audit_stream_test_sent],
-    [:kanban, :audit, :audit_stream_failing],
-    [:kanban, :audit, :audit_stream_recovered],
     [:kanban, :audit, :audit_stream_gap],
     [:kanban, :audit, :audit_stream_gap_dismissed],
     [:kanban, :audit, :audit_stream_cursors_reseeded]

@@ -18,6 +18,16 @@ defmodule Kanban.Webhooks.TransportTest do
     assert opts[:body] == "{}"
   end
 
+  test "request_options sets an overall request_timeout only when one is given" do
+    resolved = resolved("https://hooks.example.com/stride", [{93, 184, 216, 34}])
+
+    refute resolved |> Transport.request_options("", []) |> Keyword.has_key?(:request_timeout)
+
+    opts = Transport.request_options(resolved, "", [], request_timeout: 30_000, retry: true)
+    assert opts[:request_timeout] == 30_000
+    assert opts[:retry] == false
+  end
+
   test "prefers an IPv4 address when both families resolve" do
     opts =
       "https://hooks.example.com/"
@@ -77,5 +87,30 @@ defmodule Kanban.Webhooks.TransportTest do
 
     long = String.duplicate("a", Transport.max_body() + 5)
     assert byte_size(Transport.sanitize(long)) == Transport.max_body()
+  end
+
+  describe "post/3" do
+    @approved %{uri: URI.parse("https://hooks.example.com/x"), addresses: [{93, 184, 216, 34}]}
+
+    defp stub_reply(status, headers) do
+      Req.Test.stub(Transport, fn conn ->
+        conn = Enum.reduce(headers, conn, fn {k, v}, c -> Plug.Conn.put_resp_header(c, k, v) end)
+        Plug.Conn.send_resp(conn, status, "body")
+      end)
+    end
+
+    test "returns the retry-after header value" do
+      stub_reply(503, [{"retry-after", "120"}])
+
+      assert {:ok, %{status: 503, body: "body", retry_after: "120"}} =
+               Transport.post(@approved, "{}", [])
+    end
+
+    test "retry_after is nil when the response has none" do
+      stub_reply(200, [])
+
+      assert {:ok, %{status: 200, retry_after: nil}} =
+               Transport.post(@approved, "{}", [])
+    end
   end
 end
