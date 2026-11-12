@@ -13,7 +13,7 @@ defmodule Kanban.AuditLog.SignedExport do
   | Entry | Contents |
   | --- | --- |
   | `audit_log.csv` or `audit_log.json` | The events, encoded by `Kanban.AuditLog.Export`'s encoders: byte for byte what an unsigned export of the same events holds |
-  | `manifest.json` | What the export is: instance, Organization, who made it and when, the filters, the file's name, size and SHA-256, the row count, the newest and oldest event, `truncated` and the signing key's id |
+  | `manifest.json` | What the export is: instance, Organization, who made it and when, the filters, the file's name, size and SHA-256, the row count, the newest and oldest event, `truncated`, the signing key's id and `snapshot_at`, the boundary of the snapshot the events were read from |
   | `manifest.json.sig` | The raw 64-byte Ed25519 signature over the exact bytes of `manifest.json` (`Kanban.AuditLog.Signing.sign/1`) |
   | `README.txt` | The three verification commands (`Kanban.AuditLog.SignedExport.Readme`) |
 
@@ -33,11 +33,16 @@ defmodule Kanban.AuditLog.SignedExport do
   `org_audit_log_exported` event: it carries the file's SHA-256, so it can
   only be recorded after the file is built.
 
-  The batches are separate reads, not one database snapshot, as in the
-  unsigned export. So an event that becomes visible during the build with an
-  earlier `inserted_at`, one written inside a transaction that was still
-  open, can be absent from the file although it lies inside the file's range.
-  The manifest does not record that.
+  Every batch is read inside one `REPEATABLE READ, READ ONLY` transaction
+  (`Kanban.AuditLog.SignedExport.Snapshot`), so the file is one point in
+  time. The transaction covers the read only and ends before the file is
+  signed, zipped or handed to the caller's function, so the download never
+  holds it. The manifest's last field, `snapshot_at`, is that point: every
+  matching event committed before it is in the file, up to the row cap that
+  `truncated` reports, and an event committed after it is not, even one
+  whose `inserted_at` is earlier because it was written inside a transaction
+  that was still open when the read began. The snapshot's moduledoc has the
+  one instant of slack and the bounds.
 
   ## Scope
 
@@ -72,6 +77,7 @@ defmodule Kanban.AuditLog.SignedExport do
   alias Kanban.AuditLog.Filters
   alias Kanban.AuditLog.SignedExport.Readme
   alias Kanban.AuditLog.SignedExport.Scratch
+  alias Kanban.AuditLog.SignedExport.Snapshot
   alias Kanban.AuditLog.Signing
 
   require Logger
@@ -243,6 +249,13 @@ defmodule Kanban.AuditLog.SignedExport do
     {:signed_export, reason} ->
       Logger.warning("signed audit export failed: #{inspect(reason)}")
       {:error, :build_failed}
+
+    # An exit, such as the Slots server going down while a build waits for
+    # a slot, fails the build like any other failure rather than escaping
+    # the {:error, :build_failed} contract. Only the kind is logged.
+    :exit, _reason ->
+      Logger.warning("signed audit export failed: exit")
+      {:error, :build_failed}
   end
 
   defp archive(zip_path, request, file) do
@@ -264,12 +277,15 @@ defmodule Kanban.AuditLog.SignedExport do
   defp write_events(dir, request) do
     path = Path.join(dir, file_name(request.format))
 
-    # No :delayed_write: a full disk then fails the write itself.
-    case File.open(path, [:write, :binary], &write_rows(&1, request)) do
-      {:ok, state} -> finish(state)
+    # No :delayed_write: a full disk then fails the write itself. The snapshot
+    # covers the read only: it has ended before the file is signed or zipped.
+    case File.open(path, [:write, :binary], &read_snapshot(&1, request)) do
+      {:ok, {snapshot_at, state}} -> state |> finish() |> Map.put(:snapshot_at, snapshot_at)
       {:error, reason} -> throw({:signed_export, reason})
     end
   end
+
+  defp read_snapshot(io, request), do: Snapshot.read(fn -> write_rows(io, request) end)
 
   defp write_rows(io, request) do
     start = %{
@@ -371,7 +387,8 @@ defmodule Kanban.AuditLog.SignedExport do
       {"oldest_event", event_object(file.oldest)},
       {"newest_event", event_object(file.newest)},
       {"truncated", file.truncated},
-      {"key_id", request.key_id}
+      {"key_id", request.key_id},
+      {"snapshot_at", file.snapshot_at}
     ]
   end
 

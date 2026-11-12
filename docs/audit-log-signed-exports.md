@@ -61,10 +61,15 @@ the export, or from a copy you recorded earlier, as
 | `newest_event` | The `id` and `inserted_at` of the newest event in the file, which is its first row. `null` when the file has no events |
 | `truncated` | `true` when more events matched the filters than one download holds. The file then holds the newest 50,000 of them and the older ones are not in it. `false` when the file holds every matching event |
 | `key_id` | The id of the key that signed the manifest, such as `k1-` and 16 hex characters |
+| `snapshot_at` | The boundary of the database snapshot the events were read from, in UTC to the microsecond, such as `2026-11-09T15:20:03.512077Z`. The file holds the matching events committed before it; see [What a signature proves](#what-a-signature-proves) |
 
 The rows run newest first, so `newest_event` names the first row and
 `oldest_event` the last. `inserted_at` carries microseconds, exactly as the
-row in the file does; `generated_at` stops at the second.
+row in the file does; `generated_at` stops at the second. `snapshot_at`
+carries microseconds and is taken before `generated_at`, which is taken once
+the events have been read. Because `generated_at` stops at the second, a
+`snapshot_at` in the same second shows a later fraction, such as
+`15:20:03.512077Z` beside `15:20:03Z`; compare the two at the second.
 
 ## What a signature proves
 
@@ -78,8 +83,9 @@ compared with one recorded outside Stride is known to be the instance's; see
 It does not prove:
 
 - **That the export is complete beyond what the manifest says.** A filtered
-  export says so in `filters`, and an export cut at the row limit says so in
-  `truncated`.
+  export says so in `filters`, an export cut at the row limit says so in
+  `truncated`, and the events committed after `snapshot_at` are not in it;
+  see [The snapshot boundary](#the-snapshot-boundary).
 - **That nothing happened to the events before they were exported.** That
   depends on the audit log being append-only in the database; see
   [Audit Log Ownership Hardening](audit-log-hardening.md).
@@ -93,9 +99,36 @@ It does not prove:
   host in the README's first command with the instance you expect before you
   trust the key it fetches.
 
-An event written while a long export was being built can be missing from it
-even when its time falls inside the exported range. The manifest does not
-record that. Export the same range again later if you need it.
+### The snapshot boundary
+
+Every event in the file was read from one database snapshot, so the file is
+the state of the audit log at one point in time, whatever the batch size or
+the build time. `snapshot_at` records that point:
+
+- Every matching event committed before `snapshot_at` is in the file, up to
+  the row limit that `truncated` reports.
+- An event committed after the snapshot is not in the file, even when its
+  `inserted_at` is earlier and falls inside the exported range. That happens
+  when the event was written inside a transaction that was still open when
+  the export began. Such an event appears in the next export of the same
+  range.
+
+The time is read just before the snapshot is taken, so an event that commits
+in the instant between the two can also be in the file. The file holds what
+was committed before the snapshot; it does not claim to hold every event
+older than its `newest_event`.
+
+A snapshot ends before the zip is sent. At most two signed exports read
+their snapshot at a time on each application server; another waits for its
+turn and, after 30 seconds, fails with "The signed export could not be
+built. Try again." A read still running 60 seconds after it started fails
+with the same message. Either failure, like any failed build, counts against
+the export rate limit.
+
+The unsigned CSV and JSON exports do not read under one snapshot: they read
+batch by batch while the file is being sent, and holding a snapshot open for a
+whole download would hold a database connection for as long as the client
+takes. They carry no manifest, so there is no boundary to record.
 
 ## Verifying with OpenSSL 3
 

@@ -13,6 +13,8 @@ defmodule Kanban.AuditLog.SignedExportTest do
   alias Kanban.AuditLog.Export
   alias Kanban.AuditLog.Filters
   alias Kanban.AuditLog.SignedExport
+  alias Kanban.AuditLog.SignedExport.Slots
+  alias Kanban.AuditLog.SignedExport.Snapshot
   alias Kanban.AuditLog.Signing
 
   @moduletag :tmp_dir
@@ -20,6 +22,7 @@ defmodule Kanban.AuditLog.SignedExportTest do
   @base ~U[2026-10-03 00:00:00.000000Z]
   @keys_url "https://stride.test/.well-known/stride-audit-signing-keys"
   @entry_names ~w(README.txt manifest.json manifest.json.sig)
+  @snapshot_at_format ~r/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z\z/
 
   setup %{tmp_dir: tmp_dir} do
     saved =
@@ -285,7 +288,7 @@ defmodule Kanban.AuditLog.SignedExportTest do
 
       assert Enum.map(ordered.values, &elem(&1, 0)) ==
                ~w(schema instance organization generated_at generated_by filters file rows
-                  oldest_event newest_event truncated key_id)
+                  oldest_event newest_event truncated key_id snapshot_at)
 
       manifest = built.manifest
       assert manifest["schema"] == "stride.audit-export.v1"
@@ -301,11 +304,73 @@ defmodule Kanban.AuditLog.SignedExportTest do
       assert manifest["key_id"] == Signing.current_key().key_id
       assert manifest["key_id"] == built.archive.key_id
       assert manifest["truncated"] == false
+      assert manifest["snapshot_at"] =~ @snapshot_at_format
+
+      # The boundary is in the signed bytes, last.
+      assert built.manifest_bytes =~
+               ~s(  "snapshot_at": "#{manifest["snapshot_at"]}"\n}\n)
 
       # Pretty-printed, with one trailing newline.
       assert built.manifest_bytes =~ ~s(\n  "schema": "stride.audit-export.v1",\n)
       assert String.ends_with?(built.manifest_bytes, "}\n")
       refute String.ends_with?(built.manifest_bytes, "\n\n")
+    end
+
+    test "the snapshot boundary is a UTC timestamp no later than generated_at and no earlier than the build start",
+         context do
+      insert_event!(context.organization, 1)
+      test_pid = self()
+      on_first_read(fn -> send(test_pid, {:first_read, DateTime.utc_now()}) end)
+
+      started = DateTime.utc_now()
+      built = build!(context, batch_size: 1)
+      assert_received {:first_read, first_read}
+
+      {:ok, snapshot_at, 0} = DateTime.from_iso8601(built.manifest["snapshot_at"])
+      {:ok, generated_at, 0} = DateTime.from_iso8601(built.manifest["generated_at"])
+
+      assert DateTime.compare(started, snapshot_at) != :gt
+      # Taken before the read that takes the snapshot.
+      assert DateTime.compare(snapshot_at, first_read) != :gt
+      # generated_at stops at the second, so compare at the second.
+      assert snapshot_at |> DateTime.truncate(:second) |> DateTime.compare(generated_at) != :gt
+    end
+
+    test "the guide's manifest table lists the manifest's fields in order and explains the boundary",
+         context do
+      built = build!(context)
+      ordered = Jason.decode!(built.manifest_bytes, objects: :ordered_objects)
+      guide = File.read!("docs/audit-log-signed-exports.md")
+
+      [_before, table] = String.split(guide, "| Field | Meaning |\n|---|---|\n", parts: 2)
+
+      documented =
+        table
+        |> String.split("\n")
+        |> Enum.take_while(&String.starts_with?(&1, "| `"))
+        |> Enum.map(fn row ->
+          [name] = Regex.run(~r/\A\| `([a-z_]+)` \|/, row, capture: :all_but_first)
+          name
+        end)
+
+      assert documented == Enum.map(ordered.values, &elem(&1, 0))
+
+      [_before, boundary] = String.split(guide, "### The snapshot boundary\n", parts: 2)
+      [boundary | _rest] = String.split(boundary, "\n## ", parts: 2)
+      boundary = boundary |> String.split() |> Enum.join(" ")
+
+      assert boundary =~ "Every matching event committed before `snapshot_at` is in the file"
+      assert boundary =~ "An event committed after the snapshot is not in the file"
+      refute guide =~ "The manifest does not record that."
+    end
+
+    test "the boundary is present and well-formed for an export with no rows", context do
+      for format <- [:csv, :json] do
+        empty = build!(context, format: format)
+
+        assert empty.manifest["rows"] == 0
+        assert empty.manifest["snapshot_at"] =~ @snapshot_at_format
+      end
     end
 
     test "newest_event is the first row and oldest_event the last; both null when empty",
@@ -523,6 +588,59 @@ defmodule Kanban.AuditLog.SignedExportTest do
       assert File.ls!(context.root) == []
       assert log =~ "signed audit export failed: :eisdir"
       refute log =~ context.root
+    end
+
+    test "a build that fails inside the snapshot transaction leaves nothing and rolls it back",
+         context do
+      insert_event!(context.organization, 1)
+      saved = Application.fetch_env(:kanban, Snapshot)
+
+      on_exit(fn ->
+        case saved do
+          {:ok, config} -> Application.put_env(:kanban, Snapshot, config)
+          :error -> Application.delete_env(:kanban, Snapshot)
+        end
+      end)
+
+      # With the switch on, the sandbox refuses to set the isolation level:
+      # the transaction is already nested inside its own by then. That is a
+      # failure raised inside the read's transaction, after the export file
+      # is open.
+      Application.put_env(:kanban, Snapshot, snapshot_isolation: true)
+
+      log =
+        capture_log(fn ->
+          assert {:error, :build_failed} = with_archive(context, &never_called/1)
+        end)
+
+      assert File.ls!(context.root) == []
+      assert log =~ "signed audit export failed: Postgrex.Error"
+      refute log =~ context.root
+
+      # Rolled back to before the read: the connection still works.
+      assert Repo.aggregate(AuditEvent, :count) >= 1
+    end
+
+    test "an exit during the build fails it and leaves nothing", context do
+      insert_event!(context.organization, 1)
+
+      # With the slot server gone, the build's checkout call exits. Every
+      # test that builds a signed export is async: false, so none runs
+      # while it is down.
+      :ok = Supervisor.terminate_child(Kanban.Supervisor, Slots)
+      on_exit(fn -> Supervisor.restart_child(Kanban.Supervisor, Slots) end)
+
+      log =
+        capture_log(fn ->
+          assert {:error, :build_failed} = with_archive(context, &never_called/1)
+        end)
+
+      assert File.ls!(context.root) == []
+      assert log =~ "signed audit export failed: exit"
+      refute log =~ context.root
+
+      {:ok, _pid} = Supervisor.restart_child(Kanban.Supervisor, Slots)
+      assert {:ok, _result} = with_archive(context, fn archive -> archive.rows end)
     end
 
     test "a zip that cannot be written fails the build and leaves nothing", context do

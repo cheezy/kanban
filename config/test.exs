@@ -116,6 +116,11 @@ config :kanban, Oban, testing: :manual
 config :kanban, :export_dir, Path.expand("../tmp/test_exports", __DIR__)
 config :kanban, Kanban.Workspaces.Export.Writer, snapshot_isolation: false
 
+# The signed audit export (D424) reads under the same kind of snapshot, so it
+# is off here too. Its own key, apart from Kanban.AuditLog.SignedExport's,
+# which tests replace to point tmp_root at their own directory.
+config :kanban, Kanban.AuditLog.SignedExport.Snapshot, snapshot_isolation: false
+
 # Attachment storage (W2505): the local adapter writes under tmp/, which is
 # gitignored, and every S3 request goes to a Req.Test stub, so no test
 # touches the network. The S3 values are fixed fakes. Retries keep the

@@ -18,6 +18,19 @@ defmodule Kanban.AuditLog.Export do
   byte. `export_truncated?/3` tells the caller beforehand whether that cap
   will cut the file.
 
+  `batches/2` opens no transaction of its own: each batch is a separate read
+  of whatever is committed when it runs. Inside a caller's `REPEATABLE READ`
+  transaction every batch sees that one snapshot instead, which is how the
+  signed export reads (`Kanban.AuditLog.SignedExport.Snapshot`).
+
+  `export_stream/3` is read outside any snapshot, by choice. Its batches are
+  fetched while the response is sent, so a snapshot would last as long as the
+  client's download and hold a pool connection, and hold back VACUUM, for
+  that long. Without one, an event that commits during the download with an
+  earlier `inserted_at` than a batch already sent can be absent from the
+  file, and whether it is depends on where the batch boundaries fall. The
+  unsigned file carries no manifest that could claim otherwise.
+
   ## Encoding
 
   The encoders (`encode_stream/2`, `csv_rows/1`, `json_rows/2`, `row_map/1`)
@@ -48,7 +61,8 @@ defmodule Kanban.AuditLog.Export do
   Events are fetched in keyset batches as the stream is consumed, so an export
   never loads the whole table and holds no transaction or connection while the
   response is being sent. Events inserted after the export starts are newer
-  than its first batch and are therefore not included.
+  than its first batch and are therefore not included. The batches are
+  separate reads, not one snapshot; the moduledoc says why and what follows.
 
   `opts` are those of `batches/2`.
   """

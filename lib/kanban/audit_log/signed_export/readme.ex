@@ -103,9 +103,13 @@ defmodule Kanban.AuditLog.SignedExport.Readme do
 
     It proves that this Stride instance produced these exact bytes at the
     time in generated_at, for the Organization and filters in the manifest,
-    as long as the key has not been revoked. It does not prove that the
-    export is complete beyond what the manifest says: a filtered or
-    truncated export says so in "filters" and "truncated".
+    as long as the key has not been revoked. The events were read from one
+    database snapshot, taken just after the time in snapshot_at: every
+    matching event committed before that time is in the file, unless
+    "truncated" is true, and one committed after the snapshot is not, even
+    if its inserted_at is earlier. It does not prove that the export is
+    complete beyond what the manifest says: a filtered or truncated export
+    says so in "filters" and "truncated".
     """
   end
 end

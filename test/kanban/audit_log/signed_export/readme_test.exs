@@ -56,6 +56,18 @@ defmodule Kanban.AuditLog.SignedExport.ReadmeTest do
       assert readme =~ "file.sha256"
     end
 
+    test "the README names the boundary field" do
+      readme = text(:csv)
+
+      assert readme =~ ~r/database\s+snapshot, taken just after the time in snapshot_at/
+
+      assert readme =~
+               ~r/every\s+matching event committed before that time is in the file, unless\s+"truncated" is true/
+
+      assert readme =~
+               ~r/committed after the snapshot is not, even\s+if its inserted_at is earlier/
+    end
+
     test "escapes a key id in the URL's query" do
       readme = Readme.text(%{format: :csv, key_id: "k1 &x=y", keys_url: @keys_url})
 

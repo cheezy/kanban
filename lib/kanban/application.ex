@@ -21,6 +21,9 @@ defmodule Kanban.Application do
       # Removes, at boot and every 15 minutes, the temporary directories a VM
       # killed during a signed audit export left behind.
       {Kanban.AuditLog.SignedExport.Sweeper, name: Kanban.AuditLog.SignedExport.Sweeper},
+      # Caps how many signed audit exports hold a snapshot, and a pool
+      # connection, at once (D424).
+      Kanban.AuditLog.SignedExport.Slots,
       KanbanWeb.AgentsPresence,
       # Oban runs the after_goal grace-window worker (W493). The queue
       # depth is set deliberately low — these are one-shot timer jobs,
