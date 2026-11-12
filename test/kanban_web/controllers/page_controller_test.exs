@@ -1645,6 +1645,95 @@ defmodule KanbanWeb.PageControllerTest do
       assert get_session(conn, :locale) == "en"
     end
 
+    test "set_locale marks the choice so sign-in saves it", %{conn: conn} do
+      user = Kanban.AccountsFixtures.user_fixture() |> Kanban.AccountsFixtures.set_password()
+      {:ok, user} = Kanban.Accounts.update_user_locale(user, "pt")
+
+      conn = post(conn, ~p"/locale/es")
+      assert get_session(conn, :locale_choice) == "es"
+      assert Kanban.Repo.reload!(user).locale == "pt"
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => Kanban.AccountsFixtures.valid_user_password()
+          }
+        })
+
+      assert get_session(conn, :user_token)
+      assert get_session(conn, :locale) == "es"
+      refute get_session(conn, :locale_choice)
+      assert Kanban.Repo.reload!(user).locale == "es"
+    end
+
+    test "a ?locale= link before sign-in is shown for the visit but not saved", %{conn: conn} do
+      user = Kanban.AccountsFixtures.user_fixture() |> Kanban.AccountsFixtures.set_password()
+      {:ok, user} = Kanban.Accounts.update_user_locale(user, "pt")
+
+      conn = get(conn, ~p"/pricing?locale=es")
+      assert get_session(conn, :locale) == "es"
+      refute get_session(conn, :locale_choice)
+
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => Kanban.AccountsFixtures.valid_user_password()
+          }
+        })
+
+      assert get_session(conn, :user_token)
+      assert get_session(conn, :locale) == "es"
+      assert Kanban.Repo.reload!(user).locale == "pt"
+    end
+
+    test "a signed-in choice leaves no mark for a later re-authentication to save",
+         %{conn: conn} do
+      user = Kanban.AccountsFixtures.user_fixture()
+
+      conn = conn |> log_in_user(user) |> post(~p"/locale/fr")
+      refute get_session(conn, :locale_choice)
+      assert Kanban.Repo.reload!(user).locale == "fr"
+
+      # Another device changes the saved language; re-authenticating with this
+      # browser's session keeps it.
+      {:ok, user} = user |> Kanban.Repo.reload!() |> Kanban.Accounts.update_user_locale("de")
+
+      build_conn()
+      |> Map.replace!(:secret_key_base, KanbanWeb.Endpoint.config(:secret_key_base))
+      |> init_test_session(get_session(conn))
+      |> Plug.Conn.assign(:current_scope, Kanban.Accounts.Scope.for_user(user))
+      |> KanbanWeb.UserAuth.log_in_user(user)
+
+      assert Kanban.Repo.reload!(user).locale == "de"
+    end
+
+    test "a choice made on a ?locale= page redirects without the link's language",
+         %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("referer", "http://localhost/pricing?locale=de&section=plans")
+        |> post(~p"/locale/fr")
+
+      assert redirected_to(conn) == "/pricing?section=plans"
+
+      conn = conn |> recycle() |> get(~p"/pricing")
+      assert get_session(conn, :locale) == "fr"
+
+      bare =
+        build_conn()
+        |> put_req_header("referer", "http://localhost/pricing?locale=de")
+        |> post(~p"/locale/fr")
+
+      assert redirected_to(bare) == "/pricing"
+    end
+
+    test "an unsupported locale leaves no choice mark", %{conn: conn} do
+      conn = post(conn, ~p"/locale/xx")
+      refute get_session(conn, :locale_choice)
+    end
+
     test "stores a signed-in user's choice on the account", %{conn: conn} do
       user = Kanban.AccountsFixtures.user_fixture()
       assert user.locale == nil

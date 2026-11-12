@@ -11,6 +11,7 @@ defmodule KanbanWeb.UserAuthTest do
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
+  alias KanbanWeb.Plugs.Locale
   alias KanbanWeb.UserAuth
   alias KanbanWeb.UserAuth.OrgAdminGate
   alias Phoenix.LiveView
@@ -67,22 +68,86 @@ defmodule KanbanWeb.UserAuthTest do
       refute get_session(reauth, key)
     end
 
-    test "keeps a language chosen before signing in and stores it on the account",
+    test "a language chosen with POST /locale before sign-in is saved at sign-in",
          %{conn: conn, user: user} do
-      conn = conn |> put_session(:locale, "de") |> UserAuth.log_in_user(user)
+      conn = conn |> Locale.choose_locale("de") |> UserAuth.log_in_user(user)
 
       assert get_session(conn, :locale) == "de"
       assert Repo.reload!(user).locale == "de"
+      refute get_session(conn, :locale_choice)
     end
 
     test "a language chosen before signing in replaces the account's stored one",
          %{conn: conn, user: user} do
       {:ok, user} = Accounts.update_user_locale(user, "fr")
 
-      conn = conn |> put_session(:locale, "ja") |> UserAuth.log_in_user(user)
+      conn = conn |> Locale.choose_locale("ja") |> UserAuth.log_in_user(user)
 
       assert get_session(conn, :locale) == "ja"
       assert Repo.reload!(user).locale == "ja"
+    end
+
+    test "a ?locale= link before sign-in does not change the saved language",
+         %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "pt")
+
+      linked = %{conn | query_string: "locale=es"} |> Locale.call("en")
+      assert get_session(linked, :locale) == "es"
+      refute get_session(linked, :locale_choice)
+
+      conn = UserAuth.log_in_user(linked, user)
+
+      # The visit keeps the link's language; the account keeps its own.
+      assert get_session(conn, :locale) == "es"
+      assert Repo.reload!(user).locale == "pt"
+    end
+
+    test "an unsupported ?locale= link before sign-in changes nothing",
+         %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "pt")
+
+      linked = %{conn | query_string: "locale=xx"} |> Locale.call("en")
+      refute get_session(linked, :locale)
+
+      conn = UserAuth.log_in_user(linked, user)
+
+      assert get_session(conn, :locale) == "pt"
+      assert Repo.reload!(user).locale == "pt"
+    end
+
+    test "a ?locale= link leaves an account with no saved language at the default",
+         %{conn: conn, user: user} do
+      conn =
+        %{conn | query_string: "locale=es"} |> Locale.call("en") |> UserAuth.log_in_user(user)
+
+      assert get_session(conn, :locale) == "es"
+      refute Repo.reload!(user).locale
+    end
+
+    test "a ?locale= link after a menu choice saves the choice, not the link's language",
+         %{conn: conn, user: user} do
+      conn =
+        %{Locale.choose_locale(conn, "fr") | query_string: "locale=es"}
+        |> Locale.call("en")
+        |> UserAuth.log_in_user(user)
+
+      assert get_session(conn, :locale) == "es"
+      assert Repo.reload!(user).locale == "fr"
+    end
+
+    test "re-authenticating saves a pending choice and removes its mark from the kept session",
+         %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "pt")
+
+      # Re-authenticating keeps the session, so the mark must be taken explicitly.
+      reauth =
+        conn
+        |> assign(:current_scope, Scope.for_user(user))
+        |> Locale.choose_locale("fr")
+        |> UserAuth.log_in_user(user)
+
+      refute get_session(reauth, :locale_choice)
+      assert Repo.reload!(user).locale == "fr"
     end
 
     test "loads the account's stored language when none was chosen before signing in",
@@ -105,8 +170,14 @@ defmodule KanbanWeb.UserAuthTest do
     test "does not store an unsupported session language on the account",
          %{conn: conn, user: user} do
       conn |> put_session(:locale, "xx") |> UserAuth.log_in_user(user)
-
       refute Repo.reload!(user).locale
+
+      # A forged choice mark is refused by Accounts.update_user_locale/2 too.
+      conn |> put_session(:locale_choice, "xx") |> UserAuth.log_in_user(user)
+      refute Repo.reload!(user).locale
+
+      # And the chooser itself never marks an unsupported code.
+      refute conn |> Locale.choose_locale("xx") |> get_session(:locale_choice)
     end
 
     test "clears everything previously stored in the session", %{conn: conn, user: user} do
@@ -284,6 +355,64 @@ defmodule KanbanWeb.UserAuthTest do
 
       assert get_session(conn, :live_socket_id) ==
                "users_sessions:#{Base.url_encode64(user_token)}"
+    end
+
+    test "a remember-me sign-in loads the account's saved language", %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "ja")
+
+      %{value: signed_token} =
+        conn
+        |> fetch_cookies()
+        |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+        |> Map.fetch!(:resp_cookies)
+        |> Map.fetch!(@remember_me_cookie)
+
+      conn =
+        conn
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.user.id == user.id
+      assert get_session(conn, :locale) == "ja"
+    end
+
+    test "a remember-me sign-in keeps a language the session already has, and saves nothing",
+         %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "ja")
+
+      %{value: signed_token} =
+        conn
+        |> fetch_cookies()
+        |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+        |> Map.fetch!(:resp_cookies)
+        |> Map.fetch!(@remember_me_cookie)
+
+      conn =
+        conn
+        |> put_session(:locale, "de")
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert get_session(conn, :locale) == "de"
+      assert Repo.reload!(user).locale == "ja"
+    end
+
+    test "a remember-me sign-in leaves the language unset when the account has none",
+         %{conn: conn, user: user} do
+      %{value: signed_token} =
+        conn
+        |> fetch_cookies()
+        |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+        |> Map.fetch!(:resp_cookies)
+        |> Map.fetch!(@remember_me_cookie)
+
+      conn =
+        conn
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.user.id == user.id
+      refute get_session(conn, :locale)
     end
 
     test "does not authenticate if data is missing", %{conn: conn, user: user} do

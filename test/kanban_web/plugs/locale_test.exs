@@ -16,6 +16,40 @@ defmodule KanbanWeb.Plugs.LocaleTest do
     assert Gettext.get_locale(KanbanWeb.Gettext) == "de"
   end
 
+  test "a ?locale= is shown but never marked as a choice", %{conn: conn} do
+    conn = %{conn | query_string: "locale=de"} |> call()
+
+    assert get_session(conn, :locale) == "de"
+    refute get_session(conn, :locale_choice)
+  end
+
+  test "choose_locale/2 sets a supported locale and marks it as chosen", %{conn: conn} do
+    conn = Locale.choose_locale(conn, "fr")
+
+    assert get_session(conn, :locale) == "fr"
+    assert get_session(conn, :locale_choice) == "fr"
+    assert Gettext.get_locale(KanbanWeb.Gettext) == "fr"
+  end
+
+  test "choose_locale/2 ignores an unsupported locale", %{conn: conn} do
+    for value <- ["xx", "", nil, "../en"] do
+      conn = Locale.choose_locale(conn, value)
+
+      refute get_session(conn, :locale)
+      refute get_session(conn, :locale_choice)
+    end
+  end
+
+  test "take_choice/1 returns the chosen locale and removes the mark", %{conn: conn} do
+    assert {nil, conn} = Locale.take_choice(conn)
+
+    {choice, conn} = conn |> Locale.choose_locale("ja") |> Locale.take_choice()
+
+    assert choice == "ja"
+    refute get_session(conn, :locale_choice)
+    assert get_session(conn, :locale) == "ja"
+  end
+
   test "?locale= replaces the session's language", %{conn: conn} do
     conn = %{put_session(conn, :locale, "fr") | query_string: "locale=ja"} |> call()
 

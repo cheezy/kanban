@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Setup guides in the org-admin emails.** The email to a new org-admin's account and the email to an existing one now link four Resources guides, *Accepting an Invitation*, *Administering Your Organization*, *Setting Your Organization's Security Policy* and *Reading the Organization Audit Log*, and ask the org-admin to keep them for setting the Organization up.
 - **Guides in the sign-up email.** The email that asks a new user to confirm their account now links every *Getting started* guide in Resources, and has a *For developers* section linking every developer guide, from installing the Stride plugin to connecting an MCP client. The lists follow the Resources catalog, so a guide added to either group later is linked too.
 
+### Fixed
+
+- **A language link no longer changes your saved language.** Following a link that opens Stride in a language, such as one in a service announcement email, and then signing in used to save that language to your account, which also changed the language of later announcement emails. Now only a language you choose from a language menu before signing in is saved; a link's language is shown for the visit only. Being signed back in by **Keep me signed in on this device** now also uses the language saved to your account.
+
 ## [3.1.0] - 2026-11-08
 
 ### Added

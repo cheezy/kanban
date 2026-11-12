@@ -7,11 +7,11 @@ defmodule KanbanWeb.UserAuth do
 
   alias Kanban.Accounts
   alias Kanban.Accounts.Scope
-  alias Kanban.Accounts.User
   alias Kanban.Organizations
   alias Kanban.Plans
   alias Kanban.Workspaces.Current
   alias KanbanWeb.UserAuth.OrgAdminGate
+  alias KanbanWeb.UserAuth.SessionLocale
 
   # Make the remember me cookie valid for 14 days. This should match
   # the session validity setting in UserToken.
@@ -48,17 +48,20 @@ defmodule KanbanWeb.UserAuth do
   member of the connection's Organization); any other sign-in clears the mark
   (`KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session/2`).
 
-  A language chosen before signing in is kept and stored on the account;
-  without one, the account's stored language is loaded into the session.
+  A language chosen from a language menu before signing in is kept and stored
+  on the account; a `?locale=` link's language is kept for the visit only.
+  Without either, the account's stored language is loaded into the session
+  (`KanbanWeb.UserAuth.SessionLocale`).
   """
   def log_in_user(conn, user, params \\ %{}, opts \\ []) do
     user_return_to = get_session(conn, :user_return_to)
+    {locale_choice, conn} = KanbanWeb.Plugs.Locale.take_choice(conn)
 
     Kanban.Telemetry.emit([:kanban, :user, :login], %{count: 1}, %{user_id: user.id})
 
     conn
     |> create_or_extend_session(user, params)
-    |> sync_locale(user)
+    |> SessionLocale.sync(user, locale_choice)
     |> KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session(sso_organization_id(user, opts))
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
@@ -69,17 +72,6 @@ defmodule KanbanWeb.UserAuth do
       organization_id
     else
       _not_single_sign_on_or_no_membership -> nil
-    end
-  end
-
-  # The session's language is an explicit choice (only PageController.set_locale
-  # writes it), so it wins over the account's and is stored for the emails that
-  # render in it; Accounts.update_user_locale/2 refuses an unsupported value.
-  defp sync_locale(conn, %User{locale: stored} = user) do
-    case get_session(conn, :locale) do
-      nil -> KanbanWeb.Plugs.Locale.set_locale(conn, stored)
-      ^stored -> conn
-      chosen -> tap(conn, fn _ -> Accounts.update_user_locale(user, chosen) end)
     end
   end
 
@@ -115,12 +107,19 @@ defmodule KanbanWeb.UserAuth do
   def fetch_current_scope_for_user(conn, _opts) do
     with {token, conn} <- ensure_user_token(conn),
          {user, token_inserted_at} <- Accounts.get_user_by_session_token(token) do
-      conn
-      |> assign(:current_scope, build_scope(user, get_session(conn, :current_workspace_id)))
-      |> maybe_reissue_user_session_token(user, token_inserted_at)
+      put_current_user(conn, user, token_inserted_at)
     else
       nil -> assign(conn, :current_scope, Scope.for_user(nil))
     end
+  end
+
+  # A session restored from the remember-me cookie skips log_in_user/3, so the
+  # account's saved language is loaded here when the session has none.
+  defp put_current_user(conn, user, token_inserted_at) do
+    conn
+    |> assign(:current_scope, build_scope(user, get_session(conn, :current_workspace_id)))
+    |> SessionLocale.load_saved(user)
+    |> maybe_reissue_user_session_token(user, token_inserted_at)
   end
 
   # The plug and every on_mount build the scope here, so both carry the user's
@@ -215,9 +214,11 @@ defmodule KanbanWeb.UserAuth do
   #     end
   #
   #
-  # Signing in keeps the chosen language: it is no fixation risk, and dropping
-  # it sent the user's announcement email in English. Signing out still clears
-  # it, so the next person on a shared browser does not inherit it.
+  # Signing in keeps the session's language, whether chosen from a menu or
+  # opened from a ?locale= link: it is no fixation risk, and dropping it sent
+  # the user's announcement email in English. Only a chosen one is saved to the
+  # account (SessionLocale.sync/3). Signing out still clears it, so the next
+  # person on a shared browser does not inherit it.
   defp renew_session(conn, user) do
     delete_csrf_token()
     locale = user && get_session(conn, :locale)

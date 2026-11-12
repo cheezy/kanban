@@ -1007,9 +1007,31 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                "Accounts.update_user_locale(user, locale)"
 
       user_auth = File.read!("lib/kanban_web/user_auth.ex")
-      assert user_auth =~ "defp sync_locale(conn, %User{locale: stored} = user)"
+      assert user_auth =~ "Locale.take_choice(conn)"
+      assert user_auth =~ "SessionLocale.sync(user, locale_choice)"
+      assert user_auth =~ "SessionLocale.load_saved(user)"
       assert user_auth =~ "locale = user && get_session(conn, :locale)"
       assert content =~ "Signing out returns the browser to English"
+
+      # Only the language menu's POST marks a choice; a ?locale= link is shown
+      # for the visit and never saved.
+      session_locale = File.read!("lib/kanban_web/user_auth/session_locale.ex")
+      assert session_locale =~ "def sync(conn, %User{locale: stored} = user, choice)"
+
+      assert File.read!("lib/kanban_web/controllers/page_controller.ex") =~
+               "Locale.choose_locale(conn, locale)"
+
+      plug = File.read!("lib/kanban_web/plugs/locale.ex")
+
+      assert plug =~
+               "defp put_requested_locale(%{query_params: %{\"locale\" => locale}} = conn),\n    do: set_locale(conn, locale)"
+
+      assert content =~ "If you choose a language from the language menu before you sign in"
+      assert content =~ "for your visit but doesn't change your saved language"
+      assert content =~ "**Keep me signed in on this device**"
+
+      assert File.read!("lib/kanban_web/live/user_live/login.ex") =~
+               ~s|gettext("Keep me signed in on this device")|
 
       # Only the announcement email renders in the account's language.
       with_locale =

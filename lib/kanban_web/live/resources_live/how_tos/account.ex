@@ -17,7 +17,8 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
   The language and theme guide follows the SideNav footer's language menu and
   theme switch (`SideNav.language_menu/1`, `Layouts.theme_toggle/1`), the
   marketing top bar's language menu (`MarketingComponents`,
-  `PageController.set_locale/2`), the locale sync in `UserAuth`,
+  `PageController.set_locale/2`), the locale sync in
+  `UserAuth.SessionLocale`,
   `Kanban.Notifications.AnnouncementWorker` and the theme script in the root
   layouts.
   """
@@ -218,7 +219,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
           %{
             title: "Where Your Language Is Saved",
             content:
-              "- When you're signed in, Stride saves the language to your account.\n- If you choose a language before you sign in, Stride keeps it when you sign in and saves it to your account.\n- On a new browser or device, Stride uses your saved language as soon as you sign in.\n- Signing out returns the browser to English, so the next person to use a shared computer doesn't get your language. Your account keeps it for the next time you sign in.",
+              "- When you're signed in, Stride saves the language to your account.\n- If you choose a language from the language menu before you sign in, Stride keeps it when you sign in and saves it to your account.\n- A link that opens Stride in a language, such as one in a service announcement email, shows the page in that language for your visit but doesn't change your saved language.\n- On a new browser or device, Stride uses your saved language as soon as you sign in, and also when **Keep me signed in on this device** signs you back in.\n- Signing out returns the browser to English, so the next person to use a shared computer doesn't get your language. Your account keeps it for the next time you sign in.",
             image: nil
           },
           %{
