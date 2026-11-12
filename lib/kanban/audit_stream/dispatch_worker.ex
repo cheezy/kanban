@@ -8,7 +8,10 @@ defmodule Kanban.AuditStream.DispatchWorker do
   :infinity` in the states `available`, `scheduled` and `retryable`.
   `executing` is left out on purpose, so a running job can queue its own
   follow-up. Uniqueness only avoids redundant jobs; the lease
-  (`Kanban.AuditStream.Lease`) is what stops two runs sending at once.
+  (`Kanban.AuditStream.Lease`) is what stops two runs sending at once. A
+  run queued for a destination that already has a scheduled one moves that
+  job to its own time, so a follow-up is never absorbed by a job snoozing
+  behind a lease, such as one the sweep queued between two drained batches.
 
   ## A run
 
@@ -46,6 +49,17 @@ defmodule Kanban.AuditStream.DispatchWorker do
        now, so the batch is not left without a job; a destination deleted
        while the POST was in flight records nothing.
 
+  ## Draining and pacing
+
+  After a delivered batch, `Kanban.AuditStream.Pacing` decides what follows
+  (§8.1, §8.5): nothing when no more is waiting; when the next waiting event
+  is more than 10 minutes old, a follow-up 2 seconds ahead, with
+  `next_attempt_at` set to match; otherwise the run takes the lease again
+  and sends the next batch itself, for up to 30 seconds from its start, and
+  then queues its own follow-up for now. Every batch is a run of its own
+  three transactions under its own lease, so a send always ends inside the
+  lease it started under, however long the run drains.
+
   The cursor moves only after a 2xx, past exactly the batch sent. A retry
   resends exactly the pending batch under the same `batch_id`. A filter
   change while a send is in flight does not interrupt it: on 2xx the cursor
@@ -59,8 +73,12 @@ defmodule Kanban.AuditStream.DispatchWorker do
   is a live lease: the job snoozes until it expires, so a run that crashed
   holding the lease is retried rather than ended. Oban's own attempts
   (`max_attempts` 20, `backoff/1` just past the lease) only cover a run
-  that crashes outside the send, and `timeout/1` (55 seconds) is the last
+  that crashes outside the send, and `timeout/1` (85 seconds) is the last
   resort against one that hangs there.
+
+  Settings, for tests only: `config :kanban, #{inspect(__MODULE__)}`
+  with `:send_deadline_ms`, `:horizon` (a `{module, function}`),
+  `:drain_ms` and `:batch_size`.
   """
 
   use Oban.Worker,
@@ -71,7 +89,8 @@ defmodule Kanban.AuditStream.DispatchWorker do
       fields: [:worker, :args],
       keys: [:destination_id],
       states: [:available, :scheduled, :retryable]
-    ]
+    ],
+    replace: [scheduled: [:scheduled_at]]
 
   import Ecto.Query, only: [from: 2]
 
@@ -83,6 +102,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
   alias Kanban.AuditStream.DestinationEvents
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
+  alias Kanban.AuditStream.Pacing
   alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reachability
   alias Kanban.Organizations.Organization
@@ -93,7 +113,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
 
   @send_timeout_ms 30_000
   @send_deadline_ms 45_000
-  @run_timeout_ms 55_000
+  @run_timeout_ms 85_000
 
   @doc """
   A dispatch job for `destination_id`. `opts` are `Oban.Worker.new/2`
@@ -122,9 +142,11 @@ defmodule Kanban.AuditStream.DispatchWorker do
     do: Application.get_env(:kanban, __MODULE__, [])[:send_deadline_ms] || @send_deadline_ms
 
   @doc """
-  The most milliseconds a whole run may take before Oban kills it: 55
-  seconds, inside the 60-second lease. A last resort: the send is already
-  stopped at `send_deadline_ms/0`.
+  The most milliseconds a whole run may take before Oban kills it: 85
+  seconds, the 30 seconds a run may drain for, plus one last send stopped
+  at `send_deadline_ms/0`, plus 10 seconds to prepare and record it. A last
+  resort: each batch is sent under a lease of its own, which the send
+  always ends inside.
   """
   @impl Oban.Worker
   def timeout(_job), do: @run_timeout_ms
@@ -141,7 +163,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
   def perform(%Oban.Job{args: %{"destination_id" => destination_id}})
       when is_integer(destination_id) do
     case Lease.take(destination_id) do
-      {:ok, token} -> run(destination_id, token)
+      {:ok, token} -> run(destination_id, token, Pacing.drain_deadline())
       :held -> held(destination_id)
     end
   end
@@ -156,15 +178,35 @@ defmodule Kanban.AuditStream.DispatchWorker do
   end
 
   # Public for the tests of a run whose lease or destination is gone before
-  # it prepares; `perform/1` is the only caller in production.
+  # it prepares; `perform/1` is the only caller in production. `deadline` is
+  # the monotonic time after which the run sends no more batches.
   @doc false
-  def run(destination_id, token) do
+  def run(destination_id, token, deadline \\ Pacing.drain_deadline()) do
     case Repo.transact(fn -> prepare(destination_id, token) end) do
-      {:ok, {:send, context}} -> context |> send_batch() |> record(destination_id, token)
-      {:ok, :stopped} -> :ok
-      {:error, _gone_or_lost} -> :ok
+      {:ok, {:send, context}} ->
+        context
+        |> send_batch()
+        |> record(destination_id, token, deadline)
+        |> drain(destination_id, deadline)
+
+      {:ok, :stopped} ->
+        :ok
+
+      {:error, _gone_or_lost} ->
+        :ok
     end
   end
+
+  # The next batch, under a lease of its own. A run holding it already sends
+  # the rest.
+  defp drain(:drain, destination_id, deadline) do
+    case Lease.take(destination_id) do
+      {:ok, token} -> run(destination_id, token, deadline)
+      :held -> :ok
+    end
+  end
+
+  defp drain(:done, _destination_id, _deadline), do: :ok
 
   # --- 1. prepare ------------------------------------------------------------
 
@@ -214,7 +256,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
   defp prepared({:send, adapter}, destination, cursor) do
     organization = organization(destination.organization_id)
 
-    case PendingBatch.prepare(destination, cursor, organization, horizon_opts()) do
+    case PendingBatch.prepare(destination, cursor, organization, Pacing.read_opts()) do
       {:ok, batch, attrs} ->
         with {:ok, _cursor} <- update_cursor(cursor, attrs) do
           {:ok,
@@ -265,13 +307,6 @@ defmodule Kanban.AuditStream.DispatchWorker do
       from(o in Organization, where: o.id == ^organization_id, select: %{id: o.id, name: o.name})
 
     Repo.one!(query)
-  end
-
-  defp horizon_opts do
-    case Application.get_env(:kanban, __MODULE__, [])[:horizon] do
-      {module, function} -> [horizon: apply(module, function, [])]
-      nil -> []
-    end
   end
 
   # --- 2. send (no transaction open) ----------------------------------------
@@ -328,23 +363,28 @@ defmodule Kanban.AuditStream.DispatchWorker do
 
   # --- 3. record --------------------------------------------------------------
 
-  defp record(sent, destination_id, token) do
+  # `:drain` when the run sends the next batch itself, else `:done`.
+  defp record(sent, destination_id, token, deadline) do
     class = Outcome.classify(sent.result, sent.adapter, length(sent.batch.events))
 
-    case Repo.transact(fn -> record_locked(sent, class, destination_id, token) end) do
-      {:ok, destination} ->
+    case Repo.transact(fn -> record_locked(sent, class, destination_id, token, deadline) end) do
+      {:ok, {destination, step}} ->
         emit(class, destination, sent)
+        if Pacing.continue?(step, destination), do: :drain, else: :done
 
       {:error, reason} ->
-        Logger.warning(
-          "audit stream outcome for destination #{destination_id} not recorded: " <>
-            not_recorded(reason)
-        )
-
-        requeue(reason, destination_id)
+        not_recorded(reason, destination_id)
     end
+  end
 
-    :ok
+  defp not_recorded(reason, destination_id) do
+    Logger.warning(
+      "audit stream outcome for destination #{destination_id} not recorded: " <>
+        not_recorded(reason)
+    )
+
+    requeue(reason, destination_id)
+    :done
   end
 
   # A run that lost its lease moved nothing, so the batch still needs a run:
@@ -360,15 +400,31 @@ defmodule Kanban.AuditStream.DispatchWorker do
   defp not_recorded(reason) when reason in [:gone, :lease_lost], do: Atom.to_string(reason)
   defp not_recorded(_reason), do: "invalid"
 
-  defp record_locked(sent, class, destination_id, token) do
+  defp record_locked(sent, class, destination_id, token, deadline) do
     with {:ok, destination} <- lock_destination(destination_id),
          {:ok, cursor} <- guard(destination_id, token) do
       error = Outcome.error_text(class, sent.result, sent.adapter)
-      batch = Map.put(sent.batch, :pending_attempts, cursor.pending_attempts)
-      plan = Outcome.plan(class, error, destination, batch, DateTime.utc_now())
-      apply_plan(plan, sent, class, error, destination, cursor)
+      {plan, step} = plan(sent, class, error, destination, cursor, deadline)
+
+      with {:ok, destination} <- apply_plan(plan, sent, class, error, destination, cursor) do
+        {:ok, {destination, step}}
+      end
     end
   end
+
+  defp plan(sent, class, error, destination, cursor, deadline) do
+    now = DateTime.utc_now()
+    batch = Map.put(sent.batch, :pending_attempts, cursor.pending_attempts)
+    step = next_step(class, destination, cursor, sent.batch.last, now, deadline)
+    {class |> Outcome.plan(error, destination, batch, now) |> Pacing.adjust(step), step}
+  end
+
+  # Only a delivered batch drains or paces; every other outcome keeps the
+  # follow-up its plan sets.
+  defp next_step(:delivered, destination, cursor, last, now, deadline),
+    do: Pacing.step(destination, cursor, last, now, deadline)
+
+  defp next_step(_class, _destination, _cursor, _last, _now, _deadline), do: :follow_up
 
   defp apply_plan(plan, sent, class, error, destination, cursor) do
     with {:ok, _attempt} <- insert_attempt(destination.id, sent, class, error),

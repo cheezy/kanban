@@ -5,7 +5,11 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   chosen small `txid`, which is below any real horizon, so the worker reads
   them with no horizon option (one test sets the worker's `:horizon` seam to
   hold an event back); the events the worker records itself carry the
-  sandbox transaction's own id and are never read. The uniqueness, lease and
+  sandbox transaction's own id and are never read. Events are inserted at
+  2026-11-01 unless a test says otherwise, so a destination with more than
+  one batch waiting is catching up and paced rather than drained; the
+  draining tests insert recent events and set the worker's `:batch_size`
+  and `:drain_ms` seams. The uniqueness, lease and
   open-transaction tests that need committing connections are in
   `Kanban.AuditStream.DispatchWorkerRaceTest`.
   """
@@ -25,6 +29,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   alias Kanban.AuditStream.DispatchWorker
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
+  alias Kanban.AuditStream.Pacing
   alias Kanban.Repo
   alias Kanban.Webhooks.Transport
 
@@ -38,7 +43,12 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
   # --- helpers ------------------------------------------------------------------
 
-  defp event!(organization, txid, action \\ "organization_updated") do
+  defp event!(
+         organization,
+         txid,
+         action \\ "organization_updated",
+         inserted_at \\ ~N[2026-11-01 00:00:00.000000]
+       ) do
     %{rows: [[id]]} =
       Repo.query!(
         """
@@ -49,7 +59,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
           action,
           organization.id,
           %{"email" => "someone@example.com"},
-          ~N[2026-11-01 00:00:00.000000],
+          inserted_at,
           txid
         ]
       )
@@ -175,7 +185,8 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
       assert metadata == %{kind: :https}
       refute_received {:telemetry_event, @failed, _, _}
 
-      assert [_follow_up] = follow_ups(ctx.destination)
+      # Nothing more is waiting, so the sweep queues the next run.
+      assert follow_ups(ctx.destination) == []
     end
 
     test "no events waiting ends without a POST", ctx do
@@ -862,15 +873,18 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
       assert Repo.get(Destination, ctx.destination.id) == nil
     end
 
-    test "the response wait is half the lease, and the send and the run end inside it" do
+    test "the response wait is half the lease, each send ends inside its lease, and the run outlasts the drain" do
       lease_ms = Lease.ttl() * 1_000
       assert DispatchWorker.send_timeout_ms() * 2 == lease_ms
 
       send_deadline = DispatchWorker.send_deadline_ms()
       run_timeout = DispatchWorker.timeout(%Oban.Job{})
       assert DispatchWorker.send_timeout_ms() < send_deadline
-      assert send_deadline < run_timeout
-      assert run_timeout < lease_ms
+      assert send_deadline < lease_ms
+      # A batch started at the end of the 30-second drain still sends and
+      # records before Oban stops the run.
+      assert Pacing.drain_ms() + send_deadline < run_timeout
+      assert run_timeout == 85_000
     end
 
     test "a run that crashes is retried by Oban once the lease it may hold expires" do
@@ -917,6 +931,107 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   @doc false
   def horizon_five, do: 5
 
+  describe "draining and pacing" do
+    setup do
+      on_exit(fn -> Application.delete_env(:kanban, DispatchWorker) end)
+    end
+
+    defp recent!(organization, txid),
+      do: event!(organization, txid, "organization_updated", NaiveDateTime.utc_now())
+
+    test "draining stops after 30 seconds and queues a follow-up", ctx do
+      assert Pacing.drain_ms() == 30_000
+      Application.put_env(:kanban, DispatchWorker, batch_size: 1)
+      [a, b, c] = for txid <- 1..3, do: recent!(ctx.organization, txid)
+      stub(200)
+
+      # Within the 30 seconds the run sends every batch itself.
+      assert :ok = run(ctx.destination)
+
+      assert_received {:request, first_id, [^a], _}
+      assert_received {:request, second_id, [^b], _}
+      assert_received {:request, third_id, [^c], _}
+      assert Enum.uniq([first_id, second_id, third_id]) |> length() == 3
+
+      assert [:delivered, :delivered, :delivered] =
+               ctx.destination |> attempts() |> Enum.map(& &1.outcome)
+
+      assert follow_ups(ctx.destination) == []
+
+      cursor = cursor(ctx.destination)
+      assert {cursor.last_txid, cursor.last_event_id} == {3, c}
+      assert cursor.lease_token == nil and cursor.next_attempt_at == nil
+
+      # Once the drain budget is spent, the run queues its own follow-up for
+      # now and ends.
+      Application.put_env(:kanban, DispatchWorker, batch_size: 1, drain_ms: 0)
+      [d, _e] = for txid <- 4..5, do: recent!(ctx.organization, txid)
+
+      assert :ok = run(ctx.destination)
+
+      assert_received {:request, _, [^d], _}
+      refute_received {:request, _, _, _}
+      assert [job] = follow_ups(ctx.destination)
+      assert seconds_from_now(job.scheduled_at) in -2..1
+      assert cursor(ctx.destination).next_attempt_at == nil
+    end
+
+    test "a run past its drain deadline sends one batch and queues a follow-up", ctx do
+      Application.put_env(:kanban, DispatchWorker, batch_size: 1)
+      [a, _b] = for txid <- 1..2, do: recent!(ctx.organization, txid)
+      stub(200)
+      {:ok, token} = Lease.take(ctx.destination.id)
+
+      assert :ok =
+               DispatchWorker.run(ctx.destination.id, token, System.monotonic_time(:millisecond))
+
+      assert_received {:request, _, [^a], _}
+      refute_received {:request, _, _, _}
+      assert [_follow_up] = follow_ups(ctx.destination)
+    end
+
+    test "a drained destination paused mid-run stops after the batch in flight", ctx do
+      Application.put_env(:kanban, DispatchWorker, batch_size: 1)
+      [a, _b] = for txid <- 1..2, do: recent!(ctx.organization, txid)
+      destination = ctx.destination
+      stub(200, before: fn -> set_destination(destination, enabled: false) end)
+
+      assert :ok = run(destination)
+
+      assert_received {:request, _, [^a], _}
+      refute_received {:request, _, _, _}
+      assert follow_ups(destination) == []
+    end
+
+    test "catch-up paces at one batch every 2 seconds", ctx do
+      Application.put_env(:kanban, DispatchWorker, batch_size: 1)
+      [a, b] = for txid <- 1..2, do: event!(ctx.organization, txid)
+      stub(200)
+
+      assert :ok = run(ctx.destination)
+
+      assert_received {:request, _, [^a], _}
+      refute_received {:request, _, _, _}
+      assert [job] = follow_ups(ctx.destination)
+      assert seconds_from_now(job.scheduled_at) in 0..2
+      due = cursor(ctx.destination).next_attempt_at
+      assert seconds_from_now(due) in 0..2
+      assert DateTime.diff(job.scheduled_at, due, :millisecond) in -10..10
+
+      # A run that comes early, the sweep's included, is not due yet.
+      assert :ok = run(ctx.destination)
+      refute_received {:request, _, _, _}
+
+      make_due(ctx.destination)
+      assert :ok = run(ctx.destination)
+      assert_received {:request, _, [^b], _}
+
+      cursor = cursor(ctx.destination)
+      assert {cursor.last_txid, cursor.last_event_id} == {2, b}
+      assert cursor.next_attempt_at == nil
+    end
+  end
+
   describe "enqueue_dispatch/2" do
     test "queues a run for the destination on the audit_stream queue", ctx do
       at = DateTime.add(DateTime.utc_now(), 30, :second)
@@ -925,6 +1040,19 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
       assert job.queue == "audit_stream"
       assert job.args == %{destination_id: ctx.destination.id}
       assert_enqueued(worker: DispatchWorker, args: %{destination_id: ctx.destination.id})
+    end
+
+    test "a run queued behind a snoozed one moves it to its own time", ctx do
+      snoozed_until = DateTime.add(DateTime.utc_now(), 61, :second)
+
+      assert {:ok, snoozed} =
+               AuditStream.enqueue_dispatch(ctx.destination.id, scheduled_at: snoozed_until)
+
+      assert {:ok, follow_up} = AuditStream.enqueue_dispatch(ctx.destination.id)
+      assert follow_up.id == snoozed.id
+
+      assert [job] = follow_ups(ctx.destination)
+      assert seconds_from_now(job.scheduled_at) in -2..1
     end
   end
 end

@@ -40,8 +40,9 @@ defmodule Kanban.AuditStream.Reader do
       changes no count in `waiting_counts/3`.
 
   `next_batch/3` also takes `:horizon`, `:batch_size` (default 500),
-  `:max_bytes` (default 900_000) and `:size_fun`; `waiting_counts/3` takes
-  `:horizon`. An unknown or invalid option raises `ArgumentError`.
+  `:max_bytes` (default 900_000) and `:size_fun`; `waiting_counts/3` and
+  `next_waiting_at/3` take `:horizon`. An unknown or invalid option raises
+  `ArgumentError`.
   """
   import Ecto.Query, warn: false
 
@@ -154,6 +155,33 @@ defmodule Kanban.AuditStream.Reader do
       events_above_horizon: filter(count(e.id), e.txid >= horizon(^opts[:horizon])),
       oldest_waiting_at: min(e.inserted_at)
     })
+    |> Repo.one()
+  end
+
+  @doc """
+  The `inserted_at` of the next event a destination at `cursor` can send:
+  the first after `cursor` in commit order whose `txid` is below the horizon,
+  or `nil` when none is. The filters apply.
+
+  One indexed row, however long the backlog, so the sweep and the worker can
+  ask it every minute and after every batch. Commit order is close to time
+  order, so against minutes this is the age of the oldest sendable event;
+  `waiting_counts/3` gives the exact oldest, at the cost of counting the whole
+  backlog.
+  """
+  @spec next_waiting_at(integer(), pair(), keyword()) :: DateTime.t() | nil
+  def next_waiting_at(organization_id, cursor, opts \\ [])
+      when is_integer(organization_id) and is_pair(cursor) do
+    opts = options(opts, @filter_defaults ++ [horizon: nil])
+
+    organization_id
+    |> scoped(opts)
+    |> exclude(:join)
+    |> after_pair(cursor)
+    |> where([event: e], e.txid < horizon(^opts[:horizon]))
+    |> in_commit_order()
+    |> limit(1)
+    |> select([event: e], e.inserted_at)
     |> Repo.one()
   end
 

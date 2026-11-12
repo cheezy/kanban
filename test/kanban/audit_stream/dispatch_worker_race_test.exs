@@ -178,6 +178,35 @@ defmodule Kanban.AuditStream.DispatchWorkerRaceTest do
     from(j in Oban.Job, where: j.id in ^[running.id, follow_up.id]) |> Repo.delete_all()
   end
 
+  test "a draining run past its budget queues its own follow-up while it executes", ctx do
+    for txid <- 1..2, do: event!(ctx.organization, txid)
+    original = Application.get_env(:kanban, DispatchWorker)
+    on_exit(fn -> restore(DispatchWorker, original) end)
+    Application.put_env(:kanban, DispatchWorker, batch_size: 1, drain_ms: 0)
+    Req.Test.stub(Transport, &Plug.Conn.send_resp(&1, 200, "ok"))
+    {:ok, running} = AuditStream.enqueue_dispatch(ctx.destination.id)
+
+    from(j in Oban.Job, where: j.id == ^running.id)
+    |> Repo.update_all(set: [state: "executing"])
+
+    assert :ok = run(ctx.destination)
+
+    assert [%{outcome: :delivered}] = attempts(ctx.destination)
+    assert [follow_up] = queued(ctx.destination)
+    assert follow_up.state in ["available", "scheduled"]
+    assert abs(DateTime.diff(follow_up.scheduled_at, DateTime.utc_now())) <= 2
+
+    # Within its budget, a run drains every batch itself and queues nothing.
+    Repo.delete!(follow_up)
+    Application.put_env(:kanban, DispatchWorker, batch_size: 1)
+    assert :ok = run(ctx.destination)
+
+    assert length(attempts(ctx.destination)) == 2
+    assert queued(ctx.destination) == []
+
+    Repo.delete!(running)
+  end
+
   test "the lease stops a second run", ctx do
     a = event!(ctx.organization, 1)
     blocking_stub()

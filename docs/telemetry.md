@@ -1078,8 +1078,9 @@ Stored today:
   due when the run ended;
 - since W2705, `audit_stream.lag_measured.lag_seconds`, the age of a
   streaming destination's oldest undelivered audit event. The streaming sweep
-  is to emit it at most once every 15 minutes per destination, so a growing
-  lag shows in the metrics history; no code emits it yet.
+  (`Kanban.AuditStream.Scheduler`, since W2711) emits it at most once every
+  15 minutes per enabled destination, so a growing lag shows in the metrics
+  history.
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,

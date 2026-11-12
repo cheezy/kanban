@@ -437,6 +437,48 @@ defmodule Kanban.AuditStream.ReaderTest do
     end
   end
 
+  describe "next_waiting_at/3" do
+    test "is the next sendable event's inserted_at in commit order, or nil", %{
+      organization: organization,
+      other_organization: other_organization
+    } do
+      insert_raw!(other_organization, txid: 1, at: ~N[2026-10-01 00:00:00.000000])
+      assert Reader.next_waiting_at(organization.id, {0, 0}) == nil
+
+      first = insert_raw!(organization, txid: 2, at: ~N[2026-11-02 00:00:00.000000])
+      insert_raw!(organization, txid: 3, at: ~N[2026-11-01 00:00:00.000000])
+
+      assert Reader.next_waiting_at(organization.id, {0, 0}) == ~U[2026-11-02 00:00:00.000000Z]
+
+      assert Reader.next_waiting_at(organization.id, {2, first}) ==
+               ~U[2026-11-01 00:00:00.000000Z]
+
+      assert Reader.next_waiting_at(organization.id, {3, first + 1}) == nil
+    end
+
+    test "only events below the horizon count, and the filters apply", %{
+      organization: organization
+    } do
+      insert_raw!(organization, txid: 5, action: "board_created")
+      assert Reader.next_waiting_at(organization.id, {0, 0}, horizon: 5) == nil
+      assert %DateTime{} = Reader.next_waiting_at(organization.id, {0, 0}, horizon: 6)
+
+      assert Reader.next_waiting_at(organization.id, {0, 0}, excluded_actions: ["board_created"]) ==
+               nil
+
+      assert Reader.next_waiting_at(organization.id, {0, 0}, not_before: ~U[2026-11-02 00:00:00Z]) ==
+               nil
+
+      # The test transaction's own row is above the default horizon.
+      AuditLog.event(:organization_updated, organization_id: organization.id)
+      assert Reader.next_waiting_at(organization.id, {5, 1_000_000_000}) == nil
+
+      assert_raise ArgumentError, fn ->
+        Reader.next_waiting_at(organization.id, {0, 0}, batch_size: 1)
+      end
+    end
+  end
+
   describe "redaction" do
     test "outside actor keys removed from metadata", %{
       organization: organization,

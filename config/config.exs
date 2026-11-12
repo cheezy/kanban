@@ -124,15 +124,21 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # never competes with itself for table locks. `:workspace_exports` writes one
 # workspace export archive at a time (W2222), bounding the disk and database
 # load a burst of export requests can cause. `:attachments` runs the
-# attachment blob cleanup one batch at a time (W2509).
+# attachment blob cleanup one batch at a time (W2509). `:audit_stream` sends
+# audit log streaming batches and runs the streaming sweep (W2710, W2711).
+# Its limit of 5 applies per node, so n nodes make at most 5 x n sends at
+# once, and being its own queue keeps streaming from delaying notifications,
+# webhooks or exports.
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
 # delivery-target status sweeper hourly at minute 17 (W2291), the
 # metrics retention cleanup daily at 03:23 UTC (W2345), the workspace
 # export cleanup hourly at minute 41 (W2222), the audit and archived-task
 # retention purge daily at 03:47 UTC (W2244), the verified-domain re-check
-# daily at 04:11 UTC and the attachment blob cleanup every 15 minutes
-# (Kanban.Attachments.BlobCleanupWorker, W2509).
+# daily at 04:11 UTC, the attachment blob cleanup every 15 minutes
+# (Kanban.Attachments.BlobCleanupWorker, W2509), the audit stream sweep every
+# minute (Kanban.AuditStream.Scheduler, W2711) and the audit stream attempt
+# prune hourly at minute 29 (Kanban.AuditStream.AttemptPruneWorker, W2711).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
@@ -142,7 +148,8 @@ config :kanban, Oban,
     webhooks: 10,
     maintenance: 1,
     workspace_exports: 1,
-    attachments: 1
+    attachments: 1,
+    audit_stream: 5
   ],
   # Lifeline moves a job left in `executing` for an hour, such as one whose
   # node was killed mid-run, back to `available`, or to `discarded` once its
@@ -162,7 +169,9 @@ config :kanban, Oban,
        {"47 3 * * *", Kanban.Retention.PurgeWorker},
        {"11 4 * * *", Kanban.SSO.DomainRecheckWorker},
        {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker},
-       {"*/15 * * * *", Kanban.Attachments.BlobCleanupWorker}
+       {"*/15 * * * *", Kanban.Attachments.BlobCleanupWorker},
+       {"* * * * *", Kanban.AuditStream.Scheduler},
+       {"29 * * * *", Kanban.AuditStream.AttemptPruneWorker}
      ]}
   ]
 

@@ -48,17 +48,32 @@ defmodule Kanban.AuditStream do
   events it records in `Kanban.AuditStream.DestinationEvents`, and its URL
   checks in `Kanban.AuditStream.Reachability`, and its signing secrets in
   `Kanban.AuditStream.SigningSecrets`.
+
+  ## For the workers
+
+  `enqueue_dispatch/2`, `due_for_dispatch/2`, `measure_lag/3` and
+  `prune_attempts/1` serve the delivery workers and take no scope. The
+  sweep's queries select only the fields they need, so a destination's
+  secrets are never decrypted every minute.
   """
 
   import Ecto.Query, only: [from: 2]
 
   alias Ecto.Changeset
   alias Kanban.Accounts.Scope
+  alias Kanban.AuditStream.Attempt
+  alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Destinations
   alias Kanban.AuditStream.DispatchWorker
+  alias Kanban.AuditStream.PendingBatch
+  alias Kanban.AuditStream.Reader
   alias Kanban.AuditStream.SigningSecrets
   alias Kanban.Repo
+
+  @attempts_kept 200
+  @attempt_days 7
+  @lag_slots 15
 
   @doc """
   The Organization's destinations, oldest first, or `{:error,
@@ -182,10 +197,138 @@ defmodule Kanban.AuditStream do
   `destination_id`. For the worker and the sweep only, so it takes no scope
   and checks nothing: the run itself ends at once for a paused, halted or
   deleted destination. `opts` are `Oban.Worker.new/2` options, such as
-  `:scheduled_at`. A run already queued for the destination is kept, and
-  returned with `conflict?: true`, rather than queued twice.
+  `:scheduled_at`, which defaults to now. A run already queued for the
+  destination is kept, and returned with `conflict?: true`, rather than
+  queued twice; when that run is scheduled, it moves to this one's
+  `scheduled_at`.
   """
   @spec enqueue_dispatch(integer(), keyword()) :: {:ok, Oban.Job.t()} | {:error, term()}
-  def enqueue_dispatch(destination_id, opts \\ []) when is_integer(destination_id),
-    do: destination_id |> DispatchWorker.job(opts) |> Oban.insert()
+  def enqueue_dispatch(destination_id, opts \\ []) when is_integer(destination_id) do
+    opts = Keyword.put_new_lazy(opts, :scheduled_at, &DateTime.utc_now/0)
+    destination_id |> DispatchWorker.job(opts) |> Oban.insert()
+  end
+
+  @doc """
+  The ids of the destinations the minute sweep queues a run for at `now`:
+  enabled, not halted (`halted_reason` is nil), due (`next_attempt_at` nil
+  or not after `now`), not leased (no run holds a lease that is still live
+  at `now`) and with an event waiting below the horizon
+  (`Kanban.AuditStream.Reader.next_waiting_at/3`). A run that holds the
+  lease queues its own follow-up; a job queued for it now would only snooze
+  in a unique state and make that follow-up a duplicate, delaying the next
+  send by up to a minute. A lease left by a run that crashed expires within
+  60 seconds, and the next sweep picks the destination up. For the sweep
+  only, so it takes no scope. `opts` takes `:horizon`, for tests.
+  """
+  @spec due_for_dispatch(DateTime.t(), keyword()) :: [integer()]
+  def due_for_dispatch(%DateTime{} = now, opts \\ []) do
+    query =
+      from([d, c] in sweep_rows(),
+        where:
+          d.enabled and is_nil(d.halted_reason) and
+            (is_nil(c.next_attempt_at) or c.next_attempt_at <= ^now) and
+            (is_nil(c.leased_until) or c.leased_until <= ^now)
+      )
+
+    for row <- Repo.all(query), sendable?(row, opts), do: row.id
+  end
+
+  @doc """
+  The lag of the enabled destinations whose 15-minute slot is `minute`
+  (`id` modulo 15 equals `minute` modulo 15), so each is measured once
+  every 15 minutes with no stored state (§13.1). Halted destinations are
+  measured, since their lag is what grows; paused ones are not.
+
+  Each is `%{kind, lag_seconds, events_waiting, events_above_horizon}`, from
+  `Kanban.AuditStream.Reader.waiting_counts/3` at `now`: `lag_seconds` is
+  the age of the oldest waiting event in whole seconds, or 0 when none is
+  waiting. A held horizon therefore shows as waiting events and a growing
+  lag, never as zero. `opts` takes `:horizon`, for tests.
+  """
+  @spec measure_lag(non_neg_integer(), DateTime.t(), keyword()) :: [map()]
+  def measure_lag(minute, %DateTime{} = now, opts \\ []) when is_integer(minute) do
+    slot = rem(minute, @lag_slots)
+
+    query =
+      from([d, c] in sweep_rows(),
+        where: d.enabled and fragment("? % ?", d.id, ^@lag_slots) == ^slot
+      )
+
+    for row <- Repo.all(query), do: lag(row, now, opts)
+  end
+
+  @doc """
+  Deletes the attempts the hourly prune does not keep (§8.7): those that
+  started more than 7 days before `now`, and all but the newest 200 of each
+  destination. Gaps are another table and are never touched. Returns how
+  many attempts were deleted.
+  """
+  @spec prune_attempts(DateTime.t()) :: non_neg_integer()
+  def prune_attempts(%DateTime{} = now) do
+    cutoff = DateTime.add(now, -@attempt_days * 86_400, :second)
+    {old, _} = from(a in Attempt, where: a.started_at < ^cutoff) |> Repo.delete_all()
+
+    ranked =
+      from(a in Attempt,
+        select: %{
+          id: a.id,
+          rank:
+            over(row_number(),
+              partition_by: a.destination_id,
+              order_by: [desc: a.started_at, desc: a.id]
+            )
+        }
+      )
+
+    extra =
+      from(a in Attempt,
+        join: r in subquery(ranked),
+        on: r.id == a.id,
+        where: r.rank > ^@attempts_kept
+      )
+
+    {beyond, _} = Repo.delete_all(extra)
+    old + beyond
+  end
+
+  # The destination and cursor fields the sweep reads; never the struct.
+  defp sweep_rows do
+    from(d in Destination,
+      join: c in Cursor,
+      on: c.destination_id == d.id,
+      order_by: d.id,
+      select: %{
+        id: d.id,
+        kind: d.kind,
+        organization_id: d.organization_id,
+        excluded_actions: d.excluded_actions,
+        include_personal_data: d.include_personal_data,
+        last_txid: c.last_txid,
+        last_event_id: c.last_event_id,
+        not_before: c.not_before
+      }
+    )
+  end
+
+  defp sendable?(row, opts) do
+    filters = PendingBatch.filters(row, row) ++ Keyword.take(opts, [:horizon])
+    Reader.next_waiting_at(row.organization_id, position(row), filters) != nil
+  end
+
+  defp lag(row, now, opts) do
+    filters = PendingBatch.filters(row, row) ++ Keyword.take(opts, [:horizon])
+    counts = Reader.waiting_counts(row.organization_id, position(row), filters)
+
+    %{
+      kind: row.kind,
+      lag_seconds: lag_seconds(counts.oldest_waiting_at, now),
+      events_waiting: counts.events_waiting,
+      events_above_horizon: counts.events_above_horizon
+    }
+  end
+
+  defp lag_seconds(nil, _now), do: 0
+  defp lag_seconds(oldest, now), do: max(DateTime.diff(now, oldest, :second), 0)
+
+  defp position(row), do: {row.last_txid, row.last_event_id}
 end

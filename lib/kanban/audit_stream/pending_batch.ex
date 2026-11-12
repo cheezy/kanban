@@ -47,7 +47,7 @@ defmodule Kanban.AuditStream.PendingBatch do
   The batch to send for `destination` at `cursor`, and the cursor fields to
   write before sending it, or `{:empty, attrs}` when no event is waiting.
 
-  Options: `:horizon`, passed to `Reader.next_batch/3`.
+  Options: `:horizon` and `:batch_size`, passed to `Reader.next_batch/3`.
   """
   @spec prepare(Destination.t(), Cursor.t(), Payload.organization(), keyword()) ::
           {:ok, batch(), map()} | {:empty, map()}
@@ -68,7 +68,13 @@ defmodule Kanban.AuditStream.PendingBatch do
   defp prepared(:none, {destination, cursor, organization, filters, opts}),
     do: cut(destination, cursor, organization, filters, opts, %{})
 
-  defp filters(destination, cursor) do
+  @doc """
+  The `Kanban.AuditStream.Reader` filters of `destination` at `cursor`: its
+  `not_before`, excluded actions and personal-data choice. Either may be a
+  map with those fields rather than the struct.
+  """
+  @spec filters(Destination.t() | map(), Cursor.t() | map()) :: keyword()
+  def filters(destination, cursor) do
     [
       not_before: cursor.not_before,
       excluded_actions: destination.excluded_actions,
@@ -109,7 +115,8 @@ defmodule Kanban.AuditStream.PendingBatch do
 
   defp cut(destination, cursor, organization, filters, opts, attrs) do
     read_opts =
-      filters ++ [size_fun: &encoded_size(&1, organization)] ++ Keyword.take(opts, [:horizon])
+      filters ++
+        [size_fun: &encoded_size(&1, organization)] ++ Keyword.take(opts, [:horizon, :batch_size])
 
     case Reader.next_batch(organization.id, {cursor.last_txid, cursor.last_event_id}, read_opts) do
       [] ->
