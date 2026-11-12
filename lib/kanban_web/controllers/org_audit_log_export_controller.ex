@@ -71,6 +71,14 @@ defmodule KanbanWeb.OrgAuditLogExportController do
 
   An unsigned export records `signed: false`.
 
+  A signed download the client cancels ends normally: the closed connection
+  is logged at info level by its transport reason alone, the temporary
+  directory is removed and the audit row stays. That row records that a
+  signed file was issued, not that it was received. A transport failure that
+  is not a client closing, such as a file the server could not read, ends the
+  same way but is logged at warning and reported to ErrorTracker. Any other
+  failure during the send still raises.
+
   ## HEAD
 
   A `HEAD` request (`KanbanWeb.Plugs.HeadRequest`) gets the headers a `GET`
@@ -112,7 +120,13 @@ defmodule KanbanWeb.OrgAuditLogExportController do
   alias KanbanWeb.Plugs.HeadRequest
   alias KanbanWeb.UserAuth.OrgAdminGate
 
+  require Logger
+
   @default_max_rows 50_000
+
+  # The posix reasons Bandit itself treats as a client going away
+  # (deps/bandit/lib/bandit/logger.ex).
+  @client_closure_reasons [:closed, :enotconn, :einval, :econnaborted, :econnreset]
 
   plug :require_org_admin_user
 
@@ -343,6 +357,9 @@ defmodule KanbanWeb.OrgAuditLogExportController do
   # The path is the zip Kanban.AuditLog.SignedExport has just built in its own
   # temporary directory; no request value reaches it. No x-export-truncated
   # header: the manifest inside the zip is the record.
+  # A client that cancels the download makes Bandit's send_file raise
+  # Bandit.TransportError; only that is rescued, so every other failure still
+  # raises and reaches ErrorTracker.
   # sobelow_skip ["Traversal.SendDownload"]
   defp send_zip(conn, zip_path) do
     conn
@@ -352,6 +369,31 @@ defmodule KanbanWeb.OrgAuditLogExportController do
       content_type: "application/zip",
       disposition: :attachment
     )
+  rescue
+    error in Bandit.TransportError -> end_cancelled_download(conn, error, __STACKTRACE__)
+  end
+
+  # Plug.Conn.send_file sets the conn's state only once the adapter has sent,
+  # so this conn is still :unset, and Bandit raises Plug.Conn.NotSentError for
+  # an :unset conn. :sent makes Bandit end the request and close the HTTP/1.1
+  # connection without writing to it again. Only the reason is logged: never
+  # the path, the requester's email or IP.
+  defp end_cancelled_download(conn, %Bandit.TransportError{error: reason} = error, stacktrace) do
+    report_cancelled_download(reason, error, stacktrace)
+    %{conn | state: :sent}
+  end
+
+  defp report_cancelled_download(reason, _error, _stacktrace)
+       when reason in @client_closure_reasons do
+    Logger.info("signed audit export download ended: client closed (#{inspect(reason)})")
+  end
+
+  # Bandit raises the same error for a failure on the server's side of the
+  # sendfile, such as a file it cannot open (:emfile, :enoent, :eacces), so
+  # every other reason is still reported to ErrorTracker.
+  defp report_cancelled_download(reason, error, stacktrace) do
+    Logger.warning("signed audit export download failed: transport error (#{inspect(reason)})")
+    ErrorTracker.report(error, stacktrace)
   end
 
   defp signed_filename, do: "org_audit_log_#{Date.utc_today()}_signed.zip"

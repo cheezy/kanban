@@ -86,7 +86,9 @@ It does not prove:
 - **Anything about the export itself.** Making an export records an
   `org_audit_log_exported` event that carries the file's SHA-256, so it is
   recorded after the file is built. A signed file can never hold its own
-  export event; that event appears in the next export.
+  export event; that event appears in the next export. The event records that
+  a signed file was issued, not that it was received: it is written before the
+  first byte is sent, and it stays when the download is cancelled.
 - **Anything about `README.txt`.** Only `manifest.json` is signed. Compare the
   host in the README's first command with the instance you expect before you
   trust the key it fetches.

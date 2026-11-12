@@ -52,11 +52,12 @@ defmodule Kanban.AuditLog.SignedExport do
   The directory is owner-only with an unpredictable name
   (`Kanban.AuditLog.SignedExport.Scratch`). It briefly holds audit data, so it
   is removed on every path. `with_archive/3` removes it when the build fails,
-  when the caller's function returns and when that function raises. A guard
-  process removes it when the building process is killed instead, for example
-  because its connection closed during the download. A killed VM runs neither,
-  so a sweep at boot and every 15 minutes removes what such a VM left once it
-  is an hour old. A removal the operating system refuses is logged.
+  when the caller's function returns and when that function raises. A client
+  that cancels the download is the returning case: the caller treats it as a
+  normal end, so its function returns and the directory goes. A guard process
+  removes it when the building process is killed instead. A killed VM runs
+  neither, so a sweep at boot and every 15 minutes removes what such a VM left
+  once it is an hour old. A removal the operating system refuses is logged.
 
   It is created in `System.tmp_dir/0`'s `stride-signed-exports`.
   `config :kanban, Kanban.AuditLog.SignedExport, tmp_root: path` names

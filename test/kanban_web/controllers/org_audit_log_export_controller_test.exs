@@ -15,6 +15,8 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
   alias Kanban.AuditLog.Signing
   alias Kanban.Organizations
   alias Kanban.Repo
+  alias KanbanWeb.ClosingSendFileAdapter
+  alias KanbanWeb.OrgAuditLogExportController
 
   @refusal "You must be an org-admin of an Organization to access this page."
 
@@ -687,6 +689,19 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
     fired
   end
 
+  # Runs the :browser pipeline, then the controller with a send_file that
+  # raises Bandit.TransportError with `reason`: what Bandit raises when the
+  # client has closed the connection. Phoenix.ConnTest's get/2 always installs
+  # the test adapter, so the controller is called directly; it re-declares
+  # require_org_admin_user itself, so the org-admin gate still runs.
+  defp get_closing(conn, path, reason) do
+    conn
+    |> bypass_through(KanbanWeb.Router, [:browser])
+    |> get(path)
+    |> ClosingSendFileAdapter.install(reason)
+    |> OrgAuditLogExportController.call(:export)
+  end
+
   describe "signed export" do
     @describetag :tmp_dir
     setup [:org_admin_setup, :signed_setup]
@@ -1169,6 +1184,108 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       assert File.ls!(root) == []
       assert [event] = AuditLog.list_events(action: :org_audit_log_exported)
       assert event.metadata["signed"] == true
+    end
+
+    test "a connection closed during the signed send ends normally, removes the temp dir and keeps the event",
+         %{conn: conn, root: root} do
+      test_pid = self()
+      on_export_recorded(fn _metadata -> send(test_pid, {:dirs_at_send, build_dirs(root)}) end)
+
+      conn = get_closing(conn, "/org/audit/export?signed=true", :closed)
+
+      assert_received {:dirs_at_send, [_dir]}
+
+      # :sent, not :unset: Bandit raises Plug.Conn.NotSentError for an :unset
+      # conn, and :sent makes it end the request without writing again.
+      assert conn.state == :sent
+      assert File.ls!(root) == []
+      assert [event] = AuditLog.list_events(action: :org_audit_log_exported)
+      assert event.metadata["signed"] == true
+    end
+
+    test "a closed connection logs one info line with no path or email",
+         %{conn: conn, root: root, org_admin: org_admin} do
+      # config/test.exs logs at :warning; this file is async: false.
+      original_level = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: original_level) end)
+      occurrences = Repo.aggregate(ErrorTracker.Occurrence, :count)
+
+      for reason <- [:closed, :enotconn, :einval, :econnaborted, :econnreset] do
+        log =
+          ExUnit.CaptureLog.capture_log([level: :info], fn ->
+            get_closing(conn, "/org/audit/export?signed=true", reason)
+          end)
+
+        assert [line] =
+                 log |> String.split("\n") |> Enum.filter(&(&1 =~ "signed audit export"))
+
+        assert line =~ "[info] signed audit export download ended: client closed"
+        assert line =~ inspect(reason)
+        refute log =~ root
+        refute log =~ org_admin.email
+        refute log =~ "127.0.0.1"
+      end
+
+      # Info, not warning: nothing is captured at warning level.
+      log =
+        ExUnit.CaptureLog.capture_log([level: :warning], fn ->
+          get_closing(conn, "/org/audit/export?signed=true", :closed)
+        end)
+
+      refute log =~ "signed audit export"
+      assert File.ls!(root) == []
+      assert length(AuditLog.list_events(action: :org_audit_log_exported)) == 6
+      # A client closing is not an error: ErrorTracker records nothing.
+      assert Repo.aggregate(ErrorTracker.Occurrence, :count) == occurrences
+    end
+
+    test "another transport reason logs a warning",
+         %{conn: conn, root: root, org_admin: org_admin} do
+      # :enoent is a failure on the server's side of the sendfile, which Bandit
+      # raises as the same error; :timeout is a transport failure of its own.
+      for reason <- [:enoent, :timeout] do
+        occurrences = Repo.aggregate(ErrorTracker.Occurrence, :count)
+
+        {sent, log} =
+          ExUnit.CaptureLog.with_log(fn ->
+            get_closing(conn, "/org/audit/export?signed=true", reason)
+          end)
+
+        assert sent.state == :sent
+
+        assert [line] =
+                 log |> String.split("\n") |> Enum.filter(&(&1 =~ "signed audit export"))
+
+        assert line =~
+                 "[warning] signed audit export download failed: transport error (#{inspect(reason)})"
+
+        refute log =~ root
+        refute log =~ org_admin.email
+        refute log =~ "127.0.0.1"
+        assert File.ls!(root) == []
+
+        # Still reported: this is not a client going away.
+        assert Repo.aggregate(ErrorTracker.Occurrence, :count) == occurrences + 1
+      end
+
+      assert length(AuditLog.list_events(action: :org_audit_log_exported)) == 2
+    end
+
+    test "the export span stops without an exception event when the client closes",
+         %{conn: conn} do
+      attach_telemetry([
+        [:kanban, :export, :start],
+        [:kanban, :export, :stop],
+        [:kanban, :export, :exception]
+      ])
+
+      get_closing(conn, "/org/audit/export?signed=true", :closed)
+
+      assert_receive {:telemetry_event, [:kanban, :export, :start], _, _}
+      assert_receive {:telemetry_event, [:kanban, :export, :stop], %{duration: _}, stop}
+      assert Map.delete(stop, :telemetry_span_context) == %{kind: :org_audit_log, format: :zip}
+      refute_received {:telemetry_event, [:kanban, :export, :exception], _, _}
     end
 
     for {locale, signing_off, build_failed} <- [
