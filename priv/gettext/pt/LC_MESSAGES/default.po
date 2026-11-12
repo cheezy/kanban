@@ -6841,10 +6841,10 @@ msgid "You must confirm your account before signing in. Check your email for a c
 msgstr "Você deve confirmar sua conta antes de entrar. Verifique seu e-mail para encontrar o link de confirmação."
 
 #: lib/kanban_web/user_auth.ex:344
-#: lib/kanban_web/user_auth.ex:433
-#: lib/kanban_web/user_auth.ex:469
-#: lib/kanban_web/user_auth.ex:500
-#: lib/kanban_web/user_auth.ex:531
+#: lib/kanban_web/user_auth.ex:436
+#: lib/kanban_web/user_auth.ex:472
+#: lib/kanban_web/user_auth.ex:503
+#: lib/kanban_web/user_auth.ex:534
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "Você deve confirmar sua conta para acessar esta página."
@@ -9317,7 +9317,7 @@ msgid "To (UTC)"
 msgstr "Até (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:174
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:188
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "Formato de exportação não suportado."
@@ -11008,7 +11008,7 @@ msgstr "Não confirmado"
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "Esta conta está desativada, por isso não pode ser adicionada ao quadro."
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:180
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:194
 #, elixir-autogen, elixir-format
 msgid "Too many exports. Try again later."
 msgstr "Exportações demais. Tente novamente mais tarde."
@@ -14041,13 +14041,13 @@ msgstr "Sistema"
 msgid "Theme"
 msgstr "Tema"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:183
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:197
 #: lib/kanban_web/live/org_live/audit_log.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Signed exports are not set up on this server."
 msgstr "As exportações assinadas não estão configuradas neste servidor."
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:186
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:200
 #, elixir-autogen, elixir-format
 msgid "The signed export could not be built. Try again."
 msgstr "Não foi possível criar a exportação assinada. Tente novamente."
@@ -14088,7 +14088,19 @@ msgstr "Chave de assinatura"
 msgid "This key as PEM"
 msgstr "Esta chave em PEM"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:177
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:191
 #, elixir-autogen, elixir-format
 msgid "The signed parameter must be true or false."
 msgstr "O parâmetro signed deve ser true ou false."
+
+#: lib/kanban_web/user_auth.ex:384
+#: lib/kanban_web/user_auth.ex:517
+#, elixir-autogen, elixir-format
+msgid "You must be an admin to access this page."
+msgstr "Você deve ser administrador para acessar esta página."
+
+#: lib/kanban_web/user_auth.ex:356
+#: lib/kanban_web/user_auth.ex:479
+#, elixir-autogen, elixir-format
+msgid "You must log in to access this page."
+msgstr "Você deve fazer login para acessar esta página."

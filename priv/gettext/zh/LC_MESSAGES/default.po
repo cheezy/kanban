@@ -6816,10 +6816,10 @@ msgid "You must confirm your account before signing in. Check your email for a c
 msgstr "您必须先确认您的账户才能登录。请检查您的电子邮件以获取确认链接。"
 
 #: lib/kanban_web/user_auth.ex:344
-#: lib/kanban_web/user_auth.ex:433
-#: lib/kanban_web/user_auth.ex:469
-#: lib/kanban_web/user_auth.ex:500
-#: lib/kanban_web/user_auth.ex:531
+#: lib/kanban_web/user_auth.ex:436
+#: lib/kanban_web/user_auth.ex:472
+#: lib/kanban_web/user_auth.ex:503
+#: lib/kanban_web/user_auth.ex:534
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "您必须确认您的账户才能访问此页面。"
@@ -9281,7 +9281,7 @@ msgid "To (UTC)"
 msgstr "结束日期 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:174
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:188
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "不支持的导出格式。"
@@ -10967,7 +10967,7 @@ msgstr "未确认"
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "此账户已停用，因此无法添加到看板。"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:180
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:194
 #, elixir-autogen, elixir-format
 msgid "Too many exports. Try again later."
 msgstr "导出次数过多，请稍后再试。"
@@ -13995,13 +13995,13 @@ msgstr "跟随系统"
 msgid "Theme"
 msgstr "主题"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:183
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:197
 #: lib/kanban_web/live/org_live/audit_log.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Signed exports are not set up on this server."
 msgstr "此服务器未设置签名导出。"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:186
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:200
 #, elixir-autogen, elixir-format
 msgid "The signed export could not be built. Try again."
 msgstr "无法生成签名导出，请重试。"
@@ -14042,7 +14042,19 @@ msgstr "签名密钥"
 msgid "This key as PEM"
 msgstr "此密钥的 PEM 格式"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:177
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:191
 #, elixir-autogen, elixir-format
 msgid "The signed parameter must be true or false."
 msgstr "signed 参数必须为 true 或 false。"
+
+#: lib/kanban_web/user_auth.ex:384
+#: lib/kanban_web/user_auth.ex:517
+#, elixir-autogen, elixir-format
+msgid "You must be an admin to access this page."
+msgstr "您必须是管理员才能访问此页面。"
+
+#: lib/kanban_web/user_auth.ex:356
+#: lib/kanban_web/user_auth.ex:479
+#, elixir-autogen, elixir-format
+msgid "You must log in to access this page."
+msgstr "您必须登录才能访问此页面。"

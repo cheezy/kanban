@@ -353,7 +353,7 @@ defmodule KanbanWeb.UserAuth do
       true ->
         socket =
           socket
-          |> Phoenix.LiveView.put_flash(:error, "You must log in to access this page.")
+          |> Phoenix.LiveView.put_flash(:error, gettext("You must log in to access this page."))
           |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
 
         {:halt, socket}
@@ -379,7 +379,10 @@ defmodule KanbanWeb.UserAuth do
 
         socket =
           socket
-          |> Phoenix.LiveView.put_flash(:error, "You must be an admin to access this page.")
+          |> Phoenix.LiveView.put_flash(
+            :error,
+            gettext("You must be an admin to access this page.")
+          )
           |> Phoenix.LiveView.redirect(to: ~p"/")
 
         {:halt, socket}
@@ -473,7 +476,7 @@ defmodule KanbanWeb.UserAuth do
         conn
 
       true ->
-        halt_with_login_redirect(conn, "You must log in to access this page.")
+        halt_with_login_redirect(conn, gettext("You must log in to access this page."))
     end
   end
 
@@ -511,7 +514,7 @@ defmodule KanbanWeb.UserAuth do
         )
 
         conn
-        |> put_flash(:error, "You must be an admin to access this page.")
+        |> put_flash(:error, gettext("You must be an admin to access this page."))
         |> redirect(to: ~p"/")
         |> halt()
     end

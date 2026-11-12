@@ -332,6 +332,24 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       conn = get(build_conn(), ~p"/org/audit/export")
 
       assert redirected_to(conn) == ~p"/users/log-in"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "You must log in to access this page."
+    end
+
+    test "an anonymous visitor under ja and zh gets the translated log-in flash" do
+      for {locale, expected} <- [
+            {"ja", "このページにアクセスするには、ログインする必要があります。"},
+            {"zh", "您必须登录才能访问此页面。"}
+          ] do
+        conn =
+          build_conn()
+          |> Plug.Test.init_test_session(%{"locale" => locale})
+          |> get(~p"/org/audit/export")
+
+        assert redirected_to(conn) == ~p"/users/log-in"
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) == expected
+      end
     end
   end
 

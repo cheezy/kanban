@@ -580,6 +580,119 @@ defmodule KanbanWeb.UserAuthTest do
     end
   end
 
+  describe "refusal flashes follow the request locale (D423)" do
+    @login_refusal %{
+      "ja" => "このページにアクセスするには、ログインする必要があります。",
+      "zh" => "您必须登录才能访问此页面。"
+    }
+    @admin_refusal %{
+      "ja" => "このページにアクセスするには、管理者である必要があります。",
+      "zh" => "您必须是管理员才能访问此页面。"
+    }
+
+    setup %{conn: conn} do
+      socket = %LiveView.Socket{
+        endpoint: KanbanWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      %{conn: conn, socket: socket}
+    end
+
+    test "require_authenticated_user/2 flashes the log-in refusal in ja and zh", %{conn: conn} do
+      for {locale, expected} <- @login_refusal do
+        refused =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            conn
+            |> UserAuth.fetch_current_scope_for_user([])
+            |> fetch_flash()
+            |> UserAuth.require_authenticated_user([])
+          end)
+
+        assert refused.halted
+        assert redirected_to(refused) == ~p"/users/log-in"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == expected
+      end
+    end
+
+    test "on_mount :require_authenticated flashes the log-in refusal in ja and zh",
+         %{conn: conn, socket: socket} do
+      session = get_session(conn)
+
+      for {locale, expected} <- @login_refusal do
+        {:halt, refused} =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            UserAuth.on_mount(:require_authenticated, %{}, session, socket)
+          end)
+
+        assert refused.assigns.flash["error"] == expected
+      end
+    end
+
+    test "require_admin_user/2 and on_mount :require_admin flash the admin refusal in ja and zh",
+         %{conn: conn, socket: socket, user: user} do
+      token = Accounts.generate_user_session_token(user)
+      signed_in = put_session(conn, :user_token, token)
+      session = get_session(signed_in)
+
+      for {locale, expected} <- @admin_refusal do
+        {refused_conn, {:halt, refused_socket}} =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            refused_conn =
+              signed_in
+              |> UserAuth.fetch_current_scope_for_user([])
+              |> fetch_flash()
+              |> UserAuth.require_admin_user([])
+
+            {refused_conn, UserAuth.on_mount(:require_admin, %{}, session, socket)}
+          end)
+
+        assert refused_conn.halted
+        assert redirected_to(refused_conn) == ~p"/"
+        assert Phoenix.Flash.get(refused_conn.assigns.flash, :error) == expected
+        assert refused_socket.assigns.flash["error"] == expected
+      end
+    end
+
+    test "both refusals are translated in every non-English locale" do
+      for locale <- ~w(de es fr ja pt zh),
+          msgid <- [
+            "You must log in to access this page.",
+            "You must be an admin to access this page."
+          ] do
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            Gettext.dgettext(KanbanWeb.Gettext, "default", msgid)
+          end)
+
+        refute translated == msgid, "#{locale} has no translation for #{inspect(msgid)}"
+      end
+    end
+
+    test "both refusals keep their exact English text under en", %{conn: conn, user: user} do
+      for msgid <- [
+            "You must log in to access this page.",
+            "You must be an admin to access this page."
+          ] do
+        assert Gettext.with_locale(KanbanWeb.Gettext, "en", fn ->
+                 Gettext.dgettext(KanbanWeb.Gettext, "default", msgid)
+               end) == msgid
+      end
+
+      refused =
+        Gettext.with_locale(KanbanWeb.Gettext, "en", fn ->
+          conn
+          |> put_session(:user_token, Accounts.generate_user_session_token(user))
+          |> UserAuth.fetch_current_scope_for_user([])
+          |> fetch_flash()
+          |> UserAuth.require_admin_user([])
+        end)
+
+      assert Phoenix.Flash.get(refused.assigns.flash, :error) ==
+               "You must be an admin to access this page."
+    end
+  end
+
   describe "require_authenticated_user/2" do
     setup %{conn: conn} do
       %{conn: UserAuth.fetch_current_scope_for_user(conn, [])}
