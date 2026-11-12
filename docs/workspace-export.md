@@ -155,4 +155,16 @@ Archives are written under the directory named by the `EXPORT_DIR` environment
 variable, or a `stride_exports` directory in the system temp directory when it
 is unset. With more than one app machine, point `EXPORT_DIR` at storage they
 all share. Give each deployment its own `EXPORT_DIR`: the cleanup deletes any
-archive directory whose workspace its database does not know.
+archive directory whose workspace its database does not know, and any archive
+whose export has failed, been removed, or was timed out because its job was
+killed before it could record the archive. An export is
+built in a temporary `.tmp-` directory inside `EXPORT_DIR`, which is removed
+when the export ends, also when its job is killed. One left behind by a
+machine that stopped mid-export is removed by the hourly cleanup once it is
+an hour older than the stale-export limit (seven hours with the default
+six-hour limit), but only when
+`EXPORT_DIR` is a directory of the app's operating-system user that no other
+user can write to (otherwise each run logs a warning and removes nothing), and
+only if that same user created it. Machines that share `EXPORT_DIR` should
+therefore run the app as the same operating-system user, and keep their
+clocks and the storage's within an hour of each other.

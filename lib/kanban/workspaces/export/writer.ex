@@ -15,7 +15,13 @@ defmodule Kanban.Workspaces.Export.Writer do
   directory has an unpredictable name (`create_tmp_dir/1`, 128 random bits)
   and is created exclusively and owner-only, so nothing can be planted at its
   path beforehand: an existing directory or symlink there fails the export
-  instead of being written through. It is always removed.
+  instead of being written through. It is removed when the write returns,
+  raises or throws; a guard process (`Kanban.TmpDirGuard`) removes it when
+  the job process is killed; and the hourly
+  `Kanban.Workspaces.Export.CleanupWorker` removes one a killed VM left once
+  it is an hour older than that worker's `:stale_after_hours`, provided the export
+  directory is this user's own directory that no other user can write to and
+  this user made the scratch directory.
 
   Attachment blobs are copied from `Kanban.Attachments.Storage` into the
   scratch directory after the snapshot transaction has ended, so slow
@@ -46,6 +52,7 @@ defmodule Kanban.Workspaces.Export.Writer do
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.TmpDirGuard
   alias Kanban.Workspaces.Export.AttachmentBlobs
   alias Kanban.Workspaces.Export.Serializer
   alias Kanban.Workspaces.Workspace
@@ -54,6 +61,7 @@ defmodule Kanban.Workspaces.Export.Writer do
   require Logger
 
   @max_rows 500
+  @label "workspace export"
   @board_entities [
     :boards,
     :columns,
@@ -78,19 +86,31 @@ defmodule Kanban.Workspaces.Export.Writer do
   @doc """
   Writes the archive of `workspace` for the export with `export_id` under
   `export_dir`. Returns the final path, its size and the per-entity counts.
+
+  The scratch directory is checked out through `Kanban.TmpDirGuard`; when no
+  guard can be started the export fails with `:export_failed` before anything
+  is written. `:supervisor` names the task supervisor for the guard, for
+  tests (default `Kanban.TaskSupervisor`).
   """
-  @spec write_archive(Workspace.t(), integer(), String.t()) ::
+  @spec write_archive(Workspace.t(), integer(), String.t(), keyword()) ::
           {:ok, result()} | {:error, :storage_unavailable | :export_failed}
-  def write_archive(%Workspace{} = workspace, export_id, export_dir)
+  def write_archive(%Workspace{} = workspace, export_id, export_dir, opts \\ [])
       when is_integer(export_id) and is_binary(export_dir) do
-    final = archive_path(export_dir, workspace.id, export_id)
+    case checkout_scratch(export_dir, opts) do
+      {:ok, scratch} ->
+        build_in(workspace, export_id, scratch, archive_path(export_dir, workspace.id, export_id))
+
+      {:error, reason} ->
+        {:error, error_code(reason)}
+    end
+  end
+
+  # The guard creates the directory itself, once it is monitoring this process.
+  defp checkout_scratch(export_dir, opts) do
+    create = fn -> create_tmp_dir(export_dir) end
 
     with :ok <- mkdir(export_dir),
-         {:ok, tmp_dir} <- create_tmp_dir(export_dir) do
-      build_in(workspace, export_id, tmp_dir, final)
-    else
-      {:error, reason} -> {:error, error_code(reason)}
-    end
+         do: TmpDirGuard.checkout(create, @label, Keyword.take(opts, [:supervisor]))
   end
 
   @doc """
@@ -116,8 +136,8 @@ defmodule Kanban.Workspaces.Export.Writer do
     with :ok <- File.mkdir(path), do: restrict(path, 0o700)
   end
 
-  defp build_in(workspace, export_id, tmp_dir, final) do
-    build_archive(workspace, tmp_dir, final)
+  defp build_in(workspace, export_id, scratch, final) do
+    build_archive(workspace, scratch.path, final)
   rescue
     error ->
       Logger.warning("workspace export #{export_id} failed: #{inspect(error.__struct__)}")
@@ -126,7 +146,7 @@ defmodule Kanban.Workspaces.Export.Writer do
   catch
     {:storage, reason} -> {:error, error_code(reason)}
   after
-    File.rm_rf(tmp_dir)
+    TmpDirGuard.release(scratch, @label)
   end
 
   defp archive_path(export_dir, workspace_id, export_id),

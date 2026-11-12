@@ -43,19 +43,20 @@ defmodule Kanban.AuditLog.SignedExport.Scratch do
   the sweep removes any stale entry in it that is named like one of these
   directories.
 
-  Nothing here logs a path.
+  The guard and the sweep are `Kanban.TmpDirGuard`'s, shared with the
+  workspace export. Nothing here logs a path.
   """
 
   alias Kanban.AuditLog.SignedExport
+  alias Kanban.TmpDirGuard
   alias Kanban.Workspaces.Export.Writer
-
-  require Logger
 
   @default_dir "stride-signed-exports"
   @stale_after_seconds 3600
+  @label "signed audit export"
 
   @typedoc "A checked-out directory: its path and the guard that watches it."
-  @type t :: %{path: String.t(), guard: pid()}
+  @type t :: TmpDirGuard.t()
 
   @doc """
   Creates a new temporary directory and starts the guard that removes it if
@@ -63,26 +64,14 @@ defmodule Kanban.AuditLog.SignedExport.Scratch do
   usable root or the directory cannot be created; nothing is left behind.
   """
   @spec checkout() :: {:ok, t()} | {:error, atom()}
-  def checkout do
-    owner = self()
-    tag = make_ref()
-
-    case Task.Supervisor.start_child(Kanban.TaskSupervisor, fn -> guard(owner, tag) end) do
-      {:ok, guard} -> await(guard, tag)
-      _not_started -> {:error, :no_guard}
-    end
-  end
+  def checkout, do: TmpDirGuard.checkout(&create/0, @label)
 
   @doc """
   Removes the directory and stops its guard. The directory is gone when this
   returns, unless the operating system refuses the removal, which is logged.
   """
   @spec release(t()) :: :ok
-  def release(%{path: path, guard: guard}) do
-    remove(path)
-    send(guard, :released)
-    :ok
-  end
+  def release(scratch), do: TmpDirGuard.release(scratch, @label)
 
   @doc """
   Removes the directories left in the root by a VM that was killed during a
@@ -93,80 +82,14 @@ defmodule Kanban.AuditLog.SignedExport.Scratch do
   """
   @spec sweep() :: non_neg_integer()
   def sweep do
-    with {:ok, root} <- existing_root(),
-         {:ok, names} <- File.ls(root) do
-      names |> Enum.count(&remove_if_stale(root, &1)) |> report()
-    else
-      _no_root_or_unreadable -> 0
+    case existing_root() do
+      {:ok, root} -> TmpDirGuard.sweep(root, @stale_after_seconds, @label)
+      _no_root -> 0
     end
   end
 
-  defp report(0), do: 0
-
-  # A count only: a killed VM left audit data on disk, which an operator
-  # should hear about, without a path.
-  defp report(removed) do
-    Logger.warning("signed audit export: removed #{removed} stale temporary directories")
-    removed
-  end
-
-  # The guard creates the directory itself, after it has started to monitor
-  # the owner, so there is no moment when a directory exists unwatched.
-  # sobelow_skip ["Traversal.FileModule"]
-  defp guard(owner, tag) do
-    Process.flag(:trap_exit, true)
-    monitor = Process.monitor(owner)
-
-    case create() do
-      {:ok, path} ->
-        send(owner, {tag, {:ok, path}})
-        if wait(monitor) == :remove, do: remove(path)
-
-      {:error, reason} ->
-        send(owner, {tag, {:error, reason}})
-    end
-  end
-
-  # The owner released the directory, and so has removed it already; or the
-  # owner went down, or the supervisor is stopping this guard, and the guard
-  # removes it.
-  defp wait(monitor) do
-    receive do
-      :released -> :released
-      {:DOWN, ^monitor, :process, _pid, _reason} -> :remove
-      {:EXIT, _from, _reason} -> :remove
-    end
-  end
-
-  # The reason is an operating-system error name. No path is logged.
-  # sobelow_skip ["Traversal.FileModule"]
-  defp remove(path) do
-    case File.rm_rf(path) do
-      {:ok, _removed} ->
-        :ok
-
-      {:error, reason, _file} ->
-        Logger.warning(
-          "signed audit export: a temporary directory could not be removed: #{inspect(reason)}"
-        )
-
-        :error
-    end
-  end
-
-  defp await(guard, tag) do
-    monitor = Process.monitor(guard)
-
-    receive do
-      {^tag, result} ->
-        Process.demonitor(monitor, [:flush])
-        with {:ok, path} <- result, do: {:ok, %{path: path, guard: guard}}
-
-      {:DOWN, ^monitor, :process, _pid, _reason} ->
-        {:error, :no_guard}
-    end
-  end
-
+  # Runs in the guard process, which creates the directory once it is
+  # monitoring the owner.
   defp create do
     with {:ok, root} <- prepared_root(), do: Writer.create_tmp_dir(root)
   end
@@ -215,7 +138,7 @@ defmodule Kanban.AuditLog.SignedExport.Scratch do
   end
 
   defp own_directory(path) do
-    with {:ok, uid} <- own_uid(),
+    with {:ok, uid} <- TmpDirGuard.own_uid(),
          true <- owned_directory?(path, uid) do
       :ok
     else
@@ -233,40 +156,12 @@ defmodule Kanban.AuditLog.SignedExport.Scratch do
     match?({:ok, %File.Stat{type: :directory, uid: ^uid}}, File.lstat(path))
   end
 
-  # The operating-system user this VM runs as: the owner of a directory it
-  # has just created. Erlang has no call that returns it.
-  # sobelow_skip ["Traversal.FileModule"]
-  defp own_uid do
-    with {:ok, probe} <- Writer.create_tmp_dir(System.tmp_dir()) do
-      stat = File.lstat(probe)
-      File.rmdir(probe)
-
-      with {:ok, %File.Stat{uid: uid}} <- stat, do: {:ok, uid}
-    end
-  end
-
   # sobelow_skip ["Traversal.FileModule"]
   defp mkdir(root) do
     case File.mkdir(root) do
       :ok -> :ok
       {:error, :eexist} -> :ok
       {:error, reason} -> {:error, reason}
-    end
-  end
-
-  # The shape Writer.create_tmp_dir/1 gives a name.
-  defp dir_name?(name), do: Regex.match?(~r/\A\.tmp-[A-Za-z0-9_-]{22}\z/, name)
-
-  # sobelow_skip ["Traversal.FileModule"]
-  defp remove_if_stale(root, name) do
-    path = Path.join(root, name)
-
-    with true <- dir_name?(name),
-         {:ok, %File.Stat{type: :directory, mtime: changed}} <- File.lstat(path, time: :posix),
-         true <- System.os_time(:second) - changed > @stale_after_seconds do
-      remove(path) == :ok
-    else
-      _keep -> false
     end
   end
 end

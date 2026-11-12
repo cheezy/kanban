@@ -4,7 +4,8 @@ defmodule Kanban.AttachmentHookStorage do
   and reports each put and delete to the calling process as
   `{:storage_put, key}` and `{:storage_deleted, key}`. A test can replace a
   put with `Process.put(:on_put, fun)` (`fun.(key, source, opts)`) and a
-  delete's result with `Process.put(:delete_result, result)`. The storage
+  delete's result with `Process.put(:delete_result, result)`, and a stream
+  with `Process.put(:on_stream, fun)` (`fun.(key)`). The storage
   facade calls the adapter in the caller's process, so the process
   dictionary is the test's own.
 
@@ -28,7 +29,12 @@ defmodule Kanban.AttachmentHookStorage do
   end
 
   @impl true
-  def stream(key), do: Local.stream(key)
+  def stream(key) do
+    case Process.get(:on_stream) do
+      nil -> Local.stream(key)
+      fun -> fun.(key)
+    end
+  end
 
   @impl true
   def delete(key) do
