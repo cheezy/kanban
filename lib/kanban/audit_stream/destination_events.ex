@@ -1,0 +1,82 @@
+defmodule Kanban.AuditStream.DestinationEvents do
+  @moduledoc """
+  The audit events `Kanban.AuditStream.Destinations` records, with the keys
+  `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §13.2 lists. Each is a literal
+  `AuditLog.event/2` call so the telemetry call-site tests see it.
+
+  No secret, URL or credential is ever passed: a destination is named by its
+  id, kind, name and host only (§12.2). Called inside the transaction that
+  makes the change, so an event never commits without its change.
+  `AuditLog.event/2` logs rather than raises when its own insert fails.
+  """
+
+  alias Kanban.AuditLog
+
+  @doc "Records `audit_stream_destination_created`."
+  def created(destination, actor, start_from) do
+    AuditLog.event(:audit_stream_destination_created,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind,
+      start_from: start_from,
+      include_personal_data: destination.include_personal_data,
+      destination_name: destination.name,
+      url_host: destination.url_host
+    )
+  end
+
+  @doc "Records `audit_stream_destination_updated`; `changed` holds field names only."
+  def updated(destination, actor, changed) do
+    AuditLog.event(:audit_stream_destination_updated,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind,
+      changed: changed,
+      destination_name: destination.name,
+      url_host: destination.url_host
+    )
+  end
+
+  @doc "Records `audit_stream_destination_paused` (`false`) or `_resumed` (`true`)."
+  def enabled(destination, actor, false) do
+    AuditLog.event(:audit_stream_destination_paused,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind,
+      destination_name: destination.name
+    )
+  end
+
+  def enabled(destination, actor, true) do
+    AuditLog.event(:audit_stream_destination_resumed,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind,
+      destination_name: destination.name
+    )
+  end
+
+  @doc "Records `audit_stream_destination_deleted`."
+  def deleted(destination, actor) do
+    AuditLog.event(:audit_stream_destination_deleted,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      kind: destination.kind,
+      destination_name: destination.name
+    )
+  end
+
+  @doc "Records `audit_stream_signing_secret_rotated`."
+  def rotated(destination, actor) do
+    AuditLog.event(:audit_stream_signing_secret_rotated,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id
+    )
+  end
+end

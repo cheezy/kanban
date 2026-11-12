@@ -146,6 +146,10 @@ config :kanban, Kanban.Webhooks.Transport,
 config :kanban, Kanban.Webhooks.DeliveryWorker, resolver: {Kanban.WebhooksFixtures, :resolve}
 config :kanban, Kanban.Webhooks, resolver: {Kanban.WebhooksFixtures, :resolve}
 
+# Audit log streaming (W2706): Splunk and HTTPS destination hosts resolve from
+# a fixed table, so no test touches DNS.
+config :kanban, Kanban.AuditStream, resolver: {Kanban.AuditStreamFixtures, :resolve}
+
 # Single sign-on (W2245): identity provider requests go to a Req.Test stub,
 # issuer hosts resolve from a fixed table and TXT lookups come from a stub
 # resolver, so no test touches the network or DNS.
