@@ -29,8 +29,8 @@ defmodule Kanban.Telemetry.Catalog do
     * `:metrics` - the metrics `KanbanWeb.Telemetry.CatalogMetrics` builds
       for the event, as a keyword list of `{type, measurement}`. The type is
       `:counter`, `:sum` or `:summary`. Most events take
-      `[counter: :count]`; a span takes `[summary: :duration]`, a duration
-      summary of its `:stop` event.
+      `[counter: :count]`; a span takes `[summary: :duration]`. An event may
+      summarise any measurement it carries except `:count`.
     * `:persist` - whether `KanbanWeb.Telemetry.MetricsStorage` stores the
       entry's first metric in `metrics_events`. Store only events that are
       rare enough not to flood the table and that cannot be triggered at will
@@ -76,7 +76,7 @@ defmodule Kanban.Telemetry.Catalog do
     * `[:kanban, :audit, action]`, emitted by `Kanban.AuditLog.event/2`. The
       persisted audit row and the `security_audit` log line keep the actor's
       `email` and `ip`, but the telemetry copy never carries them, nor the
-      export `filters`, which can contain an email.
+      export `filters`, nor a destination's `destination_name` or `url_host`.
 
   ## Adding an event
 
@@ -86,15 +86,17 @@ defmodule Kanban.Telemetry.Catalog do
   `Kanban.Telemetry.Catalog.Families`. Board, membership and column, task
   activity, account and user administration, notification, delivery target,
   broadcast message, goal, dependency or after_goal, Organization, paid
-  plan and attachment events go in `BoardEvents`, `TaskEvents`, `UserEvents`,
-  `NotificationEvents`, `TargetEvents`, `MessageEvents`, `GoalEvents`,
-  `OrganizationEvents`, `PlanEvents` and `AttachmentEvents` under
+  plan, attachment and audit log streaming events go in `BoardEvents`,
+  `TaskEvents`, `UserEvents`, `NotificationEvents`, `TargetEvents`,
+  `MessageEvents`, `GoalEvents`, `OrganizationEvents`, `PlanEvents`,
+  `AttachmentEvents` and `AuditStreamEvents` under
   `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a key the
   entry does not declare raises there, and it fails if an entry's metrics,
   persist flag or tags are invalid.
   """
 
   alias Kanban.Telemetry.Catalog.AttachmentEvents
+  alias Kanban.Telemetry.Catalog.AuditStreamEvents
   alias Kanban.Telemetry.Catalog.BoardEvents
   alias Kanban.Telemetry.Catalog.Families
   alias Kanban.Telemetry.Catalog.GoalEvents
@@ -479,7 +481,8 @@ defmodule Kanban.Telemetry.Catalog do
             GoalEvents.events() ++
             OrganizationEvents.events() ++
             PlanEvents.events() ++
-            AttachmentEvents.events()
+            AttachmentEvents.events() ++
+            AuditStreamEvents.events()
 
   @by_name Map.new(@events, fn entry -> {entry.name, entry} end)
 

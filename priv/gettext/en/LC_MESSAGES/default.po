@@ -4325,7 +4325,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:391
+#: lib/kanban_web/live/org_live/console.ex:408
 #: lib/kanban_web/live/org_live/console.html.heex:131
 #: lib/kanban_web/live/workspace_live/settings.ex:458
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
@@ -6348,7 +6348,7 @@ msgstr ""
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:152
-#: lib/kanban_web/live/org_live/console.ex:390
+#: lib/kanban_web/live/org_live/console.ex:407
 #: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -6778,11 +6778,11 @@ msgstr ""
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr ""
 
-#: lib/kanban_web/user_auth.ex:344
-#: lib/kanban_web/user_auth.ex:436
-#: lib/kanban_web/user_auth.ex:472
-#: lib/kanban_web/user_auth.ex:503
-#: lib/kanban_web/user_auth.ex:534
+#: lib/kanban_web/user_auth.ex:305
+#: lib/kanban_web/user_auth.ex:397
+#: lib/kanban_web/user_auth.ex:433
+#: lib/kanban_web/user_auth.ex:464
+#: lib/kanban_web/user_auth.ex:495
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr ""
@@ -10433,7 +10433,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
-#: lib/kanban_web/live/org_live/console.ex:397
+#: lib/kanban_web/live/org_live/console.ex:414
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
 #: lib/kanban_web/live/workspace_live/settings.ex:470
@@ -10448,7 +10448,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:253
-#: lib/kanban_web/live/org_live/console.ex:396
+#: lib/kanban_web/live/org_live/console.ex:413
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr ""
@@ -10507,7 +10507,7 @@ msgstr ""
 
 #: lib/kanban_web/components/side_nav.ex:356
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:78
-#: lib/kanban_web/live/org_live/console.ex:74
+#: lib/kanban_web/live/org_live/console.ex:78
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr ""
@@ -10523,8 +10523,8 @@ msgstr ""
 msgid "Read-only. Ask a site admin to change them."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:66
-#: lib/kanban_web/live/org_live/console.ex:306
+#: lib/kanban_web/live/org_live/console.ex:70
+#: lib/kanban_web/live/org_live/console.ex:311
 #: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:220
@@ -10533,12 +10533,12 @@ msgstr ""
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:390
+#: lib/kanban_web/live/org_live/console.ex:407
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:391
+#: lib/kanban_web/live/org_live/console.ex:408
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr ""
@@ -10598,12 +10598,12 @@ msgstr ""
 msgid "Rename"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:264
+#: lib/kanban_web/live/org_live/console.ex:268
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:256
+#: lib/kanban_web/live/org_live/console.ex:260
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr ""
@@ -10613,12 +10613,12 @@ msgstr ""
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:238
+#: lib/kanban_web/live/org_live/console.ex:242
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:199
+#: lib/kanban_web/live/org_live/console.ex:203
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr ""
@@ -10628,19 +10628,19 @@ msgstr ""
 msgid "Workspace name"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:270
+#: lib/kanban_web/live/org_live/console.ex:274
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:233
+#: lib/kanban_web/live/org_live/console.ex:237
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr ""
 
 #: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:111
-#: lib/kanban_web/live/org_live/console.ex:392
+#: lib/kanban_web/live/org_live/console.ex:409
 #: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
@@ -10656,7 +10656,7 @@ msgstr ""
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:392
+#: lib/kanban_web/live/org_live/console.ex:409
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr ""
@@ -10666,7 +10666,7 @@ msgstr ""
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:231
+#: lib/kanban_web/live/org_live/console.ex:235
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr ""
@@ -10984,7 +10984,7 @@ msgstr ""
 msgid "Manage who is in this workspace and which boards it holds."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:189
+#: lib/kanban_web/live/org_live/console.ex:193
 #: lib/kanban_web/live/workspace_live/settings.ex:411
 #, elixir-autogen, elixir-format
 msgid "Member not found."
@@ -10995,7 +10995,7 @@ msgstr ""
 msgid "Member removed from the workspace."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:173
+#: lib/kanban_web/live/org_live/console.ex:177
 #, elixir-autogen, elixir-format
 msgid "Member removed."
 msgstr ""
@@ -11041,7 +11041,7 @@ msgstr ""
 msgid "Only an org-admin can manage this workspace."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:182
+#: lib/kanban_web/live/org_live/console.ex:186
 #, elixir-autogen, elixir-format
 msgid "Org-admins can't be removed here."
 msgstr ""
@@ -14031,14 +14031,92 @@ msgstr "This key as PEM"
 msgid "The signed parameter must be true or false."
 msgstr "The signed parameter must be true or false."
 
-#: lib/kanban_web/user_auth.ex:384
-#: lib/kanban_web/user_auth.ex:517
+#: lib/kanban_web/user_auth.ex:345
+#: lib/kanban_web/user_auth.ex:478
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to access this page."
 msgstr "You must be an admin to access this page."
 
-#: lib/kanban_web/user_auth.ex:356
-#: lib/kanban_web/user_auth.ex:479
+#: lib/kanban_web/user_auth.ex:317
+#: lib/kanban_web/user_auth.ex:440
 #, elixir-autogen, elixir-format
 msgid "You must log in to access this page."
 msgstr "You must log in to access this page."
+
+#: lib/kanban_web/components/audit_log_actions.ex:169
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Rejected streaming batch skipped"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:186
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming cursors re-seeded"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:151
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination added"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:154
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination changed"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:163
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination deleted"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:175
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination failing"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:157
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination paused"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:178
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination recovered"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:160
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination resumed"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:183
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming gap dismissed"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:180
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming gap recorded"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:166
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming signing secret rotated"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:172
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming test event sent"
+msgstr ""

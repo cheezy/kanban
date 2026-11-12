@@ -4321,7 +4321,7 @@ msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:391
+#: lib/kanban_web/live/org_live/console.ex:408
 #: lib/kanban_web/live/org_live/console.html.heex:131
 #: lib/kanban_web/live/workspace_live/settings.ex:458
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
@@ -6351,7 +6351,7 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:152
-#: lib/kanban_web/live/org_live/console.ex:390
+#: lib/kanban_web/live/org_live/console.ex:407
 #: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -6815,11 +6815,11 @@ msgstr "您对本服务的使用须遵守我们的"
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "您必须先确认您的账户才能登录。请检查您的电子邮件以获取确认链接。"
 
-#: lib/kanban_web/user_auth.ex:344
-#: lib/kanban_web/user_auth.ex:436
-#: lib/kanban_web/user_auth.ex:472
-#: lib/kanban_web/user_auth.ex:503
-#: lib/kanban_web/user_auth.ex:534
+#: lib/kanban_web/user_auth.ex:305
+#: lib/kanban_web/user_auth.ex:397
+#: lib/kanban_web/user_auth.ex:433
+#: lib/kanban_web/user_auth.ex:464
+#: lib/kanban_web/user_auth.ex:495
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "您必须确认您的账户才能访问此页面。"
@@ -10455,7 +10455,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "请输入有效的电子邮件地址。未做任何更改。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
-#: lib/kanban_web/live/org_live/console.ex:397
+#: lib/kanban_web/live/org_live/console.ex:414
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
 #: lib/kanban_web/live/workspace_live/settings.ex:470
@@ -10470,7 +10470,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "只有站点管理员可以任命或移除组织管理员。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:253
-#: lib/kanban_web/live/org_live/console.ex:396
+#: lib/kanban_web/live/org_live/console.ex:413
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "组织管理员"
@@ -10529,7 +10529,7 @@ msgstr "组织还有其他成员时，不能移除最后一位组织管理员。
 
 #: lib/kanban_web/components/side_nav.ex:356
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:78
-#: lib/kanban_web/live/org_live/console.ex:74
+#: lib/kanban_web/live/org_live/console.ex:78
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr "组织"
@@ -10545,8 +10545,8 @@ msgstr "组织分区"
 msgid "Read-only. Ask a site admin to change them."
 msgstr "只读。如需更改，请联系站点管理员。"
 
-#: lib/kanban_web/live/org_live/console.ex:66
-#: lib/kanban_web/live/org_live/console.ex:306
+#: lib/kanban_web/live/org_live/console.ex:70
+#: lib/kanban_web/live/org_live/console.ex:311
 #: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:220
@@ -10555,12 +10555,12 @@ msgstr "只读。如需更改，请联系站点管理员。"
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "您必须是某个组织的组织管理员才能访问此页面。"
 
-#: lib/kanban_web/live/org_live/console.ex:390
+#: lib/kanban_web/live/org_live/console.ex:407
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "名称 · 地址 · 联系人"
 
-#: lib/kanban_web/live/org_live/console.ex:391
+#: lib/kanban_web/live/org_live/console.ex:408
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "姓名 · 角色"
@@ -10620,12 +10620,12 @@ msgstr "新工作区名称"
 msgid "Rename"
 msgstr "重命名"
 
-#: lib/kanban_web/live/org_live/console.ex:264
+#: lib/kanban_web/live/org_live/console.ex:268
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr "无法更改工作区，请重试。"
 
-#: lib/kanban_web/live/org_live/console.ex:256
+#: lib/kanban_web/live/org_live/console.ex:260
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "此工作区中仍有看板。请先将它们移出，再归档。"
@@ -10635,12 +10635,12 @@ msgstr "此工作区中仍有看板。请先将它们移出，再归档。"
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "组织的看板存放在这里。工作区中没有看板后即可归档。"
 
-#: lib/kanban_web/live/org_live/console.ex:238
+#: lib/kanban_web/live/org_live/console.ex:242
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr "工作区已归档。"
 
-#: lib/kanban_web/live/org_live/console.ex:199
+#: lib/kanban_web/live/org_live/console.ex:203
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr "工作区已创建。"
@@ -10650,19 +10650,19 @@ msgstr "工作区已创建。"
 msgid "Workspace name"
 msgstr "工作区名称"
 
-#: lib/kanban_web/live/org_live/console.ex:270
+#: lib/kanban_web/live/org_live/console.ex:274
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr "未找到工作区。"
 
-#: lib/kanban_web/live/org_live/console.ex:233
+#: lib/kanban_web/live/org_live/console.ex:237
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr "工作区已重命名。"
 
 #: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:111
-#: lib/kanban_web/live/org_live/console.ex:392
+#: lib/kanban_web/live/org_live/console.ex:409
 #: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
@@ -10678,7 +10678,7 @@ msgstr "您的组织还没有工作区。"
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr "您组织的详细信息、成员和工作区。只有站点管理员可以更改详细信息或任命组织管理员。"
 
-#: lib/kanban_web/live/org_live/console.ex:392
+#: lib/kanban_web/live/org_live/console.ex:409
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr "创建 · 重命名 · 归档"
@@ -10688,7 +10688,7 @@ msgstr "创建 · 重命名 · 归档"
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "该用户的个人工作区中仍有看板，因此无法删除。"
 
-#: lib/kanban_web/live/org_live/console.ex:231
+#: lib/kanban_web/live/org_live/console.ex:235
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr "没有需要保存的更改。"
@@ -11005,7 +11005,7 @@ msgstr "访客"
 msgid "Manage who is in this workspace and which boards it holds."
 msgstr "管理此工作区的成员及其包含的看板。"
 
-#: lib/kanban_web/live/org_live/console.ex:189
+#: lib/kanban_web/live/org_live/console.ex:193
 #: lib/kanban_web/live/workspace_live/settings.ex:411
 #, elixir-autogen, elixir-format
 msgid "Member not found."
@@ -11016,7 +11016,7 @@ msgstr "未找到成员。"
 msgid "Member removed from the workspace."
 msgstr "已将成员从工作区移除。"
 
-#: lib/kanban_web/live/org_live/console.ex:173
+#: lib/kanban_web/live/org_live/console.ex:177
 #, elixir-autogen, elixir-format
 msgid "Member removed."
 msgstr "已移除成员。"
@@ -11062,7 +11062,7 @@ msgstr "此工作区还没有添加任何人。"
 msgid "Only an org-admin can manage this workspace."
 msgstr "只有组织管理员可以管理此工作区。"
 
-#: lib/kanban_web/live/org_live/console.ex:182
+#: lib/kanban_web/live/org_live/console.ex:186
 #, elixir-autogen, elixir-format
 msgid "Org-admins can't be removed here."
 msgstr "无法在此处移除组织管理员。"
@@ -14047,14 +14047,92 @@ msgstr "此密钥的 PEM 格式"
 msgid "The signed parameter must be true or false."
 msgstr "signed 参数必须为 true 或 false。"
 
-#: lib/kanban_web/user_auth.ex:384
-#: lib/kanban_web/user_auth.ex:517
+#: lib/kanban_web/user_auth.ex:345
+#: lib/kanban_web/user_auth.ex:478
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to access this page."
 msgstr "您必须是管理员才能访问此页面。"
 
-#: lib/kanban_web/user_auth.ex:356
-#: lib/kanban_web/user_auth.ex:479
+#: lib/kanban_web/user_auth.ex:317
+#: lib/kanban_web/user_auth.ex:440
 #, elixir-autogen, elixir-format
 msgid "You must log in to access this page."
 msgstr "您必须登录才能访问此页面。"
+
+#: lib/kanban_web/components/audit_log_actions.ex:169
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Rejected streaming batch skipped"
+msgstr "已跳过被拒绝的流式传输批次"
+
+#: lib/kanban_web/components/audit_log_actions.ex:186
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming cursors re-seeded"
+msgstr "已重新设置流式传输游标"
+
+#: lib/kanban_web/components/audit_log_actions.ex:151
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination added"
+msgstr "已添加流式传输目标"
+
+#: lib/kanban_web/components/audit_log_actions.ex:154
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination changed"
+msgstr "已更改流式传输目标"
+
+#: lib/kanban_web/components/audit_log_actions.ex:163
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination deleted"
+msgstr "已删除流式传输目标"
+
+#: lib/kanban_web/components/audit_log_actions.ex:175
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination failing"
+msgstr "流式传输目标出现故障"
+
+#: lib/kanban_web/components/audit_log_actions.ex:157
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination paused"
+msgstr "已暂停流式传输目标"
+
+#: lib/kanban_web/components/audit_log_actions.ex:178
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination recovered"
+msgstr "流式传输目标已恢复"
+
+#: lib/kanban_web/components/audit_log_actions.ex:160
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming destination resumed"
+msgstr "已重新启用流式传输目标"
+
+#: lib/kanban_web/components/audit_log_actions.ex:183
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming gap dismissed"
+msgstr "已忽略流式传输缺口"
+
+#: lib/kanban_web/components/audit_log_actions.ex:180
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming gap recorded"
+msgstr "已记录流式传输缺口"
+
+#: lib/kanban_web/components/audit_log_actions.ex:166
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming signing secret rotated"
+msgstr "已轮换流式传输签名密钥"
+
+#: lib/kanban_web/components/audit_log_actions.ex:172
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Streaming test event sent"
+msgstr "已发送流式传输测试事件"

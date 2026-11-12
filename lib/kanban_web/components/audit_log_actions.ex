@@ -147,5 +147,43 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("scim_group_updated"),
     do: pgettext("audit action", "Group members changed by SCIM")
 
+  def action_label("audit_stream_destination_created"),
+    do: pgettext("audit action", "Streaming destination added")
+
+  def action_label("audit_stream_destination_updated"),
+    do: pgettext("audit action", "Streaming destination changed")
+
+  def action_label("audit_stream_destination_paused"),
+    do: pgettext("audit action", "Streaming destination paused")
+
+  def action_label("audit_stream_destination_resumed"),
+    do: pgettext("audit action", "Streaming destination resumed")
+
+  def action_label("audit_stream_destination_deleted"),
+    do: pgettext("audit action", "Streaming destination deleted")
+
+  def action_label("audit_stream_signing_secret_rotated"),
+    do: pgettext("audit action", "Streaming signing secret rotated")
+
+  def action_label("audit_stream_batch_skipped"),
+    do: pgettext("audit action", "Rejected streaming batch skipped")
+
+  def action_label("audit_stream_test_sent"),
+    do: pgettext("audit action", "Streaming test event sent")
+
+  def action_label("audit_stream_failing"),
+    do: pgettext("audit action", "Streaming destination failing")
+
+  def action_label("audit_stream_recovered"),
+    do: pgettext("audit action", "Streaming destination recovered")
+
+  def action_label("audit_stream_gap"), do: pgettext("audit action", "Streaming gap recorded")
+
+  def action_label("audit_stream_gap_dismissed"),
+    do: pgettext("audit action", "Streaming gap dismissed")
+
+  def action_label("audit_stream_cursors_reseeded"),
+    do: pgettext("audit action", "Streaming cursors re-seeded")
+
   def action_label(action) when is_binary(action), do: action
 end

@@ -51,7 +51,8 @@ defmodule Kanban.Telemetry.Catalog.Families do
   ]
 
   # {action, metadata keys, description} for [:kanban, :audit, action]. The
-  # telemetry copy never carries email, ip or filters; see Kanban.AuditLog.
+  # telemetry copy never carries email, ip, filters, destination_name or
+  # url_host, so they are not declared here; see Kanban.AuditLog.
   @audit_actions [
     {:login_failed, [], "A browser sign-in failed."},
     {:password_reset_requested, [], "A password reset was requested."},
@@ -168,7 +169,46 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "A SCIM client deprovisioned a user: their Organization membership, workspace memberships and board access there were removed. reason is deactivated or deleted; disabled is true when the account, managed by the Organization, was disabled with every session and API token revoked."},
     {:scim_group_updated,
      [:organization_id, :scim_token_id, :workspace_id, :added_count, :removed_count],
-     "A SCIM client changed the members of a Group, one of the Organization's workspaces."}
+     "A SCIM client changed the members of a Group, one of the Organization's workspaces."},
+    {:audit_stream_destination_created,
+     [:user_id, :organization_id, :destination_id, :kind, :start_from, :include_personal_data],
+     "An org-admin added an audit log streaming destination. start_from is where its first batch begins; include_personal_data is true when its events keep actor emails and IPs. The destination's name and host are stored, never sent to telemetry."},
+    {:audit_stream_destination_updated,
+     [:user_id, :organization_id, :destination_id, :kind, :changed],
+     "An org-admin changed an audit log streaming destination. changed names the fields that changed, never their values."},
+    {:audit_stream_destination_paused, [:user_id, :organization_id, :destination_id, :kind],
+     "An org-admin paused an audit log streaming destination."},
+    {:audit_stream_destination_resumed, [:user_id, :organization_id, :destination_id, :kind],
+     "An org-admin resumed an audit log streaming destination."},
+    {:audit_stream_destination_deleted, [:user_id, :organization_id, :destination_id, :kind],
+     "An org-admin deleted an audit log streaming destination."},
+    {:audit_stream_signing_secret_rotated, [:user_id, :organization_id, :destination_id],
+     "An org-admin rotated a streaming destination's signing secret. The secret is never recorded."},
+    {:audit_stream_batch_skipped,
+     [
+       :user_id,
+       :organization_id,
+       :destination_id,
+       :kind,
+       :events,
+       :http_status,
+       :first_event_id,
+       :last_event_id
+     ],
+     "An org-admin skipped a batch a streaming destination rejected. events is how many were skipped, first_event_id and last_event_id the range, and http_status the destination's last response."},
+    {:audit_stream_test_sent, [:user_id, :organization_id, :destination_id, :outcome],
+     "An org-admin sent a test event to a streaming destination. outcome is the coarse result of the request."},
+    {:audit_stream_failing, [:user_id, :organization_id, :destination_id, :kind, :reason],
+     "A streaming destination was marked Failing. Recorded by the system, so user_id is not set; reason is the fixed cause."},
+    {:audit_stream_recovered, [:user_id, :organization_id, :destination_id, :kind, :reason],
+     "A Failing streaming destination accepted a batch again. Recorded by the system, so user_id is not set."},
+    {:audit_stream_gap,
+     [:user_id, :organization_id, :destination_id, :events, :reason, :from, :to],
+     "Audit events a streaming destination will never receive were recorded as a gap. events is how many; from and to bound the lost range; reason is the fixed cause."},
+    {:audit_stream_gap_dismissed, [:user_id, :organization_id, :destination_id, :gap_id],
+     "An org-admin dismissed a streaming destination's recorded gap."},
+    {:audit_stream_cursors_reseeded, [:user_id, :organization_id, :destinations],
+     "An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

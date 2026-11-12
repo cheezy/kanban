@@ -15,7 +15,7 @@ defmodule Kanban.TelemetryTest do
   @real [:kanban, :task, :changed_files_missing]
 
   # Kanban.AuditLog never sends these to telemetry; the stored row keeps them.
-  @audit_omitted_keys [:email, :ip, :filters]
+  @audit_omitted_keys [:email, :ip, :filters, :destination_name, :url_host]
 
   # Test-only entries, passed with the :catalog option so the real catalog
   # carries no fake events. @leaked deliberately declares forbidden keys.
@@ -432,8 +432,11 @@ defmodule Kanban.TelemetryTest do
           assert measurement in available,
                  "#{where} has a metric on #{inspect(measurement)}, which it does not measure"
 
+          # A summary may describe any measurement (a span's :duration, a
+          # duration_ms or a lag_seconds), but never :count, which is counted
+          # or summed instead.
           if type == :summary do
-            assert measurement == :duration, "#{where} summarises a non-duration measurement"
+            refute measurement == :count, "#{where} summarises :count; count or sum it instead"
           end
         end
 

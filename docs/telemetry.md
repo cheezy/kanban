@@ -220,7 +220,11 @@ The task lifecycle events are emitted through `Kanban.Tasks.TaskTelemetry`.
 `audit_events` row and the `security_audit` log line are the compliance record
 and keep the actor's `email` and `ip`. The telemetry copy can leave the app,
 so it never carries `email`, `ip` or the export `filters` (which can contain
-an email).
+an email). Nor does it carry an audit log streaming destination's
+`destination_name` or `url_host`: they are stored in the row but would name
+the destination on a dashboard. These five keys are listed in
+`@telemetry_omitted_keys` in `Kanban.AuditLog` and in `@audit_omitted_keys`
+in `test/kanban/telemetry_test.exs`, and are not declared in the catalog.
 
 The audit emit passes `strict: false`, because `event/2` must never crash its
 caller: an action or key missing from the catalog is logged and dropped there,
@@ -970,8 +974,10 @@ raise.
    new goal, dependency or after_goal event is an entry in
    `Kanban.Telemetry.Catalog.GoalEvents`, a new Organization event is an
    entry in `Kanban.Telemetry.Catalog.OrganizationEvents`, a new paid
-   plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`, and a new
-   attachment event is an entry in `Kanban.Telemetry.Catalog.AttachmentEvents`.
+   plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`, a new
+   attachment event is an entry in `Kanban.Telemetry.Catalog.AttachmentEvents`,
+   and a new audit log streaming event is an entry in
+   `Kanban.Telemetry.Catalog.AuditStreamEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -1023,13 +1029,17 @@ without one:
 | An event, `[sum: :count]` | The event name plus the measurement | `kanban.board.creation.count` |
 | An event, `[summary: :duration]` | The event name plus the measurement, in milliseconds | `kanban.api.request.duration` |
 | A span, `[summary: :duration]` | The `:stop` event name plus the measurement, in milliseconds | `kanban.export.stop.duration` |
+| An event, `[summary: :lag_seconds]` | The event name plus the measurement, in the unit the measurement already has | `kanban.audit_stream.lag_measured.lag_seconds` |
 
 Most events take `[counter: :count]`. Use `:sum` when `count` is a number of
 things rather than 1, as for `token_bulk_revoked`, `sessions_revoked`,
 `notification.all_read`, `digest.fanout_completed` and
 `announcement.fanout_completed`, and give every span
-`[summary: :duration]` first. The entry's description becomes the metric's
-description, and its `tags` become the metric's tags.
+`[summary: :duration]` first. An event may summarise any other measurement
+it carries, such as `duration_ms` or `lag_seconds`, but never `count`, which
+is counted or summed instead. Only a `:duration` summary is converted to
+milliseconds. The entry's description becomes the metric's description, and
+its `tags` become the metric's tags.
 
 Every metric name that existed before W2344 kept its name, type and tags,
 because the stored history and the admin users page read them. A test in
@@ -1065,7 +1075,11 @@ Stored today:
   stored;
 - since 2026-11-02, `attachment.blob_cleanup_completed.left`, one row per
   attachment blob cleanup run, whose value is the number of tombstones still
-  due when the run ended.
+  due when the run ended;
+- since W2705, `audit_stream.lag_measured.lag_seconds`, the age of a
+  streaming destination's oldest undelivered audit event. The streaming sweep
+  is to emit it at most once every 15 minutes per destination, so a growing
+  lag shows in the metrics history; no code emits it yet.
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
@@ -1333,6 +1347,28 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :scim_user_updated]` | event, legacy | `count` | `organization_id`, `scim_token_id`, `member_user_id`, `fields` | A SCIM client changed a user's attributes. fields names what changed (name, external_id), never the values. |
 | `[:kanban, :audit, :scim_user_deprovisioned]` | event, legacy | `count` | `organization_id`, `scim_token_id`, `member_user_id`, `reason`, `disabled`, `api_credentials_revoked` | A SCIM client deprovisioned a user: their Organization membership, workspace memberships and board access there were removed. reason is deactivated or deleted; disabled is true when the account, managed by the Organization, was disabled with every session and API token revoked. |
 | `[:kanban, :audit, :scim_group_updated]` | event, legacy | `count` | `organization_id`, `scim_token_id`, `workspace_id`, `added_count`, `removed_count` | A SCIM client changed the members of a Group, one of the Organization's workspaces. |
+| `[:kanban, :audit, :audit_stream_destination_created]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind`, `start_from`, `include_personal_data` | An org-admin added an audit log streaming destination. start_from is where its first batch begins; include_personal_data is true when its events keep actor emails and IPs. The destination's name and host are stored, never sent to telemetry. |
+| `[:kanban, :audit, :audit_stream_destination_updated]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind`, `changed` | An org-admin changed an audit log streaming destination. changed names the fields that changed, never their values. |
+| `[:kanban, :audit, :audit_stream_destination_paused]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind` | An org-admin paused an audit log streaming destination. |
+| `[:kanban, :audit, :audit_stream_destination_resumed]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind` | An org-admin resumed an audit log streaming destination. |
+| `[:kanban, :audit, :audit_stream_destination_deleted]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind` | An org-admin deleted an audit log streaming destination. |
+| `[:kanban, :audit, :audit_stream_signing_secret_rotated]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id` | An org-admin rotated a streaming destination's signing secret. The secret is never recorded. |
+| `[:kanban, :audit, :audit_stream_batch_skipped]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind`, `events`, `http_status`, `first_event_id`, `last_event_id` | An org-admin skipped a batch a streaming destination rejected. events is how many were skipped, first_event_id and last_event_id the range, and http_status the destination's last response. |
+| `[:kanban, :audit, :audit_stream_test_sent]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `outcome` | An org-admin sent a test event to a streaming destination. outcome is the coarse result of the request. |
+| `[:kanban, :audit, :audit_stream_failing]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind`, `reason` | A streaming destination was marked Failing. Recorded by the system, so user_id is not set; reason is the fixed cause. |
+| `[:kanban, :audit, :audit_stream_recovered]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `kind`, `reason` | A Failing streaming destination accepted a batch again. Recorded by the system, so user_id is not set. |
+| `[:kanban, :audit, :audit_stream_gap]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `events`, `reason`, `from`, `to` | Audit events a streaming destination will never receive were recorded as a gap. events is how many; from and to bound the lost range; reason is the fixed cause. |
+| `[:kanban, :audit, :audit_stream_gap_dismissed]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `gap_id` | An org-admin dismissed a streaming destination's recorded gap. |
+| `[:kanban, :audit, :audit_stream_cursors_reseeded]` | event, legacy | `count` | `user_id`, `organization_id`, `destinations` | An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set. |
+
+### Domain `audit_stream`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :audit_stream, :batch_delivered]` | event | `count`, `events`, `bytes`, `duration_ms` | `kind` | A destination accepted a batch of audit events. events is the number of events in the batch, bytes its encoded size and duration_ms how long the request took. kind is the destination's kind. |
+| `[:kanban, :audit_stream, :batch_failed]` | event | `count`, `duration_ms` | `kind`, `outcome` | A batch of audit events was not accepted. outcome is the fixed failure class of the attempt, never the response body; duration_ms is how long the attempt took. kind is the destination's kind. |
+| `[:kanban, :audit_stream, :lag_measured]` | event | `lag_seconds`, `events_waiting`, `events_above_horizon` | `kind` | A destination's delivery lag was measured. lag_seconds is the age of its oldest undelivered event, events_waiting the events not yet sent and events_above_horizon those committed too recently to send safely. kind is the destination's kind. |
+| `[:kanban, :audit_stream, :gap_recorded]` | event | `count`, `events` | `kind`, `reason` | Audit events that a destination will never receive were recorded as a gap. events is how many were lost and reason the fixed cause. kind is the destination's kind. |
 
 ### Domain `board`
 

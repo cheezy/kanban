@@ -15,6 +15,30 @@ defmodule Kanban.Telemetry.EmitSitesTest do
     "lib/kanban_web/controllers/api/task_actions.ex"
   ]
 
+  # TEMPORARY: the audit log streaming events and audit actions are declared
+  # up front (design task A5) so later tasks can emit them in strict mode.
+  # Each task that adds a call site removes its names here; the list is empty,
+  # and can be deleted, once every one of them is emitted.
+  @awaiting_emit_site [
+    [:kanban, :audit_stream, :batch_delivered],
+    [:kanban, :audit_stream, :batch_failed],
+    [:kanban, :audit_stream, :lag_measured],
+    [:kanban, :audit_stream, :gap_recorded],
+    [:kanban, :audit, :audit_stream_destination_created],
+    [:kanban, :audit, :audit_stream_destination_updated],
+    [:kanban, :audit, :audit_stream_destination_paused],
+    [:kanban, :audit, :audit_stream_destination_resumed],
+    [:kanban, :audit, :audit_stream_destination_deleted],
+    [:kanban, :audit, :audit_stream_signing_secret_rotated],
+    [:kanban, :audit, :audit_stream_batch_skipped],
+    [:kanban, :audit, :audit_stream_test_sent],
+    [:kanban, :audit, :audit_stream_failing],
+    [:kanban, :audit, :audit_stream_recovered],
+    [:kanban, :audit, :audit_stream_gap],
+    [:kanban, :audit, :audit_stream_gap_dismissed],
+    [:kanban, :audit, :audit_stream_cursors_reseeded]
+  ]
+
   setup_all do
     %{scan: TelemetrySourceScan.scan("lib")}
   end
@@ -37,10 +61,22 @@ defmodule Kanban.Telemetry.EmitSitesTest do
     unused =
       for %{name: name} <- Catalog.events(),
           name != [:kanban, :telemetry, :metadata_dropped],
+          name not in @awaiting_emit_site,
           not MapSet.member?(emitted, name),
           do: name
 
     assert unused == []
+  end
+
+  test "the awaiting list names only catalogued events that have no emit site yet",
+       %{scan: scan} do
+    emitted = MapSet.new(scan.sites, & &1.name)
+
+    assert length(@awaiting_emit_site) == length(Enum.uniq(@awaiting_emit_site))
+    assert Enum.all?(@awaiting_emit_site, &match?({:ok, _}, Catalog.fetch(&1)))
+
+    # A name whose call site now exists must be removed from the list.
+    assert Enum.filter(@awaiting_emit_site, &MapSet.member?(emitted, &1)) == []
   end
 
   test "every API and audit action is found and catalogued", %{scan: scan} do

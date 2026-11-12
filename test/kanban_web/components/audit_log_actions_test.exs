@@ -25,6 +25,23 @@ defmodule KanbanWeb.AuditLogActionsTest do
       assert AuditLogActions.action_label("user_delete_refused") == "Account deletion refused"
     end
 
+    test "labels every audit_stream_ action" do
+      streaming = Enum.filter(catalog_audit_actions(), &String.starts_with?(&1, "audit_stream_"))
+
+      assert length(streaming) == 13
+      assert Enum.all?(streaming, &(AuditLogActions.action_label(&1) != &1))
+
+      assert AuditLogActions.action_label("audit_stream_destination_created") ==
+               "Streaming destination added"
+
+      assert AuditLogActions.action_label("audit_stream_batch_skipped") ==
+               "Rejected streaming batch skipped"
+
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert AuditLogActions.action_label("audit_stream_gap") == "Streaming-Lücke erfasst"
+      end)
+    end
+
     test "passes an unknown action through unchanged" do
       assert AuditLogActions.action_label("retired_action") == "retired_action"
     end

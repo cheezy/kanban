@@ -6,7 +6,8 @@ defmodule Kanban.AuditLog do
 
     * a `:telemetry` event `[:kanban, :audit, <action>]`, emitted through
       `Kanban.Telemetry` (measurement `%{count: 1}`, metadata the sanitized
-      fields minus `email`, `ip` and `filters`) — the monitoring/alerting bus,
+      fields minus `email`, `ip`, `filters`, `destination_name` and
+      `url_host`) — the monitoring/alerting bus,
       and what tests attach to. Telemetry can leave the app, so it never
       carries personal data; the log line and the stored row below keep those
       fields, because they are the compliance record;
@@ -87,9 +88,9 @@ defmodule Kanban.AuditLog do
 
   @telemetry_prefix [:kanban, :audit]
 
-  # Personal data kept in the audit row and log line but never sent to
-  # telemetry. `filters` (audit-log exports) can contain an actor email.
-  @telemetry_omitted_keys [:email, :ip, :filters]
+  # Kept in the audit row and log line but never sent to telemetry. `filters`
+  # (exports) can contain an email; a streaming destination's name and host.
+  @telemetry_omitted_keys [:email, :ip, :filters, :destination_name, :url_host]
 
   # A key is dropped when its name CONTAINS any of these substrings, so
   # credential-shaped keys the original exact-match list never anticipated
