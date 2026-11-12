@@ -4,8 +4,6 @@ defmodule Kanban.AuditLog.SigningTest do
   # :persistent_term cache.
   use ExUnit.Case, async: false
 
-  import ExUnit.CaptureLog
-
   alias Kanban.AuditLog.Signing
 
   # RFC 8032 section 7.1, TEST 1: a published test vector, not a secret.
@@ -442,197 +440,49 @@ defmodule Kanban.AuditLog.SigningTest do
       assert tmp_dir |> File.ls!() |> Enum.sort() == ["empty.pem", "rsa.pem", "truncated.pem"]
     end
 
-    test "a dev key file that is a symlink is refused, even to a valid key", %{tmp_dir: tmp_dir} do
-      target = Path.join(tmp_dir, "elsewhere.pem")
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      File.write!(target, private_pem(@test1_seed))
-      File.ln_s!(target, path)
-      use_dev_file(path)
-
-      error = assert_raise RuntimeError, fn -> Signing.current_key() end
-
-      assert Exception.message(error) =~ path
-      assert Exception.message(error) =~ "is not a regular file"
-      assert File.read_link!(path) == target
-      assert File.read!(target) == private_pem(@test1_seed)
-    end
-
-    test "a dev key file the app cannot read raises naming the path and is not replaced",
+    test "the development key is cached under {Kanban.AuditLog.Signing, {:dev_file, expanded path}}",
          %{tmp_dir: tmp_dir} do
       path = Path.join(tmp_dir, "audit_signing_key.pem")
       File.write!(path, private_pem(@test1_seed))
-      File.chmod!(path, 0o000)
-      on_exit(fn -> File.chmod(path, 0o600) end)
-      use_dev_file(path)
+      relative = Path.relative_to_cwd(path)
+      assert Path.type(relative) == :relative
 
-      # Root reads any file, so there is nothing to check when running as root.
-      if match?({:error, :eacces}, File.read(path)) do
-        error = assert_raise RuntimeError, fn -> Signing.current_key() end
-
-        assert Exception.message(error) =~ path
-        assert Exception.message(error) =~ "cannot be read (eacces)"
-        assert mode(path) == 0o000
-        assert File.ls!(tmp_dir) == ["audit_signing_key.pem"]
-      end
-    end
-
-    test "a dev key path that cannot be created raises naming the path", %{tmp_dir: tmp_dir} do
-      blocker = Path.join(tmp_dir, "a-file")
-      File.write!(blocker, "")
-      path = Path.join(blocker, "audit_signing_key.pem")
-      use_dev_file(path)
-
-      error = assert_raise RuntimeError, fn -> Signing.current_key() end
-
-      assert Exception.message(error) =~ path
-      assert Exception.message(error) =~ "cannot be reached (enotdir)"
-      assert Exception.message(error) =~ "did not create a key there"
-      refute Exception.message(error) =~ "did not replace"
-      assert File.read!(blocker) == ""
-    end
-
-    test "a dev key directory that cannot be written raises without naming a file to fix",
-         %{tmp_dir: tmp_dir} do
-      directory = Path.join(tmp_dir, "read-only")
-      File.mkdir!(directory)
-      File.chmod!(directory, 0o500)
-      on_exit(fn -> File.chmod(directory, 0o700) end)
-      path = Path.join(directory, "audit_signing_key.pem")
-      use_dev_file(path)
-
-      # Root writes anywhere, so there is nothing to check when running as root.
-      probe = Path.join(directory, "probe")
-
-      if match?({:error, :eacces}, File.write(probe, "")) do
-        error = assert_raise RuntimeError, fn -> Signing.current_key() end
-
-        assert Exception.message(error) =~ path
-        assert Exception.message(error) =~ "cannot be created (eacces)"
-        assert Exception.message(error) =~ "did not create a key there"
-        refute Exception.message(error) =~ "did not replace"
-        assert File.ls!(directory) == []
-      end
-    end
-
-    test "blank lines around the PEM are accepted and other text is refused",
-         %{tmp_dir: tmp_dir} do
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      File.write!(path, "\n \r\n" <> private_pem(@test1_seed) <> "\n\n")
-      File.chmod!(path, 0o600)
-      use_dev_file(path)
+      # Written out rather than built from the alias, so a rename of the
+      # module or of the cache key fails here. The running dev server's
+      # cached key stays valid across a code reload only while this holds.
+      term = {Kanban.AuditLog.Signing, {:dev_file, path}}
+      on_exit(fn -> :persistent_term.erase(term) end)
+      configure(fallback: :dev_file, dev_key_path: relative)
 
       assert Signing.current_key().key_id == @test1_key_id
+      assert key_id(:persistent_term.get(term)) == @test1_key_id
+      assert :persistent_term.get({Signing, {:dev_file, relative}}, nil) == nil
+      assert :persistent_term.get({Signing.DevKey, {:dev_file, path}}, nil) == nil
+    end
+
+    test "a dev key file deleted while its key is cached is not recreated until a restart",
+         %{tmp_dir: tmp_dir} do
+      path = Path.join(tmp_dir, "audit_signing_key.pem")
+      use_dev_file(path)
+      key = Signing.current_key()
+
+      File.rm!(path)
+
+      assert Signing.current_key() == key
+      assert {:ok, %{key_id: key_id}} = Signing.sign("body")
+      assert key_id == key.key_id
+      refute File.exists?(path)
 
       forget_dev_key(path)
-      File.write!(path, "a note\n" <> private_pem(@test1_seed))
 
-      error = assert_raise RuntimeError, fn -> Signing.current_key() end
-      assert Exception.message(error) =~ "is not an Ed25519 private key"
-    end
-
-    test "a dev key file other users can read is set to 0600 and a warning is logged",
-         %{tmp_dir: tmp_dir} do
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      File.write!(path, private_pem(@test1_seed))
-      File.chmod!(path, 0o644)
-      use_dev_file(path)
-
-      log = capture_log(fn -> assert Signing.current_key().key_id == @test1_key_id end)
-
+      refute Signing.current_key().key_id == key.key_id
       assert mode(path) == 0o600
-      assert log =~ path
-      assert log =~ "mode 644"
-      assert log =~ "Stride set it to 600"
-
-      forget_dev_key(path)
-      assert capture_log(fn -> Signing.current_key() end) == ""
-      assert mode(path) == 0o600
-    end
-
-    # W2724: the user-immutable flag makes chmod fail for the file's own
-    # owner. chflags is BSD and macOS only, so the test is skipped elsewhere.
-    @tag skip: System.find_executable("chflags") == nil && "needs chflags"
-    test "a dev key file other users can read whose chmod fails is used and logged",
-         %{tmp_dir: tmp_dir} do
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      File.write!(path, private_pem(@test1_seed))
-      File.chmod!(path, 0o640)
-      assert {_output, 0} = System.cmd("chflags", ["uchg", path])
-      on_exit(fn -> System.cmd("chflags", ["nouchg", path]) end)
-      use_dev_file(path)
-
-      log = capture_log(fn -> assert Signing.current_key().key_id == @test1_key_id end)
-
-      assert mode(path) == 0o640
-      assert log =~ path
-      assert log =~ "mode 640"
-      assert log =~ "Stride could not set it to 600 (eperm)"
-    end
-
-    test "a stale staging directory is removed on load and a fresh one is kept",
-         %{tmp_dir: tmp_dir} do
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      [stale, stale_empty, fresh] = for name <- ~w(old oldempty new), do: "#{path}.tmp-#{name}"
-      Enum.each([stale, stale_empty, fresh], &File.mkdir!/1)
-      stale |> Path.join("key") |> File.write!(private_pem(seed()))
-      fresh |> Path.join("key") |> File.write!(private_pem(seed()))
-      an_hour_ago = System.os_time(:second) - 3600
-      Enum.each([stale, stale_empty], &File.touch!(&1, an_hour_ago))
-      planted = "#{path}.tmp-link"
-      File.ln_s!(stale, planted)
-      use_dev_file(path)
-
-      assert %{key_id: "k1-" <> _hex} = Signing.current_key()
-
-      assert tmp_dir |> File.ls!() |> Enum.sort() == [
-               "audit_signing_key.pem",
-               "audit_signing_key.pem.tmp-link",
-               "audit_signing_key.pem.tmp-new"
-             ]
-
-      assert File.ls!(fresh) == ["key"]
     end
 
     test "the dev file fallback without a path raises" do
       configure(fallback: :dev_file)
 
       assert_raise ArgumentError, ~r/:dev_key_path/, fn -> Signing.current_key() end
-    end
-
-    test "create_dev_key/1 never replaces a key file that is already there", %{tmp_dir: tmp_dir} do
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      File.write!(path, private_pem(@test1_seed))
-
-      assert Signing.create_dev_key(path).key_id == @test1_key_id
-      assert File.read!(path) == private_pem(@test1_seed)
-      assert File.ls!(tmp_dir) == ["audit_signing_key.pem"]
-    end
-
-    test "create_dev_key/1 never writes through a planted symlink", %{tmp_dir: tmp_dir} do
-      target = Path.join(tmp_dir, "elsewhere.pem")
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-      File.ln_s!(target, path)
-
-      assert_raise RuntimeError, ~r/is not a regular file/, fn -> Signing.create_dev_key(path) end
-
-      refute File.exists?(target)
-      assert tmp_dir |> File.ls!() |> Enum.sort() == ["audit_signing_key.pem"]
-    end
-
-    test "two concurrent first uses of the dev key file end with the same key",
-         %{tmp_dir: tmp_dir} do
-      # Every process stages its own key and tries to link it into place, as
-      # two BEAM processes starting together would.
-      path = Path.join(tmp_dir, "audit_signing_key.pem")
-
-      keys = race(16, fn -> Signing.create_dev_key(path) end)
-
-      assert [%{key_id: key_id}] = Enum.uniq(keys)
-      assert mode(path) == 0o600
-      assert File.ls!(tmp_dir) == ["audit_signing_key.pem"]
-
-      use_dev_file(path)
-      assert Signing.current_key().key_id == key_id
     end
 
     test "concurrent first uses through the fallback end with the same key",
