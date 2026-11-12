@@ -35,7 +35,17 @@ ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)
 # that ships with macOS, cannot verify Ed25519. Where there is none the tag is
 # excluded (Kanban.OpenSSL3). `mix test --only openssl3` still runs them, and
 # they then fail with a message naming what is missing.
-ExUnit.start(capture_log: true, exclude: Kanban.OpenSSL3.exclusions())
+#
+# The tests tagged :audit_stream_race (Kanban.AuditStream.CommitOrderRaceTest)
+# commit audit events that the append-only trigger never lets them delete, and
+# they wait on the cluster-wide snapshot horizon, which every other partition's
+# open sandbox transaction holds back. They are excluded unless a run asks for
+# them by tag or by file:line, and their setup_all refuses any database but
+# kanban_test_race; their moduledoc gives the command that runs them.
+ExUnit.start(
+  capture_log: true,
+  exclude: [:audit_stream_race | Kanban.OpenSSL3.exclusions()]
+)
 
 # Attachment blobs. A stored file's row rolls back with the test's sandbox,
 # but Kanban.Attachments.Storage.Local has already written its bytes, so
