@@ -201,20 +201,101 @@ defmodule Kanban.AuditLog.SigningTest do
     end
 
     test "a config that is not a keyword list raises without the seed in its stack frames" do
-      configure(%{private_key: String.duplicate("S", 32)})
+      seed = String.duplicate("S", 32)
 
-      for call <- [&Signing.enabled?/0, &Signing.published_keys/0, fn -> Signing.sign("m") end] do
-        {error, stacktrace} =
-          try do
-            call.()
-          rescue
-            error -> {error, __STACKTRACE__}
-          end
+      # An improper list finds :private_key at its head, then makes
+      # :lists.keyfind/3 raise with the whole config in its frame (W2724).
+      for config <- [%{private_key: seed}, [{:private_key, seed} | :tail]] do
+        configure(config)
 
-        assert %ArgumentError{} = error
-        assert Exception.message(error) =~ "must be a keyword list"
-        refute Exception.format(:error, error, stacktrace) =~ "SSSS"
+        for call <- [&Signing.enabled?/0, &Signing.published_keys/0, fn -> Signing.sign("m") end] do
+          {error, stacktrace} = raised(call)
+
+          assert %ArgumentError{} = error
+          assert Exception.message(error) =~ "must be a keyword list"
+          refute_sentinel(error, stacktrace)
+        end
       end
+    end
+
+    # W2724: on a binary, a tuple or an improper list, `in`, `for` and
+    # :lists.member/2 raise with the value, or the seed beside it, in the
+    # error or a frame. A map did not raise but was silently misread, and is
+    # now refused too.
+    test "a :previous or :revoked value that is not a list raises without its value or the seed" do
+      seed = String.duplicate("S", 32)
+      other = String.duplicate("P", 32)
+      values = [seed, {seed}, :atom, %{a: seed}, [other | :tail], [other | seed]]
+
+      for name <- [:previous, :revoked], value <- values do
+        signing_calls = [
+          &Signing.enabled?/0,
+          &Signing.published_keys/0,
+          fn -> Signing.sign("m") end
+        ]
+
+        # With no private key, enabled?/0 and sign/1 never read the lists, and
+        # published_keys/0 is the only way to reach them.
+        for {config, calls} <- [
+              {[{:private_key, seed}, {name, value}], signing_calls},
+              {[{name, value}], [&Signing.published_keys/0]}
+            ],
+            call <- calls do
+          configure(config)
+          {error, stacktrace} = raised(call)
+
+          assert match?(%ArgumentError{}, error), "#{inspect(name)}: #{inspect(error.__struct__)}"
+          assert Exception.message(error) =~ "#{inspect(name)} must be a list"
+          refute_sentinel(error, stacktrace)
+        end
+      end
+    end
+  end
+
+  describe "a malformed revocation date" do
+    # W2724 (Step 5.5): a map tagged as a Date passed the is_struct/2 guard,
+    # so Date.compare/2 raised with its contents and published_keys/0
+    # returned it as revoked_on. Only a valid ISO date counts as a date.
+    test "a Date-tagged map in a :revoked date slot is dropped, not raised or returned" do
+      sentinel = String.duplicate("S", 32)
+      revoked = public_key(seed())
+      fake_date = %{__struct__: Date, key: sentinel}
+
+      for {entries, revoked_on} <- [
+            {[{revoked, fake_date}, {revoked, ~D[2024-01-01]}], ~D[2024-01-01]},
+            {[{revoked, fake_date}], nil},
+            {[{revoked, %{~D[2024-01-01] | month: 13}}], nil}
+          ] do
+        configure(private_key: seed(), revoked: entries)
+
+        keys = Signing.published_keys()
+
+        assert keys.revoked == [%{key_id: Signing.key_id(revoked), revoked_on: revoked_on}]
+        refute inspect(keys, limit: :infinity) =~ "SSSS"
+        assert Signing.enabled?()
+        assert {:ok, _signed} = Signing.sign("m")
+      end
+    end
+  end
+
+  defp raised(call) do
+    call.()
+    flunk("expected #{inspect(call)} to raise")
+  rescue
+    error in ExUnit.AssertionError -> reraise error, __STACKTRACE__
+    error -> {error, __STACKTRACE__}
+  end
+
+  # "SSSS" is the sentinel seed; "PPPP" the other list entry, which the
+  # error must not echo either.
+  defp refute_sentinel(error, stacktrace) do
+    for text <- [
+          Exception.format(:error, error, stacktrace),
+          inspect(error, limit: :infinity),
+          inspect(stacktrace, limit: :infinity)
+        ] do
+      refute text =~ "SSSS"
+      refute text =~ "PPPP"
     end
   end
 
@@ -466,6 +547,26 @@ defmodule Kanban.AuditLog.SigningTest do
       forget_dev_key(path)
       assert capture_log(fn -> Signing.current_key() end) == ""
       assert mode(path) == 0o600
+    end
+
+    # W2724: the user-immutable flag makes chmod fail for the file's own
+    # owner. chflags is BSD and macOS only, so the test is skipped elsewhere.
+    @tag skip: System.find_executable("chflags") == nil && "needs chflags"
+    test "a dev key file other users can read whose chmod fails is used and logged",
+         %{tmp_dir: tmp_dir} do
+      path = Path.join(tmp_dir, "audit_signing_key.pem")
+      File.write!(path, private_pem(@test1_seed))
+      File.chmod!(path, 0o640)
+      assert {_output, 0} = System.cmd("chflags", ["uchg", path])
+      on_exit(fn -> System.cmd("chflags", ["nouchg", path]) end)
+      use_dev_file(path)
+
+      log = capture_log(fn -> assert Signing.current_key().key_id == @test1_key_id end)
+
+      assert mode(path) == 0o640
+      assert log =~ path
+      assert log =~ "mode 640"
+      assert log =~ "Stride could not set it to 600 (eperm)"
     end
 
     test "a stale staging directory is removed on load and a fresh one is kept",

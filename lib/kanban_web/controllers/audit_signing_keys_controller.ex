@@ -21,7 +21,9 @@ defmodule KanbanWeb.AuditSigningKeysController do
   cannot be decoded (a value that is not valid UTF-8, or one nested too
   deep) is refused by the endpoint with a 400. `KanbanWeb.Plugs.Parsers`
   renders that error as JSON for this address, and its body does not repeat
-  the request either.
+  the request either. A malformed percent escape such as `%ZZ` is not such a
+  query: it is decoded as the literal text `%ZZ`, so `?kid=%ZZ` gets the key
+  set and `?format=pem&kid=%ZZ` gets the 404.
 
   All key data comes from `Kanban.AuditLog.Signing.published_keys/0` and
   `Kanban.AuditLog.Signing.find_published/1`, which return public material

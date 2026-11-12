@@ -287,6 +287,29 @@ defmodule KanbanWeb.AuditSigningKeysControllerTest do
       end
     end
 
+    # W2724: %ZZ is not a percent escape, so it decodes as the three
+    # characters "%ZZ" rather than failing like the invalid UTF-8 above. The
+    # paths are written out because pem_path/1 would encode it as %25ZZ.
+    test "a malformed percent escape such as %ZZ is read as literal text, not refused" do
+      jwks = build_conn() |> get(@path) |> json_response(200)
+
+      for path <- [@path <> "?kid=%ZZ", @path <> "/?kid=%ZZ"] do
+        conn = get(build_conn(), path)
+
+        assert conn.query_params == %{"kid" => "%ZZ"}
+        assert json_response(conn, 200) == jwks
+      end
+
+      for path <- [@path <> "?format=pem&kid=%ZZ", @path <> "/?format=pem&kid=%ZZ"] do
+        conn = get(build_conn(), path)
+
+        assert conn.query_params == %{"format" => "pem", "kid" => "%ZZ"}
+        assert json_response(conn, 404) == %{"errors" => %{"detail" => "Not Found"}}
+        assert get_resp_header(conn, "cache-control") == ["no-store"]
+        refute response_text(conn) =~ "%ZZ"
+      end
+    end
+
     test "an unknown format value returns 404", %{current: current} do
       for format <- ["jwks", "json", "PEM", "pem ", "der", ""] do
         conn = get(build_conn(), @path, %{"format" => format, "kid" => kid(current)})

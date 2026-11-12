@@ -80,6 +80,32 @@ defmodule KanbanWeb.Plugs.ParsersTest do
     assert_raise Plug.Conn.InvalidQueryError, fn -> Parsers.call(conn, @opts) end
   end
 
+  test "only the exact signing-keys path gets the json pin (W2724)" do
+    for path <- [
+          "/.well-known/stride-audit-signing-keys/extra?kid=%FF",
+          "/.well-known/stride-audit-signing-keys.json?kid=%FF",
+          "/.well-known/Stride-Audit-Signing-Keys?kid=%FF",
+          "/.well-known/stride-audit-signing-keys-v2?kid=%FF"
+        ] do
+      conn = conn(:get, path)
+
+      assert_raise Plug.Conn.InvalidQueryError, fn -> Parsers.call(conn, @opts) end
+    end
+  end
+
+  test "a malformed percent escape on the signing-keys path parses as literal text (W2724)" do
+    for path <- [
+          "/.well-known/stride-audit-signing-keys?kid=%ZZ",
+          "/.well-known/stride-audit-signing-keys?format=pem&kid=%ZZ",
+          "/.well-known/stride-audit-signing-keys/?kid=%ZZ"
+        ] do
+      conn = :get |> conn(path) |> Parsers.call(@opts)
+
+      assert conn.query_params["kid"] == "%ZZ"
+      refute Map.has_key?(conn.private, :phoenix_format)
+    end
+  end
+
   test "a non-/api parse failure is raised as-is, without a format" do
     conn = conn(:get, "/about?a=%FF")
 

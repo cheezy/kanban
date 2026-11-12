@@ -169,6 +169,17 @@ defmodule Kanban.AuditLog.SigningRuntimeConfigTest do
       assert read(%{}) == nil
       assert read(%{@previous => " , ,"}) == [previous: []]
     end
+
+    # W2724: 32 zero bytes are a valid Ed25519 seed and are accepted, as any
+    # other published or guessable seed would be: refusing one known value
+    # would give false assurance about the rest.
+    test "a seed of 32 zero bytes is accepted as the key" do
+      zero = <<0::256>>
+
+      for key <- [Base.encode64(zero), ed25519_pem(zero)] do
+        assert read(%{@key => key}) == [private_key: zero]
+      end
+    end
   end
 
   describe "AUDIT_SIGNING_KEYS_PREVIOUS and AUDIT_SIGNING_KEYS_REVOKED" do
@@ -268,6 +279,61 @@ defmodule Kanban.AuditLog.SigningRuntimeConfigTest do
 
       # The current key may still be listed as previous, mid-rotation.
       assert read(%{@key => Base.encode64(seed), @previous => leaked, @revoked => other})
+    end
+  end
+
+  describe "every boot refusal" do
+    # W2724: a sentinel seed, so a refusal that printed the key in any form
+    # is caught: raw bytes, base64 (also inside a PEM body), and hex.
+    @sentinel_seed String.duplicate("S", 32)
+    @sentinel_fragments ["SSSSSSSS", "U1NTU1NT", "53535353"]
+
+    test "every boot refusal in the AUDIT_SIGNING block names its variable and prints no key bytes, base64 or PEM" do
+      seed = @sentinel_seed
+      hex = Base.encode16(seed)
+      pem = ed25519_pem(seed)
+      pub = url64(public_key(seed))
+      other = url64(public_key(seed()))
+
+      # Each form of the sentinel carries a fragment, so no refute below is vacuous.
+      for {form, fragment} <- [
+            {seed, "SSSSSSSS"},
+            {Base.encode64(seed), "U1NTU1NT"},
+            {url64(seed), "U1NTU1NT"},
+            {pem, "U1NTU1NT"},
+            {hex, "53535353"}
+          ] do
+        assert form =~ fragment
+      end
+
+      rows = [
+        {%{@key => Base.encode64(seed <> "S", padding: false)}, "AUDIT_SIGNING_KEY must be"},
+        {%{@key => hex}, "AUDIT_SIGNING_KEY must be"},
+        {%{@key => String.replace(pem, "-----END PRIVATE KEY-----", "")},
+         "AUDIT_SIGNING_KEY must be"},
+        {%{@previous => "#{other},#{hex}"}, "AUDIT_SIGNING_KEYS_PREVIOUS must be"},
+        {%{@previous => "#{other},#{pem}"}, "AUDIT_SIGNING_KEYS_PREVIOUS must be"},
+        {%{@revoked => "#{hex}:2026-11-11"}, "AUDIT_SIGNING_KEYS_REVOKED must be"},
+        {%{@revoked => pem}, "AUDIT_SIGNING_KEYS_REVOKED must be"},
+        {%{@key => Base.encode64(seed), @previous => url64(seed)},
+         "AUDIT_SIGNING_KEY holds the same 32 bytes"},
+        {%{@key => pem, @revoked => url64(seed)}, "AUDIT_SIGNING_KEY holds the same 32 bytes"},
+        {%{@key => Base.encode64(seed), @previous => pub, @revoked => pub},
+         "listed in both AUDIT_SIGNING_KEYS_PREVIOUS and AUDIT_SIGNING_KEYS_REVOKED"},
+        {%{@key => Base.encode64(seed), @revoked => "#{other}, #{pub}"},
+         "AUDIT_SIGNING_KEY is a key that AUDIT_SIGNING_KEYS_REVOKED lists"},
+        {%{@key => pem, @revoked => "#{other}, #{pub}"},
+         "AUDIT_SIGNING_KEY is a key that AUDIT_SIGNING_KEYS_REVOKED lists"}
+      ]
+
+      for {env, expected} <- rows do
+        message = boot_error(env)
+
+        assert message =~ expected
+        for fragment <- @sentinel_fragments, do: refute(message =~ fragment)
+        refute message =~ pub
+        refute message =~ other
+      end
     end
   end
 

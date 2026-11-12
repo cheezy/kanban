@@ -248,7 +248,9 @@ names a key the instance does not publish, or names a revoked key. Any
 `format` other than `pem` also returns `404`. Without `format`, `kid` is
 ignored and the whole key set is returned. A query string that cannot be
 decoded, such as one with invalid UTF-8, is refused with `400` before any of
-this.
+this. A malformed percent escape such as `%ZZ` is not refused: it is read as
+the literal text `%ZZ`, so `?kid=%ZZ` returns the whole key set and
+`?format=pem&kid=%ZZ` returns `404`.
 
 Both successful responses are sent with `Cache-Control: public, max-age=3600`,
 so a verifier or proxy may keep a copy for up to an hour. A rotation or a

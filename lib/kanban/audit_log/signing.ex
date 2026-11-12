@@ -270,19 +270,39 @@ defmodule Kanban.AuditLog.Signing do
   # pattern or guard on it, so a failed match can never carry the seed into
   # an exception.
 
-  # Anything but a list is refused here: Keyword.get/3 on a map would raise
-  # with the whole config, seed included, in its stack frame.
+  # Anything but a proper list is refused here: Keyword.get/3 on a map, or on
+  # an improper list, would raise with the whole config, seed included, in its
+  # stack frame.
   defp config do
-    case Application.get_env(:kanban, __MODULE__, []) do
-      config when is_list(config) ->
-        config
+    config = Application.get_env(:kanban, __MODULE__, [])
 
-      _other ->
-        raise ArgumentError,
-              "config :kanban, Kanban.AuditLog.Signing must be a keyword list. " <>
-                "Its value is not shown here."
+    if proper_list?(config) do
+      config
+    else
+      raise ArgumentError,
+            "config :kanban, Kanban.AuditLog.Signing must be a keyword list. " <>
+              "Its value is not shown here."
     end
   end
+
+  # :previous or :revoked, refused unless it is a proper list. On a binary, a
+  # tuple or an improper list, `in`, `for` and :lists.member/2 raise with the
+  # value, or the seed beside it, in the error or a stack frame; a map would
+  # not raise but be silently misread.
+  defp list_option(config, name) do
+    list = Keyword.get(config, name, [])
+
+    if proper_list?(list) do
+      list
+    else
+      raise ArgumentError,
+            "config :kanban, Kanban.AuditLog.Signing, #{inspect(name)} must be a list of " <>
+              "public keys. Its value is not shown here."
+    end
+  end
+
+  # List.improper?/1 has guard-only clauses, so it cannot raise.
+  defp proper_list?(value), do: is_list(value) and not List.improper?(value)
 
   defp current_key(config) do
     case signing_key(config) do
@@ -311,7 +331,7 @@ defmodule Kanban.AuditLog.Signing do
   # The same 32 bytes as a previous or revoked key: a public key pasted as the
   # private key, or the private key pasted into a list of public keys.
   defp listed_as_public?(config, seed) do
-    seed in Keyword.get(config, :previous, []) or revoked?(config, seed)
+    seed in list_option(config, :previous) or revoked?(config, seed)
   end
 
   defp seed(config) do
@@ -569,7 +589,7 @@ defmodule Kanban.AuditLog.Signing do
   end
 
   defp revoked_entries(config) do
-    for entry <- Keyword.get(config, :revoked, []),
+    for entry <- list_option(config, :revoked),
         {<<_::binary-size(32)>>, _date} = revoked <- [revoked_entry(entry)],
         do: revoked
   end
@@ -580,9 +600,16 @@ defmodule Kanban.AuditLog.Signing do
     end)
   end
 
-  defp revoked_entry({public_key, date}) when is_struct(date, Date), do: {public_key, date}
-  defp revoked_entry({public_key, _date}), do: {public_key, nil}
+  defp revoked_entry({public_key, date}), do: {public_key, if(iso_date?(date), do: date)}
   defp revoked_entry(public_key), do: {public_key, nil}
+
+  # A map tagged as a Date passes is_struct/2, and Date.compare/2 would then
+  # raise with its contents: only a valid ISO date counts.
+  defp iso_date?(%Date{calendar: Calendar.ISO, year: year, month: month, day: day})
+       when is_integer(year) and is_integer(month) and is_integer(day),
+       do: Calendar.ISO.valid_date?(year, month, day)
+
+  defp iso_date?(_other), do: false
 
   defp earliest(nil, date), do: date
   defp earliest(date, nil), do: date
@@ -598,7 +625,7 @@ defmodule Kanban.AuditLog.Signing do
 
   # The configured order, without duplicates, the current key or a revoked key.
   defp previous(config, hidden) do
-    for <<_::binary-size(32)>> = public_key <- Keyword.get(config, :previous, []),
+    for <<_::binary-size(32)>> = public_key <- list_option(config, :previous),
         public_key not in hidden,
         uniq: true,
         do: key(public_key)
