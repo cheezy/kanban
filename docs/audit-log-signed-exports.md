@@ -14,6 +14,16 @@ signed JSON export is requested by URL, with
 signed export counts towards the same 10 exports an hour and the same 50,000
 events per download as an unsigned one.
 
+The `signed` parameter takes exactly `true` or `false`. `signed=false`, like
+leaving the parameter out, gives an ordinary unsigned export. Any other value,
+such as `yes`, `1`, `TRUE`, an empty value or a value with spaces, is refused
+with a message and is not counted, and so is a `signed` parameter given more
+than once, such as `signed=true&signed=false`. A request whose `signed`
+parameter asks for a signature therefore never gets an unsigned file without
+saying so. A misspelt parameter name, such as `sigend=true`, is not a `signed`
+parameter at all and gives an unsigned export, so check that what you
+downloaded is a zip.
+
 The same key also signs the audit batches Stride streams to an HTTPS
 destination, and receivers check those against the same published keys. This
 document covers exports only.

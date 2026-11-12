@@ -9317,13 +9317,13 @@ msgid "To (UTC)"
 msgstr "Até (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:147
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:174
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "Formato de exportação não suportado."
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:134
+#: lib/kanban_web/live/org_live/audit_log.ex:141
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "Usuário #%{id} (excluído)"
@@ -9435,7 +9435,7 @@ msgid "unclaimed"
 msgstr "liberou"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:136
+#: lib/kanban_web/live/org_live/audit_log.ex:143
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
@@ -10619,7 +10619,7 @@ msgid "Back to Organization"
 msgstr "Voltar à organização"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
-#: lib/kanban_web/live/org_live/audit_log.ex:52
+#: lib/kanban_web/live/org_live/audit_log.ex:55
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Organization audit log"
@@ -10635,7 +10635,7 @@ msgstr "Eventos de segurança registrados para %{name}, os mais recentes primeir
 msgid "Organization administrators"
 msgstr "Administradores da organização"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:127
+#: lib/kanban_web/live/org_live/audit_log.ex:134
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "Fora da sua organização"
@@ -11008,7 +11008,7 @@ msgstr "Não confirmado"
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "Esta conta está desativada, por isso não pode ser adicionada ao quadro."
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:150
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:180
 #, elixir-autogen, elixir-format
 msgid "Too many exports. Try again later."
 msgstr "Exportações demais. Tente novamente mais tarde."
@@ -14041,13 +14041,13 @@ msgstr "Sistema"
 msgid "Theme"
 msgstr "Tema"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:153
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:183
 #: lib/kanban_web/live/org_live/audit_log.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Signed exports are not set up on this server."
 msgstr "As exportações assinadas não estão configuradas neste servidor."
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:156
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:186
 #, elixir-autogen, elixir-format
 msgid "The signed export could not be built. Try again."
 msgstr "Não foi possível criar a exportação assinada. Tente novamente."
@@ -14087,3 +14087,8 @@ msgstr "Chave de assinatura"
 #, elixir-autogen, elixir-format
 msgid "This key as PEM"
 msgstr "Esta chave em PEM"
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:177
+#, elixir-autogen, elixir-format
+msgid "The signed parameter must be true or false."
+msgstr "O parâmetro signed deve ser true ou false."

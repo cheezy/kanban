@@ -18,6 +18,23 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
 
   @refusal "You must be an org-admin of an Organization to access this page."
 
+  @invalid_signed "The signed parameter must be true or false."
+
+  # Values that are neither absent, "false" nor the exact "true": each is
+  # refused rather than read as a request for an unsigned file.
+  @invalid_signed_queries [
+    "signed=yes",
+    "signed=1",
+    "signed=0",
+    "signed=TRUE",
+    "signed=True",
+    "signed=",
+    "signed",
+    "signed=%20true",
+    "signed=true%20",
+    "signed=yes&format=json"
+  ]
+
   defp insert_event!(action, organization, inserted_at, metadata \\ %{}) do
     Repo.insert!(%AuditEvent{
       action: action,
@@ -170,7 +187,7 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
     end
 
     test "the unsigned export event carries signed false and no key or hash", %{conn: conn} do
-      for query <- ["", "?format=json", "?signed=false", "?signed=1", "?signed=TRUE"] do
+      for query <- ["", "?format=json", "?signed=false"] do
         conn = get(conn, "/org/audit/export" <> query)
 
         assert [content_type] = get_resp_header(conn, "content-type")
@@ -178,7 +195,7 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
         assert response(conn, 200)
       end
 
-      assert [_, _, _, _, _] = events = AuditLog.list_events(action: :org_audit_log_exported)
+      assert [_, _, _] = events = AuditLog.list_events(action: :org_audit_log_exported)
 
       for event <- events do
         assert event.metadata["signed"] == false
@@ -673,6 +690,33 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
   describe "signed export" do
     @describetag :tmp_dir
     setup [:org_admin_setup, :signed_setup]
+
+    test "no signed param and signed=false give the unsigned export", %{conn: conn} do
+      for {query, type} <- [
+            {"", "text/csv"},
+            {"?signed=false", "text/csv"},
+            {"?format=json", "application/json"},
+            {"?format=json&signed=false", "application/json"},
+            {"?signed[x=1&signed=false", "text/csv"}
+          ] do
+        answered = get(conn, "/org/audit/export" <> query)
+
+        assert response(answered, 200)
+        assert [content_type] = get_resp_header(answered, "content-type")
+        assert content_type =~ type
+        refute content_type =~ "zip"
+      end
+
+      assert [_, _, _, _, _] = events = export_events()
+      assert Enum.all?(events, &(&1.metadata["signed"] == false))
+
+      signed = get(conn, ~p"/org/audit/export?signed=true")
+      assert [content_type] = get_resp_header(signed, "content-type")
+      assert content_type =~ "application/zip"
+
+      assert export_events() |> Enum.map(& &1.metadata["signed"]) |> Enum.sort() ==
+               [false, false, false, false, false, true]
+    end
 
     test "signed=true returns an application/zip attachment",
          %{conn: conn, org_a: org_a, org_admin: org_admin, root: root} do
@@ -1246,6 +1290,140 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
       assert length(export_events()) == 1
     end
+
+    test "a signed value other than true or false is refused with the flash, records nothing and is not charged",
+         %{conn: conn} do
+      attach_telemetry([[:kanban, :rate_limit, :denied]])
+
+      for query <- @invalid_signed_queries do
+        refused = get(conn, "/org/audit/export?" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == @invalid_signed
+      end
+
+      assert export_events() == []
+      refute_received {:telemetry_event, [:kanban, :rate_limit, :denied], _, _}
+
+      # The whole allowance is still there.
+      for _ <- 1..@rate_limit do
+        assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
+      end
+
+      assert length(export_events()) == @rate_limit
+    end
+
+    test "a repeated signed param is refused and is not charged", %{conn: conn} do
+      for query <- [
+            "signed=true&signed=false",
+            "signed=yes&signed=true",
+            "signed=true&signed=true",
+            "signed=false&signed=false",
+            "sign%65d=true&signed=false",
+            "signed[]=true&signed=false",
+            "signed[a]=true&signed=false"
+          ] do
+        refused = get(conn, "/org/audit/export?" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == @invalid_signed
+      end
+
+      assert export_events() == []
+
+      for _ <- 1..@rate_limit do
+        assert conn |> get(~p"/org/audit/export?signed=true") |> response(200)
+      end
+    end
+
+    test "a list-valued signed param is refused", %{conn: conn} do
+      for query <- ["signed[]=true", "signed[]=true&signed[]=false", "signed[a]=true"] do
+        refused = get(conn, "/org/audit/export?" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == @invalid_signed
+      end
+
+      assert export_events() == []
+    end
+
+    test "an invalid signed value is refused while signing is off", %{conn: conn} do
+      Application.put_env(:kanban, Signing, [])
+
+      for query <- ["signed=yes", "signed=TRUE", "signed[]=true"] do
+        refused = get(conn, "/org/audit/export?" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == @invalid_signed
+      end
+
+      assert export_events() == []
+    end
+
+    test "an unsupported format with an invalid signed value gets the format flash",
+         %{conn: conn} do
+      for query <- ["signed=yes&format=pdf", "format=pdf&signed[]=true"] do
+        refused = get(conn, "/org/audit/export?" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == "Unsupported export format."
+      end
+
+      assert export_events() == []
+    end
+
+    test "the invalid-signed refusal flash is translated under ja and zh", %{conn: conn} do
+      for {locale, message} <- [
+            {"ja", "signed パラメーターは true または false でなければなりません。"},
+            {"zh", "signed 参数必须为 true 或 false。"}
+          ] do
+        refused =
+          conn
+          |> Plug.Test.init_test_session(%{"locale" => locale})
+          |> get(~p"/org/audit/export?signed=yes")
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == message
+      end
+    end
+
+    test "the invalid-signed refusal flash is translated in the other locales", %{conn: conn} do
+      for {locale, message} <- [
+            {"de", "Der Parameter signed muss true oder false sein."},
+            {"en", @invalid_signed},
+            {"es", "El parámetro signed debe ser true o false."},
+            {"fr", "Le paramètre signed doit valoir true ou false."},
+            {"pt", "O parâmetro signed deve ser true ou false."}
+          ] do
+        refused =
+          conn
+          |> Plug.Test.init_test_session(%{"locale" => locale})
+          |> get(~p"/org/audit/export?signed=yes")
+
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == message
+        refute message =~ "yes"
+      end
+    end
+  end
+
+  describe "the signed rule" do
+    defp squish(text), do: text |> String.split() |> Enum.join(" ")
+
+    test "the two docs and the moduledoc state that signed takes only true or false" do
+      for path <- ["docs/audit-log-signed-exports.md", "docs/organizations.md"] do
+        text = path |> File.read!() |> squish()
+
+        assert text =~ "parameter takes exactly `true` or `false`", path
+        assert text =~ "given more than once", path
+      end
+
+      {:docs_v1, _, _, _, %{"en" => moduledoc}, _, _} =
+        Code.fetch_docs(KanbanWeb.OrgAuditLogExportController)
+
+      moduledoc = squish(moduledoc)
+      assert moduledoc =~ "The `signed` param takes exactly two values."
+      assert moduledoc =~ "given more than once in the query string"
+    end
   end
 
   describe "HEAD" do
@@ -1286,7 +1464,7 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
     test "an unsigned HEAD sends the file headers and charges and records nothing", %{conn: conn} do
       for {path, type, name} <- [
             {~p"/org/audit/export", "text/csv", "csv"},
-            {~p"/org/audit/export?format=json&signed=1", "application/json", "json"}
+            {~p"/org/audit/export?format=json&signed=false", "application/json", "json"}
           ] do
         answered = head(conn, path)
 
@@ -1338,6 +1516,30 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
                "Signed exports are not set up on this server."
 
       assert export_events() == []
+    end
+
+    test "a HEAD with an invalid signed value is refused as a GET is", %{conn: conn, root: root} do
+      for query <- [
+            "signed=yes",
+            "signed=1&format=json",
+            "signed[]=true",
+            "signed=true&signed=false",
+            "signed[]=true&signed=false"
+          ] do
+        refused = head(conn, "/org/audit/export?" <> query)
+
+        assert redirected_to(refused) == ~p"/org/audit"
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == @invalid_signed
+      end
+
+      Application.put_env(:kanban, Signing, [])
+
+      refused = head(conn, ~p"/org/audit/export?signed=TRUE")
+      assert redirected_to(refused) == ~p"/org/audit"
+      assert Phoenix.Flash.get(refused.assigns.flash, :error) == @invalid_signed
+
+      assert export_events() == []
+      assert File.ls!(root) == []
     end
   end
 end

@@ -381,9 +381,14 @@ none.
 filter parameters as the page uses). The zip holds the same CSV or JSON file,
 a `manifest.json` that describes it, an Ed25519 signature over the manifest,
 and a `README.txt` with the three commands that verify them. A signed export
-counts towards the same 10 an hour and the same 50,000 events. On a Stride
-instance with no signing key, the button is disabled, and a request is
-refused with a message and is not counted. An org-admin who is removed or
+counts towards the same 10 an hour and the same 50,000 events. The `signed`
+parameter takes exactly `true` or `false`; `signed=false` gives the unsigned
+export, and any other value, or a `signed` parameter given more than once, is
+refused with a message and is not counted, so a typo in the value never
+yields an unsigned file in place of a signed one. A misspelt parameter name is
+not a `signed` parameter and gives the unsigned export. On a Stride instance with no signing key, the
+button is disabled, and a request is refused with a message and is not
+counted. An org-admin who is removed or
 disabled while a signed export is being built is refused when it is ready,
 and gets no file. The **Signing key** panel shows the key's id and
 fingerprint; record the fingerprint outside Stride.

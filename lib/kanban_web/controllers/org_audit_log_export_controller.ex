@@ -29,10 +29,22 @@ defmodule KanbanWeb.OrgAuditLogExportController do
 
   ## Signed exports
 
-  `signed=true` (only that exact value; anything else is an unsigned export)
-  downloads one zip instead: the same CSV or JSON file, a `manifest.json`
-  describing it, an Ed25519 signature over the manifest and a `README.txt`
-  with the verification commands. `Kanban.AuditLog.with_signed_export/3`
+  The `signed` param takes exactly two values. `signed=false`, like no
+  `signed` param at all, gives the unsigned export. Any other value (`yes`,
+  `1`, `TRUE`, an empty value, a value with spaces, a list) is refused: the
+  request is redirected to `/org/audit` with a fixed flash that does not echo
+  the value, whether or not signing is on. That is checked after the format
+  and before the rate limit, so the refusal is not charged, and nothing is
+  recorded. A `signed` param given more than once in the query string, such
+  as `signed=true&signed=false`, is refused the same way, because Plug would
+  keep only its last value. A request whose `signed` param asks for a
+  signature therefore never gets an unsigned file silently. A misspelt param
+  name, such as `sigend=true`, is not a `signed` param at all and gives the
+  unsigned export.
+
+  `signed=true` downloads one zip instead: the same CSV or JSON file, a
+  `manifest.json` describing it, an Ed25519 signature over the manifest and a
+  `README.txt` with the verification commands. `Kanban.AuditLog.with_signed_export/3`
   (`Kanban.AuditLog.SignedExport`) builds it in a temporary directory and
   removes that directory when the download ends or fails. It applies the same
   forced `organization_id`, the same redaction and the same row cap.
@@ -64,7 +76,8 @@ defmodule KanbanWeb.OrgAuditLogExportController do
   A `HEAD` request (`KanbanWeb.Plugs.HeadRequest`) gets the headers a `GET`
   would send and no body. Nothing is built, signed, charged against the rate
   limit or recorded for it, because no file leaves the server. An unsupported
-  format, and a signed request while signing is off, are refused as for `GET`.
+  format, an invalid `signed` value, and a signed request while signing is
+  off, are refused as for `GET`.
 
   ## Limits
 
@@ -83,7 +96,8 @@ defmodule KanbanWeb.OrgAuditLogExportController do
     * **Rate limit.** Each org-admin may export 10 times an hour (the
       `:org_audit_export` surface of `Kanban.RateLimit`, keyed on the
       signed-in user's id, never a request param). The check runs after the
-      format is validated, so an unsupported format is not charged, and before
+      format and the `signed` value are validated, so neither an unsupported
+      format nor an invalid `signed` value is charged, and before
       the audit row and the stream, so a refused request writes nothing and
       opens no stream: it is redirected to `/org/audit` with a flash. Signed
       and unsigned exports share this one limit.
@@ -120,23 +134,24 @@ defmodule KanbanWeb.OrgAuditLogExportController do
   defp answer_export({:head, kind, format}, conn, _params), do: send_head(conn, kind, format)
   defp answer_export({:error, reason}, conn, _params), do: refuse(conn, reason)
 
-  # The order matters: the format, then whether signing is on, then the rate
-  # limit. So neither an unsupported format nor a signed request made while
-  # signing is off is charged.
+  # The order matters: the format, then the signed value and whether signing
+  # is on, then the rate limit. So neither an unsupported format, an invalid
+  # signed value nor a signed request made while signing is off is charged.
   defp export_request(conn, params, false) do
     with {:ok, format} <- export_format(params["format"]),
-         {:ok, kind} <- export_kind(params["signed"]),
+         {:ok, kind} <- export_kind(signed_param(conn, params)),
          :ok <- check_rate_limit(conn) do
       {:ok, kind, format}
     end
   end
 
-  # A HEAD is refused as a GET would be for its format and for signing being
-  # off. Otherwise it is answered with the headers alone: the server drops
-  # the body of a HEAD, so nothing is built, charged or recorded for one.
-  defp export_request(_conn, params, true) do
+  # A HEAD is refused as a GET would be for its format, for an invalid signed
+  # value and for signing being off. Otherwise it is answered with the headers
+  # alone: the server drops the body of a HEAD, so nothing is built, charged
+  # or recorded for one.
+  defp export_request(conn, params, true) do
     with {:ok, format} <- export_format(params["format"]),
-         {:ok, kind} <- export_kind(params["signed"]) do
+         {:ok, kind} <- export_kind(signed_param(conn, params)) do
       {:head, kind, format}
     end
   end
@@ -158,6 +173,9 @@ defmodule KanbanWeb.OrgAuditLogExportController do
 
   defp refusal_message(:unsupported_format), do: gettext("Unsupported export format.")
 
+  defp refusal_message(:invalid_signed),
+    do: gettext("The signed parameter must be true or false.")
+
   defp refusal_message({:rate_limited, _retry_after_ms}),
     do: gettext("Too many exports. Try again later.")
 
@@ -172,13 +190,43 @@ defmodule KanbanWeb.OrgAuditLogExportController do
   defp export_format("json"), do: {:ok, :json}
   defp export_format(_other), do: {:error, :unsupported_format}
 
-  # Only the exact value "true" asks for a signed export. Decided before the
-  # rate limit, so a refusal while signing is off is not charged.
+  # Only three forms are accepted: no param or "false" for an unsigned export,
+  # and the exact value "true" for a signed one. Any other value, a list or a
+  # map included, is refused whether or not signing is on, so a request that
+  # asked for a signature never silently gets an unsigned file. Decided before
+  # the rate limit, so neither refusal is charged.
+  defp export_kind(nil), do: {:ok, :plain}
+  defp export_kind("false"), do: {:ok, :plain}
+
   defp export_kind("true") do
     if AuditLog.signed_export_available?(), do: {:ok, :signed}, else: {:error, :signing_off}
   end
 
-  defp export_kind(_absent_or_other), do: {:ok, :plain}
+  defp export_kind(_other), do: {:error, :invalid_signed}
+
+  # Plug keeps only the last of a repeated query key, so signed=true&signed=false
+  # or signed[]=true&signed=false would read as "false". A repeated signed key,
+  # bracketed or not, is therefore answered with
+  # :repeated, which export_kind/1 refuses. The raw query string has already
+  # been decoded once by Plug, so it is well formed here.
+  defp signed_param(conn, params) do
+    if repeated_signed?(conn.query_string), do: :repeated, else: params["signed"]
+  end
+
+  defp repeated_signed?(query_string) do
+    query_string
+    |> URI.query_decoder()
+    |> Enum.count(fn {key, _value} -> signed_key?(key) end)
+    |> Kernel.>(1)
+  end
+
+  # Plug roots a bracketed key such as signed[] or signed[a] under the same
+  # "signed" param, so those count as signed keys too. A key such as signed[
+  # or signed[x, with no closing bracket, is a param of its own name to Plug,
+  # so it is not counted.
+  defp signed_key?("signed"), do: true
+  defp signed_key?("signed[" <> rest), do: String.ends_with?(rest, "]")
+  defp signed_key?(_key), do: false
 
   defp send_head(conn, kind, format) do
     conn

@@ -9281,13 +9281,13 @@ msgid "To (UTC)"
 msgstr "结束日期 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:147
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:174
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "不支持的导出格式。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:134
+#: lib/kanban_web/live/org_live/audit_log.ex:141
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "用户 #%{id}（已删除）"
@@ -9399,7 +9399,7 @@ msgid "unclaimed"
 msgstr "已取消认领"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:136
+#: lib/kanban_web/live/org_live/audit_log.ex:143
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
@@ -10579,7 +10579,7 @@ msgid "Back to Organization"
 msgstr "返回组织"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
-#: lib/kanban_web/live/org_live/audit_log.ex:52
+#: lib/kanban_web/live/org_live/audit_log.ex:55
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Organization audit log"
@@ -10595,7 +10595,7 @@ msgstr "为 %{name} 记录的安全事件，按时间倒序排列。时间为 UT
 msgid "Organization administrators"
 msgstr "组织管理员"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:127
+#: lib/kanban_web/live/org_live/audit_log.ex:134
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "组织外部人员"
@@ -10967,7 +10967,7 @@ msgstr "未确认"
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "此账户已停用，因此无法添加到看板。"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:150
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:180
 #, elixir-autogen, elixir-format
 msgid "Too many exports. Try again later."
 msgstr "导出次数过多，请稍后再试。"
@@ -13995,13 +13995,13 @@ msgstr "跟随系统"
 msgid "Theme"
 msgstr "主题"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:153
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:183
 #: lib/kanban_web/live/org_live/audit_log.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Signed exports are not set up on this server."
 msgstr "此服务器未设置签名导出。"
 
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:156
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:186
 #, elixir-autogen, elixir-format
 msgid "The signed export could not be built. Try again."
 msgstr "无法生成签名导出，请重试。"
@@ -14041,3 +14041,8 @@ msgstr "签名密钥"
 #, elixir-autogen, elixir-format
 msgid "This key as PEM"
 msgstr "此密钥的 PEM 格式"
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:177
+#, elixir-autogen, elixir-format
+msgid "The signed parameter must be true or false."
+msgstr "signed 参数必须为 true 或 false。"
