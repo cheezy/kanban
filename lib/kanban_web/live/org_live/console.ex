@@ -39,6 +39,7 @@ defmodule KanbanWeb.OrgLive.Console do
   alias Kanban.Organizations.MemberRemoval
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrgWorkspaces
+  alias Kanban.Workspaces.Current
   alias Kanban.Workspaces.Workspace
 
   # The router's live_session :require_authenticated_user lets in every
@@ -49,13 +50,16 @@ defmodule KanbanWeb.OrgLive.Console do
   @sections ["details", "members", "workspaces"]
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     %{current_scope: %{user: user}, current_organization: %Organization{id: id}} =
       socket.assigns
 
     case Organizations.get_organization(id, user) do
       %Organization{} = organization ->
-        {:ok, assign_console(socket, organization, user)}
+        {:ok,
+         socket
+         |> assign_console(organization, user)
+         |> assign(:session_workspace_id, session["current_workspace_id"])}
 
       # The org-admin role was removed between the gate and this lookup.
       nil ->
@@ -272,8 +276,9 @@ defmodule KanbanWeb.OrgLive.Console do
     |> refresh_workspaces(actor)
   end
 
-  # current_scope is loaded at mount and never refreshed, and an event does not
-  # run the gate's handle_params hook. Re-read the actor and their org-admin
+  # current_scope's user and membership are loaded at mount and never re-read
+  # (refresh_workspaces/2 rebuilds only its switcher fields), and an event does
+  # not run the gate's handle_params hook. Re-read the actor and their org-admin
   # role from the database, and pass that fresh struct to the context.
   defp with_org_admin(socket, fun) do
     case authorized_actor(socket) do
@@ -308,12 +313,24 @@ defmodule KanbanWeb.OrgLive.Console do
     |> redirect(to: ~p"/boards")
   end
 
+  # The side-nav switcher renders from current_scope, which is built once at
+  # mount, so the console rebuilds it here as well as its own list. The switcher
+  # goes through Current.put_current/2, never the console's org-admin listing,
+  # so it keeps the switcher's own reach rule. The hint is the session's
+  # current_workspace_id as it was when this page mounted, the value a reload
+  # uses unless the workspace was switched in another tab since: the chosen
+  # workspace stays current, and when none was chosen, or it is gone,
+  # put_current/2 falls back as a reload does.
   defp refresh_workspaces(socket, actor) do
-    assign(
-      socket,
-      :workspaces,
-      OrgWorkspaces.list_workspaces(actor, socket.assigns.organization.id)
-    )
+    %{
+      current_scope: scope,
+      organization: %Organization{id: organization_id},
+      session_workspace_id: session_workspace_id
+    } = socket.assigns
+
+    socket
+    |> assign(:workspaces, OrgWorkspaces.list_workspaces(actor, organization_id))
+    |> assign(:current_scope, Current.put_current(scope, session_workspace_id))
   end
 
   # The listed workspaces are only a UI hint: renaming re-reads the workspace

@@ -706,6 +706,224 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
     end
   end
 
+  # D419: the side-nav switcher renders from current_scope, which is built at
+  # mount, so the console must rebuild it after each workspace change.
+  describe "side-nav workspace switcher" do
+    setup :org_admin_setup
+
+    defp switcher_view(conn) do
+      {:ok, view, _html} = live(conn, ~p"/org?section=workspaces")
+      view
+    end
+
+    defp workspace_named(organization, name) do
+      Repo.get_by!(Workspace, organization_id: organization.id, name: name)
+    end
+
+    defp switcher_current?(view, name),
+      do: has_element?(view, "#workspace-switcher [data-workspace-current][title=\"#{name}\"]")
+
+    defp switcher_html(view), do: view |> element("#workspace-switcher") |> render()
+
+    test "lists a created workspace in the side-nav switcher without a reload", %{
+      conn: conn,
+      organization: organization
+    } do
+      org_workspace_fixture(organization, %{name: "Alpha"})
+      view = switcher_view(conn)
+      refute has_element?(view, "#workspace-switcher", "Design")
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Design"})
+      |> render_submit()
+
+      design = workspace_named(organization, "Design")
+      assert has_element?(view, "#workspace-switch-#{design.id}", "Design")
+    end
+
+    test "makes the first workspace current in the switcher when the Organization had none", %{
+      conn: conn,
+      organization: organization
+    } do
+      view = switcher_view(conn)
+
+      assert has_element?(
+               view,
+               "#workspace-switcher [data-workspace-current]",
+               "Choose a workspace"
+             )
+
+      assert has_element?(view, "#workspace-switcher", "No workspaces yet")
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Design"})
+      |> render_submit()
+
+      design = workspace_named(organization, "Design")
+      assert switcher_current?(view, "Design")
+      assert has_element?(view, "#workspace-switch-#{design.id} button[aria-current=\"true\"]")
+      refute has_element?(view, "#workspace-switcher", "No workspaces yet")
+
+      # A reload shows the same switcher.
+      assert switcher_current?(switcher_view(conn), "Design")
+    end
+
+    test "keeps the current workspace selected when another workspace is created", %{
+      conn: conn,
+      organization: organization
+    } do
+      beta = org_workspace_fixture(organization, %{name: "Beta"})
+      view = conn |> Plug.Conn.put_session(:current_workspace_id, beta.id) |> switcher_view()
+      assert switcher_current?(view, "Beta")
+
+      # "Aardvark" sorts first, so a switcher rebuilt without the session's
+      # chosen workspace as its hint would make it current instead.
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Aardvark"})
+      |> render_submit()
+
+      aardvark = workspace_named(organization, "Aardvark")
+      assert switcher_current?(view, "Beta")
+      assert has_element?(view, "#workspace-switch-#{beta.id} button[aria-current=\"true\"]")
+      assert has_element?(view, "#workspace-switch-#{aardvark.id}", "Aardvark")
+      refute has_element?(view, "#workspace-switch-#{aardvark.id} button[aria-current]")
+    end
+
+    test "shows the workspace a reload would make current when none was chosen", %{
+      conn: conn,
+      organization: organization
+    } do
+      org_workspace_fixture(organization, %{name: "Beta"})
+      view = switcher_view(conn)
+      assert switcher_current?(view, "Beta")
+
+      # With no current_workspace_id in the session, a reload falls back to the
+      # first workspace by name, so the switcher must follow it to "Aardvark".
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Aardvark"})
+      |> render_submit()
+
+      assert switcher_current?(view, "Aardvark")
+      assert switcher_current?(switcher_view(conn), "Aardvark")
+    end
+
+    test "switching to a just-created workspace from the refreshed switcher succeeds", %{
+      conn: conn,
+      organization: organization
+    } do
+      org_workspace_fixture(organization, %{name: "Beta"})
+      view = switcher_view(conn)
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Design"})
+      |> render_submit()
+
+      design = workspace_named(organization, "Design")
+      conn = view |> form("#workspace-switch-#{design.id}") |> submit_form(conn)
+
+      assert redirected_to(conn) == ~p"/boards"
+      assert get_session(conn, :current_workspace_id) == design.id
+    end
+
+    test "leaves the switcher unchanged when creating a workspace fails validation", %{
+      conn: conn,
+      organization: organization
+    } do
+      org_workspace_fixture(organization, %{name: "Design"})
+      view = switcher_view(conn)
+      before = switcher_html(view)
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "  "})
+      |> render_submit()
+
+      assert switcher_html(view) == before
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "design"})
+      |> render_submit()
+
+      assert switcher_html(view) == before
+    end
+
+    test "leaves the switcher unchanged when a rename or archive is refused", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      busy = org_workspace_fixture(organization, %{name: "Busy"})
+
+      org_admin
+      |> board_fixture()
+      |> Ecto.Changeset.change(workspace_id: busy.id)
+      |> Repo.update!()
+
+      view = switcher_view(conn)
+      before = switcher_html(view)
+
+      view |> element("#rename-workspace-#{busy.id}") |> render_click()
+
+      view
+      |> form("#rename-workspace-form", rename: %{name: ""})
+      |> render_submit()
+
+      assert switcher_html(view) == before
+
+      view |> element("#cancel-workspace-rename") |> render_click()
+      view |> element("#archive-workspace-#{busy.id}") |> render_click()
+
+      assert render(view) =~ "This workspace still holds boards."
+      assert switcher_html(view) == before
+    end
+
+    test "shows a renamed workspace's new name in the switcher", %{
+      conn: conn,
+      organization: organization
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Old name"})
+      view = switcher_view(conn)
+      assert switcher_current?(view, "Old name")
+
+      view |> element("#rename-workspace-#{workspace.id}") |> render_click()
+
+      view
+      |> form("#rename-workspace-form", rename: %{name: "New name"})
+      |> render_submit()
+
+      assert switcher_current?(view, "New name")
+      assert has_element?(view, "#workspace-switch-#{workspace.id}", "New name")
+      refute has_element?(view, "#workspace-switcher", "Old name")
+    end
+
+    test "removes an archived workspace from the switcher", %{
+      conn: conn,
+      organization: organization
+    } do
+      alpha = org_workspace_fixture(organization, %{name: "Alpha"})
+      beta = org_workspace_fixture(organization, %{name: "Beta"})
+      view = conn |> Plug.Conn.put_session(:current_workspace_id, alpha.id) |> switcher_view()
+      assert switcher_current?(view, "Alpha")
+
+      # Archiving the chosen workspace falls back to the first one left.
+      view |> element("#archive-workspace-#{alpha.id}") |> render_click()
+
+      refute has_element?(view, "#workspace-switch-#{alpha.id}")
+      assert switcher_current?(view, "Beta")
+
+      view |> element("#archive-workspace-#{beta.id}") |> render_click()
+
+      refute has_element?(view, "#workspace-switch-#{beta.id}")
+
+      assert has_element?(
+               view,
+               "#workspace-switcher [data-workspace-current]",
+               "Choose a workspace"
+             )
+
+      assert has_element?(view, "#workspace-switcher", "No workspaces yet")
+    end
+  end
+
   describe "mount/3 when the Organization lookup fails" do
     test "redirects to /boards with the refusal when the user no longer administers it" do
       user = user_fixture()
