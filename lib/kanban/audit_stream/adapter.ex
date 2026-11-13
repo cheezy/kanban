@@ -95,7 +95,11 @@ defmodule Kanban.AuditStream.Adapter do
 
   @optional_callbacks describe_error: 2, validate_credential: 2, validate_url: 1
 
-  @adapters %{https: Adapters.Https, splunk_hec: Adapters.SplunkHec}
+  @adapters %{
+    datadog: Adapters.Datadog,
+    https: Adapters.Https,
+    splunk_hec: Adapters.SplunkHec
+  }
 
   @doc "The adapter module for `kind`, or nil when the kind has none yet."
   @spec module_for(atom() | nil) :: module() | nil

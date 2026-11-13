@@ -899,17 +899,27 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   end
 
   describe "kinds and the horizon seam" do
-    test "a kind with no adapter yet sends nothing and releases the lease", ctx do
+    test "a Datadog destination sends its batch to the site's intake as a JSON array", ctx do
       destination = destination_fixture(ctx.organization, :datadog)
-      event!(ctx.organization, 1)
-      stub(200)
+      # Recent, so it is inside Datadog's 17-hour max_event_age.
+      id = event!(ctx.organization, 1, "organization_updated", NaiveDateTime.utc_now())
+      test = self()
+
+      Req.Test.stub(Transport, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        send(test, {:datadog, conn, body})
+        Plug.Conn.send_resp(conn, 202, "{}")
+      end)
 
       assert :ok = run(destination)
 
-      refute_received {:request, _, _, _}
-      cursor = cursor(destination)
-      assert {cursor.lease_token, cursor.leased_until, cursor.last_event_id} == {nil, nil, 0}
-      assert attempts(destination) == []
+      assert_receive {:datadog, conn, body}
+      assert conn.request_path == "/api/v2/logs"
+      assert Plug.Conn.get_req_header(conn, "host") == ["http-intake.logs.datadoghq.eu"]
+      assert [entry] = Jason.decode!(body)
+      assert entry["stride"]["id"] == Integer.to_string(id)
+      assert entry["ddtags"] == "source:stride,organization_id:#{ctx.organization.id}"
+      assert cursor(destination).last_event_id == id
     end
 
     test "the configured horizon holds back an event at or above it", ctx do

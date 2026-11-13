@@ -13,8 +13,9 @@ defmodule Kanban.AuditStream.Destination do
 
   The hints shown in place of secrets are derived here, from the plaintext:
   `url_host`, and the last 4 characters of the URL (`url_hint`) and of the
-  credential (`credential_hint`). A credential shorter than 16 characters
-  gets no hint, so a hint never shows a large share of a short credential.
+  credential (`credential_hint`), made by `Kanban.AuditStream.SecretHint`. A
+  credential shorter than 16 characters gets no hint, so a hint never shows a
+  large share of a short credential.
   `url_hint` is the URL's own last 4 characters (§9.2), so a URL that ends in
   a token shows that token's last 4 characters; a URL is never shorter than
   16. A hint never splits a character made of several codepoints, so it can
@@ -45,6 +46,7 @@ defmodule Kanban.AuditStream.Destination do
 
   alias Kanban.Accounts.User
   alias Kanban.AuditStream.Adapter
+  alias Kanban.AuditStream.SecretHint
   alias Kanban.ChangesetText
   alias Kanban.Encryption.TolerantEncryptedBinary
   alias Kanban.Organizations.Organization
@@ -71,10 +73,6 @@ defmodule Kanban.AuditStream.Destination do
   @reserved_prefix "audit_stream_"
 
   @default_max_destinations 3
-
-  # A hint is the last 4 characters of a secret of at least 16.
-  @hint_length 4
-  @hint_min_length 16
 
   @max_host_length 253
 
@@ -452,7 +450,7 @@ defmodule Kanban.AuditStream.Destination do
       {:ok, url} ->
         changeset
         |> put_change(:url_host, url_host(url))
-        |> put_change(:url_hint, hint(url))
+        |> put_change(:url_hint, SecretHint.hint(url))
 
       :error ->
         changeset
@@ -461,7 +459,7 @@ defmodule Kanban.AuditStream.Destination do
 
   defp put_credential_hint(changeset) do
     case fetch_change(changeset, :credential) do
-      {:ok, credential} -> put_change(changeset, :credential_hint, hint(credential))
+      {:ok, credential} -> put_change(changeset, :credential_hint, SecretHint.hint(credential))
       :error -> changeset
     end
   end
@@ -474,27 +472,4 @@ defmodule Kanban.AuditStream.Destination do
   end
 
   defp url_host(nil), do: nil
-
-  # The last whole characters of `value` that fit in 4 codepoints (the
-  # varchar(4) column), never splitting a character made of several.
-  defp hint(value) when is_binary(value) do
-    if length(String.codepoints(value)) >= @hint_min_length do
-      value |> String.graphemes() |> Enum.reverse() |> take_hint([], 0)
-    end
-  end
-
-  defp hint(nil), do: nil
-
-  defp take_hint([grapheme | rest], acc, size) do
-    grapheme_size = length(String.codepoints(grapheme))
-
-    if size + grapheme_size <= @hint_length,
-      do: take_hint(rest, [grapheme | acc], size + grapheme_size),
-      else: join_hint(acc)
-  end
-
-  defp take_hint([], acc, _size), do: join_hint(acc)
-
-  defp join_hint([]), do: nil
-  defp join_hint(graphemes), do: Enum.join(graphemes)
 end

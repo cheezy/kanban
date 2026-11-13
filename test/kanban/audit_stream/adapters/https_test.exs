@@ -354,7 +354,7 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
       end
     end
 
-    test "Destination.changeset refuses an unsendable HTTPS credential, and only for HTTPS" do
+    test "Destination.changeset refuses an unsendable HTTPS credential with HTTPS rules" do
       https = fn credential ->
         Destination.changeset(
           %Destination{},
@@ -369,10 +369,12 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
       assert {"is invalid", [validation: :header_value]} = refused.errors[:credential]
       refute inspect(refused.errors) =~ "abcdefghijklmnop"
 
+      # Datadog's stricter rule for its key is in
+      # Kanban.AuditStream.Adapters.DatadogTest.
       datadog =
         Destination.changeset(
           %Destination{},
-          destination_attrs(:datadog, %{credential: "token-é-1234567890"})
+          destination_attrs(:datadog, %{credential: "datadog-key-1234567890"})
         )
 
       assert datadog.valid?
@@ -519,7 +521,7 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
       refute changeset.(%{"format" => "xml"}).valid?
     end
 
-    test "Destination.changeset skips a kind with no adapter yet" do
+    test "Destination.changeset leaves another kind's settings to its own adapter" do
       changeset =
         Destination.changeset(%Destination{}, destination_attrs(:datadog, %{}))
 
@@ -568,7 +570,8 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
     test "maps a kind to its adapter, and a kind without one to nil" do
       assert Adapter.module_for(:https) == Https
       assert Adapter.module_for(:splunk_hec) == Kanban.AuditStream.Adapters.SplunkHec
-      assert Adapter.module_for(:datadog) == nil
+      assert Adapter.module_for(:datadog) == Kanban.AuditStream.Adapters.Datadog
+      assert Adapter.module_for(:other) == nil
       assert Adapter.module_for(nil) == nil
     end
   end

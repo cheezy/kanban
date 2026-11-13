@@ -112,6 +112,8 @@ defmodule Kanban.AuditStreamFixtures do
     * `siem.example.org` - a public address
     * `internal.example.com` - a private address
     * `metadata.example.com` - the cloud metadata address
+    * `http-intake.logs.datadoghq.eu` - a public address, the intake for the
+      Datadog fixture's site
 
   Anything else does not resolve.
   """
@@ -119,6 +121,7 @@ defmodule Kanban.AuditStreamFixtures do
   def resolve("siem.example.org"), do: {:ok, [{93, 184, 216, 35}]}
   def resolve("internal.example.com"), do: {:ok, [{10, 0, 0, 1}]}
   def resolve("metadata.example.com"), do: {:ok, [{169, 254, 169, 254}]}
+  def resolve("http-intake.logs.datadoghq.eu"), do: {:ok, [{93, 184, 216, 36}]}
   def resolve(_host), do: {:error, :nxdomain}
 
   defp unique, do: System.unique_integer([:positive])

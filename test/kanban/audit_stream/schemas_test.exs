@@ -444,21 +444,16 @@ defmodule Kanban.AuditStream.SchemasTest do
       assert errors_on_field(changeset, :url) != []
     end
 
-    test "never splits a character made of several codepoints", ctx do
+    test "stores a hint of 4 codepoints of any width", ctx do
+      # No credential a kind accepts carries more than ASCII (each is sent as
+      # a header value), so the column is checked directly; how a hint is cut
+      # is in Kanban.AuditStream.SecretHintTest.
       flag = "\u{1F1EB}\u{1F1F7}"
-      family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"
+      destination = insert!(ctx, :datadog)
 
-      for {credential, hint} <- [
-            {"long-credential-x" <> flag <> flag, flag <> flag},
-            {"long-credential-x" <> "a" <> family, nil},
-            {"long-credential-xyz" <> "e\u0301", "yze\u0301"}
-          ] do
-        # Datadog, because a Splunk HEC token must be one ASCII header word.
-        changeset = changeset(ctx, %{attrs(:datadog) | credential: credential})
-        assert Ecto.Changeset.get_field(changeset, :credential_hint) == hint
-      end
+      from(d in Destination, where: d.id == ^destination.id)
+      |> Repo.update_all(set: [credential_hint: flag <> flag])
 
-      destination = insert!(ctx, :datadog, %{credential: "long-credential-x" <> flag <> flag})
       assert Repo.get!(Destination, destination.id).credential_hint == flag <> flag
     end
 
@@ -470,11 +465,6 @@ defmodule Kanban.AuditStream.SchemasTest do
 
       changeset = changeset(ctx, %{attrs(:splunk_hec) | credential: "abcdefghijklmnop"})
       assert Ecto.Changeset.get_field(changeset, :credential_hint) == "mnop"
-    end
-
-    test "takes the last 4 Unicode characters", ctx do
-      changeset = changeset(ctx, %{attrs(:datadog) | credential: "a-long-tokén-ñüéß"})
-      assert Ecto.Changeset.get_field(changeset, :credential_hint) == "ñüéß"
     end
 
     test "refuses a URL whose host is longer than 253 characters", ctx do
