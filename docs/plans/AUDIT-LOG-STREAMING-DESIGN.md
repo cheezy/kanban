@@ -1160,11 +1160,13 @@ sends a test event. The test event is synthetic: it has the `stride.audit.v1`
 shape and the action `audit_stream_test_sent`, and carries no real audit
 data. The destination is saved even if the test fails. The result is shown as
 "Test event delivered" or a coarse class: "Could not connect" (covering a
-refused connection, a timeout and a host that does not resolve), "The
+refused connection, a timeout, a host that does not resolve, an address the
+URL check refuses and every other transport failure), "The
 certificate could not be verified", "The destination refused the
 credentials" or "The destination answered with an error (*status*)". The
-coarse class stops the test from telling an org-admin which ports are open on
-another host ([§12.5](#125-load-and-fairness)). For an HTTPS destination, the
+coarse class says whether something answered, whether it speaks TLS or HTTP
+and, for an HTTP error, its status, but never a transport reason or address
+([§12.5](#125-load-and-fairness)). For an HTTPS destination, the
 signing secret is shown once, after the first save, with a **Copy** button and
 the warning that it will not be shown again.
 
@@ -1536,19 +1538,35 @@ page does not show.
   to 10 an hour **per Organization**, so deleting and re-creating a
   destination does not reset the limit. Each one is an `audit_stream_test_sent`
   audit event, and its result is shown only as a coarse class
-  ([§10.3](#103-adding-or-editing-a-destination)), so the test cannot be used
-  to probe another host's ports.
+  ([§10.3](#103-adding-or-editing-a-destination)). Like every other rate
+  limit, it counts in a fixed window, not a sliding one, and here the window
+  is a clock hour, so up to 20 tests can go out in a burst across an hour
+  boundary: 10 at the end of one hour and 10 at the start of the next. The
+  counter is per node and kept in memory, so an instance running several
+  nodes allows 10 an hour on each, and a node that restarts starts its count
+  again at zero. The limit is therefore a brake on how fast an org-admin can
+  send tests, not a hard ceiling. This is accepted rather than fixed, because
+  the numbers stay small and every test is recorded as an audit event.
 - **Accepted risk: test-event timing.** **Send test event** answers
   synchronously, so on a public host how long it takes can still tell a port
   that answers at once, open or refusing, from one whose packets are silently
-  dropped until the connect timeout. This is accepted rather than fixed, because the leak is coarse
-  and rate-limited: only org-admins can send a test; the address check
+  dropped until the connect timeout. The class tells a little more: "The
+  certificate could not be verified" shows that a TLS server is listening, and
+  "Test event delivered", "The destination refused the credentials" or an error
+  status shows that an HTTP server answered, the error with its status. Only
+  "Could not connect" merges a refused connection, a timeout, a host that does
+  not resolve, an address the URL check refuses and every other transport
+  failure. So the classes reveal whether something answered, whether it speaks
+  TLS or HTTP and, for an HTTP error, its status, and never a transport reason
+  or an address. The classes stay, because they tell the org-admin how to fix
+  the destination. This is accepted rather than fixed, because the leak is
+  coarse and rate-limited: only org-admins can send a test; the address check
   ([§12.1](#121-sending-to-the-internet-safely)) refuses private, loopback,
   link-local and reserved addresses, so it cannot reach Stride's own network;
   the result is one of the coarse classes and never a transport detail; and
-  sends are limited to 10 an hour per Organization. Moving the send to a
-  background job would hide the timing, at the cost of an answer the org-admin
-  has to wait for.
+  sends are limited per Organization, as the bullet above describes. Moving the
+  send to a background job would hide the timing, at the cost of an answer the
+  org-admin has to wait for.
 
 ---
 

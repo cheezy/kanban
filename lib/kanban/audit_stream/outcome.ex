@@ -178,10 +178,10 @@ defmodule Kanban.AuditStream.Outcome do
   defp text(class, {:response, %{status: status, body: body}}, adapter),
     do: described(adapter, status, body) || status_text(class, status)
 
-  # One text for every transport failure: org-admins read this in the
-  # attempt list and the status, and a refused, closed, silent or TLS-failed
-  # port told apart there would let them probe another host's ports (§12.5),
-  # the thing the test event's coarse classes prevent.
+  # One text for every transport failure, a certificate failure included:
+  # org-admins read this in the attempt list and the status, and a refused,
+  # closed, silent or TLS-failed port told apart there would tell them more
+  # about another host's ports (§12.5).
   defp text(_class, {:transport_error, _error}, _adapter),
     do: "Could not connect to the destination"
 

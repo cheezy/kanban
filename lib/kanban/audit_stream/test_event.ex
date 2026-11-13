@@ -26,9 +26,15 @@ defmodule Kanban.AuditStream.TestEvent do
       unauthorized (401, 403, and Splunk codes 21 and 22);
     * `{:http_error, status}` - any other answer.
 
-  Nothing more is returned or recorded: no response body, no transport
-  reason, no address. The classes are deliberately coarse so the test cannot
-  tell an org-admin which ports are open on another host.
+  Nothing more is returned or recorded: no response body, no transport reason,
+  no address. The classes still say whether something answered, whether it
+  speaks TLS or HTTP and, for an HTTP error, its status:
+  `:certificate_invalid` shows that a TLS server is listening, and
+  `:delivered`, `:credentials_refused` or `{:http_error, status}` shows that
+  an HTTP server answered. Only `:could_not_connect` merges several failures,
+  every one its bullet above names. The classes stay, because they tell an
+  org-admin how to fix a destination; §12.5 of
+  `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` accepts what they reveal.
 
   ## Limit and record
 
@@ -38,8 +44,11 @@ defmodule Kanban.AuditStream.TestEvent do
   against the `:audit_stream_test` surface of `Kanban.RateLimit`: 10 an hour
   per Organization, keyed on the Organization so deleting and re-creating a
   destination does not reset it. The 11th gets `{:error, {:rate_limited,
-  retry_after_ms}}` and sends nothing. The counter is per node, so an
-  instance running several nodes allows 10 an hour on each. Every test sent
+  retry_after_ms}}` and sends nothing. The window is a fixed clock hour, not
+  a sliding one, so up to 20 can go out in a burst across an hour boundary,
+  which §12.5 accepts. The counter is per node and kept in memory, so an
+  instance running several nodes allows 10 an hour on each, and a node that
+  restarts starts its count again at zero. Every test sent
   records `audit_stream_test_sent` with its outcome, after the send, even
   when the destination was deleted while it was in flight.
 
@@ -73,8 +82,8 @@ defmodule Kanban.AuditStream.TestEvent do
 
   # The TLS alerts a client raises when it can't verify the server's
   # certificate. Every other alert, such as one raised because the port does
-  # not speak TLS at all, is a failed connection, so the class never tells an
-  # open port from a closed one.
+  # not speak TLS at all, is a failed connection, so the class never tells a
+  # port that does not speak TLS from a closed one.
   @certificate_alerts [
     :bad_certificate,
     :unsupported_certificate,
