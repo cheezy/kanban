@@ -1,8 +1,13 @@
 defmodule Kanban.AuditStream.Scheduler do
   @moduledoc """
   The minute sweep of audit log streaming (`Oban.Plugins.Cron`, every
-  minute, on the `:audit_stream` queue;
-  `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §8.1, §13.1).
+  minute, on the `:audit_stream_schedule` queue;
+  `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §8.1, §13.1). That queue has a
+  limit of 1 on each node and runs nothing else, so a sweep on it never waits
+  behind the `:audit_stream` dispatch runs it queues, and two sweeps on it
+  never overlap on a node. A sweep queued on `:audit_stream` before the move
+  (W2736) still runs there, sharing that queue's slots with the dispatch
+  runs.
 
   There is no after-commit nudge (D9): `Kanban.AuditLog.event/2` can't tell
   when its caller's transaction commits. So this sweep is what starts every
@@ -33,7 +38,7 @@ defmodule Kanban.AuditStream.Scheduler do
   replaced by the next minute's.
   """
 
-  use Oban.Worker, queue: :audit_stream, max_attempts: 1
+  use Oban.Worker, queue: :audit_stream_schedule, max_attempts: 1
 
   alias Kanban.AuditStream
 

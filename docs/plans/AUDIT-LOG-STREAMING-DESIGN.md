@@ -133,7 +133,7 @@ added.
 | Encryption at rest | `Kanban.Encryption` and `Kanban.Encryption.EncryptedBinary` (AES-256-GCM, key from `ENCRYPTION_KEY`) | Destination URLs and credentials, as for the SSO client secret |
 | The org-admin gate | `KanbanWeb.UserAuth` `on_mount :require_org_admin`, and a private `with_org_admin/2` copied into each Organization console page (`OrgLive.Console`, `Security`, `SSO`, `SCIM`) | The new pages and their events. B1 moves `with_org_admin/2` into one shared module first, so the new pages do not add two more copies ([§16](#16-goals-tasks-and-order)) |
 | Notifications | `Kanban.Notifications`, its email worker and per-recipient locale (`Gettext.with_locale` per user) | The translated org-admin emails ([§13.3](#133-emails)). `Kanban.Accounts.UserNotifier` is not used: it has no translations |
-| Oban | `config/config.exs` | A new `:audit_stream` queue and two cron entries: `AuditStream.Scheduler` every minute and `AuditStream.AttemptPruneWorker` every hour |
+| Oban | `config/config.exs` | New `:audit_stream` and `:audit_stream_schedule` queues and two cron entries: `AuditStream.Scheduler` every minute and `AuditStream.AttemptPruneWorker` every hour |
 | Telemetry | `Kanban.Telemetry.emit/3`, `Kanban.Telemetry.Catalog` | Delivery events and the new audit actions ([§13](#13-telemetry-audit-events-notifications-and-docs)) |
 
 The `:audit` plan feature is declared in `Kanban.Plans` but nothing checks it
@@ -567,7 +567,9 @@ it ([§15](#15-decisions-needed), D1).
 
 - **Queue.** A new Oban queue, `:audit_stream`, with a limit of 5. Oban
   applies the limit on each node, so an instance running *n* nodes runs at most
-  5 × *n* sends at once.
+  5 × *n* sends at once. The sweep below runs on a second queue,
+  `:audit_stream_schedule`, with a limit of 1 on each node, so it never waits
+  behind those sends ([§12.5](#125-load-and-fairness)).
 - **`AuditStream.DispatchWorker`**: one job per destination. It is unique on
   the `destination_id` argument, with `period: :infinity` and the states
   `available`, `scheduled` and `retryable`. `executing` is left out on purpose,
@@ -1524,6 +1526,11 @@ page does not show.
 - At most 3 destinations an Organization and 5 concurrent sends on each node,
   on a queue of their own, so streaming cannot delay notifications,
   webhooks or exports.
+- The minute sweep (`AuditStream.Scheduler`) has a queue of its own too,
+  `:audit_stream_schedule`, with a limit of 1 on each node (W2736). A sweep on
+  it never waits behind the sends it queues, so new work and gap checks start
+  on time even while 5 runs are draining or catching up. A sweep queued on
+  `:audit_stream` before the move still runs there.
 - Catch-up is paced ([§8.5](#85-starting-point-and-catch-up)).
 - **Test events**, from **Send test event** and from every **Save**, are limited
   to 10 an hour **per Organization**, so deleting and re-creating a

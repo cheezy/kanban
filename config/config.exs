@@ -125,10 +125,12 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # workspace export archive at a time (W2222), bounding the disk and database
 # load a burst of export requests can cause. `:attachments` runs the
 # attachment blob cleanup one batch at a time (W2509). `:audit_stream` sends
-# audit log streaming batches and runs the streaming sweep (W2710, W2711).
-# Its limit of 5 applies per node, so n nodes make at most 5 x n sends at
-# once, and being its own queue keeps streaming from delaying notifications,
-# webhooks or exports.
+# audit log streaming batches (W2710). Its limit of 5 applies per node, so n
+# nodes make at most 5 x n sends at once, and being its own queue keeps
+# streaming from delaying notifications, webhooks or exports.
+# `:audit_stream_schedule` runs the minute streaming sweep one at a time on
+# each node (W2711, W2736), on a queue of its own so it never waits behind
+# the `:audit_stream` sends it queues.
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
 # delivery-target status sweeper hourly at minute 17 (W2291), the
@@ -149,7 +151,8 @@ config :kanban, Oban,
     maintenance: 1,
     workspace_exports: 1,
     attachments: 1,
-    audit_stream: 5
+    audit_stream: 5,
+    audit_stream_schedule: 1
   ],
   # Lifeline moves a job left in `executing` for an hour, such as one whose
   # node was killed mid-run, back to `available`, or to `discarded` once its

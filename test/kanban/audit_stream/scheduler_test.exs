@@ -233,9 +233,46 @@ defmodule Kanban.AuditStream.SchedulerTest do
       assert {"29 * * * *", AttemptPruneWorker} in crontab
       assert crontab |> Enum.map(&elem(&1, 0)) |> Enum.count(&String.starts_with?(&1, "29 ")) == 1
 
-      assert Scheduler.__opts__()[:queue] == :audit_stream
       assert Scheduler.__opts__()[:max_attempts] == 1
       assert AttemptPruneWorker.__opts__()[:queue] == :maintenance
+    end
+
+    test "runs on its own queue" do
+      assert Scheduler.__opts__()[:queue] == :audit_stream_schedule
+      assert %Ecto.Changeset{changes: %{queue: "audit_stream_schedule"}} = Scheduler.new(%{})
+
+      {:ok, job} = %{} |> Scheduler.new() |> Oban.insert()
+      assert job.queue == "audit_stream_schedule"
+      assert_enqueued(worker: Scheduler, queue: :audit_stream_schedule)
+      refute_enqueued(worker: Scheduler, queue: :audit_stream)
+    end
+
+    test "its queue runs one job at a time" do
+      queues = :kanban |> Application.fetch_env!(Oban) |> Keyword.fetch!(:queues)
+
+      assert Keyword.fetch!(queues, :audit_stream_schedule) == 1
+      assert Keyword.fetch!(queues, :audit_stream) == 5
+    end
+
+    test "the config comment and design doc section 12.5 name the sweep's queue" do
+      config_comment =
+        "config/config.exs"
+        |> File.read!()
+        |> String.split("\n")
+        |> Enum.filter(&String.starts_with?(&1, "#"))
+        |> Enum.join("\n")
+
+      assert config_comment =~
+               "`:audit_stream_schedule` runs the minute streaming sweep one at a time on\n# each node"
+
+      [_before, after_heading] =
+        "docs/plans/AUDIT-LOG-STREAMING-DESIGN.md"
+        |> File.read!()
+        |> String.split("\n### 12.5 Load and fairness\n", parts: 2)
+
+      [section_12_5 | _rest] = String.split(after_heading, "\n#", parts: 2)
+
+      assert section_12_5 =~ "`:audit_stream_schedule`, with a limit of 1 on each node"
     end
   end
 
