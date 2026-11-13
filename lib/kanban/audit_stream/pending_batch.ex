@@ -26,6 +26,13 @@ defmodule Kanban.AuditStream.PendingBatch do
 
   When nothing is waiting it returns `{:empty, attrs}`; `attrs` then discards
   a stale pending batch, if there was one, and the cursor stays where it is.
+
+  For a kind with a `max_event_age` (Datadog), `:older_than` is the time
+  before which an event is too old to send (§5.2). A batch never holds such
+  an event: a pending batch that does is discarded and cut again, and a cut
+  stops before the first one. `Kanban.AuditStream.AgeLimit` has already moved
+  the cursor past the too-old events at its head, so the event a cut stops
+  at becomes the head of the next run's, which records it as a gap.
   """
 
   alias Kanban.AuditStream.Cursor
@@ -47,7 +54,8 @@ defmodule Kanban.AuditStream.PendingBatch do
   The batch to send for `destination` at `cursor`, and the cursor fields to
   write before sending it, or `{:empty, attrs}` when no event is waiting.
 
-  Options: `:horizon` and `:batch_size`, passed to `Reader.next_batch/3`.
+  Options: `:horizon` and `:batch_size`, passed to `Reader.next_batch/3`,
+  and `:older_than`, as above.
   """
   @spec prepare(Destination.t(), Cursor.t(), Payload.organization(), keyword()) ::
           {:ok, batch(), map()} | {:empty, map()}
@@ -56,8 +64,17 @@ defmodule Kanban.AuditStream.PendingBatch do
 
     destination
     |> reread(cursor, organization, filters)
+    |> within_age(opts[:older_than])
     |> prepared({destination, cursor, organization, filters, opts})
   end
+
+  # A pending batch that now holds a too-old event is cut again, so the
+  # event is recorded as a gap rather than sent under its old batch_id.
+  defp within_age({:ok, events}, %DateTime{} = older_than) do
+    if Enum.any?(events, &too_old?(&1, older_than)), do: :discard, else: {:ok, events}
+  end
+
+  defp within_age(reread, _older_than), do: reread
 
   defp prepared({:ok, events}, {_destination, cursor, organization, _filters, _opts}),
     do: {:ok, batch(cursor.pending_batch_id, events, organization), %{}}
@@ -118,7 +135,10 @@ defmodule Kanban.AuditStream.PendingBatch do
       filters ++
         [size_fun: &encoded_size(&1, organization)] ++ Keyword.take(opts, [:horizon, :batch_size])
 
-    case Reader.next_batch(organization.id, {cursor.last_txid, cursor.last_event_id}, read_opts) do
+    organization.id
+    |> Reader.next_batch({cursor.last_txid, cursor.last_event_id}, read_opts)
+    |> recent(opts[:older_than])
+    |> case do
       [] ->
         {:empty, attrs}
 
@@ -140,6 +160,11 @@ defmodule Kanban.AuditStream.PendingBatch do
         {:ok, batch, Map.merge(attrs, pending)}
     end
   end
+
+  defp recent(events, nil), do: events
+  defp recent(events, older_than), do: Enum.take_while(events, &(not too_old?(&1, older_than)))
+
+  defp too_old?(event, older_than), do: DateTime.compare(event.inserted_at, older_than) == :lt
 
   defp batch(batch_id, events, organization) do
     payloads = Enum.map(events, &Payload.build(&1, organization))

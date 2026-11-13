@@ -6,12 +6,16 @@ defmodule Kanban.Retention.PurgeWorkerTest do
 
   import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
+  import Kanban.AuditStreamFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.AuditLog.AuditEvent
+  alias Kanban.AuditStream.Cursor
+  alias Kanban.AuditStream.Gap
+  alias Kanban.AuditStream.Lease
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Retention.PurgeWorker
   alias Kanban.Tasks.Task
@@ -126,6 +130,7 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       assert event.metadata["site_count"] == nil
       assert event.metadata["archived_task_count"] == nil
       assert event.metadata["failed_steps"] == []
+      assert event.metadata["audit_stream_skipped"] == []
     end
 
     test "removes in batches until a batch comes back short" do
@@ -174,6 +179,125 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       assert site_old in audit_ids()
       [event] = purge_events()
       assert event.metadata["failed_steps"] == ["organization:#{org.id}", "site"]
+    end
+  end
+
+  describe "Organizations with audit stream destinations" do
+    setup do
+      original = Application.get_env(:kanban, Kanban.AuditStream.Retention)
+      Application.put_env(:kanban, Kanban.AuditStream.Retention, lease_wait_ms: 0)
+
+      on_exit(fn ->
+        if original,
+          do: Application.put_env(:kanban, Kanban.AuditStream.Retention, original),
+          else: Application.delete_env(:kanban, Kanban.AuditStream.Retention)
+      end)
+
+      :ok
+    end
+
+    defp gaps(destination),
+      do: from(g in Gap, where: g.destination_id == ^destination.id) |> Repo.all()
+
+    defp lease_token(destination), do: Repo.get!(Cursor, destination.id).lease_token
+
+    test "a destination behind the cutoff gets a gap and the purge runs as before" do
+      org = org_with_retention(120)
+      destination = destination_fixture(org, :https)
+      old = audit_at!(200, org.id)
+
+      assert :ok = run()
+
+      refute old in audit_ids()
+      assert [%Gap{reason: :retention, events: 1}] = gaps(destination)
+      assert lease_token(destination) == nil
+      [event] = purge_events()
+      assert event.metadata["organization_counts"] == %{to_string(org.id) => 1}
+      assert event.metadata["audit_stream_skipped"] == []
+    end
+
+    test "lease held by a running dispatch skips that Organization" do
+      held = org_with_retention(120)
+      held_destination = destination_fixture(held, :https)
+      {:ok, _token} = Lease.take(held_destination.id)
+      other = org_with_retention(120)
+      other_destination = destination_fixture(other, :https)
+      held_old = audit_at!(200, held.id)
+      other_old = audit_at!(200, other.id)
+      site_old = audit_at!(400)
+      put_config(site_audit_retention_days: 91)
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      assert log =~ "retention purge skipped organization_id=#{held.id}"
+      assert held_old in audit_ids()
+      refute other_old in audit_ids()
+      refute site_old in audit_ids()
+      assert gaps(held_destination) == []
+      assert [%Gap{events: 1}] = gaps(other_destination)
+
+      [event] = purge_events()
+      assert event.metadata["audit_stream_skipped"] == [held.id]
+      assert event.metadata["organization_counts"] == %{to_string(other.id) => 1}
+      assert event.metadata["failed_steps"] == []
+      assert event.metadata["site_count"] == 1
+    end
+
+    test "a purge the database refuses records no gap" do
+      org = org_with_retention(91)
+      destination = destination_fixture(org, :https)
+      old = audit_at!(200, org.id)
+      # A run far ahead of the database's clock puts the cutoff inside its floor.
+      future = DateTime.add(DateTime.utc_now(), 100 * @day, :second)
+
+      log =
+        capture_log(fn ->
+          assert :ok = perform_job(PurgeWorker, %{"now" => DateTime.to_iso8601(future)})
+        end)
+
+      assert log =~ "refused a cutoff inside the floor"
+      assert old in audit_ids()
+      assert gaps(destination) == []
+      assert hd(purge_events()).metadata["organization_counts"] == %{to_string(org.id) => 0}
+    end
+
+    test "a failed purge records no gap and releases the lease" do
+      org = org_with_retention(120)
+      destination = destination_fixture(org, :https)
+      audit_at!(200, org.id)
+
+      Repo.query!(
+        "ALTER FUNCTION audit_events_purge_organization(bigint, timestamp with time zone, integer) " <>
+          "RENAME TO audit_events_purge_organization_gone"
+      )
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      assert log =~ "retention purge failed"
+      assert gaps(destination) == []
+      assert lease_token(destination) == nil
+      assert hd(purge_events()).metadata["failed_steps"] == ["organization:#{org.id}"]
+    end
+
+    test "an error in the gap steps is logged and never stops the purge or the other steps" do
+      put_config(site_audit_retention_days: 91)
+      org = org_with_retention(120)
+      destination = destination_fixture(org, :https)
+      old = audit_at!(200, org.id)
+      site_old = audit_at!(400)
+      Repo.query!("ALTER TABLE audit_stream_gaps RENAME TO audit_stream_gaps_gone")
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      Repo.query!("ALTER TABLE audit_stream_gaps_gone RENAME TO audit_stream_gaps")
+      assert log =~ "audit stream gap not recorded"
+      refute old in audit_ids()
+      refute site_old in audit_ids()
+      assert lease_token(destination) == nil
+
+      [event] = purge_events()
+      assert event.metadata["organization_counts"] == %{to_string(org.id) => 1}
+      assert event.metadata["failed_steps"] == []
     end
   end
 

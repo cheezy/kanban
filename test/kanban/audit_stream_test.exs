@@ -231,6 +231,7 @@ defmodule Kanban.AuditStreamTest do
       [
         status: fn -> AuditStream.destination_status(scope, destination) end,
         attempts: fn -> AuditStream.list_attempts(scope, destination) end,
+        gaps: fn -> AuditStream.list_gaps(scope, destination) end,
         pending: fn -> AuditStream.pending_batch_summary(scope, destination) end,
         test: fn -> AuditStream.send_test_event(scope, destination) end,
         retry: fn -> AuditStream.retry_now(scope, destination) end,

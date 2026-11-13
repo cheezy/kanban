@@ -53,7 +53,8 @@ defmodule Kanban.AuditStream do
 
   `destination_status/3`, `list_destinations_with_status/2`,
   `list_attempts/2` and `pending_batch_summary/2` read a destination's
-  delivery (`Kanban.AuditStream.Status`); `send_test_event/3` sends a
+  delivery (`Kanban.AuditStream.Status`); `list_gaps/2` and `dismiss_gap/2`
+  read and dismiss the gaps it will never fill (`Kanban.AuditStream.Gaps`); `send_test_event/3` sends a
   synthetic event and returns only a coarse class
   (`Kanban.AuditStream.TestEvent`); `retry_now/2` and `skip_batch/2` are the
   two ways out of a `rejected_batch` halt, both under the destination's lease
@@ -61,8 +62,9 @@ defmodule Kanban.AuditStream do
 
   ## For the workers
 
-  `enqueue_dispatch/2`, `due_for_dispatch/2`, `measure_lag/3` and
-  `prune_attempts/1` serve the delivery workers and take no scope. The
+  `enqueue_dispatch/2`, `due_for_dispatch/2`, `measure_lag/3`,
+  `audit_due_gaps/1` and `prune_attempts/1` serve the delivery workers and
+  take no scope. The
   sweep's queries select only the fields they need, so a destination's
   secrets are never decrypted every minute.
   """
@@ -77,6 +79,8 @@ defmodule Kanban.AuditStream do
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Destinations
   alias Kanban.AuditStream.DispatchWorker
+  alias Kanban.AuditStream.Gap
+  alias Kanban.AuditStream.Gaps
   alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reader
   alias Kanban.AuditStream.SigningSecrets
@@ -235,6 +239,30 @@ defmodule Kanban.AuditStream do
           {:ok, [Attempt.t()]} | {:error, :unauthorized | :not_found}
   def list_attempts(scope, %Destination{} = destination),
     do: Status.list_attempts(scope, destination)
+
+  @doc """
+  The destination's gaps, open and dismissed, newest first: the events it
+  will never receive, because retention deleted them first or they were too
+  old for its kind.
+  """
+  @spec list_gaps(Scope.t() | nil, Destination.t()) ::
+          {:ok, [Gap.t()]} | {:error, :unauthorized | :not_found}
+  def list_gaps(scope, %Destination{} = destination), do: Gaps.list_gaps(scope, destination)
+
+  @doc """
+  Dismisses a gap and records `audit_stream_gap_dismissed`. A later loss
+  then opens a new gap. Dismissing a dismissed gap records nothing.
+  """
+  @spec dismiss_gap(Scope.t() | nil, Gap.t()) ::
+          {:ok, Gap.t()} | {:error, :unauthorized | :not_found}
+  def dismiss_gap(scope, %Gap{} = gap), do: Gaps.dismiss_gap(scope, gap)
+
+  @doc """
+  For the minute sweep: records `audit_stream_gap` for each open gap that
+  grew since its last one, once a day has passed since it. Returns how many.
+  """
+  @spec audit_due_gaps(DateTime.t()) :: non_neg_integer()
+  def audit_due_gaps(%DateTime{} = now), do: Gaps.audit_due(now)
 
   @doc """
   For a destination halted with `rejected_batch`, the batch it is stuck on:

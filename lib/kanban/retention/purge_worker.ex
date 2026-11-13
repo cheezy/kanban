@@ -8,7 +8,14 @@ defmodule Kanban.Retention.PurgeWorker do
        (`Kanban.Organizations.SecurityPolicies.list_audit_retention/0`), removes
        its audit events older than that through
        `Kanban.AuditLog.purge_organization_before/3`. Organizations without a
-       retention period keep everything.
+       retention period keep everything. For an Organization with audit
+       stream destinations the purge runs inside
+       `Kanban.AuditStream.Retention.purge/4`, which takes each
+       destination's lease first and records as a gap every event a
+       destination loses before receiving it. When a lease can't be taken
+       within 30 seconds, that Organization's purge is skipped for the day
+       and named in `audit_stream_skipped`; the other Organizations and steps
+       still run.
     2. **Site-level audit events** (rows with no Organization), only when
        `site_audit_retention_days` is set. `config/config.exs` sets 90, the
        period `/privacy` promises; unset keeps them all.
@@ -42,7 +49,8 @@ defmodule Kanban.Retention.PurgeWorker do
 
   Each run records one `retention_purge` audit event with the rows removed per
   Organization, for site-level events, for archived tasks and for SAML
-  sign-in state (`saml_count`).
+  sign-in state (`saml_count`), and the ids of the Organizations whose purge
+  was skipped for a held lease (`audit_stream_skipped`).
   """
 
   # A run that fails is simply re-run by the next day's cron tick.
@@ -51,6 +59,7 @@ defmodule Kanban.Retention.PurgeWorker do
   alias Kanban.Archives
   alias Kanban.AuditLog
   alias Kanban.AuditLog.Hardening.Purge
+  alias Kanban.AuditStream
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.SSO.SAMLLogin
 
@@ -70,7 +79,7 @@ defmodule Kanban.Retention.PurgeWorker do
 
     settings
     |> run_steps(now, batch_size)
-    |> Enum.reduce(%{failed_steps: []}, &summarize_step/2)
+    |> Enum.reduce(%{failed_steps: [], audit_stream_skipped: []}, &summarize_step/2)
     |> report()
 
     :ok
@@ -85,6 +94,12 @@ defmodule Kanban.Retention.PurgeWorker do
     ]
   end
 
+  defp summarize_step({key, {count, failures, skipped}}, summary) do
+    {key, {count, failures}}
+    |> summarize_step(summary)
+    |> Map.update!(:audit_stream_skipped, &(&1 ++ skipped))
+  end
+
   defp summarize_step({key, {count, failures}}, summary) do
     summary |> Map.put(key, count) |> Map.update!(:failed_steps, &(&1 ++ failures))
   end
@@ -92,7 +107,7 @@ defmodule Kanban.Retention.PurgeWorker do
   # --- steps -----------------------------------------------------------------
 
   defp purge_organizations(now, batch_size) do
-    Enum.reduce(SecurityPolicies.list_audit_retention(), {%{}, []}, fn policy, acc ->
+    Enum.reduce(SecurityPolicies.list_audit_retention(), {%{}, [], []}, fn policy, acc ->
       policy |> purge_organization(now, batch_size) |> collect_organization(policy, acc)
     end)
   end
@@ -100,8 +115,10 @@ defmodule Kanban.Retention.PurgeWorker do
   defp purge_organization(%{organization_id: id, audit_retention_days: days}, now, batch_size) do
     case audit_days(days) do
       {:ok, days} ->
+        cutoff = audit_cutoff(now, days)
+
         run_step({:organization, id}, fn ->
-          purge_audit(id, audit_cutoff(now, days), batch_size)
+          AuditStream.Retention.purge(id, cutoff, &purge_audit(id, cutoff, batch_size, &1))
         end)
 
       :error ->
@@ -110,11 +127,19 @@ defmodule Kanban.Retention.PurgeWorker do
     end
   end
 
-  defp collect_organization({:ok, removed}, %{organization_id: id}, {counts, failures}),
-    do: {Map.put(counts, to_string(id), removed), failures}
+  defp collect_organization({:ok, removed}, %{organization_id: id}, {counts, failures, skipped}),
+    do: {Map.put(counts, to_string(id), removed), failures, skipped}
 
-  defp collect_organization(:error, %{organization_id: id}, {counts, failures}),
-    do: {counts, failures ++ ["organization:#{id}"]}
+  defp collect_organization(:error, %{organization_id: id}, {counts, failures, skipped}),
+    do: {counts, failures ++ ["organization:#{id}"], skipped}
+
+  defp collect_organization(:lease_held, %{organization_id: id}, {counts, failures, skipped}) do
+    Logger.warning(
+      "retention purge skipped organization_id=#{id}: an audit stream lease could not be taken"
+    )
+
+    {counts, failures, skipped ++ [id]}
+  end
 
   defp collect_organization(:skipped, _policy, acc), do: acc
 
@@ -165,13 +190,27 @@ defmodule Kanban.Retention.PurgeWorker do
     end
   end
 
-  defp purge_audit(organization_id, cutoff, batch_size, removed \\ 0) do
-    case AuditLog.purge_organization_before(organization_id, cutoff, batch_size) do
-      {:ok, count} when count < batch_size -> {:ok, removed + count}
-      {:ok, count} -> purge_audit(organization_id, cutoff, batch_size, removed + count)
-      {:error, :cutoff_too_recent} -> refused(organization_id, removed)
-    end
+  # `keep_alive` runs before each batch: it renews the audit stream leases
+  # an Organization's purge holds.
+  defp purge_audit(organization_id, cutoff, batch_size, keep_alive \\ &no_op/0, removed \\ 0) do
+    keep_alive.()
+
+    organization_id
+    |> AuditLog.purge_organization_before(cutoff, batch_size)
+    |> purged({organization_id, cutoff, batch_size, keep_alive, removed})
   end
+
+  defp purged({:ok, count}, {_id, _cutoff, batch_size, _keep_alive, removed})
+       when count < batch_size,
+       do: {:ok, removed + count}
+
+  defp purged({:ok, count}, {id, cutoff, batch_size, keep_alive, removed}),
+    do: purge_audit(id, cutoff, batch_size, keep_alive, removed + count)
+
+  defp purged({:error, :cutoff_too_recent}, {id, _cutoff, _batch_size, _keep_alive, removed}),
+    do: refused(id, removed)
+
+  defp no_op, do: :ok
 
   # The database measures the floor from its own clock. audit_cutoff/2 leaves
   # room for clock skew; a refusal beyond that removes nothing, which is safe,
@@ -246,6 +285,7 @@ defmodule Kanban.Retention.PurgeWorker do
       "retention purge: organizations=#{map_size(result.organization_counts)} " <>
         "site=#{inspect(result.site_count)} archived_tasks=#{inspect(result.archived_task_count)} " <>
         "saml=#{inspect(result.saml_count)} " <>
+        "audit_stream_skipped=#{length(result.audit_stream_skipped)} " <>
         "failed=#{length(result.failed_steps)}"
     )
   end

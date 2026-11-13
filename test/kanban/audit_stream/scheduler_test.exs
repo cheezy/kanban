@@ -25,6 +25,21 @@ defmodule Kanban.AuditStream.SchedulerTest do
 
   # --- helpers ------------------------------------------------------------------
 
+  defp grown_gap!(destination) do
+    audited_at = DateTime.add(DateTime.utc_now(), -25 * 60 * 60, :second)
+
+    Repo.insert!(%Kanban.AuditStream.Gap{
+      destination_id: destination.id,
+      reason: :retention,
+      events: 3,
+      first_occurred_at: DateTime.add(audited_at, -200 * 24 * 60 * 60, :second),
+      last_occurred_at: DateTime.add(audited_at, -150 * 24 * 60 * 60, :second),
+      opened_at: audited_at,
+      audited_at: audited_at,
+      last_extended_at: DateTime.add(audited_at, 60, :second)
+    })
+  end
+
   defp destination(fields \\ [], kind \\ :https) do
     destination = organization_fixture() |> destination_fixture(kind)
     {cursor_fields, destination_fields} = Keyword.split(fields, [:next_attempt_at, :leased_until])
@@ -221,6 +236,25 @@ defmodule Kanban.AuditStream.SchedulerTest do
       assert Scheduler.__opts__()[:queue] == :audit_stream
       assert Scheduler.__opts__()[:max_attempts] == 1
       assert AttemptPruneWorker.__opts__()[:queue] == :maintenance
+    end
+  end
+
+  describe "gap audit events" do
+    test "the sweep records audit_stream_gap for a gap that grew after its day", _ctx do
+      destination = destination()
+      grown_gap!(destination)
+
+      assert :ok = perform_job(Scheduler, %{})
+
+      query =
+        from(e in Kanban.AuditLog.AuditEvent,
+          where:
+            e.organization_id == ^destination.organization_id and e.action == "audit_stream_gap"
+        )
+
+      assert [event] = Repo.all(query)
+      assert event.metadata["events"] == 3
+      assert event.metadata["destination_id"] == destination.id
     end
   end
 end

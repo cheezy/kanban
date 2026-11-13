@@ -17,7 +17,8 @@ defmodule Kanban.AuditStream.Lease do
   one clock, and a statement inside a longer transaction still reads the
   current time rather than the transaction's start.
 
-  Public so the retention step (§8.6) can take the same lease.
+  Public so the retention step (§8.6) can take the same lease; it holds
+  leases for longer than one send, so it renews them with `extend/2`.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -82,6 +83,22 @@ defmodule Kanban.AuditStream.Lease do
   end
 
   @doc """
+  The cursor of `destination_id`, locked `FOR UPDATE`, when it still
+  carries `token`, whether or not the lease has expired; else nil. A token
+  unchanged since it was taken means no other run has taken the lease, so
+  the holder may still write, as `Kanban.AuditStream.Retention` does after a
+  long purge. Call it inside a transaction.
+  """
+  @spec owned(integer(), Ecto.UUID.t()) :: Cursor.t() | nil
+  def owned(destination_id, token) when is_integer(destination_id) and is_binary(token) do
+    from(c in Cursor,
+      where: c.destination_id == ^destination_id and c.lease_token == ^token,
+      lock: "FOR UPDATE"
+    )
+    |> Repo.one()
+  end
+
+  @doc """
   Whole seconds, rounded up and at least 0, until the lease on
   `destination_id`'s cursor expires; 0 when no lease is held, and nil when
   the destination has no cursor.
@@ -99,6 +116,33 @@ defmodule Kanban.AuditStream.Lease do
       )
 
     Repo.one(query)
+  end
+
+  @doc """
+  Moves the live lease `token` holds on `destination_id`'s cursor to expire
+  60 seconds from now. Returns `:lost` when the lease has expired or another
+  run has taken it since; a lost lease is never revived.
+  """
+  @spec extend(integer(), Ecto.UUID.t()) :: :ok | :lost
+  def extend(destination_id, token) when is_integer(destination_id) and is_binary(token) do
+    query =
+      from(c in Cursor,
+        where:
+          c.destination_id == ^destination_id and c.lease_token == ^token and
+            c.leased_until > fragment("(clock_timestamp() AT TIME ZONE 'UTC')"),
+        update: [
+          set: [
+            leased_until:
+              fragment("(clock_timestamp() AT TIME ZONE 'UTC') + interval '60 seconds'"),
+            updated_at: fragment("(clock_timestamp() AT TIME ZONE 'UTC')")
+          ]
+        ]
+      )
+
+    case Repo.update_all(query, []) do
+      {1, _rows} -> :ok
+      {0, _rows} -> :lost
+    end
   end
 
   @doc "The cursor fields that release a lease, for a run's last cursor update."

@@ -27,6 +27,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.DispatchWorker
+  alias Kanban.AuditStream.Gap
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Pacing
@@ -895,6 +896,160 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
       for attempt <- [1, 2, 20] do
         assert DispatchWorker.backoff(%Oban.Job{attempt: attempt}) == Lease.ttl() + 1
       end
+    end
+  end
+
+  describe "Datadog's age limit" do
+    @gap_recorded [:kanban, :audit_stream, :gap_recorded]
+
+    setup ctx do
+      test = self()
+
+      Req.Test.stub(Transport, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        ids = body |> Jason.decode!() |> Enum.map(&String.to_integer(&1["stride"]["id"]))
+        send(test, {:datadog, ids})
+        Plug.Conn.send_resp(conn, 202, "{}")
+      end)
+
+      %{datadog: destination_fixture(ctx.organization, :datadog)}
+    end
+
+    defp hours_ago(hours, extra_seconds \\ 0),
+      do: NaiveDateTime.add(NaiveDateTime.utc_now(), -(hours * 3600 + extra_seconds), :second)
+
+    defp gaps(destination),
+      do: from(g in Gap, where: g.destination_id == ^destination.id, order_by: g.id) |> Repo.all()
+
+    defp datadog_requests(acc \\ []) do
+      receive do
+        {:datadog, ids} -> datadog_requests([ids | acc])
+      after
+        0 -> Enum.reverse(acc)
+      end
+    end
+
+    test "Datadog events older than 17 hours become a too_old gap", ctx do
+      attach_telemetry(@gap_recorded)
+      oldest_at = hours_ago(18)
+      old_at = hours_ago(17, 60)
+      event!(ctx.organization, 1, "organization_updated", oldest_at)
+      event!(ctx.organization, 2, "organization_updated", old_at)
+      recent = event!(ctx.organization, 3, "organization_updated", hours_ago(17, -60))
+
+      assert :ok = run(ctx.datadog)
+
+      assert datadog_requests() == [[recent]]
+      assert [gap] = gaps(ctx.datadog)
+      assert gap.reason == :too_old
+      assert gap.events == 2
+      assert DateTime.to_naive(gap.first_occurred_at) == oldest_at
+      assert DateTime.to_naive(gap.last_occurred_at) == old_at
+      assert cursor(ctx.datadog).last_event_id == recent
+
+      assert [audit] = audit_actions(ctx.organization, "audit_stream_gap")
+      assert audit.metadata["reason"] == "too_old"
+      assert audit.metadata["events"] == 2
+
+      assert_receive {:telemetry_event, @gap_recorded, %{count: 1, events: 2},
+                      %{kind: :datadog, reason: :too_old}}
+    end
+
+    test "every event of a Datadog batch too old sends nothing and moves the cursor past them",
+         ctx do
+      event!(ctx.organization, 1, "organization_updated", hours_ago(20))
+      last_at = hours_ago(18)
+      last = event!(ctx.organization, 2, "organization_updated", last_at)
+
+      assert :ok = run(ctx.datadog)
+
+      assert datadog_requests() == []
+      assert attempts(ctx.datadog) == []
+      cursor = cursor(ctx.datadog)
+      assert {cursor.last_txid, cursor.last_event_id} == {2, last}
+      assert DateTime.to_naive(cursor.last_inserted_at) == last_at
+      assert cursor.lease_token == nil
+      assert cursor.pending_batch_id == nil
+      assert [%Gap{events: 2, reason: :too_old}] = gaps(ctx.datadog)
+    end
+
+    test "a too-old event after a recent one in commit order is never sent", ctx do
+      first = event!(ctx.organization, 1, "organization_updated", hours_ago(1))
+      event!(ctx.organization, 2, "organization_updated", hours_ago(18))
+      third = event!(ctx.organization, 3, "organization_updated", hours_ago(1))
+
+      assert :ok = run(ctx.datadog)
+      make_due(ctx.datadog)
+      assert :ok = run(ctx.datadog)
+
+      assert datadog_requests() == [[first], [third]]
+      assert [%Gap{events: 1, reason: :too_old}] = gaps(ctx.datadog)
+    end
+
+    test "a pending Datadog batch that aged past 17 hours is cut again under a new batch_id",
+         ctx do
+      old = event!(ctx.organization, 1, "organization_updated", hours_ago(18))
+      recent = event!(ctx.organization, 2, "organization_updated", hours_ago(1))
+      old_batch = Ecto.UUID.generate()
+
+      set_cursor(ctx.datadog,
+        pending_batch_id: old_batch,
+        pending_first_txid: 1,
+        pending_first_id: old,
+        pending_last_txid: 2,
+        pending_last_id: recent,
+        pending_attempts: 1,
+        pending_filter_version: ctx.datadog.filter_version
+      )
+
+      assert :ok = run(ctx.datadog)
+
+      assert datadog_requests() == [[recent]]
+      assert [attempt] = attempts(ctx.datadog)
+      assert attempt.batch_id != old_batch
+      assert [%Gap{events: 1}] = gaps(ctx.datadog)
+    end
+
+    test "a pending Datadog batch whose later event aged is cut again", ctx do
+      first = event!(ctx.organization, 1, "organization_updated", hours_ago(1))
+      aged = event!(ctx.organization, 2, "organization_updated", hours_ago(18))
+      old_batch = Ecto.UUID.generate()
+
+      set_cursor(ctx.datadog,
+        pending_batch_id: old_batch,
+        pending_first_txid: 1,
+        pending_first_id: first,
+        pending_last_txid: 2,
+        pending_last_id: aged,
+        pending_filter_version: ctx.datadog.filter_version
+      )
+
+      assert :ok = run(ctx.datadog)
+
+      assert datadog_requests() == [[first]]
+      assert [attempt] = attempts(ctx.datadog)
+      assert attempt.batch_id != old_batch
+    end
+
+    test "repeated too-old losses extend the open gap with one audit event", ctx do
+      event!(ctx.organization, 1, "organization_updated", hours_ago(18))
+      assert :ok = run(ctx.datadog)
+      event!(ctx.organization, 2, "organization_updated", hours_ago(19))
+      make_due(ctx.datadog)
+      assert :ok = run(ctx.datadog)
+
+      assert [%Gap{events: 2}] = gaps(ctx.datadog)
+      assert length(audit_actions(ctx.organization, "audit_stream_gap")) == 1
+    end
+
+    test "an HTTPS destination sends old events and records no gap", ctx do
+      id = event!(ctx.organization, 1)
+      stub(200)
+
+      assert :ok = run(ctx.destination)
+
+      assert_received {:request, _batch, [^id], _body}
+      assert Repo.all(Gap) == []
     end
   end
 

@@ -40,9 +40,16 @@ defmodule Kanban.AuditStream.Reader do
       changes no count in `waiting_counts/3`.
 
   `next_batch/3` also takes `:horizon`, `:batch_size` (default 500),
-  `:max_bytes` (default 900_000) and `:size_fun`; `waiting_counts/3` and
-  `next_waiting_at/3` take `:horizon`. An unknown or invalid option raises
-  `ArgumentError`.
+  `:max_bytes` (default 900_000) and `:size_fun`; `waiting_counts/3`,
+  `next_waiting_at/3` and `too_old/4` take `:horizon`; `loss_counts/4`
+  takes `:through`. An unknown or invalid option raises `ArgumentError`.
+
+  ## Losses
+
+  `loss_counts/4` and `too_old/4` serve the two ways a destination loses
+  events (§8.6, §9.6): retention deleting events it has not received yet,
+  and events too old for its kind to accept. Both only count; neither loads
+  an event.
   """
   import Ecto.Query, warn: false
 
@@ -59,6 +66,20 @@ defmodule Kanban.AuditStream.Reader do
           events_waiting: non_neg_integer(),
           events_above_horizon: non_neg_integer(),
           oldest_waiting_at: DateTime.t() | nil
+        }
+
+  @type loss :: %{
+          events: non_neg_integer(),
+          first_at: DateTime.t() | nil,
+          last_at: DateTime.t() | nil
+        }
+
+  @type too_old :: %{
+          events: pos_integer(),
+          first_at: DateTime.t(),
+          last_at: DateTime.t(),
+          last: pair(),
+          last_inserted_at: DateTime.t()
         }
 
   @filter_defaults [not_before: nil, excluded_actions: [], include_personal_data: true]
@@ -185,6 +206,104 @@ defmodule Kanban.AuditStream.Reader do
     |> Repo.one()
   end
 
+  @doc """
+  The events a destination at `cursor` has not received yet that were
+  inserted strictly before `cutoff`, the events a retention purge at that
+  cutoff deletes (§8.6): how many, and the first and last `inserted_at`
+  (`nil` when there are none).
+
+  No horizon applies: a purge deletes rows whatever their `txid`. The
+  filters apply, so excluded actions and events before `not_before`, which
+  the destination never sends, are never counted. `:through` (a pair)
+  counts only events up to it, included, such as those of a pending batch.
+  """
+  @spec loss_counts(integer(), pair(), DateTime.t(), keyword()) :: loss()
+  def loss_counts(organization_id, cursor, %DateTime{} = cutoff, opts \\ [])
+      when is_integer(organization_id) and is_pair(cursor) do
+    opts = options(opts, @filter_defaults ++ [through: nil])
+
+    organization_id
+    |> scoped(opts, until: cutoff)
+    |> exclude(:join)
+    |> after_pair(cursor)
+    |> through(opts[:through])
+    |> select([event: e], %{
+      events: count(e.id),
+      first_at: min(e.inserted_at),
+      last_at: max(e.inserted_at)
+    })
+    |> Repo.one()
+  end
+
+  @doc """
+  The events after `cursor`, below the horizon and in commit order, that
+  come before the first one inserted at or after `threshold`: every
+  waiting event when none is. They are too old for a destination whose
+  kind accepts nothing inserted before `threshold` (§5.2), so its cursor
+  moves past them and they are recorded as a gap.
+
+  Returns how many, their first and last `inserted_at`, and the (`txid`,
+  `id`) and `inserted_at` of the last one, or `nil` when the next waiting
+  event is recent enough (or none is waiting). Only a prefix is ever
+  returned: commit order is close to, but not exactly, time order, and the
+  cursor can only move over a run of events with nothing left behind it.
+
+  The horizon is read once, so every statement sees the same rows.
+  """
+  @spec too_old(integer(), pair(), DateTime.t(), keyword()) :: too_old() | nil
+  def too_old(organization_id, cursor, %DateTime{} = threshold, opts \\ [])
+      when is_integer(organization_id) and is_pair(cursor) do
+    opts = options(opts, @filter_defaults ++ [horizon: nil])
+    horizon = opts[:horizon] || current_horizon()
+
+    base =
+      organization_id
+      |> scoped(opts)
+      |> exclude(:join)
+      |> after_pair(cursor)
+      |> where([event: e], e.txid < ^horizon)
+
+    prefix = before_pair(base, first_recent(base, threshold))
+    too_old_prefix(prefix, last_of(prefix))
+  end
+
+  defp first_recent(query, threshold) do
+    query
+    |> where([event: e], e.inserted_at >= ^threshold)
+    |> in_commit_order()
+    |> limit(1)
+    |> select([event: e], {e.txid, e.id})
+    |> Repo.one()
+  end
+
+  defp last_of(query) do
+    query
+    |> order_by([event: e], desc: e.txid, desc: e.id)
+    |> limit(1)
+    |> select([event: e], %{txid: e.txid, id: e.id, inserted_at: e.inserted_at})
+    |> Repo.one()
+  end
+
+  defp too_old_prefix(_prefix, nil), do: nil
+
+  defp too_old_prefix(prefix, last) do
+    prefix
+    |> select([event: e], %{
+      events: count(e.id),
+      first_at: min(e.inserted_at),
+      last_at: max(e.inserted_at)
+    })
+    |> Repo.one()
+    |> Map.merge(%{last: {last.txid, last.id}, last_inserted_at: last.inserted_at})
+  end
+
+  defp current_horizon do
+    %{rows: [[horizon]]} =
+      Repo.query!("SELECT pg_snapshot_xmin(pg_current_snapshot())::text::bigint")
+
+    horizon
+  end
+
   defp options(opts, defaults) do
     opts = Keyword.validate!(opts, defaults)
 
@@ -199,12 +318,14 @@ defmodule Kanban.AuditStream.Reader do
   defp valid_option?({:include_personal_data, value}), do: is_boolean(value)
   defp valid_option?({:horizon, value}), do: is_nil(value) or is_integer(value)
   defp valid_option?({:size_fun, value}), do: is_nil(value) or is_function(value, 1)
+  defp valid_option?({:through, value}), do: is_nil(value) or is_pair(value)
   defp valid_option?({_limit, value}), do: is_integer(value) and value > 0
 
   # One Organization's events, with `organization_id` always an integer here
   # (the public guards), so Query never drops the scope.
-  defp scoped(organization_id, opts) do
+  defp scoped(organization_id, opts, filters \\ []) do
     [organization_id: organization_id, since: opts[:not_before]]
+    |> Kernel.++(filters)
     |> Query.events(:asc)
     |> exclude(:order_by)
     |> without_actions(opts[:excluded_actions])
@@ -242,6 +363,19 @@ defmodule Kanban.AuditStream.Reader do
       fragment("(?, ?) <= (?, ?)", e.txid, e.id, type(^txid, :integer), type(^id, :integer))
     )
   end
+
+  defp before_pair(query, nil), do: query
+
+  defp before_pair(query, {txid, id}) do
+    where(
+      query,
+      [event: e],
+      fragment("(?, ?) < (?, ?)", e.txid, e.id, type(^txid, :integer), type(^id, :integer))
+    )
+  end
+
+  defp through(query, nil), do: query
+  defp through(query, pair), do: to_pair(query, pair)
 
   defp in_commit_order(query), do: order_by(query, [event: e], asc: e.txid, asc: e.id)
 

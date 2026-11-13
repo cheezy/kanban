@@ -437,6 +437,118 @@ defmodule Kanban.AuditStream.ReaderTest do
     end
   end
 
+  describe "loss_counts/4" do
+    test "counts the events after the cursor inserted strictly before the cutoff", ctx do
+      cutoff = ~U[2026-06-01 00:00:00.000000Z]
+      _sent = insert_raw!(ctx.organization, txid: 1, at: ~N[2026-01-01 00:00:00.000000])
+      insert_raw!(ctx.organization, txid: 2, at: ~N[2026-02-01 00:00:00.000000])
+      insert_raw!(ctx.organization, txid: 3, at: ~N[2026-03-01 00:00:00.000000])
+      insert_raw!(ctx.organization, txid: 4, at: ~N[2026-06-01 00:00:00.000000])
+      insert_raw!(ctx.other_organization, txid: 2, at: ~N[2026-02-01 00:00:00.000000])
+      [first | _] = stored_events(ctx.organization) |> order_by(:id) |> Repo.all()
+
+      assert %{events: 2, first_at: first_at, last_at: last_at} =
+               Reader.loss_counts(ctx.organization.id, {1, first.id}, cutoff)
+
+      assert first_at == ~U[2026-02-01 00:00:00.000000Z]
+      assert last_at == ~U[2026-03-01 00:00:00.000000Z]
+    end
+
+    test "applies the filters and :through, and has no horizon", ctx do
+      cutoff = ~U[2026-06-01 00:00:00.000000Z]
+      insert_raw!(ctx.organization, txid: 1, at: ~N[2026-01-01 00:00:00.000000])
+
+      insert_raw!(ctx.organization,
+        txid: 2,
+        action: "member_added",
+        at: ~N[2026-01-02 00:00:00.000000]
+      )
+
+      second = insert_raw!(ctx.organization, txid: 3, at: ~N[2026-01-03 00:00:00.000000])
+      insert_raw!(ctx.organization, txid: own_txid() + 10, at: ~N[2026-01-04 00:00:00.000000])
+
+      # Including the event above the horizon: a purge deletes it all the same.
+      assert %{events: 4} = Reader.loss_counts(ctx.organization.id, {0, 0}, cutoff)
+
+      assert %{events: 3} =
+               Reader.loss_counts(ctx.organization.id, {0, 0}, cutoff,
+                 excluded_actions: ["member_added"]
+               )
+
+      assert %{events: 1} =
+               Reader.loss_counts(ctx.organization.id, {0, 0}, cutoff,
+                 not_before: ~U[2026-01-03 12:00:00.000000Z],
+                 excluded_actions: ["member_added"]
+               )
+
+      assert %{events: 3} =
+               Reader.loss_counts(ctx.organization.id, {0, 0}, cutoff, through: {3, second})
+
+      assert %{events: 0, first_at: nil, last_at: nil} =
+               Reader.loss_counts(ctx.organization.id, {0, 0}, ~U[2025-01-01 00:00:00Z])
+
+      assert_raise ArgumentError, fn ->
+        Reader.loss_counts(ctx.organization.id, {0, 0}, cutoff, through: :all)
+      end
+    end
+  end
+
+  describe "too_old/4" do
+    test "is the run of events before the first recent one, in commit order", ctx do
+      threshold = ~U[2026-06-01 00:00:00.000000Z]
+      insert_raw!(ctx.organization, txid: 1, at: ~N[2026-01-01 00:00:00.000000])
+      second = insert_raw!(ctx.organization, txid: 2, at: ~N[2026-02-01 00:00:00.000000])
+      insert_raw!(ctx.organization, txid: 3, at: ~N[2026-07-01 00:00:00.000000])
+      insert_raw!(ctx.organization, txid: 4, at: ~N[2026-01-15 00:00:00.000000])
+
+      assert Reader.too_old(ctx.organization.id, {0, 0}, threshold) == %{
+               events: 2,
+               first_at: ~U[2026-01-01 00:00:00.000000Z],
+               last_at: ~U[2026-02-01 00:00:00.000000Z],
+               last: {2, second},
+               last_inserted_at: ~U[2026-02-01 00:00:00.000000Z]
+             }
+    end
+
+    test "is every waiting event when none is recent, and nil when the next one is", ctx do
+      threshold = ~U[2026-06-01 00:00:00.000000Z]
+      insert_raw!(ctx.organization, txid: 1, at: ~N[2026-07-01 00:00:00.000000])
+      assert Reader.too_old(ctx.organization.id, {0, 0}, threshold) == nil
+
+      [recent] = stored_events(ctx.organization) |> Repo.all()
+      old = insert_raw!(ctx.organization, txid: 2, at: ~N[2026-01-01 00:00:00.000000])
+
+      assert %{events: 1, last: {2, ^old}} =
+               Reader.too_old(ctx.organization.id, {1, recent.id}, threshold)
+
+      assert Reader.too_old(ctx.organization.id, {2, old}, threshold) == nil
+    end
+
+    test "applies the filters and the horizon", ctx do
+      threshold = ~U[2026-06-01 00:00:00.000000Z]
+
+      insert_raw!(ctx.organization,
+        txid: 1,
+        action: "member_added",
+        at: ~N[2026-01-01 00:00:00.000000]
+      )
+
+      insert_raw!(ctx.organization, txid: 5, at: ~N[2026-01-02 00:00:00.000000])
+
+      assert %{events: 2} = Reader.too_old(ctx.organization.id, {0, 0}, threshold)
+
+      assert %{events: 1} =
+               Reader.too_old(ctx.organization.id, {0, 0}, threshold,
+                 excluded_actions: ["member_added"]
+               )
+
+      assert Reader.too_old(ctx.organization.id, {0, 0}, threshold,
+               excluded_actions: ["member_added"],
+               horizon: 5
+             ) == nil
+    end
+  end
+
   describe "next_waiting_at/3" do
     test "is the next sendable event's inserted_at in commit order, or nil", %{
       organization: organization,

@@ -1,8 +1,8 @@
 defmodule Kanban.AuditStream.DestinationEvents do
   @moduledoc """
   The audit events `Kanban.AuditStream.Destinations`,
-  `Kanban.AuditStream.BatchActions`, `Kanban.AuditStream.TestEvent` and
-  `Kanban.AuditStream.DispatchWorker` record, with the keys
+  `Kanban.AuditStream.BatchActions`, `Kanban.AuditStream.TestEvent`,
+  `Kanban.AuditStream.DispatchWorker` and `Kanban.AuditStream.Gaps` record, with the keys
   `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §13.2 lists. Each is a literal
   `AuditLog.event/2` call so the telemetry call-site tests see it.
 
@@ -135,6 +135,32 @@ defmodule Kanban.AuditStream.DestinationEvents do
       user_id: actor.id,
       organization_id: destination.organization_id,
       destination_id: destination.id
+    )
+  end
+
+  @doc """
+  Records `audit_stream_gap` for `gap`: its events so far, its reason and
+  the times it spans. Recorded by the system, so no `user_id` is set, and
+  it carries ids, a count, the reason and dates only (§12.3).
+  """
+  def gap(destination, gap) do
+    AuditLog.event(:audit_stream_gap,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      events: gap.events,
+      reason: gap.reason,
+      from: gap.first_occurred_at,
+      to: gap.last_occurred_at
+    )
+  end
+
+  @doc "Records `audit_stream_gap_dismissed`."
+  def gap_dismissed(destination, actor, gap) do
+    AuditLog.event(:audit_stream_gap_dismissed,
+      user_id: actor.id,
+      organization_id: destination.organization_id,
+      destination_id: destination.id,
+      gap_id: gap.id
     )
   end
 end

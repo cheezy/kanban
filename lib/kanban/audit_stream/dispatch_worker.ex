@@ -27,9 +27,12 @@ defmodule Kanban.AuditStream.DispatchWorker do
        (`next_attempt_at`); halt it with `txid_reset` when the database's
        transaction id is below the cursor's (§8.8); halt it with
        `credentials_unreadable` when a secret it needs can't be decrypted,
-       sending nothing and recording no attempt (D17); then re-read the
+       sending nothing and recording no attempt (D17); for a kind with a
+       `max_event_age` (Datadog), move the cursor past the events at the
+       head of the backlog that are too old for it and record them as a
+       `too_old` gap (`Kanban.AuditStream.AgeLimit`); then re-read the
        pending batch or cut the next one (`Kanban.AuditStream.PendingBatch`),
-       and commit it as pending.
+       never holding a too-old event, and commit it as pending.
     2. **Send.** Build the request with the kind's adapter, check the URL
        again with `Kanban.Webhooks.UrlGuard` (DNS may have changed), and POST
        it through `Kanban.Webhooks.Transport` to the approved address. The
@@ -96,10 +99,12 @@ defmodule Kanban.AuditStream.DispatchWorker do
 
   alias Kanban.AuditStream
   alias Kanban.AuditStream.Adapter
+  alias Kanban.AuditStream.AgeLimit
   alias Kanban.AuditStream.Attempt
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.DestinationEvents
+  alias Kanban.AuditStream.Gaps
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Pacing
@@ -184,10 +189,15 @@ defmodule Kanban.AuditStream.DispatchWorker do
   def run(destination_id, token, deadline \\ Pacing.drain_deadline()) do
     case Repo.transact(fn -> prepare(destination_id, token) end) do
       {:ok, {:send, context}} ->
+        Gaps.emit_recorded(context.gap)
+
         context
         |> send_batch()
         |> record(destination_id, token, deadline)
         |> drain(destination_id, deadline)
+
+      {:ok, {:stopped, gap}} ->
+        Gaps.emit_recorded(gap)
 
       {:ok, :stopped} ->
         :ok
@@ -254,24 +264,39 @@ defmodule Kanban.AuditStream.DispatchWorker do
   end
 
   defp prepared({:send, adapter}, destination, cursor) do
-    organization = organization(destination.organization_id)
+    read_opts = Pacing.read_opts()
+    older_than = AgeLimit.threshold(adapter, DateTime.utc_now())
 
-    case PendingBatch.prepare(destination, cursor, organization, Pacing.read_opts()) do
-      {:ok, batch, attrs} ->
-        with {:ok, _cursor} <- update_cursor(cursor, attrs) do
-          {:ok,
-           {:send,
-            %{
-              adapter: adapter,
-              destination: destination,
-              organization: organization,
-              batch: batch
-            }}}
-        end
+    with {:ok, cursor, gap} <- AgeLimit.skip(destination, cursor, older_than, read_opts) do
+      organization = organization(destination.organization_id)
+      opts = [{:older_than, older_than} | read_opts]
 
-      {:empty, attrs} ->
-        stop(cursor, attrs)
+      destination
+      |> PendingBatch.prepare(cursor, organization, opts)
+      |> cut({adapter, destination, organization, cursor, gap})
     end
+  end
+
+  defp cut({:ok, batch, attrs}, {adapter, destination, organization, cursor, gap}) do
+    with {:ok, _cursor} <- update_cursor(cursor, attrs) do
+      {:ok,
+       {:send,
+        %{
+          adapter: adapter,
+          destination: destination,
+          organization: organization,
+          batch: batch,
+          gap: gap
+        }}}
+    end
+  end
+
+  # Every waiting event was too old: the cursor has moved past them all.
+  defp cut({:empty, attrs}, {_adapter, _destination, _organization, cursor, nil}),
+    do: stop(cursor, attrs)
+
+  defp cut({:empty, attrs}, {_adapter, _destination, _organization, cursor, gap}) do
+    with {:ok, :stopped} <- stop(cursor, attrs), do: {:ok, {:stopped, gap}}
   end
 
   defp stop(cursor, attrs) do

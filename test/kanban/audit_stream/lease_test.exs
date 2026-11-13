@@ -59,6 +59,39 @@ defmodule Kanban.AuditStream.LeaseTest do
     assert {:ok, _token} = Lease.take(destination.id)
   end
 
+  test "extend/2 renews only the token's own live lease", %{destination: destination} do
+    {:ok, token} = Lease.take(destination.id)
+    soon = DateTime.add(DateTime.utc_now(), 5, :second)
+
+    from(c in Cursor, where: c.destination_id == ^destination.id)
+    |> Repo.update_all(set: [leased_until: soon])
+
+    assert Lease.extend(destination.id, token) == :ok
+    assert DateTime.diff(cursor(destination).leased_until, DateTime.utc_now()) >= Lease.ttl() - 2
+
+    assert Lease.extend(destination.id, Ecto.UUID.generate()) == :lost
+    assert cursor(destination).lease_token == token
+
+    expire(destination)
+    assert Lease.extend(destination.id, token) == :lost
+    assert DateTime.compare(cursor(destination).leased_until, DateTime.utc_now()) == :lt
+  end
+
+  test "owned/2 finds the cursor while the token is unchanged, expired or not", %{
+    destination: destination
+  } do
+    {:ok, token} = Lease.take(destination.id)
+    assert %Cursor{lease_token: ^token} = Lease.owned(destination.id, token)
+
+    expire(destination)
+    assert Lease.guard(destination.id, token) == nil
+    assert %Cursor{lease_token: ^token} = Lease.owned(destination.id, token)
+
+    {:ok, other} = Lease.take(destination.id)
+    assert Lease.owned(destination.id, token) == nil
+    assert %Cursor{lease_token: ^other} = Lease.owned(destination.id, other)
+  end
+
   test "release_attrs/0 clears the lease fields" do
     assert Lease.release_attrs() == %{lease_token: nil, leased_until: nil}
   end

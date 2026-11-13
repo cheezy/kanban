@@ -152,12 +152,21 @@ config :kanban, Kanban.Retention.PurgeWorker,
 - A step that fails, for example because the database refuses the purge
   function, is logged and named in `failed_steps`; the other steps still run.
   The job is not retried, because the next day's run repeats it.
+- Retention is never held back for an audit stream destination. For an
+  Organization with destinations, the purge first takes each destination's
+  lease, waiting up to 30 seconds, then records every event a destination
+  loses before receiving it as a gap, with an `audit_stream_gap` audit event
+  that no destination can exclude. A destination created while the purge
+  runs, starting from everything the audit log holds, gets a gap too, which
+  can overstate its loss. When a lease can't be taken, that Organization's
+  purge is skipped for the day and named in `audit_stream_skipped`; the other
+  Organizations and steps still run.
 
 Each run records one `retention_purge` audit event with the rows removed per
 Organization (`organization_counts`), for site events (`site_count`), for
 archived tasks (`archived_task_count`) and for expired SAML sign-in state
-(`saml_count`), plus `failed_steps`. A count is `nil`
-when its step did not run.
+(`saml_count`), plus `failed_steps` and `audit_stream_skipped`. A count is
+`nil` when its step did not run.
 
 ## After deploying
 

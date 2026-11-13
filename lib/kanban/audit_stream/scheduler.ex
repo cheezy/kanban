@@ -20,7 +20,11 @@ defmodule Kanban.AuditStream.Scheduler do
        (`Kanban.AuditStream.measure_lag/3`), so each is measured at most once
        every 15 minutes and the persisted event stays rare. Its metadata is
        the destination's kind only: no Organization id, destination name or
-       host reaches telemetry (D8).
+       host reaches telemetry (D8);
+    3. records `audit_stream_gap` for every open gap that grew since its
+       last one, once a day has passed since it
+       (`Kanban.AuditStream.audit_due_gaps/1`), so a loss that extended a
+       gap inside its daily throttle still reaches the stream (§12.3).
 
   The slot is the minute the cron tick was scheduled for, so a sweep that
   starts late still measures the tick's own slot. A run that fails is simply
@@ -52,6 +56,8 @@ defmodule Kanban.AuditStream.Scheduler do
         %{kind: lag.kind}
       )
     end
+
+    AuditStream.audit_due_gaps(now)
 
     :ok
   end
