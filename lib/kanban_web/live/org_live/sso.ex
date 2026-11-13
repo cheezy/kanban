@@ -11,8 +11,9 @@ defmodule KanbanWeb.OrgLive.SSO do
   it is never read from params. `current_scope` is loaded once at mount and an
   event does not run the gate again, so every event re-reads the actor, their
   org-admin role and their paid access (`Kanban.Plans`, feature `:sso`) from
-  the database first, and the `Kanban.SSO` write checks once more. A refused
-  event is audited as `permission_denied` and redirects to `/boards`.
+  the database first (`KanbanWeb.OrgLive.OrgAdminCheck`), and the `Kanban.SSO`
+  write checks once more. A refused event is audited as `permission_denied`
+  and redirects to `/boards`.
 
   The client secret is never sent to the browser: the form's secret field is
   always empty, and leaving it empty keeps the stored secret.
@@ -20,13 +21,11 @@ defmodule KanbanWeb.OrgLive.SSO do
   use KanbanWeb, :live_view
 
   import KanbanWeb.LockedFeature, only: [locked_feature: 1]
+  import KanbanWeb.OrgLive.OrgAdminCheck, only: [with_org_admin: 3, refuse: 1]
   import KanbanWeb.UserLive.SettingsComponents, only: [settings_card: 1]
 
   on_mount {KanbanWeb.UserAuth, :require_org_admin}
 
-  alias Kanban.Accounts
-  alias Kanban.Accounts.User
-  alias Kanban.Organizations
   alias Kanban.SSO
   alias Kanban.SSO.DomainRecheck
   alias Kanban.SSO.DomainVerification
@@ -50,7 +49,7 @@ defmodule KanbanWeb.OrgLive.SSO do
 
   @impl true
   def handle_event("add_domain", %{"domain" => params}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_paid_org_admin(socket, fn actor, organization_id ->
       case SSO.add_domain(actor, organization_id, params) do
         {:ok, _domain} ->
           {:noreply,
@@ -71,7 +70,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("verify_domain", %{"id" => id}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_paid_org_admin(socket, fn actor, organization_id ->
       actor
       |> SSO.verify_domain(organization_id, id)
       |> verified(socket, organization_id)
@@ -79,7 +78,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("remove_domain", %{"id" => id}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_paid_org_admin(socket, fn actor, organization_id ->
       case SSO.remove_domain(actor, organization_id, id) do
         {:ok, _domain} ->
           {:noreply,
@@ -95,7 +94,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("validate_connection", %{"connection" => params}, socket) do
-    with_org_admin(socket, fn _actor, _organization_id ->
+    with_paid_org_admin(socket, fn _actor, _organization_id ->
       form =
         socket.assigns.connection
         |> SSO.change_oidc_connection(Map.delete(params, "client_secret"))
@@ -107,7 +106,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("save_connection", %{"connection" => params}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_paid_org_admin(socket, fn actor, organization_id ->
       case SSO.save_oidc_connection(actor, organization_id, params) do
         {:ok, _connection} ->
           {:noreply,
@@ -133,7 +132,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("validate_saml", %{"saml" => params}, socket) do
-    with_org_admin(socket, fn _actor, _organization_id ->
+    with_paid_org_admin(socket, fn _actor, _organization_id ->
       form =
         socket.assigns.saml_connection
         |> SSO.change_saml_connection(params)
@@ -145,7 +144,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("save_saml", %{"saml" => params}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_paid_org_admin(socket, fn actor, organization_id ->
       case SSO.save_saml_connection(actor, organization_id, params) do
         {:ok, _connection} ->
           {:noreply,
@@ -193,34 +192,13 @@ defmodule KanbanWeb.OrgLive.SSO do
     |> to_form(as: :connection)
   end
 
-  # Re-read the actor, their org-admin role and their paid access from the
-  # database, as KanbanWeb.OrgLive.Security does, rather than trusting mount.
-  defp with_org_admin(socket, fun) do
-    %{current_scope: %{user: %{id: id}}, organization: organization} = socket.assigns
+  # Every event runs the shared org-admin check (KanbanWeb.OrgLive.OrgAdminCheck)
+  # and also needs the page unlocked and the actor's paid access (Kanban.Plans,
+  # feature :sso) re-read from the database.
+  defp with_paid_org_admin(socket, fun), do: with_org_admin(socket, fun, also: &paid_access?/2)
 
-    with false <- socket.assigns.locked?,
-         %User{disabled_at: nil} = actor <- Accounts.get_user(id),
-         true <- Organizations.org_admin?(actor, organization.id),
-         :ok <- SSO.check_access(actor, :live_view) do
-      fun.(actor, organization.id)
-    else
-      _not_an_enabled_paid_org_admin -> {:noreply, refuse(socket)}
-    end
-  end
-
-  defp refuse(socket) do
-    Kanban.AuditLog.event(:permission_denied,
-      user_id: socket.assigns.current_scope.user.id,
-      gate: :require_org_admin
-    )
-
-    socket
-    |> put_flash(
-      :error,
-      gettext("You must be an org-admin of an Organization to access this page.")
-    )
-    |> redirect(to: ~p"/boards")
-  end
+  defp paid_access?(socket, actor),
+    do: socket.assigns.locked? == false and SSO.check_access(actor, :live_view) == :ok
 
   defp domain_taken_message,
     do: gettext("Another Organization has already verified this domain.")

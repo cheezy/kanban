@@ -8,12 +8,14 @@ defmodule KanbanWeb.OrgLive.Security do
   `current_scope`; it is never read from params. `current_scope` is loaded once
   at mount and an event does not run the gate's `handle_params` hook, so every
   `validate` and `save` re-reads the actor and their org-admin role from the
-  database first, and `Kanban.Organizations.SecurityPolicies.update_policy/2`
-  checks again before writing. A refused event is audited as
-  `permission_denied` and redirects to `/boards`.
+  database first (`KanbanWeb.OrgLive.OrgAdminCheck`), and
+  `Kanban.Organizations.SecurityPolicies.update_policy/2` checks again before
+  writing. A refused event is audited as `permission_denied` and redirects to
+  `/boards`.
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.OrgLive.OrgAdminCheck, only: [with_org_admin: 2, refuse: 1]
   import KanbanWeb.UserLive.SettingsComponents, only: [settings_card: 1]
 
   # The router's live_session :require_authenticated_user lets in every
@@ -21,9 +23,6 @@ defmodule KanbanWeb.OrgLive.Security do
   # to members, free users and site admins even if the route is moved.
   on_mount {KanbanWeb.UserAuth, :require_org_admin}
 
-  alias Kanban.Accounts
-  alias Kanban.Accounts.User
-  alias Kanban.Organizations
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
 
@@ -76,33 +75,6 @@ defmodule KanbanWeb.OrgLive.Security do
     socket
     |> assign(:policy, policy)
     |> assign(:form, policy |> SecurityPolicies.change_policy() |> to_form())
-  end
-
-  # Re-read the actor and their org-admin role from the database, as
-  # KanbanWeb.OrgLive.Console does, rather than trusting the scope from mount.
-  defp with_org_admin(socket, fun) do
-    %{current_scope: %{user: %{id: id}}, organization: organization} = socket.assigns
-
-    with %User{disabled_at: nil} = actor <- Accounts.get_user(id),
-         true <- Organizations.org_admin?(actor, organization.id) do
-      fun.(actor)
-    else
-      _not_an_enabled_org_admin -> {:noreply, refuse(socket)}
-    end
-  end
-
-  defp refuse(socket) do
-    Kanban.AuditLog.event(:permission_denied,
-      user_id: socket.assigns.current_scope.user.id,
-      gate: :require_org_admin
-    )
-
-    socket
-    |> put_flash(
-      :error,
-      gettext("You must be an org-admin of an Organization to access this page.")
-    )
-    |> redirect(to: ~p"/boards")
   end
 
   defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M UTC")

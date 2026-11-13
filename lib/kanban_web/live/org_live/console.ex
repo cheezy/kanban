@@ -23,17 +23,18 @@ defmodule KanbanWeb.OrgLive.Console do
 
   The org-admin gate re-reads the role from the database on every patch, but
   events do not patch, so every Members and Workspaces event re-reads the actor
-  and their org-admin role itself before it does anything. A refused actor is redirected
-  to `/boards` exactly as the gate would.
+  and their org-admin role itself (`KanbanWeb.OrgLive.OrgAdminCheck`) before it
+  does anything. A refused actor is redirected to `/boards` exactly as the gate
+  would.
   """
   use KanbanWeb, :live_view
 
   import KanbanWeb.Components.AccountStatus
 
+  import KanbanWeb.OrgLive.OrgAdminCheck, only: [with_org_admin: 2, refuse: 1]
   import KanbanWeb.UserLive.SettingsComponents, only: [section_tab: 1, settings_card: 1]
 
   alias Ecto.Changeset
-  alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Organizations
   alias Kanban.Organizations.MemberRemoval
@@ -274,43 +275,6 @@ defmodule KanbanWeb.OrgLive.Console do
     |> replace_flash(:error, gettext("Workspace not found."))
     |> reset_rename()
     |> refresh_workspaces(actor)
-  end
-
-  # current_scope's user and membership are loaded at mount and never re-read
-  # (refresh_workspaces/2 rebuilds only its switcher fields), and an event does
-  # not run the gate's handle_params hook. Re-read the actor and their org-admin
-  # role from the database, and pass that fresh struct to the context.
-  defp with_org_admin(socket, fun) do
-    case authorized_actor(socket) do
-      %User{} = actor -> fun.(actor)
-      nil -> {:noreply, refuse(socket)}
-    end
-  end
-
-  defp authorized_actor(socket) do
-    %{current_scope: %{user: %{id: id}}, organization: %Organization{id: organization_id}} =
-      socket.assigns
-
-    with %User{disabled_at: nil} = actor <- Accounts.get_user(id),
-         true <- Organizations.org_admin?(actor, organization_id) do
-      actor
-    else
-      _ -> nil
-    end
-  end
-
-  defp refuse(socket) do
-    Kanban.AuditLog.event(:permission_denied,
-      user_id: socket.assigns.current_scope.user.id,
-      gate: :require_org_admin
-    )
-
-    socket
-    |> put_flash(
-      :error,
-      gettext("You must be an org-admin of an Organization to access this page.")
-    )
-    |> redirect(to: ~p"/boards")
   end
 
   # The side-nav switcher renders from current_scope, which is built once at

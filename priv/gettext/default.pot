@@ -4325,7 +4325,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:408
+#: lib/kanban_web/live/org_live/console.ex:372
 #: lib/kanban_web/live/org_live/console.html.heex:131
 #: lib/kanban_web/live/workspace_live/settings.ex:458
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
@@ -6348,7 +6348,7 @@ msgstr ""
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:152
-#: lib/kanban_web/live/org_live/console.ex:407
+#: lib/kanban_web/live/org_live/console.ex:371
 #: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -10433,7 +10433,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
-#: lib/kanban_web/live/org_live/console.ex:414
+#: lib/kanban_web/live/org_live/console.ex:378
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
 #: lib/kanban_web/live/workspace_live/settings.ex:470
@@ -10448,7 +10448,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:253
-#: lib/kanban_web/live/org_live/console.ex:413
+#: lib/kanban_web/live/org_live/console.ex:377
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr ""
@@ -10507,7 +10507,7 @@ msgstr ""
 
 #: lib/kanban_web/components/side_nav.ex:356
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:78
-#: lib/kanban_web/live/org_live/console.ex:78
+#: lib/kanban_web/live/org_live/console.ex:79
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr ""
@@ -10523,22 +10523,19 @@ msgstr ""
 msgid "Read-only. Ask a site admin to change them."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:70
-#: lib/kanban_web/live/org_live/console.ex:311
-#: lib/kanban_web/live/org_live/scim.ex:133
-#: lib/kanban_web/live/org_live/security.ex:103
-#: lib/kanban_web/live/org_live/sso.ex:220
+#: lib/kanban_web/live/org_live/console.ex:71
+#: lib/kanban_web/live/org_live/org_admin_check.ex:117
 #: lib/kanban_web/user_auth/org_admin_gate.ex:156
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:407
+#: lib/kanban_web/live/org_live/console.ex:371
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:408
+#: lib/kanban_web/live/org_live/console.ex:372
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr ""
@@ -10598,12 +10595,12 @@ msgstr ""
 msgid "Rename"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:268
+#: lib/kanban_web/live/org_live/console.ex:269
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:260
+#: lib/kanban_web/live/org_live/console.ex:261
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr ""
@@ -10613,12 +10610,12 @@ msgstr ""
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:242
+#: lib/kanban_web/live/org_live/console.ex:243
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:203
+#: lib/kanban_web/live/org_live/console.ex:204
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr ""
@@ -10628,19 +10625,19 @@ msgstr ""
 msgid "Workspace name"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:274
+#: lib/kanban_web/live/org_live/console.ex:275
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:237
+#: lib/kanban_web/live/org_live/console.ex:238
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr ""
 
 #: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:111
-#: lib/kanban_web/live/org_live/console.ex:409
+#: lib/kanban_web/live/org_live/console.ex:373
 #: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
@@ -10656,7 +10653,7 @@ msgstr ""
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:409
+#: lib/kanban_web/live/org_live/console.ex:373
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr ""
@@ -10666,7 +10663,7 @@ msgstr ""
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:235
+#: lib/kanban_web/live/org_live/console.ex:236
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr ""
@@ -10984,7 +10981,7 @@ msgstr ""
 msgid "Manage who is in this workspace and which boards it holds."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:193
+#: lib/kanban_web/live/org_live/console.ex:194
 #: lib/kanban_web/live/workspace_live/settings.ex:411
 #, elixir-autogen, elixir-format
 msgid "Member not found."
@@ -10995,7 +10992,7 @@ msgstr ""
 msgid "Member removed from the workspace."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:177
+#: lib/kanban_web/live/org_live/console.ex:178
 #, elixir-autogen, elixir-format
 msgid "Member removed."
 msgstr ""
@@ -11041,7 +11038,7 @@ msgstr ""
 msgid "Only an org-admin can manage this workspace."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/console.ex:186
+#: lib/kanban_web/live/org_live/console.ex:187
 #, elixir-autogen, elixir-format
 msgid "Org-admins can't be removed here."
 msgstr ""
@@ -11498,7 +11495,7 @@ msgstr ""
 msgid "Your new workspace token"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/scim.ex:152
+#: lib/kanban_web/live/org_live/scim.ex:131
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
@@ -11842,7 +11839,7 @@ msgstr ""
 msgid "Keep forever"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/security.ex:37
+#: lib/kanban_web/live/org_live/security.ex:36
 #, elixir-autogen, elixir-format
 msgid "Organization security"
 msgstr ""
@@ -11877,7 +11874,7 @@ msgstr ""
 msgid "Security policy for %{name}. Only its org-admins can change it."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/security.ex:62
+#: lib/kanban_web/live/org_live/security.ex:61
 #, elixir-autogen, elixir-format
 msgid "Security policy saved."
 msgstr ""
@@ -11919,7 +11916,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:251
+#: lib/kanban_web/live/org_live/sso.ex:229
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr ""
@@ -11944,7 +11941,7 @@ msgstr ""
 msgid "Allow sign-in through this identity provider"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:226
+#: lib/kanban_web/live/org_live/sso.ex:204
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr ""
@@ -11959,12 +11956,12 @@ msgstr ""
 msgid "Client secret"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:59
+#: lib/kanban_web/live/org_live/sso.ex:58
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:86
+#: lib/kanban_web/live/org_live/sso.ex:85
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr ""
@@ -12051,7 +12048,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:41
+#: lib/kanban_web/live/org_live/sso.ex:40
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12059,7 +12056,7 @@ msgstr ""
 msgid "Single sign-on"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:116
+#: lib/kanban_web/live/org_live/sso.ex:115
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr ""
@@ -12086,12 +12083,12 @@ msgstr ""
 msgid "TXT record value"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:259
+#: lib/kanban_web/live/org_live/sso.ex:237
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:123
+#: lib/kanban_web/live/org_live/sso.ex:122
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr ""
@@ -12222,7 +12219,7 @@ msgstr ""
 msgid "Paste the metadata XML to fill the fields below"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:154
+#: lib/kanban_web/live/org_live/sso.ex:153
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr ""
@@ -12313,7 +12310,7 @@ msgstr ""
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/scim.ex:139
+#: lib/kanban_web/live/org_live/scim.ex:118
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr ""
@@ -12349,7 +12346,7 @@ msgid "SCIM base URL"
 msgstr ""
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:39
+#: lib/kanban_web/live/org_live/scim.ex:38
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12360,7 +12357,7 @@ msgstr ""
 msgid "SCIM tokens"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/scim.ex:69
+#: lib/kanban_web/live/org_live/scim.ex:68
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr ""
@@ -12422,7 +12419,7 @@ msgstr ""
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:237
+#: lib/kanban_web/live/org_live/sso.ex:215
 #, elixir-autogen, elixir-format
 msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
 msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."

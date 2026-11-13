@@ -10,23 +10,22 @@ defmodule KanbanWeb.OrgLive.SCIM do
   it is never read from params. `current_scope` is loaded once at mount and an
   event does not run the gate again, so `validate`, `create_token` and
   `revoke_token` re-read the actor and their org-admin role from the database
-  first, and `Kanban.SCIM` checks once more. A refused event is audited as
-  `permission_denied` and redirects to `/boards`. `dismiss_token` only clears
-  the revealed token from the page, and any other event is ignored, so
-  neither needs the check.
+  first (`KanbanWeb.OrgLive.OrgAdminCheck`), and `Kanban.SCIM` checks once
+  more. A refused event is audited as `permission_denied` and redirects to
+  `/boards`. `dismiss_token` only clears the revealed token from the page, and
+  any other event is ignored, so neither needs the check.
 
   The plain text is held only in the `:new_token` assign: never in a form,
   cleared by the next event, and gone after a reload.
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.OrgLive.OrgAdminCheck, only: [with_org_admin: 3, refuse: 2]
   import KanbanWeb.UserLive.SettingsComponents, only: [settings_card: 1]
 
   on_mount {KanbanWeb.UserAuth, :require_org_admin}
 
-  alias Kanban.Accounts
   alias Kanban.Accounts.User
-  alias Kanban.Organizations
   alias Kanban.SCIM
   alias Kanban.SCIM.ScimToken
 
@@ -46,20 +45,20 @@ defmodule KanbanWeb.OrgLive.SCIM do
 
   @impl true
   def handle_event("validate", %{"token" => params}, socket) do
-    with_org_admin(socket, fn _actor, _organization_id ->
+    with_scim_org_admin(socket, fn _actor, _organization_id ->
       form = params |> SCIM.change_token() |> Map.put(:action, :validate) |> to_form(as: :token)
       {:noreply, socket |> assign(:new_token, nil) |> assign(:form, form)}
     end)
   end
 
   def handle_event("create_token", %{"token" => params}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_scim_org_admin(socket, fn actor, organization_id ->
       actor |> SCIM.create_token(organization_id, params) |> token_created(socket)
     end)
   end
 
   def handle_event("revoke_token", %{"id" => id}, socket) do
-    with_org_admin(socket, fn actor, organization_id ->
+    with_scim_org_admin(socket, fn actor, organization_id ->
       case SCIM.revoke_token(actor, organization_id, id) do
         {:ok, _token} ->
           {:noreply,
@@ -72,7 +71,7 @@ defmodule KanbanWeb.OrgLive.SCIM do
           {:noreply, socket |> assign(:new_token, nil) |> load_tokens()}
 
         {:error, :unauthorized} ->
-          {:noreply, refuse(socket)}
+          {:noreply, refuse(socket, refuse_opts())}
       end
     end)
   end
@@ -97,7 +96,8 @@ defmodule KanbanWeb.OrgLive.SCIM do
      |> assign(:form, to_form(Map.put(changeset, :action, :insert), as: :token))}
   end
 
-  defp token_created({:error, :unauthorized}, socket), do: {:noreply, refuse(socket)}
+  defp token_created({:error, :unauthorized}, socket),
+    do: {:noreply, refuse(socket, refuse_opts())}
 
   # The SCIM routes are /scim/v2/<resource>, so the base is one of them less
   # its resource name, which keeps the URL verified.
@@ -107,33 +107,12 @@ defmodule KanbanWeb.OrgLive.SCIM do
     assign(socket, :tokens, SCIM.list_tokens(socket.assigns.organization.id))
   end
 
-  # Re-read the actor and their org-admin role from the database, as
-  # KanbanWeb.OrgLive.SSO does, rather than trusting mount.
-  defp with_org_admin(socket, fun) do
-    %{current_scope: %{user: %{id: id}}, organization: organization} = socket.assigns
+  # Every event runs the shared org-admin check (KanbanWeb.OrgLive.OrgAdminCheck),
+  # and every refusal also clears the revealed token, so a refused actor never
+  # keeps the plain text on the page.
+  defp with_scim_org_admin(socket, fun), do: with_org_admin(socket, fun, refuse_opts())
 
-    with %User{disabled_at: nil} = actor <- Accounts.get_user(id),
-         true <- Organizations.org_admin?(actor, organization.id) do
-      fun.(actor, organization.id)
-    else
-      _not_an_enabled_org_admin -> {:noreply, refuse(socket)}
-    end
-  end
-
-  defp refuse(socket) do
-    Kanban.AuditLog.event(:permission_denied,
-      user_id: socket.assigns.current_scope.user.id,
-      gate: :require_org_admin
-    )
-
-    socket
-    |> assign(:new_token, nil)
-    |> put_flash(
-      :error,
-      gettext("You must be an org-admin of an Organization to access this page.")
-    )
-    |> redirect(to: ~p"/boards")
-  end
+  defp refuse_opts, do: [on_refuse: &assign(&1, :new_token, nil)]
 
   defp token_details(%ScimToken{} = token) do
     gettext("By %{creator} · created %{created} · last used %{used}",
