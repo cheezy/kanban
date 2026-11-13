@@ -73,6 +73,28 @@ defmodule Kanban.Encryption do
   def decrypt(_value), do: {:error, :invalid}
 
   @doc """
+  Whether `value` has the shape of a value produced by `encrypt/1`: the
+  version byte, an IV and a tag. It does not decrypt, so a match is not proof
+  that the value decrypts under the current key.
+
+  ## Examples
+
+      iex> Kanban.Encryption.ciphertext?(Kanban.Encryption.encrypt("hello"))
+      true
+
+      iex> Kanban.Encryption.ciphertext?("hello")
+      false
+
+  """
+  @spec ciphertext?(term()) :: boolean()
+  def ciphertext?(
+        <<@version, _iv::binary-size(@iv_size), _tag::binary-size(@tag_size), _rest::binary>>
+      ),
+      do: true
+
+  def ciphertext?(_value), do: false
+
+  @doc """
   Returns a keyed HMAC-SHA256 of `data`, for values that are stored only as a
   digest (such as recovery codes) and must not be guessable offline from a
   database dump alone.

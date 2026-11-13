@@ -44,6 +44,10 @@ defmodule Kanban.Application do
 
     Kanban.Plans.BootReport.log_enforcement()
 
+    # Kanban.Repo.init/2 turns Ecto's query log off; this logs queries in its
+    # place with the plaintext of encrypted fields redacted (D431).
+    :ok = Kanban.Repo.QueryLogger.attach()
+
     :kanban
     |> Application.get_env(Kanban.Attachments.BlobCleanupWorker, [])
     |> Kanban.Attachments.BlobCleanupWorker.Settings.check!()

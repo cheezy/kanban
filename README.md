@@ -101,6 +101,21 @@ openssl rand -base64 32
   and each endpoint has to be set up again.
 - **Development and test need nothing.** `config/dev.exs` and
   `config/test.exs` use fixed, public keys.
+- **Query logs are redacted at every level, debug included.** Ecto's own
+  query log would print the plaintext of an encrypted field, so
+  `Kanban.Repo` turns it off and `Kanban.Repo.QueryLogger` logs each query
+  instead. A value encrypted with this key (`EncryptedBinary`,
+  `TolerantEncryptedBinary`) or with the `SECRET_KEY_BASE`-derived webhook
+  key (`EncryptedString`), and its plaintext, are shown as `"**redacted**"`.
+  A value is recognised by decrypting it, not by field name, so a new field
+  of those types is covered with no list to update. The
+  `[:kanban, :repo, :query]` telemetry event is unchanged and still carries
+  the plaintext in `cast_params`, so a handler must not log that field.
+  Two gaps remain. The message of an `Ecto.InvalidChangesetError` (raised by
+  a bang call such as `Repo.insert!/2` on an invalid changeset) prints the
+  applied changes and params unredacted, so write encrypted fields with
+  non-raising calls. And a single Repo call given its own `log: <level>`
+  option is logged by Ecto itself, unredacted; no code here does that.
 
 ### Metrics retention (`retention_days`)
 

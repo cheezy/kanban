@@ -82,6 +82,21 @@ defmodule Kanban.EncryptionTest do
     end
   end
 
+  describe "ciphertext?/1" do
+    test "matches what encrypt/1 returns, including an empty plaintext" do
+      assert "secret" |> Encryption.encrypt() |> Encryption.ciphertext?()
+      assert "" |> Encryption.encrypt() |> Encryption.ciphertext?()
+    end
+
+    test "rejects plaintext, a short binary, another version byte and non-binaries" do
+      refute Encryption.ciphertext?("secret")
+      refute Encryption.ciphertext?(<<1, 0::size(27)-unit(8)>>)
+      refute Encryption.ciphertext?(<<2, 0::size(40)-unit(8)>>)
+      refute Encryption.ciphertext?(nil)
+      refute Encryption.ciphertext?(42)
+    end
+  end
+
   describe "hmac/1" do
     test "is deterministic for the same key and input" do
       assert Encryption.hmac("abc") == Encryption.hmac("abc")
