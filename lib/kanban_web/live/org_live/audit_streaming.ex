@@ -132,17 +132,25 @@ defmodule KanbanWeb.OrgLive.AuditStreaming do
   end
 
   defp load(socket, %User{} = actor) do
-    case actor |> Scope.for_user() |> AuditStream.list_destinations_with_status() do
-      {:ok, entries} ->
-        socket
-        |> assign(:rows, Enum.map(entries, &AuditStreamingRow.to_view/1))
-        |> assign(
-          :org_admin_count,
-          Organizations.count_enabled_org_admins(socket.assigns.organization)
-        )
+    scope = Scope.for_user(actor)
 
+    with {:ok, entries} <- AuditStream.list_destinations_with_status(scope),
+         {:ok, gaps} <- AuditStream.open_gap_summaries(scope) do
+      assign_rows(socket, entries, gaps)
+    else
       {:error, :unauthorized} ->
         socket |> assign(:rows, []) |> assign(:org_admin_count, 0) |> refuse()
     end
+  end
+
+  defp assign_rows(socket, entries, gaps) do
+    rows = Enum.map(entries, &AuditStreamingRow.to_view(&1, gaps[&1.destination.id]))
+
+    socket
+    |> assign(:rows, rows)
+    |> assign(
+      :org_admin_count,
+      Organizations.count_enabled_org_admins(socket.assigns.organization)
+    )
   end
 end

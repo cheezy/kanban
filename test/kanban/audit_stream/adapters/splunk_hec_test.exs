@@ -442,6 +442,42 @@ defmodule Kanban.AuditStream.Adapters.SplunkHecTest do
     end
   end
 
+  describe "config_error_reason/1 and partially_indexed?/1" do
+    test "reads the configuration error back from Stride's own attempt text" do
+      for {code, reason} <- [
+            {7, :incorrect_index},
+            {10, :indexer_ack_enabled},
+            {11, :indexer_ack_enabled},
+            {14, :ack_disabled},
+            {16, :query_string_auth}
+          ] do
+        text = SplunkHec.describe_error(400, hec(code))
+        assert {code, reason} == {code, SplunkHec.config_error_reason(text)}
+      end
+
+      assert SplunkHec.config_error_reason(
+               "The destination reported a configuration error (ack_disabled, HTTP 400)"
+             ) == :ack_disabled
+
+      assert 400 |> SplunkHec.describe_error(hec(6)) |> SplunkHec.config_error_reason() == nil
+      assert SplunkHec.config_error_reason("Rejected by the destination (HTTP 400)") == nil
+      assert SplunkHec.config_error_reason(nil) == nil
+    end
+
+    test "an invalid-event-number above 0 means earlier events may be in Splunk" do
+      assert 400
+             |> SplunkHec.describe_error(hec(6, %{"invalid-event-number" => 3}))
+             |> SplunkHec.partially_indexed?()
+
+      refute 400
+             |> SplunkHec.describe_error(hec(6, %{"invalid-event-number" => 0}))
+             |> SplunkHec.partially_indexed?()
+
+      refute SplunkHec.partially_indexed?("Rejected by the destination (HTTP 400)")
+      refute SplunkHec.partially_indexed?(nil)
+    end
+  end
+
   describe "fix_message/2" do
     test "names a fix for each configuration reason" do
       assert SplunkHec.fix_message(:incorrect_index, %{"index" => "security"}) ==

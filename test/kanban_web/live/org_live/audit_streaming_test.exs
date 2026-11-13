@@ -93,6 +93,52 @@ defmodule KanbanWeb.OrgLive.AuditStreamingTest do
   end
 
   describe "the destination list" do
+    test "each row's name links to the destination page", %{conn: conn, org: org} do
+      destination = destination_fixture(org, :https)
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming")
+
+      assert has_element?(
+               lv,
+               ~s(#destination-link-#{destination.id}[href="/org/audit/streaming/#{destination.id}"]),
+               destination.name
+             )
+
+      assert {:ok, _page, html} =
+               lv
+               |> element("#destination-link-#{destination.id}")
+               |> render_click()
+               |> follow_redirect(conn)
+
+      assert html =~ "destination-attempts"
+    end
+
+    test "an open gap shows its warning with events and dates; a dismissed one does not",
+         %{conn: conn, org: org} do
+      gapped = destination_fixture(org, :https)
+      gap_fixture(gapped, %{events: 1})
+
+      gap_fixture(gapped, %{
+        reason: :too_old,
+        events: 4,
+        last_occurred_at: ~U[2026-10-05 01:00:00Z]
+      })
+
+      dismissed = destination_fixture(org, :https)
+      gap_fixture(dismissed, %{dismissed_at: DateTime.utc_now()})
+      clean = destination_fixture(org, :https)
+
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming")
+
+      assert has_element?(
+               lv,
+               "#destination-gap-warning-#{gapped.id}",
+               "5 events will never reach this destination (2026-10-01 to 2026-10-05 UTC)"
+             )
+
+      refute has_element?(lv, "#destination-gap-warning-#{dismissed.id}")
+      refute has_element?(lv, "#destination-gap-warning-#{clean.id}")
+    end
+
     test "an org-admin sees each destination row with hint, status pill, last delivered and behind by",
          %{conn: conn, org: org} do
       delivered = ~U[2026-11-01 09:30:00Z]

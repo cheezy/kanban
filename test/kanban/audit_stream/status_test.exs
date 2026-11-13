@@ -259,7 +259,7 @@ defmodule Kanban.AuditStream.StatusTest do
   # --- retry now ----------------------------------------------------------------
 
   describe "retry_now/2" do
-    test "retry_now clears rejected_batch and enqueues", ctx do
+    test "retry_now/2 clears halted_reason and enqueues the dispatch job", ctx do
       batch = reject_batch!(ctx)
       set_cursor(ctx.destination, next_attempt_at: DateTime.add(DateTime.utc_now(), 3600))
 
@@ -300,7 +300,8 @@ defmodule Kanban.AuditStream.StatusTest do
   # --- skip this batch ----------------------------------------------------------
 
   describe "skip_batch/2" do
-    test "skip_batch records the attempt and audit event and moves the cursor", ctx do
+    test "skip_batch/2 moves the cursor past the pending batch, records a skipped attempt and audit_stream_batch_skipped",
+         ctx do
       batch = reject_batch!(ctx)
 
       assert {:ok, %Destination{halted_reason: nil} = skipped} =
@@ -345,20 +346,24 @@ defmodule Kanban.AuditStream.StatusTest do
       assert waiting >= 1
     end
 
-    test "skip_batch refused for a config error halt", ctx do
+    test "skip_batch/2 and retry_now/2 refuse a destination whose halted_reason is not rejected_batch",
+         ctx do
       reject_batch!(ctx)
       before = cursor(ctx.destination)
 
       # A configuration error or an unauthorized answer leaves halted_reason
-      # unset; the other halts can't be skipped either.
-      for reason <- [nil, :blocked_address, :txid_reset, :credentials_unreadable] do
+      # unset; the other halts can't be skipped or retried either.
+      for reason <- [nil, :blocked_address, :txid_reset, :credentials_unreadable],
+          {name, call} <- [skip: &AuditStream.skip_batch/2, retry: &AuditStream.retry_now/2] do
         set_destination(ctx.destination,
           halted_reason: reason,
           state_reason: "The destination reported a configuration error"
         )
 
-        assert {reason, {:error, :not_rejected_batch}} ==
-                 {reason, AuditStream.skip_batch(ctx.scope, ctx.destination)}
+        assert {reason, name, {:error, :not_rejected_batch}} ==
+                 {reason, name, call.(ctx.scope, ctx.destination)}
+
+        assert fresh(ctx.destination).halted_reason == reason
       end
 
       assert cursor(ctx.destination) == before
@@ -395,6 +400,46 @@ defmodule Kanban.AuditStream.StatusTest do
       assert {:error, :unauthorized} = AuditStream.retry_now(ctx.scope, ctx.destination)
       assert fresh(ctx.destination).halted_reason == :rejected_batch
       assert cursor(ctx.destination).lease_token == nil
+    end
+  end
+
+  # --- open gap summaries -------------------------------------------------------
+
+  describe "open_gap_summaries/1" do
+    test "sums each destination's open gaps; dismissed and other Organizations' are left out",
+         ctx do
+      d = ctx.destination
+      gap_fixture(d, %{events: 3, first_occurred_at: ~U[2026-10-02 00:00:00.000000Z]})
+
+      gap_fixture(d, %{
+        reason: :too_old,
+        events: 4,
+        first_occurred_at: ~U[2026-10-01 00:00:00.000000Z],
+        last_occurred_at: ~U[2026-10-09 00:00:00.000000Z]
+      })
+
+      gap_fixture(d, %{events: 100, dismissed_at: DateTime.utc_now()})
+
+      only_dismissed = destination_fixture(ctx.organization, :https)
+      gap_fixture(only_dismissed, %{dismissed_at: DateTime.utc_now()})
+      clean = destination_fixture(ctx.organization, :datadog)
+
+      other = organization_fixture() |> destination_fixture(:https)
+      gap_fixture(other)
+
+      assert {:ok, summaries} = AuditStream.open_gap_summaries(ctx.scope)
+
+      assert summaries == %{
+               d.id => %{
+                 events: 7,
+                 first_at: ~U[2026-10-01 00:00:00.000000Z],
+                 last_at: ~U[2026-10-09 00:00:00.000000Z]
+               }
+             }
+
+      refute Map.has_key?(summaries, only_dismissed.id)
+      refute Map.has_key?(summaries, clean.id)
+      refute Map.has_key?(summaries, other.id)
     end
   end
 

@@ -18,7 +18,7 @@ defmodule Kanban.AuditStream.Gaps do
   `Kanban.AuditStream.AgeLimit` and `Kanban.AuditStream.Reseed`, each holding
   the destination row lock, so two writers never open two gaps.
 
-  `list_gaps/2` and `dismiss_gap/2` are the org-admin's, through
+  `list_gaps/2`, `open_summaries/1` and `dismiss_gap/2` are the org-admin's, through
   `Kanban.AuditStream`, and authorize exactly as its other functions do.
   """
 
@@ -151,6 +151,42 @@ defmodule Kanban.AuditStream.Gaps do
         )
 
       {:ok, Repo.all(query)}
+    end
+  end
+
+  @typedoc "What `open_summaries/1` reports of one destination's open gaps."
+  @type open_summary :: %{
+          events: non_neg_integer(),
+          first_at: DateTime.t(),
+          last_at: DateTime.t()
+        }
+
+  @doc """
+  The open (not dismissed) gaps of every destination in the caller's
+  Organization, summed per destination: `%{destination_id => %{events:,
+  first_at:, last_at:}}`. A destination with no open gap has no key. One
+  query, for the destination list. Org-admins only.
+  """
+  @spec open_summaries(Scope.t() | nil) ::
+          {:ok, %{pos_integer() => open_summary()}} | {:error, :unauthorized}
+  def open_summaries(scope) do
+    with {:ok, _actor, organization_id} <- Destinations.authorize(scope) do
+      query =
+        from(g in Gap,
+          join: d in Destination,
+          on: d.id == g.destination_id,
+          where: d.organization_id == ^organization_id and is_nil(g.dismissed_at),
+          group_by: g.destination_id,
+          select:
+            {g.destination_id,
+             %{
+               events: type(sum(g.events), :integer),
+               first_at: type(min(g.first_occurred_at), :utc_datetime_usec),
+               last_at: type(max(g.last_occurred_at), :utc_datetime_usec)
+             }}
+        )
+
+      {:ok, query |> Repo.all() |> Map.new()}
     end
   end
 

@@ -328,6 +328,41 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   def fix_message(_reason, _settings),
     do: gettext("Check this destination's Splunk HEC settings")
 
+  @doc """
+  The configuration error an attempt's `error` names, for `fix_message/2`:
+  read back from the text `describe_error/2` writes (`with code 7`), or from
+  the fallback Stride writes when Splunk's answer had no code
+  (`configuration error (incorrect_index, ...`). `nil` for any other text.
+  Only Stride's own text is read, never a response body.
+  """
+  @spec config_error_reason(String.t() | nil) :: atom() | nil
+  def config_error_reason(error) when is_binary(error) do
+    case Regex.run(~r/ with code (\d+)/, error) do
+      [_match, code] -> Map.get(@config_errors, String.to_integer(code))
+      nil -> named_config_error(error)
+    end
+  end
+
+  def config_error_reason(_error), do: nil
+
+  defp named_config_error(error) do
+    @config_errors
+    |> Map.values()
+    |> Enum.find(fn reason ->
+      String.contains?(error, "configuration error (#{reason},")
+    end)
+  end
+
+  @doc """
+  Whether an attempt's `error` says Splunk named an `invalid-event-number`
+  above 0, so the events before it may already be in Splunk (§10.4).
+  """
+  @spec partially_indexed?(String.t() | nil) :: boolean()
+  def partially_indexed?(error) when is_binary(error),
+    do: Regex.match?(~r/invalid-event-number [1-9]\d*/, error)
+
+  def partially_indexed?(_error), do: false
+
   @impl true
   def max_event_age, do: :infinity
 

@@ -255,6 +255,7 @@ defmodule Kanban.AuditStreamTest do
         status: fn -> AuditStream.destination_status(scope, destination) end,
         attempts: fn -> AuditStream.list_attempts(scope, destination) end,
         gaps: fn -> AuditStream.list_gaps(scope, destination) end,
+        open_gaps: fn -> AuditStream.open_gap_summaries(scope) end,
         pending: fn -> AuditStream.pending_batch_summary(scope, destination) end,
         test: fn -> AuditStream.send_test_event(scope, destination) end,
         retry: fn -> AuditStream.retry_now(scope, destination) end,
@@ -288,11 +289,12 @@ defmodule Kanban.AuditStreamTest do
       other_scope = Scope.for_user(other_admin)
 
       for {name, call} <- every_call(other_scope, ctx.destination),
-          name not in [:list, :create] do
+          name not in [:list, :create, :open_gaps] do
         assert {name, {:error, :not_found}} == {name, call.()}
       end
 
       assert {:ok, []} = AuditStream.list_destinations(other_scope)
+      assert {:ok, %{}} = AuditStream.open_gap_summaries(other_scope)
       assert {:ok, {created, nil}} = every_call(other_scope, ctx.destination)[:create].()
       assert created.organization_id == other_organization.id
 
@@ -596,7 +598,7 @@ defmodule Kanban.AuditStreamTest do
     defp dispatch_jobs(destination),
       do: all_enqueued(worker: DispatchWorker, args: %{destination_id: destination.id})
 
-    test "skip_batch is refused while a dispatch run holds the destination's lease", ctx do
+    test "skip_batch/2 is refused while another run holds the lease", ctx do
       halt!(ctx.destination, :rejected_batch)
       token = Ecto.UUID.generate()
       leased_until = DateTime.add(DateTime.utc_now(), 40, :second)

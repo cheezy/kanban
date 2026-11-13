@@ -1,0 +1,468 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:organization}>
+  <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
+    <.link
+      id="destination-back"
+      navigate={~p"/org/audit/streaming"}
+      class="text-sm underline"
+      style="color: var(--ink-2);"
+    >
+      {gettext("Back to audit streaming")}
+    </.link>
+
+    <header style="padding: 12px 0 14px;">
+      <div class="flex flex-wrap items-center gap-2">
+        <h1
+          id="destination-title"
+          style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink); overflow-wrap: anywhere;"
+        >
+          {@view.name}
+        </h1>
+        <span
+          id="destination-status"
+          data-status-pill={@status.state}
+          style={[
+            "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
+            "background: var(--st-#{state_token(@status.state)}-soft);",
+            "color: var(--st-#{state_token(@status.state)});",
+            "border: 1px solid var(--line);"
+          ]}
+        >
+          {state_label(@status.state)}
+        </span>
+      </div>
+      <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); line-height: 1.55;">
+        {AuditStreamingRow.type_label(@view.kind)}
+      </p>
+    </header>
+
+    <div class="flex flex-col gap-5 max-w-3xl">
+      <section
+        :if={@new_secret}
+        id="destination-secret-reveal"
+        style={[
+          "background: var(--stride-orange-soft); border: 1px solid var(--line);",
+          "border-radius: 10px; padding: 14px 16px;",
+          "display: flex; align-items: flex-start; gap: 12px;"
+        ]}
+      >
+        <span style="color: var(--stride-orange-ink); display: inline-flex; margin-top: 2px;">
+          <.icon name="hero-key" class="w-5 h-5" />
+        </span>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--ink);">
+            {gettext("Your new signing secret")}
+          </div>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.5;">
+            {gettext("Copy it now — you won't be able to see it again.")}
+          </p>
+          <p
+            :if={@new_secret_valid_until}
+            id="destination-secret-overlap"
+            style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.5;"
+          >
+            {gettext("The old secret stays valid until %{time} UTC.",
+              time: AuditStreamDestinationView.utc(@new_secret_valid_until)
+            )}
+          </p>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+            <code
+              id="destination-secret-value"
+              style={[
+                "flex: 1 1 220px; min-width: 0; padding: 6px 10px; border-radius: 5px;",
+                "background: var(--surface); border: 1px solid var(--line-strong);",
+                "color: var(--ink); font-family: var(--font-mono);",
+                "font-size: 11.5px; word-break: break-all; user-select: all;"
+              ]}
+            >{@new_secret}</code>
+            <button
+              id="destination-secret-copy"
+              type="button"
+              phx-click={
+                JS.dispatch("stride:copy",
+                  to: "#destination-secret-value",
+                  detail: %{
+                    copied: "destination-secret-copied",
+                    failed: "destination-secret-copy-failed"
+                  }
+                )
+              }
+              style={[
+                "padding: 6px 12px; border-radius: 5px; border: none;",
+                "background: var(--ink); color: var(--color-base-100);",
+                "font-size: 12px; font-weight: 500; cursor: pointer;"
+              ]}
+            >
+              {gettext("Copy")}
+            </button>
+            <span
+              id="destination-secret-copied"
+              role="status"
+              style="display: none; font-size: 11.5px; color: var(--ink-2);"
+            >
+              {gettext("Copied!")}
+            </span>
+            <span
+              id="destination-secret-copy-failed"
+              role="status"
+              style="display: none; font-size: 11.5px; color: var(--st-blocked);"
+            >
+              {gettext("Couldn't copy it. Select the secret and copy it yourself.")}
+            </span>
+          </div>
+        </div>
+        <button
+          id="destination-secret-dismiss"
+          type="button"
+          phx-click="dismiss_secret"
+          aria-label={gettext("Dismiss")}
+          style="padding: 4px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: var(--ink-3);"
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4" />
+        </button>
+      </section>
+
+      <.settings_card id="destination-status-card" title={gettext("Status")}>
+        <div class="flex flex-col gap-3">
+          <p
+            :if={reason(@status)}
+            id="destination-reason"
+            data-halted-reason={@status.halted_reason}
+            style="margin: 0; font-size: 13px; color: var(--ink); line-height: 1.5; overflow-wrap: anywhere;"
+          >
+            {reason(@status)}
+          </p>
+          <.link
+            :if={@status.halted_reason == :credentials_unreadable}
+            id="destination-edit-link"
+            href={AuditStreamDestinationView.edit_path(@view.id)}
+            class="text-sm underline"
+            style="color: var(--color-primary);"
+          >
+            {gettext("Enter the credentials again")}
+          </.link>
+          <div
+            :if={@config_error_fix}
+            id="destination-config-error"
+            role="status"
+            style={[
+              "font-size: 13px; color: var(--ink); line-height: 1.5;",
+              "background: var(--st-blocked-soft); border: 1px solid var(--line);",
+              "border-radius: 8px; padding: 8px 12px;"
+            ]}
+          >
+            <div style="font-weight: 600;">{gettext("Configuration error")}</div>
+            <p id="destination-config-error-fix" style="margin: 2px 0 0;">{@config_error_fix}</p>
+            <p style="margin: 2px 0 0; color: var(--ink-2);">
+              {gettext(
+                "Stride keeps trying, and delivery carries on once the destination is fixed."
+              )}
+            </p>
+          </div>
+
+          <dl class="flex flex-col gap-1 sm:flex-row sm:gap-6" style="margin: 0; font-size: 12px;">
+            <div class="flex gap-2">
+              <dt style="color: var(--ink-3);">{gettext("Last delivered")}</dt>
+              <dd id="destination-last-delivered" style="margin: 0; color: var(--ink);">
+                {AuditStreamingRow.last_delivered(@status.last_success_at)}
+              </dd>
+            </div>
+            <div class="flex gap-2">
+              <dt style="color: var(--ink-3);">{gettext("Behind by")}</dt>
+              <dd id="destination-lag" style="margin: 0; color: var(--ink);">
+                {AuditStreamingRow.behind_by(@status.lag)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </.settings_card>
+
+      <.settings_card
+        :if={@actions.retry}
+        id="destination-rejected-batch"
+        title={gettext("Rejected batch")}
+        hint={
+          gettext(
+            "Retry now once the cause is fixed at the destination, or skip this batch to carry on with the next one."
+          )
+        }
+      >
+        <div class="flex flex-col gap-3">
+          <dl :if={@batch} class="flex flex-col gap-1" style="margin: 0; font-size: 12px;">
+            <div class="flex flex-wrap gap-2">
+              <dt style="color: var(--ink-3);">{gettext("Answer")}</dt>
+              <dd
+                id="rejected-batch-answer"
+                style="margin: 0; color: var(--ink); overflow-wrap: anywhere;"
+              >
+                {AuditStreamDestinationView.classification(@batch)}
+              </dd>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <dt style="color: var(--ink-3);">{gettext("Events")}</dt>
+              <dd id="rejected-batch-events" style="margin: 0; color: var(--ink);">
+                {@batch.events}
+              </dd>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <dt style="color: var(--ink-3);">{gettext("First event")}</dt>
+              <dd id="rejected-batch-first" style="margin: 0; color: var(--ink);">
+                {gettext("%{time} UTC", time: AuditStreamDestinationView.utc(@batch.first_at))}
+              </dd>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <dt style="color: var(--ink-3);">{gettext("Last event")}</dt>
+              <dd id="rejected-batch-last" style="margin: 0; color: var(--ink);">
+                {gettext("%{time} UTC", time: AuditStreamDestinationView.utc(@batch.last_at))}
+              </dd>
+            </div>
+          </dl>
+          <p
+            :if={AuditStreamDestinationView.partially_indexed?(@view.kind, @batch)}
+            id="rejected-batch-partial-note"
+            style="margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5;"
+          >
+            {gettext(
+              "Splunk named the first event it refused, so the events before that one may already be in Splunk."
+            )}
+          </p>
+          <div class="flex flex-wrap items-center gap-2">
+            <.button id="retry-now" type="button" phx-click="retry_now">
+              {gettext("Retry now")}
+            </.button>
+            <.button
+              :if={@actions.skip}
+              id="skip-batch"
+              type="button"
+              phx-click="skip_batch"
+              data-confirm={AuditStreamDestinationView.skip_confirmation(@batch.events)}
+            >
+              {gettext("Skip this batch")}
+            </.button>
+          </div>
+        </div>
+      </.settings_card>
+
+      <.settings_card
+        id="destination-settings"
+        title={gettext("Settings")}
+        hint={
+          gettext(
+            "Secrets are never shown: only the host and the last 4 characters of the credential or URL."
+          )
+        }
+      >
+        <dl class="flex flex-col gap-1" style="margin: 0; font-size: 12px;">
+          <div :if={@view.host} class="flex flex-wrap gap-2">
+            <dt style="color: var(--ink-3);">{gettext("Host")}</dt>
+            <dd
+              id="destination-host"
+              style="margin: 0; color: var(--ink); overflow-wrap: anywhere;"
+            >
+              {@view.host}
+            </dd>
+          </div>
+          <div :if={@view.hint} class="flex flex-wrap gap-2">
+            <dt style="color: var(--ink-3);">{gettext("Credential")}</dt>
+            <dd style="margin: 0;">
+              <code
+                id="destination-hint"
+                style="font-family: var(--font-mono); font-size: 11.5px; color: var(--ink);"
+              >
+                {@view.hint}
+              </code>
+            </dd>
+          </div>
+          <div :for={{label, value} <- @view.settings} class="flex flex-wrap gap-2">
+            <dt style="color: var(--ink-3);">{label}</dt>
+            <dd data-setting style="margin: 0; color: var(--ink); overflow-wrap: anywhere;">
+              {value}
+            </dd>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <dt style="color: var(--ink-3);">{gettext("Email and IP addresses")}</dt>
+            <dd id="destination-personal-data" style="margin: 0; color: var(--ink);">
+              {if @view.include_personal_data,
+                do: gettext("Included"),
+                else: gettext("Left out")}
+            </dd>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <dt style="color: var(--ink-3);">{gettext("Excluded actions")}</dt>
+            <dd
+              id="destination-excluded-actions"
+              style="margin: 0; color: var(--ink); overflow-wrap: anywhere;"
+            >
+              {if @view.excluded_actions == [],
+                do: gettext("None"),
+                else: Enum.join(@view.excluded_actions, ", ")}
+            </dd>
+          </div>
+        </dl>
+      </.settings_card>
+
+      <.settings_card
+        :if={@view.kind == :https}
+        id="destination-signing-secret"
+        title={gettext("Signing secret")}
+        hint={gettext("Each request is signed with this secret so the receiver can verify it.")}
+      >
+        <div class="flex flex-col gap-3">
+          <p
+            :if={@view.signing_secret_unreadable}
+            id="rotate-no-overlap-note"
+            style={[
+              "margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5;",
+              "background: var(--st-doing-soft); border: 1px solid var(--line);",
+              "border-radius: 8px; padding: 8px 12px;"
+            ]}
+          >
+            {gettext(
+              "The current signing secret can't be read, so there is no 24-hour overlap this time: the new secret replaces it at once."
+            )}
+          </p>
+          <p
+            :if={!@view.signing_secret_unreadable}
+            style="margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5;"
+          >
+            {gettext("After a rotation the old secret keeps working for 24 hours.")}
+          </p>
+          <p
+            :if={@view.rotate_again_at}
+            id="rotate-again-note"
+            style="margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5;"
+          >
+            {gettext("You can rotate the signing secret again after %{time} UTC.",
+              time: AuditStreamDestinationView.utc(@view.rotate_again_at)
+            )}
+          </p>
+          <div>
+            <.button
+              id="rotate-secret"
+              type="button"
+              phx-click="rotate_secret"
+              data-confirm={
+                gettext(
+                  "Rotate the signing secret? The new one is shown once; update the receiver to verify with it."
+                )
+              }
+            >
+              {gettext("Rotate signing secret")}
+            </.button>
+          </div>
+        </div>
+      </.settings_card>
+
+      <.settings_card
+        id="destination-gaps"
+        title={gettext("Gaps")}
+        hint={gettext("Events this destination will never receive. They stay in the audit log.")}
+        compact
+      >
+        <p
+          :if={@gaps == []}
+          id="gaps-empty"
+          style="margin: 0; padding: 10px 0; font-size: 13px; color: var(--ink-2);"
+        >
+          {gettext("No gaps: every event has reached this destination or is waiting to.")}
+        </p>
+        <ul id="gap-rows" style="list-style: none; margin: 0; padding: 0;">
+          <li
+            :for={gap <- @gaps}
+            id={"gap-#{gap.id}"}
+            data-dismissed={to_string(gap.dismissed_at != nil)}
+            class="flex flex-col gap-1"
+            style="padding: 10px 0; border-bottom: 1px solid var(--line);"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <span style="font-size: 13px; font-weight: 600; color: var(--ink);">
+                {AuditStreamDestinationView.events_lost(gap.events)}
+              </span>
+              <span style="font-size: 12px; color: var(--ink-2);">
+                {AuditStreamDestinationView.gap_reason(gap.reason)}
+              </span>
+              <span
+                :if={gap.dismissed_at}
+                style={[
+                  "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
+                  "background: var(--st-backlog-soft); color: var(--st-backlog);",
+                  "border: 1px solid var(--line);"
+                ]}
+              >
+                {gettext("Dismissed")}
+              </span>
+            </div>
+            <p style="margin: 0; font-size: 12px; color: var(--ink-2);">
+              {gettext("%{first} to %{last} UTC",
+                first: AuditStreamDestinationView.utc(gap.first_occurred_at),
+                last: AuditStreamDestinationView.utc(gap.last_occurred_at)
+              )}
+            </p>
+            <div :if={is_nil(gap.dismissed_at)}>
+              <.button
+                id={"dismiss-gap-#{gap.id}"}
+                type="button"
+                phx-click="dismiss_gap"
+                phx-value-id={gap.id}
+              >
+                {gettext("Dismiss")}
+              </.button>
+            </div>
+          </li>
+        </ul>
+      </.settings_card>
+
+      <.settings_card
+        id="destination-attempts"
+        title={gettext("Recent attempts")}
+        hint={gettext("The last 50 attempts to send to this destination, newest first.")}
+        compact
+      >
+        <p
+          :if={@attempts == []}
+          id="attempts-empty"
+          style="margin: 0; padding: 10px 0; font-size: 13px; color: var(--ink-2);"
+        >
+          {gettext("No attempts yet.")}
+        </p>
+        <div :if={@attempts != []} style="overflow-x: auto; font-size: 12px;">
+          <.table id="attempt-rows" rows={@attempts} row_id={&"attempt-#{&1.id}"}>
+            <:col :let={attempt} label={gettext("Time (UTC)")}>
+              <span style="white-space: nowrap;">{AuditStreamDestinationView.utc(
+                attempt.started_at
+              )}</span>
+            </:col>
+            <:col :let={attempt} label={gettext("Events")}>{attempt.event_count || "—"}</:col>
+            <:col :let={attempt} label={gettext("Size")}>
+              <span style="white-space: nowrap;">{AuditStreamDestinationView.size(attempt.bytes)}</span>
+            </:col>
+            <:col :let={attempt} label={gettext("HTTP status")}>
+              {attempt.http_status || "—"}
+            </:col>
+            <:col :let={attempt} label={gettext("Outcome")}>
+              <span
+                data-outcome={attempt.outcome}
+                style={[
+                  "white-space: nowrap; font-size: 10.5px; font-weight: 600;",
+                  "padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line);",
+                  "background: var(--st-#{AuditStreamDestinationView.outcome_token(attempt.outcome)}-soft);",
+                  "color: var(--st-#{AuditStreamDestinationView.outcome_token(attempt.outcome)});"
+                ]}
+              >
+                {AuditStreamDestinationView.outcome_label(attempt.outcome)}
+              </span>
+            </:col>
+            <:col :let={attempt} label={gettext("Error")}>
+              <span
+                data-attempt-error
+                title={attempt.error}
+                style="color: var(--ink); overflow-wrap: anywhere;"
+              >
+                {AuditStreamDestinationView.error_preview(attempt.error)}
+              </span>
+            </:col>
+          </.table>
+        </div>
+      </.settings_card>
+    </div>
+  </div>
+</Layouts.app>

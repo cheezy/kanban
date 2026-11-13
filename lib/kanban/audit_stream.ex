@@ -53,8 +53,9 @@ defmodule Kanban.AuditStream do
 
   `destination_status/3`, `list_destinations_with_status/2`,
   `list_attempts/2` and `pending_batch_summary/2` read a destination's
-  delivery (`Kanban.AuditStream.Status`); `list_gaps/2` and `dismiss_gap/2`
-  read and dismiss the gaps it will never fill (`Kanban.AuditStream.Gaps`); `send_test_event/3` sends a
+  delivery (`Kanban.AuditStream.Status`); `list_gaps/2`, `open_gap_summaries/1`
+  and `dismiss_gap/2` read and dismiss the gaps it will never fill
+  (`Kanban.AuditStream.Gaps`); `send_test_event/3` sends a
   synthetic event and returns only a coarse class
   (`Kanban.AuditStream.TestEvent`); `retry_now/2` and `skip_batch/2` are the
   two ways out of a `rejected_batch` halt, both under the destination's lease
@@ -265,6 +266,15 @@ defmodule Kanban.AuditStream do
   @spec list_gaps(Scope.t() | nil, Destination.t()) ::
           {:ok, [Gap.t()]} | {:error, :unauthorized | :not_found}
   def list_gaps(scope, %Destination{} = destination), do: Gaps.list_gaps(scope, destination)
+
+  @doc """
+  The open gaps of every destination in the caller's Organization, summed per
+  destination id (`%{events:, first_at:, last_at:}`), in one query, for the
+  destination list's warning. A destination with no open gap has no key.
+  """
+  @spec open_gap_summaries(Scope.t() | nil) ::
+          {:ok, %{pos_integer() => Gaps.open_summary()}} | {:error, :unauthorized}
+  def open_gap_summaries(scope), do: Gaps.open_summaries(scope)
 
   @doc """
   Dismisses a gap and records `audit_stream_gap_dismissed`. A later loss

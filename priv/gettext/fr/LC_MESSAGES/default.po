@@ -92,6 +92,7 @@ msgstr "Se Déconnecter"
 #: lib/kanban_web/components/nav_components.ex:138
 #: lib/kanban_web/components/side_nav.ex:123
 #: lib/kanban_web/components/side_nav.ex:124
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:247
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
 #: lib/kanban_web/live/user_live/settings_components.ex:33
 #, elixir-autogen, elixir-format
@@ -799,6 +800,7 @@ msgstr "Aucun historique disponible"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:61
 #: lib/kanban_web/live/board_live/webhook_views.ex:366
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:124
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:48
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:141
@@ -1456,6 +1458,7 @@ msgstr "En attente"
 msgid "Pitfalls"
 msgstr "Pièges"
 
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:199
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:78
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #, elixir-autogen, elixir-format
@@ -1685,6 +1688,7 @@ msgstr "Êtes-vous sûr de vouloir révoquer ce token ?"
 #: lib/kanban_web/live/board_live/show.html.heex:646
 #: lib/kanban_web/live/board_live/show.html.heex:676
 #: lib/kanban_web/live/board_live/webhook_views.ex:83
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:95
 #: lib/kanban_web/live/org_live/scim.html.heex:72
 #: lib/kanban_web/live/user_live/confirmation.ex:63
 #: lib/kanban_web/live/user_live/confirmation.ex:89
@@ -1840,6 +1844,8 @@ msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:683
 #: lib/kanban_web/live/board_live/webhook_views.ex:106
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:117
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:407
 #: lib/kanban_web/live/org_live/scim.html.heex:94
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:209
 #, elixir-autogen, elixir-format
@@ -1848,6 +1854,7 @@ msgstr "Rejeter"
 
 #: lib/kanban_web/live/board_live/show.html.heex:647
 #: lib/kanban_web/live/board_live/webhook_views.ex:90
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:102
 #: lib/kanban_web/live/org_live/scim.html.heex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
@@ -2027,7 +2034,7 @@ msgstr "Tableau :"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:913
 #: lib/kanban_web/live/board_live/webhook_views.ex:286
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:191
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:210
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:119
 #: lib/kanban_web/live/task_live/components/comment_row.ex:132
 #, elixir-autogen, elixir-format
@@ -2818,6 +2825,7 @@ msgstr "Non déclenché"
 msgid "Reason"
 msgstr "Raison"
 
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:203
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:77
 #, elixir-autogen, elixir-format
 msgid "Skipped"
@@ -4684,6 +4692,7 @@ msgstr "Séparées par des virgules. Valides : api_design, code_generation, code
 
 #: lib/kanban_web/live/board_live/show.html.heex:629
 #: lib/kanban_web/live/board_live/webhook_views.ex:55
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:56
 #: lib/kanban_web/live/org_live/scim.html.heex:45
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:157
 #, elixir-autogen, elixir-format
@@ -5284,6 +5293,7 @@ msgid "No archived tasks match this filter."
 msgstr "Aucune tâche archivée ne correspond à ce filtre."
 
 #: lib/kanban_web/live/archive_live/index.html.heex:190
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:439
 #, elixir-autogen, elixir-format
 msgid "Outcome"
 msgstr "Résultat"
@@ -7115,6 +7125,7 @@ msgid "Recent activity"
 msgstr "Activité récente"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:317
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Aucun"
@@ -8214,6 +8225,7 @@ msgid "Identifier"
 msgstr "Identifiant"
 
 #: lib/kanban_web/export/metrics_excel.ex:98
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:285
 #, elixir-autogen, elixir-format
 msgid "Included"
 msgstr "Inclus"
@@ -8443,7 +8455,7 @@ msgid "Error / exception"
 msgstr "Erreur / exception"
 
 #: lib/kanban_web/components/behaviour_test_labels.ex:41
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:89
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:111
 #, elixir-autogen, elixir-format
 msgid "Failing"
 msgstr "En échec"
@@ -9285,6 +9297,7 @@ msgstr "Événements de sécurité enregistrés sur cette instance, les plus ré
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
 #: lib/kanban_web/live/org_live/audit_log.html.heex:138
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:429
 #, elixir-autogen, elixir-format
 msgid "Time (UTC)"
 msgstr "Heure (UTC)"
@@ -10112,6 +10125,7 @@ msgid "Endpoint not found"
 msgstr "Endpoint introuvable"
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:369
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:452
 #, elixir-autogen, elixir-format
 msgid "Error"
 msgstr "Erreur"
@@ -10122,6 +10136,8 @@ msgid "Event"
 msgstr "Événement"
 
 #: lib/kanban_web/live/board_live/webhook_form.ex:213
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:201
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:432
 #, elixir-autogen, elixir-format
 msgid "Events"
 msgstr "Événements"
@@ -10209,6 +10225,7 @@ msgid "Send test"
 msgstr "Envoyer un test"
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:52
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "Signing secret"
 msgstr "Secret de signature"
@@ -10301,6 +10318,7 @@ msgid "Paste the webhook URL you copied from Discord (for example https://discor
 msgstr "Collez l'URL de webhook que vous avez copiée dans Discord (par exemple https://discord.com/api/webhooks/…)."
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:97
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:109
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the secret and copy it yourself."
 msgstr "Impossible de le copier. Sélectionnez le secret et copiez-le vous-même."
@@ -10933,7 +10951,7 @@ msgid "Integrations are available to organizations. Nothing was changed."
 msgstr "Les intégrations sont disponibles pour les organisations. Rien n'a été modifié."
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:169
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:90
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:112
 #, elixir-autogen, elixir-format
 msgid "Paused"
 msgstr "En pause"
@@ -11379,7 +11397,7 @@ msgstr "Recherchez d'abord une adresse e-mail."
 msgid "Send invitation"
 msgstr "Envoyer l'invitation"
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:177
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:196
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Sending..."
@@ -14196,19 +14214,19 @@ msgstr "Désactivez l'accusé de réception de l'indexeur sur ce jeton HEC"
 msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
 msgstr "Utilisez une URL HEC sans accusé de réception ; Stride n'utilise pas l'accusé de réception de l'indexeur"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:125
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:147
 #, elixir-autogen, elixir-format
 msgid "%{age} · %{time} UTC"
 msgstr "%{age} · %{time} UTC"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:118
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:140
 #, elixir-autogen, elixir-format
 msgid "%{count} event waiting"
 msgid_plural "%{count} events waiting"
 msgstr[0] "%{count} événement en attente"
 msgstr[1] "%{count} événements en attente"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:109
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:131
 #, elixir-autogen, elixir-format
 msgid "%{count} event waiting, the oldest from %{age}"
 msgid_plural "%{count} events waiting, the oldest from %{age}"
@@ -14234,27 +14252,28 @@ msgstr "Diffusion de l'audit"
 msgid "Back to the audit log"
 msgstr "Retour au journal d'audit"
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:138
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:170
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Behind by"
 msgstr "Retard"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:138
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:160
 #, elixir-autogen, elixir-format
 msgid "Could not connect"
 msgstr "Connexion impossible"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:166
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:188
 #, elixir-autogen, elixir-format
 msgid "Credentials can't be read. Enter them again."
 msgstr "Les identifiants sont illisibles. Saisissez-les à nouveau."
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:58
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:80
 #, elixir-autogen, elixir-format
 msgid "Datadog"
 msgstr "Datadog"
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:186
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Delete this destination? Events will no longer be sent to it, and its history of attempts and gaps is deleted too. Nothing already in the destination tool is deleted."
 msgstr "Supprimer cette destination ? Les événements ne lui seront plus envoyés, et son historique de tentatives et de lacunes est aussi supprimé. Rien de ce qui se trouve déjà dans l'outil de destination n'est supprimé."
@@ -14279,27 +14298,28 @@ msgstr "Destination reprise."
 msgid "Destinations"
 msgstr "Destinations"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:59
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:81
 #, elixir-autogen, elixir-format
 msgid "HTTPS endpoint"
 msgstr "Point de terminaison HTTPS"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:87
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:109
 #, elixir-autogen, elixir-format
 msgid "Healthy"
 msgstr "Opérationnel"
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:132
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:164
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Last delivered"
 msgstr "Dernière livraison"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:91
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:113
 #, elixir-autogen, elixir-format
 msgid "Needs attention"
 msgstr "Requiert votre attention"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:122
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:144
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "Jamais"
@@ -14309,22 +14329,22 @@ msgstr "Jamais"
 msgid "No destinations yet. Audit events are not being streamed anywhere."
 msgstr "Aucune destination pour l'instant. Les événements d'audit ne sont diffusés nulle part."
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:158
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Pause"
 msgstr "Mettre en pause"
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:153
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Pause this destination? Events wait in the audit log and are sent when you resume it."
 msgstr "Mettre cette destination en pause ? Les événements attendent dans le journal d'audit et sont envoyés quand vous la reprenez."
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:167
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:186
 #, elixir-autogen, elixir-format
 msgid "Resume"
 msgstr "Reprendre"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:88
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:110
 #, elixir-autogen, elixir-format
 msgid "Retrying"
 msgstr "Nouvelle tentative"
@@ -14334,12 +14354,12 @@ msgstr "Nouvelle tentative"
 msgid "Secrets are never shown here: each destination shows its host and the last 4 characters of its credential or URL."
 msgstr "Les secrets ne sont jamais affichés ici : chaque destination affiche son hôte et les 4 derniers caractères de son identifiant ou de son URL."
 
-#: lib/kanban_web/live/org_live/audit_streaming.html.heex:178
+#: lib/kanban_web/live/org_live/audit_streaming.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Send test event"
 msgstr "Envoyer un événement de test"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:57
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:79
 #, elixir-autogen, elixir-format
 msgid "Splunk"
 msgstr "Splunk"
@@ -14349,44 +14369,45 @@ msgstr "Splunk"
 msgid "Streaming"
 msgstr "Diffusion"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:137
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:159
 #, elixir-autogen, elixir-format
 msgid "Test event delivered"
 msgstr "Événement de test livré"
 
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:123
 #: lib/kanban_web/live/org_live/audit_streaming.ex:104
 #, elixir-autogen, elixir-format
 msgid "That destination no longer exists."
 msgstr "Cette destination n'existe plus."
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:141
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:163
 #, elixir-autogen, elixir-format
 msgid "The certificate could not be verified"
 msgstr "Le certificat n'a pas pu être vérifié"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:147
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:169
 #, elixir-autogen, elixir-format
 msgid "The destination answered with an error (%{status})"
 msgstr "La destination a répondu par une erreur (%{status})"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:144
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:166
 #, elixir-autogen, elixir-format
 msgid "The destination refused the credentials"
 msgstr "La destination a refusé les identifiants"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:162
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:184
 #, elixir-autogen, elixir-format
 msgid "The test event could not be sent."
 msgstr "L'événement de test n'a pas pu être envoyé."
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:155
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:177
 #, elixir-autogen, elixir-format
 msgid "This Organization has sent as many test events as it can this hour. Try again in %{count} minute."
 msgid_plural "This Organization has sent as many test events as it can this hour. Try again in %{count} minutes."
 msgstr[0] "Cette organisation a envoyé autant d'événements de test qu'elle le peut pour cette heure. Réessayez dans %{count} minute."
 msgstr[1] "Cette organisation a envoyé autant d'événements de test qu'elle le peut pour cette heure. Réessayez dans %{count} minutes."
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:106
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:128
 #, elixir-autogen, elixir-format
 msgid "Up to date"
 msgstr "À jour"
@@ -14400,3 +14421,377 @@ msgstr "Où le journal d'audit de %{name} est envoyé au fil de son écriture, e
 #, elixir-autogen, elixir-format
 msgid "Your Organization has only one org-admin, so emails about changes to its destinations go only to that person. Ask a site admin to appoint another org-admin."
 msgstr "Votre organisation n'a qu'un seul administrateur d'organisation : les e-mails sur les modifications de ses destinations ne sont envoyés qu'à cette personne. Demandez à un administrateur du site d'en nommer un autre."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:215
+#, elixir-autogen, elixir-format
+msgid "%{count} B"
+msgstr "%{count} o"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:218
+#, elixir-autogen, elixir-format
+msgid "%{count} KB"
+msgstr "%{count} Ko"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:220
+#, elixir-autogen, elixir-format
+msgid "%{count} MB"
+msgstr "%{count} Mo"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:193
+#, elixir-autogen, elixir-format
+msgid "%{count} event lost"
+msgid_plural "%{count} events lost"
+msgstr[0] "%{count} événement perdu"
+msgstr[1] "%{count} événements perdus"
+
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:68
+#, elixir-autogen, elixir-format
+msgid "%{count} event will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap."
+msgid_plural "%{count} events will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap."
+msgstr[0] "%{count} événement n'atteindra jamais cette destination (du %{first} au %{last} UTC). Ouvrez-la pour voir et ignorer la lacune."
+msgstr[1] "%{count} événements n'atteindront jamais cette destination (du %{first} au %{last} UTC). Ouvrez-la pour voir et ignorer la lacune."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:395
+#, elixir-autogen, elixir-format
+msgid "%{first} to %{last} UTC"
+msgstr "Du %{first} au %{last} UTC"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:209
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:215
+#, elixir-autogen, elixir-format
+msgid "%{time} UTC"
+msgstr "%{time} UTC"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:137
+#, elixir-autogen, elixir-format
+msgid "A delivery is running for this destination. Try again in a minute."
+msgstr "Une livraison est en cours pour cette destination. Réessayez dans une minute."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:327
+#, elixir-autogen, elixir-format
+msgid "After a rotation the old secret keeps working for 24 hours."
+msgstr "Après un renouvellement, l'ancien secret reste valable pendant 24 heures."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:192
+#, elixir-autogen, elixir-format
+msgid "Answer"
+msgstr "Réponse"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:48
+#, elixir-autogen, elixir-format
+msgid "Audit stream destination"
+msgstr "Destination de diffusion de l'audit"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Back to audit streaming"
+msgstr "Retour à la diffusion de l'audit"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:80
+#, elixir-autogen, elixir-format
+msgid "Batch skipped."
+msgstr "Lot ignoré."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:202
+#, elixir-autogen, elixir-format
+msgid "Blocked address"
+msgstr "Adresse bloquée"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:149
+#, elixir-autogen, elixir-format
+msgid "Check this destination's settings."
+msgstr "Vérifiez les paramètres de cette destination."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:153
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:201
+#, elixir-autogen, elixir-format
+msgid "Configuration error"
+msgstr "Erreur de configuration"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:265
+#, elixir-autogen, elixir-format
+msgid "Credential"
+msgstr "Identifiant"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:200
+#, elixir-autogen, elixir-format
+msgid "Credentials refused"
+msgstr "Identifiants refusés"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:186
+#, elixir-autogen, elixir-format
+msgid "Deleted by retention before it was sent"
+msgstr "Supprimé par la rétention avant son envoi"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:197
+#, elixir-autogen, elixir-format
+msgid "Delivered"
+msgstr "Livré"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:179
+#, elixir-autogen, elixir-format
+msgid "Destination not found."
+msgstr "Destination introuvable."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:391
+#, elixir-autogen, elixir-format
+msgid "Dismissed"
+msgstr "Ignorée"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:307
+#, elixir-autogen, elixir-format
+msgid "Each request is signed with this secret so the receiver can verify it."
+msgstr "Chaque requête est signée avec ce secret afin que le destinataire puisse la vérifier."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:282
+#, elixir-autogen, elixir-format
+msgid "Email and IP addresses"
+msgstr "Adresses e-mail et IP"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:141
+#, elixir-autogen, elixir-format
+msgid "Enter the credentials again"
+msgstr "Saisir à nouveau les identifiants"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:358
+#, elixir-autogen, elixir-format
+msgid "Events this destination will never receive. They stay in the audit log."
+msgstr "Événements que cette destination ne recevra jamais. Ils restent dans le journal d'audit."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:290
+#, elixir-autogen, elixir-format
+msgid "Excluded actions"
+msgstr "Actions exclues"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:207
+#, elixir-autogen, elixir-format
+msgid "First event"
+msgstr "Premier événement"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:86
+#, elixir-autogen, elixir-format
+msgid "Format"
+msgstr "Format"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:69
+#, elixir-autogen, elixir-format
+msgid "Gap dismissed."
+msgstr "Lacune ignorée."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:357
+#, elixir-autogen, elixir-format
+msgid "Gaps"
+msgstr "Lacunes"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:170
+#, elixir-autogen, elixir-format
+msgid "HTTP %{status}"
+msgstr "HTTP %{status}"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:436
+#, elixir-autogen, elixir-format
+msgid "HTTP status"
+msgstr "Statut HTTP"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:256
+#, elixir-autogen, elixir-format
+msgid "Host"
+msgstr "Hôte"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:80
+#, elixir-autogen, elixir-format
+msgid "Index"
+msgstr "Index"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:213
+#, elixir-autogen, elixir-format
+msgid "Last event"
+msgstr "Dernier événement"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:188
+#, elixir-autogen, elixir-format
+msgid "Left behind by a database move"
+msgstr "Laissé de côté par un déplacement de la base de données"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:286
+#, elixir-autogen, elixir-format
+msgid "Left out"
+msgstr "Exclues"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:172
+#, elixir-autogen, elixir-format
+msgid "No answer was recorded."
+msgstr "Aucune réponse n'a été enregistrée."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:425
+#, elixir-autogen, elixir-format
+msgid "No attempts yet."
+msgstr "Aucune tentative pour l'instant."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:366
+#, elixir-autogen, elixir-format
+msgid "No gaps: every event has reached this destination or is waiting to."
+msgstr "Aucune lacune : chaque événement a atteint cette destination ou attend de l'atteindre."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:139
+#, elixir-autogen, elixir-format
+msgid "Only HTTPS endpoints have a signing secret."
+msgstr "Seuls les points de terminaison HTTPS ont un secret de signature."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:416
+#, elixir-autogen, elixir-format
+msgid "Recent attempts"
+msgstr "Tentatives récentes"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:182
+#, elixir-autogen, elixir-format
+msgid "Rejected batch"
+msgstr "Lot rejeté"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:230
+#, elixir-autogen, elixir-format
+msgid "Retry now"
+msgstr "Réessayer maintenant"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:184
+#, elixir-autogen, elixir-format
+msgid "Retry now once the cause is fixed at the destination, or skip this batch to carry on with the next one."
+msgstr "Réessayez maintenant une fois la cause corrigée côté destination, ou ignorez ce lot pour passer au suivant."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:77
+#, elixir-autogen, elixir-format
+msgid "Retrying the batch now."
+msgstr "Nouvelle tentative du lot en cours."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:349
+#, elixir-autogen, elixir-format
+msgid "Rotate signing secret"
+msgstr "Renouveler le secret de signature"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:344
+#, elixir-autogen, elixir-format
+msgid "Rotate the signing secret? The new one is shown once; update the receiver to verify with it."
+msgstr "Renouveler le secret de signature ? Le nouveau n'est affiché qu'une fois ; configurez le destinataire pour vérifier avec lui."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:249
+#, elixir-autogen, elixir-format
+msgid "Secrets are never shown: only the host and the last 4 characters of the credential or URL."
+msgstr "Les secrets ne sont jamais affichés : seulement l'hôte et les 4 derniers caractères de l'identifiant ou de l'URL."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:83
+#, elixir-autogen, elixir-format
+msgid "Service"
+msgstr "Service"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:86
+#, elixir-autogen, elixir-format
+msgid "Signature header"
+msgstr "En-tête de signature"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:74
+#, elixir-autogen, elixir-format
+msgid "Signing secret rotated."
+msgstr "Secret de signature renouvelé."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:83
+#, elixir-autogen, elixir-format
+msgid "Site"
+msgstr "Site"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:433
+#, elixir-autogen, elixir-format
+msgid "Size"
+msgstr "Taille"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:239
+#, elixir-autogen, elixir-format
+msgid "Skip this batch"
+msgstr "Ignorer ce lot"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:80
+#, elixir-autogen, elixir-format
+msgid "Source type"
+msgstr "Type de source"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:224
+#, elixir-autogen, elixir-format
+msgid "Splunk named the first event it refused, so the events before that one may already be in Splunk."
+msgstr "Splunk a indiqué le premier événement refusé : les événements précédents sont peut-être déjà dans Splunk."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "Stride keeps trying, and delivery carries on once the destination is fixed."
+msgstr "Stride continue d'essayer, et la livraison reprend dès que la destination est corrigée."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:83
+#, elixir-autogen, elixir-format
+msgid "Tags"
+msgstr "Tags"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:124
+#, elixir-autogen, elixir-format
+msgid "The URL's host resolves only to addresses Stride may not send to. Nothing is sent until the URL is changed."
+msgstr "L'hôte de l'URL ne se résout qu'en adresses vers lesquelles Stride ne peut pas envoyer. Rien n'est envoyé tant que l'URL n'est pas modifiée."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:319
+#, elixir-autogen, elixir-format
+msgid "The current signing secret can't be read, so there is no 24-hour overlap this time: the new secret replaces it at once."
+msgstr "Le secret de signature actuel est illisible, il n'y a donc pas de chevauchement de 24 heures cette fois : le nouveau secret le remplace immédiatement."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:129
+#, elixir-autogen, elixir-format
+msgid "The database was moved. An operator must re-seed audit streaming."
+msgstr "La base de données a été déplacée. Un opérateur doit réinitialiser la diffusion de l'audit."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:118
+#, elixir-autogen, elixir-format
+msgid "The destination rejected the same batch on every try. Stride never skips a batch on its own: fix the cause at the destination and choose Retry now, or skip the batch."
+msgstr "La destination a rejeté le même lot à chaque tentative. Stride n'ignore jamais un lot de lui-même : corrigez la cause côté destination et choisissez Réessayer maintenant, ou ignorez le lot."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:417
+#, elixir-autogen, elixir-format
+msgid "The last 50 attempts to send to this destination, newest first."
+msgstr "Les 50 dernières tentatives d'envoi vers cette destination, les plus récentes en premier."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "The old secret stays valid until %{time} UTC."
+msgstr "L'ancien secret reste valable jusqu'au %{time} UTC."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:145
+#, elixir-autogen, elixir-format
+msgid "This destination changed since the page loaded. Try again."
+msgstr "Cette destination a changé depuis le chargement de la page. Réessayez."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:134
+#, elixir-autogen, elixir-format
+msgid "This destination is no longer waiting on a rejected batch."
+msgstr "Cette destination n'attend plus de décision sur un lot rejeté."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:177
+#, elixir-autogen, elixir-format
+msgid "This event will not be sent to this destination. It stays in the audit log and in exports."
+msgid_plural "These %{count} events will not be sent to this destination. They stay in the audit log and in exports."
+msgstr[0] "Cet événement ne sera pas envoyé à cette destination. Il reste dans le journal d'audit et dans les exports."
+msgstr[1] "Ces %{count} événements ne seront pas envoyés à cette destination. Ils restent dans le journal d'audit et dans les exports."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:187
+#, elixir-autogen, elixir-format
+msgid "Too old for Datadog"
+msgstr "Trop ancien pour Datadog"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:198
+#, elixir-autogen, elixir-format
+msgid "Will retry"
+msgstr "Nouvelle tentative prévue"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:142
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:334
+#, elixir-autogen, elixir-format
+msgid "You can rotate the signing secret again after %{time} UTC."
+msgstr "Vous pourrez renouveler à nouveau le secret de signature après le %{time} UTC."
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:53
+#, elixir-autogen, elixir-format
+msgid "Your new signing secret"
+msgstr "Votre nouveau secret de signature"

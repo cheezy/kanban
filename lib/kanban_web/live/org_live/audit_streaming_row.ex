@@ -31,12 +31,17 @@ defmodule KanbanWeb.OrgLive.AuditStreamingRow do
           reason: String.t() | nil,
           credentials_unreadable: boolean(),
           last_success_at: DateTime.t() | nil,
-          lag: map()
+          lag: map(),
+          open_gap: map() | nil
         }
 
-  @doc "The row for one destination and its status. See the moduledoc."
-  @spec to_view(%{destination: Destination.t(), status: map()}) :: t()
-  def to_view(%{destination: %Destination{} = destination, status: status}) do
+  @doc """
+  The row for one destination and its status, with `open_gap` its open gaps
+  summed (`Kanban.AuditStream.open_gap_summaries/1`), or `nil` for none. See
+  the moduledoc.
+  """
+  @spec to_view(%{destination: Destination.t(), status: map()}, map() | nil) :: t()
+  def to_view(%{destination: %Destination{} = destination, status: status}, open_gap \\ nil) do
     %{
       id: destination.id,
       name: destination.name,
@@ -48,8 +53,25 @@ defmodule KanbanWeb.OrgLive.AuditStreamingRow do
       reason: reason(status),
       credentials_unreadable: status.halted_reason == :credentials_unreadable,
       last_success_at: status.last_success_at,
-      lag: status.lag
+      lag: status.lag,
+      open_gap: open_gap
     }
+  end
+
+  @doc """
+  The warning a row shows while its destination has an open gap: how many
+  events it will never receive and their first and last dates (§10.2).
+  """
+  @spec gap_warning(%{events: non_neg_integer(), first_at: DateTime.t(), last_at: DateTime.t()}) ::
+          String.t()
+  def gap_warning(%{events: events, first_at: first_at, last_at: last_at}) do
+    ngettext(
+      "%{count} event will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap.",
+      "%{count} events will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap.",
+      events,
+      first: Calendar.strftime(first_at, "%Y-%m-%d"),
+      last: Calendar.strftime(last_at, "%Y-%m-%d")
+    )
   end
 
   @doc "The destination type's label: Splunk, Datadog or HTTPS endpoint."

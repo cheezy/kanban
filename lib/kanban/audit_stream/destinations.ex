@@ -78,6 +78,10 @@ defmodule Kanban.AuditStream.Destinations do
 
   def authorize(_scope), do: {:error, :unauthorized}
 
+  # The largest bigint primary key; a larger id cannot exist and would fail
+  # to encode as a query parameter.
+  @max_id 9_223_372_036_854_775_807
+
   @doc """
   The Organization's destination `id`, or `{:error, :not_found}`. With
   `lock: true` the row is locked `FOR UPDATE`.
@@ -85,8 +89,11 @@ defmodule Kanban.AuditStream.Destinations do
   @spec fetch(pos_integer(), term(), keyword()) :: {:ok, Destination.t()} | {:error, :not_found}
   def fetch(organization_id, id, opts \\ []) do
     case Ecto.Type.cast(:id, id) do
-      {:ok, id} when is_integer(id) -> organization_id |> destination_query(id, opts) |> one()
-      _invalid -> {:error, :not_found}
+      {:ok, id} when is_integer(id) and id > 0 and id <= @max_id ->
+        organization_id |> destination_query(id, opts) |> one()
+
+      _invalid ->
+        {:error, :not_found}
     end
   end
 

@@ -8,6 +8,7 @@ defmodule Kanban.AuditStreamFixtures do
 
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
+  alias Kanban.AuditStream.Gap
   alias Kanban.Repo
 
   @doc """
@@ -81,6 +82,37 @@ defmodule Kanban.AuditStreamFixtures do
     |> Repo.insert!()
 
     destination
+  end
+
+  @doc """
+  Inserts an open gap for `destination`, straight through `Repo` so no
+  `audit_stream_gap` row is written. `audited_at` equals `last_extended_at`,
+  so dismissing it records only `audit_stream_gap_dismissed`. `overrides`
+  may set any `Kanban.AuditStream.Gap` field, `dismissed_at` included.
+  """
+  def gap_fixture(%Destination{id: destination_id}, overrides \\ %{}) do
+    now = DateTime.utc_now()
+
+    attrs =
+      Map.merge(
+        %{
+          destination_id: destination_id,
+          reason: :retention,
+          events: 12,
+          first_occurred_at: ~U[2026-10-01 08:00:00.000000Z],
+          last_occurred_at: ~U[2026-10-03 17:30:00.000000Z],
+          opened_at: now,
+          last_extended_at: now,
+          audited_at: now
+        },
+        Map.new(overrides)
+      )
+
+    {dismissed_at, attrs} = Map.pop(attrs, :dismissed_at)
+
+    %Gap{dismissed_at: dismissed_at}
+    |> Gap.changeset(attrs)
+    |> Repo.insert!()
   end
 
   @doc """

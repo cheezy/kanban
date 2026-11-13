@@ -76,12 +76,15 @@
             style="padding: 12px 0; border-bottom: 1px solid var(--line);"
           >
             <div class="flex flex-wrap items-center gap-2">
-              <span
+              <.link
+                id={"destination-link-#{row.id}"}
+                navigate={~p"/org/audit/streaming/#{row.id}"}
                 data-destination-name
+                class="underline"
                 style="font-size: 13px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere;"
               >
                 {row.name}
-              </span>
+              </.link>
               <span data-destination-type style="font-size: 12px; color: var(--ink-2);">
                 {AuditStreamingRow.type_label(row.kind)}
               </span>
@@ -122,6 +125,19 @@
               style="margin: 0; font-size: 12px; color: var(--ink); line-height: 1.5; overflow-wrap: anywhere;"
             >
               {row.reason}
+            </p>
+
+            <p
+              :if={row.open_gap}
+              id={"destination-gap-warning-#{row.id}"}
+              role="status"
+              style={[
+                "margin: 0; font-size: 12px; color: var(--ink); line-height: 1.5;",
+                "background: var(--st-blocked-soft); border: 1px solid var(--line);",
+                "border-radius: 8px; padding: 6px 10px; overflow-wrap: anywhere;"
+              ]}
+            >
+              {AuditStreamingRow.gap_warning(row.open_gap)}
             </p>
 
             <dl
