@@ -32,29 +32,30 @@ defmodule Kanban.AuditStream.OutcomeTest do
   end
 
   describe "error_text/3" do
-    test "names the status or failure and never the body" do
+    test "names a response's HTTP status and never its body" do
       assert Outcome.error_text(:delivered, response(200), Https) == nil
 
       assert Outcome.error_text({:retry, nil}, response(503), Https) ==
                "HTTP 503 from the destination"
-
-      assert Outcome.error_text({:retry, nil}, {:transport_error, %{reason: {:a, :b}}}, Https) ==
-               "The connection to the destination failed"
-
-      assert Outcome.error_text(
-               {:retry, nil},
-               {:transport_error, %{reason: :econnrefused}},
-               Https
-             ) ==
-               "Could not connect (econnrefused)"
     end
 
-    test "a timeout or a closed connection is not worded as a failure to connect" do
-      assert Outcome.error_text({:retry, nil}, {:transport_error, %{reason: :timeout}}, Https) ==
-               "The destination did not answer in time"
+    test "every transport failure has the same text, so ports can't be told apart" do
+      reasons = [
+        :econnrefused,
+        :timeout,
+        :closed,
+        :nxdomain,
+        {:tls_alert, {:unexpected_message, ~c"TLS client: unexpected message"}},
+        {:a, :b}
+      ]
 
-      assert Outcome.error_text({:retry, nil}, {:transport_error, %{reason: :closed}}, Https) ==
-               "The destination closed the connection before answering"
+      for reason <- reasons do
+        assert Outcome.error_text({:retry, nil}, {:transport_error, %{reason: reason}}, Https) ==
+                 "Could not connect to the destination"
+      end
+
+      assert Outcome.error_text({:retry, nil}, {:transport_error, :crashed}, Https) ==
+               "Could not connect to the destination"
 
       assert Outcome.error_text({:config_error, :bad_index}, response(400), Https) ==
                "The destination reported a configuration error (bad_index, HTTP 400)"

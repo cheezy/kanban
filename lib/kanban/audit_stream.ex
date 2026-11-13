@@ -49,6 +49,16 @@ defmodule Kanban.AuditStream do
   checks in `Kanban.AuditStream.Reachability`, and its signing secrets in
   `Kanban.AuditStream.SigningSecrets`.
 
+  ## Status, tests and halted batches
+
+  `destination_status/3`, `list_destinations_with_status/2`,
+  `list_attempts/2` and `pending_batch_summary/2` read a destination's
+  delivery (`Kanban.AuditStream.Status`); `send_test_event/3` sends a
+  synthetic event and returns only a coarse class
+  (`Kanban.AuditStream.TestEvent`); `retry_now/2` and `skip_batch/2` are the
+  two ways out of a `rejected_batch` halt, both under the destination's lease
+  (`Kanban.AuditStream.BatchActions`). Each authorizes as above.
+
   ## For the workers
 
   `enqueue_dispatch/2`, `due_for_dispatch/2`, `measure_lag/3` and
@@ -62,6 +72,7 @@ defmodule Kanban.AuditStream do
   alias Ecto.Changeset
   alias Kanban.Accounts.Scope
   alias Kanban.AuditStream.Attempt
+  alias Kanban.AuditStream.BatchActions
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Destinations
@@ -69,6 +80,8 @@ defmodule Kanban.AuditStream do
   alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reader
   alias Kanban.AuditStream.SigningSecrets
+  alias Kanban.AuditStream.Status
+  alias Kanban.AuditStream.TestEvent
   alias Kanban.Repo
 
   @attempts_kept 200
@@ -146,7 +159,10 @@ defmodule Kanban.AuditStream do
   `UrlGuard.check/2` and clears a `blocked_address` halt; a save that leaves
   nothing the destination needs unreadable clears a `credentials_unreadable`
   halt. A change to `excluded_actions` or `include_personal_data` increases
-  `filter_version` by one (D16).
+  `filter_version` by one (D16); on a destination halted with
+  `rejected_batch` it also clears the halt and queues a dispatch run, as
+  `retry_now/2` does, since the rejected events may no longer be in the
+  batch the next run cuts. Any other halt stays.
   """
   @spec update_destination(Scope.t() | nil, Destination.t(), map(), keyword()) ::
           {:ok, Destination.t()} | {:error, :unauthorized | :not_found | Changeset.t()}
@@ -191,6 +207,94 @@ defmodule Kanban.AuditStream do
           | {:error, :unauthorized | :not_found | :not_https | Changeset.t()}
   def rotate_signing_secret(scope, %Destination{} = destination),
     do: Destinations.rotate(scope, destination)
+
+  @doc """
+  The destination's status: `state` (`:paused`, `:needs_attention`,
+  `:healthy`, `:retrying` or `:failing`), `state_reason`, `halted_reason`,
+  `last_success_at` and `lag`, whose waiting events include those above the
+  horizon. See `Kanban.AuditStream.Status`. `opts` take `:horizon` and
+  `:now`, for tests.
+  """
+  @spec destination_status(Scope.t() | nil, Destination.t(), keyword()) ::
+          {:ok, Status.t()} | {:error, :unauthorized | :not_found}
+  def destination_status(scope, %Destination{} = destination, opts \\ []),
+    do: Status.destination_status(scope, destination, opts)
+
+  @doc """
+  The Organization's destinations, oldest first, each as `%{destination:
+  destination, status: status}` (see `destination_status/3`).
+  """
+  @spec list_destinations_with_status(Scope.t() | nil, keyword()) ::
+          {:ok, [%{destination: Destination.t(), status: Status.t()}]}
+          | {:error, :unauthorized}
+  def list_destinations_with_status(scope, opts \\ []),
+    do: Status.list_destinations_with_status(scope, opts)
+
+  @doc "The destination's newest 50 attempts, newest first."
+  @spec list_attempts(Scope.t() | nil, Destination.t()) ::
+          {:ok, [Attempt.t()]} | {:error, :unauthorized | :not_found}
+  def list_attempts(scope, %Destination{} = destination),
+    do: Status.list_attempts(scope, destination)
+
+  @doc """
+  For a destination halted with `rejected_batch`, the batch it is stuck on:
+  its event count, first and last event ids and times, and the
+  destination's last answer as Stride classified it; `{:ok, nil}` for any
+  other destination.
+  """
+  @spec pending_batch_summary(Scope.t() | nil, Destination.t()) ::
+          {:ok, Status.pending_batch() | nil} | {:error, :unauthorized | :not_found}
+  def pending_batch_summary(scope, %Destination{} = destination),
+    do: Status.pending_batch_summary(scope, destination)
+
+  @doc """
+  Sends a synthetic `stride.audit.v1` event with the action
+  `audit_stream_test_sent` and no real audit data through the destination's
+  adapter, and records `audit_stream_test_sent` with its outcome. It never
+  touches the cursor, the state or the attempts.
+
+  Returns `{:ok, class}`, a coarse class only: `:delivered`,
+  `:could_not_connect` (a refused connection, a timeout, a host that does
+  not resolve or a blocked address), `:certificate_invalid`,
+  `:credentials_refused` or `{:http_error, status}`; never a body or a
+  transport detail (§12.5). Limited to 10 an hour per Organization
+  (`{:error, {:rate_limited, retry_after_ms}}`); a destination whose secrets
+  can't be read gets `{:error, :credentials_unreadable}`. See
+  `Kanban.AuditStream.TestEvent`.
+  """
+  @spec send_test_event(Scope.t() | nil, Destination.t(), keyword()) ::
+          {:ok, TestEvent.class()}
+          | {:error,
+             :unauthorized
+             | :not_found
+             | :credentials_unreadable
+             | {:rate_limited, non_neg_integer()}}
+  def send_test_event(scope, %Destination{} = destination, opts \\ []),
+    do: TestEvent.send_test(scope, destination, opts)
+
+  @doc """
+  **Retry now**: clears a `rejected_batch` halt, resets the pending batch's
+  `pending_attempts` and `next_attempt_at`, and queues a dispatch run, under
+  the destination's lease. Any other destination gets `{:error,
+  :not_rejected_batch}`, and one whose lease a run holds `{:error, :busy}`.
+  """
+  @spec retry_now(Scope.t() | nil, Destination.t()) ::
+          {:ok, Destination.t()} | {:error, BatchActions.error()}
+  def retry_now(scope, %Destination{} = destination),
+    do: BatchActions.retry_now(scope, destination)
+
+  @doc """
+  **Skip this batch**: for a destination halted with `rejected_batch` only,
+  under its lease, records an attempt with outcome `skipped` and
+  `audit_stream_batch_skipped`, moves the cursor past exactly the pending
+  batch, discards it, clears the halt and queues a dispatch run. Any other
+  destination, including a configuration error, gets `{:error,
+  :not_rejected_batch}`, and one whose lease a run holds `{:error, :busy}`.
+  """
+  @spec skip_batch(Scope.t() | nil, Destination.t()) ::
+          {:ok, Destination.t()} | {:error, BatchActions.error()}
+  def skip_batch(scope, %Destination{} = destination),
+    do: BatchActions.skip_batch(scope, destination)
 
   @doc """
   Queues a `Kanban.AuditStream.DispatchWorker` run for the destination

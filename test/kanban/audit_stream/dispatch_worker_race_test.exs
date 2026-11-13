@@ -312,7 +312,7 @@ defmodule Kanban.AuditStream.DispatchWorkerRaceTest do
     assert [%{outcome: :delivered}] = attempts(ctx.destination)
   end
 
-  test "a send that outlasts the deadline is stopped and recorded as a timeout", ctx do
+  test "a send past the deadline is stopped, recorded as a retry, cursor kept", ctx do
     event!(ctx.organization, 1)
     original = Application.get_env(:kanban, DispatchWorker)
     on_exit(fn -> restore(DispatchWorker, original) end)
@@ -328,7 +328,7 @@ defmodule Kanban.AuditStream.DispatchWorkerRaceTest do
     assert result == :ok
     assert elapsed_us < 10_000_000
 
-    assert [%{outcome: :retry, error: "The destination did not answer in time"}] =
+    assert [%{outcome: :retry, error: "Could not connect to the destination"}] =
              attempts(ctx.destination)
 
     assert cursor(ctx.destination).last_event_id == 0

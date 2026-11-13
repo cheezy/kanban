@@ -230,11 +230,16 @@ defmodule Kanban.AuditStream.Destinations do
          do: still_org_admin(actor, organization_id)
   end
 
-  # The Organization is locked before the destination, as every path that
-  # takes both does, and the rights are read again after both locks are held,
-  # so a revocation that committed during either wait is seen. A revoked
-  # caller is refused before being told whether the destination still exists.
-  defp fetch_authorized(%User{} = actor, organization_id, id) do
+  @doc """
+  Inside a transaction: locks the Organization row, then the destination's
+  (`FOR UPDATE`), and reads the actor's rights again, so a revocation that
+  committed during either wait is seen. Every path that takes both locks
+  takes them in that order. A revoked caller gets `{:error, :unauthorized}`
+  before being told whether the destination still exists.
+  """
+  @spec fetch_authorized(User.t(), pos_integer(), term()) ::
+          {:ok, Destination.t()} | {:error, :unauthorized | :not_found}
+  def fetch_authorized(%User{} = actor, organization_id, id) do
     with :ok <- lock_organization(organization_id),
          fetched = fetch(organization_id, id, lock: true),
          :ok <- still_org_admin(actor, organization_id),
@@ -362,6 +367,11 @@ defmodule Kanban.AuditStream.Destinations do
 
   defp halt_cleared?(:blocked_address, changeset), do: Map.has_key?(changeset.changes, :url)
 
+  # The rejected events may no longer be in the batch: the next run re-cuts
+  # it because filter_version changed (D16).
+  defp halt_cleared?(:rejected_batch, changeset),
+    do: Enum.any?(@filter_fields, &Map.has_key?(changeset.changes, &1))
+
   defp halt_cleared?(:credentials_unreadable, changeset),
     do: changeset |> Changeset.apply_changes() |> needed_unreadable() == []
 
@@ -375,12 +385,28 @@ defmodule Kanban.AuditStream.Destinations do
   defp save_update(changeset, actor) do
     changed = for field <- @editable_fields, Map.has_key?(changeset.changes, field), do: field
 
-    with {:ok, destination} <- Repo.update(changeset, stale_error_field: :id) do
+    with {:ok, destination} <- Repo.update(changeset, stale_error_field: :id),
+         :ok <- requeue_rejected(changeset) do
       if changed != [],
         do: DestinationEvents.updated(destination, actor, Enum.map(changed, &Atom.to_string/1))
 
       {:ok, destination}
     end
+  end
+
+  # A cleared rejected_batch halt queues a run in the same transaction, as
+  # Retry now does; the sweep picks up every other cleared halt.
+  defp requeue_rejected(%Changeset{data: %{halted_reason: :rejected_batch} = data} = changeset) do
+    case Changeset.fetch_change(changeset, :halted_reason) do
+      {:ok, nil} -> enqueue(data.id)
+      _kept -> :ok
+    end
+  end
+
+  defp requeue_rejected(_changeset), do: :ok
+
+  defp enqueue(destination_id) do
+    with {:ok, _job} <- Kanban.AuditStream.enqueue_dispatch(destination_id), do: :ok
   end
 
   # --- pause and resume ---------------------------------------------------------

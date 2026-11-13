@@ -1,5 +1,6 @@
 defmodule Kanban.AuditStreamTest do
   use Kanban.DataCase, async: true
+  use Oban.Testing, repo: Kanban.Repo
 
   import Kanban.AccountsFixtures
   import Kanban.AuditStreamFixtures
@@ -11,6 +12,7 @@ defmodule Kanban.AuditStreamTest do
   alias Kanban.AuditStream.Attempt
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
+  alias Kanban.AuditStream.DispatchWorker
   alias Kanban.AuditStream.Gap
   alias Kanban.AuditStream.Reader
   alias Kanban.Organizations.OrganizationMember
@@ -209,7 +211,10 @@ defmodule Kanban.AuditStreamTest do
       %{destination: destination}
     end
 
-    defp every_call(scope, destination) do
+    defp every_call(scope, destination),
+      do: management_calls(scope, destination) ++ delivery_calls(scope, destination)
+
+    defp management_calls(scope, destination) do
       [
         list: fn -> AuditStream.list_destinations(scope) end,
         get: fn -> AuditStream.get_destination(scope, destination.id) end,
@@ -219,6 +224,17 @@ defmodule Kanban.AuditStreamTest do
         resume: fn -> AuditStream.resume_destination(scope, destination) end,
         rotate: fn -> AuditStream.rotate_signing_secret(scope, destination) end,
         delete: fn -> AuditStream.delete_destination(scope, destination) end
+      ]
+    end
+
+    defp delivery_calls(scope, destination) do
+      [
+        status: fn -> AuditStream.destination_status(scope, destination) end,
+        attempts: fn -> AuditStream.list_attempts(scope, destination) end,
+        pending: fn -> AuditStream.pending_batch_summary(scope, destination) end,
+        test: fn -> AuditStream.send_test_event(scope, destination) end,
+        retry: fn -> AuditStream.retry_now(scope, destination) end,
+        skip: fn -> AuditStream.skip_batch(scope, destination) end
       ]
     end
 
@@ -530,6 +546,103 @@ defmodule Kanban.AuditStreamTest do
 
       assert {:ok, renamed} = AuditStream.update_destination(ctx.scope, destination, %{name: "N"})
       assert reload(renamed).halted_reason == :credentials_unreadable
+    end
+  end
+
+  describe "rejected_batch halts" do
+    setup ctx do
+      {destination, _secret} = create!(ctx, :splunk_hec)
+
+      from(c in Cursor, where: c.destination_id == ^destination.id)
+      |> Repo.update_all(
+        set: [
+          pending_batch_id: Ecto.UUID.generate(),
+          pending_first_txid: 5,
+          pending_first_id: 1,
+          pending_last_txid: 5,
+          pending_last_id: 1,
+          pending_attempts: 3,
+          pending_filter_version: 1
+        ]
+      )
+
+      %{destination: destination}
+    end
+
+    defp dispatch_jobs(destination),
+      do: all_enqueued(worker: DispatchWorker, args: %{destination_id: destination.id})
+
+    test "skip_batch is refused while a dispatch run holds the destination's lease", ctx do
+      halt!(ctx.destination, :rejected_batch)
+      token = Ecto.UUID.generate()
+      leased_until = DateTime.add(DateTime.utc_now(), 40, :second)
+
+      from(c in Cursor, where: c.destination_id == ^ctx.destination.id)
+      |> Repo.update_all(set: [lease_token: token, leased_until: leased_until])
+
+      before = cursor(ctx.destination)
+
+      assert {:error, :busy} = AuditStream.skip_batch(ctx.scope, ctx.destination)
+      assert {:error, :busy} = AuditStream.retry_now(ctx.scope, ctx.destination)
+
+      # Neither moved the cursor nor touched the run's lease.
+      assert cursor(ctx.destination) == before
+      assert reload(ctx.destination).halted_reason == :rejected_batch
+      assert events(ctx.organization.id, :audit_stream_batch_skipped) == []
+      assert dispatch_jobs(ctx.destination) == []
+    end
+
+    test "a filter change clears a rejected_batch halt and enqueues a dispatch job", ctx do
+      [action | _rest] = Destination.excludable_actions()
+
+      for {attrs, version} <- [
+            {%{excluded_actions: [action]}, 2},
+            {%{include_personal_data: false}, 3}
+          ] do
+        halt!(ctx.destination, :rejected_batch)
+        destination = reload(ctx.destination)
+
+        assert {:ok, updated} = AuditStream.update_destination(ctx.scope, destination, attrs)
+        assert {updated.halted_reason, updated.filter_version} == {nil, version}
+        assert [_job] = dispatch_jobs(ctx.destination)
+      end
+
+      # Still audited: it is not a silent Skip this batch.
+      changed =
+        for e <- events(ctx.organization.id, :audit_stream_destination_updated),
+            do: e.metadata["changed"]
+
+      assert changed == [["excluded_actions"], ["include_personal_data"]]
+    end
+
+    test "a filter change leaves a txid_reset halt in place", ctx do
+      # credentials_unreadable is left out: a save that leaves every secret
+      # readable clears it, whatever it changes.
+      for reason <- [:txid_reset, :blocked_address] do
+        halt!(ctx.destination, reason)
+        destination = reload(ctx.destination)
+        personal = not destination.include_personal_data
+
+        assert {:ok, updated} =
+                 AuditStream.update_destination(ctx.scope, destination, %{
+                   include_personal_data: personal
+                 })
+
+        assert {reason, updated.halted_reason} == {reason, reason}
+      end
+
+      assert dispatch_jobs(ctx.destination) == []
+    end
+
+    test "a change to anything but the filters keeps a rejected_batch halt", ctx do
+      halt!(ctx.destination, :rejected_batch)
+
+      assert {:ok, renamed} =
+               AuditStream.update_destination(ctx.scope, ctx.destination, %{name: "Renamed"})
+
+      assert renamed.halted_reason == :rejected_batch
+      assert cursor(ctx.destination).pending_attempts == 3
+      assert dispatch_jobs(ctx.destination) == []
     end
   end
 

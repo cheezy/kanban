@@ -254,6 +254,29 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":audit_stream_test surface (identity-only)" do
+    test "allows 10 test events per Organization per hour, then refuses; another is unaffected" do
+      organization = "organization:#{System.unique_integer([:positive])}"
+      other = "organization:#{System.unique_integer([:positive])}"
+      attach_telemetry([:kanban, :rate_limit, :denied])
+
+      assert RateLimit.__limits__(:audit_stream_test) == %{scale_ms: 3_600_000, id_limit: 10}
+
+      for _ <- 1..10,
+          do: assert(:ok = RateLimit.check(:audit_stream_test, identity: organization))
+
+      assert {:error, {:rate_limited, retry}} =
+               RateLimit.check(:audit_stream_test, identity: organization)
+
+      assert is_integer(retry) and retry > 0 and retry <= 3_600_000
+
+      assert_received {:telemetry_event, [:kanban, :rate_limit, :denied], %{count: 1},
+                       %{surface: :audit_stream_test}}
+
+      assert :ok = RateLimit.check(:audit_stream_test, identity: other)
+    end
+  end
+
   describe ":two_factor_challenge surface (IP-only)" do
     test "denies one IP after 30 failures spread across different users" do
       ip = unique_ip()

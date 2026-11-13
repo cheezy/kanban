@@ -306,7 +306,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
       run(ctx.destination)
 
-      assert [%{outcome: :retry, http_status: nil, error: "Could not connect (econnrefused)"}] =
+      assert [%{outcome: :retry, http_status: nil, error: "Could not connect to the destination"}] =
                attempts(ctx.destination)
 
       assert fresh(ctx.destination).state == :retrying
@@ -319,7 +319,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
       log = capture_log(fn -> assert :ok = run(ctx.destination) end)
 
-      assert [%{outcome: :retry, error: "The connection to the destination failed"}] =
+      assert [%{outcome: :retry, error: "Could not connect to the destination"}] =
                attempts(ctx.destination)
 
       assert log =~ "boom in the send"

@@ -1,8 +1,9 @@
 defmodule Kanban.RateLimit do
   @moduledoc """
   Rate-limiting policy for abuse-prone authentication surfaces, the org-admin
-  audit log export, email invitations, the locked-feature click metric, the
-  audit rows of refused API board gates, and API attachment downloads.
+  audit log export, audit stream test events, email invitations, the
+  locked-feature click metric, the audit rows of refused API board gates, and
+  API attachment downloads.
 
   Wraps the low-level `Kanban.RateLimiter` (Hammer/ETS) with per-surface
   thresholds and a two-key strategy: every check is evaluated against both a
@@ -26,6 +27,7 @@ defmodule Kanban.RateLimit do
     * `:two_factor_challenge` — 5 min / — / 30 (IP-only, failure-counted)
     * `:two_factor_daily` — 24 h / 30 / —    (identity-only, failure-counted)
     * `:org_audit_export` — 1 h / 10 / —     (identity-only, per export)
+    * `:audit_stream_test` — 1 h / 10 / —    (identity-only, per test event)
     * `:invite`    — 1 h / 20 / —           (identity-only, per invitation email)
     * `:account_delete` — 5 min / 5 / —     (identity-only, per attempt)
     * `:api_denied_audit` — 5 min / 1 / —   (identity-only, per audit row)
@@ -56,6 +58,16 @@ defmodule Kanban.RateLimit do
   are counted together; a signed request refused because the instance has no
   signing key is not counted. Like `:two_factor` it has no IP ceiling, so
   org-admins behind one office NAT do not block each other.
+
+  `:audit_stream_test` counts audit stream test events
+  (`Kanban.AuditStream.send_test_event/3`) per Organization (`identity:
+  "organization:<id>"`, the id read from the org-admin's own membership, no
+  IP), with `check/2` after the caller is authorized and before anything is
+  sent, so deleting and re-creating a destination does not reset it, and
+  several org-admins share one limit (§12.5 of
+  `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md`). A refused test sends nothing
+  and records no audit event. The counter lives in this node's ETS table, so
+  an instance running several nodes allows 10 an hour on each node.
 
   `:invite` counts invitation emails per inviter (`identity: "user:<id>"`, the
   id of the signed-in inviter, no IP), with `check/2` before a workspace or
@@ -108,7 +120,7 @@ defmodule Kanban.RateLimit do
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
-      `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`,
+      `:audit_stream_test`, `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`,
       `:attachment_download`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
@@ -133,6 +145,7 @@ defmodule Kanban.RateLimit do
     two_factor_challenge: %{scale_ms: 300_000, ip_limit: 30},
     two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30},
     org_audit_export: %{scale_ms: 3_600_000, id_limit: 10},
+    audit_stream_test: %{scale_ms: 3_600_000, id_limit: 10},
     invite: %{scale_ms: 3_600_000, id_limit: 20},
     account_delete: %{scale_ms: 300_000, id_limit: 5},
     api_denied_audit: %{scale_ms: 300_000, id_limit: 1},
@@ -151,6 +164,7 @@ defmodule Kanban.RateLimit do
           | :two_factor_challenge
           | :two_factor_daily
           | :org_audit_export
+          | :audit_stream_test
           | :invite
           | :account_delete
           | :api_denied_audit

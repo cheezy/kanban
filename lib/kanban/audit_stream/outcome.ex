@@ -158,8 +158,10 @@ defmodule Kanban.AuditStream.Outcome do
 
   @doc """
   The short error for a failed send, nil for a delivered one. It names the
-  status or the transport failure, and the adapter's `describe_error/2`
-  replaces it when it gives one; the response body is never quoted.
+  status, or says only that the destination could not be reached for any
+  transport failure, and the adapter's `describe_error/2` replaces a status
+  text when it gives one; the response body and the transport reason are
+  never quoted.
   """
   @spec error_text(class(), result(), module()) :: String.t() | nil
   def error_text(:delivered, _result, _adapter), do: nil
@@ -168,7 +170,12 @@ defmodule Kanban.AuditStream.Outcome do
   defp text(class, {:response, %{status: status, body: body}}, adapter),
     do: described(adapter, status, body) || status_text(class, status)
 
-  defp text(_class, {:transport_error, error}, _adapter), do: transport_text(error)
+  # One text for every transport failure: org-admins read this in the
+  # attempt list and the status, and a refused, closed, silent or TLS-failed
+  # port told apart there would let them probe another host's ports (§12.5),
+  # the thing the test event's coarse classes prevent.
+  defp text(_class, {:transport_error, _error}, _adapter),
+    do: "Could not connect to the destination"
 
   defp text(_class, {:guard_error, reason}, _adapter),
     do: "The URL " <> UrlGuard.error_message(reason)
@@ -199,16 +206,6 @@ defmodule Kanban.AuditStream.Outcome do
 
   defp status_text({:config_error, reason}, status),
     do: "The destination reported a configuration error (#{reason}, HTTP #{status})"
-
-  # :timeout and :closed come after the connection was made, so they are
-  # not "could not connect".
-  defp transport_text(%{reason: :timeout}), do: "The destination did not answer in time"
-
-  defp transport_text(%{reason: :closed}),
-    do: "The destination closed the connection before answering"
-
-  defp transport_text(%{reason: reason}) when is_atom(reason), do: "Could not connect (#{reason})"
-  defp transport_text(_error), do: "The connection to the destination failed"
 
   @doc """
   What a send of `batch` means, as attribute maps for the cursor and the

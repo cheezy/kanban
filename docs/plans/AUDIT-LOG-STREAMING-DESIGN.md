@@ -1453,6 +1453,17 @@ page does not show.
   audit event, and its result is shown only as a coarse class
   ([§10.3](#103-adding-or-editing-a-destination)), so the test cannot be used
   to probe another host's ports.
+- **Accepted risk: test-event timing.** **Send test event** answers
+  synchronously, so on a public host how long it takes can still tell a port
+  that answers at once, open or refusing, from one whose packets are silently
+  dropped until the connect timeout. This is accepted rather than fixed, because the leak is coarse
+  and rate-limited: only org-admins can send a test; the address check
+  ([§12.1](#121-sending-to-the-internet-safely)) refuses private, loopback,
+  link-local and reserved addresses, so it cannot reach Stride's own network;
+  the result is one of the coarse classes and never a transport detail; and
+  sends are limited to 10 an hour per Organization. Moving the send to a
+  background job would hide the timing, at the cost of an answer the org-admin
+  has to wait for.
 
 ---
 
