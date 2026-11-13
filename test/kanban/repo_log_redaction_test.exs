@@ -13,6 +13,7 @@ defmodule Kanban.RepoLogRedactionTest do
   alias Kanban.AuditStream.Destination
   alias Kanban.Encryption
   alias Kanban.Integrations.SecretBox
+  alias Kanban.Repo.ChangesetRedactor
   alias Kanban.Repo.QueryLogger
   alias Kanban.SSO.SSOConnection
   alias Kanban.Webhooks.Endpoint
@@ -22,6 +23,9 @@ defmodule Kanban.RepoLogRedactionTest do
   @mark "**redacted**"
 
   setup do
+    # Every test here reads the query log, so none may depend on whether an
+    # earlier test left the handler attached. Attaching is idempotent.
+    :ok = QueryLogger.attach()
     original = Logger.level()
     Logger.configure(level: :debug)
     on_exit(fn -> Logger.configure(level: original) end)
@@ -165,39 +169,6 @@ defmodule Kanban.RepoLogRedactionTest do
       end
     end
 
-    defp invalid_totp_error(secret) do
-      changeset =
-        %UserTotp{}
-        |> Ecto.Changeset.change(secret: secret)
-        |> Ecto.Changeset.add_error(:user_id, "can't be blank")
-
-      assert_raise Ecto.InvalidChangesetError, fn -> Repo.insert!(changeset) end
-    end
-
-    test "an invalid changeset error's struct and Changeset section are redacted" do
-      secret = probe("invalid-struct")
-      error = invalid_totp_error(secret)
-
-      refute inspect(error) =~ secret
-      [_before, changeset_section] = error |> Exception.message() |> String.split("\nChangeset\n")
-      assert changeset_section =~ @mark
-      refute changeset_section =~ secret
-    end
-
-    # Ecto.InvalidChangesetError.message/1 (ecto 3.14) prints the changeset's
-    # "Applied changes" and "Params" with inspect/2, ignoring redact: true, and
-    # the query logger cannot reach an exception message. No code in lib raises
-    # it for an encrypted schema today (every write there is a non-raising
-    # Repo call or a validation-free change/2), so this stays skipped until
-    # the message itself is redacted (D431 follow-up).
-    @tag skip: "Ecto.InvalidChangesetError.message/1 prints applied changes unredacted"
-    test "invalid changeset errors carry no plaintext secret" do
-      secret = probe("invalid")
-      error = invalid_totp_error(secret)
-
-      refute Exception.message(error) =~ secret
-    end
-
     test "a failed query logs as ERROR with its encrypted params redacted" do
       secret = probe("failed")
 
@@ -290,6 +261,128 @@ defmodule Kanban.RepoLogRedactionTest do
     end
   end
 
+  describe "invalid changeset errors" do
+    @bang_functions [:insert!, :update!, :insert_or_update!, :delete!]
+
+    defp invalid_changeset(schema, params, error_field) do
+      fields = params |> Map.keys() |> Enum.map(&String.to_existing_atom/1)
+
+      schema
+      |> struct()
+      |> Ecto.Changeset.cast(params, fields)
+      |> Ecto.Changeset.add_error(error_field, "is invalid")
+    end
+
+    defp raise_invalid(fun), do: assert_raise(Ecto.InvalidChangesetError, fun)
+
+    defp section(message, from, to),
+      do: message |> String.split(from) |> List.last() |> String.split(to) |> hd()
+
+    test "invalid changeset errors carry no plaintext secret" do
+      for {schema, fields} <- encrypted_schemas(), function <- @bang_functions do
+        params = Map.new(fields, &{Atom.to_string(&1), probe("#{inspect(schema)}-#{&1}")})
+        changeset = invalid_changeset(schema, params, hd(fields))
+        error = raise_invalid(fn -> apply(Repo, function, [changeset]) end)
+        message = Exception.message(error)
+
+        assert message =~ @mark, "#{inspect(schema)} #{function} redacted nothing"
+
+        for {field, secret} <- params do
+          refute message =~ secret, "#{inspect(schema)}.#{field} in the #{function} message"
+          refute inspect(error) =~ secret, "#{inspect(schema)}.#{field} in the #{function} struct"
+        end
+      end
+    end
+
+    test "covers every encrypted schema" do
+      schemas = encrypted_schemas()
+
+      # Non-vacuity: the enumeration finds the schemas known to hold secrets.
+      for schema <- [Destination, SSOConnection, UserTotp, Endpoint] do
+        assert List.keymember?(schemas, schema, 0), "#{inspect(schema)} not found"
+      end
+
+      for {schema, fields} <- schemas do
+        sensitive =
+          schema |> struct() |> ChangesetRedactor.sensitive_fields(schema.__changeset__())
+
+        assert fields |> MapSet.new() |> MapSet.subset?(sensitive), inspect(schema)
+
+        # The declared redact: true is the backstop should type detection miss one.
+        assert fields -- schema.__schema__(:redact_fields) == [],
+               "#{inspect(schema)} not redact: true"
+      end
+    end
+
+    test "valid saves are unchanged" do
+      user = user_fixture()
+      secret = probe("valid")
+      updated = probe("valid-update")
+
+      totp = Repo.insert!(%UserTotp{user_id: user.id, secret: secret})
+      assert Repo.get!(UserTotp, totp.id).secret == secret
+
+      totp = totp |> Ecto.Changeset.change(secret: updated) |> Repo.update!()
+      assert %UserTotp{secret: ^updated} = Repo.get!(UserTotp, totp.id)
+
+      assert %UserTotp{secret: ^secret} =
+               totp |> Ecto.Changeset.change(secret: secret) |> Repo.insert_or_update!()
+
+      assert %UserTotp{} = Repo.delete!(totp)
+      refute Repo.get(UserTotp, totp.id)
+    end
+
+    test "leaves nil encrypted changes alone" do
+      changeset =
+        %UserTotp{secret: probe("old")}
+        |> Ecto.Changeset.change(secret: nil)
+        |> Ecto.Changeset.add_error(:user_id, "can't be blank")
+
+      message = raise_invalid(fn -> Repo.insert!(changeset) end) |> Exception.message()
+      applied = section(message, "Applied changes", "Params")
+
+      assert applied =~ "secret: nil"
+      refute applied =~ @mark
+    end
+
+    test "non-encrypted errors are unchanged" do
+      name = probe("plain-name")
+      changeset = invalid_changeset(Destination, %{"name" => name}, :name)
+      error = raise_invalid(fn -> Repo.insert!(changeset) end)
+      message = Exception.message(error)
+
+      assert error.changeset.changes == changeset.changes
+      assert error.changeset.params == changeset.params
+      assert section(message, "Applied changes", "Params") =~ name
+      assert section(message, "Params", "Changeset") =~ name
+    end
+
+    # Ecto.ConstraintError prints only constraint names, and StaleEntryError
+    # inspects the struct, whose derived Inspect honours redact: true. The
+    # query-pin path (NoResultsError) is a documented gap with no caller.
+    test "constraint and stale-entry errors carry no plaintext secret" do
+      user = user_fixture()
+      [old, new, bad_fk] = Enum.map(["stale-old", "stale-new", "fk"], &probe/1)
+      totp = Repo.insert!(%UserTotp{user_id: user.id, secret: old})
+      Repo.delete!(totp)
+
+      errors = [
+        assert_raise(Ecto.StaleEntryError, fn ->
+          totp |> Ecto.Changeset.change(secret: new) |> Repo.update!()
+        end),
+        assert_raise(Ecto.StaleEntryError, fn -> Repo.delete!(totp) end),
+        assert_raise(Ecto.ConstraintError, fn ->
+          %UserTotp{} |> Ecto.Changeset.change(user_id: -1, secret: bad_fk) |> Repo.insert!()
+        end)
+      ]
+
+      for error <- errors, secret <- [old, new, bad_fk] do
+        refute Exception.message(error) =~ secret
+        refute inspect(error) =~ secret
+      end
+    end
+  end
+
   describe "redact_params/2" do
     test "redacts a plaintext wherever it sits, and its ciphertext" do
       ciphertext = Encryption.encrypt("s3cret")
@@ -343,6 +436,8 @@ defmodule Kanban.RepoLogRedactionTest do
 
       assert readme =~ "Query logs are redacted at every level, debug included."
       assert readme =~ "Ecto.InvalidChangesetError"
+      assert readme =~ "Exceptions are redacted too, in every environment."
+      assert readme =~ "Kanban.Repo.ChangesetRedactor"
       assert readme =~ "log: <level>"
     end
   end
@@ -390,22 +485,30 @@ defmodule Kanban.RepoLogRedactionTest do
       on_exit(fn -> :ok = QueryLogger.attach() end)
     end
 
-    defp attached? do
+    defp handlers do
       [:kanban, :repo, :query]
       |> :telemetry.list_handlers()
-      |> Enum.any?(&(&1.id == {QueryLogger, :redacted_query_log}))
+      |> Enum.filter(&(&1.id == {QueryLogger, :redacted_query_log}))
     end
 
+    # The boot state is recorded by test/test_helper.exs before any test runs,
+    # and the rest owns its state, so no other test's attach or detach call
+    # changes the outcome (D434).
     test "is attached at boot, and attaching twice is a no-op" do
-      assert attached?()
+      assert Application.fetch_env!(:kanban, :query_logger_attached_at_boot) == true
+
+      :ok = QueryLogger.detach()
+      refute QueryLogger.attached?()
       assert :ok = QueryLogger.attach()
-      assert attached?()
+      assert :ok = QueryLogger.attach()
+      assert QueryLogger.attached?()
+      assert length(handlers()) == 1
     end
 
     test "attaches nothing when the Repo config says log: false" do
       :ok = QueryLogger.detach()
       assert :ok = QueryLogger.attach(log: false)
-      refute attached?()
+      refute QueryLogger.attached?()
     end
 
     test "turns Ecto's own logging off in the Repo config" do

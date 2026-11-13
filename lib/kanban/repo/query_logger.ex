@@ -43,6 +43,10 @@ defmodule Kanban.Repo.QueryLogger do
   migrator's `schema_migrations` queries. A caller that passes its own
   `log: <level>` to a single Repo call is still logged by Ecto itself, without
   redaction; nothing in this app does so.
+
+  An exception is not a query log, so this handler never sees one. The
+  `Ecto.InvalidChangesetError` that `Kanban.Repo`'s bang functions raise is
+  redacted by `Kanban.Repo.ChangesetRedactor` instead.
   """
 
   alias Kanban.Encryption
@@ -91,6 +95,14 @@ defmodule Kanban.Repo.QueryLogger do
   def detach do
     _ = :telemetry.detach(@handler_id)
     :ok
+  end
+
+  @doc "Whether the handler `attach/1` adds is attached."
+  @spec attached?() :: boolean()
+  def attached? do
+    @event
+    |> :telemetry.list_handlers()
+    |> Enum.any?(&(&1.id == @handler_id))
   end
 
   @doc false

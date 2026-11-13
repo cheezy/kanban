@@ -111,11 +111,27 @@ openssl rand -base64 32
   of those types is covered with no list to update. The
   `[:kanban, :repo, :query]` telemetry event is unchanged and still carries
   the plaintext in `cast_params`, so a handler must not log that field.
-  Two gaps remain. The message of an `Ecto.InvalidChangesetError` (raised by
-  a bang call such as `Repo.insert!/2` on an invalid changeset) prints the
-  applied changes and params unredacted, so write encrypted fields with
-  non-raising calls. And a single Repo call given its own `log: <level>`
-  option is logged by Ecto itself, unredacted; no code here does that.
+- **Exceptions are redacted too, in every environment.** The message of an
+  `Ecto.InvalidChangesetError` prints a changeset's applied changes and
+  params with no regard for `redact: true`, and exception messages reach
+  logs, error trackers and CI output at any log level. So `Kanban.Repo`'s
+  bang functions (`insert!/2`, `update!/2`, `insert_or_update!/2`,
+  `delete!/2`) re-raise it through `Kanban.Repo.ChangesetRedactor`, which
+  shows every field whose type encrypts, and every `redact: true` field, as
+  `"**redacted**"`, nested changesets included. A field is found by its type,
+  not its name, so a new encrypted field is covered with no list to update.
+  `Ecto.ConstraintError` prints the action and constraint names but no value,
+  and `Ecto.StaleEntryError` prints the struct, whose `redact: true` fields
+  are hidden. Four gaps remain, and no code here hits any of them.
+  `Ecto.Changeset.apply_action!/2` raises the same error without going
+  through the Repo, so use `apply_action/2` on a changeset with an encrypted
+  field. `Ecto.NoResultsError` and `Ecto.MultipleResultsError` (from
+  `Repo.one!/2`, `get_by!/3` and the like) print the query with its pinned
+  values, so never pin an encrypted field's plaintext in a bang query.
+  `Ecto.Query.CastError` and `Ecto.ChangeError` print a value an encrypted
+  type refused, which only happens to a non-binary one (a list or a
+  charlist), so pass secrets as binaries. And a single Repo call given its
+  own `log: <level>` option is logged by Ecto itself, unredacted.
 
 ### Metrics retention (`retention_days`)
 

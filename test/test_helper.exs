@@ -67,4 +67,13 @@ Application.put_env(
 )
 
 ExUnit.after_suite(fn _result -> File.rm_rf(attachments_root) end)
+# Kanban.RepoLogRedactionTest checks that Kanban.Application attached the
+# redacting query logger at boot. Record it now, before any test can attach
+# or detach the handler, so that check does not depend on test order (D434).
+Application.put_env(
+  :kanban,
+  :query_logger_attached_at_boot,
+  Kanban.Repo.QueryLogger.attached?()
+)
+
 Ecto.Adapters.SQL.Sandbox.mode(Kanban.Repo, :manual)
