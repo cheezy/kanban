@@ -17,10 +17,12 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   use Oban.Testing, repo: Kanban.Repo
 
   import ExUnit.CaptureLog
+  import Kanban.AccountsFixtures
   import Kanban.AuditStreamFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.TelemetryHelpers
 
+  alias Kanban.Accounts.Scope
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditStream
   alias Kanban.AuditStream.Attempt
@@ -31,7 +33,10 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Pacing
+  alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reader
+  alias Kanban.AuditStream.Reseed
+  alias Kanban.Organizations.Organization
   alias Kanban.Repo
   alias Kanban.Webhooks.Transport
 
@@ -847,6 +852,232 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
       run(ctx.destination)
       assert_received {:request, second_cut, [^d], _}
       assert second_cut != stale_id
+    end
+  end
+
+  describe "the Organization snapshot (D428)" do
+    # Replies `status`, reporting each request's raw body and the `t` of its
+    # signature, with the system time just before the request was signed and
+    # just after it was answered.
+    defp capture(status) do
+      test = self()
+
+      Req.Test.stub(Transport, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        [signature] = Plug.Conn.get_req_header(conn, "x-stride-signature")
+        ["t=" <> t | _] = String.split(signature, ",")
+        send(test, {:sent, batch_header(conn), body, String.to_integer(t)})
+        Plug.Conn.send_resp(conn, status, "ok")
+      end)
+    end
+
+    defp rename(organization, name) do
+      from(o in Organization, where: o.id == ^organization.id)
+      |> Repo.update_all(set: [name: name])
+    end
+
+    defp snapshot(destination) do
+      cursor = cursor(destination)
+      {cursor.pending_organization_id, cursor.pending_organization_name}
+    end
+
+    test "a first attempt stores the Organization snapshot with the pending batch", ctx do
+      event!(ctx.organization, 1)
+      stub(503)
+
+      run(ctx.destination)
+
+      assert_received {:request, batch_id, _, _}
+      assert cursor(ctx.destination).pending_batch_id == batch_id
+      assert snapshot(ctx.destination) == {ctx.organization.id, ctx.organization.name}
+    end
+
+    test "a retry after an Organization rename builds the same body", ctx do
+      destination =
+        destination_fixture(ctx.organization, :https, %{settings: %{"format" => "json"}})
+
+      event!(ctx.organization, 1)
+      event!(ctx.organization, 2)
+      capture(503)
+
+      before_first = System.system_time(:second)
+      run(destination)
+      assert_received {:sent, batch_id, first_body, first_t}
+      assert first_t >= before_first and first_t <= System.system_time(:second)
+
+      rename(ctx.organization, "Renamed between attempts")
+      make_due(destination)
+      capture(200)
+
+      before_second = System.system_time(:second)
+      run(destination)
+      assert_received {:sent, ^batch_id, second_body, second_t}
+
+      # The body is byte-identical; only the signature time is the attempt's.
+      assert second_body == first_body
+      assert second_t >= before_second and second_t <= System.system_time(:second)
+
+      decoded = Jason.decode!(second_body)
+
+      assert decoded["organization"] == %{
+               "id" => ctx.organization.id,
+               "name" => ctx.organization.name
+             }
+
+      assert Enum.all?(decoded["events"], &(&1["organization"]["name"] == ctx.organization.name))
+      refute second_body =~ "Renamed between attempts"
+    end
+
+    test "the next batch uses the current Organization name", ctx do
+      event!(ctx.organization, 1)
+      stub(503)
+      run(ctx.destination)
+      assert_received {:request, first_id, _, _}
+
+      rename(ctx.organization, "Current name")
+      make_due(ctx.destination)
+      stub(200)
+      run(ctx.destination)
+      assert_received {:request, ^first_id, _, delivered_body}
+      refute delivered_body =~ "Current name"
+
+      # Acknowledging the batch clears the snapshot.
+      assert snapshot(ctx.destination) == {nil, nil}
+
+      event!(ctx.organization, 2)
+      stub(503)
+      run(ctx.destination)
+
+      assert_received {:request, next_id, _, next_body}
+      assert next_id != first_id
+      assert next_body =~ "Current name"
+      assert snapshot(ctx.destination) == {ctx.organization.id, "Current name"}
+    end
+
+    test "a discarded pending batch clears the Organization snapshot", ctx do
+      event!(ctx.organization, 1)
+      stub(503)
+      run(ctx.destination)
+      assert_received {:request, old_id, _, _}
+
+      # Discarded and re-cut: the new batch stores a fresh snapshot.
+      rename(ctx.organization, "After the filter change")
+      set_destination(ctx.destination, filter_version: 2)
+      make_due(ctx.destination)
+      run(ctx.destination)
+
+      assert_received {:request, new_id, _, body}
+      assert new_id != old_id
+      assert body =~ "After the filter change"
+      assert snapshot(ctx.destination) == {ctx.organization.id, "After the filter change"}
+
+      # Discarded with nothing left to send: the snapshot goes with it.
+      set_destination(ctx.destination,
+        excluded_actions: ["organization_updated"],
+        filter_version: 3
+      )
+
+      make_due(ctx.destination)
+      run(ctx.destination)
+
+      refute_received {:request, _, _, _}
+      assert cursor(ctx.destination).pending_batch_id == nil
+      assert snapshot(ctx.destination) == {nil, nil}
+    end
+
+    test "a pending batch discarded for a shrunk range stores a fresh snapshot", ctx do
+      b = event!(ctx.organization, 2)
+      c = event!(ctx.organization, 3)
+      stub(503)
+
+      # The first event, (1, 1), is gone; the stale snapshot goes with the batch.
+      set_cursor(ctx.destination,
+        pending_batch_id: Ecto.UUID.generate(),
+        pending_first_txid: 1,
+        pending_first_id: 1,
+        pending_last_txid: 3,
+        pending_last_id: c,
+        pending_filter_version: 1,
+        pending_organization_id: ctx.organization.id,
+        pending_organization_name: "Stale name"
+      )
+
+      run(ctx.destination)
+
+      assert_received {:request, _new_id, [^b, ^c], body}
+      refute body =~ "Stale name"
+      assert body =~ ctx.organization.name
+      assert snapshot(ctx.destination) == {ctx.organization.id, ctx.organization.name}
+    end
+
+    test "a pending batch without a snapshot stores one", ctx do
+      event!(ctx.organization, 1)
+      stub(503)
+      run(ctx.destination)
+      assert_received {:request, batch_id, _, _}
+
+      # As a batch cut before the snapshot columns existed.
+      set_cursor(ctx.destination, pending_organization_id: nil, pending_organization_name: nil)
+      rename(ctx.organization, "Read once")
+      make_due(ctx.destination)
+      run(ctx.destination)
+
+      assert_received {:request, ^batch_id, _, fallback_body}
+      assert fallback_body =~ "Read once"
+      assert snapshot(ctx.destination) == {ctx.organization.id, "Read once"}
+
+      rename(ctx.organization, "Read twice")
+      make_due(ctx.destination)
+      run(ctx.destination)
+
+      assert_received {:request, ^batch_id, _, retried_body}
+      assert retried_body == fallback_body
+    end
+
+    test "skip and reseed clear the Organization snapshot", ctx do
+      admin = user_fixture()
+      organization_member_fixture(ctx.organization, admin, :org_admin)
+      event!(ctx.organization, 1)
+      stub(503)
+      run(ctx.destination)
+      assert_received {:request, _, _, _}
+      assert snapshot(ctx.destination) == {ctx.organization.id, ctx.organization.name}
+
+      set_destination(ctx.destination, state: :failing, halted_reason: :rejected_batch)
+
+      scope = Scope.for_user(admin)
+      assert {:ok, _skipped} = AuditStream.skip_batch(scope, ctx.destination)
+      assert snapshot(ctx.destination) == {nil, nil}
+
+      other = destination_fixture(ctx.organization, :https)
+      run(other)
+      assert_received {:request, _, _, _}
+      assert snapshot(other) == {ctx.organization.id, ctx.organization.name}
+
+      # As after a logical database move: the re-seed finds it halted.
+      set_destination(other, halted_reason: :txid_reset)
+
+      assert {:ok, %{destinations: reseeded}} = Reseed.run()
+      assert reseeded >= 1
+      assert cursor(other).pending_batch_id == nil
+      assert snapshot(other) == {nil, nil}
+    end
+
+    test "snapshot/2 reuses only a snapshot stored for the same Organization" do
+      live = %{id: 7, name: "Live name"}
+
+      stored = %Cursor{pending_organization_id: 7, pending_organization_name: "Stored name"}
+      assert PendingBatch.snapshot(stored, live) == {%{id: 7, name: "Stored name"}, %{}}
+
+      fields = %{pending_organization_id: 7, pending_organization_name: "Live name"}
+      assert PendingBatch.snapshot(%Cursor{}, live) == {live, fields}
+
+      # A snapshot recorded for another Organization is never reused.
+      other = %Cursor{pending_organization_id: 8, pending_organization_name: "Other name"}
+      assert PendingBatch.snapshot(other, live) == {live, fields}
+
+      half = %Cursor{pending_organization_id: 7, pending_organization_name: nil}
+      assert PendingBatch.snapshot(half, live) == {live, fields}
     end
   end
 

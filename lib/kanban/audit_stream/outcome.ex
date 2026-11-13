@@ -391,6 +391,8 @@ defmodule Kanban.AuditStream.Outcome do
       pending_last_id: nil,
       pending_attempts: 0,
       pending_filter_version: nil,
+      pending_organization_id: nil,
+      pending_organization_name: nil,
       next_attempt_at: nil
     }
   end

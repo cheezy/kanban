@@ -323,7 +323,7 @@ the bytes it is given.
 
 | Header | Value |
 | --- | --- |
-| `X-Stride-Signature` | `t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "<t>.<body>")>`, the webhook format. Unlike webhooks, whose rotation takes effect at once, a rotation here keeps the old secret valid for 24 hours. During that time the header carries one `v1=` per secret, the old one first, until `previous_secret_expires_at` |
+| `X-Stride-Signature` | `t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "<t>.<body>")>`, the webhook format. Unlike webhooks, whose rotation takes effect at once, a rotation here keeps the old secret valid for 24 hours. During that time the header carries one `v1=` per secret, the old one first, until `previous_secret_expires_at`. `t` is the time of this attempt, in whole seconds: each retry is signed afresh ([§8.3](#83-at-least-once-and-batch-identity)), so two attempts in the same second carry the same `t` and signatures |
 | `X-Stride-Audit-Signature` | `t=<unix seconds>,kid=<key id>,ed25519=<signature>`. The signature is the 64-byte Ed25519 signature over `"<t>.<destination id>.<body>"`, made with the instance's audit signing key ([§11.4](#114-keys)), and written as base64url **without padding** (RFC 4648 §5). `t` is the same value as in `X-Stride-Signature`. Left out when the instance has no signing key |
 | `X-Stride-Destination` | The destination's id, which the Ed25519 signature covers |
 | `X-Stride-Batch` | The batch id, the same on every retry of the same batch |
@@ -658,6 +658,19 @@ written and committed before the POST, so it survives a crash. A retry re-reads
 exactly that range, even if more events have arrived meanwhile. A new batch is
 cut only once the pending one has succeeded or been given up.
 
+Every event names its Organization by id and name, and the name can change
+between attempts. So the pending batch also stores the Organization's id and
+name as they were when it was cut, in the same write as its range, and every
+retry builds its events and envelope from them, never from the live row
+(D428). A rename therefore shows in the next batch, not in a retry. The first
+half of a split batch ([§8.4](#84-retries-and-failure)) keeps the stored name
+under its new `batch_id`. A pending batch with no stored name, one cut before
+the columns existed, is built from the live row on its next attempt, which
+stores it, so such a batch can change its Organization name once, on that
+attempt, if the Organization was renamed since it was cut. Delivering,
+skipping, discarding or re-seeding the pending batch clears the stored name
+with the rest of it.
+
 One thing can change a pending batch: retention removing some of its events.
 The retention step then discards the pending batch and records the loss as a
 gap. The next run cuts a new batch, with a new `batch_id`, from the events that
@@ -683,7 +696,21 @@ different content, under the old `batch_id`. Instead (D16):
   ([§12.3](#123-abuse-by-an-org-admin)), so it can't be used as a silent
   **Skip this batch**.
 
-A `batch_id` therefore always names the same events with the same content.
+A `batch_id` therefore always names the same events, under the same filters
+and with the same Organization details. Two inputs are still read on every
+attempt, so they can change a retry's body under the same `batch_id`:
+
+- the actor's live user row: its email, and, for an event written before
+  `actor_in_organization` was recorded, the current-membership redaction
+  fallback;
+- a destination setting outside the filters, such as the HTTPS format or
+  Datadog's tags and service, which does not change `filter_version`.
+
+The signature time `t` ([§5.3](#53-any-https-endpoint)) is each attempt's own,
+as with most webhook senders, so the signature values change from one attempt
+to the next, and so does the number of `v1=` values when a secret rotation
+starts or ends. A receiver should dedupe by `batch_id` and event `id`, not by
+a body hash or a signature.
 
 ### 8.4 Retries and failure
 
@@ -1007,6 +1034,7 @@ conflict with an org-admin editing the settings.
 | `pending_first_txid`, `pending_first_id`, `pending_last_txid`, `pending_last_id` | bigint | The pending batch's range |
 | `pending_attempts` | integer | |
 | `pending_filter_version` | integer, nullable | The destination's `filter_version` when the pending batch was cut ([§8.3](#83-at-least-once-and-batch-identity)) |
+| `pending_organization_id`, `pending_organization_name` | bigint, string, nullable | The Organization's id and name when the pending batch was cut, which every retry sends ([§8.3](#83-at-least-once-and-batch-identity)) |
 | `next_attempt_at` | utc_datetime_usec, nullable | When the destination is next due ([§8.4](#84-retries-and-failure)) |
 | `lease_token` | uuid, nullable | The run holding the lease ([§8.1](#81-workers-and-scheduling)) |
 | `leased_until` | utc_datetime_usec, nullable | |
@@ -1638,7 +1666,7 @@ emails do. They are sent when:
 | Migration | Existing rows read `txid = 0`; new rows get a real transaction id; `AuditEvent` never casts `txid`. Under `AuditLogRoleHelper`, the hardened end state is checked: the owner is unchanged, the app role cannot alter the table, and `audit_log_status` still reports hardened |
 | Reader | In the sandbox, with the `:horizon` option set above the test's own transaction: Organization scoping, redaction of outside actors (keys removed from `metadata`), the personal-data switch removing `email` and `ip` keys at every depth, excluded actions, `not_before`, batch size and the byte limit |
 | Adapters | Each type's request (URL, headers, gzip body) against `Req.Test` stubs, and each response classified correctly. Splunk: every HEC code in [§5.1](#51-splunk-http-event-collector), including 200 with codes 24 and 25, and the path check. Datadog: the `date` field, the `message` with personal data off, the 17-hour cut-off, the tag limits, and 401 and 408. 413 splitting for each. HTTPS: the HMAC verifies with the webhook verifier on the inflated body, including both values during a rotation; the Ed25519 signature verifies, from the gzip bytes after inflation, against the published key chosen by `kid`, over `t`, the destination id and the body; a changed byte fails both; with no signing key, only the HMAC is sent |
-| Worker | With Oban `testing: :disabled` in the race partition, because Oban only applies uniqueness then: one job per destination plus at most one follow-up; the lease stops a second run; a run whose lease expired cannot move the cursor; no transaction is open during the POST. Also: the cursor moves only on 2xx; a retry resends exactly the pending batch; `next_attempt_at` holds the backoff, Retry-After and the cap against the sweep; a halted destination is never swept; draining and catch-up pacing; state moves Healthy → Retrying → Failing → Healthy with the right emails; a `txid` lower than the cursor's halts the destination; a pending batch whose `pending_filter_version` is older than the destination's is discarded and re-cut with a new `batch_id`, while a send already in flight completes normally; saving a filter change clears a `rejected_batch` halt; a destination whose secret loads as `:unreadable` sends nothing, records no attempt and halts with `credentials_unreadable`, and replacing the secret clears it |
+| Worker | With Oban `testing: :disabled` in the race partition, because Oban only applies uniqueness then: one job per destination plus at most one follow-up; the lease stops a second run; a run whose lease expired cannot move the cursor; no transaction is open during the POST. Also: the cursor moves only on 2xx; a retry resends exactly the pending batch, with a byte-identical body after an Organization rename; `next_attempt_at` holds the backoff, Retry-After and the cap against the sweep; a halted destination is never swept; draining and catch-up pacing; state moves Healthy → Retrying → Failing → Healthy with the right emails; a `txid` lower than the cursor's halts the destination; a pending batch whose `pending_filter_version` is older than the destination's is discarded and re-cut with a new `batch_id`, while a send already in flight completes normally; saving a filter change clears a `rejected_batch` halt; a destination whose secret loads as `:unreadable` sends nothing, records no attempt and halts with `credentials_unreadable`, and replacing the secret clears it |
 | Tolerant encrypted type | `TolerantEncryptedBinary` round-trips a value; a value written under another key loads as `:unreadable` instead of failing; dumping `:unreadable` is refused; a destination row with an unreadable secret loads, and the streaming pages render it |
 | Retention | A destination behind the cutoff records a gap with the right count, including a paused one; a refused purge records none; a pending batch that loses events is discarded and the next batch has a new `batch_id`; a second loss extends the open gap without a new email; a lease that can't be taken skips the Organization; retention still purges |
 | Re-seed | `reseed_audit_stream_cursors/0` sets `(0, 0)` and `not_before`, clears `txid_reset`, and the next batch starts at the last delivered event's time; restored events not yet delivered, and any older than `not_before`, are one `database_move` gap and never read; a second re-seed records nothing twice; the sweep queues a caught-up cursor past the database's transaction ids, and its run halts it with `txid_reset` |

@@ -840,6 +840,8 @@ defmodule Kanban.ReleaseTest do
         pending_last_id: 4_250,
         pending_attempts: 3,
         pending_filter_version: 1,
+        pending_organization_id: destination.organization_id,
+        pending_organization_name: "Before the move",
         next_attempt_at: ~U[2026-11-05 11:00:00.000000Z]
       ]
 
@@ -911,6 +913,8 @@ defmodule Kanban.ReleaseTest do
             :pending_last_txid,
             :pending_last_id,
             :pending_filter_version,
+            :pending_organization_id,
+            :pending_organization_name,
             :next_attempt_at,
             :lease_token,
             :leased_until

@@ -280,18 +280,21 @@ defmodule Kanban.AuditStream.DispatchWorker do
 
       destination
       |> PendingBatch.prepare(cursor, organization, opts)
-      |> cut({adapter, destination, organization, cursor, gap})
+      |> cut({adapter, destination, cursor, gap})
     end
   end
 
-  defp cut({:ok, batch, attrs}, {adapter, destination, organization, cursor, gap}) do
+  # The batch carries the Organization its events were built for: the
+  # snapshot stored when it was cut, or, for a batch cut before the snapshot
+  # existed, the live row read once and stored then (D428).
+  defp cut({:ok, batch, attrs}, {adapter, destination, cursor, gap}) do
     with {:ok, _cursor} <- update_cursor(cursor, attrs) do
       {:ok,
        {:send,
         %{
           adapter: adapter,
           destination: destination,
-          organization: organization,
+          organization: batch.organization,
           batch: batch,
           gap: gap
         }}}
@@ -299,10 +302,10 @@ defmodule Kanban.AuditStream.DispatchWorker do
   end
 
   # Every waiting event was too old: the cursor has moved past them all.
-  defp cut({:empty, attrs}, {_adapter, _destination, _organization, cursor, nil}),
+  defp cut({:empty, attrs}, {_adapter, _destination, cursor, nil}),
     do: stop(cursor, attrs)
 
-  defp cut({:empty, attrs}, {_adapter, _destination, _organization, cursor, gap}) do
+  defp cut({:empty, attrs}, {_adapter, _destination, cursor, gap}) do
     with {:ok, :stopped} <- stop(cursor, attrs), do: {:ok, {:stopped, gap}}
   end
 

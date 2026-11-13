@@ -312,6 +312,31 @@ defmodule Kanban.AuditStream.DispatchWorkerRaceTest do
     assert [%{outcome: :delivered}] = attempts(ctx.destination)
   end
 
+  test "the Organization snapshot commits with the pending batch, before the POST", ctx do
+    event!(ctx.organization, 1)
+    blocking_stub()
+
+    {task, poster, _check} = start_run(ctx.destination)
+
+    # The prepare transaction has committed: another connection sees the
+    # pending batch and its snapshot together.
+    pending = cursor(ctx.destination)
+    assert pending.pending_batch_id
+    assert pending.pending_organization_id == ctx.organization.id
+    assert pending.pending_organization_name == ctx.organization.name
+
+    # A rename committed while the POST is in flight changes nothing pending.
+    from(o in Kanban.Organizations.Organization, where: o.id == ^ctx.organization.id)
+    |> Repo.update_all(set: [name: "renamed mid-flight #{System.unique_integer([:positive])}"])
+
+    send(poster, {:reply, 503})
+    assert :ok = Task.await(task, @await_ms)
+
+    retried = cursor(ctx.destination)
+    assert retried.pending_batch_id == pending.pending_batch_id
+    assert retried.pending_organization_name == ctx.organization.name
+  end
+
   test "a send past the deadline is stopped, recorded as a retry, cursor kept", ctx do
     event!(ctx.organization, 1)
     original = Application.get_env(:kanban, DispatchWorker)

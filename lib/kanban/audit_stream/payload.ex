@@ -13,8 +13,10 @@ defmodule Kanban.AuditStream.Payload do
     * `id` is a string, so a 64-bit id survives JavaScript tools;
     * `action_label` is the English label from `KanbanWeb.AuditLogActions`,
       whatever locale is active when the payload is built;
-    * `organization` is the Organization's id and current name, passed in
-      because the Reader does not preload it;
+    * `organization` is the Organization's id and name, passed in because
+      the Reader does not preload it. For a streamed batch they are the ones
+      stored when the batch was cut, so every retry of a `batch_id` carries
+      the same name (`Kanban.AuditStream.PendingBatch`, D428);
     * `actor.in_organization` is always a boolean: false for a redacted actor
       or an event with no actor, the stored flag when there is one, and for a
       row written before that flag existed, which the Reader did not redact,
@@ -41,7 +43,7 @@ defmodule Kanban.AuditStream.Payload do
   def schema, do: @schema
 
   @doc """
-  The `organization` object of a payload or batch: the id and current name.
+  The `organization` object of a payload or batch: the id and name.
   """
   @spec organization(organization()) :: %{String.t() => term()}
   def organization(%{id: id, name: name}), do: %{"id" => id, "name" => name}

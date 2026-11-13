@@ -27,6 +27,20 @@ defmodule Kanban.AuditStream.PendingBatch do
   When nothing is waiting it returns `{:empty, attrs}`; `attrs` then discards
   a stale pending batch, if there was one, and the cursor stays where it is.
 
+  The Organization `prepare/4` is given is the live row, and every event of a
+  batch carries its id and name. A cut stores them on the cursor with the
+  other `pending_` fields, as `pending_organization_id` and
+  `pending_organization_name`, and a re-read builds its events from them, so
+  every attempt of one `batch_id` carries the same Organization details even
+  when the Organization is renamed between attempts (D428). The batch returned
+  carries the Organization it was built for, which is what the request
+  envelope names. A pending batch with no stored snapshot (one cut before it
+  was recorded), or one recorded for another Organization, is built from the
+  live row and the snapshot is stored then. The signature time (`signed_at`)
+  is taken afresh, in whole seconds, by the adapter on every attempt. The
+  actor fields the Reader reads live, and adapter settings outside the
+  filters, are not frozen (design §8.3).
+
   For a kind with a `max_event_age` (Datadog), `:older_than` is the time
   before which an event is too old to send (§5.2). A batch never holds such
   an event: a pending batch that does is discarded and cut again, and a cut
@@ -46,6 +60,7 @@ defmodule Kanban.AuditStream.PendingBatch do
           events: [Kanban.AuditLog.AuditEvent.t()],
           payloads: [Payload.t()],
           bytes: non_neg_integer(),
+          organization: Payload.organization(),
           first: Reader.pair(),
           last: Reader.pair()
         }
@@ -76,14 +91,35 @@ defmodule Kanban.AuditStream.PendingBatch do
 
   defp within_age(reread, _older_than), do: reread
 
-  defp prepared({:ok, events}, {_destination, cursor, organization, _filters, _opts}),
-    do: {:ok, batch(cursor.pending_batch_id, events, organization), %{}}
+  defp prepared({:ok, events}, {_destination, cursor, organization, _filters, _opts}) do
+    {snapshot, attrs} = snapshot(cursor, organization)
+    {:ok, batch(cursor.pending_batch_id, events, snapshot), attrs}
+  end
 
   defp prepared(:discard, {destination, cursor, organization, filters, opts}),
     do: cut(destination, cursor, organization, filters, opts, Outcome.cleared_pending_attrs())
 
   defp prepared(:none, {destination, cursor, organization, filters, opts}),
     do: cut(destination, cursor, organization, filters, opts, %{})
+
+  @doc """
+  The Organization a pending batch at `cursor` is built for, and the cursor
+  fields to write for it: the snapshot stored when the batch was cut, and no
+  fields, when it was stored for `organization`; otherwise `organization`, the
+  live row, and the fields that store it.
+  """
+  @spec snapshot(Cursor.t(), Payload.organization()) :: {Payload.organization(), map()}
+  def snapshot(
+        %Cursor{pending_organization_id: id, pending_organization_name: name},
+        %{id: id}
+      )
+      when is_binary(name),
+      do: {%{id: id, name: name}, %{}}
+
+  def snapshot(%Cursor{}, organization), do: {organization, snapshot_attrs(organization)}
+
+  defp snapshot_attrs(%{id: id, name: name}),
+    do: %{pending_organization_id: id, pending_organization_name: name}
 
   @doc """
   The `Kanban.AuditStream.Reader` filters of `destination` at `cursor`: its
@@ -151,21 +187,25 @@ defmodule Kanban.AuditStream.PendingBatch do
 
       events ->
         batch = batch(Ecto.UUID.generate(), events, organization)
-        {first_txid, first_id} = batch.first
-        {last_txid, last_id} = batch.last
+        pending = pending_attrs(batch, destination)
 
-        pending = %{
-          pending_batch_id: batch.batch_id,
-          pending_first_txid: first_txid,
-          pending_first_id: first_id,
-          pending_last_txid: last_txid,
-          pending_last_id: last_id,
-          pending_attempts: 0,
-          pending_filter_version: destination.filter_version
-        }
-
-        {:ok, batch, Map.merge(attrs, pending)}
+        {:ok, batch, attrs |> Map.merge(pending) |> Map.merge(snapshot_attrs(organization))}
     end
+  end
+
+  defp pending_attrs(
+         %{first: {first_txid, first_id}, last: {last_txid, last_id}} = batch,
+         destination
+       ) do
+    %{
+      pending_batch_id: batch.batch_id,
+      pending_first_txid: first_txid,
+      pending_first_id: first_id,
+      pending_last_txid: last_txid,
+      pending_last_id: last_id,
+      pending_attempts: 0,
+      pending_filter_version: destination.filter_version
+    }
   end
 
   defp recent(events, nil), do: events
@@ -183,6 +223,7 @@ defmodule Kanban.AuditStream.PendingBatch do
       events: events,
       payloads: payloads,
       bytes: payloads |> Enum.map(&payload_size/1) |> Enum.sum(),
+      organization: organization,
       first: {first.txid, first.id},
       last: {last.txid, last.id}
     }

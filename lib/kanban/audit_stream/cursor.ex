@@ -10,9 +10,11 @@ defmodule Kanban.AuditStream.Cursor do
   a cursor at zero would silently stream the whole log.
 
   The `pending_` fields describe the batch being sent: its id, its range, how
-  many attempts it has had and the destination's `filter_version` it was cut
-  under, so a filter change discards it (D16). `leased_until` and
-  `lease_token` hold the lease of the run sending it.
+  many attempts it has had, the destination's `filter_version` it was cut
+  under, so a filter change discards it (D16), and the Organization id and
+  name its events carry, stored when it is cut so every retry builds the same
+  body (D428). `leased_until` and `lease_token` hold the lease of the run
+  sending it.
   """
 
   use Ecto.Schema
@@ -38,6 +40,8 @@ defmodule Kanban.AuditStream.Cursor do
     field :pending_last_id, :integer
     field :pending_attempts, :integer, default: 0
     field :pending_filter_version, :integer
+    field :pending_organization_id, :integer
+    field :pending_organization_name, :string
     field :next_attempt_at, :utc_datetime_usec
     field :leased_until, :utc_datetime_usec
     field :lease_token, Ecto.UUID
@@ -66,6 +70,8 @@ defmodule Kanban.AuditStream.Cursor do
       :pending_last_id,
       :pending_attempts,
       :pending_filter_version,
+      :pending_organization_id,
+      :pending_organization_name,
       :next_attempt_at,
       :leased_until,
       :lease_token,

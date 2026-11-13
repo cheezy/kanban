@@ -123,7 +123,8 @@ defmodule Kanban.AuditStream.SchemasTest do
                Enum.sort(~w(
                  destination_id last_txid last_event_id last_inserted_at not_before
                  pending_batch_id pending_first_txid pending_first_id pending_last_txid
-                 pending_last_id pending_attempts pending_filter_version next_attempt_at
+                 pending_last_id pending_attempts pending_filter_version
+                 pending_organization_id pending_organization_name next_attempt_at
                  leased_until lease_token restored_max_event_id restored_min_txid updated_at
                ))
 
@@ -690,6 +691,32 @@ defmodule Kanban.AuditStream.SchemasTest do
              )
 
       refute Cursor.changeset(base, %{last_txid: 0, last_event_id: 0, pending_attempts: -1}).valid?
+    end
+
+    test "cursor round-trips the Organization snapshot", ctx do
+      destination = insert!(ctx, :https)
+
+      %Cursor{destination_id: destination.id}
+      |> Cursor.changeset(%{
+        last_txid: 0,
+        last_event_id: 0,
+        pending_batch_id: Ecto.UUID.generate(),
+        pending_organization_id: ctx.organization.id,
+        pending_organization_name: "Snapshot name"
+      })
+      |> Repo.insert!()
+
+      loaded = Repo.get!(Cursor, destination.id)
+
+      assert {loaded.pending_organization_id, loaded.pending_organization_name} ==
+               {ctx.organization.id, "Snapshot name"}
+
+      cleared =
+        loaded
+        |> Cursor.changeset(%{pending_organization_id: nil, pending_organization_name: nil})
+        |> Repo.update!()
+
+      assert {cleared.pending_organization_id, cleared.pending_organization_name} == {nil, nil}
     end
 
     test "the restored bound is set whole or not at all", ctx do
