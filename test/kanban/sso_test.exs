@@ -240,6 +240,11 @@ defmodule Kanban.SSOTest do
       assert options[:url] == "https://93.184.216.34:8443/token"
       assert options[:headers] == [{"host", "idp.example.com:8443"}]
 
+      assert {:ok, options} = SSO.pinned_request("https://[2606:4700::1]:8443/token")
+      assert options[:url] == "https://[2606:4700::1]:8443/token"
+      assert options[:headers] == [{"host", "[2606:4700::1]:8443"}]
+      assert options[:connect_options] == [hostname: "2606:4700::1"]
+
       assert {:error, :unsafe_url} = SSO.pinned_request("https://internal.example.com/jwks")
       assert {:error, :unsafe_url} = SSO.pinned_request("http://idp.example.com/jwks")
     end

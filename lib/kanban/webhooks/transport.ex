@@ -6,7 +6,8 @@ defmodule Kanban.Webhooks.Transport do
     * **Pinned to the approved address.** The URL's host is replaced with
       the first address `Kanban.Webhooks.UrlGuard.check/2` approved (IPv4
       first), and the original host name goes in `connect_options` for TLS
-      SNI and certificate verification and in the `host` header. A DNS
+      SNI and certificate verification and in the `host` header (bracketed
+      when it is an IPv6 literal, see `host_header/1`). A DNS
       change between the check and the connection cannot reach another
       address.
     * **No redirects, no Req retries** (Oban owns retrying), no compression,
@@ -125,8 +126,33 @@ defmodule Kanban.Webhooks.Transport do
     URI.to_string(%URI{uri | host: address_host})
   end
 
-  defp host_header(%URI{host: host, port: port, scheme: scheme}) do
-    if port == URI.default_port(scheme), do: host, else: "#{host}:#{port}"
+  @doc """
+  The `host` header for a request to `uri`: its host, with `:port` when the
+  port is not the scheme's default. An IPv6 literal is bracketed
+  (`[2606:4700::1]:8443`), as RFC 7230 section 5.4 requires, because
+  `URI.parse/1` returns it without brackets. Host names and IPv4 literals are
+  unchanged. Only the header is bracketed: `connect_options` keeps the bare
+  host for TLS SNI and certificate verification.
+
+  A `nil` port is left out, as for the default port. The URI must have a
+  host: `Kanban.Webhooks.UrlGuard.check/2` refuses a URL without one, and
+  this raises `FunctionClauseError` rather than build an empty header.
+  """
+  @spec host_header(URI.t()) :: String.t()
+  def host_header(%URI{host: host, port: port, scheme: scheme}) when is_binary(host) do
+    host = bracket_ipv6(host)
+    if default_port?(scheme, port), do: host, else: "#{host}:#{port}"
+  end
+
+  defp default_port?(_scheme, nil), do: true
+  defp default_port?(scheme, port) when is_binary(scheme), do: port == URI.default_port(scheme)
+  defp default_port?(_scheme, _port), do: false
+
+  defp bracket_ipv6(host) do
+    case host |> String.to_charlist() |> :inet.parse_ipv6strict_address() do
+      {:ok, _address} -> "[#{host}]"
+      {:error, _reason} -> host
+    end
   end
 
   defp configured_options do

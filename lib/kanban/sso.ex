@@ -57,6 +57,7 @@ defmodule Kanban.SSO do
   alias Kanban.SSO.SSOConnection
   alias Kanban.SSO.TwoFactorLink
   alias Kanban.SSO.UserIdentity
+  alias Kanban.Webhooks.Transport
   alias Kanban.Webhooks.UrlGuard
 
   # --- configuration -----------------------------------------------------------
@@ -88,7 +89,8 @@ defmodule Kanban.SSO do
   Checks `url` as `guard_url/1` does and returns the Req options that send a
   request to an address the check approved: the URL's host is replaced with
   that address (IPv4 first), and the original host name goes in the `host`
-  header and in `connect_options` for TLS SNI and certificate verification. A
+  header (`Kanban.Webhooks.Transport.host_header/1`, which brackets an IPv6
+  literal) and in `connect_options` for TLS SNI and certificate verification. A
   DNS change between the check and the connection (DNS rebinding) therefore
   cannot reach another address. With `allow_private_issuers?/0` the URL is used
   as it is. Returns `{:ok, options}` or `{:error, :unsafe_url}`.
@@ -110,13 +112,9 @@ defmodule Kanban.SSO do
 
     [
       url: URI.to_string(%URI{uri | host: address |> :inet.ntoa() |> to_string()}),
-      headers: [{"host", host_header(uri)}],
+      headers: [{"host", Transport.host_header(uri)}],
       connect_options: [hostname: uri.host]
     ]
-  end
-
-  defp host_header(%URI{host: host, port: port, scheme: scheme}) do
-    if port == URI.default_port(scheme), do: host, else: "#{host}:#{port}"
   end
 
   defp url_resolver do

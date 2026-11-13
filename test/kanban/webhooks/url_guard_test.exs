@@ -157,6 +157,16 @@ defmodule Kanban.Webhooks.UrlGuardTest do
         assert check(url, resolver: resolving([@public_v4])) == {:error, :invalid_host}, url
       end
     end
+
+    test "an IPv6 literal with a zone id is refused, never resolved" do
+      for url <- [
+            "https://[fe80::1%25en0]/",
+            "https://[2606:4700::1%25en0]/",
+            "https://[2606:4700::1%en0]:8443/hook"
+          ] do
+        assert check(url, resolver: resolving([@public_v4])) == {:error, :invalid_url}, url
+      end
+    end
   end
 
   describe "check/2 with host names" do
