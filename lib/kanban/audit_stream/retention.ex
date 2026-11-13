@@ -53,18 +53,19 @@ defmodule Kanban.AuditStream.Retention do
 
   `:lease_wait_ms` (default 30 seconds) and `:lease_poll_ms` (default 500)
   are options, or `config :kanban, #{inspect(__MODULE__)}`, for tests.
+
+  The steps live in three modules: `Kanban.AuditStream.Retention.Leases`
+  takes, renews and releases the leases, `Kanban.AuditStream.Retention.Snapshot`
+  takes the counts, and `Kanban.AuditStream.Retention.Losses` records the
+  gaps. This module orders them, and holds every rescue and the release.
   """
 
   import Ecto.Query, only: [from: 2]
 
-  alias Kanban.AuditLog.AuditEvent
-  alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
-  alias Kanban.AuditStream.Gaps
-  alias Kanban.AuditStream.Lease
-  alias Kanban.AuditStream.Outcome
-  alias Kanban.AuditStream.PendingBatch
-  alias Kanban.AuditStream.Reader
+  alias Kanban.AuditStream.Retention.Leases
+  alias Kanban.AuditStream.Retention.Losses
+  alias Kanban.AuditStream.Retention.Snapshot
   alias Kanban.Repo
 
   require Logger
@@ -111,18 +112,24 @@ defmodule Kanban.AuditStream.Retention do
   end
 
   defp leased(organization_id, ids, cutoff, opts, known) do
-    case take_leases(ids, deadline(opts), setting(opts, :lease_poll_ms, @default_lease_poll_ms)) do
+    case Leases.take_all(
+           ids,
+           deadline(opts),
+           setting(opts, :lease_poll_ms, @default_lease_poll_ms)
+         ) do
       {:ok, leases} -> snapshot(organization_id, leases, cutoff, known)
       :held -> :lease_held
     end
   end
 
   defp snapshot(organization_id, leases, cutoff, known) do
-    extend_all(leases)
-    {:ok, %{leases: leases, snapshots: snapshots(organization_id, leases, cutoff), known: known}}
+    Leases.extend_all(leases)
+
+    {:ok,
+     %{leases: leases, snapshots: Snapshot.list(organization_id, leases, cutoff), known: known}}
   rescue
     error ->
-      release_all(leases)
+      Leases.release_all(leases)
       reraise error, __STACKTRACE__
   end
 
@@ -135,86 +142,18 @@ defmodule Kanban.AuditStream.Retention do
     |> Repo.all()
   end
 
-  defp take_leases(ids, deadline, poll_ms) do
-    Enum.reduce_while(ids, {:ok, []}, fn id, {:ok, leases} ->
-      case take(id, deadline, poll_ms) do
-        {:ok, token} ->
-          {:cont, {:ok, [{id, token} | leases]}}
-
-        :gone ->
-          {:cont, {:ok, leases}}
-
-        :held ->
-          release_all(leases)
-          {:halt, :held}
-      end
-    end)
-  end
-
-  defp take(id, deadline, poll_ms) do
-    case Lease.take(id) do
-      {:ok, token} -> {:ok, token}
-      :held -> wait(id, deadline, poll_ms)
-    end
-  end
-
-  # No cursor means the destination was deleted after it was listed.
-  defp wait(id, deadline, poll_ms) do
-    remaining = deadline - System.monotonic_time(:millisecond)
-
-    cond do
-      is_nil(Lease.seconds_left(id)) ->
-        :gone
-
-      remaining <= 0 ->
-        :held
-
-      true ->
-        poll_ms |> min(remaining) |> Process.sleep()
-        take(id, deadline, poll_ms)
-    end
-  end
-
   defp deadline(opts),
     do:
       System.monotonic_time(:millisecond) + setting(opts, :lease_wait_ms, @default_lease_wait_ms)
 
-  # Plain fields only, so a destination's secrets are never decrypted here.
-  defp snapshots(organization_id, leases, cutoff) do
-    tokens = Map.new(leases)
-    ids = Map.keys(tokens)
-
-    from(d in Destination,
-      join: c in Cursor,
-      on: c.destination_id == d.id,
-      where: d.id in ^ids,
-      order_by: d.id,
-      select: %{
-        id: d.id,
-        organization_id: d.organization_id,
-        kind: d.kind,
-        excluded_actions: d.excluded_actions,
-        include_personal_data: d.include_personal_data,
-        not_before: c.not_before,
-        last_txid: c.last_txid,
-        last_event_id: c.last_event_id,
-        pending_batch_id: c.pending_batch_id,
-        pending_last_txid: c.pending_last_txid,
-        pending_last_id: c.pending_last_id,
-        restored_max_event_id: c.restored_max_event_id,
-        restored_min_txid: c.restored_min_txid
-      }
-    )
-    |> Repo.all()
-    |> Enum.map(fn row ->
-      row
-      |> Map.put(:token, Map.fetch!(tokens, row.id))
-      |> Map.put(
-        :before,
-        Reader.loss_counts(organization_id, position(row), cutoff, filters(row))
-      )
-      |> Map.put(:pending_before, pending_count(organization_id, row, cutoff))
-    end)
+  # Never stops the purge: without the counts, a destination created during
+  # it records nothing, as before.
+  defp safe_counts_by_action(organization_id, cutoff) do
+    Snapshot.counts_by_action(organization_id, cutoff)
+  rescue
+    error ->
+      log_error("audit stream retention counts not taken", organization_id, error)
+      nil
   end
 
   # --- 3, 4, 5: purge, record, release ------------------------------------------
@@ -223,12 +162,12 @@ defmodule Kanban.AuditStream.Retention do
   # runs exactly as before.
   defp purge_leased(organization_id, cutoff, purge_fun, prepared) do
     %{leases: leases, snapshots: snapshots, known: {ids, by_action}} = prepared
-    result = run_purge(purge_fun, fn -> extend_all(leases) end)
+    result = run_purge(purge_fun, fn -> Leases.extend_all(leases) end)
     Enum.each(snapshots, &record_loss(organization_id, &1, cutoff))
     record_created(organization_id, cutoff, ids, by_action)
     finish(result)
   after
-    release_all(prepared.leases)
+    Leases.release_all(prepared.leases)
   end
 
   defp run_purge(purge_fun, keep_alive) do
@@ -240,236 +179,21 @@ defmodule Kanban.AuditStream.Retention do
   defp finish({:ok, result}), do: result
   defp finish({:raised, error, stacktrace}), do: reraise(error, stacktrace)
 
-  defp record_loss(_organization_id, %{before: %{events: 0}}, _cutoff), do: :ok
-
   defp record_loss(organization_id, snapshot, cutoff) do
-    after_purge =
-      Reader.loss_counts(organization_id, position(snapshot), cutoff, filters(snapshot))
-
-    lost = snapshot.before.events - after_purge.events
-
-    if lost > 0,
-      do:
-        write_loss(
-          organization_id,
-          snapshot,
-          lost_range(snapshot.before, after_purge, lost),
-          cutoff
-        ),
-      else: :ok
+    Losses.record(organization_id, snapshot, cutoff)
   rescue
     error -> log_error("audit stream gap not recorded", snapshot.id, error)
-  end
-
-  # The purge deletes oldest first, so the lost events are the oldest of the
-  # first count. When some are still there, the last lost one is gone and
-  # the first survivor's time bounds it.
-  defp lost_range(before, %{events: 0}, lost),
-    do: %{events: lost, first_at: before.first_at, last_at: before.last_at}
-
-  defp lost_range(before, after_purge, lost),
-    do: %{
-      events: lost,
-      first_at: before.first_at,
-      last_at: Enum.min([before.last_at, after_purge.first_at], DateTime)
-    }
-
-  defp write_loss(organization_id, snapshot, loss, cutoff) do
-    result =
-      Repo.transact(fn ->
-        case lock_destination(snapshot.id) do
-          nil -> {:ok, nil}
-          destination -> record_locked(organization_id, destination, snapshot, loss, cutoff)
-        end
-      end)
-
-    case result do
-      {:ok, recorded} ->
-        Gaps.emit_recorded(recorded)
-
-      {:error, _changeset} ->
-        Logger.error("audit stream gap not recorded destination_id=#{snapshot.id} reason=invalid")
-    end
-  end
-
-  defp record_locked(organization_id, destination, snapshot, loss, cutoff) do
-    cursor = leased_cursor(snapshot)
-
-    with {:ok, recorded} <- Gaps.record(destination, :retention, loss, DateTime.utc_now()),
-         {:ok, _cursor} <- discard_pending(organization_id, snapshot, cursor, cutoff) do
-      {:ok, recorded}
-    end
-  end
-
-  # The lease is renewed before every batch, so it expires only when a step
-  # outlasts it; while its token is unchanged no other run has taken it, and
-  # this run still owns the cursor. When another run has taken it, that run
-  # may have sent some of the counted events before they were deleted, so
-  # the gap can overstate the loss; it is still recorded, since an overstated
-  # gap is visible and a missing one is not.
-  defp leased_cursor(snapshot) do
-    case Lease.owned(snapshot.id, snapshot.token) do
-      nil ->
-        Logger.warning(
-          "audit stream lease lost during retention destination_id=#{snapshot.id}: " <>
-            "the gap may overstate the loss"
-        )
-
-        nil
-
-      cursor ->
-        cursor
-    end
-  end
-
-  # A pending batch that lost events no longer names the events it was cut
-  # as, so it is discarded and the next run cuts a new one (§8.3). Only
-  # while this run still holds the lease and the batch is the one counted.
-  defp discard_pending(_organization_id, %{pending_before: nil}, _cursor, _cutoff),
-    do: {:ok, nil}
-
-  defp discard_pending(_organization_id, %{pending_before: 0}, _cursor, _cutoff), do: {:ok, nil}
-
-  defp discard_pending(_organization_id, _snapshot, nil, _cutoff), do: {:ok, nil}
-
-  defp discard_pending(organization_id, snapshot, %Cursor{} = cursor, cutoff) do
-    pending_lost = snapshot.pending_before - pending_count(organization_id, snapshot, cutoff)
-
-    if pending_lost > 0 and cursor.pending_batch_id == snapshot.pending_batch_id,
-      do: cursor |> Cursor.changeset(Outcome.cleared_pending_attrs()) |> Repo.update(),
-      else: {:ok, nil}
-  end
-
-  defp pending_count(_organization_id, %{pending_batch_id: nil}, _cutoff), do: nil
-
-  defp pending_count(organization_id, row, cutoff) do
-    through = {row.pending_last_txid, row.pending_last_id}
-    opts = [{:through, through} | filters(row)]
-    Reader.loss_counts(organization_id, position(row), cutoff, opts).events
-  end
-
-  # --- destinations created during the purge -----------------------------------
-
-  defp counts_by_action(organization_id, cutoff) do
-    from(e in AuditEvent,
-      where: e.organization_id == ^organization_id and e.inserted_at < ^cutoff,
-      group_by: e.action,
-      select:
-        {e.action,
-         %{events: count(e.id), first_at: min(e.inserted_at), last_at: max(e.inserted_at)}}
-    )
-    |> Repo.all()
-    |> Map.new()
-  end
-
-  # Never stops the purge: without the counts, a destination created during
-  # it records nothing, as before.
-  defp safe_counts_by_action(organization_id, cutoff) do
-    counts_by_action(organization_id, cutoff)
-  rescue
-    error ->
-      log_error("audit stream retention counts not taken", organization_id, error)
-      nil
   end
 
   defp record_created(_organization_id, _cutoff, _known_ids, nil), do: :ok
 
   defp record_created(organization_id, cutoff, known_ids, by_action) do
-    case created_from_everything(organization_id, known_ids) do
-      [] -> :ok
-      created -> record_created_losses(organization_id, cutoff, created, by_action)
-    end
+    Losses.record_created(organization_id, cutoff, known_ids, by_action)
   rescue
     error -> log_error("audit stream gap not recorded", organization_id, error)
   end
 
-  defp record_created_losses(organization_id, cutoff, created, by_action) do
-    gone = gone_by_action(by_action, counts_by_action(organization_id, cutoff))
-    Enum.each(created, &record_created_loss(&1, gone))
-  end
-
-  # Only a destination starting from everything (cursor (0, 0), no
-  # not_before) was owed events older than the cutoff.
-  defp created_from_everything(organization_id, known_ids) do
-    from(d in Destination,
-      join: c in Cursor,
-      on: c.destination_id == d.id,
-      where:
-        d.organization_id == ^organization_id and d.id not in ^known_ids and
-          c.last_txid == 0 and c.last_event_id == 0 and is_nil(c.not_before),
-      order_by: d.id,
-      select: %{id: d.id, excluded_actions: d.excluded_actions}
-    )
-    |> Repo.all()
-  end
-
-  defp gone_by_action(by_action, after_purge) do
-    Map.new(by_action, fn {action, before} ->
-      left = after_purge |> Map.get(action, %{events: 0}) |> Map.fetch!(:events)
-      {action, Map.put(before, :events, before.events - left)}
-    end)
-  end
-
-  defp record_created_loss(%{id: id, excluded_actions: excluded}, gone) do
-    excluded = MapSet.new(excluded || [], &to_string/1)
-
-    lost =
-      for {action, %{events: n} = loss} <- gone,
-          n > 0,
-          not MapSet.member?(excluded, action),
-          do: loss
-
-    if lost != [], do: write_created_loss(id, combine(lost)), else: :ok
-  end
-
-  defp combine(losses),
-    do: %{
-      events: losses |> Enum.map(& &1.events) |> Enum.sum(),
-      first_at: losses |> Enum.map(& &1.first_at) |> Enum.min(DateTime),
-      last_at: losses |> Enum.map(& &1.last_at) |> Enum.max(DateTime)
-    }
-
-  defp write_created_loss(id, loss) do
-    Logger.warning(
-      "audit stream destination created during retention destination_id=#{id}: " <>
-        "the gap may overstate the loss"
-    )
-
-    result =
-      Repo.transact(fn ->
-        case lock_destination(id) do
-          nil -> {:ok, nil}
-          destination -> Gaps.record(destination, :retention, loss, DateTime.utc_now())
-        end
-      end)
-
-    case result do
-      {:ok, recorded} ->
-        Gaps.emit_recorded(recorded)
-
-      {:error, _changeset} ->
-        Logger.error("audit stream gap not recorded destination_id=#{id} reason=invalid")
-    end
-  end
-
-  defp lock_destination(id) do
-    from(d in Destination,
-      where: d.id == ^id,
-      lock: "FOR UPDATE",
-      select: %{id: d.id, organization_id: d.organization_id, kind: d.kind}
-    )
-    |> Repo.one()
-  end
-
-  defp extend_all(leases), do: Enum.each(leases, fn {id, token} -> Lease.extend(id, token) end)
-
-  defp release_all(leases), do: Enum.each(leases, fn {id, token} -> Lease.release(id, token) end)
-
   # --- helpers -----------------------------------------------------------------
-
-  defp position(row), do: {row.last_txid, row.last_event_id}
-
-  defp filters(row), do: PendingBatch.filters(row, row)
 
   defp setting(opts, key, default) do
     Keyword.get_lazy(opts, key, fn ->

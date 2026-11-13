@@ -14,7 +14,7 @@ defmodule Kanban.AuditStream.Gaps do
   recorded by `audit_due/1`, which the minute sweep runs: once the day has
   passed, every open gap that grew since its last event gets one, so no loss
   is left out of the stream for want of a later one. Dismissing a gap that
-  grew since its last event records that event first, with the final count. The callers are `Kanban.AuditStream.Retention`,
+  grew since its last event records that event first, with the final count. The callers are `Kanban.AuditStream.Retention.Losses`,
   `Kanban.AuditStream.AgeLimit` and `Kanban.AuditStream.Reseed`, each holding
   the destination row lock, so two writers never open two gaps.
 

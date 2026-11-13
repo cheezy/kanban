@@ -86,7 +86,7 @@ defmodule Kanban.AuditStream.Lease do
   The cursor of `destination_id`, locked `FOR UPDATE`, when it still
   carries `token`, whether or not the lease has expired; else nil. A token
   unchanged since it was taken means no other run has taken the lease, so
-  the holder may still write, as `Kanban.AuditStream.Retention` does after a
+  the holder may still write, as `Kanban.AuditStream.Retention.Losses` does after a
   long purge. Call it inside a transaction.
   """
   @spec owned(integer(), Ecto.UUID.t()) :: Cursor.t() | nil

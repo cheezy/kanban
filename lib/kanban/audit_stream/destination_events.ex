@@ -2,7 +2,7 @@ defmodule Kanban.AuditStream.DestinationEvents do
   @moduledoc """
   The audit events `Kanban.AuditStream.Destinations`,
   `Kanban.AuditStream.BatchActions`, `Kanban.AuditStream.TestEvent`,
-  `Kanban.AuditStream.DispatchWorker`, `Kanban.AuditStream.Gaps` and
+  `Kanban.AuditStream.DispatchRows`, `Kanban.AuditStream.Gaps` and
   `Kanban.AuditStream.Reseed` record, with the keys
   `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §13.2 lists. Each is a literal
   `AuditLog.event/2` call so the telemetry call-site tests see it.

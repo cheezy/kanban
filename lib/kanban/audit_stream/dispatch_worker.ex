@@ -36,7 +36,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
        `too_old` gap (`Kanban.AuditStream.AgeLimit`); then re-read the
        pending batch or cut the next one (`Kanban.AuditStream.PendingBatch`),
        never holding a too-old event, and commit it as pending.
-    2. **Send.** Build the request with the kind's adapter, check the URL
+    2. **Send** (`Kanban.AuditStream.Send`). Build the request with the kind's adapter, check the URL
        again with `Kanban.Webhooks.UrlGuard` (DNS may have changed), and POST
        it through `Kanban.Webhooks.Transport` to the approved address. The
        POST runs in a supervised task that is stopped after
@@ -46,7 +46,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
        a timeout, and one whose task crashes is a failed connection: both
        are recorded and retried like any transport error, so a destination
        that never answers in time still moves to Retrying and Failing.
-    3. **Record.** Under the lease again: record an attempt and apply the
+    3. **Record** (`Kanban.AuditStream.Send`). Under the lease again: record an attempt and apply the
        outcome (`Kanban.AuditStream.Outcome`) to the cursor and the
        destination, record `audit_stream_failing` or
        `audit_stream_recovered` on a move into or out of Failing, queue the
@@ -71,8 +71,10 @@ defmodule Kanban.AuditStream.DispatchWorker do
   change while a send is in flight does not interrupt it: on 2xx the cursor
   moves past it as usual, and the next run cuts under the new settings.
 
-  `batch_delivered` and `batch_failed` are emitted after the outcome
-  commits, with the destination's kind and the attempt's outcome only.
+  `batch_delivered` and `batch_failed` are emitted by
+  `Kanban.AuditStream.Send` after the outcome commits, with the destination's
+  kind and the attempt's outcome only. Prepare and record lock and write the
+  rows through `Kanban.AuditStream.DispatchRows`.
 
   `perform/1` returns `:ok` on every path it handles: the destination's own
   `next_attempt_at` paces retries, not Oban's attempts. The one exception
@@ -103,21 +105,17 @@ defmodule Kanban.AuditStream.DispatchWorker do
   alias Kanban.AuditStream
   alias Kanban.AuditStream.Adapter
   alias Kanban.AuditStream.AgeLimit
-  alias Kanban.AuditStream.Attempt
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
-  alias Kanban.AuditStream.DestinationEvents
+  alias Kanban.AuditStream.DispatchRows
   alias Kanban.AuditStream.Gaps
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Pacing
   alias Kanban.AuditStream.PendingBatch
-  alias Kanban.AuditStream.Reachability
+  alias Kanban.AuditStream.Send
   alias Kanban.Organizations.Organization
   alias Kanban.Repo
-  alias Kanban.Webhooks.Transport
-
-  require Logger
 
   @send_timeout_ms 30_000
   @send_deadline_ms 45_000
@@ -195,8 +193,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
         Gaps.emit_recorded(context.gap)
 
         context
-        |> send_batch()
-        |> record(destination_id, token, deadline)
+        |> Send.deliver(destination_id, token, deadline)
         |> drain(destination_id, deadline)
 
       {:ok, {:stopped, gap}} ->
@@ -224,8 +221,8 @@ defmodule Kanban.AuditStream.DispatchWorker do
   # --- 1. prepare ------------------------------------------------------------
 
   defp prepare(destination_id, token) do
-    with {:ok, destination} <- lock_destination(destination_id),
-         {:ok, cursor} <- guard(destination_id, token) do
+    with {:ok, destination} <- DispatchRows.lock_destination(destination_id),
+         {:ok, cursor} <- DispatchRows.guard(destination_id, token) do
       destination
       |> check(cursor)
       |> prepared(destination, cursor)
@@ -265,7 +262,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
   defp prepared({:halt, reason, text}, destination, cursor) do
     plan = Outcome.halt(destination, reason, text, DateTime.utc_now())
 
-    with {:ok, _destination} <- apply_status(destination, plan) do
+    with {:ok, _destination} <- DispatchRows.apply_status(destination, plan) do
       stop(cursor, plan.cursor)
     end
   end
@@ -288,7 +285,7 @@ defmodule Kanban.AuditStream.DispatchWorker do
   # snapshot stored when it was cut, or, for a batch cut before the snapshot
   # existed, the live row read once and stored then (D428).
   defp cut({:ok, batch, attrs}, {adapter, destination, cursor, gap}) do
-    with {:ok, _cursor} <- update_cursor(cursor, attrs) do
+    with {:ok, _cursor} <- DispatchRows.update_cursor(cursor, attrs) do
       {:ok,
        {:send,
         %{
@@ -310,7 +307,8 @@ defmodule Kanban.AuditStream.DispatchWorker do
   end
 
   defp stop(cursor, attrs) do
-    with {:ok, _cursor} <- update_cursor(cursor, Map.merge(attrs, Lease.release_attrs())) do
+    with {:ok, _cursor} <-
+           DispatchRows.update_cursor(cursor, Map.merge(attrs, Lease.release_attrs())) do
       {:ok, :stopped}
     end
   end
@@ -343,224 +341,5 @@ defmodule Kanban.AuditStream.DispatchWorker do
       from(o in Organization, where: o.id == ^organization_id, select: %{id: o.id, name: o.name})
 
     Repo.one!(query)
-  end
-
-  # --- 2. send (no transaction open) ----------------------------------------
-
-  defp send_batch(
-         %{adapter: adapter, destination: destination, organization: organization, batch: batch} =
-           context
-       ) do
-    {url, headers, body} =
-      adapter.build_request(destination, %{
-        batch_id: batch.batch_id,
-        events: batch.payloads,
-        organization: organization
-      })
-
-    started_at = DateTime.utc_now()
-    start = System.monotonic_time()
-    result = post(url, body, headers)
-    duration_ms = System.convert_time_unit(System.monotonic_time() - start, :native, :millisecond)
-
-    Map.merge(context, %{
-      result: result,
-      started_at: started_at,
-      duration_ms: duration_ms
-    })
-  end
-
-  defp post(url, body, headers) do
-    case Reachability.check_url(url) do
-      {:ok, resolved} ->
-        within_deadline(fn ->
-          Transport.post(resolved, body, headers, request_timeout: @send_timeout_ms)
-        end)
-
-      {:error, reason} ->
-        {:guard_error, reason}
-    end
-  end
-
-  # The POST runs unlinked, so a crash in it is an outcome rather than the
-  # end of the run, and a send that outlasts the deadline is stopped.
-  defp within_deadline(post) do
-    task = Task.Supervisor.async_nolink(Kanban.TaskSupervisor, post)
-
-    case Task.yield(task, send_deadline_ms()) || Task.shutdown(task, :brutal_kill) do
-      {:ok, result} -> posted(result)
-      {:exit, _reason} -> {:transport_error, :crashed}
-      nil -> {:transport_error, %Req.TransportError{reason: :timeout}}
-    end
-  end
-
-  defp posted({:ok, response}), do: {:response, response}
-  defp posted({:error, error}), do: {:transport_error, error}
-
-  # --- 3. record --------------------------------------------------------------
-
-  # `:drain` when the run sends the next batch itself, else `:done`.
-  defp record(sent, destination_id, token, deadline) do
-    class = Outcome.classify(sent.result, sent.adapter, length(sent.batch.events))
-
-    case Repo.transact(fn -> record_locked(sent, class, destination_id, token, deadline) end) do
-      {:ok, {destination, step}} ->
-        emit(class, destination, sent)
-        if Pacing.continue?(step, destination), do: :drain, else: :done
-
-      {:error, reason} ->
-        not_recorded(reason, destination_id)
-    end
-  end
-
-  defp not_recorded(reason, destination_id) do
-    Logger.warning(
-      "audit stream outcome for destination #{destination_id} not recorded: " <>
-        not_recorded(reason)
-    )
-
-    requeue(reason, destination_id)
-    :done
-  end
-
-  # A run that lost its lease moved nothing, so the batch still needs a run:
-  # queue one now. It snoozes while another run holds the lease.
-  defp requeue(:lease_lost, destination_id) do
-    {:ok, _job} = AuditStream.enqueue_dispatch(destination_id)
-    :ok
-  end
-
-  defp requeue(_reason, _destination_id), do: :ok
-
-  # A bounded reason for the log: never a changeset, which holds the values.
-  defp not_recorded(reason) when reason in [:gone, :lease_lost], do: Atom.to_string(reason)
-  defp not_recorded(_reason), do: "invalid"
-
-  defp record_locked(sent, class, destination_id, token, deadline) do
-    with {:ok, destination} <- lock_destination(destination_id),
-         {:ok, cursor} <- guard(destination_id, token) do
-      error = Outcome.error_text(class, sent.result, sent.adapter)
-      {plan, step} = plan(sent, class, error, destination, cursor, deadline)
-
-      with {:ok, destination} <- apply_plan(plan, sent, class, error, destination, cursor) do
-        {:ok, {destination, step}}
-      end
-    end
-  end
-
-  defp plan(sent, class, error, destination, cursor, deadline) do
-    now = DateTime.utc_now()
-    batch = Map.put(sent.batch, :pending_attempts, cursor.pending_attempts)
-    step = next_step(class, destination, cursor, sent.batch.last, now, deadline)
-    {class |> Outcome.plan(error, destination, batch, now) |> Pacing.adjust(step), step}
-  end
-
-  # Only a delivered batch drains or paces; every other outcome keeps the
-  # follow-up its plan sets.
-  defp next_step(:delivered, destination, cursor, last, now, deadline),
-    do: Pacing.step(destination, cursor, last, now, deadline)
-
-  defp next_step(_class, _destination, _cursor, _last, _now, _deadline), do: :follow_up
-
-  defp apply_plan(plan, sent, class, error, destination, cursor) do
-    with {:ok, _attempt} <- insert_attempt(destination.id, sent, class, error),
-         {:ok, _cursor} <- update_cursor(cursor, Map.merge(plan.cursor, Lease.release_attrs())),
-         {:ok, destination} <- apply_status(destination, plan),
-         :ok <- follow_up(destination, plan.follow_up_at) do
-      {:ok, destination}
-    end
-  end
-
-  defp insert_attempt(destination_id, sent, class, error) do
-    {_first_txid, first_id} = sent.batch.first
-    {_last_txid, last_id} = sent.batch.last
-
-    %Attempt{}
-    |> Attempt.changeset(%{
-      destination_id: destination_id,
-      batch_id: sent.batch.batch_id,
-      started_at: sent.started_at,
-      duration_ms: sent.duration_ms,
-      event_count: length(sent.batch.events),
-      bytes: sent.batch.bytes,
-      first_event_id: first_id,
-      last_event_id: last_id,
-      http_status: http_status(sent.result),
-      outcome: Outcome.attempt_outcome(class),
-      error: error
-    })
-    |> Repo.insert()
-  end
-
-  defp http_status({:response, %{status: status}}), do: status
-  defp http_status(_result), do: nil
-
-  # A paused or halted destination gets no follow-up; the sweep, or the
-  # person clearing the halt, queues the next run.
-  defp follow_up(_destination, nil), do: :ok
-
-  defp follow_up(%Destination{enabled: true, halted_reason: nil} = destination, due_at) do
-    {:ok, _job} = AuditStream.enqueue_dispatch(destination.id, scheduled_at: due_at)
-    :ok
-  end
-
-  defp follow_up(_destination, _due_at), do: :ok
-
-  # --- shared ------------------------------------------------------------------
-
-  defp lock_destination(destination_id) do
-    query = from(d in Destination, where: d.id == ^destination_id, lock: "FOR UPDATE")
-
-    case Repo.one(query) do
-      nil -> {:error, :gone}
-      destination -> {:ok, destination}
-    end
-  end
-
-  defp guard(destination_id, token) do
-    case Lease.guard(destination_id, token) do
-      nil -> {:error, :lease_lost}
-      cursor -> {:ok, cursor}
-    end
-  end
-
-  defp update_cursor(cursor, attrs) when map_size(attrs) == 0, do: {:ok, cursor}
-  defp update_cursor(cursor, attrs), do: cursor |> Cursor.changeset(attrs) |> Repo.update()
-
-  # Only the status fields are written, so a secret that loaded as
-  # :unreadable is never dumped and lock_version never moves.
-  defp apply_status(destination, plan) do
-    with {:ok, updated} <-
-           destination |> Destination.status_changeset(plan.destination) |> Repo.update() do
-      record_audit(plan.audit, updated)
-      {:ok, updated}
-    end
-  end
-
-  defp record_audit(nil, _destination), do: :ok
-  defp record_audit(:recovered, destination), do: DestinationEvents.recovered(destination)
-
-  defp record_audit({:failing, reason}, destination),
-    do: DestinationEvents.failing(destination, reason)
-
-  defp emit(:delivered, destination, sent) do
-    Kanban.Telemetry.emit(
-      [:kanban, :audit_stream, :batch_delivered],
-      %{
-        count: 1,
-        events: length(sent.batch.events),
-        bytes: sent.batch.bytes,
-        duration_ms: sent.duration_ms
-      },
-      %{kind: destination.kind}
-    )
-  end
-
-  defp emit(class, destination, sent) do
-    Kanban.Telemetry.emit(
-      [:kanban, :audit_stream, :batch_failed],
-      %{count: 1, duration_ms: sent.duration_ms},
-      %{kind: destination.kind, outcome: Outcome.attempt_outcome(class)}
-    )
   end
 end

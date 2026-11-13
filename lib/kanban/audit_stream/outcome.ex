@@ -2,8 +2,9 @@ defmodule Kanban.AuditStream.Outcome do
   @moduledoc """
   What one send of an audit stream batch means for the destination, its
   cursor and its attempt record (`docs/plans/AUDIT-LOG-STREAMING-DESIGN.md`
-  §8.2, §8.4, §8.7). Pure: `Kanban.AuditStream.DispatchWorker` reads the rows,
-  sends, and writes what `plan/5` and `halt/4` return.
+  §8.2, §8.4, §8.7). Pure: `Kanban.AuditStream.DispatchWorker` reads the rows
+  and writes what `halt/4` returns, and `Kanban.AuditStream.Send` sends and
+  writes what `plan/5` returns.
 
   ## Classes
 
