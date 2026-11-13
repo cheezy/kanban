@@ -210,10 +210,22 @@ defmodule Kanban.AuditStream do
   when nothing else the destination needs is unreadable. Another kind gets
   `{:error, :not_https}`, and a destination loaded before another save
   `{:error, changeset}` with an error on `:id`.
+
+  Only one previous secret is kept, so a readable current secret can't be
+  rotated again until the last rotation's 24 hours have ended: until then
+  the call returns `{:error, {:rotation_overlap, previous_secret_expires_at}}`,
+  the time it can rotate again, and changes and records nothing. The check is
+  made under the destination's row lock, after the rights check. Replacing an
+  unreadable current secret is never refused.
   """
   @spec rotate_signing_secret(Scope.t() | nil, Destination.t()) ::
           {:ok, {Destination.t(), String.t()}}
-          | {:error, :unauthorized | :not_found | :not_https | Changeset.t()}
+          | {:error,
+             :unauthorized
+             | :not_found
+             | :not_https
+             | {:rotation_overlap, DateTime.t()}
+             | Changeset.t()}
   def rotate_signing_secret(scope, %Destination{} = destination),
     do: Destinations.rotate(scope, destination)
 

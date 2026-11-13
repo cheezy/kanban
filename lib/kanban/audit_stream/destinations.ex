@@ -169,7 +169,12 @@ defmodule Kanban.AuditStream.Destinations do
   """
   @spec rotate(Scope.t() | nil, Destination.t()) ::
           {:ok, {Destination.t(), String.t()}}
-          | {:error, :unauthorized | :not_found | :not_https | Changeset.t()}
+          | {:error,
+             :unauthorized
+             | :not_found
+             | :not_https
+             | {:rotation_overlap, DateTime.t()}
+             | Changeset.t()}
   def rotate(scope, %Destination{id: id, lock_version: lock_version}) do
     with {:ok, actor, organization_id} <- authorize(scope) do
       fn -> rotate_locked(organization_id, id, lock_version, actor) end
@@ -434,6 +439,7 @@ defmodule Kanban.AuditStream.Destinations do
   defp rotate_locked(organization_id, id, lock_version, actor) do
     with {:ok, fresh} <- fetch_authorized(actor, organization_id, id),
          :ok <- require_https(fresh),
+         :ok <- require_no_overlap(fresh),
          {:ok, destination} <-
            fresh |> rotation_changeset(lock_version) |> Repo.update(stale_error_field: :id) do
       DestinationEvents.rotated(destination, actor)
@@ -443,6 +449,18 @@ defmodule Kanban.AuditStream.Destinations do
 
   defp require_https(%Destination{kind: :https}), do: :ok
   defp require_https(%Destination{}), do: {:error, :not_https}
+
+  # Read from the locked row, after the rights check. An unreadable current
+  # secret is replaced with no overlap, so it is never refused: that is how a
+  # broken secret is repaired.
+  defp require_no_overlap(%Destination{signing_secret: current} = fresh)
+       when is_binary(current) do
+    if SigningSecrets.in_overlap?(fresh, DateTime.utc_now()),
+      do: {:error, {:rotation_overlap, fresh.previous_secret_expires_at}},
+      else: :ok
+  end
+
+  defp require_no_overlap(%Destination{}), do: :ok
 
   defp rotation_changeset(fresh, lock_version) do
     attrs =

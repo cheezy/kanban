@@ -1178,7 +1178,15 @@ the warning that it will not be shown again.
   error).
 
 For HTTPS destinations it has **Rotate signing secret**, which keeps the old
-secret valid for 24 hours and shows the new one once.
+secret valid for 24 hours and shows the new one once. Only one previous
+secret is kept, so a second rotation is refused until those 24 hours have
+ended: `rotate_signing_secret/2` returns
+`{:error, {:rotation_overlap, previous_secret_expires_at}}`, the time it can
+rotate again, and changes nothing. Otherwise a receiver still verifying with
+the old secret would lose it before its 24 hours were up. The check is made
+under the destination's row lock, so two rotations at once can't both pass
+it, and after the org-admin check, so the refusal tells nobody else that a
+rotation is under way.
 
 When a batch has been rejected ([§8.4](#84-retries-and-failure)), the page
 shows the destination's answer as Stride classified it, the number of events
@@ -1436,8 +1444,10 @@ subject to an account's IP allow list.
   - the edit form asks again for an unreadable URL or credential
     ([§10.3](#103-adding-or-editing-a-destination)). An unreadable HTTPS
     signing secret, which Stride generated, is replaced with **Rotate signing
-    secret**, with no 24-hour overlap, since the old one can't be used. A
-    previous signing secret that can't be read is dropped;
+    secret**, with no 24-hour overlap, since the old one can't be used. That
+    replacement is allowed at any time, even during another rotation's 24
+    hours. A previous signing secret that can't be read is dropped, and never
+    holds up a rotation;
   - the halt clears as soon as every secret the destination needs can be read
     again. Events wait in the audit log meanwhile, and retention gaps still
     apply ([§8.6](#86-retention-and-a-destination-that-falls-behind)).

@@ -36,6 +36,26 @@ defmodule Kanban.AuditStream.SigningSecrets do
     do: %{previous_signing_secret: nil, previous_secret_expires_at: nil}
 
   @doc """
+  Whether `destination` still has a readable previous secret whose 24 hours
+  have not ended at `now`. A rotation then would overwrite that secret while
+  receivers may still verify with it. An expiry at exactly `now` has ended,
+  as it has for signing. An unreadable previous secret can't verify anything,
+  so it is never in its overlap.
+  """
+  @spec in_overlap?(Destination.t(), DateTime.t()) :: boolean()
+  def in_overlap?(
+        %Destination{
+          previous_signing_secret: previous,
+          previous_secret_expires_at: %DateTime{} = expires_at
+        },
+        %DateTime{} = now
+      )
+      when is_binary(previous),
+      do: DateTime.after?(expires_at, now)
+
+  def in_overlap?(%Destination{}, %DateTime{}), do: false
+
+  @doc """
   Hides a destination's signing secrets. Takes a destination, a list of
   them, or an `{:ok, _}` or `{:error, changeset}` result, whose data, changes
   and params lose the secrets too. A secret that can't be read stays

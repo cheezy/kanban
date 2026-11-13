@@ -28,6 +28,62 @@ defmodule Kanban.AuditStream.SigningSecretsTest do
     end
   end
 
+  describe "in_overlap?/2" do
+    setup do
+      now = DateTime.utc_now(:second)
+
+      %{
+        now: now,
+        destination: %Destination{
+          signing_secret: "assec_now",
+          previous_signing_secret: "assec_old",
+          previous_secret_expires_at: DateTime.add(now, 60, :second)
+        }
+      }
+    end
+
+    test "a readable previous secret that has not expired is in its overlap", %{
+      destination: %Destination{} = destination,
+      now: now
+    } do
+      assert SigningSecrets.in_overlap?(destination, now)
+    end
+
+    test "an expiry exactly at now has ended", %{
+      destination: %Destination{} = destination,
+      now: now
+    } do
+      destination = %Destination{destination | previous_secret_expires_at: now}
+      refute SigningSecrets.in_overlap?(destination, now)
+    end
+
+    test "an expiry in the past has ended", %{destination: %Destination{} = destination, now: now} do
+      expired = DateTime.add(now, -1, :second)
+      destination = %Destination{destination | previous_secret_expires_at: expired}
+      refute SigningSecrets.in_overlap?(destination, now)
+    end
+
+    test "no previous secret, or one that can't be read, is never in its overlap", %{
+      destination: %Destination{} = destination,
+      now: now
+    } do
+      refute SigningSecrets.in_overlap?(%Destination{}, now)
+
+      for previous <- [nil, :unreadable] do
+        destination = %Destination{destination | previous_signing_secret: previous}
+        refute SigningSecrets.in_overlap?(destination, now)
+      end
+    end
+
+    test "a previous secret with no expiry is not in its overlap", %{
+      destination: %Destination{} = destination,
+      now: now
+    } do
+      destination = %Destination{destination | previous_secret_expires_at: nil}
+      refute SigningSecrets.in_overlap?(destination, now)
+    end
+  end
+
   describe "conceal/1 and reveal/1" do
     setup do
       %{

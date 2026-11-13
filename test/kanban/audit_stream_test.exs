@@ -5,6 +5,7 @@ defmodule Kanban.AuditStreamTest do
   import Kanban.AccountsFixtures
   import Kanban.AuditStreamFixtures
   import Kanban.OrganizationsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.AuditLog.AuditEvent
@@ -33,6 +34,28 @@ defmodule Kanban.AuditStreamTest do
   end
 
   defp reload(destination), do: Repo.get!(Destination, destination.id)
+
+  # Moves the previous secret's expiry, leaving lock_version alone, so a
+  # rotation's 24-hour overlap can be ended without waiting for it.
+  defp end_overlap!(destination, at \\ :second |> DateTime.utc_now() |> DateTime.add(-1, :second)) do
+    {1, _} =
+      from(d in Destination, where: d.id == ^destination.id)
+      |> Repo.update_all(set: [previous_secret_expires_at: at])
+
+    :ok
+  end
+
+  defp secrets(destination) do
+    stored = reload(destination)
+
+    Map.take(stored, [
+      :signing_secret,
+      :previous_signing_secret,
+      :previous_secret_expires_at,
+      :lock_version
+    ])
+  end
+
   defp cursor(destination), do: Repo.get!(Cursor, destination.id)
 
   defp events(organization_id, action) do
@@ -713,6 +736,7 @@ defmodule Kanban.AuditStreamTest do
       {:ok, got} = AuditStream.get_destination(ctx.scope, destination.id)
       {:ok, updated} = AuditStream.update_destination(ctx.scope, rotated, %{name: "Renamed"})
       {:error, stale} = AuditStream.update_destination(ctx.scope, rotated, %{name: "Stale"})
+      end_overlap!(rotated)
       {:error, stale_rotate} = AuditStream.rotate_signing_secret(ctx.scope, rotated)
       {:ok, paused} = AuditStream.pause_destination(ctx.scope, updated)
       {:ok, resumed} = AuditStream.resume_destination(ctx.scope, paused)
@@ -759,9 +783,97 @@ defmodule Kanban.AuditStreamTest do
                       86_400,
                       60
 
+      end_overlap!(rotated)
       assert {:error, changeset} = AuditStream.rotate_signing_secret(ctx.scope, destination)
       assert "is stale" in errors_on(changeset).id
       assert reload(rotated).signing_secret == new_secret
+    end
+
+    test "refuses a second rotation during the overlap", ctx do
+      {destination, first} = create!(ctx, :https)
+      {:ok, {rotated, second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      before = secrets(rotated)
+
+      assert {:error, {:rotation_overlap, %DateTime{} = expires_at}} =
+               AuditStream.rotate_signing_secret(ctx.scope, rotated)
+
+      assert expires_at == before.previous_secret_expires_at
+      assert DateTime.after?(expires_at, DateTime.utc_now())
+      assert secrets(rotated) == before
+      assert {before.signing_secret, before.previous_signing_secret} == {second, first}
+    end
+
+    test "rotates again once the overlap has ended", ctx do
+      {destination, _first} = create!(ctx, :https)
+      {:ok, {rotated, second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      end_overlap!(rotated)
+
+      assert {:ok, {again, third}} = AuditStream.rotate_signing_secret(ctx.scope, rotated)
+
+      stored = reload(again)
+      assert {stored.signing_secret, stored.previous_signing_secret} == {third, second}
+
+      assert_in_delta DateTime.diff(stored.previous_secret_expires_at, DateTime.utc_now()),
+                      86_400,
+                      60
+    end
+
+    test "an overlap ending now allows rotation", ctx do
+      {destination, _first} = create!(ctx, :https)
+      {:ok, {rotated, second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      end_overlap!(rotated, DateTime.utc_now(:second))
+
+      assert {:ok, {again, _third}} = AuditStream.rotate_signing_secret(ctx.scope, rotated)
+      assert reload(again).previous_signing_secret == second
+    end
+
+    test "rotates when there is no previous secret", ctx do
+      {destination, first} = create!(ctx, :https)
+      assert reload(destination).previous_signing_secret == nil
+
+      assert {:ok, {rotated, second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      stored = reload(rotated)
+      assert {stored.signing_secret, stored.previous_signing_secret} == {second, first}
+    end
+
+    test "an unreadable current secret is replaced even during the overlap", ctx do
+      {destination, _first} = create!(ctx, :https)
+      {:ok, {rotated, _second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      make_unreadable!(rotated, :signing_secret)
+
+      assert {:ok, {again, third}} = AuditStream.rotate_signing_secret(ctx.scope, reload(rotated))
+
+      stored = reload(again)
+      assert stored.signing_secret == third
+      assert {stored.previous_signing_secret, stored.previous_secret_expires_at} == {nil, nil}
+    end
+
+    test "a refused rotation is not audited", ctx do
+      event = [:kanban, :audit, :audit_stream_signing_secret_rotated]
+      attach_telemetry(event)
+      {destination, _first} = create!(ctx, :https)
+      {:ok, {rotated, _second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      assert_received {:telemetry_event, ^event, _measurements, _metadata}
+
+      assert {:error, {:rotation_overlap, _}} =
+               AuditStream.rotate_signing_secret(ctx.scope, rotated)
+
+      refute_received {:telemetry_event, ^event, _measurements, _metadata}
+      assert length(events(ctx.organization.id, :audit_stream_signing_secret_rotated)) == 1
+    end
+
+    test "a caller who lost org-admin rights is refused before the overlap is checked", ctx do
+      {destination, _first} = create!(ctx, :https)
+      {:ok, {rotated, _second}} = AuditStream.rotate_signing_secret(ctx.scope, destination)
+      before = secrets(rotated)
+
+      from(m in OrganizationMember,
+        where: m.organization_id == ^ctx.organization.id and m.user_id == ^ctx.admin.id
+      )
+      |> Repo.update_all(set: [role: :member])
+
+      assert {:error, :unauthorized} = AuditStream.rotate_signing_secret(ctx.scope, rotated)
+      assert secrets(rotated) == before
     end
 
     test "rotate on a Splunk destination is refused", ctx do
@@ -887,6 +999,7 @@ defmodule Kanban.AuditStreamLimitRaceTest do
   alias Kanban.Accounts.User
   alias Kanban.AuditStream
   alias Kanban.AuditStream.Destination
+  alias Kanban.AuditStream.SigningSecrets
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
@@ -1005,6 +1118,44 @@ defmodule Kanban.AuditStreamLimitRaceTest do
 
       assert {lock_version, name} == {destination.lock_version, destination.name}
     end
+  end
+
+  # Two rotations of one destination at once. The first, in its own session,
+  # locks the destination's row as rotate does, writes what a rotation writes
+  # and commits. It writes no audit row, which could never be deleted again,
+  # and leaves lock_version alone, so the stale check can't refuse the
+  # second: only the overlap check, reading the row once it holds the lock,
+  # can.
+  test "only one of two concurrent rotations succeeds", ctx do
+    destination = destination_fixture(ctx.organization, :https)
+
+    competitor =
+      hold_lock(from(d in Destination, where: d.id == ^destination.id, select: d.id), fn ->
+        fresh = Repo.get!(Destination, destination.id)
+
+        attrs =
+          fresh.signing_secret
+          |> SigningSecrets.previous()
+          |> Map.put(:signing_secret, SigningSecrets.generate())
+
+        fresh |> Destination.signing_secret_changeset(attrs) |> Repo.update!()
+      end)
+
+    {elapsed_ms, result} =
+      timed(fn ->
+        Repo.transaction(fn ->
+          Repo.rollback(AuditStream.rotate_signing_secret(ctx.scope, destination))
+        end)
+      end)
+
+    assert {:ok, :committed} = Task.await(competitor)
+    assert {:error, {:error, {:rotation_overlap, %DateTime{} = expires_at}}} = result
+    assert elapsed_ms >= @hold_ms - 50
+
+    stored = Repo.get!(Destination, destination.id)
+    assert stored.previous_signing_secret == destination.signing_secret
+    assert stored.previous_secret_expires_at == expires_at
+    assert stored.lock_version == destination.lock_version
   end
 
   defp write(:update, scope, destination),
