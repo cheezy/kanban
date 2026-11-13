@@ -22,7 +22,9 @@ defmodule Kanban.ReleaseTest do
   alias Kanban.AuditLogRoleHelper
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
+  alias Kanban.AuditStream.Gap
   alias Kanban.AuditStream.Lease
+  alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reader
   alias Kanban.Boards
   alias Kanban.Boards.Board
@@ -878,6 +880,17 @@ defmodule Kanban.ReleaseTest do
       txid
     end
 
+    # One past the latest completed transaction: every committed row of this
+    # server has a lower txid, so a row below it is never taken as restored.
+    # Unlike own_txid/0 it is safe under concurrent transactions, whose ids
+    # can sit on either side of the test's own.
+    defp xmax do
+      %{rows: [[xmax]]} =
+        Repo.query!("SELECT pg_snapshot_xmax(pg_current_snapshot())::text::bigint")
+
+      xmax
+    end
+
     test "reseed sets (0, 0) and not_before from last_inserted_at" do
       organization = organization_fixture()
       destination = destination_fixture(organization, :https)
@@ -940,8 +953,10 @@ defmodule Kanban.ReleaseTest do
       assert fresh(rejected).halted_reason == :rejected_batch
       assert fresh(blocked).halted_reason == :blocked_address
 
-      # The state stays Failing until the next delivery recovers it.
+      # The state stays Failing until the next delivery recovers it, and no
+      # longer asks for a re-seed.
       assert fresh(moved).state == :failing
+      assert fresh(moved).state_reason == Kanban.AuditStream.Outcome.reseeded_reason()
 
       # Every cursor moves, so a halt a person clears later starts right.
       for destination <- [moved, rejected, blocked] do
@@ -1026,6 +1041,221 @@ defmodule Kanban.ReleaseTest do
       # The new row first (lower txid), then the last delivered one again;
       # nothing before the move point.
       assert ids == [newer, last]
+    end
+
+    defp gaps(destination),
+      do: from(g in Gap, where: g.destination_id == ^destination.id) |> Repo.all()
+
+    # Every id the re-seeded cursor reads once the new server's txids are far
+    # past the restored ones.
+    defp readable_ids(organization, destination) do
+      cursor = cursor(destination)
+      filters = destination |> fresh() |> PendingBatch.filters(cursor)
+
+      organization.id
+      |> Reader.next_batch(
+        {cursor.last_txid, cursor.last_event_id},
+        [horizon: own_txid() + 10_000_000, batch_size: 1_000] ++ filters
+      )
+      |> Enum.map(& &1.id)
+    end
+
+    test "restored events not delivered before the dump are recorded as a gap and never read" do
+      attach_telemetry([:kanban, :audit_stream, :gap_recorded])
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :datadog)
+      caught_up = destination_fixture(organization, :https)
+
+      # Restored rows keep the old server's txids, above every new one.
+      old = own_txid() + 1_000_000
+      delivered = event!(organization, old, @last_at)
+      # One microsecond older than the last delivered event, committed after it.
+      older = event!(organization, old + 3, ~N[2026-11-05 10:00:00.123455])
+      held = event!(organization, old + 5, ~N[2026-11-05 11:00:00.000000])
+      # Written on the new server after the move.
+      written_after = event!(organization, 2, ~N[2026-11-06 09:00:00.000000])
+
+      moved_cursor(destination, last_txid: old, last_event_id: delivered)
+
+      moved_cursor(caught_up,
+        last_txid: old + 5,
+        last_event_id: held,
+        last_inserted_at: ~U[2026-11-05 11:00:00.000000Z],
+        pending_batch_id: nil
+      )
+
+      assert {:ok, %{organizations: 1, destinations: 2, busy: 0}} =
+               Release.reseed_audit_stream_cursors()
+
+      assert [gap] = gaps(destination)
+      assert gap.reason == :database_move
+      assert gap.events == 2
+      assert gap.first_occurred_at == ~U[2026-11-05 10:00:00.123455Z]
+      assert gap.last_occurred_at == ~U[2026-11-05 11:00:00.000000Z]
+      assert gaps(caught_up) == []
+
+      destination_id = destination.id
+
+      assert [%AuditEvent{metadata: %{"events" => 2, "reason" => "database_move"}}] =
+               from(e in AuditEvent,
+                 where:
+                   e.action == "audit_stream_gap" and
+                     fragment("(?->>'destination_id')::bigint", e.metadata) == ^destination_id
+               )
+               |> Repo.all()
+
+      assert_receive {:telemetry_event, [:kanban, :audit_stream, :gap_recorded], %{events: 2},
+                      %{kind: :datadog, reason: :database_move}}
+
+      refute_receive {:telemetry_event, [:kanban, :audit_stream, :gap_recorded], _,
+                      %{kind: :https}}
+
+      for target <- [destination, caught_up] do
+        cursor = cursor(target)
+        assert cursor.restored_max_event_id == held
+        # The snapshot's xmax: below every restored txid.
+        assert cursor.restored_min_txid in 1..old
+
+        ids = readable_ids(organization, target)
+        assert written_after in ids
+        for restored <- [delivered, older, held], do: refute(restored in ids)
+      end
+    end
+
+    test "an undelivered event older than the last delivered one is a gap, not a skip" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+
+      # No restored txid above the new ones: the move kept the txids low, so
+      # only not_before can leave an event behind.
+      horizon = xmax()
+      delivered = event!(organization, horizon - 3, @last_at)
+      older = event!(organization, horizon - 2, ~N[2026-11-05 10:00:00.123455])
+      newer = event!(organization, horizon - 1, ~N[2026-11-05 12:00:00.000000])
+      moved_cursor(destination, last_txid: horizon - 3, last_event_id: delivered)
+
+      assert {:ok, %{destinations: 1}} = Release.reseed_audit_stream_cursors()
+
+      assert [%Gap{reason: :database_move, events: 1, first_occurred_at: first_at}] =
+               gaps(destination)
+
+      assert first_at == ~U[2026-11-05 10:00:00.123455Z]
+      assert cursor(destination).restored_max_event_id == nil
+
+      ids = readable_ids(organization, destination)
+      assert newer in ids
+      refute older in ids
+    end
+
+    # Created on the new server (or already re-seeded and delivering there),
+    # nothing about the move is behind its cursor.
+    test "a cursor the move did not leave behind is left as it was" do
+      organization = organization_fixture()
+      old = own_txid() + 1_000_000
+      event!(organization, old, @last_at)
+      created_after = destination_fixture(organization, :https)
+      delivering = destination_fixture(organization, :datadog)
+      new_event = event!(organization, xmax() - 5, ~N[2026-11-05 09:00:00.000000])
+      at = xmax() - 10
+
+      from(c in Cursor, where: c.destination_id == ^created_after.id)
+      |> Repo.update_all(set: [last_txid: at, last_event_id: 0])
+
+      moved_cursor(delivering,
+        last_txid: xmax() - 6,
+        last_event_id: new_event - 1,
+        pending_batch_id: nil,
+        pending_first_txid: nil,
+        pending_first_id: nil,
+        pending_last_txid: nil,
+        pending_last_id: nil,
+        pending_attempts: 0,
+        pending_filter_version: nil
+      )
+
+      before = {cursor(created_after), cursor(delivering)}
+
+      assert {:ok, %{organizations: 0, destinations: 0, busy: 0}} =
+               Release.reseed_audit_stream_cursors(dry_run: true)
+
+      assert {:ok, %{organizations: 0, destinations: 0, busy: 0}} =
+               Release.reseed_audit_stream_cursors()
+
+      assert {cursor(created_after), cursor(delivering)} == before
+      assert gaps(created_after) == [] and gaps(delivering) == []
+      assert new_event in readable_ids(organization, delivering)
+      assert reseeded_events(organization) == []
+    end
+
+    # A clock behind the old server's stamps a new event before not_before;
+    # its txid sorts before the old position, so only its id tells it apart.
+    test "a new-server event stamped before the restart time is in the gap" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      old = own_txid() + 1_000_000
+      delivered = event!(organization, old, @last_at)
+      moved_cursor(destination, last_txid: old, last_event_id: delivered)
+      skewed = event!(organization, xmax() - 5, ~N[2026-11-05 10:00:00.123455])
+      later = event!(organization, xmax() - 4, ~N[2026-11-05 12:00:00.000000])
+
+      assert {:ok, %{destinations: 1}} = Release.reseed_audit_stream_cursors()
+
+      assert [%Gap{reason: :database_move, events: 1, first_occurred_at: first_at}] =
+               gaps(destination)
+
+      assert first_at == ~U[2026-11-05 10:00:00.123455Z]
+      ids = readable_ids(organization, destination)
+      assert later in ids
+      refute skewed in ids
+    end
+
+    # A second move: the earlier bound's rows predate the new not_before, so
+    # the new bound replaces it rather than spanning the ids between them.
+    test "a later move replaces the bound instead of widening it" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      earlier = event!(organization, 1, ~N[2026-11-01 10:00:00.000000])
+      between = event!(organization, xmax() - 5, ~N[2026-11-06 10:00:00.000000])
+      old = own_txid() + 1_000_000
+      restored = event!(organization, old + 5, ~N[2026-11-06 11:00:00.000000])
+
+      moved_cursor(destination,
+        last_txid: old,
+        last_event_id: 0,
+        last_inserted_at: ~U[2026-11-06 09:00:00.000000Z],
+        restored_max_event_id: earlier,
+        restored_min_txid: xmax() - 50
+      )
+
+      assert {:ok, %{destinations: 1}} = Release.reseed_audit_stream_cursors()
+
+      cursor = cursor(destination)
+      assert cursor.restored_max_event_id == restored
+      assert cursor.restored_min_txid > xmax() - 50
+      assert [%Gap{events: 1}] = gaps(destination)
+      assert between in readable_ids(organization, destination)
+    end
+
+    test "running the re-seed again records nothing twice and keeps the bound" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      old = own_txid() + 1_000_000
+      delivered = event!(organization, old, @last_at)
+      held = event!(organization, old + 5, ~N[2026-11-05 11:00:00.000000])
+      moved_cursor(destination, last_txid: old, last_event_id: delivered)
+
+      assert {:ok, %{destinations: 1}} = Release.reseed_audit_stream_cursors()
+      first = cursor(destination)
+      # Re-seeded to (0, 0), it is no longer left behind.
+      assert {:ok, %{destinations: 0}} = Release.reseed_audit_stream_cursors()
+
+      assert [%Gap{events: 1}] = gaps(destination)
+      second = cursor(destination)
+
+      assert {second.restored_max_event_id, second.restored_min_txid} ==
+               {first.restored_max_event_id, first.restored_min_txid}
+
+      assert second.restored_max_event_id == held
     end
 
     test "waits for a live lease and counts the destination as busy when it stays held" do
@@ -1166,6 +1396,39 @@ defmodule Kanban.ReleaseTest do
       assert cursor(taken).lease_token == other_run
       assert cursor(held).last_txid == 0
       assert [%AuditEvent{metadata: %{"destinations" => 1}}] = reseeded_events(organization)
+    end
+
+    # The restored bound hides ids at or below it, so an id sequence that was
+    # not restored would hide the new server's events and count them nowhere.
+    test "refuses, changing nothing, when the id sequence is behind the highest event id" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      moved_cursor(destination)
+
+      %{rows: [[ahead]]} =
+        Repo.query!("""
+        SELECT COALESCE(pg_sequence_last_value(pg_get_serial_sequence('audit_events', 'id')::regclass), 0)
+        """)
+
+      # As if restored without its sequence: an id the sequence never drew.
+      Repo.query!(
+        """
+        INSERT INTO audit_events (id, action, organization_id, metadata, inserted_at)
+        VALUES ($1, 'organization_updated', $2, '{}', now())
+        """,
+        [ahead + 1_000_000_000, organization.id]
+      )
+
+      for opts <- [[dry_run: true], []] do
+        assert_raise RuntimeError, ~r/id sequence is behind/, fn ->
+          Release.reseed_audit_stream_cursors(opts)
+        end
+      end
+
+      assert cursor(destination).last_txid == 900_000_000
+      assert cursor(destination).lease_token == nil
+      assert reseeded_events(organization) == []
+      assert gaps(destination) == []
     end
 
     test "the roles doc has the re-seed runbook section" do

@@ -493,6 +493,115 @@ defmodule Kanban.AuditStream.ReaderTest do
     end
   end
 
+  describe ":restored" do
+    # A restored row: an id at most the bound and a txid at or above it.
+    test "every read leaves out the rows the bound covers, and only those", ctx do
+      new_low = insert_raw!(ctx.organization, txid: 5, at: ~N[2026-01-01 00:00:00.000000])
+      restored = insert_raw!(ctx.organization, txid: 900, at: ~N[2026-01-02 00:00:00.000000])
+      restored_too = insert_raw!(ctx.organization, txid: 901, at: ~N[2026-01-03 00:00:00.000000])
+      # Above the bound's id: written after the move, never left out.
+      newer = insert_raw!(ctx.organization, txid: 902, at: ~N[2026-01-04 00:00:00.000000])
+      bound = {restored_too, 900}
+      horizon = 1_000
+
+      assert ids(read_all(ctx.organization, horizon: horizon)) ==
+               [new_low, restored, restored_too, newer]
+
+      assert ids(read_all(ctx.organization, horizon: horizon, restored: bound)) ==
+               [new_low, newer]
+
+      # A txid below the bound's is this server's, whatever its id.
+      assert ids(read_all(ctx.organization, horizon: horizon, restored: {restored_too, 901})) ==
+               [new_low, restored, newer]
+
+      assert %{events_waiting: 2} =
+               Reader.waiting_counts(ctx.organization.id, {0, 0},
+                 horizon: horizon,
+                 restored: bound
+               )
+
+      assert Reader.next_waiting_at(ctx.organization.id, {5, new_low},
+               horizon: horizon,
+               restored: bound
+             ) == ~U[2026-01-04 00:00:00.000000Z]
+
+      assert %{events: 2} =
+               Reader.loss_counts(ctx.organization.id, {0, 0}, ~U[2027-01-01 00:00:00Z],
+                 restored: bound
+               )
+
+      assert %{events: 2, last: {902, ^newer}} =
+               Reader.too_old(ctx.organization.id, {0, 0}, ~U[2027-01-01 00:00:00Z],
+                 horizon: horizon,
+                 restored: bound
+               )
+
+      assert ids(Reader.read_range(ctx.organization.id, {0, 0}, {902, newer}, restored: bound)) ==
+               [new_low, newer]
+
+      assert_raise ArgumentError, fn -> read_all(ctx.organization, restored: 900) end
+    end
+  end
+
+  describe "move_losses/5" do
+    test "counts the events after the cursor that are restored or before not_before", ctx do
+      not_before = ~U[2026-01-10 00:00:00.000000Z]
+      sent = insert_raw!(ctx.organization, txid: 800, at: ~N[2026-01-09 00:00:00.000000])
+      # Older than the last delivered one, but committed after it.
+      _older = insert_raw!(ctx.organization, txid: 810, at: ~N[2026-01-09 23:59:59.999999])
+      held = insert_raw!(ctx.organization, txid: 820, at: ~N[2026-01-11 00:00:00.000000])
+      # Written on the new server after the move: delivered, never a loss.
+      _new = insert_raw!(ctx.organization, txid: 5, at: ~N[2026-01-12 00:00:00.000000])
+      insert_raw!(ctx.other_organization, txid: 815, at: ~N[2026-01-09 23:00:00.000000])
+      cursor = {800, sent}
+
+      assert Reader.move_losses(ctx.organization.id, cursor, {held, 800}, not_before) == %{
+               events: 2,
+               first_at: ~U[2026-01-09 23:59:59.999999Z],
+               last_at: ~U[2026-01-11 00:00:00.000000Z]
+             }
+
+      # With no restored rows only the older one is lost.
+      assert %{events: 1, first_at: first_at} =
+               Reader.move_losses(ctx.organization.id, cursor, nil, not_before)
+
+      assert first_at == ~U[2026-01-09 23:59:59.999999Z]
+    end
+
+    test "applies the filters, the cursor's own bound among them, and has no horizon", ctx do
+      not_before = ~U[2026-01-10 00:00:00.000000Z]
+      first = insert_raw!(ctx.organization, txid: 900, at: ~N[2026-01-11 00:00:00.000000])
+
+      second =
+        insert_raw!(ctx.organization,
+          txid: 901,
+          action: "member_added",
+          at: ~N[2026-01-12 00:00:00.000000]
+        )
+
+      above =
+        insert_raw!(ctx.organization, txid: own_txid() + 10, at: ~N[2026-01-13 00:00:00.000000])
+
+      bound = {above, 900}
+
+      assert %{events: 3} = Reader.move_losses(ctx.organization.id, {0, 0}, bound, not_before)
+
+      assert %{events: 2} =
+               Reader.move_losses(ctx.organization.id, {0, 0}, bound, not_before,
+                 excluded_actions: ["member_added"]
+               )
+
+      # Rows an earlier re-seed already recorded are not counted again.
+      assert %{events: 1} =
+               Reader.move_losses(ctx.organization.id, {0, 0}, bound, not_before,
+                 restored: {second, 900}
+               )
+
+      assert %{events: 0, first_at: nil} =
+               Reader.move_losses(ctx.organization.id, {900, first}, nil, not_before)
+    end
+  end
+
   describe "too_old/4" do
     test "is the run of events before the first recent one, in commit order", ctx do
       threshold = ~U[2026-06-01 00:00:00.000000Z]

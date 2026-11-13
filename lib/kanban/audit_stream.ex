@@ -65,8 +65,8 @@ defmodule Kanban.AuditStream do
   `enqueue_dispatch/2`, `due_for_dispatch/2`, `measure_lag/3`,
   `audit_due_gaps/1` and `prune_attempts/1` serve the delivery workers and
   take no scope. The
-  sweep's queries select only the fields they need, so a destination's
-  secrets are never decrypted every minute.
+  sweep's queries (`Kanban.AuditStream.Sweep`) select only the fields they
+  need, so a destination's secrets are never decrypted every minute.
 
   ## For operators
 
@@ -82,23 +82,20 @@ defmodule Kanban.AuditStream do
   alias Kanban.Accounts.Scope
   alias Kanban.AuditStream.Attempt
   alias Kanban.AuditStream.BatchActions
-  alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Destinations
   alias Kanban.AuditStream.DispatchWorker
   alias Kanban.AuditStream.Gap
   alias Kanban.AuditStream.Gaps
-  alias Kanban.AuditStream.PendingBatch
-  alias Kanban.AuditStream.Reader
   alias Kanban.AuditStream.Reseed
   alias Kanban.AuditStream.SigningSecrets
   alias Kanban.AuditStream.Status
+  alias Kanban.AuditStream.Sweep
   alias Kanban.AuditStream.TestEvent
   alias Kanban.Repo
 
   @attempts_kept 200
   @attempt_days 7
-  @lag_slots 15
 
   @doc """
   The Organization's destinations, oldest first, or `{:error,
@@ -273,8 +270,10 @@ defmodule Kanban.AuditStream do
   def audit_due_gaps(%DateTime{} = now), do: Gaps.audit_due(now)
 
   @doc """
-  For an operator after a logical database move: sets every cursor to
-  `(0, 0)` from its last delivered event's time, discards pending batches,
+  For an operator after a logical database move: records the events each
+  destination had not received and can no longer be sent as a
+  `database_move` gap, sets every cursor to `(0, 0)` from its last delivered
+  event's time with the restored rows left out, discards pending batches,
   clears `txid_reset` halts and records one `audit_stream_cursors_reseeded`
   event per Organization. `Kanban.AuditStream.Reseed.run/1` documents the
   options and the counts it returns.
@@ -359,11 +358,17 @@ defmodule Kanban.AuditStream do
   end
 
   @doc """
-  The ids of the destinations the minute sweep queues a run for at `now`:
-  enabled, not halted (`halted_reason` is nil), due (`next_attempt_at` nil
-  or not after `now`), not leased (no run holds a lease that is still live
-  at `now`) and with an event waiting below the horizon
-  (`Kanban.AuditStream.Reader.next_waiting_at/3`). A run that holds the
+  The ids of the destinations the minute sweep queues a run for at `now`.
+  Each is not halted (`halted_reason` is nil), not leased (no run holds a
+  lease that is still live at `now`) and either enabled, due
+  (`next_attempt_at` nil or not after `now`) and with an event waiting below
+  the horizon (`Kanban.AuditStream.Reader.next_waiting_at/3`), or, paused or
+  backed off too, with a cursor at or past this server's next transaction
+  id. The second is a logical database move (§8.8): after one, no new event
+  sorts after a caught-up cursor, so only this check queues the run that
+  halts it with `txid_reset`, and once this server's transaction ids pass
+  the cursor the move can no longer be seen. A destination halted for
+  another reason keeps that halt for a person; the re-seed covers it. A run that holds the
   lease queues its own follow-up; a job queued for it now would only snooze
   in a unique state and make that follow-up a duplicate, delaying the next
   send by up to a minute. A lease left by a run that crashed expires within
@@ -371,17 +376,7 @@ defmodule Kanban.AuditStream do
   only, so it takes no scope. `opts` takes `:horizon`, for tests.
   """
   @spec due_for_dispatch(DateTime.t(), keyword()) :: [integer()]
-  def due_for_dispatch(%DateTime{} = now, opts \\ []) do
-    query =
-      from([d, c] in sweep_rows(),
-        where:
-          d.enabled and is_nil(d.halted_reason) and
-            (is_nil(c.next_attempt_at) or c.next_attempt_at <= ^now) and
-            (is_nil(c.leased_until) or c.leased_until <= ^now)
-      )
-
-    for row <- Repo.all(query), sendable?(row, opts), do: row.id
-  end
+  def due_for_dispatch(%DateTime{} = now, opts \\ []), do: Sweep.due_for_dispatch(now, opts)
 
   @doc """
   The lag of the enabled destinations whose 15-minute slot is `minute`
@@ -396,16 +391,8 @@ defmodule Kanban.AuditStream do
   lag, never as zero. `opts` takes `:horizon`, for tests.
   """
   @spec measure_lag(non_neg_integer(), DateTime.t(), keyword()) :: [map()]
-  def measure_lag(minute, %DateTime{} = now, opts \\ []) when is_integer(minute) do
-    slot = rem(minute, @lag_slots)
-
-    query =
-      from([d, c] in sweep_rows(),
-        where: d.enabled and fragment("? % ?", d.id, ^@lag_slots) == ^slot
-      )
-
-    for row <- Repo.all(query), do: lag(row, now, opts)
-  end
+  def measure_lag(minute, %DateTime{} = now, opts \\ []) when is_integer(minute),
+    do: Sweep.measure_lag(minute, now, opts)
 
   @doc """
   Deletes the attempts the hourly prune does not keep (§8.7): those that
@@ -440,45 +427,4 @@ defmodule Kanban.AuditStream do
     {beyond, _} = Repo.delete_all(extra)
     old + beyond
   end
-
-  # The destination and cursor fields the sweep reads; never the struct.
-  defp sweep_rows do
-    from(d in Destination,
-      join: c in Cursor,
-      on: c.destination_id == d.id,
-      order_by: d.id,
-      select: %{
-        id: d.id,
-        kind: d.kind,
-        organization_id: d.organization_id,
-        excluded_actions: d.excluded_actions,
-        include_personal_data: d.include_personal_data,
-        last_txid: c.last_txid,
-        last_event_id: c.last_event_id,
-        not_before: c.not_before
-      }
-    )
-  end
-
-  defp sendable?(row, opts) do
-    filters = PendingBatch.filters(row, row) ++ Keyword.take(opts, [:horizon])
-    Reader.next_waiting_at(row.organization_id, position(row), filters) != nil
-  end
-
-  defp lag(row, now, opts) do
-    filters = PendingBatch.filters(row, row) ++ Keyword.take(opts, [:horizon])
-    counts = Reader.waiting_counts(row.organization_id, position(row), filters)
-
-    %{
-      kind: row.kind,
-      lag_seconds: lag_seconds(counts.oldest_waiting_at, now),
-      events_waiting: counts.events_waiting,
-      events_above_horizon: counts.events_above_horizon
-    }
-  end
-
-  defp lag_seconds(nil, _now), do: 0
-  defp lag_seconds(oldest, now), do: max(DateTime.diff(now, oldest, :second), 0)
-
-  defp position(row), do: {row.last_txid, row.last_event_id}
 end

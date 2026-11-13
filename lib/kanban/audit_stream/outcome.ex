@@ -78,6 +78,7 @@ defmodule Kanban.AuditStream.Outcome do
 
   @credentials_unreadable "Credentials can't be read. Enter them again."
   @txid_reset "The database was moved. An operator must re-seed audit streaming."
+  @reseeded "Audit streaming was re-seeded after the database move. The next delivery clears this."
 
   @doc "The `state_reason` a halt with `credentials_unreadable` sets."
   @spec credentials_unreadable_reason() :: String.t()
@@ -86,6 +87,13 @@ defmodule Kanban.AuditStream.Outcome do
   @doc "The `state_reason` a halt with `txid_reset` sets."
   @spec txid_reset_reason() :: String.t()
   def txid_reset_reason, do: @txid_reset
+
+  @doc """
+  The `state_reason` the re-seed leaves on a destination whose `txid_reset`
+  halt it cleared, until its next delivery returns it to healthy.
+  """
+  @spec reseeded_reason() :: String.t()
+  def reseeded_reason, do: @reseeded
 
   @doc """
   The class of a send of `event_count` events, classified by `adapter` when

@@ -2,8 +2,9 @@ defmodule Kanban.AuditStream.Gap do
   @moduledoc """
   A run of audit events one destination never received
   (`docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §9.6): because they were
-  deleted by retention before they were sent, or were too old for the
-  destination to accept.
+  deleted by retention before they were sent, were too old for the
+  destination to accept, or were left in the old server's transaction ids by
+  a logical database move (`database_move`, §8.8).
 
   A gap counts its `events`, spans `first_occurred_at` to
   `last_occurred_at`, and records when it opened, when it last grew, when it
@@ -19,7 +20,7 @@ defmodule Kanban.AuditStream.Gap do
 
   @type t :: %__MODULE__{}
 
-  @reasons [:retention, :too_old]
+  @reasons [:retention, :too_old, :database_move]
 
   schema "audit_stream_gaps" do
     belongs_to :destination, Destination

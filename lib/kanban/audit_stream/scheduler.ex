@@ -10,9 +10,11 @@ defmodule Kanban.AuditStream.Scheduler do
   destination within about a minute. Each run:
 
     1. queues a `Kanban.AuditStream.DispatchWorker` run for every
-       destination that is enabled, not halted, due, not leased by a running
-       run and has an event waiting below the horizon
-       (`Kanban.AuditStream.due_for_dispatch/2`). A run
+       destination that is not halted, not leased by a running run and
+       either is enabled, due and has an event waiting below the horizon,
+       or, paused or backed off too, has a cursor at or past this server's
+       next transaction id, after a logical database move (§8.8;
+       `Kanban.AuditStream.due_for_dispatch/2`). A run
        already queued is kept rather than queued twice, and a run lost to a
        unique race is made up by the next sweep;
     2. emits `[:kanban, :audit_stream, :lag_measured]` for the enabled

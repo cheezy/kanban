@@ -298,8 +298,10 @@ defmodule Kanban.Release do
   (run it again for those). Each destination then receives every event
   written on the new server since the last one it received; events at that
   exact time may arrive twice and receivers drop them by id. An event not yet
-  delivered when the database was dumped is not covered, so the runbook in
-  `docs/audit-log-database-roles.md` has every destination catch up first.
+  delivered when the database was dumped cannot be sent after the move, so
+  each destination records those as one `database_move` gap and never reads
+  them; the runbook in `docs/audit-log-database-roles.md` has every
+  destination catch up first, which leaves nothing for the gap.
   Pass `dry_run: true` to count and
   write nothing; an unknown option or a non-boolean `:dry_run` raises first.
   Its own log line carries counts only, and each Organization's audit event

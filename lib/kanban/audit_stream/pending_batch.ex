@@ -87,17 +87,24 @@ defmodule Kanban.AuditStream.PendingBatch do
 
   @doc """
   The `Kanban.AuditStream.Reader` filters of `destination` at `cursor`: its
-  `not_before`, excluded actions and personal-data choice. Either may be a
-  map with those fields rather than the struct.
+  `not_before`, the restored rows a re-seed recorded as a gap (§8.8),
+  excluded actions and personal-data choice. Either may be a map with those
+  fields rather than the struct.
   """
   @spec filters(Destination.t() | map(), Cursor.t() | map()) :: keyword()
   def filters(destination, cursor) do
     [
       not_before: cursor.not_before,
+      restored: restored(cursor),
       excluded_actions: destination.excluded_actions,
       include_personal_data: destination.include_personal_data
     ]
   end
+
+  defp restored(%{restored_max_event_id: nil, restored_min_txid: nil}), do: nil
+
+  defp restored(%{restored_max_event_id: max_id, restored_min_txid: min_txid}),
+    do: {max_id, min_txid}
 
   defp reread(_destination, %Cursor{pending_batch_id: nil}, _organization, _filters), do: :none
 

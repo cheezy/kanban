@@ -35,6 +35,11 @@ defmodule Kanban.AuditStream.Reader do
 
     * `:not_before` - a `DateTime`; only events inserted at or after it are
       read. It filters by time only and never moves the cursor (§8.5).
+    * `:restored` - `{max_event_id, min_txid}` or `nil` (default): events
+      with `id` at most `max_event_id` and `txid` at least `min_txid` are
+      never read. They are the rows a logical database move restored with
+      the old server's transaction ids, which a re-seed recorded as a gap
+      (§8.8, `move_losses/5`).
     * `:excluded_actions` - action names (strings or atoms) never read.
     * `:include_personal_data` - `true` (default) or `false`, as above. It
       changes no count in `waiting_counts/3`.
@@ -46,10 +51,11 @@ defmodule Kanban.AuditStream.Reader do
 
   ## Losses
 
-  `loss_counts/4` and `too_old/4` serve the two ways a destination loses
-  events (§8.6, §9.6): retention deleting events it has not received yet,
-  and events too old for its kind to accept. Both only count; neither loads
-  an event.
+  `loss_counts/4`, `too_old/4` and `move_losses/5` serve the three ways a
+  destination loses events (§8.6, §8.8, §9.6): retention deleting events it
+  has not received yet, events too old for its kind to accept, and restored
+  events a logical database move left in the old server's transaction ids.
+  They only count; none loads an event.
   """
   import Ecto.Query, warn: false
 
@@ -82,7 +88,12 @@ defmodule Kanban.AuditStream.Reader do
           last_inserted_at: DateTime.t()
         }
 
-  @filter_defaults [not_before: nil, excluded_actions: [], include_personal_data: true]
+  @filter_defaults [
+    not_before: nil,
+    restored: nil,
+    excluded_actions: [],
+    include_personal_data: true
+  ]
   @batch_defaults [horizon: nil, batch_size: 500, max_bytes: 900_000, size_fun: nil]
   @personal_keys ["email", "ip"]
 
@@ -267,6 +278,62 @@ defmodule Kanban.AuditStream.Reader do
     too_old_prefix(prefix, last_of(prefix))
   end
 
+  @doc """
+  The events a re-seed after a logical database move takes away from a
+  destination at `cursor` (§8.8): those after `cursor` that `restored`
+  (`{max_event_id, min_txid}`, or `nil` for none) bounds, or that were
+  inserted strictly before `not_before`, the re-seeded cursor's start; and
+  the new server's events inserted before `not_before`, as a skewed clock
+  can stamp them. Those sort before `cursor`, since their txids are this
+  server's, and are told from old rows by their `id`, which is above every
+  restored one. How many, and the first and last `inserted_at` (`nil` when
+  there are none).
+
+  No horizon applies: restored rows were committed on the old server, and
+  a row the new server writes is inserted after the move. The filters
+  apply, the cursor's own `:restored` among them, so rows an earlier
+  re-seed recorded are never counted twice.
+  """
+  @spec move_losses(integer(), pair(), pair() | nil, DateTime.t(), keyword()) :: loss()
+  def move_losses(organization_id, cursor, restored, %DateTime{} = not_before, opts \\ [])
+      when is_integer(organization_id) and is_pair(cursor) and
+             (is_nil(restored) or is_pair(restored)) do
+    opts = options(opts, @filter_defaults)
+
+    organization_id
+    |> scoped(opts)
+    |> exclude(:join)
+    |> where(^move_lost(cursor, restored, not_before))
+    |> select([event: e], %{
+      events: count(e.id),
+      first_at: min(e.inserted_at),
+      last_at: max(e.inserted_at)
+    })
+    |> Repo.one()
+  end
+
+  defp move_lost(cursor, nil, not_before),
+    do: dynamic(^past(cursor) and ^before(not_before))
+
+  defp move_lost(cursor, {max_id, min_txid}, not_before) do
+    restored = dynamic([event: e], e.id <= ^max_id and e.txid >= ^min_txid)
+    new_server = dynamic([event: e], e.id > ^max_id)
+
+    dynamic(
+      (^past(cursor) and (^restored or ^before(not_before))) or
+        (^new_server and ^before(not_before))
+    )
+  end
+
+  defp past({txid, id}) do
+    dynamic(
+      [event: e],
+      fragment("(?, ?) > (?, ?)", e.txid, e.id, type(^txid, :integer), type(^id, :integer))
+    )
+  end
+
+  defp before(not_before), do: dynamic([event: e], e.inserted_at < ^not_before)
+
   defp first_recent(query, threshold) do
     query
     |> where([event: e], e.inserted_at >= ^threshold)
@@ -319,6 +386,7 @@ defmodule Kanban.AuditStream.Reader do
   defp valid_option?({:horizon, value}), do: is_nil(value) or is_integer(value)
   defp valid_option?({:size_fun, value}), do: is_nil(value) or is_function(value, 1)
   defp valid_option?({:through, value}), do: is_nil(value) or is_pair(value)
+  defp valid_option?({:restored, value}), do: is_nil(value) or is_pair(value)
   defp valid_option?({_limit, value}), do: is_integer(value) and value > 0
 
   # One Organization's events, with `organization_id` always an integer here
@@ -328,8 +396,14 @@ defmodule Kanban.AuditStream.Reader do
     |> Kernel.++(filters)
     |> Query.events(:asc)
     |> exclude(:order_by)
+    |> without_restored(opts[:restored])
     |> without_actions(opts[:excluded_actions])
   end
+
+  defp without_restored(query, nil), do: query
+
+  defp without_restored(query, {max_id, min_txid}),
+    do: where(query, [event: e], not (e.id <= ^max_id and e.txid >= ^min_txid))
 
   defp without_actions(query, []), do: query
 

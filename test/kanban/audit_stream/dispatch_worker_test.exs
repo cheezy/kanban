@@ -31,6 +31,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Pacing
+  alias Kanban.AuditStream.Reader
   alias Kanban.Repo
   alias Kanban.Webhooks.Transport
 
@@ -494,6 +495,131 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
       assert [%{metadata: %{"reason" => "txid_reset"}}] =
                audit_actions(ctx.organization, "audit_stream_failing")
+    end
+
+    # A destination that had received everything before the move has no
+    # event after its cursor, so only the sweep's cursor check queues it.
+    test "caught-up destination halts with txid_reset after txids go backwards", ctx do
+      caught_up = destination_fixture(ctx.organization, :datadog)
+      id = event!(ctx.organization, 1)
+      set_cursor(caught_up, last_txid: own_txid() + 1_000_000, last_event_id: 0)
+      # A pending batch from the old server counts too.
+      set_cursor(ctx.destination,
+        last_txid: 1,
+        last_event_id: id,
+        pending_last_txid: own_txid() + 1_000_000
+      )
+
+      stub(200)
+
+      assert Reader.next_waiting_at(ctx.organization.id, {own_txid() + 1_000_000, 0}) == nil
+
+      due = AuditStream.due_for_dispatch(DateTime.utc_now())
+      assert caught_up.id in due
+      assert ctx.destination.id in due
+
+      run(caught_up)
+
+      refute_received {:request, _, _, _}
+      assert %{state: :failing, halted_reason: :txid_reset} = fresh(caught_up)
+      assert attempts(caught_up) == []
+
+      # Halted, so the sweep never queues it again.
+      refute caught_up.id in AuditStream.due_for_dispatch(DateTime.utc_now())
+    end
+
+    test "after a move and a re-seed the worker sends the new server's events only", ctx do
+      # Restored rows keep the old server's txids, above every new one.
+      old = own_txid() + 1_000_000
+      delivered = event!(ctx.organization, old, "organization_updated", ~N[2026-11-05 10:00:00])
+      held = event!(ctx.organization, old + 5, "organization_updated", ~N[2026-11-05 11:00:00])
+
+      set_cursor(ctx.destination,
+        last_txid: old,
+        last_event_id: delivered,
+        last_inserted_at: ~U[2026-11-05 10:00:00.000000Z]
+      )
+
+      # Written on the new server after the move.
+      written_after = event!(ctx.organization, 2, "organization_updated", ~N[2026-11-06 09:00:00])
+      stub(200)
+
+      run(ctx.destination)
+      refute_received {:request, _, _, _}
+      assert fresh(ctx.destination).halted_reason == :txid_reset
+
+      assert {:ok, %{destinations: 1}} = AuditStream.reseed_cursors()
+      assert [%Gap{reason: :database_move, events: 1}] = Repo.all(Gap)
+      assert ctx.destination.id in AuditStream.due_for_dispatch(DateTime.utc_now())
+
+      run(ctx.destination)
+
+      assert_received {:request, _batch, [^written_after], _body}
+      assert %{state: :healthy, halted_reason: nil} = fresh(ctx.destination)
+
+      assert {cursor(ctx.destination).last_txid, cursor(ctx.destination).last_event_id} ==
+               {2, written_after}
+
+      # The restored event never follows, however many runs come.
+      make_due(ctx.destination)
+      run(ctx.destination)
+      refute_received {:request, _, _, _}
+      assert cursor(ctx.destination).restored_max_event_id == held
+    end
+
+    test "the sweep leaves a caught-up cursor on this server alone", ctx do
+      id = event!(ctx.organization, 1)
+      set_cursor(ctx.destination, last_txid: 1, last_event_id: id)
+
+      refute ctx.destination.id in AuditStream.due_for_dispatch(DateTime.utc_now())
+    end
+
+    # Once this server's txids pass the old cursor the move is invisible, so
+    # it is caught while paused or backing off, not only while sending. A halt
+    # for another reason waits for a person and is never replaced.
+    test "a paused or backed-off destination halts with txid_reset after a move; a halted one keeps its halt",
+         ctx do
+      moved = own_txid() + 1_000_000
+      later = DateTime.add(DateTime.utc_now(), 3_600, :second)
+
+      paused = destination_fixture(ctx.organization, :datadog)
+      set_destination(paused, enabled: false)
+      halted = destination_fixture(ctx.organization, :datadog)
+      set_destination(halted, halted_reason: :rejected_batch, state: :failing)
+      backed_off = destination_fixture(ctx.organization, :datadog)
+
+      for destination <- [paused, halted, backed_off],
+          do: set_cursor(destination, last_txid: moved, last_event_id: 0, next_attempt_at: later)
+
+      stub(200)
+      due = AuditStream.due_for_dispatch(DateTime.utc_now())
+      for destination <- [paused, backed_off], do: assert(destination.id in due)
+      refute halted.id in due
+
+      for destination <- [paused, halted, backed_off], do: run(destination)
+
+      for destination <- [paused, backed_off] do
+        assert %{state: :failing, halted_reason: :txid_reset} = fresh(destination)
+        assert attempts(destination) == []
+      end
+
+      assert fresh(halted).halted_reason == :rejected_batch
+      refute_received {:request, _, _, _}
+      assert fresh(paused).enabled == false
+      due = AuditStream.due_for_dispatch(DateTime.utc_now())
+      for destination <- [paused, halted, backed_off], do: refute(destination.id in due)
+    end
+
+    # A committed row's txid is below every running transaction's on one
+    # server, so a cursor equal to the worker's own txid is another server's.
+    test "a cursor at the worker's own txid halts with txid_reset", ctx do
+      set_cursor(ctx.destination, last_txid: own_txid(), last_event_id: 0)
+      stub(200)
+
+      run(ctx.destination)
+
+      assert %{halted_reason: :txid_reset} = fresh(ctx.destination)
+      refute_received {:request, _, _, _}
     end
 
     test "attempt error never contains response body text", ctx do

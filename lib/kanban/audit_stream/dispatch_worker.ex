@@ -23,9 +23,12 @@ defmodule Kanban.AuditStream.DispatchWorker do
        another run holds a live lease, this one sends nothing and snoozes
        until it expires. Then, with the destination and its
        cursor locked (in that order, the order a delete cascades in):
-       end when the destination is paused or halted, or not yet due
-       (`next_attempt_at`); halt it with `txid_reset` when the database's
-       transaction id is below the cursor's (§8.8); halt it with
+       end when the destination is halted; halt it with `txid_reset` when
+       the database's transaction id is at or below the cursor's (§8.8),
+       even when it is paused or not yet due, because the move can no
+       longer be seen once this server's ids pass the cursor (the sweep
+       queues a run for such a cursor even with nothing waiting); end when
+       it is paused, or not yet due (`next_attempt_at`); halt it with
        `credentials_unreadable` when a secret it needs can't be decrypted,
        sending nothing and recording no attempt (D17); for a kind with a
        `max_event_age` (Datadog), move the cursor past the events at the
@@ -231,14 +234,18 @@ defmodule Kanban.AuditStream.DispatchWorker do
 
   defp check(destination, cursor) do
     cond do
-      not destination.enabled or not is_nil(destination.halted_reason) ->
+      not is_nil(destination.halted_reason) ->
+        :stop
+
+      # Before pause and backoff: a move missed now is never seen.
+      txid_reset?(cursor) ->
+        {:halt, :txid_reset, Outcome.txid_reset_reason()}
+
+      not destination.enabled ->
         :stop
 
       not due?(cursor) ->
         {:not_due, cursor.next_attempt_at}
-
-      txid_reset?(cursor) ->
-        {:halt, :txid_reset, Outcome.txid_reset_reason()}
 
       needed_unreadable(destination) != [] ->
         {:halt, :credentials_unreadable, Outcome.credentials_unreadable_reason()}
@@ -317,10 +324,11 @@ defmodule Kanban.AuditStream.DispatchWorker do
   defp due?(%Cursor{next_attempt_at: at}), do: DateTime.compare(at, DateTime.utc_now()) != :gt
 
   # Transaction ids belong to one Postgres server; after a logical move new
-  # rows get ids below every cursor's (§8.8).
+  # rows get ids at or below every cursor's (§8.8). A cursor holds committed
+  # rows' txids, always below this running transaction's on the same server.
   defp txid_reset?(cursor) do
     %{rows: [[current]]} = Repo.query!("SELECT pg_current_xact_id()::text::bigint")
-    current < max(cursor.last_txid, cursor.pending_last_txid || 0)
+    current <= max(cursor.last_txid, cursor.pending_last_txid || 0)
   end
 
   # An unreadable previous signing secret is never needed: rotation drops it.

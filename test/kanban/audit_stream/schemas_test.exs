@@ -124,7 +124,7 @@ defmodule Kanban.AuditStream.SchemasTest do
                  destination_id last_txid last_event_id last_inserted_at not_before
                  pending_batch_id pending_first_txid pending_first_id pending_last_txid
                  pending_last_id pending_attempts pending_filter_version next_attempt_at
-                 leased_until lease_token updated_at
+                 leased_until lease_token restored_max_event_id restored_min_txid updated_at
                ))
 
       assert columns("audit_stream_attempts") |> Map.keys() |> Enum.sort() ==
@@ -691,6 +691,34 @@ defmodule Kanban.AuditStream.SchemasTest do
 
       refute Cursor.changeset(base, %{last_txid: 0, last_event_id: 0, pending_attempts: -1}).valid?
     end
+
+    test "the restored bound is set whole or not at all", ctx do
+      destination = insert!(ctx, :https)
+      base = %Cursor{destination_id: destination.id}
+      attrs = %{last_txid: 0, last_event_id: 0}
+
+      cursor =
+        base
+        |> Cursor.changeset(Map.merge(attrs, %{restored_max_event_id: 7, restored_min_txid: 9}))
+        |> Repo.insert!()
+
+      assert {cursor.restored_max_event_id, cursor.restored_min_txid} == {7, 9}
+
+      for half <- [%{restored_max_event_id: 7}, %{restored_min_txid: 9}] do
+        assert "must be set with restored_min_txid" in errors_on_field(
+                 Cursor.changeset(base, Map.merge(attrs, half)),
+                 :restored_max_event_id
+               )
+      end
+
+      # The check constraint holds even for a write that skips the changeset.
+      assert_raise Postgrex.Error, ~r/audit_stream_cursors_restored_bound_complete/, fn ->
+        Repo.query!(
+          "UPDATE audit_stream_cursors SET restored_min_txid = NULL WHERE destination_id = $1",
+          [destination.id]
+        )
+      end
+    end
   end
 
   describe "Attempt" do
@@ -776,10 +804,10 @@ defmodule Kanban.AuditStream.SchemasTest do
       )
     end
 
-    test "accepts retention and too_old and refuses any other reason", ctx do
+    test "accepts retention, too_old and database_move and refuses any other reason", ctx do
       destination = insert!(ctx, :https)
 
-      for reason <- ~w(retention too_old) do
+      for reason <- ~w(retention too_old database_move) do
         gap = %Gap{} |> Gap.changeset(gap_attrs(destination, %{reason: reason})) |> Repo.insert!()
         assert Atom.to_string(gap.reason) == reason
       end

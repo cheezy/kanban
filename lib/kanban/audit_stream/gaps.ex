@@ -14,9 +14,9 @@ defmodule Kanban.AuditStream.Gaps do
   recorded by `audit_due/1`, which the minute sweep runs: once the day has
   passed, every open gap that grew since its last event gets one, so no loss
   is left out of the stream for want of a later one. Dismissing a gap that
-  grew since its last event records that event first, with the final count. The callers are `Kanban.AuditStream.Retention`
-  and `Kanban.AuditStream.AgeLimit`, each holding the destination row lock,
-  so two writers never open two gaps.
+  grew since its last event records that event first, with the final count. The callers are `Kanban.AuditStream.Retention`,
+  `Kanban.AuditStream.AgeLimit` and `Kanban.AuditStream.Reseed`, each holding
+  the destination row lock, so two writers never open two gaps.
 
   `list_gaps/2` and `dismiss_gap/2` are the org-admin's, through
   `Kanban.AuditStream`, and authorize exactly as its other functions do.
@@ -53,8 +53,8 @@ defmodule Kanban.AuditStream.Gaps do
   @type recorded :: %{kind: atom(), reason: atom(), events: pos_integer()}
 
   @doc """
-  Records `loss` against `destination` for `reason` (`:retention` or
-  `:too_old`) at `now`: opens a gap or extends the open one. Call it inside
+  Records `loss` against `destination` for `reason` (`:retention`,
+  `:too_old` or `:database_move`) at `now`: opens a gap or extends the open one. Call it inside
   the transaction that holds `destination`'s row lock, and pass what it
   returns to `emit_recorded/1` once that transaction commits.
   """

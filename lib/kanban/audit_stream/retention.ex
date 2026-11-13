@@ -200,7 +200,9 @@ defmodule Kanban.AuditStream.Retention do
         last_event_id: c.last_event_id,
         pending_batch_id: c.pending_batch_id,
         pending_last_txid: c.pending_last_txid,
-        pending_last_id: c.pending_last_id
+        pending_last_id: c.pending_last_id,
+        restored_max_event_id: c.restored_max_event_id,
+        restored_min_txid: c.restored_min_txid
       }
     )
     |> Repo.all()

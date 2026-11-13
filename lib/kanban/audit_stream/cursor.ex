@@ -41,6 +41,8 @@ defmodule Kanban.AuditStream.Cursor do
     field :next_attempt_at, :utc_datetime_usec
     field :leased_until, :utc_datetime_usec
     field :lease_token, Ecto.UUID
+    field :restored_max_event_id, :integer
+    field :restored_min_txid, :integer
 
     timestamps(type: :utc_datetime_usec, inserted_at: false)
   end
@@ -66,14 +68,30 @@ defmodule Kanban.AuditStream.Cursor do
       :pending_filter_version,
       :next_attempt_at,
       :leased_until,
-      :lease_token
+      :lease_token,
+      :restored_max_event_id,
+      :restored_min_txid
     ])
     |> validate_required([:last_txid, :last_event_id])
     |> validate_number(:last_txid, greater_than_or_equal_to: 0)
     |> validate_number(:last_event_id, greater_than_or_equal_to: 0)
     |> validate_number(:pending_attempts, greater_than_or_equal_to: 0)
     |> validate_number(:pending_filter_version, greater_than_or_equal_to: 1)
+    |> validate_restored_bound()
+    |> check_constraint(:restored_max_event_id,
+      name: :audit_stream_cursors_restored_bound_complete
+    )
     |> foreign_key_constraint(:destination_id)
     |> unique_constraint(:destination_id, name: :audit_stream_cursors_pkey)
+  end
+
+  # Both bounds or neither: half a bound would hide nothing or everything.
+  defp validate_restored_bound(changeset) do
+    max_id = get_field(changeset, :restored_max_event_id)
+    min_txid = get_field(changeset, :restored_min_txid)
+
+    if is_nil(max_id) == is_nil(min_txid),
+      do: changeset,
+      else: add_error(changeset, :restored_max_event_id, "must be set with restored_min_txid")
   end
 end

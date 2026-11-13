@@ -825,22 +825,62 @@ one, new rows get transaction ids lower than the ones already stored and
 already in every cursor. The reader would then find nothing after any cursor,
 forever, and no delivery would fail.
 
-- **Detection.** Before each read, the worker compares
-  `pg_current_xact_id()` with the cursor's `last_txid`. If the database's id
-  is lower, transaction ids have gone backwards. The destination is then marked
+- **Detection.** Before it reads, the worker compares `pg_current_xact_id()`
+  with the cursor's `last_txid` and `pending_last_txid`. If the database's id
+  is not above them, transaction ids have gone backwards: a cursor holds
+  committed rows' ids, which on one server are always below a running
+  transaction's. The destination is then marked
   **Failing** with `halted_reason` `txid_reset` and the reason "The database
-  was moved. An operator must re-seed audit streaming", and every org-admin is
-  emailed.
+  was moved. An operator must re-seed audit streaming", and an
+  `audit_stream_failing` event is recorded. A destination that had received
+  everything before the move has no event after its cursor, so the minute
+  sweep also queues a run for every destination whose cursor is at or past
+  the database's next transaction id (the snapshot's `xmax`), and that run
+  halts it. Without this check such a destination would look healthy while
+  it received nothing. The check covers paused destinations and destinations
+  waiting to retry (a paused one stays paused): once the new server's
+  transaction ids pass the cursor the move can no longer be seen, and a
+  destination resumed then would skip every event written below its old
+  position. A destination halted for another reason keeps that halt, which
+  waits for a person, and the re-seed covers it.
 - **Repair.** `Kanban.Release.reseed_audit_stream_cursors/0`, run from a
-  release console, sets each cursor to `(0, 0)` with `not_before` set to its
-  `last_inserted_at`. It clears any pending batch and `txid_reset`, and records
+  release console, re-seeds each cursor the move left behind: one halted
+  with `txid_reset`, or holding a `last_txid` or `pending_last_txid` at or
+  above the snapshot's `xmax`. A cursor already re-seeded, one created on
+  the new server and one the new server's ids already passed are left
+  alone, so a second run changes nothing. It sets each cursor to `(0, 0)`
+  with `not_before` set to its `last_inserted_at`. It clears any pending batch and `txid_reset`, and records
   an `audit_stream_cursors_reseeded` event for each Organization. Each
-  destination then receives every event inserted since the last one it
-  received, whatever its `txid`. Events at that exact time may arrive twice,
-  and receivers drop them by `id`.
-- **Order after a move.** New rows sort before restored ones, because their
-  transaction ids are lower. Delivery is in that order, so it is not time
-  order across the move, but nothing is skipped.
+  destination then receives every event the new server writes after the move.
+  Events at the exact time of its last delivery may arrive twice, and
+  receivers drop them by `id`.
+- **Restored events not yet delivered.** Restored rows keep the old server's
+  transaction ids, which sort after every row the new server writes. One
+  `(txid, id)` cursor cannot deliver both: if it read the restored rows first,
+  every new row would sort behind it, and reading restored rows above the
+  horizon would break the guarantee that no late commit is skipped. So the
+  re-seed does not deliver them. Before it moves a cursor it finds the
+  Organization's restored rows: every row whose `txid` is at or above the
+  snapshot's `xmax`, which no committed transaction of the new server can
+  have. It records, as one gap with reason `database_move`, every event after
+  the cursor's old position that the new cursor will never read: a restored
+  one, or one inserted before the new `not_before`, and any event of the new
+  server that a skewed clock stamped before `not_before` (told from old rows
+  by its `id`, above every restored one). Nothing is skipped without a gap. The cursor stores the bound of the restored rows
+  (`restored_max_event_id`, the highest restored `id`, and
+  `restored_min_txid`, that `xmax`), and every read for it leaves those rows
+  out, so none arrives later, when the new server's ids pass the old ones.
+  The bound relies on the `id` sequence being restored with the table, as
+  `pg_dump` does, so every new row has a higher `id`. The re-seed checks
+  that first and raises, writing nothing, when the sequence is behind the
+  highest `id` in the table. A later move replaces the bound with its own:
+  the earlier restored rows were inserted before the new `not_before`, so
+  they stay unread. The cleared halt leaves the reason "Audit streaming was
+  re-seeded after the database move" until the next delivery. Restored events in a
+  `database_move` gap stay in the audit log and can still be exported from
+  the Organization's audit page.
+- **Order after a move.** Delivery restarts at the new server's first rows,
+  in their commit order. Nothing written after the move is skipped.
 
 The operator runbook lists the re-seed as a step of any logical move.
 
@@ -1013,7 +1053,7 @@ which is already large and has one job: recording and reading events.
 | --- | --- | --- |
 | `id` | bigserial | |
 | `destination_id` | FK, `on_delete: :delete_all` | |
-| `reason` | string | `retention` or `too_old` (Datadog) |
+| `reason` | string | `retention`, `too_old` (Datadog) or `database_move` ([§8.8](#88-after-a-database-move)) |
 | `events` | integer | Events lost, added to while the gap is open |
 | `first_occurred_at`, `last_occurred_at` | utc_datetime_usec | The dates of the lost events |
 | `opened_at`, `last_extended_at` | utc_datetime_usec | |
@@ -1601,7 +1641,7 @@ emails do. They are sent when:
 | Worker | With Oban `testing: :disabled` in the race partition, because Oban only applies uniqueness then: one job per destination plus at most one follow-up; the lease stops a second run; a run whose lease expired cannot move the cursor; no transaction is open during the POST. Also: the cursor moves only on 2xx; a retry resends exactly the pending batch; `next_attempt_at` holds the backoff, Retry-After and the cap against the sweep; a halted destination is never swept; draining and catch-up pacing; state moves Healthy → Retrying → Failing → Healthy with the right emails; a `txid` lower than the cursor's halts the destination; a pending batch whose `pending_filter_version` is older than the destination's is discarded and re-cut with a new `batch_id`, while a send already in flight completes normally; saving a filter change clears a `rejected_batch` halt; a destination whose secret loads as `:unreadable` sends nothing, records no attempt and halts with `credentials_unreadable`, and replacing the secret clears it |
 | Tolerant encrypted type | `TolerantEncryptedBinary` round-trips a value; a value written under another key loads as `:unreadable` instead of failing; dumping `:unreadable` is refused; a destination row with an unreadable secret loads, and the streaming pages render it |
 | Retention | A destination behind the cutoff records a gap with the right count, including a paused one; a refused purge records none; a pending batch that loses events is discarded and the next batch has a new `batch_id`; a second loss extends the open gap without a new email; a lease that can't be taken skips the Organization; retention still purges |
-| Re-seed | `reseed_audit_stream_cursors/0` sets `(0, 0)` and `not_before`, clears `txid_reset`, and the next batch starts at the last delivered event's time |
+| Re-seed | `reseed_audit_stream_cursors/0` sets `(0, 0)` and `not_before`, clears `txid_reset`, and the next batch starts at the last delivered event's time; restored events not yet delivered, and any older than `not_before`, are one `database_move` gap and never read; a second re-seed records nothing twice; the sweep queues a caught-up cursor past the database's transaction ids, and its run halts it with `txid_reset` |
 | Security | `UrlGuard` refusals at save and send time; secrets never appear in rendered HTML, logs, telemetry or audit metadata; `destination_name` and `url_host` never reach telemetry; a non-org-admin, and an org-admin of another Organization, get nothing; a reserved header name is refused; `audit_stream_*` cannot be excluded; the test-event limit is per Organization and its result is coarse |
 | UI | The LiveViews in every supported locale (de, en, es, fr, ja, pt, zh), including plural forms; write-only secret fields, the limit of 3, the one-org-admin warning, gaps and **Dismiss**, confirmations, and light and dark mode |
 | Emails | Each email kind in a recipient's locale, the throttles, and the catch-up subject |
@@ -1724,7 +1764,7 @@ Within a goal, dependencies use array positions as usual.
 | Risk | Mitigation |
 | --- | --- |
 | A long-open writing transaction anywhere on the database server, in any database, holds the horizon back and streaming stalls | `events_above_horizon` and the lag telemetry show it, and the destination page counts those events as waiting. The doc names `pg_stat_activity` rows with a `backend_xid` and `pg_prepared_xacts` as the first places to look ([§7.3](#73-what-it-costs)). Keep review apps and test databases off the production server |
-| The database is moved logically and transaction ids restart lower | The worker detects it and halts each destination, and the operator re-seeds the cursors ([§8.8](#88-after-a-database-move)) |
+| The database is moved logically and transaction ids restart lower | The sweep and the worker detect it and halt each destination, including one that had received everything, and the operator re-seeds the cursors. Restored events a destination had not received become a `database_move` gap ([§8.8](#88-after-a-database-move)) |
 | The `txid` migration fails on a hardened, self-hosted database | The deploy stops on `insufficient_privilege`, and the operator applies it with the admin URL and re-checks the hardening, as [§9.1](#91-a-commit-order-column-on-audit_events) describes. Rehearsed on a local hardened database, not a review app. On production's Managed Postgres it runs as usual |
 | The `ALTER`s queue behind a long transaction and block audit inserts during a deploy | `lock_timeout` of 10 seconds; re-run when the transaction ends |
 | Production's last machine stops while idle, and the sweep with it | D15: B8 sets `min_machines_running = 1`, so one machine always runs |

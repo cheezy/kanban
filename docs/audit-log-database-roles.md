@@ -316,19 +316,25 @@ physical replica or a Fly Managed Postgres failover keeps them, so neither
 needs this step. A **logical** move does not: a dump and restore, logical
 replication, or a major-version upgrade done by dump. After one, new rows get
 transaction ids lower than every stored position, so no destination receives
-anything new. A destination with events still waiting halts as **Failing**
-with the reason "The database was moved. An operator must re-seed audit
-streaming"; one that had caught up shows nothing wrong at all, because it is
-never sent anything that would notice. So make the re-seed a step of every
-logical move, whatever the destinations show.
+anything new. Every destination that is not already halted then halts as
+**Failing** with the reason "The database was moved. An operator must
+re-seed audit streaming", including one that had received everything
+before the move: the minute sweep queues a run for a position past the new
+server's transaction ids even when no event is waiting. A paused destination
+halts too and stays paused, because once the new server's transaction ids
+pass the old positions the move can no longer be seen. A destination
+already halted for another reason keeps that halt. So make the re-seed a
+step of every logical move, whatever the destinations show.
 
 **Before the dump**, stop new writes while the app keeps running, and wait
 until the `audit_stream.lag_measured.lag_seconds` metric, recorded at most
 every 15 minutes per destination, is 0 for every destination. Restored rows
-keep the old server's transaction ids, so an event a destination had not yet
-received when the database was dumped is not covered by the re-seed: it is
-held back until the new server's ids pass the old ones, or skipped when it
-is older than the last event that destination received.
+keep the old server's transaction ids, which sort after every row the new
+server writes, so the re-seed cannot send an event a destination had not yet
+received when the database was dumped. It records those events as a gap with
+the reason `database_move` instead, together with any undelivered event
+older than the last one that destination received, and never reads them for
+it again. Draining first leaves nothing for that gap.
 
 **After the move**, once the app is up on the new server, run:
 
@@ -344,7 +350,13 @@ line with the same counts, plus the usual `security_audit` line for each
 Organization's event. None of them names a URL, a destination or a
 credential. What to expect:
 
-- Every destination's position restarts at the time of the last event it
+- Only a position the move left behind is re-seeded: a destination halted
+  with `txid_reset`, or one whose position is in the old server's
+  transaction ids. A destination created on the new server, one already
+  re-seeded, and one whose position the new server's ids had already
+  passed are left as they are, so running the command again changes
+  nothing.
+- Every re-seeded destination's position restarts at the time of the last event it
   received, or at the time it was added if it never received one. A
   destination added to receive history it has not received yet therefore
   starts at the time it was added instead. Its pending batch is discarded,
@@ -352,12 +364,27 @@ credential. What to expect:
 - The `txid_reset` halt is cleared, so the next minute's sweep sends again.
   The destination stays **Failing** until that delivery succeeds, which
   records the usual recovery. Every other halt stays, because each waits for
-  a person. A destination halted on a rejected batch keeps that halt but no
+  a person. Until the next delivery, the reason reads "Audit streaming was
+  re-seeded after the database move", so a paused destination no longer asks
+  for a re-seed. A destination halted on a rejected batch keeps that halt but no
   longer has the batch: **Retry now** resumes it from the re-seed point, and
   **Skip this batch** is refused because there is no batch to skip.
 - Each destination receives every event written on the new server since the
   move, and events at the exact time of its last delivery may arrive twice.
   Receivers drop duplicates by `id`.
+- A destination that had not received every event before the dump gets one
+  open gap with the reason `database_move`, counting those events and
+  spanning their times, and the usual `audit_stream_gap` audit event. The
+  gap also counts any event the new server wrote with a clock behind the
+  old one, stamped before that destination's restart time. The
+  events stay in the audit log: an org-admin can export that time range from
+  the Organization's audit page and load it into the tool, then dismiss the
+  gap. Running the re-seed again records nothing twice. This relies on the
+  `audit_events` id sequence being restored with the table, as `pg_dump`
+  does; with logical replication, copy the sequence values before switching
+  over. The re-seed checks it and raises, changing nothing, when the
+  sequence is behind the highest event id: advance it with `setval` and run
+  the re-seed again.
 - Each Organization with at least one destination re-seeded gets one
   `audit_stream_cursors_reseeded` audit event, with no actor and the number
   re-seeded. Every destination receives it, so a re-seed is visible in the
