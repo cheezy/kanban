@@ -308,6 +308,65 @@ check recognises only the owner-role model, and `release_command` runs with the
 application's secrets, so migrations would have to become a manual operator
 step. Full hardening needs a Postgres where you hold a superuser.
 
+## Re-seeding audit streaming after a logical database move
+
+Audit log streaming remembers how far each destination has got by
+transaction id, and transaction ids belong to one Postgres server. A
+physical replica or a Fly Managed Postgres failover keeps them, so neither
+needs this step. A **logical** move does not: a dump and restore, logical
+replication, or a major-version upgrade done by dump. After one, new rows get
+transaction ids lower than every stored position, so no destination receives
+anything new. A destination with events still waiting halts as **Failing**
+with the reason "The database was moved. An operator must re-seed audit
+streaming"; one that had caught up shows nothing wrong at all, because it is
+never sent anything that would notice. So make the re-seed a step of every
+logical move, whatever the destinations show.
+
+**Before the dump**, stop new writes while the app keeps running, and wait
+until the `audit_stream.lag_measured.lag_seconds` metric, recorded at most
+every 15 minutes per destination, is 0 for every destination. Restored rows
+keep the old server's transaction ids, so an event a destination had not yet
+received when the database was dumped is not covered by the re-seed: it is
+held back until the new server's ids pass the old ones, or skipped when it
+is older than the last event that destination received.
+
+**After the move**, once the app is up on the new server, run:
+
+```bash
+/app/bin/kanban eval 'Kanban.Release.reseed_audit_stream_cursors(dry_run: true) |> IO.inspect()'
+/app/bin/kanban eval 'Kanban.Release.reseed_audit_stream_cursors() |> IO.inspect()'
+```
+
+The first command counts and changes nothing; a misspelt option raises
+before anything is read. The second returns
+`{:ok, %{organizations: n, destinations: m, busy: b}}` and logs one summary
+line with the same counts, plus the usual `security_audit` line for each
+Organization's event. None of them names a URL, a destination or a
+credential. What to expect:
+
+- Every destination's position restarts at the time of the last event it
+  received, or at the time it was added if it never received one. A
+  destination added to receive history it has not received yet therefore
+  starts at the time it was added instead. Its pending batch is discarded,
+  because its range is in the old server's ids.
+- The `txid_reset` halt is cleared, so the next minute's sweep sends again.
+  The destination stays **Failing** until that delivery succeeds, which
+  records the usual recovery. Every other halt stays, because each waits for
+  a person. A destination halted on a rejected batch keeps that halt but no
+  longer has the batch: **Retry now** resumes it from the re-seed point, and
+  **Skip this batch** is refused because there is no batch to skip.
+- Each destination receives every event written on the new server since the
+  move, and events at the exact time of its last delivery may arrive twice.
+  Receivers drop duplicates by `id`.
+- Each Organization with at least one destination re-seeded gets one
+  `audit_stream_cursors_reseeded` audit event, with no actor and the number
+  re-seeded. Every destination receives it, so a re-seed is visible in the
+  tools too.
+- `busy` counts destinations whose lease another run (a delivery, a
+  retention purge, or an org-admin's **Retry now** or **Skip this batch**)
+  still held after waiting up to 15 seconds for that Organization; they are
+  left as they were. Run the command again for them.
+
 ## Open questions
 
 - **Which privileges does production's Fly Postgres give?** Answered for Fly

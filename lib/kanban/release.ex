@@ -24,7 +24,10 @@ defmodule Kanban.Release do
   creates Stride's own Organization and appoints its org-admins (W2403), and
   `import_workspace/3`, the release counterpart of `mix kanban.import_workspace`
   (W2222), and `send_launch_announcement/1`, the one-time service announcement
-  email (W2416).
+  email (W2416), and `reseed_audit_stream_cursors/0` (`/1` for `dry_run`), the audit streaming
+  repair after a logical database move, described under "Re-seeding audit
+  streaming after a logical database move" in
+  `docs/audit-log-database-roles.md` (W2714).
 
   Log lines from this module carry reason atoms and exception types only,
   never the admin URL, its host or its password.
@@ -32,6 +35,8 @@ defmodule Kanban.Release do
 
   alias Kanban.AuditLog.Hardening
   alias Kanban.AuditLog.Hardening.Purge
+  alias Kanban.AuditStream
+  alias Kanban.AuditStream.Reseed
   alias Kanban.Boards
   alias Kanban.Boards.Membership
   alias Kanban.Notifications.Announcement
@@ -279,6 +284,47 @@ defmodule Kanban.Release do
       Ecto.Migrator.with_repo(Repo, fn _repo -> LaunchAnnouncement.send(opts) end)
 
     result
+  end
+
+  @doc """
+  Re-seeds every audit stream destination's cursor after a logical database
+  move (dump and restore, logical replication, or a major-version upgrade
+  done by dump), through the app Repo. Not needed after a physical replica or
+  a Fly Managed Postgres failover, which keep transaction ids.
+
+  Runs `Kanban.AuditStream.reseed_cursors/1` and returns `{:ok, counts}`:
+  the `:organizations` and `:destinations` re-seeded, and the `:busy`
+  destinations left as they were because another run held their lease
+  (run it again for those). Each destination then receives every event
+  written on the new server since the last one it received; events at that
+  exact time may arrive twice and receivers drop them by id. An event not yet
+  delivered when the database was dumped is not covered, so the runbook in
+  `docs/audit-log-database-roles.md` has every destination catch up first.
+  Pass `dry_run: true` to count and
+  write nothing; an unknown option or a non-boolean `:dry_run` raises first.
+  Its own log line carries counts only, and each Organization's audit event
+  adds the usual `security_audit` line, which names no URL, destination name
+  or credential. Run it with `bin/kanban eval`:
+
+      Kanban.Release.reseed_audit_stream_cursors() |> IO.inspect()
+  """
+  @spec reseed_audit_stream_cursors(keyword()) :: {:ok, Reseed.counts()}
+  def reseed_audit_stream_cursors(opts \\ []) do
+    load_app()
+
+    {:ok, {:ok, counts} = result, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo -> AuditStream.reseed_cursors(opts) end)
+
+    log_reseed(counts, Keyword.get(opts, :dry_run, false))
+    result
+  end
+
+  defp log_reseed(counts, dry_run) do
+    line =
+      "audit_stream_cursors_reseeded dry_run=#{dry_run} organizations=#{counts.organizations} " <>
+        "destinations=#{counts.destinations} busy=#{counts.busy}"
+
+    if counts.busy > 0, do: Logger.warning(line), else: Logger.info(line)
   end
 
   @doc """

@@ -2,7 +2,8 @@ defmodule Kanban.AuditStream.DestinationEvents do
   @moduledoc """
   The audit events `Kanban.AuditStream.Destinations`,
   `Kanban.AuditStream.BatchActions`, `Kanban.AuditStream.TestEvent`,
-  `Kanban.AuditStream.DispatchWorker` and `Kanban.AuditStream.Gaps` record, with the keys
+  `Kanban.AuditStream.DispatchWorker`, `Kanban.AuditStream.Gaps` and
+  `Kanban.AuditStream.Reseed` record, with the keys
   `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §13.2 lists. Each is a literal
   `AuditLog.event/2` call so the telemetry call-site tests see it.
 
@@ -161,6 +162,18 @@ defmodule Kanban.AuditStream.DestinationEvents do
       organization_id: destination.organization_id,
       destination_id: destination.id,
       gap_id: gap.id
+    )
+  end
+
+  @doc """
+  Records `audit_stream_cursors_reseeded` with the number of the
+  Organization's `destinations` re-seeded. Recorded by an operator's release
+  command, so no `user_id` is set.
+  """
+  def cursors_reseeded(organization_id, destinations) do
+    AuditLog.event(:audit_stream_cursors_reseeded,
+      organization_id: organization_id,
+      destinations: destinations
     )
   end
 end

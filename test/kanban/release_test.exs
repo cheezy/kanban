@@ -8,6 +8,7 @@ defmodule Kanban.ReleaseTest do
 
   import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
+  import Kanban.AuditStreamFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.OrganizationsFixtures
@@ -16,8 +17,13 @@ defmodule Kanban.ReleaseTest do
 
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
+  alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditLog.Hardening.Purge
   alias Kanban.AuditLogRoleHelper
+  alias Kanban.AuditStream.Cursor
+  alias Kanban.AuditStream.Destination
+  alias Kanban.AuditStream.Lease
+  alias Kanban.AuditStream.Reader
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
@@ -811,6 +817,375 @@ defmodule Kanban.ReleaseTest do
       assert enqueued == length(Announcement.list_recipients())
       assert_enqueued(worker: AnnouncementWorker, args: %{user_id: user.id, key: @key})
       assert Oban.whereis(name) == nil
+    end
+  end
+
+  describe "reseed_audit_stream_cursors/0" do
+    @reseeded "audit_stream_cursors_reseeded"
+    @last_at ~U[2026-11-05 10:00:00.123456Z]
+
+    # A cursor as a destination's would be on the old server: well past
+    # every new txid, with a pending batch and a stale lease.
+    defp moved_cursor(destination, fields \\ []) do
+      defaults = [
+        last_txid: 900_000_000,
+        last_event_id: 4_242,
+        last_inserted_at: @last_at,
+        pending_batch_id: Ecto.UUID.generate(),
+        pending_first_txid: 900_000_001,
+        pending_first_id: 4_243,
+        pending_last_txid: 900_000_009,
+        pending_last_id: 4_250,
+        pending_attempts: 3,
+        pending_filter_version: 1,
+        next_attempt_at: ~U[2026-11-05 11:00:00.000000Z]
+      ]
+
+      from(c in Cursor, where: c.destination_id == ^destination.id)
+      |> Repo.update_all(set: Keyword.merge(defaults, fields))
+    end
+
+    defp set_destination(destination, fields),
+      do: from(d in Destination, where: d.id == ^destination.id) |> Repo.update_all(set: fields)
+
+    defp cursor(destination), do: Repo.get!(Cursor, destination.id)
+    defp fresh(destination), do: Repo.get!(Destination, destination.id)
+
+    defp reseeded_events(organization) do
+      from(e in AuditEvent,
+        where: e.organization_id == ^organization.id and e.action == @reseeded,
+        order_by: e.id
+      )
+      |> Repo.all()
+    end
+
+    # `txid` can only be chosen with raw SQL: the schema never writes it.
+    defp event!(organization, txid, inserted_at) do
+      %{rows: [[id]]} =
+        Repo.query!(
+          """
+          INSERT INTO audit_events (action, organization_id, metadata, inserted_at, txid)
+          VALUES ('organization_updated', $1, '{}', $2, $3) RETURNING id
+          """,
+          [organization.id, inserted_at, txid]
+        )
+
+      id
+    end
+
+    defp own_txid do
+      %{rows: [[txid]]} = Repo.query!("SELECT pg_current_xact_id()::text::bigint")
+      txid
+    end
+
+    test "reseed sets (0, 0) and not_before from last_inserted_at" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      moved_cursor(destination, lease_token: Ecto.UUID.generate(), leased_until: nil)
+
+      assert {:ok, %{organizations: 1, destinations: 1, busy: 0}} =
+               Release.reseed_audit_stream_cursors()
+
+      cursor = cursor(destination)
+      assert {cursor.last_txid, cursor.last_event_id} == {0, 0}
+      assert cursor.not_before == @last_at
+      assert cursor.last_inserted_at == @last_at
+
+      for field <- [
+            :pending_batch_id,
+            :pending_first_txid,
+            :pending_first_id,
+            :pending_last_txid,
+            :pending_last_id,
+            :pending_filter_version,
+            :next_attempt_at,
+            :lease_token,
+            :leased_until
+          ] do
+        assert Map.fetch!(cursor, field) == nil, "#{field} was not cleared"
+      end
+
+      assert cursor.pending_attempts == 0
+    end
+
+    test "destination never delivered uses its inserted_at" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :splunk_hec)
+      moved_cursor(destination, last_inserted_at: nil)
+
+      assert {:ok, %{destinations: 1}} = Release.reseed_audit_stream_cursors()
+
+      assert DateTime.compare(cursor(destination).not_before, destination.inserted_at) == :eq
+    end
+
+    test "clears txid_reset and keeps rejected_batch" do
+      organization = organization_fixture()
+      moved = destination_fixture(organization, :https)
+      rejected = destination_fixture(organization, :datadog)
+      blocked = destination_fixture(organization, :splunk_hec)
+
+      for {destination, reason} <- [
+            {moved, :txid_reset},
+            {rejected, :rejected_batch},
+            {blocked, :blocked_address}
+          ] do
+        moved_cursor(destination)
+        set_destination(destination, halted_reason: reason, state: :failing)
+      end
+
+      assert {:ok, %{organizations: 1, destinations: 3, busy: 0}} =
+               Release.reseed_audit_stream_cursors()
+
+      assert fresh(moved).halted_reason == nil
+      assert fresh(rejected).halted_reason == :rejected_batch
+      assert fresh(blocked).halted_reason == :blocked_address
+
+      # The state stays Failing until the next delivery recovers it.
+      assert fresh(moved).state == :failing
+
+      # Every cursor moves, so a halt a person clears later starts right.
+      for destination <- [moved, rejected, blocked] do
+        assert {cursor(destination).last_txid, cursor(destination).pending_batch_id} == {0, nil}
+      end
+    end
+
+    test "no destinations returns zero counts" do
+      organization = organization_fixture()
+
+      assert {:ok, %{organizations: 0, destinations: 0, busy: 0}} =
+               Release.reseed_audit_stream_cursors()
+
+      assert reseeded_events(organization) == []
+      assert AuditLog.list_events(action: :audit_stream_cursors_reseeded) == []
+    end
+
+    test "records one audit event per Organization" do
+      attach_telemetry([:kanban, :audit, :audit_stream_cursors_reseeded])
+      first = organization_fixture()
+      second = organization_fixture()
+      _none = organization_fixture()
+
+      for destination <- [
+            destination_fixture(first, :https),
+            destination_fixture(first, :datadog),
+            destination_fixture(second, :splunk_hec)
+          ],
+          do: moved_cursor(destination)
+
+      assert {:ok, %{organizations: 2, destinations: 3, busy: 0}} =
+               Release.reseed_audit_stream_cursors()
+
+      assert [%AuditEvent{actor_user_id: nil, metadata: %{"destinations" => 2}}] =
+               reseeded_events(first)
+
+      assert [%AuditEvent{actor_user_id: nil, metadata: %{"destinations" => 1}}] =
+               reseeded_events(second)
+
+      first_id = first.id
+      second_id = second.id
+
+      assert_receive {:telemetry_event, [:kanban, :audit, :audit_stream_cursors_reseeded], _,
+                      %{organization_id: ^first_id, destinations: 2}}
+
+      assert_receive {:telemetry_event, [:kanban, :audit, :audit_stream_cursors_reseeded], _,
+                      %{organization_id: ^second_id, destinations: 1}}
+    end
+
+    test "after reseed Reader.next_batch starts at the last delivered event's time" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+
+      # The sandbox's own txid stands for the new server's horizon, so rows
+      # this test writes through Repo (the fixtures, the re-seed's own event)
+      # stay above it. Restored rows keep the old server's higher txids; a
+      # row written on the new server after the move gets a lower one.
+      horizon = own_txid()
+      _older = event!(organization, horizon - 2, ~N[2026-11-05 09:00:00.000000])
+      last = event!(organization, horizon - 1, ~N[2026-11-05 10:00:00.123456])
+      newer = event!(organization, 2, ~N[2026-11-05 12:00:00.000000])
+      moved_cursor(destination, last_txid: horizon - 1, last_event_id: last)
+
+      before = cursor(destination)
+
+      assert Reader.next_batch(organization.id, {before.last_txid, before.last_event_id},
+               horizon: horizon
+             ) == []
+
+      assert {:ok, %{destinations: 1}} = Release.reseed_audit_stream_cursors()
+
+      after_reseed = cursor(destination)
+
+      ids =
+        organization.id
+        |> Reader.next_batch({after_reseed.last_txid, after_reseed.last_event_id},
+          horizon: horizon,
+          not_before: after_reseed.not_before
+        )
+        |> Enum.map(& &1.id)
+
+      # The new row first (lower txid), then the last delivered one again;
+      # nothing before the move point.
+      assert ids == [newer, last]
+    end
+
+    test "waits for a live lease and counts the destination as busy when it stays held" do
+      organization = organization_fixture()
+      held = destination_fixture(organization, :https)
+      free = destination_fixture(organization, :datadog)
+      moved_cursor(held)
+      moved_cursor(free)
+      {:ok, token} = Lease.take(held.id)
+
+      log =
+        capture_log(fn ->
+          assert {:ok, %{organizations: 1, destinations: 1, busy: 1}} =
+                   Release.reseed_audit_stream_cursors(lease_wait_ms: 30, lease_poll_ms: 10)
+        end)
+
+      assert log =~ "busy=1"
+      assert cursor(held).last_txid == 900_000_000
+      assert cursor(held).lease_token == token
+      assert cursor(free).last_txid == 0
+      assert [%AuditEvent{metadata: %{"destinations" => 1}}] = reseeded_events(organization)
+    end
+
+    test "takes a lease a stuck run left past leased_until" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+
+      moved_cursor(destination,
+        lease_token: Ecto.UUID.generate(),
+        leased_until: ~U[2026-11-01 00:00:00.000000Z]
+      )
+
+      assert {:ok, %{destinations: 1, busy: 0}} =
+               Release.reseed_audit_stream_cursors(lease_wait_ms: 30, lease_poll_ms: 10)
+
+      assert cursor(destination).last_txid == 0
+      assert cursor(destination).lease_token == nil
+    end
+
+    test "dry_run counts and writes nothing" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      moved_cursor(destination)
+      set_destination(destination, halted_reason: :txid_reset)
+
+      assert {:ok, %{organizations: 1, destinations: 1, busy: 0}} =
+               Release.reseed_audit_stream_cursors(dry_run: true)
+
+      assert cursor(destination).last_txid == 900_000_000
+      assert fresh(destination).halted_reason == :txid_reset
+      assert reseeded_events(organization) == []
+    end
+
+    test "logs counts only, never a URL, name or credential" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :splunk_hec)
+      moved_cursor(destination)
+      attrs = destination_attrs(:splunk_hec)
+      # async: false, so the global level can be lowered for this test.
+      original = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: original) end)
+
+      log =
+        capture_log([level: :info], fn ->
+          assert {:ok, _} = Release.reseed_audit_stream_cursors()
+        end)
+
+      assert log =~
+               "audit_stream_cursors_reseeded dry_run=false organizations=1 destinations=1 busy=0"
+
+      refute log =~ destination.name
+      refute log =~ "collector.example.com"
+      refute log =~ "splunk-hec-token"
+      refute log =~ attrs.url
+    end
+
+    test "an unknown option or a non-boolean dry_run raises and writes nothing" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      moved_cursor(destination)
+
+      for opts <- [[dryrun: true], [dry: true], [dry_run: "true"], [lease_wait_ms: -1]] do
+        assert_raise ArgumentError, fn -> Release.reseed_audit_stream_cursors(opts) end
+      end
+
+      assert cursor(destination).last_txid == 900_000_000
+      assert reseeded_events(organization) == []
+    end
+
+    test "skips a destination deleted while waiting for its lease" do
+      organization = organization_fixture()
+      destination = destination_fixture(organization, :https)
+      moved_cursor(destination)
+      {:ok, _token} = Lease.take(destination.id)
+
+      # Shared sandbox (async: false): this process deletes the destination,
+      # and so its cursor, while the re-seed waits on the lease.
+      deleter =
+        Elixir.Task.async(fn ->
+          Process.sleep(50)
+          from(d in Destination, where: d.id == ^destination.id) |> Repo.delete_all()
+        end)
+
+      assert {:ok, %{organizations: 0, destinations: 0, busy: 0}} =
+               Release.reseed_audit_stream_cursors(lease_wait_ms: 5_000, lease_poll_ms: 10)
+
+      assert {1, _} = Elixir.Task.await(deleter)
+      assert reseeded_events(organization) == []
+    end
+
+    test "counts as busy a destination whose lease another run takes before the write" do
+      organization = organization_fixture()
+      taken = destination_fixture(organization, :https)
+      held = destination_fixture(organization, :datadog)
+      moved_cursor(taken)
+      moved_cursor(held)
+      {:ok, held_token} = Lease.take(held.id)
+      other_run = Ecto.UUID.generate()
+
+      # While the re-seed waits on `held`, another run takes over the lease it
+      # already holds on `taken`, then the holder of `held` lets go.
+      intruder =
+        Elixir.Task.async(fn ->
+          Process.sleep(50)
+
+          from(c in Cursor, where: c.destination_id == ^taken.id)
+          |> Repo.update_all(set: [lease_token: other_run])
+
+          Lease.release(held.id, held_token)
+        end)
+
+      assert {:ok, %{organizations: 1, destinations: 1, busy: 1}} =
+               Release.reseed_audit_stream_cursors(lease_wait_ms: 5_000, lease_poll_ms: 10)
+
+      assert :ok = Elixir.Task.await(intruder)
+      assert cursor(taken).last_txid == 900_000_000
+      assert cursor(taken).lease_token == other_run
+      assert cursor(held).last_txid == 0
+      assert [%AuditEvent{metadata: %{"destinations" => 1}}] = reseeded_events(organization)
+    end
+
+    test "the roles doc has the re-seed runbook section" do
+      doc = File.read!("docs/audit-log-database-roles.md")
+
+      [_, section] =
+        String.split(doc, "\n## Re-seeding audit streaming after a logical database move\n")
+
+      [section | _] = String.split(section, "\n## ")
+      prose = String.replace(section, ~r/\s+/, " ")
+
+      assert section =~ "Kanban.Release.reseed_audit_stream_cursors(dry_run: true)"
+      assert section =~ "Kanban.Release.reseed_audit_stream_cursors() |> IO.inspect()"
+      assert prose =~ "a Fly Managed Postgres failover keeps them, so neither needs this step"
+
+      assert prose =~
+               "make the re-seed a step of every logical move, whatever the destinations show"
+
+      assert prose =~ "**Before the dump**"
+      assert prose =~ "events at the exact time of its last delivery may arrive twice"
     end
   end
 end

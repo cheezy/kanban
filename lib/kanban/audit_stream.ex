@@ -67,6 +67,13 @@ defmodule Kanban.AuditStream do
   take no scope. The
   sweep's queries select only the fields they need, so a destination's
   secrets are never decrypted every minute.
+
+  ## For operators
+
+  `reseed_cursors/1` re-seeds every destination's cursor after a logical
+  database move (`Kanban.AuditStream.Reseed`, §8.8). It takes no scope:
+  only `Kanban.Release.reseed_audit_stream_cursors/1`, run from a release
+  console, calls it.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -83,6 +90,7 @@ defmodule Kanban.AuditStream do
   alias Kanban.AuditStream.Gaps
   alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reader
+  alias Kanban.AuditStream.Reseed
   alias Kanban.AuditStream.SigningSecrets
   alias Kanban.AuditStream.Status
   alias Kanban.AuditStream.TestEvent
@@ -263,6 +271,16 @@ defmodule Kanban.AuditStream do
   """
   @spec audit_due_gaps(DateTime.t()) :: non_neg_integer()
   def audit_due_gaps(%DateTime{} = now), do: Gaps.audit_due(now)
+
+  @doc """
+  For an operator after a logical database move: sets every cursor to
+  `(0, 0)` from its last delivered event's time, discards pending batches,
+  clears `txid_reset` halts and records one `audit_stream_cursors_reseeded`
+  event per Organization. `Kanban.AuditStream.Reseed.run/1` documents the
+  options and the counts it returns.
+  """
+  @spec reseed_cursors(keyword()) :: {:ok, Reseed.counts()}
+  def reseed_cursors(opts \\ []), do: Reseed.run(opts)
 
   @doc """
   For a destination halted with `rejected_batch`, the batch it is stuck on:

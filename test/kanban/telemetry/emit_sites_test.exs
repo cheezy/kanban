@@ -15,14 +15,6 @@ defmodule Kanban.Telemetry.EmitSitesTest do
     "lib/kanban_web/controllers/api/task_actions.ex"
   ]
 
-  # TEMPORARY: the audit log streaming events and audit actions are declared
-  # up front (design task A5) so later tasks can emit them in strict mode.
-  # Each task that adds a call site removes its names here; the list is empty,
-  # and can be deleted, once every one of them is emitted.
-  @awaiting_emit_site [
-    [:kanban, :audit, :audit_stream_cursors_reseeded]
-  ]
-
   setup_all do
     %{scan: TelemetrySourceScan.scan("lib")}
   end
@@ -45,22 +37,10 @@ defmodule Kanban.Telemetry.EmitSitesTest do
     unused =
       for %{name: name} <- Catalog.events(),
           name != [:kanban, :telemetry, :metadata_dropped],
-          name not in @awaiting_emit_site,
           not MapSet.member?(emitted, name),
           do: name
 
     assert unused == []
-  end
-
-  test "the awaiting list names only catalogued events that have no emit site yet",
-       %{scan: scan} do
-    emitted = MapSet.new(scan.sites, & &1.name)
-
-    assert length(@awaiting_emit_site) == length(Enum.uniq(@awaiting_emit_site))
-    assert Enum.all?(@awaiting_emit_site, &match?({:ok, _}, Catalog.fetch(&1)))
-
-    # A name whose call site now exists must be removed from the list.
-    assert Enum.filter(@awaiting_emit_site, &MapSet.member?(emitted, &1)) == []
   end
 
   test "every API and audit action is found and catalogued", %{scan: scan} do
