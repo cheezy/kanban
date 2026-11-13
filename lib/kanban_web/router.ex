@@ -430,6 +430,10 @@ defmodule KanbanWeb.Router do
       # The org-admin audit log; OrgLive.AuditLog re-declares the same gate and
       # forces the Organization filter from the membership.
       live "/org/audit", OrgLive.AuditLog, :index
+      # The org-admin audit streaming destination list (W2716);
+      # OrgLive.AuditStreaming re-declares the same gate and re-checks the role
+      # on every event.
+      live "/org/audit/streaming", OrgLive.AuditStreaming, :index
       # The org-admin security policy page (W2244); OrgLive.Security re-declares
       # the same gate and re-checks the role on every event.
       live "/org/security", OrgLive.Security, :index

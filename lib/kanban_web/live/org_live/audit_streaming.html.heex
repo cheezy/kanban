@@ -1,0 +1,215 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:organization}>
+  <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
+    <.link
+      id="audit-streaming-back"
+      navigate={~p"/org/audit"}
+      class="text-sm underline"
+      style="color: var(--ink-2);"
+    >
+      {gettext("Back to the audit log")}
+    </.link>
+
+    <header style="padding: 12px 0 14px;">
+      <h1
+        id="audit-streaming-title"
+        style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);"
+      >
+        {gettext("Audit streaming")}
+      </h1>
+      <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
+        {gettext(
+          "Where %{name}'s audit log is sent as it is written, and whether each destination is keeping up.",
+          name: @organization.name
+        )}
+      </p>
+    </header>
+
+    <div class="flex flex-col gap-5 max-w-3xl">
+      <div class="flex flex-col gap-2">
+        <p
+          id="audit-streaming-limit-note"
+          style="margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5;"
+        >
+          {ngettext(
+            "An Organization can have up to %{count} destination.",
+            "An Organization can have up to %{count} destinations.",
+            @max_destinations
+          )}
+        </p>
+        <p
+          :if={@org_admin_count == 1}
+          id="audit-streaming-one-org-admin-note"
+          style={[
+            "margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5;",
+            "background: var(--st-doing-soft); border: 1px solid var(--line);",
+            "border-radius: 8px; padding: 8px 12px;"
+          ]}
+        >
+          {gettext(
+            "Your Organization has only one org-admin, so emails about changes to its destinations go only to that person. Ask a site admin to appoint another org-admin."
+          )}
+        </p>
+      </div>
+
+      <.settings_card
+        id="audit-streaming-destinations"
+        title={gettext("Destinations")}
+        hint={
+          gettext(
+            "Secrets are never shown here: each destination shows its host and the last 4 characters of its credential or URL."
+          )
+        }
+        compact
+      >
+        <p
+          :if={@rows == []}
+          id="audit-streaming-empty"
+          style="margin: 0; padding: 10px 0; font-size: 13px; color: var(--ink-2);"
+        >
+          {gettext("No destinations yet. Audit events are not being streamed anywhere.")}
+        </p>
+        <ul id="audit-streaming-rows" style="list-style: none; margin: 0; padding: 0;">
+          <li
+            :for={row <- @rows}
+            id={"destination-#{row.id}"}
+            class="flex flex-col gap-2"
+            style="padding: 12px 0; border-bottom: 1px solid var(--line);"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                data-destination-name
+                style="font-size: 13px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere;"
+              >
+                {row.name}
+              </span>
+              <span data-destination-type style="font-size: 12px; color: var(--ink-2);">
+                {AuditStreamingRow.type_label(row.kind)}
+              </span>
+              <span
+                id={"destination-status-#{row.id}"}
+                data-status-pill={row.state}
+                style={[
+                  "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
+                  "background: var(--st-#{AuditStreamingRow.state_token(row.state)}-soft);",
+                  "color: var(--st-#{AuditStreamingRow.state_token(row.state)});",
+                  "border: 1px solid var(--line);"
+                ]}
+              >
+                {AuditStreamingRow.state_label(row.state)}
+              </span>
+            </div>
+
+            <div
+              class="flex flex-wrap items-center gap-x-3 gap-y-1"
+              style="font-size: 12px; color: var(--ink-2);"
+            >
+              <span :if={row.host} data-destination-host style="overflow-wrap: anywhere;">
+                {row.host}
+              </span>
+              <code
+                :if={row.hint}
+                data-destination-hint
+                style="font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2);"
+              >
+                {row.hint}
+              </code>
+            </div>
+
+            <p
+              :if={row.reason}
+              id={"destination-reason-#{row.id}"}
+              data-credentials-unreadable={row.credentials_unreadable}
+              style="margin: 0; font-size: 12px; color: var(--ink); line-height: 1.5; overflow-wrap: anywhere;"
+            >
+              {row.reason}
+            </p>
+
+            <dl
+              class="flex flex-col gap-1 sm:flex-row sm:gap-6"
+              style="margin: 0; font-size: 12px;"
+            >
+              <div class="flex gap-2">
+                <dt style="color: var(--ink-3);">{gettext("Last delivered")}</dt>
+                <dd
+                  id={"destination-last-delivered-#{row.id}"}
+                  style="margin: 0; color: var(--ink);"
+                >
+                  {AuditStreamingRow.last_delivered(row.last_success_at)}
+                </dd>
+              </div>
+              <div class="flex gap-2">
+                <dt style="color: var(--ink-3);">{gettext("Behind by")}</dt>
+                <dd id={"destination-behind-by-#{row.id}"} style="margin: 0; color: var(--ink);">
+                  {AuditStreamingRow.behind_by(row.lag)}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <.button
+                :if={row.enabled}
+                id={"pause-destination-#{row.id}"}
+                type="button"
+                phx-click="pause"
+                phx-value-id={row.id}
+                data-confirm={
+                  gettext(
+                    "Pause this destination? Events wait in the audit log and are sent when you resume it."
+                  )
+                }
+              >
+                {gettext("Pause")}
+              </.button>
+              <.button
+                :if={!row.enabled}
+                id={"resume-destination-#{row.id}"}
+                type="button"
+                phx-click="resume"
+                phx-value-id={row.id}
+              >
+                {gettext("Resume")}
+              </.button>
+              <.button
+                id={"test-destination-#{row.id}"}
+                type="button"
+                phx-click="send_test"
+                phx-value-id={row.id}
+                disabled={MapSet.member?(@testing, row.id)}
+              >
+                {if MapSet.member?(@testing, row.id),
+                  do: gettext("Sending..."),
+                  else: gettext("Send test event")}
+              </.button>
+              <.button
+                id={"delete-destination-#{row.id}"}
+                type="button"
+                phx-click="delete"
+                phx-value-id={row.id}
+                data-confirm={
+                  gettext(
+                    "Delete this destination? Events will no longer be sent to it, and its history of attempts and gaps is deleted too. Nothing already in the destination tool is deleted."
+                  )
+                }
+              >
+                {gettext("Delete")}
+              </.button>
+            </div>
+
+            <p
+              :if={@test_results[row.id]}
+              id={"destination-test-result-#{row.id}"}
+              role="status"
+              data-test-result={elem(@test_results[row.id], 0)}
+              style={[
+                "margin: 0; font-size: 12px; line-height: 1.5;",
+                "color: var(--st-#{if elem(@test_results[row.id], 0) == :ok, do: "done", else: "blocked"});"
+              ]}
+            >
+              {elem(@test_results[row.id], 1)}
+            </p>
+          </li>
+        </ul>
+      </.settings_card>
+    </div>
+  </div>
+</Layouts.app>

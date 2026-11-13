@@ -249,6 +249,22 @@ defmodule Kanban.Organizations do
   end
 
   @doc """
+  The number of org-admins of `organization` whose account is enabled, read
+  from the database. An Organization with none gets 0.
+
+  `organization` is an `%Organization{}` or its id.
+  """
+  @spec count_enabled_org_admins(Organization.t() | integer()) :: non_neg_integer()
+  def count_enabled_org_admins(organization) do
+    organization_id = organization_id(organization)
+
+    OrganizationMember
+    |> where([m], m.organization_id == ^organization_id and m.role == ^:org_admin)
+    |> join(:inner, [m], u in assoc(m, :user), on: is_nil(u.disabled_at))
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Returns `{:error, :last_org_admin}` when `user` is the last enabled org-admin
   of an Organization that has other members, else `:ok`. Call it inside the
   transaction that disables or deletes `user`; see

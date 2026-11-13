@@ -1,7 +1,7 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} active={:organization}>
   <div data-settings-panel class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
-    <header style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px;">
-      <div style="flex: 1; min-width: 0;">
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; padding-bottom: 14px;">
+      <div style="flex: 1 1 240px; min-width: 0;">
         <h1
           id="organization-name"
           style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink); overflow-wrap: anywhere;"
@@ -30,6 +30,10 @@
         <.button id="org-audit-log-link" navigate={~p"/org/audit"}>
           <.icon name="hero-shield-check" class="size-4" />
           {gettext("Audit log")}
+        </.button>
+        <.button id="org-audit-streaming-link" navigate={~p"/org/audit/streaming"}>
+          <.icon name="hero-signal" class="size-4" />
+          {gettext("Audit streaming")}
         </.button>
       </div>
     </header>

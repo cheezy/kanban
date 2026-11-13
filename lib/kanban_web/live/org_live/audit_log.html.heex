@@ -20,6 +20,10 @@
           <.icon name="hero-arrow-down-tray" class="size-4" />
           {gettext("Export JSON")}
         </.button>
+        <.button id="audit-log-streaming-link" navigate={~p"/org/audit/streaming"}>
+          <.icon name="hero-signal" class="size-4" />
+          {gettext("Streaming")}
+        </.button>
         <.button
           :if={@signing_key}
           id="audit-log-export-signed"

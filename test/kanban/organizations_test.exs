@@ -716,6 +716,22 @@ defmodule Kanban.OrganizationsTest do
       refute Organizations.org_admin?(user_fixture(), ctx.first)
     end
 
+    test "count_enabled_org_admins/1 counts enabled org-admins only", ctx do
+      assert Organizations.count_enabled_org_admins(ctx.first) == 1
+      assert Organizations.count_enabled_org_admins(ctx.first.id) == 1
+      assert Organizations.count_enabled_org_admins(ctx.second) == 0
+
+      second_admin = user_fixture()
+      organization_member_fixture(ctx.first, second_admin, :org_admin)
+      assert Organizations.count_enabled_org_admins(ctx.first) == 2
+
+      second_admin |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+      assert Organizations.count_enabled_org_admins(ctx.first) == 1
+
+      organization_member_fixture(ctx.second, user_fixture(), :member)
+      assert Organizations.count_enabled_org_admins(ctx.second) == 0
+    end
+
     test "org_admin?/2 is false for a disabled org-admin, while member?/2 stays true", ctx do
       ctx.org_admin |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
 
