@@ -10,11 +10,15 @@ defmodule Kanban.AuditStream.Cursor do
   a cursor at zero would silently stream the whole log.
 
   The `pending_` fields describe the batch being sent: its id, its range, how
-  many attempts it has had, the destination's `filter_version` it was cut
-  under, so a filter change discards it (D16), and the Organization id and
-  name its events carry, stored when it is cut so every retry builds the same
-  body (D428). `leased_until` and `lease_token` hold the lease of the run
-  sending it.
+  many times the destination has rejected it permanently (`pending_attempts`,
+  `Kanban.AuditStream.Outcome`), the destination's `filter_version` it was
+  cut under, so a filter change discards it (D16), and the Organization id and
+  name its events carry, stored when it is cut so every retry carries the
+  same Organization details (D428). Nothing else about the body is stored:
+  the actors and the destination's settings outside the filters are read
+  again on every attempt, so a retry's body can differ under the same
+  `batch_id` (`Kanban.AuditStream.PendingBatch`; design §8.3, D18, D19).
+  `leased_until` and `lease_token` hold the lease of the run sending it.
 
   `lag_measured_slot` is the start of the 15-minute slot the destination's
   lag was last measured in. Only the minute sweep writes it, claiming the

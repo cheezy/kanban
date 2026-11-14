@@ -41,6 +41,26 @@ defmodule Kanban.AuditStream.PendingBatch do
   actor fields the Reader reads live, and adapter settings outside the
   filters, are not frozen (design §8.3).
 
+  So a retry keeps the events, their range, the `batch_id`, the
+  `pending_filter_version` and the Organization details, and re-reads the
+  rest:
+
+    * the actors, deliberately (D18): each attempt reads each event's actor
+      user row, so a changed email, a deleted account's null email, or the
+      current-membership redaction of an event from before
+      `actor_in_organization` shows from the next attempt. A privacy removal
+      wins over a byte-identical retry;
+    * the destination's settings outside the two filters, such as the HTTPS
+      format or Datadog's tags and service, deliberately too (D19). They do
+      not move `filter_version`, so the pending batch is not discarded: its
+      next attempt sends the same events under the same `batch_id` in the
+      new settings, which lets an HTTPS receiver recognise a retry of an
+      attempt whose 2xx was lost. A send already under way finishes as it
+      started.
+
+  Only the events and the `batch_id` are stable across attempts, never the
+  request body or its signatures.
+
   For a kind with a `max_event_age` (Datadog), `:older_than` is the time
   before which an event is too old to send (§5.2). A batch never holds such
   an event: a pending batch that does is discarded and cut again, and a cut

@@ -191,6 +191,15 @@ it is:
   org-admins use.
 - **`organization`** carries the Organization's id and name. Every retry of a
   batch carries the name it had when the batch was made.
+- **`actor`** is read again on every attempt, unlike `organization`. A retry
+  carries the actor's email as it is at that attempt, `null` once the account
+  has been deleted. A deleted actor's `user_id` is still sent when the event's
+  own record kept it, and is `null` when it did not; the event's `ip` and
+  `metadata` are sent as the two items below describe. An event from before
+  Stride recorded whether its actor was a member, whose actor has since left
+  the Organization, goes out as an outside actor. This is deliberate: a retry
+  never re-sends an email Stride has since deleted, or an actor it would now
+  hide.
 - **An actor from outside the Organization**, such as a Stride site admin, is
   sent as on the Organization audit page: `user_id`, `email` and `ip` are
   `null`, `in_organization` is `false`, and the user id, email and IP address
@@ -221,11 +230,23 @@ A new `batch_id` also comes from a batch that the destination refused as too
 large (HTTP `413`), which Stride halves and sends again, and from a waiting
 batch that retention shortened.
 
+Any other change, such as the HTTPS endpoint's **Format** or Datadog's
+**Service** or **Tags**, does not drop the waiting batch. Its next attempt
+sends the same events, under the same `batch_id`, in the new settings. The
+`batch_id` stays the same on purpose: an HTTPS endpoint that stored an
+attempt Stride never saw answered can tell, from `x-stride-batch`, that the
+retry is that batch. Splunk and Datadog requests carry no `batch_id`; drop
+duplicates there by the event's `id`.
+
 So a receiver must drop duplicates by the event's `id` (with its
 `instance`), never by `batch_id`, the body's hash or the signature. The same
 `batch_id` always names the same events, but two different `batch_id`
 values can hold the same event, so dropping a batch by its id never replaces
-dropping events by theirs.
+dropping events by theirs. Only the events and the `batch_id` stay the same
+from one attempt to the next. The request can change: the body with the
+actor fields, the format, Splunk's index and source type, or Datadog's tags
+and service, and the headers with the signatures. A different request under
+the same `batch_id` is not a sign of a tampered retry.
 
 ## Verifying an HTTPS delivery
 

@@ -38,6 +38,18 @@ defmodule Kanban.AuditStream.Destination do
   `include_personal_data` changes (D16); the cursor lives in
   `Kanban.AuditStream.Cursor` so the worker's writes never conflict with an
   edit here (§9.3).
+
+  No other edit increases it, deliberately (§8.3, D19). Those two decide
+  which events a batch holds and what they say. The HTTPS `format`, Datadog's
+  `tags` and `service`, Splunk's `index` and `source_type`, and the other
+  `settings` (Datadog's `site`, the HTTPS `header_name`) do not: they decide
+  how and where the same events are sent. So an edit to them does not
+  discard a pending batch: its next attempt sends the same events under the
+  same `batch_id` in the new settings, and an HTTPS receiver that stored an
+  attempt whose 2xx was lost can recognise the retry by that `batch_id`
+  (Splunk and Datadog requests carry none; their receivers drop duplicates by
+  event id). A send already under way finishes with the settings it was
+  prepared with.
   """
 
   use Ecto.Schema

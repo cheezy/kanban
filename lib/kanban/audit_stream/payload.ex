@@ -24,6 +24,16 @@ defmodule Kanban.AuditStream.Payload do
       applies);
     * a redacted actor has a null `user_id`, `email` and `ip`;
     * `instance` is the endpoint host, unless the `:instance` option is given.
+
+  Unlike the Organization, the actor fields are not frozen for a batch. The
+  Reader reads each event with its actor's user row on every attempt, so a
+  retry of one `batch_id` carries the actor as they are at that attempt: a
+  changed email goes out as it is now, a deleted account's email goes out
+  null (`user_id` then falls back to the id kept in the metadata), and an
+  event from before `actor_in_organization` whose actor has left the
+  Organization goes out redacted. That is deliberate: a privacy removal wins
+  over a byte-identical retry, so a retry never re-sends an email the app has
+  since deleted, or an actor it would now redact (design §8.3, D18).
   """
 
   alias Kanban.AuditLog.AuditEvent
