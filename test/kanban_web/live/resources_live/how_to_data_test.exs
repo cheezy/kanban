@@ -53,6 +53,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   @org_admin_ids [
     "administering-your-organization",
     "reading-the-organization-audit-log",
+    "streaming-your-audit-log-to-a-security-tool",
     "organization-security-policy",
     "setting-up-single-sign-on",
     "provisioning-users-with-scim"
@@ -1777,8 +1778,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 49 guides" do
-      assert length(HowToData.all_how_tos()) == 49
+    test "has all 50 guides" do
+      assert length(HowToData.all_how_tos()) == 50
     end
 
     test "every guide id is unique across the area modules" do
@@ -2236,6 +2237,42 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         assert guide.description =~ ~r/^For org-admins: /, "#{id} doesn't say who it is for"
         refute "security" in guide.tags, "#{id} would join the security navigation chain"
       end
+
+      assert {:ok, streaming} =
+               HowToData.get_how_to("streaming-your-audit-log-to-a-security-tool")
+
+      assert streaming.title == "Streaming Your Audit Log to a Security Tool"
+      assert streaming.tags == ["organizations", "admin"]
+      assert streaming.content_type == "guide"
+      assert streaming.created_at == ~D[2026-11-13]
+      assert length(streaming.steps) >= 10
+      assert streaming.description =~ ~r/^For org-admins: /
+      refute "security" in streaming.tags
+
+      for step <- streaming.steps do
+        assert String.length(step.title) > 0
+        assert String.length(step.content) > 10, "#{step.title} has no content"
+        refute step.content =~ ~r/^#/m, "#{step.title} uses a heading"
+        refute step.content =~ ~r/^\d+\. /m, "#{step.title} uses an ordered list"
+      end
+
+      illustrated =
+        streaming.steps
+        |> Enum.with_index(1)
+        |> Enum.filter(fn {step, _n} -> step[:images] end)
+
+      assert Enum.map(illustrated, &elem(&1, 1)) == [2, 8]
+
+      for {step, n} <- illustrated do
+        base = "/images/resources/guides/streaming-your-audit-log-to-a-security-tool-step-#{n}"
+
+        assert Enum.map(step.images, & &1.url) == ["#{base}-light.png", "#{base}-dark.png"],
+               "step #{n} needs a light and a dark screenshot"
+
+        assert [light, dark] = Enum.map(step.images, & &1.alt)
+        assert light =~ "light mode" and dark =~ "dark mode"
+        refute step[:image], "step #{n} mixes image and images"
+      end
     end
 
     test "the org-admin guides continue the organizations navigation" do
@@ -2310,6 +2347,154 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert File.read!("lib/kanban/organizations/org_workspaces.ex") =~
                "no two unarchived workspaces share a name, compared\n  ignoring case"
+    end
+
+    test "the streaming guide facts match the code" do
+      guide = org_admin_content(["streaming-your-audit-log-to-a-security-tool"])
+      console = org_admin_content(["administering-your-organization"])
+      audit = org_admin_content(["reading-the-organization-audit-log"])
+      org_live = "lib/kanban_web/live/org_live/"
+      list = File.read!(org_live <> "audit_streaming.html.heex")
+      form = File.read!(org_live <> "audit_stream_form.html.heex")
+      page = File.read!(org_live <> "audit_stream_destination.html.heex")
+      kinds = File.read!(org_live <> "audit_stream_kinds.ex")
+      row = File.read!(org_live <> "audit_streaming_row.ex")
+
+      assert console =~ "**Audit log** and **Audit streaming**"
+      assert File.read!(org_live <> "console.html.heex") =~ ~s|{gettext("Audit streaming")}|
+      assert audit =~ "**Streaming** opens audit streaming"
+      assert audit =~ "](/resources/streaming-your-audit-log-to-a-security-tool)"
+      assert File.read!(org_live <> "audit_log.html.heex") =~ ~s|{gettext("Streaming")}|
+
+      assert File.read!("lib/kanban_web/router.ex") =~
+               ~s(live "/org/audit/streaming", OrgLive.AuditStreaming, :index)
+
+      assert guide =~ "By default an Organization can have up to 3 destinations"
+      assert guide =~ "the page shows your own limit"
+      assert Kanban.AuditStream.Destination.max_destinations() == 3
+      assert File.read!("lib/kanban/audit_stream/destination.ex") =~ "@default_max_destinations 3"
+      assert list =~ "An Organization can have up to %{count} destination."
+
+      assert guide =~ "Datadog drops events older than 18 hours"
+      assert guide =~ "never sends one older than 17 hours"
+      assert Kanban.AuditStream.Adapters.Datadog.max_event_age() == 17 * 60 * 60
+
+      assert guide =~ "10 test events an hour, across all its destinations"
+
+      assert File.read!("lib/kanban/rate_limit.ex") =~
+               "audit_stream_test: %{scale_ms: 3_600_000, id_limit: 10}"
+
+      assert File.read!("lib/kanban/audit_stream/test_event.ex") =~
+               "10 an hour\n  per Organization"
+
+      assert Kanban.AuditStream.StartPoint.options(:splunk_hec) == ~w(now 24h 7d all)
+      assert Kanban.AuditStream.StartPoint.options(:https) == ~w(now 24h 7d all)
+      assert Kanban.AuditStream.StartPoint.options(:datadog) == ~w(now 17h)
+
+      for value <- ~w(now 24h 7d 17h all) do
+        label = KanbanWeb.OrgLive.AuditStreamKinds.start_point_label(value)
+        assert guide =~ "**#{label}**", "the guide misses the start point #{label}"
+      end
+
+      assert guide =~ "every org-admin of the Organization is emailed about it"
+      assert form =~ "every org-admin of the Organization will be told."
+      assert guide =~ "The start point can only be chosen when the destination is added"
+      assert form =~ ~s|:if={@live_action == :new}\n          id="destination-form-start"|
+
+      assert guide =~
+               "Turn off indexer acknowledgement on this token: Stride does not wait for it."
+
+      assert form =~
+               "Turn off indexer acknowledgement on this HEC token: Stride does not wait for it."
+
+      assert guide =~ "every save sends a test event to the destination"
+      assert form =~ "Every save sends a test event to the destination."
+
+      assert guide =~ "**Your new signing secret** is shown once"
+      assert form =~ "Copy it now — you won't be able to see it again."
+      assert page =~ ~s|:if={@view.kind == :https}|
+      assert guide =~ "the old secret keeps working for 24 hours"
+      assert page =~ "After a rotation the old secret keeps working for 24 hours."
+
+      for label <- [
+            "Include email and IP addresses",
+            "Leave out these actions",
+            "Changes to audit streaming are always sent and can't be left out",
+            "What is sent"
+          ] do
+        assert guide =~ label
+        assert form =~ label
+      end
+
+      for label <- [
+            "Retry now",
+            "Skip this batch",
+            "Rejected batch",
+            "Dismiss",
+            "Gaps",
+            "Behind by",
+            "Recent attempts"
+          ] do
+        assert guide =~ "**#{label}**"
+        assert page =~ ~s|gettext("#{label}")|
+      end
+
+      assert guide =~ "the last 50 attempts"
+      assert page =~ "The last 50 attempts to send to this destination, newest first."
+      assert guide =~ "Stride never skips a batch on its own"
+
+      assert File.read!("lib/kanban/audit_stream/batch_actions.ex") =~
+               "Stride never skips a batch on its own"
+
+      assert guide =~ "retention deleted them before they were sent or they were too old"
+
+      assert File.read!("lib/kanban/audit_stream/gap.ex") =~
+               "@reasons [:retention, :too_old, :database_move]"
+
+      for state <- ~w(healthy retrying failing paused needs_attention)a do
+        label = KanbanWeb.OrgLive.AuditStreamingRow.state_label(state)
+        assert guide =~ "**#{label}**", "the guide misses the status #{label}"
+      end
+
+      assert guide =~ "**Up to date**"
+      assert row =~ ~s|gettext("Up to date")|
+
+      for kind <- ~w(splunk_hec datadog https)a do
+        assert guide =~ "**#{KanbanWeb.OrgLive.AuditStreamingRow.type_label(kind)}**"
+      end
+
+      for label <- ["HEC URL", "HEC token", "API key", "URL", "Authorization header value"] do
+        assert guide =~ "**#{label}**"
+        assert kinds =~ ~s|gettext("#{label}")|
+      end
+
+      for label <- [
+            "Index (optional)",
+            "Source type",
+            "Site",
+            "Service",
+            "Tags (optional)",
+            "Format",
+            "Authorization header name (optional)",
+            "Send events from"
+          ] do
+        assert guide =~ "**#{label}**"
+        assert form =~ ~s|gettext("#{label}")|
+      end
+
+      for label <- [
+            "Add destination",
+            "Back to the audit log",
+            "Send test event",
+            "Pause",
+            "Resume",
+            "Edit",
+            "Delete",
+            "Last delivered"
+          ] do
+        assert guide =~ "**#{label}**"
+        assert list =~ ~s|gettext("#{label}")|
+      end
     end
 
     test "the audit log facts match the code" do

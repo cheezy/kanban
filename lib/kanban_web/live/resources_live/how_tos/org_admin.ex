@@ -1,19 +1,21 @@
 defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
   @moduledoc """
   Guides for an Organization's org-admins: the org console, the audit log,
-  the security policy, single sign-on and SCIM provisioning.
+  audit streaming, the security policy, single sign-on and SCIM provisioning.
 
   One of the data modules `KanbanWeb.ResourcesLive.HowToData` concatenates,
   in order, into the Resources catalog. It sits right after
   `HowTos.Organizations`, and every guide leads with the `organizations` tag,
   so navigation runs on from the member guides: accepting an invitation →
-  the console → audit log → security policy → single sign-on → SCIM.
+  the console → audit log → audit streaming → security policy → single
+  sign-on → SCIM.
 
   The guides follow the `/org` LiveViews (`OrgLive.Console`,
-  `OrgLive.AuditLog`, `OrgLive.Security`, `OrgLive.SSO`, `OrgLive.SCIM`).
-  `docs/organizations.md`, `docs/organization-security-policies.md`,
-  `docs/single-sign-on.md` and `docs/scim-provisioning.md` are the technical
-  references behind them.
+  `OrgLive.AuditLog`, `OrgLive.AuditStreaming`, `OrgLive.AuditStreamForm`,
+  `OrgLive.AuditStreamDestination`, `OrgLive.Security`, `OrgLive.SSO`,
+  `OrgLive.SCIM`). `docs/organizations.md`, `docs/audit-log-streaming.md`,
+  `docs/organization-security-policies.md`, `docs/single-sign-on.md` and
+  `docs/scim-provisioning.md` are the technical references behind them.
   """
 
   @doc "The guides in this group, in display order."
@@ -38,7 +40,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "The Organization Console",
             content:
-              "The console has three tabs:\n\n- **Details**: your Organization's name, address and contact.\n- **Members**: everyone in the Organization.\n- **Workspaces**: where the Organization's boards live.\n\nThe buttons at the top open the other org-admin pages: **Security**, **Single sign-on**, **SCIM provisioning** and **Audit log**. The rest of this group covers each of them.",
+              "The console has three tabs:\n\n- **Details**: your Organization's name, address and contact.\n- **Members**: everyone in the Organization.\n- **Workspaces**: where the Organization's boards live.\n\nThe buttons at the top open the other org-admin pages: **Security**, **Single sign-on**, **SCIM provisioning**, **Audit log** and **Audit streaming**. The rest of this group covers each of them.",
             image: "/images/resources/guides/administering-your-organization-step-2.png",
             image_width: 1191,
             image_height: 352
@@ -98,7 +100,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Opening the Audit Log",
             content:
-              "In the Organization console, click **Audit log**. **Organization audit log** lists events newest first, with the **Time (UTC)**, **Action**, **Actor**, **IP** and **Details** of each. All times are in UTC. **Back to Organization** returns to the console.",
+              "In the Organization console, click **Audit log**. **Organization audit log** lists events newest first, with the **Time (UTC)**, **Action**, **Actor**, **IP** and **Details** of each. All times are in UTC. **Back to Organization** returns to the console.\n\n**Streaming** opens audit streaming, which sends these events to a security tool such as Splunk or Datadog: [Streaming Your Audit Log to a Security Tool](/resources/streaming-your-audit-log-to-a-security-tool) explains it.",
             image: nil
           },
           %{
@@ -133,6 +135,110 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
             title: "How Long Events Are Kept",
             content:
               "Events are kept forever unless your Organization sets a retention period. [Setting Your Organization's Security Policy](/resources/organization-security-policy) explains how.",
+            image: nil
+          }
+        ]
+      },
+      %{
+        id: "streaming-your-audit-log-to-a-security-tool",
+        title: "Streaming Your Audit Log to a Security Tool",
+        description:
+          "For org-admins: send your Organization's audit events to Splunk, Datadog or your own HTTPS endpoint, and keep the stream healthy.",
+        tags: ["organizations", "admin"],
+        content_type: "guide",
+        reading_time: 7,
+        created_at: ~D[2026-11-13],
+        steps: [
+          %{
+            title: "Who This Guide Is For",
+            content:
+              "This guide is for org-admins. Audit streaming sends a copy of every event in your Organization's audit log to a security tool you already use. The audit log itself stays in Stride, exactly as [Reading the Organization Audit Log](/resources/reading-the-organization-audit-log) describes.",
+            image: nil
+          },
+          %{
+            title: "Opening Audit Streaming",
+            content:
+              "Click **Streaming** on the audit log page, or **Audit streaming** in the Organization console. **Audit streaming** lists your destinations with their type, status, **Last delivered** and **Behind by**. **Back to the audit log** returns to the log.\n\nClick **Add destination** to add one. By default an Organization can have up to 3 destinations, and the page shows your own limit.",
+            images: [
+              %{
+                url:
+                  "/images/resources/guides/streaming-your-audit-log-to-a-security-tool-step-2-light.png",
+                alt: "The Audit streaming page in light mode, listing a Splunk destination",
+                width: 884,
+                height: 559
+              },
+              %{
+                url:
+                  "/images/resources/guides/streaming-your-audit-log-to-a-security-tool-step-2-dark.png",
+                alt: "The Audit streaming page in dark mode, listing a Splunk destination",
+                width: 884,
+                height: 559
+              }
+            ]
+          },
+          %{
+            title: "Adding a Splunk Destination",
+            content:
+              "Choose **Splunk** as the **Type** and give the destination a **Name**. Under **Connection**:\n\n- **HEC URL**: your Splunk HTTP Event Collector's address.\n- **HEC token**: the collector token. Turn off indexer acknowledgement on this token: Stride does not wait for it.\n- **Index (optional)** and **Source type**: where the events land in Splunk.\n\nSaved secrets are never shown again, and every save sends a test event to the destination.",
+            image: nil
+          },
+          %{
+            title: "Adding a Datadog Destination",
+            content:
+              "Choose **Datadog** and fill in the **API key**, the **Site** your Datadog account is on, the **Service** and, if you like, **Tags (optional)**.\n\nDatadog drops events older than 18 hours, so Stride never sends one older than 17 hours. A Datadog destination can start from now or from the last 17 hours, never further back.",
+            image: nil
+          },
+          %{
+            title: "Adding an HTTPS Endpoint",
+            content:
+              "Choose **HTTPS endpoint** to send events to your own service. Fill in the **URL**, the **Authorization header value**, the **Authorization header name (optional)** and the **Format**.\n\nStride signs each request so your service can verify it. When the destination is saved, **Your new signing secret** is shown once: copy it now, because you won't be able to see it again. On the destination's page, **Rotate signing secret** makes a new one, and the old secret keeps working for 24 hours.",
+            image: nil
+          },
+          %{
+            title: "Choosing Where It Starts",
+            content:
+              "When you add a destination, **Send events from** sets where it starts:\n\n- **Now: only new events**\n- **The last 24 hours**\n- **The last 7 days**\n- **Everything in the audit log**\n\nA Datadog destination offers **Now: only new events** and **The last 17 hours** instead. Any choice other than now is a catch-up: it sends past events from the audit log, and every org-admin of the Organization is emailed about it, so nobody is surprised by a burst of old events in the security tool. The start point can only be chosen when the destination is added.",
+            image: nil
+          },
+          %{
+            title: "Personal Data and Leaving Out Actions",
+            content:
+              "Under **What is sent**, **Include email and IP addresses** decides whether events carry people's email and IP addresses. Turn it off if your security tool shouldn't hold them.\n\n**Leave out these actions** stops chosen kinds of event from being sent. Changes to audit streaming are always sent and can't be left out, so the tool always learns when its own stream changes.",
+            image: nil
+          },
+          %{
+            title: "Reading a Destination's Status",
+            content:
+              "Click a destination to open its page. Its status is one of **Healthy**, **Retrying**, **Failing**, **Paused** or **Needs attention**. **Behind by** shows **Up to date**, or how many events are waiting and how old the oldest is.\n\n**Needs attention** means Stride has stopped sending until you act. When the destination refused a batch, the **Rejected batch** card shows its answer: fix the cause at the destination and click **Retry now**, or, where it is offered, click **Skip this batch** to carry on with the next one. Stride never skips a batch on its own.",
+            images: [
+              %{
+                url:
+                  "/images/resources/guides/streaming-your-audit-log-to-a-security-tool-step-8-light.png",
+                alt:
+                  "A Splunk destination's page in light mode, with Needs attention and the Rejected batch card",
+                width: 884,
+                height: 598
+              },
+              %{
+                url:
+                  "/images/resources/guides/streaming-your-audit-log-to-a-security-tool-step-8-dark.png",
+                alt:
+                  "A Splunk destination's page in dark mode, with Needs attention and the Rejected batch card",
+                width: 884,
+                height: 598
+              }
+            ]
+          },
+          %{
+            title: "Gaps",
+            content:
+              "**Gaps** lists events this destination will never receive, for example because retention deleted them before they were sent or they were too old for the destination to accept. They stay in the audit log, so you can still export them from there.\n\nClick **Dismiss** once you have dealt with a gap. **Recent attempts** shows the last 50 attempts to send to the destination, newest first.",
+            image: nil
+          },
+          %{
+            title: "Sending Test Events",
+            content:
+              "**Send test event** on the destinations list sends one test event, so you can check the connection without waiting for a real one. Your Organization can send 10 test events an hour, across all its destinations.\n\nThe same list has **Pause**, **Resume**, **Edit** and **Delete** for each destination.",
             image: nil
           }
         ]

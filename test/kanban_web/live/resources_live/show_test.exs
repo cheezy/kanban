@@ -223,6 +223,7 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       images = %{
         "administering-your-organization" => [2, 4, 6],
         "reading-the-organization-audit-log" => [3, 5],
+        "streaming-your-audit-log-to-a-security-tool" => [],
         "organization-security-policy" => [2, 5],
         "setting-up-single-sign-on" => [2, 4, 5],
         "provisioning-users-with-scim" => [2]
@@ -240,6 +241,21 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
           assert html =~ ~s(src="/images/resources/guides/#{id}-step-#{step}.png")
         end
       end
+
+      {:ok, _view, streaming} =
+        live(conn, ~p"/resources/streaming-your-audit-log-to-a-security-tool")
+
+      assert streaming =~ "Streaming Your Audit Log to a Security Tool"
+      assert streaming =~ "Sending Test Events"
+      assert streaming =~ ~s(href="/resources/reading-the-organization-audit-log")
+
+      for step <- [2, 8], theme <- ["light", "dark"] do
+        assert streaming =~
+                 ~s(src="/images/resources/guides/streaming-your-audit-log-to-a-security-tool-step-#{step}-#{theme}.png")
+      end
+
+      {:ok, _view, audit} = live(conn, ~p"/resources/reading-the-organization-audit-log")
+      assert audit =~ ~s(href="/resources/streaming-your-audit-log-to-a-security-tool")
 
       {:ok, _view, sso} = live(conn, ~p"/resources/setting-up-single-sign-on")
       assert sso =~ ~r{<code[^>]*>_stride-verification\.</code>}
