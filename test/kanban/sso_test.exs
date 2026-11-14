@@ -302,6 +302,85 @@ defmodule Kanban.SSOTest do
     end
   end
 
+  defp oidc_errors(ctx, attrs) do
+    ctx.organization
+    |> oidc_connection_fixture()
+    |> SSOConnection.oidc_changeset(attrs)
+    |> errors_on()
+  end
+
+  # D436: clearing a saved field makes cast produce a nil change, which the
+  # trim used to raise on (String.trim(nil)) instead of reporting.
+  describe "changesets over a saved connection" do
+    test "oidc_changeset/2 over a saved connection with client_id \"\" returns an invalid changeset with can't be blank, no raise",
+         ctx do
+      connection = oidc_connection_fixture(ctx.organization)
+
+      for blank <- ["", "   "] do
+        errors =
+          connection |> SSOConnection.oidc_changeset(%{"client_id" => blank}) |> errors_on()
+
+        assert errors.client_id == ["can't be blank"]
+      end
+    end
+
+    test "oidc_changeset/2 over a saved connection with issuer \"\" returns an invalid changeset with can't be blank, no raise",
+         ctx do
+      assert %{issuer: ["can't be blank"]} = oidc_errors(ctx, %{"issuer" => ""})
+    end
+
+    test "a whitespace-only client_id or issuer is rejected as blank", ctx do
+      connection = oidc_connection_fixture(ctx.organization)
+
+      for {field, attrs} <- [client_id: %{"client_id" => "   "}, issuer: %{"issuer" => " \t "}] do
+        errors = connection |> SSOConnection.oidc_changeset(attrs) |> errors_on()
+        assert "can't be blank" in Map.fetch!(errors, field)
+      end
+    end
+
+    test "a valid change over a saved connection still trims and validates", ctx do
+      changeset =
+        ctx.organization
+        |> oidc_connection_fixture()
+        |> SSOConnection.oidc_changeset(%{"client_id" => "  renamed-client  "})
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_change(changeset, :client_id) == "renamed-client"
+    end
+
+    test "saml_changeset/2 over a saved connection with issuer or sso_url \"\" returns can't be blank, no raise",
+         ctx do
+      connection =
+        saml_connection_fixture(ctx.organization, Kanban.SAMLTestHelpers.idp().pem)
+
+      for field <- ["issuer", "sso_url"], blank <- ["", "  "] do
+        errors = connection |> SSOConnection.saml_changeset(%{field => blank}) |> errors_on()
+        assert "can't be blank" in Map.fetch!(errors, String.to_existing_atom(field))
+      end
+    end
+  end
+
+  describe "parameter filtering" do
+    test "Phoenix.Logger filtering replaces client_secret in logged parameters" do
+      probe = "D436-probe-#{System.unique_integer([:positive])}"
+      params = %{"connection" => %{"client_id" => "c", "client_secret" => probe}}
+
+      filtered = Phoenix.Logger.filter_values(params)
+
+      assert filtered["connection"]["client_secret"] == "[FILTERED]"
+      assert filtered["connection"]["client_id"] == "c"
+      refute inspect(filtered) =~ probe
+
+      # The existing words still apply alongside the new one.
+      assert Phoenix.Logger.filter_values(%{"password" => "p"})["password"] == "[FILTERED]"
+      assert Phoenix.Logger.filter_values(%{"token" => "t"})["token"] == "[FILTERED]"
+
+      assert Phoenix.Logger.filter_values(%{"security_considerations" => ["x"]})[
+               "security_considerations"
+             ] == "[FILTERED]"
+    end
+  end
+
   describe "user_has_identity?/1" do
     test "is true once the user has an identity", ctx do
       user = user_fixture()

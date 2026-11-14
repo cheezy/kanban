@@ -7828,6 +7828,7 @@ msgstr ""
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
 #: lib/kanban_web/live/admin/user_live/index.ex:164
 #: lib/kanban_web/live/org_live/audit_stream_form.ex:199
+#: lib/kanban_web/live/org_live/sso.ex:154
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr ""
@@ -11956,7 +11957,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:229
+#: lib/kanban_web/live/org_live/sso.ex:277
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr ""
@@ -11981,7 +11982,7 @@ msgstr ""
 msgid "Allow sign-in through this identity provider"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:204
+#: lib/kanban_web/live/org_live/sso.ex:252
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr ""
@@ -11996,12 +11997,12 @@ msgstr ""
 msgid "Client secret"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:58
+#: lib/kanban_web/live/org_live/sso.ex:60
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:85
+#: lib/kanban_web/live/org_live/sso.ex:87
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr ""
@@ -12088,7 +12089,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:40
+#: lib/kanban_web/live/org_live/sso.ex:42
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12096,7 +12097,7 @@ msgstr ""
 msgid "Single sign-on"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:115
+#: lib/kanban_web/live/org_live/sso.ex:189
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr ""
@@ -12123,12 +12124,12 @@ msgstr ""
 msgid "TXT record value"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:237
+#: lib/kanban_web/live/org_live/sso.ex:285
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:122
+#: lib/kanban_web/live/org_live/sso.ex:196
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr ""
@@ -12173,7 +12174,7 @@ msgstr ""
 msgid "must be a domain such as example.com"
 msgstr ""
 
-#: lib/kanban/sso/sso_connection.ex:211
+#: lib/kanban/sso/sso_connection.ex:218
 #, elixir-autogen, elixir-format
 msgid "must be an https URL such as https://login.example.com"
 msgstr ""
@@ -12259,7 +12260,7 @@ msgstr ""
 msgid "Paste the metadata XML to fill the fields below"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:153
+#: lib/kanban_web/live/org_live/sso.ex:125
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr ""
@@ -12459,7 +12460,7 @@ msgstr ""
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/sso.ex:215
+#: lib/kanban_web/live/org_live/sso.ex:263
 #, elixir-autogen, elixir-format
 msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
 msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."

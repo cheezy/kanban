@@ -31,6 +31,8 @@ defmodule KanbanWeb.OrgLive.SSO do
   alias Kanban.SSO.DomainVerification
   alias Kanban.SSO.SAML
 
+  require Logger
+
   @impl true
   def mount(_params, _session, socket) do
     organization = socket.assigns.current_organization
@@ -94,41 +96,11 @@ defmodule KanbanWeb.OrgLive.SSO do
   end
 
   def handle_event("validate_connection", %{"connection" => params}, socket) do
-    with_paid_org_admin(socket, fn _actor, _organization_id ->
-      form =
-        socket.assigns.connection
-        |> SSO.change_oidc_connection(Map.delete(params, "client_secret"))
-        |> Map.put(:action, :validate)
-        |> connection_form()
-
-      {:noreply, assign(socket, :connection_form, form)}
-    end)
+    contained(socket, "validate", fn -> validate_connection(socket, params) end)
   end
 
   def handle_event("save_connection", %{"connection" => params}, socket) do
-    with_paid_org_admin(socket, fn actor, organization_id ->
-      case SSO.save_oidc_connection(actor, organization_id, params) do
-        {:ok, _connection} ->
-          {:noreply,
-           socket
-           |> load(organization_id)
-           |> put_flash(:info, gettext("Single sign-on connection saved."))}
-
-        {:error, :unsafe_issuer} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             gettext("The issuer URL must be a public https address.")
-           )}
-
-        {:error, %Ecto.Changeset{} = changeset} ->
-          {:noreply, assign(socket, :connection_form, connection_form(changeset))}
-
-        {:error, :unauthorized} ->
-          {:noreply, refuse(socket)}
-      end
-    end)
+    contained(socket, "save", fn -> save_connection(socket, params) end)
   end
 
   def handle_event("validate_saml", %{"saml" => params}, socket) do
@@ -163,6 +135,76 @@ defmodule KanbanWeb.OrgLive.SSO do
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
+  # A raise, exit or throw in the connection form's events would crash the
+  # LiveView, and the crash report logs the last message, whose form payload
+  # holds the typed client secret, which :filter_parameters does not reach
+  # (D436). So it is contained here, as KanbanWeb.OrgLive.AuditStreamForm
+  # does: only the exception's module (or the kind of failure) is logged and
+  # reported to ErrorTracker, never its message or reason, which can quote
+  # the values.
+  defp contained(socket, event, fun) do
+    fun.()
+  catch
+    kind, reason ->
+      failure =
+        "SSO connection form #{event} failed: #{failure_name(kind, reason, __STACKTRACE__)}"
+
+      Logger.error(failure)
+      report(failure, __STACKTRACE__)
+      {:noreply, put_flash(socket, :error, gettext("Something went wrong. Please try again."))}
+  end
+
+  defp failure_name(:error, reason, stacktrace),
+    do: inspect(Exception.normalize(:error, reason, stacktrace).__struct__)
+
+  defp failure_name(kind, _reason, _stacktrace), do: inspect(kind)
+
+  # Reporting must not crash the view either (the store can be down), or the
+  # payload would reach the crash report after all.
+  defp report(failure, stacktrace) do
+    ErrorTracker.report(%RuntimeError{message: failure}, stacktrace)
+  catch
+    _kind, _reason -> :ok
+  end
+
+  defp validate_connection(socket, params) do
+    with_paid_org_admin(socket, fn _actor, _organization_id ->
+      form =
+        socket.assigns.connection
+        |> SSO.change_oidc_connection(Map.delete(params, "client_secret"))
+        |> Map.put(:action, :validate)
+        |> connection_form()
+
+      {:noreply, assign(socket, :connection_form, form)}
+    end)
+  end
+
+  defp save_connection(socket, params) do
+    with_paid_org_admin(socket, fn actor, organization_id ->
+      case SSO.save_oidc_connection(actor, organization_id, params) do
+        {:ok, _connection} ->
+          {:noreply,
+           socket
+           |> load(organization_id)
+           |> put_flash(:info, gettext("Single sign-on connection saved."))}
+
+        {:error, :unsafe_issuer} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("The issuer URL must be a public https address.")
+           )}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:noreply, assign(socket, :connection_form, connection_form(changeset))}
+
+        {:error, :unauthorized} ->
+          {:noreply, refuse(socket)}
+      end
+    end)
+  end
+
   defp load(socket, organization_id) do
     connection = SSO.get_oidc_connection(organization_id)
 
@@ -189,8 +231,14 @@ defmodule KanbanWeb.OrgLive.SSO do
     changeset
     |> Ecto.Changeset.delete_change(:client_secret)
     |> Map.update!(:data, &Map.put(&1, :client_secret, nil))
+    |> Map.update!(:params, &drop_secret_param/1)
     |> to_form(as: :connection)
   end
+
+  # A failed save's changeset keeps the typed params, secret included, in the
+  # view state, where a later crash report would print them (D436).
+  defp drop_secret_param(params) when is_map(params), do: Map.delete(params, "client_secret")
+  defp drop_secret_param(params), do: params
 
   # Every event runs the shared org-admin check (KanbanWeb.OrgLive.OrgAdminCheck)
   # and also needs the page unlocked and the actor's paid access (Kanban.Plans,

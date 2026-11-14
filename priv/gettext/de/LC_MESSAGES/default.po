@@ -7917,6 +7917,7 @@ msgstr "Eine weitere Bestätigungs-E-Mail an dieses Konto senden?"
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
 #: lib/kanban_web/live/admin/user_live/index.ex:164
 #: lib/kanban_web/live/org_live/audit_stream_form.ex:199
+#: lib/kanban_web/live/org_live/sso.ex:154
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
@@ -12045,7 +12046,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "Aufbewahrungsbereinigung ausgeführt"
 
-#: lib/kanban_web/live/org_live/sso.ex:229
+#: lib/kanban_web/live/org_live/sso.ex:277
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} ist verifiziert."
@@ -12070,7 +12071,7 @@ msgstr "Fügen Sie jede E-Mail-Domain hinzu, die Ihre Leute verwenden, veröffen
 msgid "Allow sign-in through this identity provider"
 msgstr "Anmeldung über diesen Identitätsanbieter erlauben"
 
-#: lib/kanban_web/live/org_live/sso.ex:204
+#: lib/kanban_web/live/org_live/sso.ex:252
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr "Eine andere Organisation hat diese Domain bereits verifiziert."
@@ -12085,12 +12086,12 @@ msgstr "Client-ID"
 msgid "Client secret"
 msgstr "Client-Geheimnis"
 
-#: lib/kanban_web/live/org_live/sso.ex:58
+#: lib/kanban_web/live/org_live/sso.ex:60
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr "Domain hinzugefügt. Veröffentlichen Sie ihren TXT-Eintrag und verifizieren Sie sie dann."
 
-#: lib/kanban_web/live/org_live/sso.ex:85
+#: lib/kanban_web/live/org_live/sso.ex:87
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr "Domain entfernt."
@@ -12177,7 +12178,7 @@ msgstr "Mit SSO anmelden"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:40
+#: lib/kanban_web/live/org_live/sso.ex:42
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12185,7 +12186,7 @@ msgstr "Mit SSO anmelden"
 msgid "Single sign-on"
 msgstr "Single Sign-On"
 
-#: lib/kanban_web/live/org_live/sso.ex:115
+#: lib/kanban_web/live/org_live/sso.ex:189
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr "Single-Sign-On-Verbindung gespeichert."
@@ -12212,12 +12213,12 @@ msgstr "Name des TXT-Eintrags"
 msgid "TXT record value"
 msgstr "Wert des TXT-Eintrags"
 
-#: lib/kanban_web/live/org_live/sso.ex:237
+#: lib/kanban_web/live/org_live/sso.ex:285
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "Der TXT-Eintrag wurde nicht gefunden. DNS-Änderungen können eine Weile dauern; versuchen Sie es später erneut."
 
-#: lib/kanban_web/live/org_live/sso.ex:122
+#: lib/kanban_web/live/org_live/sso.ex:196
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr "Die Aussteller-URL muss eine öffentliche https-Adresse sein."
@@ -12262,7 +12263,7 @@ msgstr "wurde Ihrer Organisation bereits hinzugefügt"
 msgid "must be a domain such as example.com"
 msgstr "muss eine Domain wie example.com sein"
 
-#: lib/kanban/sso/sso_connection.ex:211
+#: lib/kanban/sso/sso_connection.ex:218
 #, elixir-autogen, elixir-format
 msgid "must be an https URL such as https://login.example.com"
 msgstr "muss eine https-URL wie https://login.example.com sein"
@@ -12348,7 +12349,7 @@ msgstr "Metadaten-XML des Identitätsanbieters"
 msgid "Paste the metadata XML to fill the fields below"
 msgstr "Fügen Sie das Metadaten-XML ein, um die Felder unten auszufüllen"
 
-#: lib/kanban_web/live/org_live/sso.ex:153
+#: lib/kanban_web/live/org_live/sso.ex:125
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr "SAML-Verbindung gespeichert."
@@ -12548,7 +12549,7 @@ msgstr "Geben Sie Ihre geschäftliche E-Mail-Adresse ein, um mit Single Sign-On 
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr "Single Sign-On wird mit diesem Konto verbunden. Bestätigen Sie dieses eine Mal, dass Sie es sind; spätere Anmeldungen per Single Sign-On fragen nicht mehr danach."
 
-#: lib/kanban_web/live/org_live/sso.ex:215
+#: lib/kanban_web/live/org_live/sso.ex:263
 #, elixir-autogen, elixir-format
 msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
 msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."

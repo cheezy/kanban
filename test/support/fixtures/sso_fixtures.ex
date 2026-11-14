@@ -81,6 +81,9 @@ defmodule Kanban.SSOFixtures do
   def resolve("idp.example.com"), do: {:ok, [{93, 184, 216, 34}]}
   def resolve("login.example.com"), do: {:ok, [{93, 184, 216, 35}]}
   def resolve("internal.example.com"), do: {:ok, [{10, 0, 0, 1}]}
+  # Raises inside the issuer check a save runs, to exercise the LiveView's
+  # containment of a failing event (D436).
+  def resolve("raise.example.com"), do: raise("resolver failed")
   def resolve(_host), do: {:error, :nxdomain}
 
   defmodule TxtResolver do

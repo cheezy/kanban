@@ -55,8 +55,8 @@ defmodule Kanban.SSO.SSOConnection do
     connection
     |> cast(attrs, [:issuer, :client_id, :enabled])
     |> cast_secret(attrs)
-    |> update_change(:issuer, &String.trim/1)
-    |> update_change(:client_id, &String.trim/1)
+    |> trim_change(:issuer)
+    |> trim_change(:client_id)
     |> validate_required([:issuer, :client_id, :client_secret])
     |> validate_length(:issuer, max: 2048)
     |> validate_length(:client_id, max: 1024)
@@ -86,8 +86,8 @@ defmodule Kanban.SSO.SSOConnection do
 
   defp validate_saml_endpoints(changeset) do
     changeset
-    |> update_change(:issuer, &String.trim/1)
-    |> update_change(:sso_url, &String.trim/1)
+    |> trim_change(:issuer)
+    |> trim_change(:sso_url)
     |> validate_required([:issuer, :sso_url])
     |> validate_length(:issuer, max: 1024)
     |> validate_format(:issuer, ~r/\A\S+\z/, message: gettext("must not contain spaces"))
@@ -187,6 +187,13 @@ defmodule Kanban.SSO.SSOConnection do
       "certificates" => pems
     })
   end
+
+  # Clearing a saved field makes its change nil (cast turns "" into nil), so
+  # only a string is trimmed and a nil change reaches validate_required.
+  defp trim_change(changeset, field), do: update_change(changeset, field, &trim_value/1)
+
+  defp trim_value(value) when is_binary(value), do: String.trim(value)
+  defp trim_value(value), do: value
 
   defp cast_secret(changeset, attrs) do
     case Map.get(attrs, "client_secret", Map.get(attrs, :client_secret)) do

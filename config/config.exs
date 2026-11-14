@@ -107,7 +107,14 @@ config :error_tracker,
 # query parameter so it never appears in a logged request path.
 # "security_considerations" keeps a credential-shaped consideration that a
 # task write rejects (W2382) out of the logged request params as well.
-config :phoenix, :filter_parameters, ["password", "token", "security_considerations"]
+# "client_secret" keeps an SSO connection's OIDC client secret out of the
+# logged LiveView event params and ErrorTracker's event params (D436).
+config :phoenix, :filter_parameters, [
+  "password",
+  "token",
+  "security_considerations",
+  "client_secret"
+]
 
 # ErrorTracker stores raw query strings, params and headers, which
 # :filter_parameters does not cover; this filter strips unsubscribe tokens.

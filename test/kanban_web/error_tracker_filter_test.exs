@@ -130,6 +130,21 @@ defmodule KanbanWeb.ErrorTrackerFilterTest do
            }
   end
 
+  # D436: an SSO connection form event carries connection[client_secret].
+  test "filters the SSO connection form's client_secret from a failing event's params" do
+    sanitized =
+      ErrorTrackerFilter.sanitize(%{
+        "live_view.view" => KanbanWeb.OrgLive.SSO,
+        "live_view.event_params" => %{
+          "connection" => %{"client_id" => "", "client_secret" => "D436-probe-credential"}
+        }
+      })
+
+    assert sanitized["live_view.event_params"] == %{
+             "connection" => %{"client_id" => "", "client_secret" => "[FILTERED]"}
+           }
+  end
+
   test "leaves unrelated contexts unchanged" do
     context = %{
       "request.path" => "/boards",

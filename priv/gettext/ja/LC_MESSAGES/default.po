@@ -7855,6 +7855,7 @@ msgstr "このアカウントに確認メールをもう一度送信しますか
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
 #: lib/kanban_web/live/admin/user_live/index.ex:164
 #: lib/kanban_web/live/org_live/audit_stream_form.ex:199
+#: lib/kanban_web/live/org_live/sso.ex:154
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "問題が発生しました。もう一度お試しください。"
@@ -11974,7 +11975,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "保持期間による削除を実行"
 
-#: lib/kanban_web/live/org_live/sso.ex:229
+#: lib/kanban_web/live/org_live/sso.ex:277
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} は確認済みです。"
@@ -11999,7 +12000,7 @@ msgstr "メンバーが使用する各メールドメインを追加し、DNS �
 msgid "Allow sign-in through this identity provider"
 msgstr "この ID プロバイダーでのサインインを許可する"
 
-#: lib/kanban_web/live/org_live/sso.ex:204
+#: lib/kanban_web/live/org_live/sso.ex:252
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr "このドメインはすでに別の組織によって確認されています。"
@@ -12014,12 +12015,12 @@ msgstr "クライアント ID"
 msgid "Client secret"
 msgstr "クライアントシークレット"
 
-#: lib/kanban_web/live/org_live/sso.ex:58
+#: lib/kanban_web/live/org_live/sso.ex:60
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr "ドメインを追加しました。TXT レコードを公開してから確認してください。"
 
-#: lib/kanban_web/live/org_live/sso.ex:85
+#: lib/kanban_web/live/org_live/sso.ex:87
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr "ドメインを削除しました。"
@@ -12106,7 +12107,7 @@ msgstr "SSO でサインイン"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:40
+#: lib/kanban_web/live/org_live/sso.ex:42
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12114,7 +12115,7 @@ msgstr "SSO でサインイン"
 msgid "Single sign-on"
 msgstr "シングルサインオン"
 
-#: lib/kanban_web/live/org_live/sso.ex:115
+#: lib/kanban_web/live/org_live/sso.ex:189
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr "シングルサインオンの接続を保存しました。"
@@ -12141,12 +12142,12 @@ msgstr "TXT レコード名"
 msgid "TXT record value"
 msgstr "TXT レコードの値"
 
-#: lib/kanban_web/live/org_live/sso.ex:237
+#: lib/kanban_web/live/org_live/sso.ex:285
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "TXT レコードが見つかりませんでした。DNS の変更が反映されるまで時間がかかる場合があります。後でもう一度お試しください。"
 
-#: lib/kanban_web/live/org_live/sso.ex:122
+#: lib/kanban_web/live/org_live/sso.ex:196
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr "発行者 URL は公開されている https アドレスである必要があります。"
@@ -12191,7 +12192,7 @@ msgstr "はすでに組織に追加されています"
 msgid "must be a domain such as example.com"
 msgstr "example.com のようなドメインである必要があります"
 
-#: lib/kanban/sso/sso_connection.ex:211
+#: lib/kanban/sso/sso_connection.ex:218
 #, elixir-autogen, elixir-format
 msgid "must be an https URL such as https://login.example.com"
 msgstr "https://login.example.com のような https URL である必要があります"
@@ -12277,7 +12278,7 @@ msgstr "IDプロバイダーのメタデータXML"
 msgid "Paste the metadata XML to fill the fields below"
 msgstr "メタデータXMLを貼り付けると下のフィールドに入力されます"
 
-#: lib/kanban_web/live/org_live/sso.ex:153
+#: lib/kanban_web/live/org_live/sso.ex:125
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr "SAML接続を保存しました。"
@@ -12477,7 +12478,7 @@ msgstr "シングルサインオンを続けるには、仕事用のメールア
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr "シングルサインオンをこのアカウントに接続しています。今回だけご本人であることを確認してください。以降のシングルサインオンでは確認されません。"
 
-#: lib/kanban_web/live/org_live/sso.ex:215
+#: lib/kanban_web/live/org_live/sso.ex:263
 #, elixir-autogen, elixir-format
 msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
 msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."

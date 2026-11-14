@@ -216,6 +216,120 @@ defmodule KanbanWeb.OrgLive.SSOTest do
       assert connection.enabled
     end
 
+    # D436: clearing Client ID on a saved connection crashed the LiveView.
+    test "The SSO LiveView shows a validation error for a blank Client ID and does not crash",
+         %{conn: conn, org: org} do
+      oidc_connection_fixture(org)
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      for event <- [&render_change/1, &render_submit/1], blank <- ["", "   "] do
+        html =
+          lv
+          |> form("#sso-connection-form", connection: %{client_id: blank})
+          |> event.()
+
+        assert html =~ "can&#39;t be blank"
+        assert Process.alive?(lv.pid)
+      end
+
+      html =
+        lv
+        |> form("#sso-connection-form", connection: %{issuer: ""})
+        |> render_change()
+
+      assert html =~ "can&#39;t be blank"
+      assert Process.alive?(lv.pid)
+
+      html =
+        lv
+        |> form("#sso-connection-form",
+          connection: %{issuer: issuer(), client_id: "renamed-client"}
+        )
+        |> render_submit()
+
+      assert html =~ "Single sign-on connection saved."
+      assert SSO.get_oidc_connection(org.id).client_id == "renamed-client"
+    end
+
+    test "A validate_connection event logged at debug level carries no client secret",
+         %{conn: conn, org: org} do
+      oidc_connection_fixture(org)
+      probe = "D436-probe-#{System.unique_integer([:positive])}"
+      original = Logger.level()
+      Logger.configure(level: :debug)
+      on_exit(fn -> Logger.configure(level: original) end)
+
+      log =
+        ExUnit.CaptureLog.capture_log([level: :debug], fn ->
+          {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+          lv
+          |> form("#sso-connection-form", connection: %{client_id: "", client_secret: probe})
+          |> render_change()
+
+          lv
+          |> form("#sso-connection-form", connection: %{client_id: "", client_secret: probe})
+          |> render_submit()
+
+          assert Process.alive?(lv.pid)
+        end)
+
+      assert log =~ "validate_connection"
+      assert log =~ "save_connection"
+      assert log =~ ~s("client_secret" => "[FILTERED]")
+      refute log =~ probe
+      refute inspect(Repo.all(ErrorTracker.Occurrence)) =~ probe
+    end
+
+    # The fixture resolver raises for raise.example.com, inside the issuer
+    # check the save runs.
+    test "a raise in save is contained and neither the log nor ErrorTracker holds the typed secret",
+         %{conn: conn, org: org} do
+      connection = oidc_connection_fixture(org)
+      probe = "D436-probe-#{System.unique_integer([:positive])}"
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      log =
+        ExUnit.CaptureLog.capture_log(fn ->
+          html =
+            lv
+            |> form("#sso-connection-form",
+              connection: %{
+                issuer: "https://raise.example.com",
+                client_id: "c",
+                client_secret: probe
+              }
+            )
+            |> render_submit()
+
+          assert html =~ "Something went wrong"
+        end)
+
+      assert Process.alive?(lv.pid)
+      assert log =~ "SSO connection form save failed: RuntimeError"
+      refute log =~ probe
+      refute log =~ "resolver failed"
+      assert SSO.get_oidc_connection(org.id).issuer == connection.issuer
+
+      assert [%ErrorTracker.Error{reason: "SSO connection form save failed: RuntimeError"}] =
+               Repo.all(ErrorTracker.Error)
+
+      refute inspect(Repo.all(ErrorTracker.Occurrence)) =~ probe
+    end
+
+    test "a failed save leaves no typed client secret in the view state", %{conn: conn, org: org} do
+      oidc_connection_fixture(org)
+      probe = "D436-probe-#{System.unique_integer([:positive])}"
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      lv
+      |> form("#sso-connection-form", connection: %{client_id: "", client_secret: probe})
+      |> render_submit()
+
+      refute inspect(:sys.get_state(lv.pid), limit: :infinity, printable_limit: :infinity) =~
+               probe
+    end
+
     test "the stored secret is never rendered, even after a failed save", %{conn: conn, org: org} do
       connection = oidc_connection_fixture(org)
       {:ok, lv, html} = live(conn, ~p"/org/sso")
