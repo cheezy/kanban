@@ -792,7 +792,7 @@ chose for Stride (English if none), when:
 | Email | Sent when |
 |---|---|
 | Created | A destination is created. When it starts from an earlier point than now, the subject names the catch-up: "catching up the last 24 hours", "the last 7 days", "the last 17 hours", or "sending the whole audit log" |
-| Changed | Its URL, token, API key or header value, **Include email and IP addresses**, the excluded actions, the Splunk index, the Datadog site, service or tags, or the HTTPS signature header changes. The email lists what changed. Renaming a destination, or changing only the Splunk source type or the HTTPS format, sends no email |
+| Changed | Its URL, token, API key or header value, **Include email and IP addresses**, the excluded actions, the Splunk index, the Datadog site, service or tags, or the HTTPS authorization header name changes. The email lists what changed. Renaming a destination, or changing only the Splunk source type or the HTTPS format, sends no email |
 | Paused, resumed | **Pause** or **Resume** changes it. Choosing it again on a destination already paused or running sends no email |
 | Deleted | A destination is deleted |
 | Failing | It becomes **Failing**, at most once an hour. A Datadog destination's email says that events not delivered within 17 hours are lost. When its credentials can't be read, the email asks an org-admin to enter them again, also when the destination was already Failing |

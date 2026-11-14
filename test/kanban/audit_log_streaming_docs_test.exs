@@ -63,6 +63,17 @@ defmodule Kanban.AuditLogStreamingDocsTest do
     end
   end
 
+  # D443: the HTTPS header_name setting is the authorization header's name,
+  # sent with the credential; Stride's signature headers can't be configured.
+  describe "the HTTPS header_name setting" do
+    test "the field table and the email table call it the authorization header name",
+         %{doc: doc} do
+      assert doc =~ "| **Authorization header name (optional)** |"
+      assert doc =~ "or the HTTPS authorization header name changes."
+      refute doc =~ ~r/HTTPS signature header/i
+    end
+  end
+
   # The fenced block of `language` that follows `heading`.
   defp example(doc, heading, language) do
     [_, after_heading] = String.split(doc, "\n" <> heading <> "\n", parts: 2)

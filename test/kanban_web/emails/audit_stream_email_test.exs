@@ -127,7 +127,10 @@ defmodule KanbanWeb.Emails.AuditStreamEmailTest do
 
     https = %{@splunk | kind: :https, credential_hint: nil}
     email = build(alert(:updated, destination: https, changed: ["header_name"]))
-    assert email.text_body =~ "Changed: Signature header"
+    assert email.text_body =~ "Changed: Authorization header name"
+    assert email.html_body =~ "Authorization header name"
+    refute email.text_body =~ "Signature header"
+    refute email.html_body =~ "Signature header"
     assert email.text_body =~ "Credential: •••• ndex"
   end
 

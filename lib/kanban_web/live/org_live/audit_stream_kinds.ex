@@ -72,6 +72,26 @@ defmodule KanbanWeb.OrgLive.AuditStreamKinds do
   @spec format_options() :: [{String.t(), String.t()}]
   def format_options, do: [{gettext("JSON batch"), "json"}, {gettext("NDJSON"), "ndjson"}]
 
+  @doc """
+  A stored HTTPS body format's name, as `format_options/0` gives it. An
+  unknown value, which the changeset refuses but an old row could hold, is
+  returned as it is.
+  """
+  @spec format_label(String.t()) :: String.t()
+  def format_label(value) do
+    Enum.find_value(format_options(), value, fn {label, option} ->
+      if option == value, do: label
+    end)
+  end
+
+  @doc """
+  The label of an HTTPS destination's `header_name` setting: the name of the
+  header sent with the credential as its value. It is not a signature; Stride
+  sets its own signature headers.
+  """
+  @spec header_name_label() :: String.t()
+  def header_name_label, do: gettext("Authorization header name")
+
   @doc "The start points `kind` offers, `{label, value}`."
   @spec start_point_options(atom()) :: [{String.t(), String.t()}]
   def start_point_options(kind),

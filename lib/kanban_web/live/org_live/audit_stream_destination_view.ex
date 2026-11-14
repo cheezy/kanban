@@ -27,6 +27,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
   alias Kanban.AuditStream.Adapters.SplunkHec
   alias Kanban.AuditStream.Destination
   alias KanbanWeb.OrgLive.AuditStreamingRow
+  alias KanbanWeb.OrgLive.AuditStreamKinds
 
   @error_preview 80
 
@@ -77,11 +78,15 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
 
   defp setting_row({key, label}, settings) do
     case Map.get(settings, key) do
-      value when is_binary(value) and value != "" -> [{label, value}]
+      value when is_binary(value) and value != "" -> [{label, setting_value(key, value)}]
       [_ | _] = values -> [{label, Enum.join(values, ", ")}]
       _blank -> []
     end
   end
+
+  # A stored format is shown by the name the form offers it under.
+  defp setting_value("format", value), do: AuditStreamKinds.format_label(value)
+  defp setting_value(_key, value), do: value
 
   defp setting_labels(:splunk_hec),
     do: [{"index", gettext("Index")}, {"source_type", gettext("Source type")}]
@@ -90,7 +95,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
     do: [{"site", gettext("Site")}, {"service", gettext("Service")}, {"tags", gettext("Tags")}]
 
   defp setting_labels(:https),
-    do: [{"format", gettext("Format")}, {"header_name", gettext("Signature header")}]
+    do: [{"format", gettext("Format")}, {"header_name", AuditStreamKinds.header_name_label()}]
 
   # A readable secret rotated less than 24 hours ago can't be rotated again
   # until then (§10.4). An unreadable one is always replaced at once.

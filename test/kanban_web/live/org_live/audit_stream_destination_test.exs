@@ -221,8 +221,38 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
       refute html =~ "assec_"
     end
 
+    test "an HTTPS destination shows its format by name and its authorization header name",
+         %{conn: conn, org: org} do
+      destination =
+        destination_fixture(org, :https, %{
+          credential: "Bearer page-credential-9z8y",
+          settings: %{"format" => "ndjson", "header_name" => "Authorization"}
+        })
+
+      {:ok, lv, html} = live(conn, path(destination))
+
+      settings =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("dl div:has(dd[data-setting])")
+        |> Enum.map(&LazyHTML.text/1)
+        |> Enum.map(&String.replace(&1, ~r/\s+/, " "))
+        |> Enum.map(&String.trim/1)
+
+      assert "Format NDJSON" in settings
+      assert "Authorization header name Authorization" in settings
+      refute html =~ "Signature header"
+      refute has_element?(lv, "dd[data-setting]", "ndjson")
+      refute html =~ "page-credential"
+    end
+
     test "renders in every locale", %{conn: conn, org: org} do
-      destination = destination_fixture(org, :https)
+      destination =
+        destination_fixture(org, :https, %{
+          credential: "Bearer locale-credential-4321",
+          settings: %{"format" => "json", "header_name" => "Authorization"}
+        })
+
       reject_batch!(org, destination)
 
       for locale <- ~w(de en es fr ja pt zh) do
@@ -250,6 +280,11 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
           assert has_element?(lv, "#skip-batch", skip)
           assert has_element?(lv, "#rotate-secret", rotate)
 
+          header_label = Gettext.gettext(KanbanWeb.Gettext, "Authorization header name")
+          json_batch = Gettext.gettext(KanbanWeb.Gettext, "JSON batch")
+          assert has_element?(lv, "dt", header_label)
+          assert has_element?(lv, "dd[data-setting]", json_batch)
+
           [attr] =
             lv
             |> render()
@@ -263,6 +298,8 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
             refute retry == "Retry now", "#{locale} lacks Retry now"
             refute skip == "Skip this batch", "#{locale} lacks Skip this batch"
             refute confirmation =~ "will not be sent", "#{locale} lacks the skip plural"
+            refute header_label == "Authorization header name", "#{locale} lacks the header label"
+            refute json_batch == "JSON batch", "#{locale} lacks JSON batch"
           end
         end)
       end

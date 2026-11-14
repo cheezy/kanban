@@ -348,7 +348,7 @@ defmodule KanbanWeb.Emails.AuditStreamEmail do
   defp field_label(_kind, "site"), do: gettext("Site")
   defp field_label(_kind, "service"), do: gettext("Service")
   defp field_label(_kind, "tags"), do: gettext("Tags")
-  defp field_label(_kind, "header_name"), do: gettext("Signature header")
+  defp field_label(_kind, "header_name"), do: AuditStreamKinds.header_name_label()
   defp field_label(_kind, _other), do: gettext("Settings")
 
   defp actor_label({:user, email}) when is_binary(email), do: email
