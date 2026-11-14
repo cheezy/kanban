@@ -26,7 +26,9 @@ downloaded is a zip.
 
 The same key also signs the audit batches Stride streams to an HTTPS
 destination, and receivers check those against the same published keys. This
-document covers exports only.
+document covers exports only;
+[Audit Log Streaming](audit-log-streaming.md#verifying-an-https-delivery)
+covers verifying a streamed batch.
 
 ## What the zip holds
 

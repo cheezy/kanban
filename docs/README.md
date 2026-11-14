@@ -104,8 +104,12 @@ plugins" in Multi-Agent Instructions, under Guides above).
 - [Organization Security Policies](organization-security-policies.md) — Requiring two-factor authentication for members and setting how long audit events are kept.
 - [Workspace Export](workspace-export.md) — Downloading an Organization workspace as a zip archive, and importing one into a self-hosted instance.
 - [Signed Audit Log Exports](audit-log-signed-exports.md) — Verifying a signed audit log export with OpenSSL 3 or Python, and setting up, rotating and revoking the signing key.
+- [Audit Log Streaming](audit-log-streaming.md) — Sending the Organization audit log to Splunk, Datadog or an HTTPS endpoint, verifying a delivery, lag, failures and gaps, and the operator settings.
 
 ## Self-hosting operators
+
+Operators of an instance whose Organizations stream their audit log should
+read the operator section of Audit Log Streaming, under Organization admins.
 
 - [Attachments](attachments.md) — Where attachment files are stored, the storage and limit environment variables, and the local-disk caveats for self-hosting.
 - [Fly Attachment Storage Runbook](attachments-fly-setup.md) — The commands that set up, verify and roll back Tigris attachment storage for the kanban-prod and kanban-review Fly apps.

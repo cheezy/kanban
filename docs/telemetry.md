@@ -897,6 +897,56 @@ and emits no `deleted` event. The first four measure `count: 1`;
   ids only. On a board in an Organization it carries that `organization_id`,
   so the row is listed in the Organization's audit log.
 
+### Audit log streaming events
+
+These are declared in `Kanban.Telemetry.Catalog.AuditStreamEvents`
+(`lib/kanban/telemetry/catalog/audit_stream_events.ex`) and emitted while
+audit log streaming sends an Organization's audit events to its
+destinations. [Audit Log Streaming](audit-log-streaming.md) describes the
+feature. A test event, sent when the destination form is saved or from the
+destination list, emits none of them.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :audit_stream, :batch_delivered]` | `kind` | `Kanban.AuditStream.Send`, when a destination accepts a batch |
+| `[:kanban, :audit_stream, :batch_failed]` | `kind`, `outcome` | `Kanban.AuditStream.Send`, when a destination does not accept a batch |
+| `[:kanban, :audit_stream, :lag_measured]` | `kind` | `Kanban.AuditStream.Scheduler`, the minute sweep |
+| `[:kanban, :audit_stream, :gap_recorded]` | `kind`, `reason` | `Kanban.AuditStream.Gaps.emit_recorded/1`, once the gap is committed |
+
+- **No identity in metadata.** None of them carries an Organization id, a
+  destination id, a URL, a host, the destination's name or an email:
+  telemetry can leave the app, and which Organization streams where must not
+  reach a dashboard. `kind` is the destination's type, `:splunk_hec`,
+  `:datadog` or `:https`. All three keys come from fixed sets and are tags.
+- **`batch_delivered` measures the batch.** `count` is 1, `events` the number
+  of events in the batch, `bytes` their size as JSON before compression and
+  `duration_ms` how long the request took.
+- **`outcome` is a closed set.** `batch_failed` carries `:retry` (a failure
+  that will be retried), `:rejected` (a rejected batch, or one refused as too
+  large and halved), `:unauthorized` (credentials refused), `:config_error`
+  (a Splunk setting problem) or `:blocked` (a URL whose address Stride may
+  not send to). It is the class of the attempt, never the destination's
+  answer. `duration_ms` is how long the attempt took.
+- **`lag_measured` is what "Behind by" shows, over time.** The sweep measures
+  each enabled destination at most once every 15 minutes, including one that
+  needs attention but not a paused one. Its three measurements are:
+  `lag_seconds`, the age in seconds of the destination's oldest event not yet
+  delivered, or 0 when nothing is waiting; `events_waiting`, how many events
+  are waiting, held ones included; and `events_above_horizon`, how many of
+  them were committed too recently to send safely, because a transaction that
+  started before them is still running on the database server. A held
+  horizon therefore shows as a growing `events_above_horizon` and
+  `lag_seconds` rather than as 0.
+- **`gap_recorded` counts a loss.** `count` is 1 and `events` the number of
+  events the destination will never receive. `reason` is `:retention`,
+  `:too_old` (Datadog's 17-hour limit) or `:database_move`. A gap is also
+  recorded as the `audit_stream_gap` [audit event](#audit-events), which the
+  Organization's destinations receive.
+- **Only `lag_measured` is stored.** Its first metric,
+  `kanban.audit_stream.lag_measured.lag_seconds`, gets one row per
+  measurement (see [Which metrics are stored](#which-metrics-are-stored)).
+  The other three are charted live only.
+
 ## Emitting an event
 
 ```elixir

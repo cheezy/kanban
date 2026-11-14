@@ -396,6 +396,18 @@ fingerprint; record the fingerprint outside Stride.
 can verify a signed export and how operators set up, rotate and revoke the
 key.
 
+**Audit streaming** on the Organization console, or **Streaming** on the
+audit log page, opens `/org/audit/streaming`, where org-admins send the
+Organization's audit events, within about a minute of each one, to Splunk,
+Datadog or any HTTPS endpoint. An Organization can have up to 3 destinations
+by default. Each destination chooses where its events start, whether email
+and IP addresses are included, and which actions are left out. Batches sent
+to an HTTPS endpoint are signed with the destination's own secret and, on an
+instance with a signing key, with the same Ed25519 key that signs exports.
+[Audit Log Streaming](audit-log-streaming.md) explains how to set up each
+type, what is sent, how a receiver verifies a delivery, and what to do when
+a destination fails or falls behind.
+
 Events are kept forever unless the Organization sets an audit retention
 period; see [Audit retention](organization-security-policies.md#audit-retention).
 No one can edit an audit event.
