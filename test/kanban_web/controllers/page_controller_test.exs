@@ -591,7 +591,7 @@ defmodule KanbanWeb.PageControllerTest do
       refute organization =~ "#stride-support"
     end
 
-    test "the Organization plan lists the nine paid features and a contact call to action",
+    test "the Organization plan lists the eleven paid features and a contact call to action",
          %{conn: conn} do
       document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
       organization = LazyHTML.query(document, "#plan-organization")
@@ -606,7 +606,9 @@ defmodule KanbanWeb.PageControllerTest do
             "Integrations (webhooks)",
             "Task telemetry fields",
             "MCP access",
-            "Attachments"
+            "Attachments",
+            "Audit log streaming",
+            "Signed audit exports"
           ] do
         assert text =~ feature
       end
@@ -640,6 +642,35 @@ defmodule KanbanWeb.PageControllerTest do
 
         assert unquote(expected) in items
         refute "Attachments" in items
+      end
+    end
+
+    # Audit log streaming and signed audit exports are new msgids, so each
+    # locale must render its own translation of both as items of their own.
+    for {locale, {streaming, exports}} <- %{
+          "de" => {"Audit-Protokoll-Streaming", "Signierte Audit-Exporte"},
+          "es" =>
+            {"Transmisión del registro de auditoría", "Exportaciones de auditoría firmadas"},
+          "fr" => {"Diffusion du journal d'audit", "Exports d'audit signés"},
+          "ja" => {"監査ログのストリーミング", "署名付き監査エクスポート"},
+          "pt" => {"Streaming do log de auditoria", "Exportações de auditoria assinadas"},
+          "zh" => {"审计日志流式传输", "签名审计导出"}
+        } do
+      test "the pricing page renders the new features in every locale: #{locale}",
+           %{conn: conn} do
+        items =
+          conn
+          |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+          |> get(~p"/pricing")
+          |> html_response(200)
+          |> LazyHTML.from_document()
+          |> LazyHTML.query("#plan-organization li")
+          |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+
+        assert unquote(streaming) in items
+        assert unquote(exports) in items
+        refute "Audit log streaming" in items
+        refute "Signed audit exports" in items
       end
     end
 
@@ -1588,6 +1619,37 @@ defmodule KanbanWeb.PageControllerTest do
     # [data-changelog] in app.css (inline code breaks, tables scroll). Guard the
     # anchor so that containment can't be silently removed.
     assert body =~ "data-changelog"
+  end
+
+  test "the /changelog page lists the new [Unreleased] entries inside the data-changelog container",
+       %{conn: conn} do
+    # The entries live in hand-edited HTML, so a misplaced closing tag could
+    # leave them outside the responsive containment above.
+    # They belong to the newest section: [Unreleased] now, and the version a
+    # release folds it into later, never an older release.
+    newest =
+      conn
+      |> get(~p"/changelog")
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query("[data-changelog] section")
+      |> Enum.at(0)
+
+    assert newest, "the /changelog page has no sections"
+
+    leads =
+      newest
+      |> LazyHTML.query("li > strong")
+      |> Enum.map(&(&1 |> LazyHTML.text() |> String.split() |> Enum.join(" ")))
+
+    for lead <- [
+          "Audit log streaming.",
+          "Emails about audit streaming.",
+          "Signed audit exports.",
+          "A language link no longer changes your saved language."
+        ] do
+      assert lead in leads
+    end
   end
 
   test "the theme bootstrap resolves system preference and never strips data-theme", %{conn: conn} do

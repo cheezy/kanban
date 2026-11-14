@@ -12,11 +12,9 @@ This roadmap describes what we are considering for Stride next. What has already
 
   Add files such as screenshots, logs and designs to tasks and comments on Organization boards. Drag a file onto a task or a comment, or browse for one, and images show a preview inline. Agents working a task can read its files through the API, such as a screenshot of the bug or the log that shows it, so they start from the same evidence people see. Attachments follow the board's existing access rules, so only people who can see a task can open its files.
 
-🚧 In progress
-
 - **Audit log streaming**
 
-  Send the audit log to a security tool such as Splunk, Datadog or a SIEM, and sign audit exports.
+  An Organization's org-admins can send its audit log, as it happens, to Splunk, Datadog or any HTTPS endpoint, so a security tool or SIEM receives the Organization's audit events within about a minute. Deliveries to an HTTPS endpoint are signed, and the org-admins are emailed when a destination is added, changed, paused, deleted, starts failing or recovers. When the Stride instance has a signing key, the audit log can also be exported as a signed zip that an auditor can check without trusting whoever handed it over.
 
 ## 🔜 Planned
 

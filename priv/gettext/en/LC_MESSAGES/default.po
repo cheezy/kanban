@@ -92,7 +92,7 @@ msgstr ""
 #: lib/kanban_web/components/nav_components.ex:138
 #: lib/kanban_web/components/side_nav.ex:123
 #: lib/kanban_web/components/side_nav.ex:124
-#: lib/kanban_web/emails/audit_stream_email.ex:350
+#: lib/kanban_web/emails/audit_stream_email.ex:352
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:247
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
 #: lib/kanban_web/live/user_live/settings_components.ex:33
@@ -2828,7 +2828,7 @@ msgstr ""
 msgid "Not dispatched"
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:336
+#: lib/kanban_web/emails/audit_stream_email.ex:338
 #: lib/kanban_web/live/archive_live/index.html.heex:189
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:38
@@ -3577,7 +3577,7 @@ msgstr ""
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:227
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:235
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr ""
@@ -3764,7 +3764,7 @@ msgstr ""
 msgid "CSRF protection"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:207
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "Can I switch between self-hosted and hosted later?"
 msgstr ""
@@ -3845,7 +3845,7 @@ msgstr ""
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:221
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:229
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr ""
@@ -3855,7 +3855,7 @@ msgstr ""
 msgid "Free"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:179
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Frequently asked questions"
 msgstr ""
@@ -3885,7 +3885,7 @@ msgstr ""
 msgid "Information we collect"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Is Stride really free if I self-host?"
 msgstr ""
@@ -4029,8 +4029,8 @@ msgstr ""
 msgid "Structured schema, not free-text"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:152
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:173
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:160
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "Talk to us"
 msgstr ""
@@ -4102,12 +4102,12 @@ msgstr ""
 msgid "Workspace content"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:224
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:232
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:188
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr ""
@@ -10226,7 +10226,7 @@ msgstr "Succeeded"
 msgid "Test event queued. Refresh the deliveries in a few seconds."
 msgstr "Test event queued. Refresh the deliveries in a few seconds."
 
-#: lib/kanban_web/emails/audit_stream_email.ex:340
+#: lib/kanban_web/emails/audit_stream_email.ex:342
 #: lib/kanban_web/live/board_live/webhook_form.ex:55
 #: lib/kanban_web/live/board_live/webhook_form.ex:134
 #: lib/kanban_web/live/org_live/audit_stream_kinds.ex:64
@@ -12482,7 +12482,7 @@ msgstr ""
 msgid "For individuals and small teams. No card required."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:162
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:170
 #: lib/kanban_web/live/board_live/members_form_component.ex:115
 #, elixir-autogen, elixir-format
 msgid "Get Stride for your organization"
@@ -12535,7 +12535,7 @@ msgstr ""
 msgid "Up to 3 people per board — AI agents do not count"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:196
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "Who counts toward the 3-person limit on a free board?"
 msgstr ""
@@ -12717,12 +12717,12 @@ msgstr ""
 msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:215
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:223
 #, elixir-autogen, elixir-format
 msgid " and we will help you move."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:210
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:218
 #, elixir-autogen, elixir-format
 msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
 msgstr ""
@@ -13495,7 +13495,7 @@ msgstr ""
 msgid "Your hooks, in one file"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:199
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:207
 #, elixir-autogen, elixir-format
 msgid "Only the human members of the board, including its owner. Agents — Claude, Gemini, OpenCode, Codex, your own — never count. They authenticate via API tokens scoped to a board and a user, and there is no per-agent fee. Boards in an Organization have no member limit."
 msgstr ""
@@ -13520,7 +13520,7 @@ msgstr ""
 msgid "For up to 250 users. More than 250? Contact us for pricing."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:165
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with next steps. For more than 250 users, we will send you a price."
 msgstr ""
@@ -13535,12 +13535,12 @@ msgstr ""
 msgid "Access to our Slack %{channel} channel"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:136
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Your own Slack support channel that only your organization can see, with a response to support questions within 24 hours"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:140
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "For every 100 users, or part of 100, add 2 people to the channel. For example, 60 users get 2 people and 110 users get 4."
 msgstr ""
@@ -14527,13 +14527,13 @@ msgstr ""
 msgid "Each request is signed with this secret so the receiver can verify it."
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:343
+#: lib/kanban_web/emails/audit_stream_email.ex:345
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:282
 #, elixir-autogen, elixir-format
 msgid "Email and IP addresses"
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:365
+#: lib/kanban_web/emails/audit_stream_email.ex:367
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Enter the credentials again"
@@ -14544,7 +14544,7 @@ msgstr ""
 msgid "Events this destination will never receive. They stay in the audit log."
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:344
+#: lib/kanban_web/emails/audit_stream_email.ex:346
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:290
 #, elixir-autogen, elixir-format
 msgid "Excluded actions"
@@ -14587,7 +14587,7 @@ msgstr ""
 msgid "Host"
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:345
+#: lib/kanban_web/emails/audit_stream_email.ex:347
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:87
 #, elixir-autogen, elixir-format
 msgid "Index"
@@ -14668,14 +14668,14 @@ msgstr ""
 msgid "Secrets are never shown: only the host and the last 4 characters of the credential or URL."
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:347
+#: lib/kanban_web/emails/audit_stream_email.ex:349
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:90
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:261
 #, elixir-autogen, elixir-format
 msgid "Service"
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:349
+#: lib/kanban_web/emails/audit_stream_email.ex:351
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:93
 #, elixir-autogen, elixir-format
 msgid "Signature header"
@@ -14686,7 +14686,7 @@ msgstr ""
 msgid "Signing secret rotated."
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:346
+#: lib/kanban_web/emails/audit_stream_email.ex:348
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:90
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:253
 #, elixir-autogen, elixir-format
@@ -14719,7 +14719,7 @@ msgstr ""
 msgid "Stride keeps trying, and delivery carries on once the destination is fixed."
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:348
+#: lib/kanban_web/emails/audit_stream_email.ex:350
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:90
 #, elixir-autogen, elixir-format
 msgid "Tags"
@@ -15115,7 +15115,7 @@ msgid_plural "%{count} audit events will never reach this destination."
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:354
+#: lib/kanban_web/emails/audit_stream_email.ex:356
 #, elixir-autogen, elixir-format
 msgid "A deleted account"
 msgstr ""
@@ -15200,7 +15200,7 @@ msgstr ""
 msgid "By"
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:333
+#: lib/kanban_web/emails/audit_stream_email.ex:335
 #, elixir-autogen, elixir-format
 msgid "Changed"
 msgstr ""
@@ -15235,13 +15235,13 @@ msgstr ""
 msgid "No delivery has succeeded for 30 minutes."
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:361
+#: lib/kanban_web/emails/audit_stream_email.ex:363
 #, elixir-autogen, elixir-format
 msgid "Open audit streaming"
 msgstr ""
 
-#: lib/kanban_web/emails/audit_stream_email.ex:367
-#: lib/kanban_web/emails/audit_stream_email.ex:371
+#: lib/kanban_web/emails/audit_stream_email.ex:369
+#: lib/kanban_web/emails/audit_stream_email.ex:373
 #, elixir-autogen, elixir-format
 msgid "Open the destination"
 msgstr ""
@@ -15314,4 +15314,14 @@ msgstr ""
 #: lib/kanban_web/emails/audit_stream_email.ex:84
 #, elixir-autogen, elixir-format
 msgid "You are receiving this security notice because you are an org-admin of this Organization. Every org-admin receives it, whatever their notification settings."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:135
+#, elixir-autogen, elixir-format
+msgid "Audit log streaming"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:139
+#, elixir-autogen, elixir-format
+msgid "Signed audit exports"
 msgstr ""

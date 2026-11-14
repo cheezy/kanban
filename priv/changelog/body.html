@@ -83,6 +83,41 @@
               nothing. Appointing someone who is already its org-admin sends
               nothing.
             </li>
+            <li>
+              <strong>Audit log streaming.</strong> An Organization's
+              org-admins can send its audit log, as it happens, to Splunk HTTP
+              Event Collector, Datadog or any HTTPS endpoint from
+              <strong>Audit streaming</strong> on the Organization console.
+              Events arrive within about a minute, in batches of at most 500,
+              and a new destination can start from now or catch up on earlier
+              events. Deliveries to an HTTPS endpoint carry an HMAC signature,
+              and an Ed25519 signature when the Stride instance has a signing
+              key, so the receiver can check where each batch came from. Each
+              destination's page lists its recent attempts and any gaps, with
+              <strong>Retry now</strong> and <strong>Skip this batch</strong>
+              for a batch the destination rejected. An Organization has up to
+              3 destinations unless the operator raises the limit. A new
+              Resources guide, <em>Streaming Your Audit Log to a Security
+              Tool</em>, walks through setting destinations up.
+            </li>
+            <li>
+              <strong>Emails about audit streaming.</strong> Every enabled
+              org-admin of the Organization is emailed, in the language they
+              chose for Stride, when a destination is created, changed, paused,
+              resumed or deleted, when it starts failing or recovers, when a
+              gap of events it will never receive opens, and when an operator
+              must re-seed it after a database move. They are security emails,
+              so they are sent whatever the notification settings are. None
+              contains a destination's URL, token, API key or signing secret.
+            </li>
+            <li>
+              <strong>Signed audit exports.</strong>
+              <strong>Export signed (.zip)</strong> on the Organization audit
+              log downloads the filtered events with a manifest and an Ed25519
+              signature when the Stride instance has a signing key, so an
+              auditor can check the file without trusting whoever handed it
+              over.
+            </li>
           </ul>
         </div>
 
@@ -115,6 +150,32 @@
               from installing the Stride plugin to connecting an MCP client.
               The lists follow the Resources catalog, so a guide added to
               either group later is linked too.
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>A language link no longer changes your saved
+              language.</strong> Following a link that opens Stride in a
+              language, such as one in a service announcement email, and then
+              signing in used to save that language to your account, which
+              also changed the language of later announcement emails. Now only
+              a language you choose from a language menu before signing in is
+              saved; a link's language is shown for the visit only. Being
+              signed back in by <strong>Keep me signed in on this
+              device</strong> now also uses the language saved to your account.
             </li>
           </ul>
         </div>
