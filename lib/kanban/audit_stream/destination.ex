@@ -47,9 +47,10 @@ defmodule Kanban.AuditStream.Destination do
   discard a pending batch: its next attempt sends the same events under the
   same `batch_id` in the new settings, and an HTTPS receiver that stored an
   attempt whose 2xx was lost can recognise the retry by that `batch_id`
-  (Splunk and Datadog requests carry none; their receivers drop duplicates by
-  event id). A send already under way finishes with the settings it was
-  prepared with.
+  (Splunk and Datadog requests carry none). Every receiver drops duplicates
+  by event id with its instance, never by `batch_id`, which only HTTPS
+  requests carry, or by the unsigned `x-stride-batch` header. A send already
+  under way finishes with the settings it was prepared with.
   """
 
   use Ecto.Schema

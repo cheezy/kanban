@@ -42,8 +42,8 @@ exported file.
   envelope around them, so they do not follow a change to the tags, service
   or format.
 - **At least once.** A batch can arrive more than once, and an event can
-  arrive in more than one batch. Receivers drop duplicates by the event `id`
-  (see [Changing the filters re-sends the waiting batch](#changing-the-filters-re-sends-the-waiting-batch)).
+  arrive in more than one batch. Every receiver drops duplicates by the event
+  `id` with its `instance` (see [Changing the filters re-sends the waiting batch](#changing-the-filters-re-sends-the-waiting-batch)).
 - **From the starting point you choose.** **Send events from** offers **Now:
   only new events**, **The last 24 hours**, **The last 7 days** or
   **Everything in the audit log** for Splunk and HTTPS, and **Now: only new
@@ -243,12 +243,16 @@ Any other change, such as the HTTPS endpoint's **Format** or Datadog's
 **Service** or **Tags**, does not drop the waiting batch. Its next attempt
 sends the same events, under the same `batch_id`, in the new settings. The
 `batch_id` stays the same on purpose: an HTTPS endpoint that stored an
-attempt Stride never saw answered can tell, from `x-stride-batch`, that the
-retry is that batch. Splunk and Datadog requests carry no `batch_id`; drop
-duplicates there by the event's `id`.
+attempt Stride never saw answered can tell that the retry is that batch. The
+signed copy is the `batch_id` in a JSON batch's body. The `x-stride-batch`
+header, the only copy in an NDJSON batch, is covered by no signature, so use
+it only to correlate attempts, never to accept, skip or drop events. Splunk
+and Datadog requests carry no `batch_id` at all, and every receiver drops
+duplicates by the event's `id` with its `instance`.
 
 So a receiver must drop duplicates by the event's `id` (with its
-`instance`), never by `batch_id`, the body's hash or the signature. The same
+`instance`), whatever the destination type, never by `batch_id` (which only
+HTTPS requests carry), the body's hash or the signature. The same
 `batch_id` always names the same events, but two different `batch_id`
 values can hold the same event, so dropping a batch by its id never replaces
 dropping events by theirs. Only the events and the `batch_id` stay the same

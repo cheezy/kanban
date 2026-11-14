@@ -355,9 +355,13 @@ Each batch is signed twice, and a receiver can check either signature or both
   be kept with the events as evidence of where they came from. The key is the
   instance's, not the destination's, so a receiver also checks that
   `organization.id` is its own and that the signed destination id is its own,
-  and drops a `batch_id` it has already accepted. To keep the signature as
-  evidence, it stores the inflated body and the header unchanged. The 5-minute
-  freshness check (reject a `t` more than 5 minutes from its own clock) applies
+  and drops events it has already accepted, by `instance` and `id`. It
+  never drops a batch by its `X-Stride-Batch` header: no signature covers
+  that header, so a replay with a rewritten one could make a later genuine
+  batch be dropped ([§8.3](#83-at-least-once-and-batch-identity)). To keep the
+  signature as evidence, it stores the inflated body and the header
+  unchanged. The 5-minute freshness check (reject a `t` more than 5 minutes
+  from its own clock) applies
   when receiving, not when checking stored evidence later.
 
 If the instance has no audit signing key, only the HMAC is sent, and the
@@ -674,8 +678,11 @@ that age are left out and recorded as a gap ([§5.2](#52-datadog-logs-intake),
 
 Delivery is **at least once**. The cursor moves only after the destination
 answers 2xx, so a crash between the answer and the cursor update sends the
-batch again. Every event carries its stable `id`, and every batch its
-`batch_id`, so the receiver can drop duplicates.
+batch again. Every event carries its stable `id`, and every receiver, of
+every type, drops duplicates by that `id` with its `instance`. Only HTTPS
+requests also carry the batch's `batch_id`: it lets an HTTPS receiver
+recognise a retry of a batch, but never replaces dropping events by `id`.
+Splunk and Datadog requests carry no `batch_id`.
 
 To make a retry resend exactly the same events, the cursor row keeps the
 **pending batch**: its `batch_id` and its first and last `(txid, id)`. It is
@@ -755,24 +762,30 @@ written out, so the context does not increase `filter_version` for them, and
 a pending batch is not discarded. The next attempt sends the same events, under
 the same `batch_id`, in the new settings. A send already under way finishes as
 it started. Keeping the `batch_id` is the point: an HTTPS receiver may have
-stored an attempt whose 2xx Stride never saw, and the stable `batch_id` (in
-`X-Stride-Batch` and the body) lets it recognise the retry as that batch. A new
-`batch_id` would hide it. Splunk and Datadog requests carry no `batch_id`, so
-their receivers drop duplicates by event `id`, which a retry keeps too. The
-same holds for Splunk's index and source type, and for every other setting
-outside the two filters: none of them moves `filter_version`.
+stored an attempt whose 2xx Stride never saw, and the stable `batch_id` lets
+it recognise the retry as that batch. A new `batch_id` would hide it. Only
+the body of a JSON-format batch carries the `batch_id` under the signatures.
+The `X-Stride-Batch` header, the only copy in an NDJSON batch, is unsigned,
+so a receiver uses it only to correlate attempts, for logging or grouping,
+and never to accept, skip or drop events. Every receiver drops duplicates by
+event `id` with its `instance`; a retry keeps the `id`, and Splunk and
+Datadog requests carry no `batch_id`. The same holds for Splunk's index and
+source type, and for every other setting outside the two filters: none of
+them moves `filter_version`.
 
-So a receiver should treat only a batch's events, by `id`, and its `batch_id`
-as stable across attempts. The request itself is not: the body's actor fields,
-its format, Splunk's index and source type, and Datadog's tags and service can
-all differ between two attempts of one batch, and so can the signature
-headers. A difference is not a sign that a retry was tampered with.
+So a receiver should treat only a batch's events, by `id`, and, on HTTPS,
+its `batch_id` as stable across attempts. The request itself is not: the
+body's actor fields, its format, Splunk's index and source type, and Datadog's
+tags and service can all differ between two attempts of one batch, and so can
+the signature headers. A difference is not a sign that a retry was tampered with.
 
 The signature time `t` ([§5.3](#53-any-https-endpoint)) is each attempt's own,
 as with most webhook senders, so the signature values change from one attempt
 to the next, and so does the number of `v1=` values when a secret rotation
-starts or ends. A receiver should dedupe by `batch_id` and event `id`, not by
-a body hash or a signature.
+starts or ends. A receiver should drop duplicates by event `id` with its
+`instance`, never by `batch_id` (which only HTTPS requests carry), a body hash
+or a signature, and should never drop a batch by its `X-Stride-Batch` header,
+which no signature covers.
 
 ### 8.4 Retries and failure
 
@@ -1810,7 +1823,7 @@ duplicated beyond what `id` resolves:
 | D16 | An org-admin changes the excluded actions or the personal-data setting while a batch is pending. A retry would re-read the range under the new settings, so one `batch_id` would name different events. What happens? | **Settled on 2026-11-11: discard and re-cut.** The change increases the destination's `filter_version`; a run whose pending batch was cut under an older version discards it and cuts a new batch with a new `batch_id`. A send already in flight completes. Saving the change also clears a `rejected_batch` halt, and is audited and emailed as before ([§8.3](#83-at-least-once-and-batch-identity)). Other setting edits do not increase it (D19). Snapshotting the old filter, or storing the batch's event ids, were rejected |
 | D17 | A lost or replaced `ENCRYPTION_KEY` makes destination secrets undecryptable, and `EncryptedBinary` then fails to load the whole row. How does a destination show it? | **Settled on 2026-11-11: a tolerant type and a halt.** Destination secrets use `Kanban.Encryption.TolerantEncryptedBinary`, which loads an undecryptable value as `:unreadable`. The worker halts the destination with `credentials_unreadable` and emails org-admins once, and re-entering or rotating the secrets clears it ([§12.2](#122-secrets)). Decrypting by hand in the context, or the two-factor precedent of an operator deleting rows, were rejected |
 | D18 | A pending batch keeps its Organization details across retries (D428). Should it keep its actors' details too, so a retry is byte-identical? | **Settled on 2026-11-13: no.** Each attempt reads the actor's live user row, as the audit page does: an email changed since goes out as it is now, a deleted account's email goes out `null`, and an event from before `actor_in_organization` whose actor has left the Organization goes out redacted. A privacy removal wins over a byte-identical retry, so a retry never re-sends an email the app has since deleted or an actor it would now redact ([§8.3](#83-at-least-once-and-batch-identity)) |
-| D19 | Should editing the HTTPS format, Datadog's tags or Datadog's service increase `filter_version`, so a pending batch is re-cut under a new `batch_id`? | **Settled on 2026-11-13: no.** Only `excluded_actions` and `include_personal_data` increase it, because only they change which events a batch holds or what they say. The other edits apply from the next attempt: the same events, under the same `batch_id`, in the new settings. A stable `batch_id` lets an HTTPS receiver recognise a retry of an attempt whose 2xx Stride never saw; a new one would hide it. Splunk and Datadog requests carry no `batch_id`, and their receivers drop duplicates by event `id` ([§8.3](#83-at-least-once-and-batch-identity)) |
+| D19 | Should editing the HTTPS format, Datadog's tags or Datadog's service increase `filter_version`, so a pending batch is re-cut under a new `batch_id`? | **Settled on 2026-11-13: no.** Only `excluded_actions` and `include_personal_data` increase it, because only they change which events a batch holds or what they say. The other edits apply from the next attempt: the same events, under the same `batch_id`, in the new settings. A stable `batch_id` lets an HTTPS receiver recognise a retry of an attempt whose 2xx Stride never saw; a new one would hide it. Every receiver still drops duplicates by event `id` with its `instance`, which a `batch_id` never replaces, and Splunk and Datadog requests carry no `batch_id` at all ([§8.3](#83-at-least-once-and-batch-identity)) |
 
 ---
 

@@ -371,7 +371,7 @@ credential. What to expect:
   **Skip this batch** is refused because there is no batch to skip.
 - Each destination receives every event written on the new server since the
   move, and events at the exact time of its last delivery may arrive twice.
-  Receivers drop duplicates by `id`.
+  Receivers drop duplicates by `id` with its `instance`.
 - A destination that had not received every event before the dump gets one
   open gap with the reason `database_move`, counting those events and
   spanning their times, and the usual `audit_stream_gap` audit event. The
