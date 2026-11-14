@@ -764,6 +764,38 @@ defmodule Kanban.AuditStream.ReaderTest do
       assert outside.metadata == %{}
     end
 
+    test "the stream redacts a pre-flag text user_id after its actor is deleted", %{
+      organization: organization
+    } do
+      probe = user_fixture()
+
+      insert_raw!(organization,
+        actor: probe,
+        ip: "198.51.100.7",
+        metadata: %{
+          "user_id" => Integer.to_string(probe.id),
+          "email" => probe.email,
+          "ip" => "198.51.100.7",
+          "organization_id" => organization.id
+        }
+      )
+
+      Repo.delete!(probe)
+
+      for include <- [true, false] do
+        [event] = read_all(organization, include_personal_data: include)
+        row = Export.row_map(event)
+
+        assert event.actor_redacted
+        assert event.actor_user_id == nil
+        assert event.ip == nil
+        assert event.metadata == %{"organization_id" => organization.id}
+        assert row["actor_user_id"] == nil
+        assert row["actor_email"] == nil
+        refute inspect(row) =~ probe.email
+      end
+    end
+
     test "actor account deleted: actor_user_id falls back to metadata.user_id", %{
       organization: organization
     } do

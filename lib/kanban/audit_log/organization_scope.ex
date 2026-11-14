@@ -22,6 +22,14 @@ defmodule Kanban.AuditLog.OrganizationScope do
   as org-admin) do not uncover what staff did before. Rows written before the
   column existed have `nil` there and fall back to current membership; they
   all predate launch.
+
+  For such a row the actor is the link, or, once the link was nulled (the
+  actor's account was deleted) or never made, the `user_id` kept in the
+  metadata. That may be an integer or the canonical decimal text of one
+  (`"42"`). Any other value (padded, signed or zero-led text, a number past
+  the bigint range, a float, a map) cannot be judged, so the event is
+  redacted: the type of a stored value never decides whether a non-member's
+  identity is shown.
   """
   import Ecto.Query, warn: false
 
@@ -30,6 +38,8 @@ defmodule Kanban.AuditLog.OrganizationScope do
   alias Kanban.Repo
 
   @identity_keys ["user_id", "email", "ip"]
+  @max_bigint 9_223_372_036_854_775_807
+  @max_bigint_digits 19
 
   @doc """
   Redacts the actor of each event in `events` who was not a member of the
@@ -67,24 +77,42 @@ defmodule Kanban.AuditLog.OrganizationScope do
     |> Repo.exists?(repo_opts)
   end
 
-  defp members_among([], _organization_id), do: MapSet.new()
-
   defp members_among(events, organization_id) do
-    actor_ids = events |> Enum.map(&actor_id/1) |> Enum.reject(&is_nil/1) |> Enum.uniq()
+    case events |> Enum.map(&actor_id/1) |> Enum.filter(&is_integer/1) |> Enum.uniq() do
+      [] ->
+        MapSet.new()
 
-    from(m in OrganizationMember,
-      where: m.organization_id == ^organization_id and m.user_id in ^actor_ids,
-      select: m.user_id
-    )
-    |> Repo.all()
-    |> MapSet.new()
+      actor_ids ->
+        from(m in OrganizationMember,
+          where: m.organization_id == ^organization_id and m.user_id in ^actor_ids,
+          select: m.user_id
+        )
+        |> Repo.all()
+        |> MapSet.new()
+    end
   end
 
   # The actor link, or for an actor whose row was nulled or never linked, the
-  # id kept in the metadata.
+  # id kept in the metadata. `nil` means the event has no actor; a metadata
+  # user_id that is not a valid id reads as `:unjudgeable`.
   defp actor_id(%AuditEvent{actor_user_id: id}) when is_integer(id), do: id
-  defp actor_id(%AuditEvent{metadata: %{"user_id" => id}}) when is_integer(id), do: id
+  defp actor_id(%AuditEvent{metadata: %{"user_id" => id}}), do: metadata_actor_id(id)
   defp actor_id(_event), do: nil
+
+  # A positive integer that fits a bigint, given as an integer or as its
+  # canonical decimal text (no sign, padding or leading zero). The length is
+  # checked before the text is converted, so stored text never builds a large
+  # integer.
+  defp metadata_actor_id(nil), do: nil
+  defp metadata_actor_id(id) when is_integer(id) and id > 0 and id <= @max_bigint, do: id
+
+  defp metadata_actor_id(text) when is_binary(text) and byte_size(text) <= @max_bigint_digits do
+    if text =~ ~r/\A[1-9][0-9]*\z/,
+      do: text |> String.to_integer() |> metadata_actor_id(),
+      else: :unjudgeable
+  end
+
+  defp metadata_actor_id(_id), do: :unjudgeable
 
   # The flag stored with the event decides; only a row written before the
   # column existed falls back to current membership.
@@ -95,6 +123,7 @@ defmodule Kanban.AuditLog.OrganizationScope do
   defp outside_actor?(event, members) do
     case actor_id(event) do
       nil -> false
+      :unjudgeable -> true
       id -> not MapSet.member?(members, id)
     end
   end
