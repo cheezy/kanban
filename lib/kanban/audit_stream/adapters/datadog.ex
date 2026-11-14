@@ -59,6 +59,7 @@ defmodule Kanban.AuditStream.Adapters.Datadog do
 
   @behaviour Kanban.AuditStream.Adapter
 
+  alias Kanban.AuditStream.Adapter
   alias Kanban.AuditStream.Destination
 
   @sites ~w(
@@ -149,6 +150,20 @@ defmodule Kanban.AuditStream.Adapters.Datadog do
     |> Jason.encode!()
     |> :zlib.gzip()
   end
+
+  # The body is a JSON array of entries: each entry and its comma, plus the
+  # two brackets less the comma the last entry does not have. The entry is
+  # the one body/2 writes, so the two cannot drift apart.
+  @impl true
+  def entry_size(%Destination{} = destination, event, organization),
+    do:
+      event
+      |> entry(destination.settings || %{}, organization)
+      |> Adapter.json_size()
+      |> Kernel.+(1)
+
+  @impl true
+  def envelope_size(%Destination{}, _organization), do: 1
 
   defp headers(api_key) do
     [

@@ -463,4 +463,115 @@ defmodule Kanban.AuditStream.Adapters.DatadogTest do
       assert inflated |> Jason.decode!() |> Enum.map(& &1["stride"]["id"]) == ["1", "2"]
     end
   end
+
+  describe "entry_size/3 and envelope_size/2 (D439)" do
+    @max_body 900_000
+
+    # What the batch cut counts for `events`: the envelope plus each entry.
+    defp counted(destination, events) do
+      Adapter.envelope_size(Datadog, destination, @organization) +
+        Enum.sum_by(events, &Adapter.entry_size(Datadog, destination, &1, @organization))
+    end
+
+    defp inflated(destination, events) do
+      {_url, _headers, body} = Datadog.build_request(destination, batch(events))
+      :zlib.gunzip(body)
+    end
+
+    # The events the cut keeps, as Reader.next_batch/3 keeps them: the
+    # first always, then each while the running total stays within the limit.
+    defp cut(destination, [first | rest]) do
+      limit = @max_body - Adapter.envelope_size(Datadog, destination, @organization)
+      size = &Adapter.entry_size(Datadog, destination, &1, @organization)
+
+      {kept, _total} =
+        Enum.reduce_while(rest, {[first], size.(first)}, &keep(&1, &2, size.(&1), limit))
+
+      Enum.reverse(kept)
+    end
+
+    defp keep(event, {kept, total}, size, limit) do
+      if total + size > limit,
+        do: {:halt, {kept, total}},
+        else: {:cont, {[event | kept], total + size}}
+    end
+
+    defp payload_total(events), do: Enum.sum_by(events, &(Adapter.json_size(&1) + 1))
+
+    defp long_events(count) do
+      for n <- 1..count do
+        event("#{n}", %{
+          "actor" => %{
+            "user_id" => n,
+            "email" => String.duplicate("é", 40) <> "#{n}@example.com",
+            "in_organization" => true
+          }
+        })
+      end
+    end
+
+    test "the counted size is exactly the uncompressed body's size" do
+      settings = %{
+        "site" => "datadoghq.eu",
+        "tags" => ["team:ünïcode", "env:prod"],
+        "service" => "naïve"
+      }
+
+      destination = destination(settings)
+
+      events = [
+        event("1"),
+        event("2", %{"occurred_at" => "not a time", "actor" => nil}),
+        event("3", %{"actor" => %{"user_id" => 9, "email" => "", "in_organization" => false}})
+      ]
+
+      for n <- 1..3 do
+        some = Enum.take(events, n)
+        assert counted(destination, some) == byte_size(inflated(destination, some))
+      end
+    end
+
+    test "a full batch with 90 maximum-length tags and a long service stays within 900,000 bytes uncompressed" do
+      settings = %{
+        "site" => "datadoghq.eu",
+        "tags" => tags(90, 200),
+        "service" => String.duplicate("ś", 1_000)
+      }
+
+      destination = destination(settings)
+      assert Datadog.validate(settings) == :ok
+
+      events = long_events(500)
+      # The Payload events alone fit, so a cut counting only them took all 500
+      # and sent a body about ten times the limit.
+      assert payload_total(events) <= @max_body
+      assert byte_size(inflated(destination, events)) > 5_000_000
+
+      kept = cut(destination, events)
+      assert length(kept) < 500
+      assert byte_size(inflated(destination, kept)) <= @max_body
+      # The next event would have taken the body over the limit.
+      next = Enum.take(events, length(kept) + 1)
+      assert byte_size(inflated(destination, next)) > @max_body
+    end
+
+    test "no tags and the default service cut the same batch as before" do
+      destination = destination()
+      events = long_events(500)
+
+      assert payload_total(events) <= @max_body
+      assert counted(destination, events) <= @max_body
+      assert cut(destination, events) == events
+    end
+
+    test "one event whose entry alone exceeds the limit is still cut on its own" do
+      destination =
+        destination(%{"site" => "datadoghq.eu", "service" => String.duplicate("s", @max_body)})
+
+      [event] = long_events(1)
+
+      assert Adapter.entry_size(Datadog, destination, event, @organization) > @max_body
+      assert cut(destination, long_events(3)) == [event]
+    end
+  end
 end

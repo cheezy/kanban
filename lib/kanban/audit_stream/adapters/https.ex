@@ -43,11 +43,15 @@ defmodule Kanban.AuditStream.Adapters.Https do
   @behaviour Kanban.AuditStream.Adapter
 
   alias Kanban.AuditLog.Signing
+  alias Kanban.AuditStream.Adapter
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Payload
   alias Kanban.Webhooks.Signer
 
   @formats ~w(json ndjson)
+
+  # Any UUID: every batch_id has this length.
+  @uuid_placeholder "00000000-0000-0000-0000-000000000000"
 
   @reserved_headers ~w(
     content-type content-encoding content-length host user-agent
@@ -198,17 +202,46 @@ defmodule Kanban.AuditStream.Adapters.Https do
   defp format(_settings), do: "json"
 
   defp encode("json", destination, batch) do
-    Jason.encode!(%{
-      "version" => 1,
-      "batch_id" => batch.batch_id,
-      "destination_id" => destination.id,
-      "organization" => Payload.organization(batch.organization),
-      "events" => batch.events
-    })
+    destination
+    |> envelope(batch.batch_id, batch.organization, batch.events)
+    |> Jason.encode!()
   end
 
   defp encode("ndjson", _destination, batch) do
     Enum.map_join(batch.events, &(Jason.encode!(&1) <> "\n"))
+  end
+
+  defp envelope(destination, batch_id, organization, events) do
+    %{
+      "version" => 1,
+      "batch_id" => batch_id,
+      "destination_id" => destination.id,
+      "organization" => Payload.organization(organization),
+      "events" => events
+    }
+  end
+
+  # Each event is written with one separator after it: a comma inside the
+  # JSON envelope's events array, a newline in NDJSON.
+  @impl true
+  def entry_size(%Destination{}, event, _organization), do: Adapter.json_size(event) + 1
+
+  # The JSON envelope is the same size for every batch of one destination and
+  # Organization (a batch_id is always a 36-character UUID), so it is measured
+  # with no events, less the comma the last event does not have. NDJSON has
+  # no envelope.
+  @impl true
+  def envelope_size(%Destination{} = destination, organization) do
+    case format(destination.settings) do
+      "json" ->
+        destination
+        |> envelope(@uuid_placeholder, organization, [])
+        |> Adapter.json_size()
+        |> Kernel.-(1)
+
+      "ndjson" ->
+        0
+    end
   end
 
   defp audit_signature(destination, signed_at, body) do

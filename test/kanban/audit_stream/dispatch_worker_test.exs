@@ -25,6 +25,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   alias Kanban.Accounts.Scope
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditStream
+  alias Kanban.AuditStream.Adapter
   alias Kanban.AuditStream.Attempt
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
@@ -33,6 +34,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Pacing
+  alias Kanban.AuditStream.Payload
   alias Kanban.AuditStream.PendingBatch
   alias Kanban.AuditStream.Reader
   alias Kanban.AuditStream.Reseed
@@ -1078,6 +1080,168 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
       half = %Cursor{pending_organization_id: 7, pending_organization_name: nil}
       assert PendingBatch.snapshot(half, live) == {live, fields}
+    end
+  end
+
+  describe "the body size cut (D439)" do
+    @max_body 900_000
+
+    defp max_tags do
+      for n <- 1..90 do
+        prefix = "k#{n}:"
+        prefix <> String.duplicate("v", 200 - String.length(prefix))
+      end
+    end
+
+    defp live(organization), do: %{id: organization.id, name: organization.name}
+
+    defp prepared(destination, organization) do
+      assert {:ok, batch, _attrs} =
+               PendingBatch.prepare(destination, cursor(destination), live(organization))
+
+      batch
+    end
+
+    @adapters %{
+      datadog: Kanban.AuditStream.Adapters.Datadog,
+      https: Kanban.AuditStream.Adapters.Https,
+      splunk_hec: Kanban.AuditStream.Adapters.SplunkHec
+    }
+
+    defp body(destination, batch, payloads) do
+      adapter = Map.fetch!(@adapters, destination.kind)
+
+      {_url, _headers, body} =
+        adapter.build_request(destination, %{
+          batch_id: batch.batch_id,
+          events: payloads,
+          organization: batch.organization
+        })
+
+      :zlib.gunzip(body)
+    end
+
+    test "the cut counts the destination adapter's entry size", ctx do
+      settings = %{
+        "site" => "datadoghq.eu",
+        "tags" => max_tags(),
+        "service" => String.duplicate("ś", 1_000)
+      }
+
+      datadog = destination_fixture(ctx.organization, :datadog, settings: settings)
+      for txid <- 1..120, do: event!(ctx.organization, txid)
+
+      # Counting only the Payload events, all 120 fit.
+      assert length(Reader.next_batch(ctx.organization.id, {0, 0})) == 120
+
+      batch = prepared(datadog, ctx.organization)
+      count = length(batch.events)
+      assert count > 1 and count < 120
+      assert byte_size(body(datadog, batch, batch.payloads)) <= @max_body
+
+      # One more event would have taken the body over the limit.
+      [next] =
+        ctx.organization.id
+        |> Reader.next_batch(batch.last, batch_size: 1)
+        |> Enum.map(&Payload.build(&1, batch.organization))
+
+      assert byte_size(body(datadog, batch, batch.payloads ++ [next])) > @max_body
+    end
+
+    test "one event whose entry alone exceeds the limit is still cut on its own", ctx do
+      settings = %{"site" => "datadoghq.eu", "service" => String.duplicate("s", @max_body)}
+      datadog = destination_fixture(ctx.organization, :datadog, settings: settings)
+      first = event!(ctx.organization, 1)
+      for txid <- 2..3, do: event!(ctx.organization, txid)
+
+      batch = prepared(datadog, ctx.organization)
+      assert Enum.map(batch.events, & &1.id) == [first]
+      assert byte_size(body(datadog, batch, batch.payloads)) > @max_body
+    end
+
+    test "no tags and the default service cut the same batch as before", ctx do
+      datadog = destination_fixture(ctx.organization, :datadog)
+      for txid <- 1..520, do: event!(ctx.organization, txid)
+
+      before = Reader.next_batch(ctx.organization.id, {0, 0})
+      assert length(before) == 500
+
+      for destination <- [datadog, ctx.destination] do
+        batch = prepared(destination, ctx.organization)
+        assert Enum.map(batch.events, & &1.id) == Enum.map(before, & &1.id)
+      end
+    end
+
+    test "every kind's cut batch stays within 900,000 bytes of uncompressed body", ctx do
+      for txid <- 1..60, do: event!(ctx.organization, txid)
+
+      destinations = [
+        destination_fixture(ctx.organization, :datadog,
+          settings: %{"site" => "datadoghq.eu", "tags" => max_tags()},
+          include_personal_data: false
+        ),
+        destination_fixture(ctx.organization, :datadog,
+          settings: %{"site" => "datadoghq.eu", "tags" => max_tags()}
+        ),
+        destination_fixture(ctx.organization, :splunk_hec,
+          settings: %{"index" => "main", "source_type" => String.duplicate("t", 30_000)}
+        ),
+        destination_fixture(ctx.organization, :https, settings: %{"format" => "json"}),
+        ctx.destination
+      ]
+
+      for destination <- destinations do
+        batch = prepared(destination, ctx.organization)
+        adapter = Map.fetch!(@adapters, destination.kind)
+        body = body(destination, batch, batch.payloads)
+        assert byte_size(body) <= @max_body, "#{destination.kind}"
+
+        # The cut measured the events exactly as they are sent: redacted, and
+        # without personal data when the destination leaves it out.
+        counted =
+          Adapter.envelope_size(adapter, destination, batch.organization) +
+            Enum.sum_by(
+              batch.payloads,
+              &Adapter.entry_size(adapter, destination, &1, batch.organization)
+            )
+
+        assert (counted - byte_size(body)) in 0..1, "#{destination.kind}"
+        assert body =~ "someone@example.com" == destination.include_personal_data
+
+        # Datadog's tags and Splunk's source type take a full read over the limit.
+        if destination.kind in [:datadog, :splunk_hec], do: assert(length(batch.events) < 60)
+      end
+    end
+
+    test "attempt bytes and delivered telemetry bytes keep their documented meaning", ctx do
+      attach_telemetry([@delivered])
+      settings = %{"site" => "datadoghq.eu", "tags" => max_tags()}
+      datadog = destination_fixture(ctx.organization, :datadog, settings: settings)
+
+      for txid <- 1..3,
+          do: event!(ctx.organization, txid, "organization_updated", NaiveDateTime.utc_now())
+
+      test = self()
+
+      Req.Test.stub(Transport, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        send(test, {:body, body})
+        Plug.Conn.send_resp(conn, 202, "{}")
+      end)
+
+      assert :ok = run(datadog)
+      assert_received {:body, body}
+
+      entries = Jason.decode!(body)
+      assert length(entries) == 3
+      payload_bytes = Enum.sum_by(entries, &(Adapter.json_size(&1["stride"]) + 1))
+
+      # The bytes are the Payload events' JSON size, each plus one separator,
+      # not the larger request body with Datadog's entry fields around them.
+      assert [attempt] = attempts(datadog)
+      assert attempt.bytes == payload_bytes
+      assert attempt.bytes < byte_size(body)
+      assert_received {:telemetry_event, @delivered, %{bytes: ^payload_bytes}, %{kind: :datadog}}
     end
   end
 

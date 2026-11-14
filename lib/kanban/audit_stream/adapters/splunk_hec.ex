@@ -54,6 +54,7 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
 
   use Gettext, backend: KanbanWeb.Gettext
 
+  alias Kanban.AuditStream.Adapter
   alias Kanban.AuditStream.Destination
   alias Kanban.Webhooks.UrlGuard
 
@@ -180,6 +181,16 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   def build_request(_destination, _batch) do
     raise ArgumentError, "a Splunk HEC destination needs a readable URL"
   end
+
+  # The body is the HEC events joined by newlines: each event and its
+  # newline, with no envelope (the last newline is not written, so the count
+  # is one byte over).
+  @impl true
+  def entry_size(%Destination{} = destination, event, _organization),
+    do: event |> hec_event(destination.settings || %{}) |> Adapter.json_size() |> Kernel.+(1)
+
+  @impl true
+  def envelope_size(%Destination{}, _organization), do: 0
 
   # A token that is not sendable (a row that never went through the
   # changeset) is left out rather than quoted in a transport error; Splunk

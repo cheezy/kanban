@@ -626,4 +626,56 @@ defmodule Kanban.AuditStream.Adapters.HttpsTest do
       assert audit_signature_valid?(audit, 31, inflated)
     end
   end
+
+  describe "entry_size/3 and envelope_size/2 (D439)" do
+    defp counted(destination, events) do
+      Adapter.envelope_size(Https, destination, @organization) +
+        Enum.sum_by(events, &Adapter.entry_size(Https, destination, &1, @organization))
+    end
+
+    defp many_events(count) do
+      for n <- 1..count,
+          do: %{"id" => "#{n}", "schema" => "stride.audit.v1", "action" => "é_#{n}"}
+    end
+
+    test "a full HTTPS JSON or NDJSON batch with its envelope stays within 900,000 bytes uncompressed" do
+      for format <- ["json", "ndjson"], n <- [1, 2, 500] do
+        destination = destination(%{settings: %{"format" => format}})
+        events = many_events(n)
+        batch = batch(%{batch_id: Ecto.UUID.generate(), events: events})
+        {_url, _headers, inflated} = request(destination, batch)
+
+        assert counted(destination, events) == byte_size(inflated), "#{format}, #{n} events"
+      end
+    end
+
+    test "with no adapter callbacks, an event counts its JSON size plus one and there is no envelope" do
+      [event | _] = @events
+
+      for adapter <- [nil, String] do
+        assert Adapter.entry_size(adapter, destination(), event, @organization) ==
+                 byte_size(Jason.encode!(event)) + 1
+
+        assert Adapter.envelope_size(adapter, destination(), @organization) == 0
+      end
+    end
+
+    test "the JSON envelope counts the Organization name" do
+      short = Adapter.envelope_size(Https, destination(), %{id: 1, name: "A"})
+
+      long =
+        Adapter.envelope_size(Https, destination(), %{
+          id: 1,
+          name: "Ä" <> String.duplicate("a", 99)
+        })
+
+      assert long - short == 100
+
+      assert Adapter.envelope_size(
+               Https,
+               destination(%{settings: %{"format" => "ndjson"}}),
+               @organization
+             ) == 0
+    end
+  end
 end

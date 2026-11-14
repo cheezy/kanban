@@ -19,10 +19,25 @@ defmodule Kanban.AuditStream.PendingBatch do
       out under a new `batch_id`, never as a smaller batch under the old
       one. Retention records the gap it makes;
     * otherwise the next batch is cut with `Reader.next_batch/3`: up to 500
-      events and 900,000 bytes, measured as the JSON size of each built
-      `Kanban.AuditStream.Payload` event plus one separator. Its `batch_id`
-      is new, and the cut records the destination's `filter_version` as
+      events and 900,000 bytes of uncompressed request body, measured as
+      the destination's adapter writes it under its current settings: each
+      built `Kanban.AuditStream.Payload` event as the adapter wraps it
+      (`Kanban.AuditStream.Adapter.entry_size/4`, such as a Datadog entry
+      with its tags and service) and the request's fixed envelope
+      (`Kanban.AuditStream.Adapter.envelope_size/3`). One event over the
+      limit on its own is still cut, alone. Its `batch_id` is new, and the
+      cut records the destination's `filter_version` as
       `pending_filter_version`.
+
+  The batch's `bytes`, which the attempt row and the `batch_delivered`
+  telemetry record, stays the summed JSON size of its Payload events, each
+  plus one separator, whatever the adapter adds around the events, so it
+  does not follow a tag, service or format change; it can still change
+  between attempts with the event fields a retry rebuilds, such as an actor's
+  email or redaction (D18). It is not the
+  request body's size, which follows the adapter's live settings (D19), so a
+  re-read pending batch can come out larger than it was cut, and a 413 then
+  halves it.
 
   When nothing is waiting it returns `{:empty, attrs}`; `attrs` then discards
   a stale pending batch, if there was one, and the cursor stays where it is.
@@ -69,11 +84,15 @@ defmodule Kanban.AuditStream.PendingBatch do
   at becomes the head of the next run's, which records it as a gap.
   """
 
+  alias Kanban.AuditStream.Adapter
   alias Kanban.AuditStream.Cursor
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Outcome
   alias Kanban.AuditStream.Payload
   alias Kanban.AuditStream.Reader
+
+  # The most uncompressed request body a cut batch may take (design §8.2).
+  @max_body_bytes 900_000
 
   @type batch :: %{
           batch_id: Ecto.UUID.t(),
@@ -196,7 +215,7 @@ defmodule Kanban.AuditStream.PendingBatch do
   defp cut(destination, cursor, organization, filters, opts, attrs) do
     read_opts =
       filters ++
-        [size_fun: &encoded_size(&1, organization)] ++ Keyword.take(opts, [:horizon, :batch_size])
+        body_limit(destination, organization) ++ Keyword.take(opts, [:horizon, :batch_size])
 
     organization.id
     |> Reader.next_batch({cursor.last_txid, cursor.last_event_id}, read_opts)
@@ -249,8 +268,17 @@ defmodule Kanban.AuditStream.PendingBatch do
     }
   end
 
-  defp encoded_size(event, organization),
-    do: event |> Payload.build(organization) |> payload_size()
+  # The cut's byte limit counts the request body the destination's adapter
+  # writes, not only the Payload events in it.
+  defp body_limit(destination, organization) do
+    adapter = Adapter.module_for(destination.kind)
+
+    [
+      size_fun:
+        &Adapter.entry_size(adapter, destination, Payload.build(&1, organization), organization),
+      max_bytes: @max_body_bytes - Adapter.envelope_size(adapter, destination, organization)
+    ]
+  end
 
   defp payload_size(payload),
     do: payload |> Jason.encode_to_iodata!() |> IO.iodata_length() |> Kernel.+(1)

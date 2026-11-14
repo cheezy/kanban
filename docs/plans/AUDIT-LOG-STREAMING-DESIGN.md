@@ -636,8 +636,29 @@ body, whichever comes first:
   exactly 1 MB would meet a 413 every time it was full;
 - self-managed Splunk Enterprise allows far more by default.
 
+The 900,000 bytes count the body as the destination's adapter writes it, before
+gzip: each event as the adapter wraps it (Datadog's entry with `ddsource`,
+`service`, `hostname`, `ddtags`, `message` and `date`; Splunk's HEC event with
+`time`, `host`, `source`, `sourcetype` and `index`; an HTTPS event and its
+separator) plus the request's fixed envelope (the HTTPS JSON object around the
+events, Datadog's brackets), through the adapter's `entry_size/3` and
+`envelope_size/2`. The cut measures the event already redacted and stripped of
+personal data, as it is sent. Datadog's tags repeat on every entry, so 90 tags
+of 200 characters cut a batch of a few dozen events rather than 500 (D439).
+
+The `bytes` of a batch, which the attempt row and the `batch_delivered`
+telemetry record, stay the JSON size of its built events, each plus one
+separator, without the adapter's entry or envelope, so they do not follow a
+tag, service or format change; they can still change between attempts with
+the event fields a retry rebuilds, such as an actor's email or redaction (D18). The body around them follows the
+destination's live settings ([§8.3](#83-at-least-once-and-batch-identity)),
+so a pending batch re-read after a tag or service change can exceed the limit
+it was cut under; a 413 then halves it as below.
+
 A single event is never near either limit: metadata values are capped at 2,000
-characters when they are stored.
+characters when they are stored. One whose wrapped entry is over the limit (a
+Datadog service hundreds of thousands of characters long) is still cut, on its
+own.
 
 A 413 from the destination halves the batch and tries again, down to a single
 event. Each half is cut and recorded as a new pending batch in a later run,

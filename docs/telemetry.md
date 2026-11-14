@@ -919,8 +919,10 @@ destination list, emits none of them.
   reach a dashboard. `kind` is the destination's type, `:splunk_hec`,
   `:datadog` or `:https`. All three keys come from fixed sets and are tags.
 - **`batch_delivered` measures the batch.** `count` is 1, `events` the number
-  of events in the batch, `bytes` their size as JSON before compression and
-  `duration_ms` how long the request took.
+  of events in the batch, `bytes` their size as JSON before compression, one
+  separator each (the events alone, not the adapter's entry or envelope around
+  them, so it does not follow a tag, service or format change) and `duration_ms` how long the request
+  took.
 - **`outcome` is a closed set.** `batch_failed` carries `:retry` (a failure
   that will be retried), `:rejected` (a rejected batch, or one refused as too
   large and halved), `:unauthorized` (credentials refused), `:config_error`
@@ -1419,7 +1421,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :audit_stream, :batch_delivered]` | event | `count`, `events`, `bytes`, `duration_ms` | `kind` | A destination accepted a batch of audit events. events is the number of events in the batch, bytes its encoded size and duration_ms how long the request took. kind is the destination's kind. |
+| `[:kanban, :audit_stream, :batch_delivered]` | event | `count`, `events`, `bytes`, `duration_ms` | `kind` | A destination accepted a batch of audit events. events is the number of events in the batch, bytes the events' JSON size before compression, one separator each, without the adapter's entry or envelope, and duration_ms how long the request took. kind is the destination's kind. |
 | `[:kanban, :audit_stream, :batch_failed]` | event | `count`, `duration_ms` | `kind`, `outcome` | A batch of audit events was not accepted. outcome is the fixed failure class of the attempt, never the response body; duration_ms is how long the attempt took. kind is the destination's kind. |
 | `[:kanban, :audit_stream, :lag_measured]` | event | `lag_seconds`, `events_waiting`, `events_above_horizon` | `kind` | A destination's delivery lag was measured. lag_seconds is the age of its oldest undelivered event, events_waiting the events not yet sent and events_above_horizon those committed too recently to send safely. kind is the destination's kind. |
 | `[:kanban, :audit_stream, :gap_recorded]` | event | `count`, `events` | `kind`, `reason` | Audit events that a destination will never receive were recorded as a gap. events is how many were lost and reason the fixed cause. kind is the destination's kind. |

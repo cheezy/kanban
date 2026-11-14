@@ -29,9 +29,18 @@ exported file.
   A retry, and the next batch of a catch-up, are queued by the delivery run
   itself, at their own time.
 - **In batches** of at most 500 events and 900,000 bytes, the size of the
-  events as JSON before compression. The rule is the same for every type of
-  destination. A single event larger than that is sent on its own. Every
-  request body is compressed with gzip.
+  request body before compression, counted as each type of destination
+  writes it: Datadog's entry around every event, with its tags, service and
+  message; Splunk's HEC fields; the HTTPS JSON envelope or NDJSON newlines.
+  So a Datadog destination with many long tags sends fewer events per batch.
+  A single event larger than that is sent on its own. A retry rebuilds the
+  body under the destination's current settings without measuring it again,
+  so after a tags, service or format change a retried batch can be larger
+  than it was cut, and a 413 then halves it. Every request body is
+  compressed with gzip. The bytes a delivery attempt records stay the size
+  of the events alone, as JSON with one separator each, without the entry or
+  envelope around them, so they do not follow a change to the tags, service
+  or format.
 - **At least once.** A batch can arrive more than once, and an event can
   arrive in more than one batch. Receivers drop duplicates by the event `id`
   (see [Changing the filters re-sends the waiting batch](#changing-the-filters-re-sends-the-waiting-batch)).
@@ -804,7 +813,7 @@ seen by all of them. Rotating a signing secret sends no email.
 | Limit | Value |
 |---|---|
 | Destinations per Organization | 3, unless the operator changes it with `AUDIT_STREAM_MAX_DESTINATIONS`. At the limit, **Add destination** is disabled |
-| Events per batch | 500, and at most 900,000 bytes of JSON before compression, for every type |
+| Events per batch | 500, and at most 900,000 bytes of request body before compression, as each type writes it |
 | Test events | 10 an hour per Organization |
 | Destination name | 80 characters, unique in the Organization |
 | URL | 2,048 characters |

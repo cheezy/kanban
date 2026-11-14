@@ -19,6 +19,14 @@ defmodule Kanban.AuditStream.Adapter do
   would refuse (and quote in its error), or a header name with no value, is
   refused when it is saved instead of being dropped or failing at send.
 
+  The batch cut counts each event as the adapter writes it, so a full batch
+  stays within 900,000 bytes of uncompressed body
+  (`docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §8.2). An adapter that wraps
+  each event, such as Datadog's entry or Splunk's HEC event, or puts the
+  events in an envelope, implements the optional `entry_size/3` and
+  `envelope_size/2`; `entry_size/4` and `envelope_size/3` call them, and
+  default to the event's JSON size plus one separator and to nothing.
+
   `module_for/1` maps a kind to its adapter. A kind whose adapter has not
   been written yet maps to nil, and `Kanban.AuditStream.Destination` then
   skips the kind's own settings check.
@@ -93,13 +101,69 @@ defmodule Kanban.AuditStream.Adapter do
   """
   @callback validate_url(url :: String.t()) :: :ok | {:error, keyword()}
 
-  @optional_callbacks describe_error: 2, validate_credential: 2, validate_url: 1
+  @doc """
+  The bytes one built `Kanban.AuditStream.Payload` event takes in the
+  uncompressed body `build_request/2` writes for `destination`, counting one
+  separator after it. Measured on the event as given, which the cut has
+  already redacted and stripped of personal data.
+  """
+  @callback entry_size(Destination.t(), event :: Payload.t(), Payload.organization()) ::
+              pos_integer()
+
+  @doc """
+  The bytes the uncompressed body takes beyond its events' `entry_size/3`,
+  such as an envelope around them, less the one separator the last event
+  does not have. Never negative, so an adapter with no envelope (Splunk
+  HEC) counts one byte over its body, never under.
+  """
+  @callback envelope_size(Destination.t(), Payload.organization()) :: non_neg_integer()
+
+  @optional_callbacks describe_error: 2,
+                      validate_credential: 2,
+                      validate_url: 1,
+                      entry_size: 3,
+                      envelope_size: 2
 
   @adapters %{
     datadog: Adapters.Datadog,
     https: Adapters.Https,
     splunk_hec: Adapters.SplunkHec
   }
+
+  @doc """
+  The bytes `event` takes in `adapter`'s uncompressed body for `destination`:
+  the adapter's `entry_size/3`, or, for an adapter without one (or no
+  adapter), the event's JSON size plus one separator.
+  """
+  @spec entry_size(module() | nil, Destination.t(), Payload.t(), Payload.organization()) ::
+          pos_integer()
+  def entry_size(adapter, destination, event, organization) do
+    if implements?(adapter, :entry_size, 3),
+      do: adapter.entry_size(destination, event, organization),
+      else: json_size(event) + 1
+  end
+
+  @doc """
+  The bytes `adapter`'s uncompressed body takes for `destination` beyond its
+  events' entry sizes: the adapter's `envelope_size/2`, or 0 for an adapter
+  without one (or no adapter).
+  """
+  @spec envelope_size(module() | nil, Destination.t(), Payload.organization()) ::
+          non_neg_integer()
+  def envelope_size(adapter, destination, organization) do
+    if implements?(adapter, :envelope_size, 2),
+      do: adapter.envelope_size(destination, organization),
+      else: 0
+  end
+
+  @doc "The byte size of `term` encoded as JSON."
+  @spec json_size(term()) :: non_neg_integer()
+  def json_size(term), do: term |> Jason.encode_to_iodata!() |> IO.iodata_length()
+
+  defp implements?(nil, _function, _arity), do: false
+
+  defp implements?(adapter, function, arity),
+    do: Code.ensure_loaded?(adapter) and function_exported?(adapter, function, arity)
 
   @doc "The adapter module for `kind`, or nil when the kind has none yet."
   @spec module_for(atom() | nil) :: module() | nil

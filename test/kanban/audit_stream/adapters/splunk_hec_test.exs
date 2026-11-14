@@ -576,4 +576,48 @@ defmodule Kanban.AuditStream.Adapters.SplunkHecTest do
       assert inflated |> lines() |> Enum.map(& &1["event"]) == Enum.take(events(), 1)
     end
   end
+
+  describe "entry_size/3 and envelope_size/2 (D439)" do
+    defp counted(destination, events) do
+      Adapter.envelope_size(SplunkHec, destination, @organization) +
+        Enum.sum_by(events, &Adapter.entry_size(SplunkHec, destination, &1, @organization))
+    end
+
+    defp inflated(destination, events) do
+      {_url, _headers, body} =
+        SplunkHec.build_request(destination, %{
+          batch_id: "5f0c-batch",
+          events: events,
+          organization: @organization
+        })
+
+      :zlib.gunzip(body)
+    end
+
+    test "a full Splunk HEC batch with index and source type stays within 900,000 bytes uncompressed" do
+      destination =
+        destination(%{
+          settings: %{"index" => String.duplicate("i", 80), "source_type" => "stride:ünïcode"}
+        })
+
+      events =
+        for n <- 1..500 do
+          "#{n}"
+          |> event(occurred_at(1_794_193_366_015_123 + n))
+          |> Map.put("action_label", "Échec")
+        end
+
+      events = [event("0", nil) | events]
+
+      # Each HEC event and its newline; the last newline is not written, so
+      # the count is one byte over and never under.
+      for n <- [1, 2, 501] do
+        some = Enum.take(events, n)
+        assert counted(destination, some) == byte_size(inflated(destination, some)) + 1
+      end
+
+      # The HEC fields are counted, not only the events they carry.
+      assert counted(destination, events) > Enum.sum_by(events, &(Adapter.json_size(&1) + 1))
+    end
+  end
 end

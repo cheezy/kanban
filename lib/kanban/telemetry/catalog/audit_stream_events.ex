@@ -23,7 +23,7 @@ defmodule Kanban.Telemetry.Catalog.AuditStreamEvents do
       measurements: [:count, :events, :bytes, :duration_ms],
       metadata: [:kind],
       description:
-        "A destination accepted a batch of audit events. events is the number of events in the batch, bytes its encoded size and duration_ms how long the request took. kind is the destination's kind.",
+        "A destination accepted a batch of audit events. events is the number of events in the batch, bytes the events' JSON size before compression, one separator each, without the adapter's entry or envelope, and duration_ms how long the request took. kind is the destination's kind.",
       legacy: false,
       metrics: [counter: :count, sum: :events, summary: :duration_ms],
       persist: false,
