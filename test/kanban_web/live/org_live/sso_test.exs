@@ -470,8 +470,281 @@ defmodule KanbanWeb.OrgLive.SSOTest do
     end
   end
 
+  # D441: a value that is not a string failed the cast but stayed in the
+  # changeset params, so the re-rendered input raised and crashed the view.
+  describe "malformed form params" do
+    setup do
+      %{idp: Kanban.SAMLTestHelpers.idp()}
+    end
+
+    test "valid connection, SAML and domain saves still work", %{conn: conn, org: org, idp: idp} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      html =
+        lv
+        |> form("#sso-domain-form", domain: %{domain: "d441-valid.example"})
+        |> render_submit()
+
+      assert html =~ "Domain added."
+
+      html =
+        lv
+        |> form("#sso-connection-form",
+          connection: %{
+            issuer: issuer(),
+            client_id: "d441-client",
+            client_secret: "d441-made-up-credential",
+            enabled: "true"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "Single sign-on connection saved."
+
+      html =
+        lv
+        |> form("#saml-connection-form",
+          saml: %{
+            issuer: "urn:d441:idp",
+            sso_url: "https://login.example.com/saml",
+            certificates_pem: idp.pem,
+            enabled: "true"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "SAML connection saved."
+
+      assert [%{domain: "d441-valid.example"}] = SSO.list_domains(org.id)
+      assert %{client_id: "d441-client", enabled: true} = SSO.get_oidc_connection(org.id)
+      assert %{issuer: "urn:d441:idp", enabled: true} = SSO.get_saml_connection(org.id)
+    end
+
+    test "a map-valued issuer, client_id or enabled does not crash the connection form",
+         %{conn: conn, org: org} do
+      connection = oidc_connection_fixture(org)
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      for event <- ["validate_connection", "save_connection"],
+          field <- ["issuer", "client_id"],
+          value <- [%{"a" => "1"}, [%{"a" => "1"}]] do
+        params = %{"issuer" => issuer(), "client_id" => "c", field => value}
+        html = render_hook(lv, event, %{"connection" => params})
+
+        assert Process.alive?(lv.pid)
+        assert html =~ "sso-connection-form"
+        assert html =~ "can&#39;t be blank"
+      end
+
+      assert Repo.reload(connection).client_id == connection.client_id
+
+      # The checkbox sends "true" or "false"; anything else keeps the stored
+      # value, so a blank enabled can no longer reach the NOT NULL column.
+      for event <- ["validate_connection", "save_connection"],
+          value <- [%{"a" => "1"}, ["true"], "yes", ""] do
+        params = %{"issuer" => issuer(), "client_id" => "c", "enabled" => value}
+        html = render_hook(lv, event, %{"connection" => params})
+
+        assert Process.alive?(lv.pid)
+        assert html =~ "sso-connection-form"
+        assert Repo.reload(connection).enabled
+      end
+
+      # A nested map in the secret field is ignored, and the stored secret kept.
+      for event <- ["validate_connection", "save_connection"] do
+        params = %{"issuer" => issuer(), "client_id" => "c", "client_secret" => %{"a" => "1"}}
+        render_hook(lv, event, %{"connection" => params})
+        assert Process.alive?(lv.pid)
+      end
+
+      assert Repo.reload(connection).client_secret == connection.client_secret
+    end
+
+    test "a map-valued SAML field does not crash the SAML form", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      base = %{"issuer" => "urn:d441:idp", "sso_url" => "https://login.example.com/saml"}
+
+      for event <- ["validate_saml", "save_saml"],
+          field <- ["issuer", "sso_url", "certificates_pem", "idp_metadata", "enabled"],
+          value <- [%{"a" => "1"}, [%{"a" => "1"}]] do
+        html = render_hook(lv, event, %{"saml" => Map.put(base, field, value)})
+
+        assert Process.alive?(lv.pid)
+        assert html =~ "saml-connection-form"
+        if field in ["issuer", "sso_url"], do: assert(html =~ "can&#39;t be blank")
+      end
+
+      refute SSO.get_saml_connection(org.id)
+    end
+
+    test "a map-valued domain does not crash the domain form", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      for value <- [%{"a" => "1"}, [%{"a" => "1"}]] do
+        html = render_hook(lv, "add_domain", %{"domain" => %{"domain" => value}})
+
+        assert Process.alive?(lv.pid)
+        assert html =~ "sso-domain-form"
+        assert html =~ "can&#39;t be blank"
+      end
+
+      assert SSO.list_domains(org.id) == []
+    end
+
+    test "a list or integer field value is treated as blank", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      for value <- [42, ["d441.example"], nil] do
+        payloads = [
+          {"add_domain", %{"domain" => %{"domain" => value}}},
+          {"validate_connection",
+           %{"connection" => %{"issuer" => issuer(), "client_id" => value}}},
+          {"save_connection", %{"connection" => %{"issuer" => value, "client_id" => "c"}}},
+          {"validate_saml", %{"saml" => %{"issuer" => "urn:d441:idp", "sso_url" => value}}},
+          {"save_saml", %{"saml" => %{"issuer" => value, "sso_url" => "https://x.example.com"}}}
+        ]
+
+        for {event, payload} <- payloads do
+          html = render_hook(lv, event, payload)
+
+          assert Process.alive?(lv.pid)
+          assert html =~ "can&#39;t be blank"
+        end
+      end
+
+      assert SSO.list_domains(org.id) == []
+      refute SSO.get_oidc_connection(org.id)
+      refute SSO.get_saml_connection(org.id)
+    end
+
+    test "a missing or non-map saml or domain param is ignored", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      events = [
+        {"add_domain", "domain"},
+        {"validate_connection", "connection"},
+        {"save_connection", "connection"},
+        {"validate_saml", "saml"},
+        {"save_saml", "saml"}
+      ]
+
+      for {event, key} <- events, payload <- [%{}, %{key => "x"}, %{key => nil}, %{key => [1]}] do
+        assert render_hook(lv, event, payload) =~ "sso-domain-form"
+        assert Process.alive?(lv.pid)
+      end
+
+      assert SSO.list_domains(org.id) == []
+      refute SSO.get_oidc_connection(org.id)
+      refute SSO.get_saml_connection(org.id)
+      assert Repo.all(ErrorTracker.Error) == []
+    end
+
+    test "a demoted admin sending malformed params is refused and audited",
+         %{conn: conn, org: org, org_admin: org_admin} do
+      events =
+        for {event, key} <- [
+              {"add_domain", "domain"},
+              {"validate_connection", "connection"},
+              {"save_connection", "connection"},
+              {"validate_saml", "saml"},
+              {"save_saml", "saml"}
+            ],
+            payload <- [%{key => "not a map"}, %{key => %{"issuer" => %{"a" => "1"}}}] do
+          {event, payload}
+        end
+
+      for {event, payload} <- events do
+        from(m in OrganizationMember, where: m.user_id == ^org_admin.id)
+        |> Repo.update_all(set: [role: :org_admin])
+
+        {:ok, lv, _html} = live(conn, ~p"/org/sso")
+        demote(org_admin)
+
+        assert {:error, {:redirect, %{to: "/boards"}}} = render_hook(lv, event, payload)
+      end
+
+      assert SSO.list_domains(org.id) == []
+      refute SSO.get_oidc_connection(org.id)
+
+      assert length(AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)) ==
+               length(events)
+    end
+  end
+
   test "the console links to the page", %{conn: conn} do
     {:ok, lv, _html} = live(conn, ~p"/org")
     assert has_element?(lv, "#org-sso-link")
+  end
+end
+
+defmodule KanbanWeb.OrgLive.SSOCrashReportTest do
+  @moduledoc """
+  The crash report of the `/org/sso` page after a typed client secret
+  (D441). Not async: it sets the global Logger level, and the crash report
+  prints the last message at every level and the LiveView's state at
+  `:debug`.
+  """
+  use KanbanWeb.ConnCase, async: false
+
+  import ExUnit.CaptureLog
+  import Phoenix.LiveViewTest
+  import Kanban.AccountsFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.SSOFixtures
+
+  alias Kanban.Repo
+
+  setup %{conn: conn} do
+    org = organization_fixture()
+    org_admin = user_fixture()
+    organization_member_fixture(org, org_admin, :org_admin)
+    oidc_connection_fixture(org)
+
+    original = Logger.level()
+    on_exit(fn -> Logger.configure(level: original) end)
+
+    %{conn: log_in_user(conn, org_admin)}
+  end
+
+  test "a crash after a typed client secret keeps the secret out of the log, ErrorTracker and the view state",
+       %{conn: conn} do
+    Process.flag(:trap_exit, true)
+
+    for level <- [:info, :debug] do
+      Logger.configure(level: level)
+      probe = "D441-probe-#{System.unique_integer([:positive])}"
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+      ref = Process.monitor(lv.pid)
+
+      log =
+        capture_log([level: level], fn ->
+          # Before D441 these map-valued events crashed the view at render,
+          # and the crash report printed the payload, probe secret included.
+          for event <- ["validate_connection", "save_connection"] do
+            render_hook(lv, event, %{
+              "connection" => %{
+                "issuer" => issuer(),
+                "client_id" => %{"a" => "1"},
+                "client_secret" => probe,
+                "enabled" => %{"a" => "1"}
+              }
+            })
+
+            assert Process.alive?(lv.pid)
+          end
+
+          refute inspect(:sys.get_state(lv.pid), limit: :infinity, printable_limit: :infinity) =~
+                   probe
+
+          # The page defines no handle_cast/2, so this crashes the view.
+          GenServer.cast(lv.pid, :d441_crash)
+          assert_receive {:DOWN, ^ref, :process, _pid, _reason}, 5_000
+        end)
+
+      assert log =~ "d441_crash"
+      refute log =~ probe
+      refute inspect(Repo.all(ErrorTracker.Occurrence)) =~ probe
+    end
   end
 end

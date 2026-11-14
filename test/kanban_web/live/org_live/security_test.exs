@@ -152,4 +152,59 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
       assert SecurityPolicies.policy_for_organization(org.id).audit_retention_days == nil
     end
   end
+
+  # D441: a value that is not a string failed the cast but stayed in the
+  # changeset params, so the re-rendered input raised and crashed the view.
+  describe "malformed params" do
+    test "a map- or list-valued field does not crash the policy form", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+
+      for event <- ["validate", "save"],
+          field <- ["require_two_factor", "two_factor_grace_days", "audit_retention_days"],
+          value <- [%{"a" => "1"}, [%{"a" => "1"}], 42] do
+        html = render_hook(lv, event, %{"security_policy" => %{field => value}})
+
+        assert Process.alive?(lv.pid)
+        assert html =~ "security-policy-form"
+      end
+
+      refute SecurityPolicies.policy_for_organization(org.id).require_two_factor
+    end
+
+    test "a missing or non-map security_policy param is ignored", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+
+      for event <- ["validate", "save"],
+          payload <- [%{}, %{"security_policy" => "x"}, %{"security_policy" => [1]}] do
+        assert render_hook(lv, event, payload) =~ "security-policy-form"
+        assert Process.alive?(lv.pid)
+      end
+
+      assert SecurityPolicies.policy_for_organization(org.id).id == nil
+    end
+
+    test "a demoted admin sending malformed params is refused and audited",
+         %{conn: conn, org_admin: org_admin} do
+      events =
+        for event <- ["validate", "save"],
+            payload <- [
+              %{"security_policy" => "x"},
+              %{"security_policy" => %{"two_factor_grace_days" => %{"a" => "1"}}}
+            ],
+            do: {event, payload}
+
+      for {event, payload} <- events do
+        from(m in OrganizationMember, where: m.user_id == ^org_admin.id)
+        |> Repo.update_all(set: [role: :org_admin])
+
+        {:ok, lv, _html} = live(conn, ~p"/org/security")
+        demote(org_admin)
+
+        assert {:error, {:redirect, %{to: "/boards"}}} = render_hook(lv, event, payload)
+      end
+
+      assert length(AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)) ==
+               length(events)
+    end
+  end
 end

@@ -12,6 +12,13 @@ defmodule KanbanWeb.OrgLive.Security do
   `Kanban.Organizations.SecurityPolicies.update_policy/2` checks again before
   writing. A refused event is audited as `permission_denied` and redirects to
   `/boards`.
+
+  The form's params pass through `KanbanWeb.OrgLive.FormParams.scalar/2`
+  first (D441): a value that is not a string becomes blank, and
+  `require_two_factor` is kept only as the `"true"` or `"false"` its checkbox
+  sends, so a crafted payload cannot crash the re-rendered inputs. A
+  `validate` or `save` event whose `"security_policy"` param is missing or not
+  a map runs the same org-admin check and changes nothing.
   """
   use KanbanWeb, :live_view
 
@@ -25,6 +32,7 @@ defmodule KanbanWeb.OrgLive.Security do
 
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
+  alias KanbanWeb.OrgLive.FormParams
 
   @impl true
   def mount(_params, _session, socket) do
@@ -39,11 +47,11 @@ defmodule KanbanWeb.OrgLive.Security do
   end
 
   @impl true
-  def handle_event("validate", %{"security_policy" => params}, socket) do
+  def handle_event("validate", %{"security_policy" => params}, socket) when is_map(params) do
     with_org_admin(socket, fn _actor ->
       form =
         socket.assigns.policy
-        |> SecurityPolicies.change_policy(params)
+        |> SecurityPolicies.change_policy(scalar_params(params))
         |> Map.put(:action, :validate)
         |> to_form()
 
@@ -51,25 +59,32 @@ defmodule KanbanWeb.OrgLive.Security do
     end)
   end
 
-  def handle_event("save", %{"security_policy" => params}, socket) do
+  def handle_event("save", %{"security_policy" => params}, socket) when is_map(params) do
     with_org_admin(socket, fn actor ->
-      case SecurityPolicies.update_policy(actor, params) do
-        {:ok, policy} ->
-          {:noreply,
-           socket
-           |> assign_policy(policy)
-           |> put_flash(:info, gettext("Security policy saved."))}
-
-        {:error, %Ecto.Changeset{} = changeset} ->
-          {:noreply, assign(socket, :form, to_form(changeset))}
-
-        {:error, :unauthorized} ->
-          {:noreply, refuse(socket)}
-      end
+      actor |> SecurityPolicies.update_policy(scalar_params(params)) |> policy_saved(socket)
     end)
   end
 
+  # A missing or non-map "security_policy" would raise in the changeset cast.
+  # It cannot come from the page, so it runs the org-admin check and does
+  # nothing.
+  def handle_event(event, _params, socket) when event in ["validate", "save"] do
+    with_org_admin(socket, fn _actor -> {:noreply, socket} end)
+  end
+
   def handle_event(_event, _params, socket), do: {:noreply, socket}
+
+  defp scalar_params(params), do: FormParams.scalar(params, ["require_two_factor"])
+
+  defp policy_saved({:ok, policy}, socket) do
+    {:noreply,
+     socket |> assign_policy(policy) |> put_flash(:info, gettext("Security policy saved."))}
+  end
+
+  defp policy_saved({:error, %Ecto.Changeset{} = changeset}, socket),
+    do: {:noreply, assign(socket, :form, to_form(changeset))}
+
+  defp policy_saved({:error, :unauthorized}, socket), do: {:noreply, refuse(socket)}
 
   defp assign_policy(socket, %SecurityPolicy{} = policy) do
     socket
