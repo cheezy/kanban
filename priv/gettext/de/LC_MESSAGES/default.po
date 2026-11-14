@@ -92,6 +92,7 @@ msgstr "Abmelden"
 #: lib/kanban_web/components/nav_components.ex:138
 #: lib/kanban_web/components/side_nav.ex:123
 #: lib/kanban_web/components/side_nav.ex:124
+#: lib/kanban_web/emails/audit_stream_email.ex:350
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:247
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
 #: lib/kanban_web/live/user_live/settings_components.ex:33
@@ -522,6 +523,7 @@ msgid "Task History"
 msgstr "Aufgabenverlauf"
 
 #: lib/kanban_web/components/board_filter_bar.ex:95
+#: lib/kanban_web/emails/audit_stream_email.ex:304
 #: lib/kanban_web/live/admin/user_live/index.html.heex:96
 #: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:139
@@ -2826,6 +2828,7 @@ msgstr "Ausgelöst"
 msgid "Not dispatched"
 msgstr "Nicht ausgelöst"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:336
 #: lib/kanban_web/live/archive_live/index.html.heex:189
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:38
@@ -10312,6 +10315,7 @@ msgstr "Erfolgreich"
 msgid "Test event queued. Refresh the deliveries in a few seconds."
 msgstr "Testereignis eingereiht. Aktualisiere die Zustellungen in ein paar Sekunden."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:340
 #: lib/kanban_web/live/board_live/webhook_form.ex:55
 #: lib/kanban_web/live/board_live/webhook_form.ex:134
 #: lib/kanban_web/live/org_live/audit_stream_kinds.ex:64
@@ -14575,6 +14579,7 @@ msgstr "Prüfen Sie die Einstellungen dieses Ziels."
 msgid "Configuration error"
 msgstr "Konfigurationsfehler"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:306
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:265
 #, elixir-autogen, elixir-format
 msgid "Credential"
@@ -14611,11 +14616,13 @@ msgstr "Verworfen"
 msgid "Each request is signed with this secret so the receiver can verify it."
 msgstr "Jede Anfrage wird mit diesem Secret signiert, damit der Empfänger sie prüfen kann."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:343
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:282
 #, elixir-autogen, elixir-format
 msgid "Email and IP addresses"
 msgstr "E-Mail- und IP-Adressen"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:365
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Enter the credentials again"
@@ -14626,6 +14633,7 @@ msgstr "Zugangsdaten erneut eingeben"
 msgid "Events this destination will never receive. They stay in the audit log."
 msgstr "Ereignisse, die dieses Ziel nie erhalten wird. Sie bleiben im Audit-Log."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:344
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:290
 #, elixir-autogen, elixir-format
 msgid "Excluded actions"
@@ -14662,11 +14670,13 @@ msgstr "HTTP %{status}"
 msgid "HTTP status"
 msgstr "HTTP-Status"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:305
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:256
 #, elixir-autogen, elixir-format
 msgid "Host"
 msgstr "Host"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:345
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:87
 #, elixir-autogen, elixir-format
 msgid "Index"
@@ -14747,12 +14757,14 @@ msgstr "Signatur-Secret erneuern? Das neue wird einmal angezeigt; stellen Sie de
 msgid "Secrets are never shown: only the host and the last 4 characters of the credential or URL."
 msgstr "Secrets werden nie angezeigt: nur der Host und die letzten 4 Zeichen der Zugangsdaten oder der URL."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:347
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:90
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:261
 #, elixir-autogen, elixir-format
 msgid "Service"
 msgstr "Dienst"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:349
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:93
 #, elixir-autogen, elixir-format
 msgid "Signature header"
@@ -14763,6 +14775,7 @@ msgstr "Signatur-Header"
 msgid "Signing secret rotated."
 msgstr "Signatur-Secret erneuert."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:346
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:90
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:253
 #, elixir-autogen, elixir-format
@@ -14795,6 +14808,7 @@ msgstr "Splunk hat das erste abgelehnte Ereignis genannt, daher sind die Ereigni
 msgid "Stride keeps trying, and delivery carries on once the destination is fixed."
 msgstr "Stride versucht es weiter, und die Zustellung läuft weiter, sobald das Ziel korrigiert ist."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:348
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:90
 #, elixir-autogen, elixir-format
 msgid "Tags"
@@ -14936,6 +14950,7 @@ msgstr "Wählen Sie einen der aufgeführten Startpunkte."
 msgid "Connection"
 msgstr "Verbindung"
 
+#: lib/kanban_web/emails/audit_stream_email.ex:303
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Destination"
@@ -15047,6 +15062,7 @@ msgstr "Ereignisse senden ab"
 msgid "Sending a test event..."
 msgstr "Testereignis wird gesendet..."
 
+#: lib/kanban_web/emails/audit_stream_email.ex:328
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:305
 #, elixir-autogen, elixir-format
 msgid "Start from"
@@ -15155,3 +15171,236 @@ msgid "You have %{count} destination, the most an Organization can have. Delete 
 msgid_plural "You have %{count} destinations, the most an Organization can have. Delete one to add another."
 msgstr[0] "Sie haben %{count} Ziel, die Höchstzahl für eine Organisation. Löschen Sie eines, um ein weiteres hinzuzufügen."
 msgstr[1] "Sie haben %{count} Ziele, die Höchstzahl für eine Organisation. Löschen Sie eines, um ein weiteres hinzuzufügen."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:167
+#, elixir-autogen, elixir-format
+msgid "%{actor} changed the audit streaming destination %{name}."
+msgstr "%{actor} hat das Audit-Streaming-Ziel %{name} geändert."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:150
+#, elixir-autogen, elixir-format
+msgid "%{actor} created the audit streaming destination %{name}."
+msgstr "%{actor} hat das Audit-Streaming-Ziel %{name} erstellt."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:195
+#, elixir-autogen, elixir-format
+msgid "%{actor} deleted the audit streaming destination %{name}."
+msgstr "%{actor} hat das Audit-Streaming-Ziel %{name} gelöscht."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:176
+#, elixir-autogen, elixir-format
+msgid "%{actor} paused the audit streaming destination %{name}."
+msgstr "%{actor} hat das Audit-Streaming-Ziel %{name} pausiert."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:186
+#, elixir-autogen, elixir-format
+msgid "%{actor} resumed the audit streaming destination %{name}."
+msgstr "%{actor} hat das Audit-Streaming-Ziel %{name} fortgesetzt."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:280
+#, elixir-autogen, elixir-format
+msgid "%{count} audit event will never reach this destination."
+msgid_plural "%{count} audit events will never reach this destination."
+msgstr[0] "%{count} Audit-Ereignis wird dieses Ziel nie erreichen."
+msgstr[1] "%{count} Audit-Ereignisse werden dieses Ziel nie erreichen."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:354
+#, elixir-autogen, elixir-format
+msgid "A deleted account"
+msgstr "Ein gelöschtes Konto"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:224
+#, elixir-autogen, elixir-format
+msgid "An operator must re-seed audit streaming before it sends again."
+msgstr "Ein Betreiber muss das Audit-Streaming neu setzen, bevor es wieder sendet."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:141
+#, elixir-autogen, elixir-format
+msgid "Audit events lost for %{name}"
+msgstr "Audit-Ereignisse für %{name} verloren"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:144
+#, elixir-autogen, elixir-format
+msgid "Audit events still being lost for %{name}"
+msgstr "Weiterhin Audit-Ereignisse für %{name} verloren"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:120
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination changed: %{name}"
+msgstr "Audit-Streaming-Ziel geändert: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:106
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination created, catching up the last 17 hours: %{name}"
+msgstr "Audit-Streaming-Ziel erstellt, holt die letzten 17 Stunden nach: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:94
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination created, catching up the last 24 hours: %{name}"
+msgstr "Audit-Streaming-Ziel erstellt, holt die letzten 24 Stunden nach: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:100
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination created, catching up the last 7 days: %{name}"
+msgstr "Audit-Streaming-Ziel erstellt, holt die letzten 7 Tage nach: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:112
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination created, sending the whole audit log: %{name}"
+msgstr "Audit-Streaming-Ziel erstellt, sendet das gesamte Audit-Log: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:117
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination created: %{name}"
+msgstr "Audit-Streaming-Ziel erstellt: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:129
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination deleted: %{name}"
+msgstr "Audit-Streaming-Ziel gelöscht: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:132
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination is failing: %{name}"
+msgstr "Audit-Streaming-Ziel schlägt fehl: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:123
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination paused: %{name}"
+msgstr "Audit-Streaming-Ziel pausiert: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:135
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination recovered: %{name}"
+msgstr "Audit-Streaming-Ziel wiederhergestellt: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:126
+#, elixir-autogen, elixir-format
+msgid "Audit streaming destination resumed: %{name}"
+msgstr "Audit-Streaming-Ziel fortgesetzt: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:138
+#, elixir-autogen, elixir-format
+msgid "Audit streaming must be re-seeded: %{name}"
+msgstr "Audit-Streaming muss neu gesetzt werden: %{name}"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:307
+#, elixir-autogen, elixir-format
+msgid "By"
+msgstr "Von"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:333
+#, elixir-autogen, elixir-format
+msgid "Changed"
+msgstr "Geändert"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:271
+#, elixir-autogen, elixir-format
+msgid "Datadog refuses events more than 18 hours old, so events not delivered within 17 hours of the destination failing are lost."
+msgstr "Datadog lehnt Ereignisse ab, die älter als 18 Stunden sind. Ereignisse, die nicht innerhalb von 17 Stunden nach dem Fehlschlagen des Ziels zugestellt werden, gehen daher verloren."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:267
+#, elixir-autogen, elixir-format
+msgid "Deliveries to the destination are failing."
+msgstr "Zustellungen an das Ziel schlagen fehl."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:158
+#, elixir-autogen, elixir-format
+msgid "It is catching up: it also sends audit events recorded before it was created, from the start point below."
+msgstr "Es holt nach: Es sendet auch Audit-Ereignisse, die vor seiner Erstellung aufgezeichnet wurden, ab dem unten genannten Startpunkt."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:199
+#, elixir-autogen, elixir-format
+msgid "It no longer receives this Organization's audit events."
+msgstr "Es empfängt keine Audit-Ereignisse dieser Organisation mehr."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:180
+#, elixir-autogen, elixir-format
+msgid "It receives no audit events until an org-admin resumes it."
+msgstr "Es empfängt keine Audit-Ereignisse, bis ein Org-Admin es fortsetzt."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:247
+#, elixir-autogen, elixir-format
+msgid "No delivery has succeeded for 30 minutes."
+msgstr "Seit 30 Minuten war keine Zustellung erfolgreich."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:361
+#, elixir-autogen, elixir-format
+msgid "Open audit streaming"
+msgstr "Audit-Streaming öffnen"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:367
+#: lib/kanban_web/emails/audit_stream_email.ex:371
+#, elixir-autogen, elixir-format
+msgid "Open the destination"
+msgstr "Ziel öffnen"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:220
+#, elixir-autogen, elixir-format
+msgid "Stride halted the audit streaming destination %{name}: transaction ids went backwards after a database move."
+msgstr "Stride hat das Audit-Streaming-Ziel %{name} angehalten: Nach einem Datenbankumzug sind die Transaktions-IDs zurückgegangen."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:205
+#, elixir-autogen, elixir-format
+msgid "Stride marked the audit streaming destination %{name} as Failing."
+msgstr "Stride hat das Audit-Streaming-Ziel %{name} als fehlschlagend markiert."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:231
+#, elixir-autogen, elixir-format
+msgid "Stride recorded a gap for the audit streaming destination %{name}: some audit events will never reach it."
+msgstr "Stride hat eine Lücke für das Audit-Streaming-Ziel %{name} erfasst: Einige Audit-Ereignisse werden es nie erreichen."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:322
+#, elixir-autogen, elixir-format
+msgid "Stride recorded this"
+msgstr "Von Stride erfasst"
+
+#: lib/kanban_web/emails/audit_stream_email.ex:257
+#, elixir-autogen, elixir-format
+msgid "Stride refused to send to the destination's address. Nothing more is sent until an org-admin changes its URL."
+msgstr "Stride hat das Senden an die Adresse des Ziels verweigert. Es wird nichts mehr gesendet, bis ein Org-Admin seine URL ändert."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:212
+#, elixir-autogen, elixir-format
+msgid "The audit streaming destination %{name} has recovered: Stride delivered to it again."
+msgstr "Das Audit-Streaming-Ziel %{name} funktioniert wieder: Stride konnte wieder an es zustellen."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:245
+#, elixir-autogen, elixir-format
+msgid "The destination answered that its configuration is wrong."
+msgstr "Das Ziel hat geantwortet, dass seine Konfiguration falsch ist."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:242
+#, elixir-autogen, elixir-format
+msgid "The destination refused the credentials Stride sends."
+msgstr "Das Ziel hat die von Stride gesendeten Zugangsdaten abgelehnt."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:251
+#, elixir-autogen, elixir-format
+msgid "The destination rejected the same batch 3 times. Nothing more is sent until an org-admin chooses Retry now or Skip this batch on the destination's page."
+msgstr "Das Ziel hat denselben Batch dreimal abgelehnt. Es wird nichts mehr gesendet, bis ein Org-Admin auf der Seite des Ziels „Jetzt erneut versuchen“ oder „Diesen Batch überspringen“ wählt."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:263
+#, elixir-autogen, elixir-format
+msgid "The destination's credentials can't be read. An org-admin must enter them again on the destination's edit page."
+msgstr "Die Zugangsdaten des Ziels können nicht gelesen werden. Ein Org-Admin muss sie auf der Bearbeitungsseite des Ziels erneut eingeben."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:236
+#, elixir-autogen, elixir-format
+msgid "The gap for the audit streaming destination %{name} has grown."
+msgstr "Die Lücke für das Audit-Streaming-Ziel %{name} ist gewachsen."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:285
+#, elixir-autogen, elixir-format
+msgid "They were recorded between %{first} and %{last} UTC."
+msgstr "Sie wurden zwischen %{first} und %{last} UTC aufgezeichnet."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:293
+#, elixir-autogen, elixir-format
+msgid "While the gap grows, you are emailed about it at most once every 7 days."
+msgstr "Solange die Lücke wächst, erhalten Sie dazu höchstens alle 7 Tage eine E-Mail."
+
+#: lib/kanban_web/emails/audit_stream_email.ex:84
+#, elixir-autogen, elixir-format
+msgid "You are receiving this security notice because you are an org-admin of this Organization. Every org-admin receives it, whatever their notification settings."
+msgstr "Sie erhalten diesen Sicherheitshinweis, weil Sie Org-Admin dieser Organisation sind. Jeder Org-Admin erhält ihn, unabhängig von seinen Benachrichtigungseinstellungen."

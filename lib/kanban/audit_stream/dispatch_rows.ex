@@ -16,6 +16,8 @@ defmodule Kanban.AuditStream.DispatchRows do
   alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.DestinationEvents
   alias Kanban.AuditStream.Lease
+  alias Kanban.Notifications
+  alias Kanban.Notifications.AuditStreamAlerts
   alias Kanban.Repo
 
   @doc """
@@ -55,18 +57,34 @@ defmodule Kanban.AuditStream.DispatchRows do
   Writes the status fields of a `Kanban.AuditStream.Outcome` plan to
   `destination`, then records the plan's `audit_stream_failing` or
   `audit_stream_recovered` event, if any.
+
+  In the same transaction it enqueues the org-admin email the plan calls for
+  (`Kanban.Notifications.AuditStreamAlerts.status_alert/3`): Failing,
+  recovered or the re-seed, writing `failing_emailed_at` or
+  `recovered_emailed_at` with the status fields so the hourly throttle holds.
   """
   @spec apply_status(Destination.t(), map()) ::
           {:ok, Destination.t()} | {:error, Ecto.Changeset.t()}
   # Only the status fields are written, so a secret that loaded as
   # :unreadable is never dumped and lock_version never moves.
   def apply_status(destination, plan) do
-    with {:ok, updated} <-
-           destination |> Destination.status_changeset(plan.destination) |> Repo.update() do
+    alert = AuditStreamAlerts.status_alert(destination, plan, DateTime.utc_now())
+    attrs = Map.merge(plan.destination, emailed_at(alert))
+
+    with {:ok, updated} <- destination |> Destination.status_changeset(attrs) |> Repo.update(),
+         :ok <- email(alert, updated) do
       record_audit(plan.audit, updated)
       {:ok, updated}
     end
   end
+
+  defp emailed_at(nil), do: %{}
+  defp emailed_at({_kind, _details, timestamps}), do: timestamps
+
+  defp email(nil, _destination), do: :ok
+
+  defp email({kind, details, _timestamps}, destination),
+    do: Notifications.enqueue_audit_stream_email(kind, destination, nil, details)
 
   defp record_audit(nil, _destination), do: :ok
   defp record_audit(:recovered, destination), do: DestinationEvents.recovered(destination)

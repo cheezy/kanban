@@ -751,7 +751,32 @@ longer than the retention period, never deleted early.
 
 Opening a gap records the `audit_stream_gap` audit event, and a gap that
 keeps growing records it again at most once a day, so the tools see the loss
-too.
+too. Every org-admin is also emailed; see
+[Emails to org-admins](#emails-to-org-admins).
+
+## Emails to org-admins
+
+Every enabled org-admin of the Organization is emailed, in the language they
+chose for Stride (English if none), when:
+
+| Email | Sent when |
+|---|---|
+| Created | A destination is created. When it starts from an earlier point than now, the subject names the catch-up: "catching up the last 24 hours", "the last 7 days", "the last 17 hours", or "sending the whole audit log" |
+| Changed | Its URL, token, API key or header value, **Include email and IP addresses**, the excluded actions, the Splunk index, the Datadog site, service or tags, or the HTTPS signature header changes. The email lists what changed. Renaming a destination, or changing only the Splunk source type or the HTTPS format, sends no email |
+| Paused, resumed | **Pause** or **Resume** changes it. Choosing it again on a destination already paused or running sends no email |
+| Deleted | A destination is deleted |
+| Failing | It becomes **Failing**, at most once an hour. A Datadog destination's email says that events not delivered within 17 hours are lost. When its credentials can't be read, the email asks an org-admin to enter them again, also when the destination was already Failing |
+| Recovered | It goes from Failing back to Healthy, at most once an hour |
+| Re-seed | Transaction ids went backwards after a database move, so an operator must re-seed; see [After a logical database move](#after-a-logical-database-move) |
+| Gap | A [gap](#gaps) opens, and then at most once every 7 days while it grows |
+
+Each email names who acted, or says that Stride recorded it, and the
+destination's name, type, host and last 4 characters, and links to its page.
+None contains the destination's URL, token, API key, header value or signing
+secret. They are security emails, so they are sent whatever an org-admin's
+notification settings are and have no unsubscribe link. The org-admin who
+made a change receives the email too, so a change made by one org-admin is
+seen by all of them. Rotating a signing secret sends no email.
 
 ## Limits
 

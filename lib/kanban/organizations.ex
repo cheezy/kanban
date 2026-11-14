@@ -63,6 +63,7 @@ defmodule Kanban.Organizations do
   alias Kanban.Organizations.MembershipWrites
   alias Kanban.Organizations.OrgAdminNotice
   alias Kanban.Organizations.OrgAdminProvisioning
+  alias Kanban.Organizations.OrgAdmins
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
@@ -263,6 +264,15 @@ defmodule Kanban.Organizations do
     |> join(:inner, [m], u in assoc(m, :user), on: is_nil(u.disabled_at))
     |> Repo.aggregate(:count)
   end
+
+  @doc """
+  The enabled org-admins of `organization`, as users ordered by id, for the
+  emails every org-admin receives. An Organization with none gets `[]`.
+
+  `organization` is an `%Organization{}` or its id.
+  """
+  @spec list_enabled_org_admins(Organization.t() | integer()) :: [User.t()]
+  defdelegate list_enabled_org_admins(organization), to: OrgAdmins
 
   @doc """
   Returns `{:error, :last_org_admin}` when `user` is the last enabled org-admin

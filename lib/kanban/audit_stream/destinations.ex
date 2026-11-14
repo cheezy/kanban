@@ -35,6 +35,8 @@ defmodule Kanban.AuditStream.Destinations do
   alias Kanban.AuditStream.Reachability
   alias Kanban.AuditStream.SigningSecrets
   alias Kanban.AuditStream.StartPoint
+  alias Kanban.Notifications
+  alias Kanban.Notifications.AuditStreamAlerts
   alias Kanban.Organizations
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
@@ -219,8 +221,9 @@ defmodule Kanban.AuditStream.Destinations do
          :ok <- check_limit(organization_id),
          horizon = read_horizon(),
          {:ok, destination} <- Repo.insert(changeset),
-         {:ok, _cursor} <- insert_cursor(destination, start_from, horizon) do
-      DestinationEvents.created(destination, actor, start_from)
+         {:ok, _cursor} <- insert_cursor(destination, start_from, horizon),
+         _event = DestinationEvents.created(destination, actor, start_from),
+         :ok <- email(:created, destination, actor, %{start_from: start_from}) do
       {:ok, destination}
     end
   end
@@ -396,15 +399,27 @@ defmodule Kanban.AuditStream.Destinations do
   # A save that changes no editable field records no event.
   defp save_update(changeset, actor) do
     changed = for field <- @editable_fields, Map.has_key?(changeset.changes, field), do: field
+    emailed = AuditStreamAlerts.emailed_changes(changeset)
 
     with {:ok, destination} <- Repo.update(changeset, stale_error_field: :id),
-         :ok <- requeue_rejected(changeset) do
-      if changed != [],
-        do: DestinationEvents.updated(destination, actor, Enum.map(changed, &Atom.to_string/1))
-
+         :ok <- requeue_rejected(changeset),
+         :ok <- email_changes(destination, actor, emailed) do
+      record_updated(destination, actor, changed)
       {:ok, destination}
     end
   end
+
+  defp record_updated(_destination, _actor, []), do: :ok
+
+  defp record_updated(destination, actor, changed),
+    do: DestinationEvents.updated(destination, actor, Enum.map(changed, &Atom.to_string/1))
+
+  # Only a change that decides where events go or what they carry is
+  # emailed (§12.3), so renaming a destination is not.
+  defp email_changes(_destination, _actor, []), do: :ok
+
+  defp email_changes(destination, actor, emailed),
+    do: email(:updated, destination, actor, %{changed: emailed})
 
   # A cleared rejected_batch halt queues a run in the same transaction, as
   # Retry now does; the sweep picks up every other cleared halt.
@@ -423,19 +438,27 @@ defmodule Kanban.AuditStream.Destinations do
 
   # --- pause and resume ---------------------------------------------------------
 
-  # Recorded on every call, even one that leaves enabled as it was.
+  # Recorded on every call, even one that leaves enabled as it was; emailed
+  # only when it pauses or resumes the destination.
   defp toggle_locked(organization_id, id, enabled, actor) do
     with {:ok, fresh} <- fetch_authorized(actor, organization_id, id),
-         {:ok, destination} <- fresh |> Changeset.change(enabled: enabled) |> Repo.update() do
-      DestinationEvents.enabled(destination, actor, enabled)
+         {:ok, destination} <- fresh |> Changeset.change(enabled: enabled) |> Repo.update(),
+         _event = DestinationEvents.enabled(destination, actor, enabled),
+         :ok <- email_toggle(fresh.enabled, destination, actor) do
       {:ok, destination}
     end
   end
 
+  defp email_toggle(enabled, %Destination{enabled: enabled}, _actor), do: :ok
+  defp email_toggle(_was, %Destination{enabled: false} = d, actor), do: email(:paused, d, actor)
+  defp email_toggle(_was, %Destination{enabled: true} = d, actor), do: email(:resumed, d, actor)
+
   # --- delete -------------------------------------------------------------------
 
+  # The email's snapshot is taken while the row still exists.
   defp delete_locked(organization_id, id, actor) do
-    with {:ok, fresh} <- fetch_authorized(actor, organization_id, id) do
+    with {:ok, fresh} <- fetch_authorized(actor, organization_id, id),
+         :ok <- email(:deleted, fresh, actor) do
       DestinationEvents.deleted(fresh, actor)
       Repo.delete(fresh)
     end
@@ -494,6 +517,11 @@ defmodule Kanban.AuditStream.Destinations do
       destination -> {:ok, destination}
     end
   end
+
+  # The org-admin emails go in the change's own transaction, so a change that
+  # rolls back emails nobody; a job that can't be inserted rolls it back.
+  defp email(kind, destination, actor, details \\ %{}),
+    do: Notifications.enqueue_audit_stream_email(kind, destination, actor, details)
 
   defp drop_keys(attrs, keys), do: Map.drop(attrs, keys ++ Enum.map(keys, &Atom.to_string/1))
 end

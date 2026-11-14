@@ -9,9 +9,10 @@ defmodule Kanban.AuditStream.Gaps do
   its dates widened and `last_extended_at` moved. A loss with no open gap,
   including one after a dismissal, opens a new gap. `audit_stream_gap` is
   recorded when a gap opens and then at most once a day per gap
-  (`audited_at`); `emailed_at` is left for the email reminder, which keeps
-  its own 7-day throttle. A loss that extends a gap inside that day is
-  recorded by `audit_due/1`, which the minute sweep runs: once the day has
+  (`audited_at`). Every org-admin is emailed when a gap opens and then at
+  most once every 7 days while it grows (`emailed_at`), in the same
+  transaction (`Kanban.Notifications.AuditStreamAlerts`). A loss that
+  extends a gap inside that day is recorded by `audit_due/1`, which the minute sweep runs: once the day has
   passed, every open gap that grew since its last event gets one, so no loss
   is left out of the stream for want of a later one. Dismissing a gap that
   grew since its last event records that event first, with the final count. The callers are `Kanban.AuditStream.Retention.Losses`,
@@ -29,6 +30,8 @@ defmodule Kanban.AuditStream.Gaps do
   alias Kanban.AuditStream.DestinationEvents
   alias Kanban.AuditStream.Destinations
   alias Kanban.AuditStream.Gap
+  alias Kanban.Notifications
+  alias Kanban.Notifications.AuditStreamAlerts
   alias Kanban.Repo
 
   @audit_interval_seconds 24 * 60 * 60
@@ -286,10 +289,12 @@ defmodule Kanban.AuditStream.Gaps do
       last_occurred_at: loss.last_at,
       opened_at: now,
       last_extended_at: now,
-      audited_at: now
+      audited_at: now,
+      emailed_at: now
     }
 
-    with {:ok, gap} <- %Gap{} |> Gap.changeset(attrs) |> Repo.insert() do
+    with {:ok, gap} <- %Gap{} |> Gap.changeset(attrs) |> Repo.insert(),
+         :ok <- email_gap(destination, gap, true) do
       DestinationEvents.gap(destination, gap)
       {:ok, gap}
     end
@@ -297,20 +302,48 @@ defmodule Kanban.AuditStream.Gaps do
 
   defp write(%Gap{} = gap, destination, _reason, loss, now) do
     audit? = audit_due?(gap.audited_at, now)
+    email? = AuditStreamAlerts.gap_email_due?(gap.emailed_at, now)
 
     attrs =
-      %{
-        events: gap.events + loss.events,
-        first_occurred_at: earliest(gap.first_occurred_at, loss.first_at),
-        last_occurred_at: latest(gap.last_occurred_at, loss.last_at),
-        last_extended_at: now
-      }
+      gap
+      |> extended_attrs(loss, now)
       |> put_audited(audit?, now)
+      |> put_emailed(email?, now)
 
-    with {:ok, gap} <- gap |> Gap.changeset(attrs) |> Repo.update() do
+    with {:ok, gap} <- gap |> Gap.changeset(attrs) |> Repo.update(),
+         :ok <- email_grown_gap(email?, destination, gap) do
       if audit?, do: DestinationEvents.gap(destination, gap)
       {:ok, gap}
     end
+  end
+
+  defp extended_attrs(gap, loss, now) do
+    %{
+      events: gap.events + loss.events,
+      first_occurred_at: earliest(gap.first_occurred_at, loss.first_at),
+      last_occurred_at: latest(gap.last_occurred_at, loss.last_at),
+      last_extended_at: now
+    }
+  end
+
+  defp email_grown_gap(true, destination, gap), do: email_gap(destination, gap, false)
+  defp email_grown_gap(false, _destination, _gap), do: :ok
+
+  defp put_emailed(attrs, true, now), do: Map.put(attrs, :emailed_at, now)
+  defp put_emailed(attrs, false, _now), do: attrs
+
+  defp email_gap(destination, gap, opened?) do
+    details = %{
+      gap: %{
+        reason: gap.reason,
+        events: gap.events,
+        first_at: gap.first_occurred_at,
+        last_at: gap.last_occurred_at,
+        opened: opened?
+      }
+    }
+
+    Notifications.enqueue_audit_stream_email(:gap, destination, nil, details)
   end
 
   defp audit_due?(nil, _now), do: true

@@ -63,6 +63,14 @@ defmodule Kanban.Notifications do
     * `{:notification_created, %Notification{}}` for every newly inserted row
     * `{:notifications_read, unread_count}` after `mark_read/2` or
       `mark_all_read/1`
+
+  ## Audit streaming security emails
+
+  `enqueue_audit_stream_email/4` emails every enabled org-admin of an
+  Organization about its audit stream destinations
+  (`Kanban.Notifications.AuditStreamAlerts`). They are security emails, so
+  they bypass `notify/3`: no in-app row, no preference, no plan gate and no
+  unsubscribe link.
   """
 
   import Ecto.Query, warn: false
@@ -70,6 +78,7 @@ defmodule Kanban.Notifications do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
+  alias Kanban.Notifications.AuditStreamAlerts
   alias Kanban.Notifications.DigestRecipients
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
@@ -380,6 +389,23 @@ defmodule Kanban.Notifications do
 
   @doc "Ids of the users who should receive the weekly digest; see `DigestRecipients`."
   defdelegate list_digest_recipients(), to: DigestRecipients
+
+  @doc """
+  Enqueues the audit stream security email `kind` about `destination` for
+  every enabled org-admin of its Organization; see `AuditStreamAlerts`. Call it
+  inside the transaction that makes the change. These emails skip `notify/3`:
+  no preference or plan gates them. `actor` is `nil` when Stride recorded it.
+  """
+  @spec enqueue_audit_stream_email(
+          atom(),
+          AuditStreamAlerts.destination_ref(),
+          User.t() | nil,
+          map()
+        ) ::
+          :ok | {:error, Ecto.Changeset.t()}
+  defdelegate enqueue_audit_stream_email(kind, destination, actor, details \\ %{}),
+    to: AuditStreamAlerts,
+    as: :enqueue
 
   # -- notify/3 helpers ------------------------------------------------------
 

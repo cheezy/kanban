@@ -124,7 +124,7 @@ defmodule Kanban.AuditStream.RetentionTest do
       assert gap.events == 2
       assert to_naive(gap.first_occurred_at) == first_at
       assert to_naive(gap.last_occurred_at) == last_at
-      assert gap.emailed_at == nil
+      assert gap.emailed_at == gap.opened_at
       assert gap.dismissed_at == nil
       assert gap.audited_at == gap.opened_at
 
@@ -381,7 +381,7 @@ defmodule Kanban.AuditStream.RetentionTest do
     test "a loss a day after the gap's last audit event records another", ctx do
       event!(ctx.organization, 1, days_ago(200))
       assert {:ok, 1} = purge(ctx.organization)
-      [gap] = gaps(ctx.destination)
+      [%Gap{emailed_at: emailed_at} = gap] = gaps(ctx.destination)
 
       backdated = DateTime.add(gap.audited_at, -25 * 60 * 60, :second)
       from(g in Gap, where: g.id == ^gap.id) |> Repo.update_all(set: [audited_at: backdated])
@@ -393,7 +393,8 @@ defmodule Kanban.AuditStream.RetentionTest do
                audit_actions(ctx.organization, "audit_stream_gap") |> Enum.reverse()
 
       assert second.metadata["events"] == 2
-      assert [%Gap{events: 2, emailed_at: nil} = extended] = gaps(ctx.destination)
+      # Inside its 7 days, the growing gap sends no new email.
+      assert [%Gap{events: 2, emailed_at: ^emailed_at} = extended] = gaps(ctx.destination)
       assert DateTime.compare(extended.audited_at, backdated) == :gt
     end
 
@@ -402,7 +403,7 @@ defmodule Kanban.AuditStream.RetentionTest do
       assert {:ok, 1} = purge(ctx.organization)
       event!(ctx.organization, 2, days_ago(200))
       assert {:ok, 1} = purge(ctx.organization)
-      [gap] = gaps(ctx.destination)
+      [%Gap{emailed_at: emailed_at} = gap] = gaps(ctx.destination)
       assert ctx.organization |> audit_actions("audit_stream_gap") |> length() == 1
 
       # Inside the day, the sweep records nothing.
@@ -413,7 +414,7 @@ defmodule Kanban.AuditStream.RetentionTest do
 
       assert [_first, second] = audit_actions(ctx.organization, "audit_stream_gap")
       assert second.metadata["events"] == 2
-      assert [%Gap{audited_at: ^later, emailed_at: nil}] = gaps(ctx.destination)
+      assert [%Gap{audited_at: ^later, emailed_at: ^emailed_at}] = gaps(ctx.destination)
 
       # The gap has not grown since, so the next sweep records nothing.
       two_days_on = DateTime.add(later, 2 * 24 * 60 * 60, :second)

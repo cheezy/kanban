@@ -1033,10 +1033,10 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert File.read!("lib/kanban_web/live/user_live/login.ex") =~
                ~s|gettext("Keep me signed in on this device")|
 
-      # Only the announcement email renders in the account's language. A
-      # file whose every with_locale call pins "en" (the audit stream payload,
-      # whose labels are English whatever the locale) renders in no account's
-      # language, so it is left out.
+      # Only the announcement and audit streaming emails render in the
+      # account's language. A file whose every with_locale call pins "en" (the
+      # audit stream payload, whose labels are English whatever the locale)
+      # renders in no account's language, so it is left out.
       with_locale =
         Path.wildcard("lib/**/*.ex")
         |> Enum.filter(&(File.read!(&1) =~ "Gettext.with_locale"))
@@ -1047,8 +1047,16 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
             length(Regex.scan(~r/Gettext\.with_locale\(KanbanWeb\.Gettext, "en",/, source))
         end)
 
-      assert with_locale == ["lib/kanban/notifications/announcement_worker.ex"]
+      assert with_locale == [
+               "lib/kanban/notifications/announcement_worker.ex",
+               "lib/kanban/notifications/audit_stream_email_worker.ex"
+             ]
+
       assert content =~ "service announcements"
+      assert content =~ "audit log streaming emails an organization's admins get"
+
+      audit_worker = File.read!("lib/kanban/notifications/audit_stream_email_worker.ex")
+      assert audit_worker =~ "AnnouncementWorker.locale_for(user)"
 
       # The English emails it names are ones Stride sends.
       notifier = File.read!("lib/kanban/accounts/user_notifier.ex")

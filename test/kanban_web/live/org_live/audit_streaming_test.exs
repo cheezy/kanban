@@ -537,7 +537,9 @@ defmodule KanbanWeb.OrgLive.AuditStreamingTest do
       {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming")
 
       render_hook(lv, "send_test", %{"id" => to_string(destination.id)})
-      assert_receive {:posted, sender}
+      # The send runs in a start_async task, which can take longer than the
+      # default 100 ms to reach the stub when the suite runs partitioned.
+      assert_receive {:posted, sender}, 5_000
       assert has_element?(lv, "#test-destination-#{destination.id}[disabled]")
 
       render_hook(lv, "send_test", %{"id" => to_string(destination.id)})

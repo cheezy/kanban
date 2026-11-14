@@ -58,7 +58,10 @@ defmodule Kanban.Notifications.EmailWorkerFailureTest do
 
     assert log =~ "permanent_failure"
     refute log =~ user.email
-    refute log =~ "550"
+    # A word match, so a notification id such as 55505 is not mistaken for
+    # the SMTP reply code.
+    refute log =~ ~r/\b550\b/
+    refute log =~ "Recipient address rejected"
   end
 
   test "mailer failure emits email_failed" do

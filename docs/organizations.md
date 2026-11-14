@@ -406,7 +406,10 @@ to an HTTPS endpoint are signed with the destination's own secret and, on an
 instance with a signing key, with the same Ed25519 key that signs exports.
 [Audit Log Streaming](audit-log-streaming.md) explains how to set up each
 type, what is sent, how a receiver verifies a delivery, and what to do when
-a destination fails or falls behind.
+a destination fails or falls behind. Every enabled org-admin is emailed when
+a destination is created, changed, paused, resumed or deleted, and when it
+fails, recovers or loses events; see
+[Emails to org-admins](audit-log-streaming.md#emails-to-org-admins).
 
 Events are kept forever unless the Organization sets an audit retention
 period; see [Audit retention](organization-security-policies.md#audit-retention).
