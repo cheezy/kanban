@@ -14,6 +14,7 @@ defmodule Kanban.Retention.PurgeWorkerTest do
 
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditStream.Cursor
+  alias Kanban.AuditStream.Destination
   alias Kanban.AuditStream.Gap
   alias Kanban.AuditStream.Lease
   alias Kanban.Organizations.SecurityPolicies
@@ -304,6 +305,70 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       refute deleted in audit_ids()
       assert kept in audit_ids()
       assert [%Gap{reason: :retention, events: 1}] = gaps(destination)
+      assert lease_token(destination) == nil
+      assert hd(purge_events()).metadata["failed_steps"] == ["organization:#{org.id}"]
+    end
+
+    test "a mid-purge batch failure bounds a late destination's gap" do
+      put_config(batch_size: 1)
+      org = org_with_retention(120)
+      destination = destination_fixture(org, :https)
+      deleted = audit_at!(300, org.id)
+      kept = audit_at!(200, org.id)
+      newest = audit_at!(180, org.id)
+
+      # Deleting `deleted` creates a destination from everything, as one
+      # created while the purge runs; the second batch then fails on `kept`.
+      # The purge function runs as its own owner with a pinned search_path,
+      # so this test-only function, rolled back with the sandbox, runs as the
+      # role that owns the audit stream tables, with its own search_path.
+      Repo.query!("""
+      CREATE FUNCTION create_late_destination() RETURNS trigger LANGUAGE plpgsql
+      SECURITY DEFINER SET search_path = public, pg_catalog AS $$
+      DECLARE created_id bigint;
+      BEGIN
+        INSERT INTO audit_stream_destinations (organization_id, kind, name, inserted_at, updated_at)
+        VALUES (OLD.organization_id, 'https', 'late', now(), now())
+        RETURNING id INTO created_id;
+        INSERT INTO audit_stream_cursors (destination_id, last_txid, last_event_id, updated_at)
+        VALUES (created_id, 0, 0, now());
+        RETURN OLD;
+      END
+      $$
+      """)
+
+      Repo.query!(
+        "CREATE TRIGGER create_late_destination BEFORE DELETE ON audit_events " <>
+          "FOR EACH ROW WHEN (OLD.id = #{deleted}) EXECUTE FUNCTION create_late_destination()"
+      )
+
+      Repo.query!("""
+      CREATE FUNCTION fail_second_purge_batch() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'second purge batch failed'; END
+      $$
+      """)
+
+      Repo.query!(
+        "CREATE TRIGGER fail_second_purge_batch BEFORE DELETE ON audit_events " <>
+          "FOR EACH ROW WHEN (OLD.id = #{kept}) EXECUTE FUNCTION fail_second_purge_batch()"
+      )
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      assert log =~ "retention purge failed"
+      assert log =~ "audit stream destination created during retention"
+      refute deleted in audit_ids()
+      assert kept in audit_ids()
+      assert newest in audit_ids()
+      assert [%Gap{events: 1}] = gaps(destination)
+
+      late = Repo.get_by!(Destination, organization_id: org.id, name: "late")
+      assert [%Gap{reason: :retention, events: 1} = gap] = gaps(late)
+      assert abs(DateTime.diff(gap.first_occurred_at, days_ago(300))) <= 5
+      # Bounded by the first event left, not the newest one before the cutoff.
+      assert abs(DateTime.diff(gap.last_occurred_at, Repo.get!(AuditEvent, kept).inserted_at)) <=
+               1
+
       assert lease_token(destination) == nil
       assert hd(purge_events()).metadata["failed_steps"] == ["organization:#{org.id}"]
     end

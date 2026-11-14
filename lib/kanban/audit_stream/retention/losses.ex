@@ -10,7 +10,11 @@ defmodule Kanban.AuditStream.Retention.Losses do
   that lost events is discarded so the next run cuts a new one under a new
   `batch_id` (§8.3). A destination created while the purge ran, starting
   from everything, is charged every gone event of an action it does not
-  exclude, which can overstate its loss.
+  exclude, which can overstate its loss. Like a leased destination's, its
+  gap's last time never names an event that is still there: when a purge
+  that failed part way left events of an action it does not exclude, the
+  last time is no later than the earliest of them. It is counted by action,
+  so it can be earlier than a leased destination's for the same loss.
 
   Neither function rescues: `Kanban.AuditStream.Retention` catches and logs
   an error raised here, so it never stops the purge job.
@@ -150,8 +154,9 @@ defmodule Kanban.AuditStream.Retention.Losses do
   # --- destinations created during the purge -----------------------------------
 
   defp record_created_losses(organization_id, cutoff, created, by_action) do
-    gone = gone_by_action(by_action, Snapshot.counts_by_action(organization_id, cutoff))
-    Enum.each(created, &record_created_loss(&1, gone))
+    after_purge = Snapshot.counts_by_action(organization_id, cutoff)
+    gone = gone_by_action(by_action, after_purge)
+    Enum.each(created, &record_created_loss(&1, gone, after_purge))
   end
 
   # Only a destination starting from everything (cursor (0, 0), no
@@ -176,17 +181,23 @@ defmodule Kanban.AuditStream.Retention.Losses do
     end)
   end
 
-  defp record_created_loss(%{id: id, excluded_actions: excluded}, gone) do
+  defp record_created_loss(%{id: id, excluded_actions: excluded}, gone, after_purge) do
     excluded = MapSet.new(excluded || [], &to_string/1)
+    lost = for {_action, %{events: n} = loss} <- owed(gone, excluded), n > 0, do: loss
 
-    lost =
-      for {action, %{events: n} = loss} <- gone,
-          n > 0,
-          not MapSet.member?(excluded, action),
-          do: loss
-
-    if lost != [], do: write_created_loss(id, combine(lost)), else: :ok
+    if lost != [],
+      do: write_created_loss(id, lost |> combine() |> bound_by(owed(after_purge, excluded))),
+      else: :ok
   end
+
+  # The by-action counts of the actions a destination does not exclude.
+  defp owed(by_action, excluded),
+    do:
+      for(
+        {action, counts} <- by_action,
+        not MapSet.member?(excluded, action),
+        do: {action, counts}
+      )
 
   defp combine(losses),
     do: %{
@@ -194,6 +205,25 @@ defmodule Kanban.AuditStream.Retention.Losses do
       first_at: losses |> Enum.map(& &1.first_at) |> Enum.min(DateTime),
       last_at: losses |> Enum.map(& &1.last_at) |> Enum.max(DateTime)
     }
+
+  # As lost_range/3 does for a leased destination: the purge deletes oldest
+  # first across every action, so while any event of an action the
+  # destination does not exclude is still there, the earliest of them bounds
+  # the last lost one. With none left, every lost event is gone and the
+  # newest counted time stands. An event older than the first counted one,
+  # written while the purge ran, never puts the last time before the first.
+  defp bound_by(loss, []), do: loss
+
+  defp bound_by(loss, survivors) do
+    first_left =
+      survivors |> Enum.map(fn {_action, left} -> left.first_at end) |> Enum.min(DateTime)
+
+    %{
+      loss
+      | last_at:
+          Enum.max([Enum.min([loss.last_at, first_left], DateTime), loss.first_at], DateTime)
+    }
+  end
 
   defp write_created_loss(id, loss) do
     Logger.warning(

@@ -95,6 +95,35 @@ defmodule Kanban.AuditStream.RetentionTest do
 
   defp exists?(id), do: Repo.get(AuditEvent, id) != nil
 
+  # A purge that deletes up to `deletes` of the oldest events and then
+  # raises, with a destination from everything created inside it, as one
+  # created while the purge runs. Returns that destination.
+  defp fail_purge_with_late_destination(organization, deletes, attrs \\ %{}) do
+    cutoff = cutoff()
+    test = self()
+
+    capture_log(fn ->
+      assert_raise RuntimeError, "purge failed", fn ->
+        Retention.purge(
+          organization.id,
+          cutoff,
+          fn _keep_alive ->
+            send(test, {:created, destination_fixture(organization, :https, attrs)})
+            {:ok, _deleted} = AuditLog.purge_organization_before(organization.id, cutoff, deletes)
+            raise "purge failed"
+          end,
+          lease_wait_ms: 0
+        )
+      end
+    end)
+
+    assert_received {:created, created}
+    created
+  end
+
+  defp at?(%DateTime{} = at, %NaiveDateTime{} = expected),
+    do: abs(DateTime.diff(at, DateTime.from_naive!(expected, "Etc/UTC"))) <= 1
+
   defp to_naive(%DateTime{} = at), do: DateTime.to_naive(at)
 
   defp org_admin_scope(organization) do
@@ -791,6 +820,150 @@ defmodule Kanban.AuditStream.RetentionTest do
 
       assert_received {:created, created}
       assert [%Gap{events: 1}] = gaps(created)
+    end
+
+    test "a destination created during a purge that fails part way bounds its gap by the first event left",
+         ctx do
+      first_at = days_ago(300)
+      event!(ctx.organization, 1, first_at)
+      event!(ctx.organization, 2, days_ago(250))
+      left_at = days_ago(200)
+      left = event!(ctx.organization, 3, left_at)
+      newest = event!(ctx.organization, 4, days_ago(180))
+
+      created = fail_purge_with_late_destination(ctx.organization, 2)
+
+      assert exists?(left)
+      assert exists?(newest)
+      # Its count and first time are as before; its last time is the first
+      # event left, not the newest one before the cutoff, which still exists.
+      assert [%Gap{reason: :retention, events: 2} = gap] = gaps(created)
+      assert at?(gap.first_occurred_at, first_at)
+      assert at?(gap.last_occurred_at, left_at)
+      assert [%Gap{events: 2}] = gaps(ctx.destination)
+
+      # The audit_stream_gap event shows the same bounded time span.
+      assert [event] =
+               audit_actions(ctx.organization, "audit_stream_gap")
+               |> Enum.filter(&(&1.metadata["destination_id"] == created.id))
+
+      assert {:ok, from, 0} = DateTime.from_iso8601(event.metadata["from"])
+      assert {:ok, to, 0} = DateTime.from_iso8601(event.metadata["to"])
+      assert at?(from, first_at)
+      assert at?(to, left_at)
+    end
+
+    test "a late destination's gap is bounded by the earliest event left across its actions",
+         ctx do
+      first_at = days_ago(300)
+      event!(ctx.organization, 1, first_at)
+      event!(ctx.organization, 2, days_ago(280), "org_member_added")
+      left_at = days_ago(250)
+      event!(ctx.organization, 3, left_at)
+      event!(ctx.organization, 4, days_ago(200), "org_member_added")
+
+      created = fail_purge_with_late_destination(ctx.organization, 2)
+
+      # Bounding each action by its own first survivor and taking the latest
+      # would say 200 days ago; the earliest survivor of any action is 250.
+      assert [%Gap{events: 2} = gap] = gaps(created)
+      assert at?(gap.first_occurred_at, first_at)
+      assert at?(gap.last_occurred_at, left_at)
+    end
+
+    test "a late destination's gap after a purge that deletes everything keeps the newest deleted time",
+         ctx do
+      first_at = days_ago(300)
+      event!(ctx.organization, 1, first_at)
+      newest_at = days_ago(180)
+      event!(ctx.organization, 2, newest_at, "org_member_added")
+      recent = event!(ctx.organization, 3, days_ago(10))
+
+      created = fail_purge_with_late_destination(ctx.organization, 1_000)
+
+      assert exists?(recent)
+      assert [%Gap{events: 2} = gap] = gaps(created)
+      assert at?(gap.first_occurred_at, first_at)
+      assert at?(gap.last_occurred_at, newest_at)
+    end
+
+    test "a late destination records no gap when a failing purge deleted nothing it was owed",
+         ctx do
+      event!(ctx.organization, 1, days_ago(300))
+      event!(ctx.organization, 2, days_ago(200), "org_member_added")
+
+      created =
+        fail_purge_with_late_destination(ctx.organization, 1, %{
+          excluded_actions: ["organization_updated"]
+        })
+
+      assert gaps(created) == []
+      assert [%Gap{events: 1}] = gaps(ctx.destination)
+    end
+
+    test "a late destination's gap bound ignores survivors of actions it excludes", ctx do
+      first_at = days_ago(300)
+      event!(ctx.organization, 1, first_at)
+      event!(ctx.organization, 2, days_ago(250), "org_member_added")
+      left_at = days_ago(200)
+      event!(ctx.organization, 3, left_at)
+
+      created =
+        fail_purge_with_late_destination(ctx.organization, 1, %{
+          excluded_actions: ["org_member_added"]
+        })
+
+      # The excluded action's survivor, at 250 days, does not bound it.
+      assert [%Gap{events: 1} = gap] = gaps(created)
+      assert at?(gap.first_occurred_at, first_at)
+      assert at?(gap.last_occurred_at, left_at)
+    end
+
+    test "a late destination's gap never ends before it starts when an older event appears mid-purge",
+         ctx do
+      first_at = days_ago(300)
+      event!(ctx.organization, 1, first_at)
+      event!(ctx.organization, 2, days_ago(250))
+      event!(ctx.organization, 3, days_ago(180))
+      cutoff = cutoff()
+      test = self()
+
+      capture_log(fn ->
+        assert_raise RuntimeError, "purge failed", fn ->
+          Retention.purge(
+            ctx.organization.id,
+            cutoff,
+            fn _keep_alive ->
+              send(test, {:created, destination_fixture(ctx.organization, :https)})
+              {:ok, 2} = AuditLog.purge_organization_before(ctx.organization.id, cutoff, 2)
+              # Written outside the app, older than every counted event.
+              event!(ctx.organization, 4, days_ago(400), "org_member_added")
+              raise "purge failed"
+            end,
+            lease_wait_ms: 0
+          )
+        end
+      end)
+
+      assert_received {:created, created}
+      assert [%Gap{events: 2} = gap] = gaps(created)
+      assert at?(gap.first_occurred_at, first_at)
+      assert DateTime.compare(gap.last_occurred_at, gap.first_occurred_at) != :lt
+    end
+
+    test "a late destination's gap ends at a shared time when equal times straddle the boundary",
+         ctx do
+      shared_at = days_ago(250)
+      event!(ctx.organization, 1, shared_at)
+      kept = event!(ctx.organization, 2, shared_at)
+      event!(ctx.organization, 3, days_ago(180))
+
+      created = fail_purge_with_late_destination(ctx.organization, 1)
+
+      assert exists?(kept)
+      assert [%Gap{events: 1} = gap] = gaps(created)
+      assert at?(gap.first_occurred_at, shared_at)
+      assert at?(gap.last_occurred_at, shared_at)
     end
   end
 

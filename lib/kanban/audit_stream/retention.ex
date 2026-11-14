@@ -41,9 +41,12 @@ defmodule Kanban.AuditStream.Retention do
   Organization's events by action, taken before the purge: every event of an
   action it does not exclude that is gone. That includes any deleted before
   it was created, so its gap can overstate the loss; it is still recorded,
-  since an overstated gap is visible and a missing one is not. A destination
-  created from now, or from a recent window, was owed nothing the purge
-  deletes.
+  since an overstated gap is visible and a missing one is not. Its last time
+  is bounded as above: when the purge failed part way and events of an
+  action it does not exclude are still there, the gap's last time is no
+  later than that of the first of them, never a later event that was not
+  deleted. A destination created from now, or from a recent window, was
+  owed nothing the purge deletes.
 
   An error raised, a throw or an exit in steps 1, 2 or 4 is caught and
   logged here, so it never stops the purge job's other steps: before the

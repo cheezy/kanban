@@ -158,9 +158,11 @@ config :kanban, Kanban.Retention.PurgeWorker,
   loses before receiving it as a gap, with an `audit_stream_gap` audit event
   that no destination can exclude. A destination created while the purge
   runs, starting from everything the audit log holds, gets a gap too, which
-  can overstate its loss. When a lease can't be taken, that Organization's
-  purge is skipped for the day and named in `audit_stream_skipped`; the other
-  Organizations and steps still run.
+  can overstate how many events it lost. When the purge fails part way, its
+  gap's last time is never later than the first event it was owed that is
+  still there, as for every other destination. When a lease can't be taken,
+  that Organization's purge is skipped for the day and named in
+  `audit_stream_skipped`; the other Organizations and steps still run.
 
 Each run records one `retention_purge` audit event with the rows removed per
 Organization (`organization_counts`), for site events (`site_count`), for
