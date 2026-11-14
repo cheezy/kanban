@@ -667,14 +667,17 @@ defmodule Kanban.AuditStream.ReaderTest do
       assert Reader.next_waiting_at(organization.id, {0, 0}) == nil
 
       first = insert_raw!(organization, txid: 2, at: ~N[2026-11-02 00:00:00.000000])
-      insert_raw!(organization, txid: 3, at: ~N[2026-11-01 00:00:00.000000])
+      # Another Organization's row between the two, so the ids are not
+      # consecutive, as concurrent writers make them in practice.
+      insert_raw!(other_organization, txid: 2, at: ~N[2026-11-02 00:00:00.000000])
+      second = insert_raw!(organization, txid: 3, at: ~N[2026-11-01 00:00:00.000000])
 
       assert Reader.next_waiting_at(organization.id, {0, 0}) == ~U[2026-11-02 00:00:00.000000Z]
 
       assert Reader.next_waiting_at(organization.id, {2, first}) ==
                ~U[2026-11-01 00:00:00.000000Z]
 
-      assert Reader.next_waiting_at(organization.id, {3, first + 1}) == nil
+      assert Reader.next_waiting_at(organization.id, {3, second}) == nil
     end
 
     test "only events below the horizon count, and the filters apply", %{
