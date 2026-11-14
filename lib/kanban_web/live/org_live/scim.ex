@@ -16,7 +16,14 @@ defmodule KanbanWeb.OrgLive.SCIM do
   any other event is ignored, so neither needs the check.
 
   The plain text is held only in the `:new_token` assign: never in a form,
-  cleared by the next event, and gone after a reload.
+  cleared by the next event, and gone after a reload. It is wrapped in a
+  `ShownToken`, whose `Inspect` implementation prints no fields, so a crash
+  report or anything else that inspects the LiveView's state does not print it
+  (D437). Formatting that bypasses `Inspect` (`structs: false`, Erlang `~p`)
+  would still show it. A `validate` or `create_token`
+  event whose `"token"` param is missing or not a map cannot come from the
+  page's form; it runs the same org-admin check, clears the revealed token and
+  changes nothing else, rather than crashing the view.
   """
   use KanbanWeb, :live_view
 
@@ -28,6 +35,18 @@ defmodule KanbanWeb.OrgLive.SCIM do
   alias Kanban.Accounts.User
   alias Kanban.SCIM
   alias Kanban.SCIM.ScimToken
+
+  defmodule ShownToken do
+    @moduledoc """
+    A new SCIM token's plain text, shown once after creation. Its `Inspect`
+    implementation prints no fields, so a crash report that inspects the
+    LiveView's state, as one at the `:debug` level does, does not print it
+    (D437).
+    """
+    @derive {Inspect, only: []}
+    @enforce_keys [:value]
+    defstruct [:value]
+  end
 
   @impl true
   def mount(_params, _session, socket) do
@@ -44,16 +63,31 @@ defmodule KanbanWeb.OrgLive.SCIM do
   end
 
   @impl true
-  def handle_event("validate", %{"token" => params}, socket) do
+  def handle_event("validate", %{"token" => params}, socket) when is_map(params) do
     with_scim_org_admin(socket, fn _actor, _organization_id ->
-      form = params |> SCIM.change_token() |> Map.put(:action, :validate) |> to_form(as: :token)
+      form =
+        params
+        |> token_params()
+        |> SCIM.change_token()
+        |> Map.put(:action, :validate)
+        |> to_form(as: :token)
+
       {:noreply, socket |> assign(:new_token, nil) |> assign(:form, form)}
     end)
   end
 
-  def handle_event("create_token", %{"token" => params}, socket) do
+  def handle_event("create_token", %{"token" => params}, socket) when is_map(params) do
     with_scim_org_admin(socket, fn actor, organization_id ->
-      actor |> SCIM.create_token(organization_id, params) |> token_created(socket)
+      actor |> SCIM.create_token(organization_id, token_params(params)) |> token_created(socket)
+    end)
+  end
+
+  # A token form event whose "token" is missing or not a map (a string, a list
+  # or nil) would raise in the changeset cast. It still runs the org-admin
+  # check and clears the revealed token, as the form's own events do.
+  def handle_event(event, _params, socket) when event in ["validate", "create_token"] do
+    with_scim_org_admin(socket, fn _actor, _organization_id ->
+      {:noreply, assign(socket, :new_token, nil)}
     end)
   end
 
@@ -81,10 +115,16 @@ defmodule KanbanWeb.OrgLive.SCIM do
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
+  # The form has one text field. A name that is not a string (a map, say)
+  # would fail the cast and then crash the re-rendered input, so it is
+  # dropped and the form reports the name as blank.
+  defp token_params(%{"name" => name}) when is_binary(name), do: %{"name" => name}
+  defp token_params(_params), do: %{"name" => ""}
+
   defp token_created({:ok, {_token, plaintext}}, socket) do
     {:noreply,
      socket
-     |> assign(:new_token, plaintext)
+     |> assign(:new_token, %ShownToken{value: plaintext})
      |> assign(:form, to_form(SCIM.change_token(), as: :token))
      |> load_tokens()}
   end
