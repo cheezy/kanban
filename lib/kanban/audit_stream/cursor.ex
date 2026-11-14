@@ -15,6 +15,11 @@ defmodule Kanban.AuditStream.Cursor do
   name its events carry, stored when it is cut so every retry builds the same
   body (D428). `leased_until` and `lease_token` hold the lease of the run
   sending it.
+
+  `lag_measured_slot` is the start of the 15-minute slot the destination's
+  lag was last measured in. Only the minute sweep writes it, claiming the
+  slot in one conditional update before it emits `lag_measured` (D432;
+  `Kanban.AuditStream.measure_lag/3`), so no changeset casts it.
   """
 
   use Ecto.Schema
@@ -47,6 +52,7 @@ defmodule Kanban.AuditStream.Cursor do
     field :lease_token, Ecto.UUID
     field :restored_max_event_id, :integer
     field :restored_min_txid, :integer
+    field :lag_measured_slot, :utc_datetime_usec
 
     timestamps(type: :utc_datetime_usec, inserted_at: false)
   end

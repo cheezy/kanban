@@ -36,10 +36,12 @@ ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)
 # excluded (Kanban.OpenSSL3). `mix test --only openssl3` still runs them, and
 # they then fail with a message naming what is missing.
 #
-# The tests tagged :audit_stream_race (Kanban.AuditStream.CommitOrderRaceTest)
-# commit audit events that the append-only trigger never lets them delete, and
-# they wait on the cluster-wide snapshot horizon, which every other partition's
-# open sandbox transaction holds back. They are excluded unless a run asks for
+# The tests tagged :audit_stream_race (the Kanban.AuditStream.*RaceTest
+# modules, such as CommitOrderRaceTest and SchedulerRaceTest) race committing
+# connections, so the rows they write stay behind: some commit audit events
+# that the append-only trigger never lets them delete, and some wait on the
+# cluster-wide snapshot horizon, which every other partition's open sandbox
+# transaction holds back. They are excluded unless a run asks for
 # them by tag or by file:line, and their setup_all refuses any database but
 # kanban_test_race; their moduledoc gives the command that runs them.
 ExUnit.start(

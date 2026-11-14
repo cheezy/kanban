@@ -411,10 +411,18 @@ defmodule Kanban.AuditStream do
   def due_for_dispatch(%DateTime{} = now, opts \\ []), do: Sweep.due_for_dispatch(now, opts)
 
   @doc """
-  The lag of the enabled destinations whose 15-minute slot is `minute`
-  (`id` modulo 15 equals `minute` modulo 15), so each is measured once
-  every 15 minutes with no stored state (§13.1). Halted destinations are
-  measured, since their lag is what grows; paused ones are not.
+  The lag of the enabled destinations whose 15-minute slot `tick` is (`id`
+  modulo 15 equals the tick's minute modulo 15), so each is measured once
+  every 15 minutes (§13.1). Halted destinations are measured, since their
+  lag is what grows; paused ones are not.
+
+  Before measuring, it claims each destination's slot by moving its
+  cursor's `lag_measured_slot` forward to the start of the slot `tick`
+  falls in, in one conditional update, and measures only the destinations
+  it claimed (D432). A second call for the same slot, a retried sweep or a
+  sweep on another node, claims nothing and returns `[]`; a call for a
+  later slot claims again. A sweep that crashes after claiming loses that
+  slot's sample, never the next slot's.
 
   Each is `%{kind, lag_seconds, events_waiting, events_above_horizon}`, from
   `Kanban.AuditStream.Reader.waiting_counts/3` at `now`: `lag_seconds` is
@@ -422,9 +430,9 @@ defmodule Kanban.AuditStream do
   waiting. A held horizon therefore shows as waiting events and a growing
   lag, never as zero. `opts` takes `:horizon`, for tests.
   """
-  @spec measure_lag(non_neg_integer(), DateTime.t(), keyword()) :: [map()]
-  def measure_lag(minute, %DateTime{} = now, opts \\ []) when is_integer(minute),
-    do: Sweep.measure_lag(minute, now, opts)
+  @spec measure_lag(DateTime.t(), DateTime.t(), keyword()) :: [map()]
+  def measure_lag(%DateTime{} = tick, %DateTime{} = now, opts \\ []),
+    do: Sweep.measure_lag(tick, now, opts)
 
   @doc """
   Deletes the attempts the hourly prune does not keep (§8.7): those that

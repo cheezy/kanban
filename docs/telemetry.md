@@ -929,7 +929,10 @@ destination list, emits none of them.
   answer. `duration_ms` is how long the attempt took.
 - **`lag_measured` is what "Behind by" shows, over time.** The sweep measures
   each enabled destination at most once every 15 minutes, including one that
-  needs attention but not a paused one. Its three measurements are:
+  needs attention but not a paused one. That holds however many sweeps run,
+  on however many nodes: each claims the destination's 15-minute slot on its
+  cursor before it measures, and a slot already claimed is not measured
+  again. Its three measurements are:
   `lag_seconds`, the age in seconds of the destination's oldest event not yet
   delivered, or 0 when nothing is waiting; `events_waiting`, how many events
   are waiting, held ones included; and `events_above_horizon`, how many of

@@ -125,7 +125,8 @@ defmodule Kanban.AuditStream.SchemasTest do
                  pending_batch_id pending_first_txid pending_first_id pending_last_txid
                  pending_last_id pending_attempts pending_filter_version
                  pending_organization_id pending_organization_name next_attempt_at
-                 leased_until lease_token restored_max_event_id restored_min_txid updated_at
+                 leased_until lease_token restored_max_event_id restored_min_txid lag_measured_slot
+                 updated_at
                ))
 
       assert columns("audit_stream_attempts") |> Map.keys() |> Enum.sort() ==

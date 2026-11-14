@@ -23,9 +23,10 @@ defmodule Kanban.AuditStream.Scheduler do
        already queued is kept rather than queued twice, and a run lost to a
        unique race is made up by the next sweep;
     2. emits `[:kanban, :audit_stream, :lag_measured]` for the enabled
-       destinations whose 15-minute slot this is
-       (`Kanban.AuditStream.measure_lag/3`), so each is measured at most once
-       every 15 minutes and the persisted event stays rare. Its metadata is
+       destinations whose 15-minute slot this is and whose slot it claims
+       first (`Kanban.AuditStream.measure_lag/3`), so each is measured at
+       most once every 15 minutes however many sweeps cover the slot (D432)
+       and the persisted event stays rare. Its metadata is
        the destination's kind only: no Organization id, destination name or
        host reaches telemetry (D8);
     3. records `audit_stream_gap` for every open gap that grew since its
@@ -35,7 +36,8 @@ defmodule Kanban.AuditStream.Scheduler do
 
   The slot is the minute the cron tick was scheduled for, so a sweep that
   starts late still measures the tick's own slot. A run that fails is simply
-  replaced by the next minute's.
+  replaced by the next minute's; one that fails after claiming a slot loses
+  that slot's lag samples, never the next slot's.
   """
 
   use Oban.Worker, queue: :audit_stream_schedule, max_attempts: 1
@@ -50,9 +52,7 @@ defmodule Kanban.AuditStream.Scheduler do
       {:ok, _job} = AuditStream.enqueue_dispatch(destination_id)
     end
 
-    minute = (job.scheduled_at || now).minute
-
-    for lag <- AuditStream.measure_lag(minute, now) do
+    for lag <- AuditStream.measure_lag(job.scheduled_at || now, now) do
       Kanban.Telemetry.emit(
         [:kanban, :audit_stream, :lag_measured],
         %{

@@ -1040,6 +1040,7 @@ conflict with an org-admin editing the settings.
 | `next_attempt_at` | utc_datetime_usec, nullable | When the destination is next due ([§8.4](#84-retries-and-failure)) |
 | `lease_token` | uuid, nullable | The run holding the lease ([§8.1](#81-workers-and-scheduling)) |
 | `leased_until` | utc_datetime_usec, nullable | |
+| `lag_measured_slot` | utc_datetime_usec, nullable | The start of the 15-minute slot the destination's lag was last measured in, which a sweep claims before it emits `lag_measured` ([§13.1](#131-telemetry)) |
 | `updated_at` | utc_datetime_usec | |
 
 ### 9.4 `audit_stream_attempts`
@@ -1597,7 +1598,12 @@ task that first emits it, which also refreshes the event reference in
 - **Emission:** `lag_measured` is emitted by the sweep at most once every 15
   minutes per destination. That keeps it rare enough to persist, under the
   rule in [telemetry.md](../telemetry.md), whose list of stored events gains
-  it.
+  it. It holds however many sweeps cover a slot (a slow sweep overlapping
+  the next, a retried one, or two nodes running the cron): before it emits,
+  a sweep claims the destination's slot by moving the cursor's
+  `lag_measured_slot` forward in one conditional update, and a sweep that
+  finds the slot already claimed measures nothing (D432). A sweep that fails
+  after claiming loses that slot's sample, never the next slot's.
 - **What metadata carries:** no Organization id, URL, host, destination name
   or email address.
 

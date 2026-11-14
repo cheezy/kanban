@@ -19,6 +19,7 @@ defmodule Kanban.AuditStream.SchedulerTest do
   alias Kanban.AuditStream.DispatchWorker
   alias Kanban.AuditStream.Lease
   alias Kanban.AuditStream.Scheduler
+  alias Kanban.AuditStream.Sweep
   alias Kanban.Repo
 
   @lag [:kanban, :audit_stream, :lag_measured]
@@ -81,6 +82,9 @@ defmodule Kanban.AuditStream.SchedulerTest do
       |> all_enqueued()
       |> Enum.map(& &1.args["destination_id"])
       |> Enum.sort()
+
+  defp measured_slot(destination),
+    do: Repo.get!(Cursor, destination.id).lag_measured_slot
 
   # A tick whose minute is `destination`'s 15-minute slot.
   defp slot_tick(destination) do
@@ -214,6 +218,124 @@ defmodule Kanban.AuditStream.SchedulerTest do
 
       assert_received {:telemetry_event, @lag, %{events_waiting: 1}, %{kind: :https}}
       refute_received {:telemetry_event, @lag, _, %{kind: :splunk_hec}}
+    end
+  end
+
+  # --- one measurement per slot (D432) ----------------------------------------------
+
+  describe "one lag measurement per destination per slot" do
+    test "measures lag once per slot", _ctx do
+      destination = destination()
+      event!(destination, 1, ago(600))
+      attach_telemetry([@lag])
+      tick = slot_tick(destination)
+
+      # The tick's own sweep, a retried run of it and one scheduled late in
+      # the same minute all cover the same slot.
+      assert :ok = sweep(tick)
+      assert :ok = sweep(tick)
+      assert :ok = sweep(DateTime.add(tick, 42, :second))
+
+      assert_received {:telemetry_event, @lag, %{events_waiting: 1}, %{kind: :https}}
+      refute_received {:telemetry_event, @lag, _, _}
+
+      {_residue, slot} = Sweep.lag_slot(tick)
+      assert measured_slot(destination) == slot
+    end
+
+    test "measures again in the next slot", _ctx do
+      destination = destination()
+      attach_telemetry([@lag])
+      tick = slot_tick(destination)
+      next = DateTime.add(tick, 15 * 60, :second)
+
+      assert :ok = sweep(tick)
+      assert_received {:telemetry_event, @lag, _, _}
+
+      assert :ok = sweep(next)
+      assert_received {:telemetry_event, @lag, _, _}
+
+      # A sweep of an earlier slot that runs after a later one has measured
+      # never moves the claim back or measures twice.
+      assert :ok = sweep(tick)
+      refute_received {:telemetry_event, @lag, _, _}
+      assert measured_slot(destination) == elem(Sweep.lag_slot(next), 1)
+    end
+
+    test "a crashed sweep does not block the next slot", _ctx do
+      destination = destination()
+      attach_telemetry([@lag])
+      tick = slot_tick(destination)
+
+      # A sweep that claimed the slot and crashed before emitting leaves the
+      # claim behind: that slot's sample is lost, the next slot's is not.
+      {_residue, slot} = Sweep.lag_slot(tick)
+
+      from(c in Cursor, where: c.destination_id == ^destination.id)
+      |> Repo.update_all(set: [lag_measured_slot: slot])
+
+      assert :ok = sweep(tick)
+      refute_received {:telemetry_event, @lag, _, _}
+
+      assert :ok = sweep(DateTime.add(tick, 15 * 60, :second))
+      assert_received {:telemetry_event, @lag, _, _}
+    end
+
+    test "no destinations, no measurement", _ctx do
+      paused = destination(enabled: false)
+      attach_telemetry([@lag])
+
+      for minute <- 0..14, do: assert(:ok = sweep(%{slot_tick(paused) | minute: minute}))
+
+      refute_received {:telemetry_event, @lag, _, _}
+      assert measured_slot(paused) == nil
+    end
+
+    test "a destination enabled mid-slot is measured once", _ctx do
+      destination = destination(enabled: false)
+      attach_telemetry([@lag])
+      tick = slot_tick(destination)
+
+      assert :ok = sweep(tick)
+      refute_received {:telemetry_event, @lag, _, _}
+
+      from(d in Destination, where: d.id == ^destination.id)
+      |> Repo.update_all(set: [enabled: true])
+
+      assert :ok = sweep(tick)
+      assert :ok = sweep(tick)
+      assert_received {:telemetry_event, @lag, _, _}
+      refute_received {:telemetry_event, @lag, _, _}
+    end
+
+    test "a slot claimed for one destination never stops another being measured", _ctx do
+      first = destination()
+      second = destination()
+      attach_telemetry([@lag])
+      tick = slot_tick(first)
+      {_residue, slot} = Sweep.lag_slot(tick)
+
+      # Same residue or not, the claim lives on each destination's own cursor.
+      from(c in Cursor, where: c.destination_id == ^first.id)
+      |> Repo.update_all(set: [lag_measured_slot: slot])
+
+      assert :ok = sweep(slot_tick(second))
+      assert_received {:telemetry_event, @lag, _, _}
+      assert measured_slot(first) == slot
+      {_residue, second_slot} = second |> slot_tick() |> Sweep.lag_slot()
+      assert measured_slot(second) == second_slot
+    end
+
+    test "lag_slot/1 gives the residue and the start of the tick's slot" do
+      assert Sweep.lag_slot(~U[2026-11-14 10:15:00.000000Z]) ==
+               {0, ~U[2026-11-14 10:15:00.000000Z]}
+
+      assert Sweep.lag_slot(~U[2026-11-14 10:29:59.999999Z]) ==
+               {14, ~U[2026-11-14 10:15:00.000000Z]}
+
+      assert Sweep.lag_slot(~U[2026-11-14 10:14:59Z]) == {14, ~U[2026-11-14 10:00:00.000000Z]}
+
+      assert Sweep.lag_slot(~U[2026-11-14 00:07:30Z]) == {7, ~U[2026-11-14 00:00:00.000000Z]}
     end
   end
 
