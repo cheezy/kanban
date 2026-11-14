@@ -279,6 +279,35 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       assert hd(purge_events()).metadata["failed_steps"] == ["organization:#{org.id}"]
     end
 
+    test "a purge that fails after a batch is deleted still records the gap and releases the lease" do
+      put_config(batch_size: 1)
+      org = org_with_retention(120)
+      destination = destination_fixture(org, :https)
+      deleted = audit_at!(300, org.id)
+      kept = audit_at!(200, org.id)
+
+      # The first batch deletes `deleted`; the second fails on `kept`.
+      Repo.query!("""
+      CREATE FUNCTION fail_second_purge_batch() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'second purge batch failed'; END
+      $$
+      """)
+
+      Repo.query!(
+        "CREATE TRIGGER fail_second_purge_batch BEFORE DELETE ON audit_events " <>
+          "FOR EACH ROW WHEN (OLD.id = #{kept}) EXECUTE FUNCTION fail_second_purge_batch()"
+      )
+
+      log = capture_log(fn -> assert :ok = run() end)
+
+      assert log =~ "retention purge failed"
+      refute deleted in audit_ids()
+      assert kept in audit_ids()
+      assert [%Gap{reason: :retention, events: 1}] = gaps(destination)
+      assert lease_token(destination) == nil
+      assert hd(purge_events()).metadata["failed_steps"] == ["organization:#{org.id}"]
+    end
+
     test "an error in the gap steps is logged and never stops the purge or the other steps" do
       put_config(site_audit_retention_days: 91)
       org = org_with_retention(120)

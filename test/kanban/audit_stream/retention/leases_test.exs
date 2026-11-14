@@ -43,6 +43,41 @@ defmodule Kanban.AuditStream.Retention.LeasesTest do
     assert lease_token(second) == held
   end
 
+  test "releases taken leases when take_all raises", %{first: first, second: second} do
+    # Kanban.AuditStream.Lease.take/1 takes only an integer id, so the third
+    # take raises after the first two leases are taken.
+    assert_raise FunctionClauseError, fn ->
+      Leases.take_all([first.id, second.id, :not_an_id], now_ms() + 1_000, 1)
+    end
+
+    assert lease_token(first) == nil
+    assert lease_token(second) == nil
+  end
+
+  test "take_all/3 raising on the first take has nothing to release", %{first: first} do
+    assert_raise FunctionClauseError, fn ->
+      Leases.take_all([:not_an_id, first.id], now_ms() + 1_000, 1)
+    end
+
+    assert lease_token(first) == nil
+  end
+
+  test "release_all/1 releases every lease even when one release raises, then re-raises", %{
+    first: first,
+    second: second
+  } do
+    {:ok, leases} = Leases.take_all([first.id, second.id], now_ms() + 1_000, 1)
+    [one, two] = leases
+
+    # Lease.release/2 takes only a binary token, so the middle release raises.
+    assert_raise FunctionClauseError, fn ->
+      Leases.release_all([one, {first.id, :not_a_token}, two])
+    end
+
+    assert lease_token(first) == nil
+    assert lease_token(second) == nil
+  end
+
   test "extend_all/1 and release_all/1 renew and release every lease", %{
     first: first,
     second: second

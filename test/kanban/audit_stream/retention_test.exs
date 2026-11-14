@@ -299,6 +299,90 @@ defmodule Kanban.AuditStream.RetentionTest do
       assert gaps(ctx.destination) == []
       assert cursor(ctx.destination).lease_token == nil
     end
+
+    test "records gaps when the purge fails after deleting", ctx do
+      event!(ctx.organization, 1, days_ago(300))
+      event!(ctx.organization, 2, days_ago(250))
+      cutoff = cutoff()
+
+      assert catch_throw(
+               Retention.purge(
+                 ctx.organization.id,
+                 cutoff,
+                 fn _keep_alive ->
+                   {:ok, 2} = AuditLog.purge_organization_before(ctx.organization.id, cutoff, 2)
+                   throw(:purge_failed)
+                 end,
+                 lease_wait_ms: 0
+               )
+             ) == :purge_failed
+
+      assert [%Gap{reason: :retention, events: 2}] = gaps(ctx.destination)
+      assert cursor(ctx.destination).lease_token == nil
+    end
+
+    test "records gaps when the purge exits after deleting", ctx do
+      event!(ctx.organization, 1, days_ago(300))
+      cutoff = cutoff()
+
+      assert catch_exit(
+               Retention.purge(
+                 ctx.organization.id,
+                 cutoff,
+                 fn _keep_alive ->
+                   {:ok, 1} = AuditLog.purge_organization_before(ctx.organization.id, cutoff, 1)
+                   exit(:purge_failed)
+                 end,
+                 lease_wait_ms: 0
+               )
+             ) == :purge_failed
+
+      assert [%Gap{reason: :retention, events: 1}] = gaps(ctx.destination)
+      assert cursor(ctx.destination).lease_token == nil
+    end
+
+    test "a purge that throws or exits before deleting records no gap", ctx do
+      old = event!(ctx.organization, 1, days_ago(200))
+
+      assert catch_throw(
+               Retention.purge(ctx.organization.id, cutoff(), fn _ -> throw(:early) end,
+                 lease_wait_ms: 0
+               )
+             ) == :early
+
+      assert catch_exit(
+               Retention.purge(ctx.organization.id, cutoff(), fn _ -> exit(:early) end,
+                 lease_wait_ms: 0
+               )
+             ) == :early
+
+      assert exists?(old)
+      assert gaps(ctx.destination) == []
+      assert cursor(ctx.destination).lease_token == nil
+    end
+
+    test "a purge that fails after deleting records a gap for every destination", ctx do
+      second = destination_fixture(ctx.organization, :https)
+      event!(ctx.organization, 1, days_ago(200))
+      cutoff = cutoff()
+
+      assert_raise RuntimeError, "purge failed", fn ->
+        Retention.purge(
+          ctx.organization.id,
+          cutoff,
+          fn _keep_alive ->
+            {:ok, 1} = AuditLog.purge_organization_before(ctx.organization.id, cutoff, 1_000)
+            raise "purge failed"
+          end,
+          lease_wait_ms: 0
+        )
+      end
+
+      for destination <- [ctx.destination, second] do
+        assert [%Gap{events: 1}] = gaps(destination)
+        assert cursor(destination).lease_token == nil
+      end
+    end
   end
 
   describe "the pending batch" do

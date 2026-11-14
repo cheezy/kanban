@@ -45,11 +45,16 @@ defmodule Kanban.AuditStream.Retention do
   created from now, or from a recent window, was owed nothing the purge
   deletes.
 
-  An error in steps 1, 2 or 4 is caught and logged here, so it never stops
-  the purge job's other steps: before the purge it returns `:error` and
-  purges nothing for the day; after it, the purge's own result stands. An
-  error raised by the purge itself is re-raised once the losses it caused
-  are recorded and the leases released, so the job handles it as before.
+  An error raised, a throw or an exit in steps 1, 2 or 4 is caught and
+  logged here, so it never stops the purge job's other steps: before the
+  purge it returns `:error` and purges nothing for the day, with every lease
+  already taken released; after it, the purge's own result stands. An error,
+  throw or exit from the purge itself is re-raised, with its own kind and
+  stacktrace, once the losses it caused are recorded and the leases
+  released, so the job handles it as before. A purge that fails after
+  deleting therefore still records its gaps, and one that fails before
+  deleting records none. Only a process killed from outside (`:kill`, a job
+  timeout) skips the recording: nothing can run in it then.
 
   `:lease_wait_ms` (default 30 seconds) and `:lease_poll_ms` (default 500)
   are options, or `config :kanban, #{inspect(__MODULE__)}`, for tests.
@@ -57,7 +62,9 @@ defmodule Kanban.AuditStream.Retention do
   The steps live in three modules: `Kanban.AuditStream.Retention.Leases`
   takes, renews and releases the leases, `Kanban.AuditStream.Retention.Snapshot`
   takes the counts, and `Kanban.AuditStream.Retention.Losses` records the
-  gaps. This module orders them, and holds every rescue and the release.
+  gaps. This module orders them, catches each step's failure and releases
+  the leases at the end; `Leases` also releases the leases it took when
+  taking one fails, or one stays held.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -105,9 +112,9 @@ defmodule Kanban.AuditStream.Retention do
       [] -> {:ok, %{leases: [], snapshots: [], known: {[], by_action}}}
       ids -> leased(organization_id, ids, cutoff, opts, {ids, by_action})
     end
-  rescue
-    error ->
-      log_error("audit stream retention not started", organization_id, error)
+  catch
+    kind, reason ->
+      log_caught("audit stream retention not started", organization_id, kind, reason)
       :error
   end
 
@@ -127,10 +134,11 @@ defmodule Kanban.AuditStream.Retention do
 
     {:ok,
      %{leases: leases, snapshots: Snapshot.list(organization_id, leases, cutoff), known: known}}
-  rescue
-    error ->
+  catch
+    kind, reason ->
+      stacktrace = __STACKTRACE__
       Leases.release_all(leases)
-      reraise error, __STACKTRACE__
+      :erlang.raise(kind, reason, stacktrace)
   end
 
   defp destination_ids(organization_id) do
@@ -150,9 +158,9 @@ defmodule Kanban.AuditStream.Retention do
   # it records nothing, as before.
   defp safe_counts_by_action(organization_id, cutoff) do
     Snapshot.counts_by_action(organization_id, cutoff)
-  rescue
-    error ->
-      log_error("audit stream retention counts not taken", organization_id, error)
+  catch
+    kind, reason ->
+      log_caught("audit stream retention counts not taken", organization_id, kind, reason)
       nil
   end
 
@@ -170,27 +178,30 @@ defmodule Kanban.AuditStream.Retention do
     Leases.release_all(prepared.leases)
   end
 
+  # A throw or an exit is caught as well as a raise: the delete may have
+  # committed before any of them, and its losses are recorded either way.
   defp run_purge(purge_fun, keep_alive) do
     {:ok, purge_fun.(keep_alive)}
-  rescue
-    error -> {:raised, error, __STACKTRACE__}
+  catch
+    kind, reason -> {:caught, kind, reason, __STACKTRACE__}
   end
 
   defp finish({:ok, result}), do: result
-  defp finish({:raised, error, stacktrace}), do: reraise(error, stacktrace)
+  defp finish({:caught, kind, reason, stacktrace}), do: :erlang.raise(kind, reason, stacktrace)
 
+  # One destination's failure never keeps the others' gaps from being recorded.
   defp record_loss(organization_id, snapshot, cutoff) do
     Losses.record(organization_id, snapshot, cutoff)
-  rescue
-    error -> log_error("audit stream gap not recorded", snapshot.id, error)
+  catch
+    kind, reason -> log_caught("audit stream gap not recorded", snapshot.id, kind, reason)
   end
 
   defp record_created(_organization_id, _cutoff, _known_ids, nil), do: :ok
 
   defp record_created(organization_id, cutoff, known_ids, by_action) do
     Losses.record_created(organization_id, cutoff, known_ids, by_action)
-  rescue
-    error -> log_error("audit stream gap not recorded", organization_id, error)
+  catch
+    kind, reason -> log_caught("audit stream gap not recorded", organization_id, kind, reason)
   end
 
   # --- helpers -----------------------------------------------------------------
@@ -201,12 +212,16 @@ defmodule Kanban.AuditStream.Retention do
     end)
   end
 
-  # The exception type and SQLSTATE are code-defined, never row data, so they
-  # are safe to log.
-  defp log_error(message, id, error) do
-    Logger.error("#{message} id=#{id} reason=#{reason(error)}")
+  # The exception type, the SQLSTATE and the kind of a throw or an exit are
+  # code-defined, never row data, so they are safe to log. A thrown or exited
+  # value can be anything, so it is never logged.
+  defp log_caught(message, id, kind, reason) do
+    Logger.error("#{message} id=#{id} reason=#{caught_reason(kind, reason)}")
     :ok
   end
+
+  defp caught_reason(:error, reason), do: reason(Exception.normalize(:error, reason))
+  defp caught_reason(kind, _reason), do: Atom.to_string(kind)
 
   defp reason(%Postgrex.Error{postgres: %{code: code}}), do: code
   defp reason(%module{}), do: inspect(module)
