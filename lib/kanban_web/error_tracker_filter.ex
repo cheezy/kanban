@@ -5,7 +5,8 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   ErrorTracker records the raw query string, the params and the request
   headers of a failing request, and the URI and params of a failing LiveView,
   while `:filter_parameters` only covers Phoenix's own logging. Two kinds of
-  token are redacted:
+  token are redacted, and a failing LiveView event's params are filtered
+  through `:filter_parameters`:
 
     * A notification unsubscribe token travels as `?token=` on the
       `/notifications/unsubscribe` routes, and can also appear in a `Referer`
@@ -19,6 +20,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
 
   @behaviour ErrorTracker.Filter
 
+  alias KanbanWeb.ParamFilter
   alias KanbanWeb.TokenPaths
 
   @redacted "[REDACTED]"
@@ -32,9 +34,18 @@ defmodule KanbanWeb.ErrorTrackerFilter do
     |> redact_unsubscribe_request()
     |> redact_token_path_request()
     |> redact_referer_header()
+    |> redact_event_params()
   end
 
   def sanitize(context), do: context
+
+  # A failing LiveView event's params go through :filter_parameters as
+  # Phoenix's own event log does, so a secret sent under a filtered key (the
+  # audit stream form's destination[secret_token]) is never stored.
+  defp redact_event_params(%{"live_view.event_params" => %{} = params} = context),
+    do: Map.put(context, "live_view.event_params", ParamFilter.filter(params))
+
+  defp redact_event_params(context), do: context
 
   defp redact_unsubscribe_request(%{"request.path" => @unsubscribe_path <> _} = context) do
     context

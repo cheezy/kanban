@@ -26,6 +26,37 @@
 
     <div class="flex flex-col gap-5 max-w-3xl">
       <div class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <.button
+            :if={!@at_limit?}
+            id="add-destination"
+            variant="primary"
+            navigate={~p"/org/audit/streaming/new"}
+          >
+            {gettext("Add destination")}
+          </.button>
+          <.button
+            :if={@at_limit?}
+            id="add-destination"
+            type="button"
+            variant="primary"
+            disabled
+            aria-describedby="audit-streaming-add-limit-reason"
+          >
+            {gettext("Add destination")}
+          </.button>
+          <span
+            :if={@at_limit?}
+            id="audit-streaming-add-limit-reason"
+            style="font-size: 12.5px; color: var(--ink);"
+          >
+            {ngettext(
+              "You have %{count} destination, the most an Organization can have. Delete one to add another.",
+              "You have %{count} destinations, the most an Organization can have. Delete one to add another.",
+              @max_destinations
+            )}
+          </span>
+        </div>
         <p
           id="audit-streaming-limit-note"
           style="margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5;"
@@ -184,6 +215,12 @@
                 phx-value-id={row.id}
               >
                 {gettext("Resume")}
+              </.button>
+              <.button
+                id={"edit-destination-#{row.id}"}
+                navigate={~p"/org/audit/streaming/#{row.id}/edit"}
+              >
+                {gettext("Edit")}
               </.button>
               <.button
                 id={"test-destination-#{row.id}"}

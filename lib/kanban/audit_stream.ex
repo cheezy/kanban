@@ -315,6 +315,16 @@ defmodule Kanban.AuditStream do
     do: Status.pending_batch_summary(scope, destination)
 
   @doc """
+  `{:ok, true}` when the destination has a pending batch, halted or not:
+  saving a change to its excluded actions or personal-data setting then
+  re-sends that batch under the new settings (D16).
+  """
+  @spec batch_pending(Scope.t() | nil, Destination.t()) ::
+          {:ok, boolean()} | {:error, :unauthorized | :not_found}
+  def batch_pending(scope, %Destination{} = destination),
+    do: Status.batch_pending(scope, destination)
+
+  @doc """
   Sends a synthetic `stride.audit.v1` event with the action
   `audit_stream_test_sent` and no real audit data through the destination's
   adapter, and records `audit_stream_test_sent` with its outcome. It never

@@ -19,6 +19,11 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
   """
   use Gettext, backend: KanbanWeb.Gettext
 
+  use Phoenix.VerifiedRoutes,
+    endpoint: KanbanWeb.Endpoint,
+    router: KanbanWeb.Router,
+    statics: KanbanWeb.static_paths()
+
   alias Kanban.AuditStream.Adapters.SplunkHec
   alias Kanban.AuditStream.Destination
   alias KanbanWeb.OrgLive.AuditStreamingRow
@@ -248,9 +253,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
   def utc(nil), do: "—"
   def utc(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
 
-  @doc "A plain-text path to the destination's edit form (B3)."
+  @doc "The path to the destination's edit form (B3)."
   @spec edit_path(integer()) :: String.t()
-  # The edit form's route is added by a later task (B3); a verified ~p path
-  # would warn until then, so this is a plain path. Switch to ~p with it.
-  def edit_path(id) when is_integer(id), do: "/org/audit/streaming/#{id}/edit"
+  def edit_path(id) when is_integer(id), do: ~p"/org/audit/streaming/#{id}/edit"
 end

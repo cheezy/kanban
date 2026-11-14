@@ -113,6 +113,23 @@ defmodule KanbanWeb.ErrorTrackerFilterTest do
     assert sanitized["request.params"] == %{"token" => "kept-not-a-path-token"}
   end
 
+  test "filters a failing LiveView event's params through :filter_parameters" do
+    sanitized =
+      ErrorTrackerFilter.sanitize(%{
+        "live_view.view" => KanbanWeb.OrgLive.AuditStreamForm,
+        "live_view.event_params" => %{
+          "destination" => %{
+            "name" => "SIEM",
+            "secret_token" => %{"url" => "https://siem.example.org/x", "credential" => "Bearer s"}
+          }
+        }
+      })
+
+    assert sanitized["live_view.event_params"] == %{
+             "destination" => %{"name" => "SIEM", "secret_token" => "[FILTERED]"}
+           }
+  end
+
   test "leaves unrelated contexts unchanged" do
     context = %{
       "request.path" => "/boards",

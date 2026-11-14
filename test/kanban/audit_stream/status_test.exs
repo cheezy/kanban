@@ -256,6 +256,19 @@ defmodule Kanban.AuditStream.StatusTest do
     end
   end
 
+  describe "batch_pending/2" do
+    test "is true only while a batch waits, whether or not it is halted", ctx do
+      assert {:ok, false} = AuditStream.batch_pending(ctx.scope, ctx.destination)
+
+      set_cursor(ctx.destination, pending_batch_id: Ecto.UUID.generate())
+      assert {:ok, true} = AuditStream.batch_pending(ctx.scope, ctx.destination)
+
+      set_cursor(ctx.destination, pending_batch_id: nil)
+      reject_batch!(ctx)
+      assert {:ok, true} = AuditStream.batch_pending(ctx.scope, ctx.destination)
+    end
+  end
+
   # --- retry now ----------------------------------------------------------------
 
   describe "retry_now/2" do
@@ -458,6 +471,7 @@ defmodule Kanban.AuditStream.StatusTest do
           status: fn -> AuditStream.destination_status(scope, ctx.destination) end,
           attempts: fn -> AuditStream.list_attempts(scope, ctx.destination) end,
           pending: fn -> AuditStream.pending_batch_summary(scope, ctx.destination) end,
+          batch_pending: fn -> AuditStream.batch_pending(scope, ctx.destination) end,
           retry: fn -> AuditStream.retry_now(scope, ctx.destination) end,
           skip: fn -> AuditStream.skip_batch(scope, ctx.destination) end
         ]

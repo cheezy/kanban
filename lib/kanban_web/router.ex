@@ -434,12 +434,17 @@ defmodule KanbanWeb.Router do
       # OrgLive.AuditStreaming re-declares the same gate and re-checks the role
       # on every event.
       live "/org/audit/streaming", OrgLive.AuditStreaming, :index
+      # The add and edit destination form (W2717). OrgLive.AuditStreamForm
+      # re-declares the same gate and re-checks the role on every event;
+      # /new comes before /:id so it is never read as an id.
+      live "/org/audit/streaming/new", OrgLive.AuditStreamForm, :new
       # One destination's page (W2718): attempts, gaps, secret rotation and the
       # Retry now / Skip this batch decision. OrgLive.AuditStreamDestination
       # re-declares the same gate, re-checks the role on every event and loads
       # the destination scoped to the caller's Organization. Any literal
       # /org/audit/streaming/<word> route (such as /new) must come before it.
       live "/org/audit/streaming/:id", OrgLive.AuditStreamDestination, :show
+      live "/org/audit/streaming/:id/edit", OrgLive.AuditStreamForm, :edit
       # The org-admin security policy page (W2244); OrgLive.Security re-declares
       # the same gate and re-checks the role on every event.
       live "/org/security", OrgLive.Security, :index

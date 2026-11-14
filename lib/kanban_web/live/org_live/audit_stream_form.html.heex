@@ -1,0 +1,398 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:organization}>
+  <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
+    <.link
+      id="destination-form-back"
+      navigate={~p"/org/audit/streaming"}
+      class="text-sm underline"
+      style="color: var(--ink-2);"
+    >
+      {gettext("Back to audit streaming")}
+    </.link>
+
+    <header style="padding: 12px 0 14px;">
+      <h1
+        id="destination-form-title"
+        style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);"
+      >
+        {@page_title}
+      </h1>
+      <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; line-height: 1.55;">
+        {gettext(
+          "Saved secrets are never shown again. Every save sends a test event to the destination."
+        )}
+      </p>
+    </header>
+
+    <div class="flex flex-col gap-5 max-w-3xl">
+      <section
+        :if={@new_secret}
+        id="form-secret-reveal"
+        style={[
+          "background: var(--stride-orange-soft); border: 1px solid var(--line);",
+          "border-radius: 10px; padding: 14px 16px;",
+          "display: flex; align-items: flex-start; gap: 12px;"
+        ]}
+      >
+        <span style="color: var(--stride-orange-ink); display: inline-flex; margin-top: 2px;">
+          <.icon name="hero-key" class="w-5 h-5" />
+        </span>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600; color: var(--ink);">
+            {gettext("Your new signing secret")}
+          </div>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.5;">
+            {gettext("Copy it now — you won't be able to see it again.")}
+          </p>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+            <code
+              id="form-secret-value"
+              style={[
+                "flex: 1 1 220px; min-width: 0; padding: 6px 10px; border-radius: 5px;",
+                "background: var(--surface); border: 1px solid var(--line-strong);",
+                "color: var(--ink); font-family: var(--font-mono);",
+                "font-size: 11.5px; word-break: break-all; user-select: all;"
+              ]}
+            >{@new_secret.value}</code>
+            <button
+              id="form-secret-copy"
+              type="button"
+              phx-click={
+                JS.dispatch("stride:copy",
+                  to: "#form-secret-value",
+                  detail: %{copied: "form-secret-copied", failed: "form-secret-copy-failed"}
+                )
+              }
+              style={[
+                "padding: 6px 12px; border-radius: 5px; border: none;",
+                "background: var(--ink); color: var(--color-base-100);",
+                "font-size: 12px; font-weight: 500; cursor: pointer;"
+              ]}
+            >
+              {gettext("Copy")}
+            </button>
+            <span
+              id="form-secret-copied"
+              role="status"
+              style="display: none; font-size: 11.5px; color: var(--ink-2);"
+            >
+              {gettext("Copied!")}
+            </span>
+            <span
+              id="form-secret-copy-failed"
+              role="status"
+              style="display: none; font-size: 11.5px; color: var(--st-blocked);"
+            >
+              {gettext("Couldn't copy it. Select the secret and copy it yourself.")}
+            </span>
+          </div>
+        </div>
+        <button
+          id="form-secret-dismiss"
+          type="button"
+          phx-click="dismiss_secret"
+          aria-label={gettext("Dismiss")}
+          style="padding: 4px; border-radius: 4px; border: none; background: transparent; cursor: pointer; color: var(--ink-3);"
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4" />
+        </button>
+      </section>
+
+      <p
+        :if={@testing or @test_result}
+        id="destination-form-test-result"
+        role="status"
+        data-test-result={@test_result && elem(@test_result, 0)}
+        style={[
+          "margin: 0; font-size: 13px; line-height: 1.5;",
+          "color: var(--#{result_token(@testing, @test_result)});"
+        ]}
+      >
+        {if @testing, do: gettext("Sending a test event..."), else: elem(@test_result, 1)}
+      </p>
+
+      <p
+        :if={resend_note?(assigns)}
+        id="destination-form-resend-note"
+        role="status"
+        style={[
+          "margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5;",
+          "background: var(--st-doing-soft); border: 1px solid var(--line);",
+          "border-radius: 8px; padding: 8px 12px;"
+        ]}
+      >
+        {gettext("The waiting batch will be sent again under the new settings.")}
+      </p>
+
+      <.form
+        for={@form}
+        id="destination-form"
+        phx-change="validate"
+        phx-submit="save"
+        class="flex flex-col gap-5"
+      >
+        <.settings_card id="destination-form-general" title={gettext("Destination")}>
+          <div :if={@live_action == :new}>
+            <.input
+              type="select"
+              id="destination_kind"
+              name="destination[kind]"
+              label={gettext("Type")}
+              value={Atom.to_string(@kind)}
+              options={AuditStreamKinds.kind_options()}
+              errors={@errors[:kind] || []}
+            />
+          </div>
+          <p
+            :if={@live_action == :edit}
+            id="destination-form-kind"
+            data-kind={@kind}
+            style="margin: 0 0 8px; font-size: 13px; color: var(--ink);"
+          >
+            <span style="color: var(--ink-2);">{gettext("Type")}:</span>
+            {AuditStreamKinds.label(@kind)}
+          </p>
+
+          <.input
+            id="destination_name"
+            name="destination[name]"
+            label={gettext("Name")}
+            value={@values.name}
+            maxlength="80"
+            autocomplete="off"
+            errors={@errors[:name] || []}
+          />
+        </.settings_card>
+
+        <.settings_card id="destination-form-connection" title={gettext("Connection")}>
+          <div :for={field <- AuditStreamKinds.secret_fields(@kind)} class="mb-2">
+            <%= if secret_input?(assigns, field) do %>
+              <.input
+                type={if field == :url, do: "text", else: "password"}
+                id={"destination_#{field}_#{@kind}"}
+                name={AuditStreamFormView.secret_input_name(field)}
+                label={AuditStreamKinds.secret_label(@kind, field)}
+                value=""
+                autocomplete={if field == :url, do: "off", else: "new-password"}
+                errors={@errors[field] || []}
+              />
+              <p
+                :if={@secret_states[field] == :unreadable and !@errors[field]}
+                id={"destination-form-#{field}-unreadable"}
+                style="margin: -4px 0 8px; font-size: 12px; color: var(--st-blocked);"
+              >
+                {AuditStreamFormView.unreadable_text()}
+              </p>
+              <p
+                :if={@secret_states[field] == :stored}
+                style="margin: -4px 0 8px; font-size: 12px; color: var(--ink-2);"
+              >
+                {gettext("Leave it blank to keep the saved value.")}
+              </p>
+            <% else %>
+              <div class="fieldset mb-2">
+                <span class="label mb-1">{AuditStreamKinds.secret_label(@kind, field)}</span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <code
+                    id={"destination-form-#{field}-hint"}
+                    style="font-family: var(--font-mono); font-size: 12px; color: var(--ink);"
+                  >
+                    {@hints[field]}
+                  </code>
+                  <.button
+                    type="button"
+                    id={"destination-form-#{field}-replace"}
+                    phx-click="replace_secret"
+                    phx-value-field={field}
+                  >
+                    {gettext("Replace")}
+                  </.button>
+                </div>
+                <.error :for={msg <- @errors[field] || []}>{msg}</.error>
+              </div>
+            <% end %>
+            <p
+              :if={field == :url and @url_warning}
+              id="destination-form-url-warning"
+              role="status"
+              style="margin: -4px 0 8px; font-size: 12px; color: var(--ink);"
+            >
+              {@url_warning}
+            </p>
+          </div>
+
+          <%= case @kind do %>
+            <% :splunk_hec -> %>
+              <p
+                id="destination-form-ack-note"
+                style="margin: 0 0 8px; font-size: 12px; color: var(--ink-2); line-height: 1.5;"
+              >
+                {gettext(
+                  "Turn off indexer acknowledgement on this HEC token: Stride does not wait for it."
+                )}
+              </p>
+              <.input
+                id="destination_settings_index"
+                name="destination[settings][index]"
+                label={gettext("Index (optional)")}
+                value={@values.settings["index"]}
+                errors={@errors[:index] || []}
+              />
+              <.input
+                id="destination_settings_source_type"
+                name="destination[settings][source_type]"
+                label={gettext("Source type")}
+                value={@values.settings["source_type"]}
+                placeholder="stride:audit"
+                errors={@errors[:source_type] || []}
+              />
+            <% :datadog -> %>
+              <.input
+                type="select"
+                id="destination_settings_site"
+                name="destination[settings][site]"
+                label={gettext("Site")}
+                value={@values.settings["site"]}
+                options={AuditStreamKinds.datadog_site_options()}
+                errors={@errors[:site] || []}
+              />
+              <.input
+                id="destination_settings_service"
+                name="destination[settings][service]"
+                label={gettext("Service")}
+                value={@values.settings["service"]}
+                placeholder="stride-audit"
+                errors={@errors[:service] || []}
+              />
+              <.input
+                type="textarea"
+                id="destination_settings_tags"
+                name="destination[settings][tags]"
+                label={gettext("Tags (optional)")}
+                value={@values.tags}
+                rows="3"
+                placeholder="env:prod team:security"
+                errors={@errors[:tags] || []}
+              />
+              <p style="margin: -4px 0 8px; font-size: 12px; color: var(--ink-2);">
+                {gettext("Up to 90 key:value tags, separated by spaces or new lines.")}
+              </p>
+            <% :https -> %>
+              <.input
+                type="select"
+                id="destination_settings_format"
+                name="destination[settings][format]"
+                label={gettext("Format")}
+                value={@values.settings["format"]}
+                options={AuditStreamKinds.format_options()}
+                errors={@errors[:format] || []}
+              />
+              <.input
+                id="destination_settings_header_name"
+                name="destination[settings][header_name]"
+                label={gettext("Authorization header name (optional)")}
+                value={@values.settings["header_name"]}
+                placeholder="Authorization"
+                autocomplete="off"
+                errors={@errors[:header_name] || []}
+              />
+          <% end %>
+          <.error :for={msg <- @errors[:settings] || []}>{msg}</.error>
+        </.settings_card>
+
+        <.settings_card
+          :if={@live_action == :new}
+          id="destination-form-start"
+          title={gettext("Start from")}
+        >
+          <.input
+            type="select"
+            id="destination_start_from"
+            name="destination[start_from]"
+            label={gettext("Send events from")}
+            value={@start_from}
+            options={AuditStreamKinds.start_point_options(@kind)}
+            errors={@errors[:start_from] || []}
+          />
+          <p
+            :if={AuditStreamKinds.catch_up?(@start_from)}
+            id="destination-form-catch-up-note"
+            role="status"
+            style={[
+              "margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5;",
+              "background: var(--st-doing-soft); border: 1px solid var(--line);",
+              "border-radius: 8px; padding: 8px 12px;"
+            ]}
+          >
+            {gettext(
+              "This sends past events from the audit log, and every org-admin of the Organization will be told."
+            )}
+          </p>
+        </.settings_card>
+
+        <.settings_card id="destination-form-content" title={gettext("What is sent")}>
+          <.input
+            type="checkbox"
+            id="destination_include_personal_data"
+            name="destination[include_personal_data]"
+            label={gettext("Include email and IP addresses")}
+            checked={@values.include_personal_data}
+          />
+          <p style="margin: 0 0 12px; font-size: 12px; color: var(--ink-2); line-height: 1.5;">
+            {gettext(
+              "When off, each event is sent without the actor's email and IP address and without any email or IP address in its details. The user id is still sent."
+            )}
+          </p>
+
+          <fieldset id="destination-form-excluded" style="margin: 0; padding: 0; border: none;">
+            <legend class="label mb-1">{gettext("Leave out these actions")}</legend>
+            <p style="margin: 0 0 8px; font-size: 12px; color: var(--ink-2); line-height: 1.5;">
+              {gettext("Changes to audit streaming are always sent and can't be left out.")}
+            </p>
+            <%!-- Raw inputs on purpose: the core <.input type="checkbox"> sends
+                 value="true" behind a hidden "false" per box, so it cannot carry
+                 one action name per box in a destination[excluded_actions][]
+                 list. The hidden "" lets unchecking every box clear the list. --%>
+            <input type="hidden" name="destination[excluded_actions][]" value="" />
+            <div class="grid gap-1 sm:grid-cols-2">
+              <label
+                :for={{label, action} <- AuditStreamKinds.excludable_options()}
+                class="flex items-start gap-2"
+                style="font-size: 12.5px; color: var(--ink);"
+              >
+                <input
+                  type="checkbox"
+                  id={"destination_excluded_#{action}"}
+                  name="destination[excluded_actions][]"
+                  value={action}
+                  checked={action in @values.excluded_actions}
+                  class="checkbox checkbox-sm"
+                />
+                <span>{label}</span>
+              </label>
+            </div>
+            <.error :for={msg <- @errors[:excluded_actions] || []}>{msg}</.error>
+          </fieldset>
+        </.settings_card>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <.button
+            id="destination-form-save"
+            variant="primary"
+            phx-disable-with={gettext("Saving...")}
+            data-confirm={
+              AuditStreamFormView.personal_data_off?(@values, @stored_filters) &&
+                gettext(
+                  "Turn off email and IP addresses? Events sent from now on will leave them out."
+                )
+            }
+          >
+            {gettext("Save")}
+          </.button>
+          <.button id="destination-form-cancel" navigate={~p"/org/audit/streaming"}>
+            {gettext("Cancel")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
+</Layouts.app>

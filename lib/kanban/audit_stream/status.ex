@@ -139,6 +139,20 @@ defmodule Kanban.AuditStream.Status do
   end
 
   @doc """
+  Whether the destination has a pending batch: one whose events are chosen
+  and which waits to be sent or sent again, halted or not. A change to its
+  filters re-reads that batch's events under the new settings (D16), so the
+  destination form says so.
+  """
+  @spec batch_pending(Scope.t() | nil, Destination.t()) ::
+          {:ok, boolean()} | {:error, :unauthorized | :not_found}
+  def batch_pending(scope, %Destination{id: id}) do
+    with {:ok, _destination, cursor} <- load(scope, id) do
+      {:ok, is_binary(cursor.pending_batch_id)}
+    end
+  end
+
+  @doc """
   The pending batch of `destination` at `cursor` when it is halted with
   `rejected_batch`, else nil. For `pending_batch_summary/2` and
   `Kanban.AuditStream.BatchActions`, which have authorized already.

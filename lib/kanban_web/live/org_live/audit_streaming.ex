@@ -4,7 +4,9 @@ defmodule KanbanWeb.OrgLive.AuditStreaming do
   `docs/plans/AUDIT-LOG-STREAMING-DESIGN.md` §10.1, §10.2, §10.5): every
   audit stream destination of the Organization with its status, when it last
   delivered and how far behind it is, and **Pause**/**Resume**, **Send test
-  event** and **Delete**.
+  event**, **Edit** and **Delete**, with **Add destination**, which is
+  disabled at the Organization's limit (W2717). The limit is checked against
+  the same count the context checks on create, so the button and a save agree.
 
   The Organization comes from `current_organization`, which the
   `:require_org_admin` gate assigns from the signed-in user's own membership;
@@ -135,12 +137,23 @@ defmodule KanbanWeb.OrgLive.AuditStreaming do
     scope = Scope.for_user(actor)
 
     with {:ok, entries} <- AuditStream.list_destinations_with_status(scope),
-         {:ok, gaps} <- AuditStream.open_gap_summaries(scope) do
-      assign_rows(socket, entries, gaps)
+         {:ok, gaps} <- AuditStream.open_gap_summaries(scope),
+         {:ok, destinations} <- AuditStream.list_destinations(scope) do
+      socket
+      |> assign_rows(entries, gaps)
+      |> assign_at_limit(destinations)
     else
-      {:error, :unauthorized} ->
-        socket |> assign(:rows, []) |> assign(:org_admin_count, 0) |> refuse()
+      {:error, :unauthorized} -> refuse_empty(socket)
     end
+  end
+
+  defp assign_at_limit(socket, destinations),
+    do: assign(socket, :at_limit?, length(destinations) >= socket.assigns.max_destinations)
+
+  defp refuse_empty(socket) do
+    socket
+    |> assign(rows: [], org_admin_count: 0, at_limit?: false)
+    |> refuse()
   end
 
   defp assign_rows(socket, entries, gaps) do
