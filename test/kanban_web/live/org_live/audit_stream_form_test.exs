@@ -733,12 +733,29 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
       assert splunk.settings["source_type"] == String.duplicate("s", 100)
     end
 
-    test "both inputs carry maxlength 100", %{conn: conn} do
+    # The server counts codepoints; a browser maxlength counts UTF-16 units and
+    # would stop 100 emoji at 50, and would also block editing a stored
+    # over-long value. So neither input carries one.
+    test "neither input carries a maxlength, so the server's codepoint limit decides",
+         %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
-      assert has_element?(lv, ~s(#destination_settings_source_type[maxlength="100"]))
+      assert has_element?(lv, "#destination_settings_source_type")
+      refute has_element?(lv, "#destination_settings_source_type[maxlength]")
 
       change(lv, %{"kind" => "datadog"})
-      assert has_element?(lv, ~s(#destination_settings_service[maxlength="100"]))
+      assert has_element?(lv, "#destination_settings_service")
+      refute has_element?(lv, "#destination_settings_service[maxlength]")
+    end
+
+    test "100 emoji, which are 200 UTF-16 units, are accepted as a service",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+      change(lv, %{"kind" => "datadog"})
+      submit(lv, put_in(@datadog, ["settings", "service"], String.duplicate("🛰", 100)))
+      render_async(lv, 5_000)
+
+      assert [datadog] = destinations(org)
+      assert datadog.settings["service"] == String.duplicate("🛰", 100)
     end
 
     test "editing a destination stored with an over-long value shows the error until it is shortened",

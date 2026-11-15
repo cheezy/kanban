@@ -16,6 +16,11 @@ defmodule Kanban.AuditStream.Retention.Losses do
   last time is no later than the earliest of them. It is counted by action,
   so it can be earlier than a leased destination's for the same loss.
 
+  For both, the gap's last time is never earlier than its first. An event
+  older than every counted one, written outside the app while the purge
+  ran, is the earliest left; the last time is then the first time, not the
+  older event's.
+
   Neither function rescues: `Kanban.AuditStream.Retention` catches and logs
   an error raised here, so it never stops the purge job.
   """
@@ -73,7 +78,7 @@ defmodule Kanban.AuditStream.Retention.Losses do
 
   # The purge deletes oldest first, so the lost events are the oldest of the
   # first count. When some are still there, the last lost one is gone and
-  # the first survivor's time bounds it.
+  # the first survivor's time bounds it, but never below the first time.
   defp lost_range(before, %{events: 0}, lost),
     do: %{events: lost, first_at: before.first_at, last_at: before.last_at}
 
@@ -81,8 +86,15 @@ defmodule Kanban.AuditStream.Retention.Losses do
     do: %{
       events: lost,
       first_at: before.first_at,
-      last_at: Enum.min([before.last_at, after_purge.first_at], DateTime)
+      last_at: bounded_last(before.first_at, before.last_at, after_purge.first_at)
     }
+
+  # The last lost time, bounded by the earliest survivor's time. An event
+  # older than the first counted one, written outside the app while the purge
+  # ran, can be that survivor; the first time then bounds it from below, so a
+  # gap never ends before it starts.
+  defp bounded_last(first_at, last_at, first_left),
+    do: Enum.max([Enum.min([last_at, first_left], DateTime), first_at], DateTime)
 
   defp write_loss(organization_id, snapshot, loss, cutoff) do
     result =
@@ -210,19 +222,15 @@ defmodule Kanban.AuditStream.Retention.Losses do
   # first across every action, so while any event of an action the
   # destination does not exclude is still there, the earliest of them bounds
   # the last lost one. With none left, every lost event is gone and the
-  # newest counted time stands. An event older than the first counted one,
-  # written while the purge ran, never puts the last time before the first.
+  # newest counted time stands. bounded_last/3 keeps the last time at or
+  # after the first.
   defp bound_by(loss, []), do: loss
 
   defp bound_by(loss, survivors) do
     first_left =
       survivors |> Enum.map(fn {_action, left} -> left.first_at end) |> Enum.min(DateTime)
 
-    %{
-      loss
-      | last_at:
-          Enum.max([Enum.min([loss.last_at, first_left], DateTime), loss.first_at], DateTime)
-    }
+    %{loss | last_at: bounded_last(loss.first_at, loss.last_at, first_left)}
   end
 
   defp write_created_loss(id, loss) do

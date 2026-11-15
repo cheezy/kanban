@@ -444,6 +444,14 @@ differ, for a tool outside Stride:
 
 - **`id`** with `instance` is unique across Stride, and receivers use it to
   drop a duplicate delivered twice ([§8.3](#83-at-least-once-and-batch-identity)).
+  A test event ([§10.3](#103-adding-or-editing-a-destination)) always has
+  the id `0`, which no real event has, so a receiver that drops duplicates by
+  `instance` and `id` treats each test after the first as a duplicate.
+- **`instance`** is `KanbanWeb.Endpoint.host/0`, read on every attempt like
+  the actor fields, not kept with the batch. It changes between two attempts
+  of one batch only if the operator changes the host in between, and a
+  receiver that drops duplicates by `instance` and `id` then stores that
+  batch's events again.
 - **`schema`** names the version. A field may be added within `v1`; renaming or
   removing one makes `v2`, and destinations created before that keep `v1`
   until an org-admin switches them.
@@ -775,9 +783,9 @@ them moves `filter_version`.
 
 So a receiver should treat only a batch's events, by `id`, and, on HTTPS,
 its `batch_id` as stable across attempts. The request itself is not: the
-body's actor fields, its format, Splunk's index and source type, and Datadog's
-tags and service can all differ between two attempts of one batch, and so can
-the signature headers. A difference is not a sign that a retry was tampered with.
+body's actor fields, its format, Splunk's index and source type, Datadog's
+tags and service, and the `instance`, if the operator changed the host, can all
+differ between two attempts of one batch, and so can the signature headers. A difference is not a sign that a retry was tampered with.
 
 The signature time `t` ([§5.3](#53-any-https-endpoint)) is each attempt's own,
 as with most webhook senders, so the signature values change from one attempt
@@ -1068,7 +1076,7 @@ CREATE INDEX CONCURRENTLY audit_events_org_txid_id_index
 | `id` | bigserial | |
 | `organization_id` | FK organizations, `on_delete: :delete_all` | |
 | `kind` | string | `splunk_hec`, `datadog`, `https` |
-| `name` | string, ≤ 80 | Chosen by the org-admin; unique per Organization |
+| `name` | string, ≤ 80 | Chosen by the org-admin; unique per Organization ignoring case, through a unique index on (`organization_id`, `lower(name)`), so "Splunk" and "splunk" are the same name |
 | `enabled` | boolean | `false` while paused by an org-admin |
 | `url` | `TolerantEncryptedBinary` | Splunk and HTTPS. Null for Datadog. All four secret columns use this type ([§12.2](#122-secrets)) |
 | `url_host` | string | The host only, for display and audit metadata |

@@ -12,7 +12,9 @@ defmodule Kanban.AuditStream.RetryDocsTest do
   (W2740). Only HTTPS requests carry a `batch_id`, so no paragraph may tell a
   receiver to dedupe by it, or to drop a batch by the unsigned
   `x-stride-batch` header, and every paragraph that names `batch_id` beside
-  dedupe wording must say it is HTTPS-only.
+  dedupe wording must say it is HTTPS-only. Nor may a sentence call either one
+  an idempotency or dedupe key, or tell a receiver to drop by "it" just after a
+  sentence that names one.
   """
   use ExUnit.Case, async: true
 
@@ -48,7 +50,7 @@ defmodule Kanban.AuditStream.RetryDocsTest do
   # `batch_id`", "deduplicate using the batch id", "drop duplicates by
   # `batch_id`", "use `batch_id` to drop", "drops a `batch_id`", or dropping a
   # batch by its unsigned `x-stride-batch` header (unless "never" or "not").
-  @drop_by_batch ~r/(?:dedup\w*|duplicates)\s+(?:by|using|with)\s+(?:the\s+|its\s+)?(?:`batch_id`|batch\s+id)|use\s+(?:the\s+|its\s+)?(?:`batch_id`|batch\s+id)\s+to\s+(?:drop|dedup|skip)|drops?\s+an?\s+`batch_id`|(?<!never\s)(?<!not\s)drops?\s+(?:a|the)\s+batch\s+by\s+(?:its\s+|the\s+)?`?x-stride-batch/i
+  @drop_by_batch ~r/(?:dedup\w*|duplicates)\s+(?:by|using|with|on)\s+(?:the\s+|its\s+)?(?:`batch_id`|batch\s+id)|use\s+(?:the\s+|its\s+)?(?:`batch_id`|batch\s+id)\s+to\s+(?:drop|dedup|skip)|drops?\s+an?\s+`batch_id`|(?<!never\s)(?<!not\s)drops?\s+(?:a|the)\s+batch\s+by\s+(?:its\s+|the\s+)?`?x-stride-batch/i
 
   # Dedupe wording, and the scope a batch_id mention beside it must state.
   @dedupe ~r/dedup|duplicates/i
@@ -68,13 +70,76 @@ defmodule Kanban.AuditStream.RetryDocsTest do
   test "every batch_id dedupe mention says only HTTPS requests carry it" do
     unscoped =
       for {file, paragraph} <- guarded_paragraphs(),
-          sentence <- String.split(paragraph, ~r/(?<=[.;!?])\s+/u),
+          sentence <- sentences(paragraph),
           sentence =~ ~r/batch(?:_|\s+)id/i,
           sentence =~ @dedupe,
           not (sentence =~ @https_scope),
           do: {file, String.slice(sentence, 0, 120)}
 
     assert unscoped == []
+  end
+
+  # The batch's identifiers, a synonym for using one to drop duplicates, an
+  # instruction to drop by a pronoun, and the words that negate either.
+  @batch_ref ~r/batch(?:_|\s+)id|x-stride-batch/i
+  @dedupe_key ~r/idempotency\s+key|dedup\w*\s+key/i
+  @pronoun_drop ~r/use\s+(?:it|this|that|them)\s+(?:as\s+\w+\s+\w+\s+)?to\s+(?:drop|dedup|skip)|(?:dedup\w*|duplicates)\s+(?:by|using|with|on)\s+(?:it|this|that|them)\b/i
+  @negated ~r/\b(?:never|not|no)\b/i
+
+  test "no sentence calls batch_id or the x-stride-batch header an idempotency key" do
+    offending =
+      for {file, sentence} <- guarded_sentences(),
+          sentence =~ @batch_ref,
+          sentence =~ @dedupe_key,
+          not (sentence =~ @negated),
+          do: {file, String.slice(sentence, 0, 120)}
+
+    assert offending == []
+  end
+
+  # A pronoun is resolved only as far back as the previous sentence of the
+  # same paragraph, which is where a reader resolves it.
+  test "no sentence drops duplicates by a pronoun that stands for batch_id" do
+    offending =
+      for {file, paragraph} <- guarded_paragraphs(),
+          {previous, sentence} <- sentence_pairs(paragraph),
+          sentence =~ @pronoun_drop,
+          previous =~ @batch_ref or sentence =~ @batch_ref,
+          not (sentence =~ @negated),
+          do: {file, String.slice(sentence, 0, 120)}
+
+    assert offending == []
+  end
+
+  test "the pronoun and synonym patterns catch the old wording and pass the fixed" do
+    for old <- [
+          "Use it to drop duplicates.",
+          "Receivers dedupe by it.",
+          "so use it as a key to skip events seen before.",
+          "Drop duplicates on it."
+        ] do
+      assert old =~ @pronoun_drop, "not caught: #{old}"
+    end
+
+    for old <- [
+          "Treat `batch_id` as an idempotency key.",
+          "The `X-Stride-Batch` header is the dedupe key.",
+          "The batch id is a deduplication key."
+        ] do
+      assert old =~ @batch_ref and old =~ @dedupe_key and not (old =~ @negated),
+             "not caught: #{old}"
+    end
+
+    assert "Receivers dedupe on `batch_id`." =~ @drop_by_batch
+
+    for fixed <- [
+          "The `batch_id` is not an idempotency key.",
+          "Never use it to drop duplicates.",
+          "A receiver uses it only to correlate attempts."
+        ] do
+      refute (fixed =~ @dedupe_key or fixed =~ @pronoun_drop) and not (fixed =~ @negated),
+             "wrongly caught: #{fixed}"
+    end
   end
 
   test "the guard patterns tell a scoped batch_id mention from an instruction to drop by it" do
@@ -124,6 +189,20 @@ defmodule Kanban.AuditStream.RetryDocsTest do
     for file <- [@design, @guide | modules], paragraph <- paragraphs(File.read!(file)) do
       {Path.relative_to(file, @root), String.replace(paragraph, ~r/\s+/u, " ")}
     end
+  end
+
+  defp guarded_sentences do
+    for {file, paragraph} <- guarded_paragraphs(), sentence <- sentences(paragraph) do
+      {file, sentence}
+    end
+  end
+
+  defp sentences(paragraph), do: String.split(paragraph, ~r/(?<=[.;!?])\s+/u)
+
+  # Each sentence with the one before it, the first with "".
+  defp sentence_pairs(paragraph) do
+    sentences = sentences(paragraph)
+    Enum.zip(["" | sentences], sentences)
   end
 
   # Blank-line-separated paragraphs; each Markdown table row stands alone,

@@ -194,7 +194,15 @@ it is:
 
 - **`id`** is the audit event's id, as a string so that tools using
   JavaScript numbers keep every digit. With `instance`, it identifies the
-  event: use it to drop duplicates.
+  event: use it to drop duplicates. A [test event](#test-events) always has
+  the id `0`, which no real event has.
+- **`instance`** is the Stride instance's host name. Like `actor`, it is read
+  again on every attempt, not kept with the batch, so it changes between two
+  attempts of one batch only if the operator changes the instance's host in
+  between. A retry then carries the new host, and a receiver that drops
+  duplicates by `instance` and `id` stores those events a second time. Change
+  the host only when every destination is up to date, or drop duplicates by
+  `id` alone while the change settles.
 - **`occurred_at`** is when the event was recorded, in UTC.
 - **`action_label`** is always in English, whatever language the
   org-admins use.
@@ -759,6 +767,14 @@ result is shown at once, such as "Test event delivered", "Could not connect",
 "The certificate could not be verified" or "The destination refused the
 credentials". Each test is recorded as the `audit_stream_test_sent` audit
 event.
+
+Every test event has the same id, `0`, so a receiver that drops duplicates
+by `instance` and `id` treats each test after the first as a duplicate. That
+is harmless when the receiver still answers 2xx, as the samples above do, but
+it means a test event never reaches storage twice. If you count deliveries,
+or want each test stored, check the action before the duplicate check and
+handle `audit_stream_test_sent` on its own: never add it to the set of ids
+you have seen.
 
 An Organization can send 10 test events an hour, across all its
 destinations and org-admins. The count runs per clock hour, so up to 20 can

@@ -32,7 +32,10 @@ defmodule Kanban.AuditStream.Retention do
   events are the oldest it was owed: the gap's first time is exact, and its
   last time is exact unless the purge failed part way. Then the last lost
   event is gone with the rest, and the gap's last time is that of the first
-  event still there, the latest the lost events can be.
+  event still there, the latest the lost events can be, but never earlier
+  than the gap's first time: an event older than every counted one, written
+  outside the app while the purge ran, would otherwise end the gap before
+  it starts.
 
   Paused, failing and halted destinations lose events like any other, so
   they get gaps too. One deleted meanwhile is skipped. A destination created
@@ -45,7 +48,7 @@ defmodule Kanban.AuditStream.Retention do
   is bounded as above: when the purge failed part way and events of an
   action it does not exclude are still there, the gap's last time is no
   later than that of the first of them, never a later event that was not
-  deleted. A destination created from now, or from a recent window, was
+  deleted, and never earlier than its first time. A destination created from now, or from a recent window, was
   owed nothing the purge deletes.
 
   An error raised, a throw or an exit in steps 1, 2 or 4 is caught and

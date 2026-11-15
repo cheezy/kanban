@@ -318,6 +318,33 @@ defmodule Kanban.AuditStream.RetentionTest do
                1
     end
 
+    test "a gap never ends before it starts when an older event appears mid-purge", ctx do
+      first_at = days_ago(300)
+      event!(ctx.organization, 1, first_at)
+      event!(ctx.organization, 2, days_ago(250))
+      event!(ctx.organization, 3, days_ago(180))
+      cutoff = cutoff()
+
+      assert_raise RuntimeError, "purge failed", fn ->
+        Retention.purge(
+          ctx.organization.id,
+          cutoff,
+          fn _keep_alive ->
+            {:ok, 2} = AuditLog.purge_organization_before(ctx.organization.id, cutoff, 2)
+            # Written outside the app, older than every counted event, so it
+            # is the earliest event left.
+            event!(ctx.organization, 4, days_ago(400))
+            raise "purge failed"
+          end,
+          lease_wait_ms: 0
+        )
+      end
+
+      assert [%Gap{} = gap] = gaps(ctx.destination)
+      assert at?(gap.first_occurred_at, first_at)
+      assert gap.last_occurred_at == gap.first_occurred_at
+    end
+
     test "a purge that raises records no gap, releases the leases and re-raises", ctx do
       event!(ctx.organization, 1, days_ago(200))
 

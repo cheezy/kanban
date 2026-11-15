@@ -24,6 +24,8 @@ defmodule Kanban.AuditStream.Payload do
       applies);
     * a redacted actor has a null `user_id`, `email` and `ip`;
     * `instance` is the endpoint host, unless the `:instance` option is given.
+      Like the actor fields below, it is read on every attempt, not kept with
+      the batch, so it differs between two attempts only if the host changed.
 
   Unlike the Organization, the actor fields are not frozen for a batch. The
   Reader reads each event with its actor's user row on every attempt, so a
