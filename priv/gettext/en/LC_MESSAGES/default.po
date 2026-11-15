@@ -657,7 +657,7 @@ msgstr ""
 msgid "Manage Users"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:232
+#: lib/kanban_web/live/board_live/index.ex:231
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr ""
@@ -2291,8 +2291,8 @@ msgstr ""
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
 #: lib/kanban_web/export/workspace_metrics_excel.ex:113
-#: lib/kanban_web/live/metrics_live/workspace.ex:206
-#: lib/kanban_web/live/metrics_live/workspace.ex:228
+#: lib/kanban_web/live/metrics_live/workspace.ex:205
+#: lib/kanban_web/live/metrics_live/workspace.ex:227
 #: lib/kanban_web/live/task_live/view_component.ex:339
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2438,7 +2438,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
 #: lib/kanban_web/live/metrics_live/components/filters.ex:142
-#: lib/kanban_web/live/metrics_live/workspace.ex:403
+#: lib/kanban_web/live/metrics_live/workspace.ex:402
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr ""
@@ -2766,13 +2766,13 @@ msgstr ""
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:43
 #: lib/kanban_web/live/board_live/form.ex:133
-#: lib/kanban_web/live/board_live/index.ex:240
+#: lib/kanban_web/live/board_live/index.ex:239
 #: lib/kanban_web/live/board_live/params.ex:44
-#: lib/kanban_web/live/metrics_live/base.ex:82
-#: lib/kanban_web/live/metrics_live/base.ex:82
-#: lib/kanban_web/live/metrics_live/base.ex:82
-#: lib/kanban_web/live/metrics_live/base.ex:82
-#: lib/kanban_web/live/metrics_live/base.ex:82
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
+#: lib/kanban_web/live/metrics_live/base.ex:81
 #: lib/kanban_web/live/metrics_live/compliance.ex:49
 #, elixir-autogen, elixir-format
 msgid "Board not found"
@@ -4198,7 +4198,7 @@ msgstr "Active goals"
 
 #: lib/kanban_web/components/side_nav.ex:320
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
-#: lib/kanban_web/live/agents_live.ex:338
+#: lib/kanban_web/live/agents_live.ex:337
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr ""
@@ -4268,11 +4268,11 @@ msgid "Stride home"
 msgstr "Stride home"
 
 #: lib/kanban_web/components/side_nav.ex:81
-#: lib/kanban_web/live/agents_live.ex:336
+#: lib/kanban_web/live/agents_live.ex:335
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:204
+#: lib/kanban_web/live/metrics_live/workspace.ex:203
 #: lib/kanban_web/live/my_work_live.ex:37
 #: lib/kanban_web/live/notification_live/index.html.heex:3
 #: lib/kanban_web/live/review_live.html.heex:3
@@ -5388,12 +5388,12 @@ msgstr ""
 
 #: lib/kanban_web/components/agents_header.ex:432
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:581
-#: lib/kanban_web/live/metrics_live/workspace.ex:565
+#: lib/kanban_web/live/metrics_live/workspace.ex:564
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:557
+#: lib/kanban_web/live/metrics_live/workspace.ex:556
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr ""
@@ -7135,23 +7135,23 @@ msgid "Cycle time · today"
 msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:583
-#: lib/kanban_web/live/metrics_live/workspace.ex:559
+#: lib/kanban_web/live/metrics_live/workspace.ex:558
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:566
+#: lib/kanban_web/live/metrics_live/workspace.ex:565
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:582
-#: lib/kanban_web/live/metrics_live/workspace.ex:558
+#: lib/kanban_web/live/metrics_live/workspace.ex:557
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:342
+#: lib/kanban_web/live/metrics_live/workspace.ex:341
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr ""
@@ -7169,7 +7169,7 @@ msgid "Agents · last %{count} days"
 msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:569
-#: lib/kanban_web/live/metrics_live/workspace.ex:440
+#: lib/kanban_web/live/metrics_live/workspace.ex:439
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr ""
@@ -7181,7 +7181,7 @@ msgid "No completions in the last %{count} days."
 msgstr ""
 
 #: lib/kanban_web/components/agents_header.ex:441
-#: lib/kanban_web/live/metrics_live/workspace.ex:422
+#: lib/kanban_web/live/metrics_live/workspace.ex:421
 #, elixir-autogen, elixir-format
 msgid "Time range"
 msgstr ""
@@ -7482,7 +7482,7 @@ msgstr ""
 msgid "Choose a new owner"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:235
+#: lib/kanban_web/live/agents_live.ex:234
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner first."
 msgstr ""
@@ -7536,7 +7536,7 @@ msgid_plural "This will move %{count} tasks to the new owner:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:216
+#: lib/kanban_web/live/agents_live.ex:215
 #: lib/kanban_web/live/agents_live/interventions.ex:60
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reassign this goal."
@@ -7547,7 +7547,7 @@ msgstr ""
 msgid "Choose a new priority"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:279
+#: lib/kanban_web/live/agents_live.ex:278
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority first."
 msgstr ""
@@ -7593,7 +7593,7 @@ msgid_plural "This will change the priority of %{count} tasks:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:260
+#: lib/kanban_web/live/agents_live.ex:259
 #: lib/kanban_web/live/agents_live/interventions.ex:159
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reprioritize this goal."
@@ -8046,7 +8046,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:45
 #: lib/kanban_web/export/workspace_metrics_excel.ex:93
-#: lib/kanban_web/live/metrics_live/workspace.ex:264
+#: lib/kanban_web/live/metrics_live/workspace.ex:263
 #, elixir-autogen, elixir-format
 msgid "Lead time · daily median (min)"
 msgstr ""
@@ -8517,7 +8517,7 @@ msgstr "Completion notes"
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:482
+#: lib/kanban_web/live/metrics_live/workspace.ex:481
 #, elixir-autogen, elixir-format
 msgid "Show Done"
 msgstr ""
@@ -15335,4 +15335,244 @@ msgstr ""
 #: lib/kanban_web/live/org_live/audit_stream_form_view.ex:310
 #, elixir-autogen, elixir-format
 msgid "Remove the # and everything after it. The collector address has no # part."
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:41
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Apr"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:45
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Aug"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:49
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Dec"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:39
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Feb"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:38
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Jan"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:44
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Jul"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:43
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Jun"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:40
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Mar"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:42
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "May"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:48
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Nov"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:47
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Oct"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:46
+#, elixir-autogen, elixir-format
+msgctxt "month abbreviation"
+msgid "Sep"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:24
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "April"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:28
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "August"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:32
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "December"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:22
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "February"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:21
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "January"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:27
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "July"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:26
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "June"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:23
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "March"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:25
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "May"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:31
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "November"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:30
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "October"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:29
+#, elixir-autogen, elixir-format
+msgctxt "month name"
+msgid "September"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:79
+#, elixir-autogen, elixir-format
+msgctxt "time of day"
+msgid "AM"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:80
+#, elixir-autogen, elixir-format
+msgctxt "time of day"
+msgid "PM"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:71
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Fri"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:67
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Mon"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:72
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Sat"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:73
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Sun"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:70
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Thu"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:68
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Tue"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:69
+#, elixir-autogen, elixir-format
+msgctxt "weekday abbreviation"
+msgid "Wed"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:59
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Friday"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:55
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Monday"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:60
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Saturday"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:61
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Sunday"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:58
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Thursday"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:56
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Tuesday"
+msgstr ""
+
+#: lib/kanban_web/local_time/names.ex:57
+#, elixir-autogen, elixir-format
+msgctxt "weekday name"
+msgid "Wednesday"
 msgstr ""

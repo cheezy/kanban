@@ -86,6 +86,8 @@ defmodule KanbanWeb do
       import Phoenix.HTML
       # Core UI components
       import KanbanWeb.CoreComponents
+      # Localised absolute dates and times
+      import KanbanWeb.LocalTimeComponent
 
       # Common modules used in templates
       alias KanbanWeb.Layouts

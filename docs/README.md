@@ -125,6 +125,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Documentation Link Contract](doc-link-contract.md) — How links inside these docs are written and checked.
 - [Documentation Example Enum Contract](doc-example-enum-contract.md) — Rules for enum values in the JSON examples of the API docs and guides.
 - [Dark Mode Contract](dark-mode-contract.md) — Theme tokens, prohibited patterns and the dark-mode scanner.
+- [Local Dates and Times](local-time.md) — How every page formats an absolute date or time in the viewer's zone and language, and how to add a style or locale.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.
 - [Organizing Tailwind CSS](TAILWIND_ORGANIZATION.md) — Keeping Tailwind classes readable in HEEx templates with function components.
