@@ -541,7 +541,7 @@
                   </p>
               <% end %>
               <p style="font-size: 11px; color: var(--ink-3); margin: 2px 0 0; font-family: var(--font-mono);">
-                {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}
+                <.local_time value={history.inserted_at} />
               </p>
             </div>
           </div>

@@ -6,6 +6,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRowTest do
   alias Kanban.Accounts.User
   alias Kanban.Attachments.TaskAttachment
   alias Kanban.Tasks.TaskComment
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.Components.CommentRow
 
   defp entry(comment, flags \\ %{}) do
@@ -285,6 +286,46 @@ defmodule KanbanWeb.TaskLive.Components.CommentRowTest do
         assert html =~ ~s(phx-click="remove_comment_attachment") == shown?
         assert html =~ "Are you sure you want to delete this attachment?" == shown?
       end
+    end
+  end
+
+  describe "comment_row/1 — local time" do
+    test "the tooltip shows the local time and zone abbreviation, not UTC" do
+      LocalTime.put_timezone("America/Toronto")
+
+      html = render_row(entry(comment(%{inserted_at: ~N[2026-11-10 23:30:00]})))
+
+      assert html =~ ~s(datetime="2026-11-10T23:30:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 6:30 PM EST")
+      refute html =~ "UTC"
+    end
+
+    test "the edited marker shows its own local day when edited on a different one" do
+      LocalTime.put_timezone("America/Toronto")
+
+      html =
+        render_row(
+          entry(
+            comment(%{
+              inserted_at: ~N[2026-11-10 23:30:00],
+              edited_at: ~U[2026-11-11 05:10:00Z]
+            })
+          )
+        )
+
+      assert html =~ ~s(title="November 11, 2026 at 12:10 AM EST")
+      refute html =~ "UTC"
+    end
+
+    test "the tooltip follows the UI language" do
+      LocalTime.put_timezone("Europe/Berlin")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_row(entry(comment(%{inserted_at: ~N[2026-05-11 14:32:00]})))
+        end)
+
+      assert html =~ ~s(title="11. Mai 2026, 16:32 CEST")
     end
   end
 end

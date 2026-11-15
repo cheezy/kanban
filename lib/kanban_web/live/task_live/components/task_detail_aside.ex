@@ -125,15 +125,15 @@ defmodule KanbanWeb.TaskLive.Components.TaskDetailAside do
       </MetaItem.meta_item>
 
       <MetaItem.meta_item :if={@task.inserted_at} label={gettext("Created")} mono>
-        {Calendar.strftime(@task.inserted_at, "%b %d, %Y")}
+        <.local_time value={@task.inserted_at} style={:short_date} />
       </MetaItem.meta_item>
 
       <MetaItem.meta_item :if={@task.claimed_at} label={gettext("Claimed")} mono>
-        {Calendar.strftime(@task.claimed_at, "%b %d, %Y %H:%M")}
+        <.local_time value={@task.claimed_at} />
       </MetaItem.meta_item>
 
       <MetaItem.meta_item :if={@task.completed_at} label={gettext("Completed")} mono>
-        {Calendar.strftime(@task.completed_at, "%b %d, %Y")}
+        <.local_time value={@task.completed_at} style={:short_date} />
       </MetaItem.meta_item>
 
       <div

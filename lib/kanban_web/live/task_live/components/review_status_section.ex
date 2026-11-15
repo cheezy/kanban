@@ -30,7 +30,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
         <%= if @task.reviewed_at do %>
           <p>
             <span class="font-semibold">{gettext("Reviewed at")}:</span>
-            {Calendar.strftime(@task.reviewed_at, "%B %d, %Y at %I:%M %p")}
+            <.local_time value={@task.reviewed_at} />
           </p>
         <% end %>
         <%= if @task.review_notes do %>

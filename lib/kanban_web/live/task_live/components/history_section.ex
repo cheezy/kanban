@@ -75,7 +75,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySection do
                   <% end %>
                 </p>
                 <p class="text-xs text-base-content opacity-60">
-                  {Calendar.strftime(history.inserted_at, "%B %d, %Y at %I:%M %p")}
+                  <.local_time value={history.inserted_at} />
                 </p>
               </div>
             </div>

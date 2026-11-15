@@ -34,6 +34,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
   alias Kanban.Accounts.User
   alias Kanban.Attachments.ContentType
   alias KanbanWeb.AttachmentResponse
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.AttachmentUploads
   alias KanbanWeb.TimeAgo
 
@@ -91,10 +92,11 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItems do
           <div style="font-size: 12px; color: var(--ink-2);">
             {AttachmentUploads.format_size(attachment.byte_size)} · {uploader_name(
               attachment.uploaded_by
-            )} · {TimeAgo.format_age(
-              to_utc(attachment.inserted_at),
-              :coarse
-            )}
+            )} ·
+            <time
+              datetime={LocalTime.utc_iso8601(attachment.inserted_at)}
+              title={LocalTime.format_full(attachment.inserted_at)}
+            >{TimeAgo.format_age(to_utc(attachment.inserted_at), :coarse)}</time>
           </div>
         </div>
         <.link

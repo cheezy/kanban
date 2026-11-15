@@ -4,6 +4,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
 
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.Components.ReviewStatusSection
 
   describe "review_status_section/1 — known statuses" do
@@ -133,6 +134,29 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
 
       assert html =~ "Unknown"
       assert html =~ "bg-[var(--surface-sunken)]"
+    end
+  end
+
+  describe "review_status_section/1 — local time" do
+    test "renders reviewed_at in the viewer's timezone" do
+      LocalTime.put_timezone("America/Toronto")
+
+      assigns = %{
+        task: %{
+          review_status: :approved,
+          reviewed_by: %{name: "Reviewer Name", email: "r@example.com"},
+          reviewed_at: ~U[2026-05-15 09:30:00Z],
+          review_notes: nil
+        }
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <ReviewStatusSection.review_status_section task={@task} />
+        """)
+
+      assert html =~ "May 15, 2026 at 5:30 AM"
+      assert html =~ ~s(datetime="2026-05-15T09:30:00Z")
     end
   end
 end

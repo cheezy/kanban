@@ -607,8 +607,14 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
 
       assert result =~ "just now"
 
-      assert result =~
-               ~r/<time datetime="\d{4}-\d{2}-\d{2}T[^"]+" title="\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC"/
+      # Read the comment's own <time>: the activity log renders one too.
+      comment_time = result |> LazyHTML.from_fragment() |> LazyHTML.query("[data-comment] time")
+
+      assert [datetime] = LazyHTML.attribute(comment_time, "datetime")
+      assert datetime =~ ~r/^\d{4}-\d{2}-\d{2}T[^"]+Z$/
+
+      assert [title] = LazyHTML.attribute(comment_time, "title")
+      assert title =~ ~r/^\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM) UTC$/
     end
 
     test "shows the comment composer to a board member", %{task: task, user: user} do

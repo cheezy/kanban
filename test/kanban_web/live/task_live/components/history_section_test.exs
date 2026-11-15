@@ -4,6 +4,7 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
 
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.Components.HistorySection
 
   describe "history_section/1 — empty state" do
@@ -215,6 +216,21 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
       assert html =~ "Moved"
       assert html =~ "Backlog"
       assert html =~ "Ready"
+    end
+  end
+
+  describe "history_section/1 — local time" do
+    test "renders the entry time in the viewer's timezone with an ISO UTC attribute" do
+      LocalTime.put_timezone("America/Toronto")
+      assigns = %{histories: [%{type: :creation, inserted_at: ~N[2026-11-11 04:56:00]}]}
+
+      html =
+        rendered_to_string(~H"""
+        <HistorySection.history_section histories={@histories} />
+        """)
+
+      assert html =~ "November 10, 2026 at 11:56 PM"
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
     end
   end
 end

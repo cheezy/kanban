@@ -3,6 +3,7 @@ defmodule KanbanWeb.TaskLive.Components.TaskDetailAsideTest do
 
   import Phoenix.LiveViewTest
 
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.Components.TaskDetailAside
 
   # The aside is pure presentation over an already-loaded task, so an unsaved
@@ -138,7 +139,7 @@ defmodule KanbanWeb.TaskLive.Components.TaskDetailAsideTest do
       assert html =~ "Created"
       assert html =~ "Jan 10, 2024"
       assert html =~ "Claimed"
-      assert html =~ "Jan 11, 2024 10:30"
+      assert html =~ "January 11, 2024 at 10:30 AM"
       assert html =~ "Completed"
       assert html =~ "Jan 15, 2024"
     end
@@ -182,6 +183,40 @@ defmodule KanbanWeb.TaskLive.Components.TaskDetailAsideTest do
 
       assert html =~ "/boards/42/tasks/7/edit"
       assert html =~ "hero-pencil"
+    end
+  end
+
+  describe "task_detail_aside/1 — local time" do
+    test "renders each timestamp in the viewer's timezone" do
+      LocalTime.put_timezone("America/Toronto")
+
+      html =
+        render_aside(%{
+          inserted_at: ~U[2024-01-11 03:00:00Z],
+          claimed_at: ~U[2024-01-11 03:30:00Z],
+          completed_at: ~U[2024-01-16 02:00:00Z]
+        })
+
+      assert html =~ "Jan 10, 2024"
+      assert html =~ "January 10, 2024 at 10:30 PM"
+      assert html =~ "Jan 15, 2024"
+      assert html =~ ~s(datetime="2024-01-11T03:30:00Z")
+    end
+
+    test "renders each timestamp in the UI language" do
+      LocalTime.put_timezone("Europe/Berlin")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_aside(%{
+            inserted_at: ~U[2024-01-10 09:00:00Z],
+            claimed_at: ~U[2024-01-11 10:30:00Z],
+            completed_at: nil
+          })
+        end)
+
+      assert html =~ "11. Januar 2024, 11:30"
+      refute html =~ "AM"
     end
   end
 end

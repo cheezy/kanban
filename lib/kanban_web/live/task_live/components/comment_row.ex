@@ -15,6 +15,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.Components.AttachmentItems
   alias KanbanWeb.TaskLive.Components.MentionField
   alias KanbanWeb.TimeAgo
@@ -90,8 +91,8 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
           </span>
           <time
             :if={@inserted_at}
-            datetime={DateTime.to_iso8601(@inserted_at)}
-            title={Calendar.strftime(@inserted_at, "%Y-%m-%d %H:%M UTC")}
+            datetime={LocalTime.utc_iso8601(@inserted_at)}
+            title={LocalTime.format_full(@inserted_at)}
             style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);"
           >
             {@age}
@@ -99,7 +100,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
           <span
             :if={@comment.edited_at}
             data-comment-edited
-            title={Calendar.strftime(@comment.edited_at, "%Y-%m-%d %H:%M UTC")}
+            title={LocalTime.format_full(@comment.edited_at)}
             style="font-size: 11px; color: var(--ink-3); font-style: italic;"
           >
             {gettext("edited")}

@@ -43,7 +43,7 @@ defmodule KanbanWeb.TaskLive.Components.CompletionSection do
         <%= if @task.completed_at do %>
           <p class="text-[var(--st-done)]">
             <span class="font-semibold">{gettext("Completed at")}:</span>
-            {Calendar.strftime(@task.completed_at, "%B %d, %Y at %I:%M %p")}
+            <.local_time value={@task.completed_at} />
           </p>
         <% end %>
         <%= if @task.completed_by do %>

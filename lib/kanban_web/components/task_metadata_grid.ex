@@ -16,7 +16,8 @@ defmodule KanbanWeb.TaskMetadataGrid do
     * Complexity — gettext word (omitted for goal type)
     * Priority — colored dot + gettext word (omitted for goal type)
     * Needs review — "Required" pill or "Auto" muted text
-    * Created / Started / Completed — `Calendar.strftime/2` timestamps
+    * Created / Started / Completed — `<.local_time>` timestamps in the
+      viewer's timezone and language
 
   Defect-specific rows (severity, reproduction) are intentionally
   deferred: those fields do not exist on `Kanban.Tasks.Task` yet, so the
@@ -111,19 +112,19 @@ defmodule KanbanWeb.TaskMetadataGrid do
 
       <.row :if={@created_at} label={gettext("Created")}>
         <span style="color: var(--ink-3); font-variant-numeric: tabular-nums;">
-          {@created_at}
+          <.local_time value={@created_at} />
         </span>
       </.row>
 
       <.row :if={@started_at} label={gettext("Started")}>
         <span style="color: var(--ink-3); font-variant-numeric: tabular-nums;">
-          {@started_at}
+          <.local_time value={@started_at} />
         </span>
       </.row>
 
       <.row :if={@completed_at} label={gettext("Completed")}>
         <span style="color: var(--ink-3); font-variant-numeric: tabular-nums;">
-          {@completed_at}
+          <.local_time value={@completed_at} />
         </span>
       </.row>
     </div>
@@ -160,9 +161,9 @@ defmodule KanbanWeb.TaskMetadataGrid do
     task = assigns.task
 
     assigns
-    |> assign(:created_at, format_dt(Map.get(task, :inserted_at)))
-    |> assign(:started_at, format_dt(Map.get(task, :claimed_at)))
-    |> assign(:completed_at, format_dt(Map.get(task, :completed_at)))
+    |> assign(:created_at, time_value(Map.get(task, :inserted_at)))
+    |> assign(:started_at, time_value(Map.get(task, :claimed_at)))
+    |> assign(:completed_at, time_value(Map.get(task, :completed_at)))
   end
 
   defp assign_show_metrics(assigns) do
@@ -252,15 +253,9 @@ defmodule KanbanWeb.TaskMetadataGrid do
 
   # --- Formatting --------------------------------------------------------
 
-  defp format_dt(nil), do: nil
-
-  defp format_dt(%DateTime{} = dt) do
-    Calendar.strftime(dt, "%B %d, %Y at %I:%M %p")
-  end
-
-  defp format_dt(%NaiveDateTime{} = dt) do
-    Calendar.strftime(dt, "%B %d, %Y at %I:%M %p")
-  end
-
-  defp format_dt(_), do: nil
+  # Only a timestamp reaches `<.local_time>`, which shifts it to the viewer's
+  # zone and language; anything else hides the row.
+  defp time_value(%DateTime{} = dt), do: dt
+  defp time_value(%NaiveDateTime{} = dt), do: dt
+  defp time_value(_), do: nil
 end

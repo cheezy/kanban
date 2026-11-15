@@ -8,6 +8,7 @@ defmodule KanbanWeb.TaskMetadataGridTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
 
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskMetadataGrid
 
   defp task(overrides \\ %{}) do
@@ -55,7 +56,7 @@ defmodule KanbanWeb.TaskMetadataGridTest do
       assert html =~ "Needs review"
       assert html =~ "Created"
       assert html =~ "Started"
-      assert html =~ "May 01, 2026"
+      assert html =~ "May 1, 2026"
     end
   end
 
@@ -230,7 +231,7 @@ defmodule KanbanWeb.TaskMetadataGridTest do
         """)
 
       assert html =~ ~r/>\s*Completed\s*</
-      assert html =~ "May 03, 2026"
+      assert html =~ "May 3, 2026"
     end
 
     test "accepts NaiveDateTime as well as DateTime" do
@@ -294,6 +295,28 @@ defmodule KanbanWeb.TaskMetadataGridTest do
         """)
 
       assert html =~ ~r/>\s*Auto\s*</
+    end
+  end
+
+  describe "metadata_grid/1 — local time" do
+    test "renders the timestamps in the viewer's timezone and language" do
+      LocalTime.put_timezone("Europe/Berlin")
+
+      assigns = %{
+        task: task(%{claimed_at: ~U[2026-05-02 23:30:00Z]}),
+        parent_goal: nil,
+        board_name: nil
+      }
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          rendered_to_string(~H"""
+          <TaskMetadataGrid.metadata_grid task={@task} parent_goal={@parent_goal} />
+          """)
+        end)
+
+      assert html =~ "3. Mai 2026, 01:30"
+      assert html =~ ~s(datetime="2026-05-02T23:30:00Z")
     end
   end
 end

@@ -4,6 +4,7 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
   import Phoenix.LiveViewTest
 
   alias Kanban.Attachments.TaskAttachment
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskLive.Components.AttachmentItems
   alias Phoenix.LiveView.UploadConfig
   alias Phoenix.LiveView.UploadEntry
@@ -370,6 +371,18 @@ defmodule KanbanWeb.TaskLive.Components.AttachmentItemsTest do
       html = render_entries(upload([entry(%{ref: "6", client_name: "   \u200B "})]))
 
       assert attr(html, "#upload-entry-6 span.truncate", "title") == ["unnamed file"]
+    end
+  end
+
+  describe "attachment_list/1 — local time" do
+    test "keeps the relative age and adds the local upload time as its title" do
+      LocalTime.put_timezone("America/Toronto")
+
+      html = render_list([attachment(%{inserted_at: ~N[2026-11-11 04:56:00]})])
+
+      assert html =~ "ago"
+      assert attr(html, "time", "datetime") == ["2026-11-11T04:56:00Z"]
+      assert attr(html, "time", "title") == ["November 10, 2026 at 11:56 PM EST"]
     end
   end
 end

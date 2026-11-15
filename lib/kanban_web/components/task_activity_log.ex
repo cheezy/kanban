@@ -84,7 +84,7 @@ defmodule KanbanWeb.TaskActivityLog do
               <.entry_message entry={entry} />
             </p>
             <p style="margin: 0; font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums;">
-              {format_dt(Map.get(entry, :inserted_at))}
+              <.local_time value={time_value(Map.get(entry, :inserted_at))} />
             </p>
           </div>
         </li>
@@ -193,9 +193,9 @@ defmodule KanbanWeb.TaskActivityLog do
   defp user_name(%{name: name}) when is_binary(name), do: name
   defp user_name(_), do: gettext("Unknown")
 
-  defp format_dt(nil), do: ""
-
-  defp format_dt(%DateTime{} = dt), do: Calendar.strftime(dt, "%B %d, %Y at %I:%M %p")
-  defp format_dt(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%B %d, %Y at %I:%M %p")
-  defp format_dt(_), do: ""
+  # Only a timestamp reaches `<.local_time>`; anything else renders nothing,
+  # as the old strftime fallback did.
+  defp time_value(%DateTime{} = dt), do: dt
+  defp time_value(%NaiveDateTime{} = dt), do: dt
+  defp time_value(_), do: nil
 end
