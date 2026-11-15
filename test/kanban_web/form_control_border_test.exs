@@ -84,11 +84,50 @@ defmodule KanbanWeb.FormControlBorderTest do
           do: assert(rule =~ state, "#{state} must keep daisyUI's own border")
     end
 
+    # D446: daisyUI's .checkbox also draws its border with --input-color, but
+    # uses that variable for the checked fill and the focus outline too, so the
+    # rule sets border-color on a resting checkbox instead.
+    test "checkboxes take their resting border from --line-input" do
+      rule = checkbox_rule()
+
+      assert rule =~ "border-color: var(--line-input);"
+      assert rule =~ ".checkbox:not("
+    end
+
+    test "the checkbox rule leaves --input-color, colour variants and error states to daisyUI" do
+      rule = checkbox_rule()
+
+      refute rule =~ "--input-color", "re-pointing --input-color fills checked boxes grey"
+
+      assert rule =~ ":disabled", "a disabled box must keep daisyUI's dimmer look"
+
+      # A plain checked box has no fill, so its border must not fade back to
+      # daisyUI's 20% alpha when it is ticked or focused.
+      for state <- ~w(:checked :focus-visible),
+          do: refute(rule =~ state, "#{state} must keep the --line-input border")
+
+      for variant <-
+            ~w(primary secondary accent neutral info success warning error)
+            |> Enum.map(&".checkbox-#{&1}"),
+          do: assert(rule =~ variant, "#{variant} must keep daisyUI's own border")
+    end
+
     test "a decorative token on a form control is reported" do
       lines = [~s|<select|, ~s|  style="border: 1px solid var(--line);"|]
       assert {"select", _, 2} = lines |> tagged_lines() |> List.last()
       assert border_tokens(Enum.at(lines, 1)) == ["--line"]
     end
+  end
+
+  defp checkbox_rule do
+    [rule] =
+      Regex.scan(
+        ~r/:where\(\.stride-screen, \.stride-marketing\)\s*\.checkbox[^{]*\{[^}]*\}/,
+        File.read!("assets/css/app.css")
+      )
+      |> List.flatten()
+
+    rule
   end
 
   defp sources do

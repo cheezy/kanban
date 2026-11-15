@@ -2236,3 +2236,26 @@
   ) {
   --input-color: var(--line-input);
 }
+
+/* D446: daisyUI's .checkbox draws its border with --input-color too, but it
+   also uses --input-color as the checked fill and the focus outline, so
+   re-pointing it would fill every checked box grey. Inside the Stride token
+   scopes a resting checkbox sets only its border colour to --line-input, the
+   3:1 form-control token, checked or not, so the box keeps its outline when
+   it is ticked or focused; the fill, check mark and focus outline stay
+   daisyUI's. :not() leaves disabled boxes and daisyUI's colour variants as
+   daisyUI draws them. */
+:where(.stride-screen, .stride-marketing)
+  .checkbox:not(
+    :disabled,
+    .checkbox-primary,
+    .checkbox-secondary,
+    .checkbox-accent,
+    .checkbox-neutral,
+    .checkbox-info,
+    .checkbox-success,
+    .checkbox-warning,
+    .checkbox-error
+  ) {
+  border-color: var(--line-input);
+}

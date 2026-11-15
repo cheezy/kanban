@@ -168,7 +168,7 @@ inside `.stride-screen` / `.stride-marketing`.
 **Every `<input>`, `<select>` and `<textarea>` draws its resting border with
 `var(--line-input)`, never `--line`, `--line-2` or `--line-strong`.** That
 includes compact toolbar and filter controls, such as the board filter bar, the
-bulk-action bar and the metrics filters. There are two routes:
+bulk-action bar and the metrics filters. There are three routes:
 
 - **Inline-styled controls** write `border: 1px solid var(--line-input)`.
 - **The core `<.input>` component** renders daisyUI `.input`, `.select` and
@@ -177,8 +177,18 @@ bulk-action bar and the metrics filters. There are two routes:
   `assets/css/app.css` sets `--input-color: var(--line-input)` inside
   `.stride-screen` / `.stride-marketing`, and leaves the focus and `-error`
   states to daisyUI. The same rule also covers daisyUI's `.file-input`.
+- **Checkboxes** use daisyUI's `.checkbox`, from the core
+  `<.input type="checkbox">` and from raw `<input type="checkbox">` tags. Its
+  border also comes from `--input-color`, but daisyUI uses that variable as the
+  checked fill and the focus outline as well, so re-pointing it would fill every
+  checked box grey. A second rule in `assets/css/app.css` sets only
+  `border-color: var(--line-input)` on a checkbox inside `.stride-screen` /
+  `.stride-marketing`, checked or not, so a ticked box keeps its outline. The
+  fill, the check mark and the focus outline stay daisyUI's, and disabled boxes
+  and daisyUI's colour variants such as `.checkbox-primary` keep daisyUI's own
+  look.
 
-`test/kanban_web/form_control_border_test.exs` checks both routes. A Stride form control is
+`test/kanban_web/form_control_border_test.exs` checks all three routes. A Stride form control is
 filled with the panel colour it sits on (1.00:1), so its border is the only
 thing that shows where the field is. That makes it a graphical object under WCAG 2.1
 SC 1.4.11, which asks for **3:1** against the adjacent colour.
