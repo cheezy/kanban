@@ -124,10 +124,13 @@ defmodule KanbanWeb.MetricsLive.BaseTest do
       assert socket.assigns.exclude_weekends == false
     end
 
-    test "assigns the viewer timezone, defaulting to Etc/UTC on the disconnected mount" do
-      {:ok, socket} = FakeMetric.mount(%{}, %{}, empty_socket())
+    test "keeps the viewer timezone that KanbanWeb.TimezoneOnMount assigned" do
+      socket = empty_socket()
+      socket = %{socket | assigns: Map.put(socket.assigns, :timezone, "America/Edmonton")}
 
-      assert socket.assigns.timezone == "Etc/UTC"
+      {:ok, socket} = FakeMetric.mount(%{}, %{}, socket)
+
+      assert socket.assigns.timezone == "America/Edmonton"
     end
 
     test "does not invoke load_data" do

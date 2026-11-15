@@ -107,7 +107,6 @@ defmodule KanbanWeb.AgentsLive do
       refresh_scheduled?: false,
       dormant_expanded?: false,
       expanded_detail_sections: MapSet.new(@detail_sections),
-      timezone: KanbanWeb.Timezone.browser_timezone(socket),
       connected_count: connected_count(socket),
       board_id: nil,
       time_range: :all_time,

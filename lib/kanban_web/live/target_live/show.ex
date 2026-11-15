@@ -50,7 +50,7 @@ defmodule KanbanWeb.TargetLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     scope = socket.assigns.current_scope
-    timezone = KanbanWeb.Timezone.browser_timezone(socket)
+    timezone = socket.assigns.timezone
 
     case Targets.get_owned_target(scope, id) do
       {:ok, target} ->

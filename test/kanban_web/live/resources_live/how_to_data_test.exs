@@ -1566,10 +1566,11 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert File.read!("lib/kanban/metrics.ex") =~ "maybe_filter_by_completing_agent(agent_name)"
       assert dashboard =~ "(for wait time, only the tasks it completed)"
 
-      # The detail pages pass the browser time zone; the dashboard passes none,
-      # so Kanban.Metrics falls back to UTC for its cards.
+      # The detail pages pass the browser time zone that KanbanWeb.TimezoneOnMount
+      # assigns on every live_session; the dashboard passes none, so
+      # Kanban.Metrics falls back to UTC for its cards.
       assert File.read!(live <> "base.ex") =~
-               "timezone: KanbanWeb.Timezone.browser_timezone(socket)"
+               ~s[timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")]
 
       refute File.read!(live <> "dashboard.ex") =~ "timezone"
       assert dashboard =~ "The dashboard's cards count from midnight UTC"

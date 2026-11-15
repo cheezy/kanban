@@ -98,8 +98,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       boards: scoped_boards(socket.assigns.current_scope),
       selected_window_days: Helpers.default_window_days(),
       exclude_weekends: false,
-      cfd_show_done: true,
-      timezone: KanbanWeb.Timezone.browser_timezone(socket)
+      cfd_show_done: true
     }
   end
 

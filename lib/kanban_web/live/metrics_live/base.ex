@@ -56,8 +56,7 @@ defmodule KanbanWeb.MetricsLive.Base do
          assign(socket,
            time_range: :last_30_days,
            agent_name: nil,
-           exclude_weekends: false,
-           timezone: KanbanWeb.Timezone.browser_timezone(socket)
+           exclude_weekends: false
          )}
       end
 

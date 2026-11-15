@@ -97,7 +97,7 @@ defmodule KanbanWeb.BoardLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     scope = socket.assigns.current_scope
-    timezone = KanbanWeb.Timezone.browser_timezone(socket)
+    timezone = socket.assigns.timezone
     boards = load_boards(scope.user)
     targets = load_targets(scope, timezone)
 
@@ -106,7 +106,6 @@ defmodule KanbanWeb.BoardLive.Index do
     {:ok,
      socket
      |> assign(:nav_active, :boards)
-     |> assign(:timezone, timezone)
      |> assign(:targets, targets)
      |> assign_boards(boards)}
   end

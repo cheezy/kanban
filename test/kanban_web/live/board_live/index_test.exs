@@ -5,7 +5,7 @@ defmodule KanbanWeb.BoardLive.IndexTest do
   status for the same delivery target and the same viewer.
 
   The three surfaces now all anchor status on the viewer's browser-local
-  calendar day (via `KanbanWeb.Timezone.browser_timezone/1` +
+  calendar day (via the `@timezone` that `KanbanWeb.TimezoneOnMount` assigns +
   `Kanban.Timezone.local_today/1`), so they can no longer split the way the
   original bug did (boards/detail on server UTC, agents on viewer-local).
 

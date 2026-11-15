@@ -34,6 +34,7 @@ defmodule KanbanWeb.Router do
 
     plug :fetch_current_scope_for_user
     plug KanbanWeb.Plugs.Locale, "en"
+    plug KanbanWeb.Plugs.Timezone
   end
 
   # Pins the response format to json for every /api route (D351). It must be
@@ -315,7 +316,8 @@ defmodule KanbanWeb.Router do
       metrics: KanbanWeb.Telemetry,
       metrics_history: {KanbanWeb.Telemetry.MetricsStorage, :metrics_history, []},
       ecto_repos: [Kanban.Repo],
-      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
+      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]],
+      on_mount: [{KanbanWeb.TimezoneOnMount, :default}]
 
     # csp_nonce_assign_key lets ErrorTracker stamp our per-request CSP nonce
     # (KanbanWeb.Plugs.CspNonce) onto its inline <script>/<style> tags —
@@ -323,7 +325,7 @@ defmodule KanbanWeb.Router do
     # like "Mark as resolved" silently do nothing.
     error_tracker_dashboard("/errors",
       csp_nonce_assign_key: :csp_nonce,
-      on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}]
+      on_mount: [{KanbanWeb.LocaleOnMount, :set_locale}, {KanbanWeb.TimezoneOnMount, :default}]
     )
   end
 
@@ -339,6 +341,7 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :require_admin},
         {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :enforce},
         {KanbanWeb.NotificationsOnMount, :default},
@@ -379,6 +382,7 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :require_sudo_mode},
         {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :banner},
         {KanbanWeb.NotificationsOnMount, :default},
@@ -399,6 +403,7 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :require_authenticated},
         {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :enforce},
         {KanbanWeb.NotificationsOnMount, :default},
@@ -528,6 +533,7 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :mount_current_scope}
       ] do
       live "/users/register", UserLive.Registration, :new
@@ -545,7 +551,8 @@ defmodule KanbanWeb.Router do
     live_session :public,
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
-        {KanbanWeb.LocaleOnMount, :set_locale}
+        {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.TimezoneOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :marketing} do
       live "/issue", IssueLive.Form, :new
@@ -555,6 +562,7 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :mount_current_scope},
         # No-op for visitors; keeps a signed-in user's bell live here too.
         {KanbanWeb.NotificationsOnMount, :default}

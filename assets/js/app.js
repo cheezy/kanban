@@ -56,11 +56,22 @@ const MyHooks = {
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// The viewer's IANA zone, sent two ways: the stride_tz cookie lets the next
+// static render (KanbanWeb.Plugs.Timezone) already use it, and the connect
+// param wins once the LiveView connects. Rewriting the cookie on every load
+// follows a browser whose zone changed. It holds only the zone name.
+const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+if (timezone) {
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  document.cookie = `stride_tz=${encodeURIComponent(timezone)}; path=/; max-age=31536000; SameSite=Lax${secure}`
+}
+
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {
     _csrf_token: csrfToken,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timezone: timezone,
   },
   hooks: {...colocatedHooks, ...MyHooks},
 })
