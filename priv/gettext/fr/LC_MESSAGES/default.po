@@ -168,7 +168,7 @@ msgstr "Mot de passe"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:383
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:381
 #: lib/kanban_web/live/org_live/console.html.heex:274
 #: lib/kanban_web/live/org_live/security.html.heex:100
 #: lib/kanban_web/live/org_live/sso.html.heex:233
@@ -218,7 +218,7 @@ msgstr "Tableau mis à jour avec succès"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:176
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:394
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:392
 #: lib/kanban_web/live/org_live/console.html.heex:284
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
@@ -4617,7 +4617,7 @@ msgstr "Fermer"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:188
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:391
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:389
 #: lib/kanban_web/live/org_live/console.html.heex:276
 #: lib/kanban_web/live/task_live/components/comment_row.ex:149
 #: lib/kanban_web/live/workspace_live/settings.html.heex:119
@@ -14198,37 +14198,37 @@ msgctxt "audit action"
 msgid "Streaming test event sent"
 msgstr "Événement de test de streaming envoyé"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:360
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:364
 #, elixir-autogen, elixir-format
 msgid "Check this destination's Splunk HEC settings"
 msgstr "Vérifiez les paramètres Splunk HEC de cette destination"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:357
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:361
 #, elixir-autogen, elixir-format
 msgid "Remove the token from the HEC URL and enter it as the HEC token"
 msgstr "Retirez le jeton de l'URL HEC et saisissez-le comme jeton HEC"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:340
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:344
 #, elixir-autogen, elixir-format
 msgid "The token can't write to index %{index}"
 msgstr "Le jeton ne peut pas écrire dans l'index %{index}"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:343
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:347
 #, elixir-autogen, elixir-format
 msgid "The token can't write to its default index"
 msgstr "Le jeton ne peut pas écrire dans son index par défaut"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:164
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:168
 #, elixir-autogen, elixir-format
 msgid "This looks like the Splunk Cloud web address. The collector address starts with http-inputs."
 msgstr "Cela ressemble à l'adresse web de Splunk Cloud. L'adresse du collecteur commence par http-inputs."
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:348
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:352
 #, elixir-autogen, elixir-format
 msgid "Turn off indexer acknowledgement on this HEC token"
 msgstr "Désactivez l'accusé de réception de l'indexeur sur ce jeton HEC"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:352
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:356
 #, elixir-autogen, elixir-format
 msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
 msgstr "Utilisez une URL HEC sans accusé de réception ; Stride n'utilise pas l'accusé de réception de l'indexeur"
@@ -14596,7 +14596,7 @@ msgid "First event"
 msgstr "Premier événement"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:98
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:286
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "Format"
 msgstr "Format"
@@ -14710,7 +14710,7 @@ msgstr "Les secrets ne sont jamais affichés : seulement l'hôte et les 4 dernie
 
 #: lib/kanban_web/emails/audit_stream_email.ex:349
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:262
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:261
 #, elixir-autogen, elixir-format
 msgid "Service"
 msgstr "Service"
@@ -14722,7 +14722,7 @@ msgstr "Secret de signature renouvelé."
 
 #: lib/kanban_web/emails/audit_stream_email.ex:348
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:254
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:253
 #, elixir-autogen, elixir-format
 msgid "Site"
 msgstr "Site"
@@ -14840,7 +14840,7 @@ msgstr "Clé d'API"
 msgid "Add destination"
 msgstr "Ajouter une destination"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:294
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:292
 #, elixir-autogen, elixir-format
 msgid "Authorization header name (optional)"
 msgstr "Nom de l'en-tête d'autorisation (facultatif)"
@@ -14850,12 +14850,12 @@ msgstr "Nom de l'en-tête d'autorisation (facultatif)"
 msgid "Authorization header value"
 msgstr "Valeur de l'en-tête d'autorisation"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:326
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:329
 #, elixir-autogen, elixir-format
 msgid "Can't be read. Enter it again."
 msgstr "Illisible. Saisissez-le à nouveau."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:351
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:349
 #, elixir-autogen, elixir-format
 msgid "Changes to audit streaming are always sent and can't be left out."
 msgstr "Les modifications du streaming d'audit sont toujours envoyées et ne peuvent pas être exclues."
@@ -14917,7 +14917,7 @@ msgstr "Modifier la destination"
 msgid "Enter a valid header name."
 msgstr "Saisissez un nom d'en-tête valide."
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:310
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:313
 #, elixir-autogen, elixir-format
 msgid "Enter a valid https:// address."
 msgstr "Saisissez une adresse https:// valide."
@@ -14927,7 +14927,7 @@ msgstr "Saisissez une adresse https:// valide."
 msgid "Enter the header name for this value."
 msgstr "Saisissez le nom de l'en-tête pour cette valeur."
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:319
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:322
 #, elixir-autogen, elixir-format
 msgid "Enter the header value, or clear the header name."
 msgstr "Saisissez la valeur de l'en-tête ou effacez son nom."
@@ -14947,7 +14947,7 @@ msgstr "URL HEC"
 msgid "HEC token"
 msgstr "Jeton HEC"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:339
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:337
 #, elixir-autogen, elixir-format
 msgid "Include email and IP addresses"
 msgstr "Inclure les adresses e-mail et IP"
@@ -14967,7 +14967,7 @@ msgstr "Lot JSON"
 msgid "Leave it blank to keep the saved value."
 msgstr "Laissez vide pour conserver la valeur enregistrée."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:349
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:347
 #, elixir-autogen, elixir-format
 msgid "Leave out these actions"
 msgstr "Exclure ces actions"
@@ -14997,7 +14997,7 @@ msgstr "Remplacer"
 msgid "Saved secrets are never shown again. Every save sends a test event to the destination."
 msgstr "Les secrets enregistrés ne sont plus jamais affichés. Chaque enregistrement envoie un événement de test à la destination."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:313
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:311
 #, elixir-autogen, elixir-format
 msgid "Send events from"
 msgstr "Envoyer les événements depuis"
@@ -15008,7 +15008,7 @@ msgid "Sending a test event..."
 msgstr "Envoi d'un événement de test..."
 
 #: lib/kanban_web/emails/audit_stream_email.ex:328
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:307
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:305
 #, elixir-autogen, elixir-format
 msgid "Start from"
 msgstr "Commencer à partir de"
@@ -15018,7 +15018,7 @@ msgstr "Commencer à partir de"
 msgid "Stride sets this header itself. Choose another name."
 msgstr "Stride définit lui-même cet en-tête. Choisissez un autre nom."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:272
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:270
 #, elixir-autogen, elixir-format
 msgid "Tags (optional)"
 msgstr "Tags (facultatif)"
@@ -15060,17 +15060,17 @@ msgstr[1] "Cette organisation a déjà %{count} destinations, le maximum autoris
 msgid "This destination changed since you opened it. Reload the page to see the changes, then save again."
 msgstr "Cette destination a changé depuis que vous l'avez ouverte. Rechargez la page pour voir les modifications, puis enregistrez à nouveau."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:328
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:326
 #, elixir-autogen, elixir-format
 msgid "This sends past events from the audit log, and every org-admin of the Organization will be told."
 msgstr "Cela envoie des événements passés du journal d'audit, et tous les administrateurs de l'organisation en seront informés."
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:316
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:319
 #, elixir-autogen, elixir-format
 msgid "This value has characters that can't be sent in a header."
 msgstr "Cette valeur contient des caractères qui ne peuvent pas être envoyés dans un en-tête."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:386
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:384
 #, elixir-autogen, elixir-format
 msgid "Turn off email and IP addresses? Events sent from now on will leave them out."
 msgstr "Désactiver les adresses e-mail et IP ? Les événements envoyés à partir de maintenant ne les incluront pas."
@@ -15080,7 +15080,7 @@ msgstr "Désactiver les adresses e-mail et IP ? Les événements envoyés à par
 msgid "Turn off indexer acknowledgement on this HEC token: Stride does not wait for it."
 msgstr "Désactivez l'accusé de réception de l'indexeur sur ce jeton HEC : Stride ne l'attend pas."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:279
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:277
 #, elixir-autogen, elixir-format
 msgid "Up to 90 key:value tags, separated by spaces or new lines."
 msgstr "Jusqu'à 90 tags key:value, séparés par des espaces ou des retours à la ligne."
@@ -15100,12 +15100,12 @@ msgstr "Utilisez des lettres minuscules, des chiffres, _ et -, 80 caractères au
 msgid "Use the collector path /services/collector or /services/collector/event."
 msgstr "Utilisez le chemin du collecteur /services/collector ou /services/collector/event."
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:334
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:332
 #, elixir-autogen, elixir-format
 msgid "What is sent"
 msgstr "Ce qui est envoyé"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:343
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:341
 #, elixir-autogen, elixir-format
 msgid "When off, each event is sent without the actor's email and IP address and without any email or IP address in its details. The user id is still sent."
 msgstr "Désactivé, chaque événement est envoyé sans l'adresse e-mail ni l'adresse IP de son auteur, et sans aucune adresse e-mail ou IP dans ses détails. L'identifiant de l'utilisateur est toujours envoyé."
@@ -15370,3 +15370,8 @@ msgstr "Nom de l'en-tête d'autorisation"
 #, elixir-autogen, elixir-format
 msgid "At most 100 characters."
 msgstr "100 caractères au maximum."
+
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:310
+#, elixir-autogen, elixir-format
+msgid "Remove the # and everything after it. The collector address has no # part."
+msgstr "Retirez le # et tout ce qui le suit. L'adresse du collecteur n'a pas de partie #."

@@ -73,7 +73,7 @@ followed.
 
 | Field | What to enter |
 |---|---|
-| **HEC URL** | The collector address, ending in `/services/collector` or `/services/collector/event`, with no query string. Any other path is refused, `/services/collector/raw` included, because Splunk would index each line as raw text |
+| **HEC URL** | The collector address, ending in `/services/collector` or `/services/collector/event`, with no query string and no `#` part. Any other path is refused, `/services/collector/raw` included, because Splunk would index each line as raw text |
 | **HEC token** | The HTTP Event Collector token. Stride sends it as `Authorization: Splunk <token>` |
 | **Index (optional)** | At most 80 lowercase letters, digits, `_` and `-`, not starting with `-`. Left blank, the token's default index is used |
 | **Source type** | At most 100 characters. Defaults to `stride:audit` |

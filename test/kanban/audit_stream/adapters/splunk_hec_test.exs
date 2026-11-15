@@ -162,12 +162,48 @@ defmodule Kanban.AuditStream.Adapters.SplunkHecTest do
             "https://splunk.example.com:8088/services/collector/",
             "https://splunk.example.com:8088/services/collector/event/1.0",
             "https://splunk.example.com:8088/services",
-            "https://splunk.example.com:8088",
-            "https://splunk.example.com:8088/services/collector#event"
+            "https://splunk.example.com:8088"
           ] do
         assert SplunkHec.validate_url(url) == {:error, [url: {"is invalid", validation: :path}]},
                url
       end
+    end
+
+    test "refuses a fragment with its own reason" do
+      for url <- [
+            "https://splunk.example.com:8088/services/collector#event",
+            "https://splunk.example.com:8088/services/collector/event#top"
+          ] do
+        assert SplunkHec.validate_url(url) ==
+                 {:error, [url: {"is invalid", validation: :fragment}]},
+               url
+      end
+    end
+
+    test "an empty fragment (a trailing #) is refused as a fragment" do
+      assert SplunkHec.validate_url("https://splunk.example.com:8088/services/collector#") ==
+               {:error, [url: {"is invalid", validation: :fragment}]}
+    end
+
+    test "a URL with both a query and a fragment reports the query" do
+      for url <- [
+            "https://splunk.example.com:8088/services/collector?token=abc#event",
+            "https://splunk.example.com:8088/services/collector?#"
+          ] do
+        assert SplunkHec.validate_url(url) ==
+                 {:error, [url: {"is invalid", validation: :query}]},
+               url
+      end
+    end
+
+    # The fragment is checked before the path, so a wrong path with a
+    # fragment names the fragment first; the path is reported once it is gone.
+    test "a wrong path with a fragment reports the fragment first" do
+      assert SplunkHec.validate_url("https://splunk.example.com:8088/services/collector/raw#x") ==
+               {:error, [url: {"is invalid", validation: :fragment}]}
+
+      assert SplunkHec.validate_url("https://splunk.example.com:8088/services/collector/raw") ==
+               {:error, [url: {"is invalid", validation: :path}]}
     end
 
     test "refuses a query string, plain HTTP and anything that is not a URL" do
@@ -251,11 +287,13 @@ defmodule Kanban.AuditStream.Adapters.SplunkHecTest do
 
       for {url, reason} <- [
             {"https://splunk.example.com:8088/services/collector/raw", :path},
-            {"https://splunk.example.com:8088/services/collector?token=abc", :query}
+            {"https://splunk.example.com:8088/services/collector?token=abc", :query},
+            {"https://splunk.example.com:8088/services/collector#secret-fragment", :fragment}
           ] do
         refused = changeset.(url)
         assert {"is invalid", [validation: ^reason]} = refused.errors[:url]
         refute inspect(refused.errors) =~ "splunk.example.com"
+        refute inspect(refused.errors) =~ "secret-fragment"
       end
     end
 

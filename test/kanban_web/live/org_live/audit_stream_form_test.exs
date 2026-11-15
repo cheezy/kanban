@@ -401,6 +401,33 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
       refute html =~ secret
     end
 
+    test "a Splunk HEC URL with a #fragment shows the fragment message, not the collector-path one",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+
+      for url <- [
+            "https://collector.example.com:8088/services/collector#secret-part",
+            "https://collector.example.com:8088/services/collector#"
+          ] do
+        html = change(lv, %{"url" => url})
+        assert html =~ "Remove the # and everything after it.", url
+        refute html =~ "Use the collector path", url
+        refute html =~ "secret-part", url
+      end
+
+      html =
+        change(lv, %{"url" => "https://collector.example.com:8088/services/collector?a=b#c"})
+
+      assert html =~ "Remove the query string."
+      refute html =~ "Remove the # and everything after it."
+
+      html =
+        submit(lv, Map.put(@splunk, "url", "https://collector.example.com/services/collector#x"))
+
+      assert html =~ "Remove the # and everything after it."
+      assert destinations(org) == []
+    end
+
     test "shows field errors for a bad Splunk path, a reserved header name in mixed case, too many tags and a duplicate name",
          %{conn: conn, org: org} do
       taken = destination_fixture(org, :datadog)
@@ -1001,6 +1028,28 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
       assert AuditLog.list_events(action: :audit_stream_destination_updated) == []
     end
 
+    test "a replaced Splunk HEC URL with a #fragment shows the fragment message and saves nothing",
+         %{conn: conn, org: org} do
+      stub(200)
+      destination = destination_fixture(org, :splunk_hec)
+      {:ok, lv, _html} = live(conn, edit_path(destination))
+      lv |> element("#destination-form-url-replace") |> render_click()
+
+      bad = "https://collector.example.com:8088/services/collector#secret-part"
+      changed = change(lv, %{"url" => bad})
+      failed = submit(lv, %{"url" => bad})
+
+      for html <- [changed, failed] do
+        assert html =~ "Remove the # and everything after it."
+        refute html =~ "Use the collector path"
+        refute html =~ "secret-part"
+      end
+
+      fresh = Repo.get!(Destination, destination.id)
+      assert fresh.url == destination.url
+      assert fresh.lock_version == destination.lock_version
+    end
+
     test "replace and dismiss go through the org-admin check", %{
       conn: conn,
       org: org,
@@ -1074,6 +1123,9 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
         new_html =
           change(new_lv, %{"url" => "https://collector.example.com/x", "start_from" => "all"})
 
+        fragment_html =
+          change(new_lv, %{"url" => "https://collector.example.com/services/collector#event"})
+
         {:ok, edit_lv, _html} = live(conn, edit_path(destination))
 
         Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
@@ -1101,12 +1153,24 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
 
           assert new_html =~ path_error
 
+          fragment_error =
+            Gettext.gettext(
+              KanbanWeb.Gettext,
+              "Remove the # and everything after it. The collector address has no # part."
+            )
+
+          assert fragment_html =~
+                   Phoenix.HTML.html_escape(fragment_error) |> Phoenix.HTML.safe_to_string()
+
+          refute fragment_html =~ path_error
+
           if locale != "en" do
             for msgid <- [
                   "Add destination",
                   "Can't be read. Enter it again.",
                   "The waiting batch will be sent again under the new settings.",
-                  "Use the collector path /services/collector or /services/collector/event."
+                  "Use the collector path /services/collector or /services/collector/event.",
+                  "Remove the # and everything after it. The collector address has no # part."
                 ] do
               refute Gettext.gettext(KanbanWeb.Gettext, msgid) == msgid,
                      "#{locale} lacks a translation of #{msgid}"

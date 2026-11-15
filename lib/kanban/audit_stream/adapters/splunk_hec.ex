@@ -23,7 +23,7 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   secret field of its own, so the URL rules are the optional
   `validate_url/1`, which `Kanban.AuditStream.Destination` calls whenever
   the URL changes: HTTPS, a path of exactly `/services/collector` or
-  `/services/collector/event`, and no query string. `url_warning/1` is for
+  `/services/collector/event`, no query string and no `#fragment`. `url_warning/1` is for
   the destination form to show: a Splunk Cloud host without `http-inputs`
   is probably the web address, not the collector.
 
@@ -127,9 +127,12 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   @doc """
   Checks a HEC URL: an HTTPS URL `Kanban.Webhooks.UrlGuard.validate_syntax/2`
   accepts, whose path is exactly `/services/collector` or
-  `/services/collector/event` and which has no query string. Anything else
-  is refused, `/services/collector/raw` among them, since it would index
-  each line as raw text. Errors are `Ecto.Changeset` errors on `:url`.
+  `/services/collector/event` and which has no query string and no
+  `#fragment`, not even an empty one. Anything else is refused,
+  `/services/collector/raw` among them, since it would index each line as
+  raw text. Errors are `Ecto.Changeset` errors on `:url`, with validation
+  `:query`, then `:fragment`, then `:path`, so a URL with more than one of
+  them names the first; the error never quotes the URL.
   """
   def validate_url(url) do
     case url_error(url) do
@@ -148,7 +151,8 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   defp url_error(_url), do: :invalid_url
 
   defp collector_error(%URI{query: query}) when is_binary(query), do: :query
-  defp collector_error(%URI{path: path, fragment: nil}) when path in @paths, do: nil
+  defp collector_error(%URI{fragment: fragment}) when is_binary(fragment), do: :fragment
+  defp collector_error(%URI{path: path}) when path in @paths, do: nil
   defp collector_error(%URI{}), do: :path
 
   @doc """

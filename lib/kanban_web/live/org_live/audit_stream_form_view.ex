@@ -306,6 +306,9 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormView do
   defp secret_error(:url, :query, _error),
     do: gettext("Remove the query string. Splunk takes the token in a header.")
 
+  defp secret_error(:url, :fragment, _error),
+    do: gettext("Remove the # and everything after it. The collector address has no # part.")
+
   defp secret_error(:url, validation, _error) when validation in [:url, :url_host, :kind],
     do: gettext("Enter a valid https:// address.")
 
