@@ -194,6 +194,19 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
       refute has_element?(lv, "#destination-rejected-batch")
     end
 
+    test "a stored over-long service or source type still renders whole in the settings rows (D447)",
+         %{conn: conn, org: org} do
+      for {kind, key} <- [datadog: "service", splunk_hec: "source_type"] do
+        long = String.duplicate("監", 150)
+        destination = destination_fixture(org, kind)
+        destination = set(destination, settings: Map.put(destination.settings, key, long))
+
+        {:ok, lv, _html} = live(conn, path(destination))
+        assert has_element?(lv, "[data-setting]", long), "#{kind}"
+        refute render(lv) =~ "At most 100 characters."
+      end
+    end
+
     test "a destination with no attempts and no gaps shows the empty states",
          %{conn: conn, org: org} do
       destination = destination_fixture(org, :datadog)

@@ -8,7 +8,9 @@ defmodule Kanban.AuditStream.Adapters.Datadog do
     * `site`: required, one of `sites/0`. The intake URL is built from it,
       `https://http-intake.logs.<site>/api/v2/logs`, so a Datadog destination
       has no URL of its own and can never point at another host.
-    * `service`: optional, `stride-audit` when blank.
+    * `service`: optional, `stride-audit` when blank. At most 100
+      characters, counted in codepoints: it is written into every entry, so
+      a longer one could make a single event too large to send.
     * `tags`: optional, a list of `key:value` tags. The key is a letter
       followed by letters, digits, `_`, `-`, `.` or `/`, the characters
       Datadog keeps unchanged; the value is non-empty with no comma (the tags
@@ -71,6 +73,7 @@ defmodule Kanban.AuditStream.Adapters.Datadog do
   @default_service "stride-audit"
   @max_tags 90
   @max_tag_length 200
+  @max_service_length 100
   @reserved_tag_keys ~w(source organization_id)
 
   # A key of a letter and then only the characters Datadog keeps in a tag
@@ -94,13 +97,27 @@ defmodule Kanban.AuditStream.Adapters.Datadog do
   @impl true
   def validate(settings) when is_map(settings) do
     errors =
-      for {reason, false} <- [site: site?(settings["site"]), tags: tags?(settings["tags"])],
+      for {reason, false} <- [
+            site: site?(settings["site"]),
+            tags: tags?(settings["tags"]),
+            service: service?(settings["service"])
+          ],
           do: {:settings, {"is invalid", validation: reason}}
 
     if errors == [], do: :ok, else: {:error, errors}
   end
 
   defp site?(site), do: site in @sites
+
+  # Only a string is sent as the service; anything else sends the default.
+  # Each codepoint is at most 4 bytes, so a longer string is refused before
+  # it is split, however large it is.
+  defp service?(service) when is_binary(service) do
+    byte_size(service) <= 4 * @max_service_length and
+      length(String.codepoints(service)) <= @max_service_length
+  end
+
+  defp service?(_service), do: true
 
   defp tags?(nil), do: true
 

@@ -243,6 +243,7 @@
                 label={gettext("Source type")}
                 value={@values.settings["source_type"]}
                 placeholder="stride:audit"
+                maxlength="100"
                 errors={@errors[:source_type] || []}
               />
             <% :datadog -> %>
@@ -261,6 +262,7 @@
                 label={gettext("Service")}
                 value={@values.settings["service"]}
                 placeholder="stride-audit"
+                maxlength="100"
                 errors={@errors[:service] || []}
               />
               <.input

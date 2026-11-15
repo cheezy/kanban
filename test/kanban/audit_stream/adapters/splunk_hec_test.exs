@@ -77,6 +77,74 @@ defmodule Kanban.AuditStream.Adapters.SplunkHecTest do
     end
   end
 
+  describe "validate/1 source_type" do
+    test "accepts a 100-character source_type" do
+      assert SplunkHec.validate(%{"source_type" => String.duplicate("s", 100)}) == :ok
+    end
+
+    test "refuses 101 codepoints with validation :source_type" do
+      assert SplunkHec.validate(%{"source_type" => String.duplicate("s", 101)}) ==
+               {:error, [settings: {"is invalid", validation: :source_type}]}
+    end
+
+    test "counts codepoints not bytes" do
+      at_limit = String.duplicate("監", 100)
+      assert byte_size(at_limit) == 300
+
+      assert SplunkHec.validate(%{"source_type" => at_limit}) == :ok
+
+      assert SplunkHec.validate(%{"source_type" => at_limit <> "監"}) ==
+               {:error, [settings: {"is invalid", validation: :source_type}]}
+    end
+
+    test "refuses a value of several megabytes" do
+      assert SplunkHec.validate(%{"source_type" => String.duplicate("s", 4_000_000)}) ==
+               {:error, [settings: {"is invalid", validation: :source_type}]}
+    end
+
+    test "blank still means the default" do
+      for blank <- [nil, ""] do
+        settings = %{"source_type" => blank}
+        assert SplunkHec.validate(settings) == :ok
+
+        {_url, _headers, inflated} = request(destination(%{settings: settings}))
+        assert inflated |> lines() |> Enum.all?(&(&1["sourcetype"] == "stride:audit"))
+      end
+    end
+
+    test "a bad index and a long source_type are both reported, index first" do
+      settings = %{"index" => "Main", "source_type" => String.duplicate("s", 101)}
+
+      assert SplunkHec.validate(settings) ==
+               {:error,
+                [
+                  settings: {"is invalid", validation: :index},
+                  settings: {"is invalid", validation: :source_type}
+                ]}
+    end
+
+    test "Destination.changeset/2 carries the error and never quotes the value" do
+      long = String.duplicate("s", 101)
+
+      changeset =
+        Destination.changeset(
+          %Destination{},
+          destination_attrs(:splunk_hec, %{settings: %{"source_type" => long}})
+        )
+
+      refute changeset.valid?
+      assert {"is invalid", [validation: :source_type]} = changeset.errors[:settings]
+      refute inspect(changeset.errors) =~ long
+    end
+
+    test "a stored over-long source_type is still sent as it is" do
+      long = String.duplicate("s", 1_000)
+      {_url, _headers, inflated} = request(destination(%{settings: %{"source_type" => long}}))
+
+      assert inflated |> lines() |> Enum.all?(&(&1["sourcetype"] == long))
+    end
+  end
+
   describe "validate_url/1" do
     test "path check accepts the two collector paths and refuses raw" do
       for url <- [

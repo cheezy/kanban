@@ -285,6 +285,9 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormView do
   defp present_setting(:index),
     do: {:index, gettext("Use lowercase letters, digits, _ and -, at most 80 characters.")}
 
+  defp present_setting(:service), do: {:service, gettext("At most 100 characters.")}
+  defp present_setting(:source_type), do: {:source_type, gettext("At most 100 characters.")}
+
   defp present_setting(:format), do: {:format, gettext("Choose JSON batch or NDJSON.")}
   defp present_setting(:header_name), do: {:header_name, gettext("Enter a valid header name.")}
 

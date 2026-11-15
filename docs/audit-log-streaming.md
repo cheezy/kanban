@@ -76,7 +76,7 @@ followed.
 | **HEC URL** | The collector address, ending in `/services/collector` or `/services/collector/event`, with no query string. Any other path is refused, `/services/collector/raw` included, because Splunk would index each line as raw text |
 | **HEC token** | The HTTP Event Collector token. Stride sends it as `Authorization: Splunk <token>` |
 | **Index (optional)** | At most 80 lowercase letters, digits, `_` and `-`, not starting with `-`. Left blank, the token's default index is used |
-| **Source type** | Defaults to `stride:audit` |
+| **Source type** | At most 100 characters. Defaults to `stride:audit` |
 
 - **Find the collector address, not the web address.** Splunk Cloud's
   collector host has one of three forms: `http-inputs-<stack>.splunkcloud.com`
@@ -110,7 +110,7 @@ the same way.
 |---|---|
 | **Site** | One of `datadoghq.com`, `us3.datadoghq.com`, `us5.datadoghq.com`, `datadoghq.eu`, `ap1.datadoghq.com`, `ap2.datadoghq.com`, `uk1.datadoghq.com`, `ddog-gov.com` and `us2.ddog-gov.com`. Stride sends to `https://http-intake.logs.<site>/api/v2/logs`, so there is no URL to enter |
 | **API key** | A Datadog API key. Stride sends it as `DD-API-KEY` |
-| **Service** | Defaults to `stride-audit` |
+| **Service** | At most 100 characters. Defaults to `stride-audit` |
 | **Tags (optional)** | Up to 90 `key:value` tags, separated by spaces, commas or new lines, each at most 200 characters. A key starts with a letter, and a value can't be empty. `source` and `organization_id` are taken by Stride |
 
 - Each log entry has `ddsource` `stride`, your service, `hostname` (the
@@ -823,6 +823,7 @@ seen by all of them. Rotating a signing secret sends no email.
 | URL | 2,048 characters |
 | Token, API key or header value | 4,096 characters |
 | Datadog tags | 90, of at most 200 characters each |
+| Datadog service and Splunk source type | 100 characters |
 | Datadog event age | 17 hours |
 | Attempts shown | The last 50; kept for 7 days, at most 200 per destination |
 

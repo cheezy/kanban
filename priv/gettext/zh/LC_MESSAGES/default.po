@@ -168,7 +168,7 @@ msgstr "密码"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:381
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:383
 #: lib/kanban_web/live/org_live/console.html.heex:274
 #: lib/kanban_web/live/org_live/security.html.heex:100
 #: lib/kanban_web/live/org_live/sso.html.heex:233
@@ -218,7 +218,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:176
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:392
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:394
 #: lib/kanban_web/live/org_live/console.html.heex:284
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
@@ -4609,7 +4609,7 @@ msgstr "关闭"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:188
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:389
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:391
 #: lib/kanban_web/live/org_live/console.html.heex:276
 #: lib/kanban_web/live/task_live/components/comment_row.ex:149
 #: lib/kanban_web/live/workspace_live/settings.html.heex:119
@@ -14175,37 +14175,37 @@ msgctxt "audit action"
 msgid "Streaming test event sent"
 msgstr "已发送流式传输测试事件"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:340
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:360
 #, elixir-autogen, elixir-format
 msgid "Check this destination's Splunk HEC settings"
 msgstr "请检查此目标的 Splunk HEC 设置"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:337
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:357
 #, elixir-autogen, elixir-format
 msgid "Remove the token from the HEC URL and enter it as the HEC token"
 msgstr "请从 HEC URL 中移除令牌，并将其填写为 HEC 令牌"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:320
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:340
 #, elixir-autogen, elixir-format
 msgid "The token can't write to index %{index}"
 msgstr "该令牌无法写入索引 %{index}"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:323
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:343
 #, elixir-autogen, elixir-format
 msgid "The token can't write to its default index"
 msgstr "该令牌无法写入其默认索引"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:144
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:164
 #, elixir-autogen, elixir-format
 msgid "This looks like the Splunk Cloud web address. The collector address starts with http-inputs."
 msgstr "这看起来是 Splunk Cloud 的网页地址。收集器地址以 http-inputs 开头。"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:328
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:348
 #, elixir-autogen, elixir-format
 msgid "Turn off indexer acknowledgement on this HEC token"
 msgstr "请关闭此 HEC 令牌的索引器确认"
 
-#: lib/kanban/audit_stream/adapters/splunk_hec.ex:332
+#: lib/kanban/audit_stream/adapters/splunk_hec.ex:352
 #, elixir-autogen, elixir-format
 msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
 msgstr "请使用不带确认的 HEC URL；Stride 不使用索引器确认"
@@ -14567,7 +14567,7 @@ msgid "First event"
 msgstr "第一个事件"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:98
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:284
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:286
 #, elixir-autogen, elixir-format
 msgid "Format"
 msgstr "格式"
@@ -14681,7 +14681,7 @@ msgstr "从不显示密钥：只显示主机以及凭据或 URL 的最后 4 个�
 
 #: lib/kanban_web/emails/audit_stream_email.ex:349
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:261
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:262
 #, elixir-autogen, elixir-format
 msgid "Service"
 msgstr "服务"
@@ -14693,7 +14693,7 @@ msgstr "签名密钥已轮换。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:348
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:253
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:254
 #, elixir-autogen, elixir-format
 msgid "Site"
 msgstr "站点"
@@ -14810,7 +14810,7 @@ msgstr "API 密钥"
 msgid "Add destination"
 msgstr "添加目标"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:292
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "Authorization header name (optional)"
 msgstr "授权标头名称（可选）"
@@ -14820,12 +14820,12 @@ msgstr "授权标头名称（可选）"
 msgid "Authorization header value"
 msgstr "授权标头值"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:323
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:326
 #, elixir-autogen, elixir-format
 msgid "Can't be read. Enter it again."
 msgstr "无法读取。请重新输入。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:349
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:351
 #, elixir-autogen, elixir-format
 msgid "Changes to audit streaming are always sent and can't be left out."
 msgstr "对审计流的更改始终会发送，无法排除。"
@@ -14835,7 +14835,7 @@ msgstr "对审计流的更改始终会发送，无法排除。"
 msgid "Changes to audit streaming can't be left out."
 msgstr "对审计流的更改无法排除。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:288
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:291
 #, elixir-autogen, elixir-format
 msgid "Choose JSON batch or NDJSON."
 msgstr "请选择 JSON 批量或 NDJSON。"
@@ -14882,22 +14882,22 @@ msgstr "目标已保存。"
 msgid "Edit destination"
 msgstr "编辑目标"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:289
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:292
 #, elixir-autogen, elixir-format
 msgid "Enter a valid header name."
 msgstr "请输入有效的标头名称。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:307
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:310
 #, elixir-autogen, elixir-format
 msgid "Enter a valid https:// address."
 msgstr "请输入有效的 https:// 地址。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:295
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:298
 #, elixir-autogen, elixir-format
 msgid "Enter the header name for this value."
 msgstr "请输入此值的标头名称。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:316
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:319
 #, elixir-autogen, elixir-format
 msgid "Enter the header value, or clear the header name."
 msgstr "请输入标头值，或清除标头名称。"
@@ -14917,7 +14917,7 @@ msgstr "HEC URL"
 msgid "HEC token"
 msgstr "HEC 令牌"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:337
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:339
 #, elixir-autogen, elixir-format
 msgid "Include email and IP addresses"
 msgstr "包含电子邮件和 IP 地址"
@@ -14937,7 +14937,7 @@ msgstr "JSON 批量"
 msgid "Leave it blank to keep the saved value."
 msgstr "留空即可保留已保存的值。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:347
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:349
 #, elixir-autogen, elixir-format
 msgid "Leave out these actions"
 msgstr "排除这些操作"
@@ -14952,7 +14952,7 @@ msgstr "NDJSON"
 msgid "Now: only new events"
 msgstr "从现在起：仅新事件"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:304
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:307
 #, elixir-autogen, elixir-format
 msgid "Remove the query string. Splunk takes the token in a header."
 msgstr "请删除查询字符串。Splunk 通过标头接收令牌。"
@@ -14967,7 +14967,7 @@ msgstr "替换"
 msgid "Saved secrets are never shown again. Every save sends a test event to the destination."
 msgstr "已保存的密钥不会再次显示。每次保存都会向目标发送一个测试事件。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:311
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:313
 #, elixir-autogen, elixir-format
 msgid "Send events from"
 msgstr "发送事件的起始点"
@@ -14978,17 +14978,17 @@ msgid "Sending a test event..."
 msgstr "正在发送测试事件..."
 
 #: lib/kanban_web/emails/audit_stream_email.ex:328
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:305
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:307
 #, elixir-autogen, elixir-format
 msgid "Start from"
 msgstr "起始点"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:292
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:295
 #, elixir-autogen, elixir-format
 msgid "Stride sets this header itself. Choose another name."
 msgstr "此标头由 Stride 自行设置。请选择其他名称。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:270
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:272
 #, elixir-autogen, elixir-format
 msgid "Tags (optional)"
 msgstr "标签（可选）"
@@ -15013,7 +15013,7 @@ msgstr "过去 7 天"
 msgid "The waiting batch will be sent again under the new settings."
 msgstr "等待中的批次将按新设置重新发送。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:298
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:301
 #, elixir-autogen, elixir-format
 msgid "These settings don't belong to this type."
 msgstr "这些设置不属于此类型。"
@@ -15029,17 +15029,17 @@ msgstr[0] "该组织已有 %{count} 个目标，已达上限。"
 msgid "This destination changed since you opened it. Reload the page to see the changes, then save again."
 msgstr "此目标在您打开后已被更改。请重新加载页面查看更改，然后再次保存。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:326
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:328
 #, elixir-autogen, elixir-format
 msgid "This sends past events from the audit log, and every org-admin of the Organization will be told."
 msgstr "这会发送审计日志中的过往事件，并通知该组织的每位组织管理员。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:313
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:316
 #, elixir-autogen, elixir-format
 msgid "This value has characters that can't be sent in a header."
 msgstr "此值包含无法在标头中发送的字符。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:384
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:386
 #, elixir-autogen, elixir-format
 msgid "Turn off email and IP addresses? Events sent from now on will leave them out."
 msgstr "要关闭电子邮件和 IP 地址吗？今后发送的事件将不包含它们。"
@@ -15049,7 +15049,7 @@ msgstr "要关闭电子邮件和 IP 地址吗？今后发送的事件将不包�
 msgid "Turn off indexer acknowledgement on this HEC token: Stride does not wait for it."
 msgstr "请在此 HEC 令牌上关闭索引器确认：Stride 不会等待它。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:277
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:279
 #, elixir-autogen, elixir-format
 msgid "Up to 90 key:value tags, separated by spaces or new lines."
 msgstr "最多 90 个 key:value 标签，用空格或换行分隔。"
@@ -15064,17 +15064,17 @@ msgstr "最多使用 90 个 key:value 格式的标签，每个最多 200 个字�
 msgid "Use lowercase letters, digits, _ and -, at most 80 characters."
 msgstr "请使用小写字母、数字、_ 和 -，最多 80 个字符。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:301
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:304
 #, elixir-autogen, elixir-format
 msgid "Use the collector path /services/collector or /services/collector/event."
 msgstr "请使用收集器路径 /services/collector 或 /services/collector/event。"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:332
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:334
 #, elixir-autogen, elixir-format
 msgid "What is sent"
 msgstr "发送的内容"
 
-#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:341
+#: lib/kanban_web/live/org_live/audit_stream_form.html.heex:343
 #, elixir-autogen, elixir-format
 msgid "When off, each event is sent without the actor's email and IP address and without any email or IP address in its details. The user id is still sent."
 msgstr "关闭后，每个事件发送时都不含执行者的电子邮件和 IP 地址，详情中也不含任何电子邮件或 IP 地址。用户 ID 仍会发送。"
@@ -15331,3 +15331,9 @@ msgstr "签名审计导出"
 #, elixir-autogen, elixir-format
 msgid "Authorization header name"
 msgstr "授权标头名称"
+
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:288
+#: lib/kanban_web/live/org_live/audit_stream_form_view.ex:289
+#, elixir-autogen, elixir-format
+msgid "At most 100 characters."
+msgstr "最多 100 个字符。"

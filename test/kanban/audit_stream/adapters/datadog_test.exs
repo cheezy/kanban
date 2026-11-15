@@ -153,6 +153,84 @@ defmodule Kanban.AuditStream.Adapters.DatadogTest do
     end
   end
 
+  describe "service" do
+    test "accepts a 100-character service" do
+      settings = %{"site" => "datadoghq.com", "service" => String.duplicate("s", 100)}
+
+      assert Datadog.validate(settings) == :ok
+    end
+
+    test "refuses 101 codepoints with validation :service" do
+      settings = %{"site" => "datadoghq.com", "service" => String.duplicate("s", 101)}
+
+      assert Datadog.validate(settings) == invalid(:service)
+    end
+
+    test "counts codepoints not bytes" do
+      at_limit = String.duplicate("監", 100)
+      assert byte_size(at_limit) == 300
+
+      assert Datadog.validate(%{"site" => "datadoghq.com", "service" => at_limit}) == :ok
+
+      assert Datadog.validate(%{"site" => "datadoghq.com", "service" => at_limit <> "監"}) ==
+               invalid(:service)
+    end
+
+    test "refuses a value of several megabytes" do
+      settings = %{"site" => "datadoghq.com", "service" => String.duplicate("s", 4_000_000)}
+
+      assert Datadog.validate(settings) == invalid(:service)
+    end
+
+    test "blank still means the default" do
+      for blank <- [nil, ""] do
+        settings = %{"site" => "datadoghq.eu", "service" => blank}
+
+        assert Datadog.validate(settings) == :ok
+        assert entry(event("1"), settings)["service"] == "stride-audit"
+      end
+
+      assert Datadog.validate(%{"site" => "datadoghq.eu"}) == :ok
+    end
+
+    test "a bad site, bad tags and a long service are all reported, in that order" do
+      settings = %{"site" => "nope", "tags" => ["nope"], "service" => String.duplicate("s", 101)}
+
+      assert Datadog.validate(settings) ==
+               {:error,
+                [
+                  settings: {"is invalid", validation: :site},
+                  settings: {"is invalid", validation: :tags},
+                  settings: {"is invalid", validation: :service}
+                ]}
+    end
+
+    test "Destination.changeset/2 carries the error and leaves the tags error working" do
+      long = %{"site" => "datadoghq.com", "service" => String.duplicate("s", 101)}
+
+      changeset =
+        Destination.changeset(%Destination{}, destination_attrs(:datadog, %{settings: long}))
+
+      refute changeset.valid?
+      assert {"is invalid", [validation: :service]} = changeset.errors[:settings]
+      refute inspect(changeset.errors) =~ String.duplicate("s", 101)
+
+      bad_tags = %{"site" => "datadoghq.com", "tags" => ["nope"]}
+
+      changeset =
+        Destination.changeset(%Destination{}, destination_attrs(:datadog, %{settings: bad_tags}))
+
+      assert {"is invalid", [validation: :tags]} = changeset.errors[:settings]
+    end
+
+    test "a stored over-long service is still sent as it is" do
+      service = String.duplicate("s", 1_000)
+      destination = destination(%{"site" => "datadoghq.eu", "service" => service})
+
+      assert entry(event("1"), destination.settings)["service"] == service
+    end
+  end
+
   describe "tags" do
     test "tag limits at 90 and 200 characters" do
       site = %{"site" => "datadoghq.com"}
@@ -535,7 +613,7 @@ defmodule Kanban.AuditStream.Adapters.DatadogTest do
       settings = %{
         "site" => "datadoghq.eu",
         "tags" => tags(90, 200),
-        "service" => String.duplicate("ś", 1_000)
+        "service" => String.duplicate("ś", 100)
       }
 
       destination = destination(settings)

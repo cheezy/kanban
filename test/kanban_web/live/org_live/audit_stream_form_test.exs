@@ -237,6 +237,18 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
     test "every error class becomes translated text on its own input" do
       present = &AuditStreamFormView.present/1
       assert {:index, _} = present.({:settings, {"is invalid", validation: :index}})
+
+      assert {:service, "At most 100 characters."} =
+               present.({:settings, {"is invalid", validation: :service}})
+
+      assert {:source_type, "At most 100 characters."} =
+               present.({:settings, {"is invalid", validation: :source_type}})
+
+      Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+        assert {:service, "100 文字以内にしてください。"} =
+                 present.({:settings, {"is invalid", validation: :service}})
+      end)
+
       assert {:format, _} = present.({:settings, {"is invalid", validation: :format}})
       assert {:header_name, _} = present.({:settings, {"is invalid", validation: :header_name}})
       assert {:settings, _} = present.({:settings, {"is invalid", validation: :settings}})
@@ -674,6 +686,92 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
       assert has_element?(lv, "#destination-form-save[data-confirm]")
       change(lv, %{"include_personal_data" => "true"})
       refute has_element?(lv, "#destination-form-save[data-confirm]")
+    end
+  end
+
+  describe "service and source type length" do
+    test "refuses an over-long service under the Service field and saves nothing",
+         %{conn: conn, org: org} do
+      long = String.duplicate("s", 101)
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+      change(lv, %{"kind" => "datadog"})
+
+      html = submit(lv, put_in(@datadog, ["settings", "service"], long))
+
+      assert html =~ "At most 100 characters."
+      assert has_element?(lv, "#destination_settings_service.input-error")
+      refute has_element?(lv, "#destination_settings_tags.input-error")
+      assert destinations(org) == []
+      # Only the input still holds the value; no message or flash repeats it.
+      assert length(String.split(html, long)) == 2
+    end
+
+    test "refuses an over-long source type under the Source type field and saves nothing",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+
+      html = submit(lv, put_in(@splunk, ["settings", "source_type"], String.duplicate("監", 101)))
+
+      assert html =~ "At most 100 characters."
+      assert has_element?(lv, "#destination_settings_source_type.input-error")
+      refute has_element?(lv, "#destination_settings_index.input-error")
+      assert destinations(org) == []
+    end
+
+    test "a 100-character service and source type save", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+      change(lv, %{"kind" => "datadog"})
+      submit(lv, put_in(@datadog, ["settings", "service"], String.duplicate("監", 100)))
+      render_async(lv, 5_000)
+
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+      submit(lv, put_in(@splunk, ["settings", "source_type"], String.duplicate("s", 100)))
+      render_async(lv, 5_000)
+
+      assert [datadog, splunk] = destinations(org)
+      assert datadog.settings["service"] == String.duplicate("監", 100)
+      assert splunk.settings["source_type"] == String.duplicate("s", 100)
+    end
+
+    test "both inputs carry maxlength 100", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+      assert has_element?(lv, ~s(#destination_settings_source_type[maxlength="100"]))
+
+      change(lv, %{"kind" => "datadog"})
+      assert has_element?(lv, ~s(#destination_settings_service[maxlength="100"]))
+    end
+
+    test "editing a destination stored with an over-long value shows the error until it is shortened",
+         %{conn: conn, org: org} do
+      for {kind, key, field} <- [
+            {:datadog, "service", "#destination_settings_service"},
+            {:splunk_hec, "source_type", "#destination_settings_source_type"}
+          ] do
+        destination = destination_fixture(org, kind)
+        long = %{key => String.duplicate("s", 101)}
+        settings = Map.merge(destination.settings, long)
+
+        from(d in Destination, where: d.id == ^destination.id)
+        |> Repo.update_all(set: [settings: settings])
+
+        {:ok, lv, _html} = live(conn, edit_path(destination))
+        html = submit(lv, %{"name" => "Renamed #{kind}"})
+
+        assert html =~ "At most 100 characters.", "#{kind}"
+        assert has_element?(lv, field <> ".input-error")
+        assert Repo.get!(Destination, destination.id).name == destination.name
+
+        submit(lv, %{
+          "name" => "Renamed #{kind}",
+          "settings" => Map.put(destination.settings, key, "short")
+        })
+
+        render_async(lv, 5_000)
+
+        fresh = Repo.get!(Destination, destination.id)
+        assert fresh.name == "Renamed #{kind}"
+        assert fresh.settings[key] == "short"
+      end
     end
   end
 

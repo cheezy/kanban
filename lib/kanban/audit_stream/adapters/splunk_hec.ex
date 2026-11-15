@@ -8,7 +8,9 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
     * `index`: optional. Left out of every event when blank, so the token's
       default index applies. When set it must be a Splunk index name:
       lowercase letters, digits, `_` and `-`, not starting with `-`.
-    * `source_type`: optional, `stride:audit` when blank.
+    * `source_type`: optional, `stride:audit` when blank. At most 100
+      characters, counted in codepoints: it is written into every event, so
+      a longer one could make a single event too large to send.
 
   The destination's `credential` is the HEC token, sent only as
   `Authorization: Splunk <token>`. `validate_credential/2` refuses a token
@@ -63,6 +65,7 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   @paths ["/services/collector", "/services/collector/event"]
   @cloud_domains [".splunkcloud.com", ".splunkcloudgc.com"]
   @default_source_type "stride:audit"
+  @max_source_type_length 100
 
   @index ~r/\A[a-z0-9_][a-z0-9_-]*\z/
 
@@ -91,10 +94,15 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
 
   @impl true
   def validate(settings) when is_map(settings) do
-    case index_error(Map.get(settings, "index")) do
-      nil -> :ok
-      reason -> {:error, [settings: {"is invalid", validation: reason}]}
-    end
+    errors =
+      for reason <- [
+            index_error(Map.get(settings, "index")),
+            source_type_error(Map.get(settings, "source_type"))
+          ],
+          reason != nil,
+          do: {:settings, {"is invalid", validation: reason}}
+
+    if errors == [], do: :ok, else: {:error, errors}
   end
 
   defp index_error(index) when index in [nil, ""], do: nil
@@ -102,6 +110,18 @@ defmodule Kanban.AuditStream.Adapters.SplunkHec do
   defp index_error(_index), do: :index
 
   defp index?(index), do: byte_size(index) <= 80 and Regex.match?(@index, index)
+
+  # Only a string is sent as the source type; anything else sends the
+  # default. Each codepoint is at most 4 bytes, so a longer string is
+  # refused before it is split, however large it is.
+  defp source_type_error(type) when is_binary(type) do
+    if byte_size(type) <= 4 * @max_source_type_length and
+         length(String.codepoints(type)) <= @max_source_type_length,
+       do: nil,
+       else: :source_type
+  end
+
+  defp source_type_error(_type), do: nil
 
   @impl true
   @doc """

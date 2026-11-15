@@ -1095,6 +1095,13 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
     defp live(organization), do: %{id: organization.id, name: organization.name}
 
+    # A row saved before validate/1 limited the service and source type
+    # (D447): written past the changeset, as such a row already is.
+    defp stored(destination, settings) do
+      set_destination(destination, settings: settings)
+      fresh(destination)
+    end
+
     defp prepared(destination, organization) do
       assert {:ok, batch, _attrs} =
                PendingBatch.prepare(destination, cursor(destination), live(organization))
@@ -1128,7 +1135,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
         "service" => String.duplicate("ś", 1_000)
       }
 
-      datadog = destination_fixture(ctx.organization, :datadog, settings: settings)
+      datadog = stored(destination_fixture(ctx.organization, :datadog), settings)
       for txid <- 1..120, do: event!(ctx.organization, txid)
 
       # Counting only the Payload events, all 120 fit.
@@ -1150,7 +1157,7 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
 
     test "one event whose entry alone exceeds the limit is still cut on its own", ctx do
       settings = %{"site" => "datadoghq.eu", "service" => String.duplicate("s", @max_body)}
-      datadog = destination_fixture(ctx.organization, :datadog, settings: settings)
+      datadog = stored(destination_fixture(ctx.organization, :datadog), settings)
       first = event!(ctx.organization, 1)
       for txid <- 2..3, do: event!(ctx.organization, txid)
 
@@ -1183,8 +1190,9 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
         destination_fixture(ctx.organization, :datadog,
           settings: %{"site" => "datadoghq.eu", "tags" => max_tags()}
         ),
-        destination_fixture(ctx.organization, :splunk_hec,
-          settings: %{"index" => "main", "source_type" => String.duplicate("t", 30_000)}
+        stored(
+          destination_fixture(ctx.organization, :splunk_hec),
+          %{"index" => "main", "source_type" => String.duplicate("t", 30_000)}
         ),
         destination_fixture(ctx.organization, :https, settings: %{"format" => "json"}),
         ctx.destination
@@ -1211,6 +1219,33 @@ defmodule Kanban.AuditStream.DispatchWorkerTest do
         # Datadog's tags and Splunk's source type take a full read over the limit.
         if destination.kind in [:datadog, :splunk_hec], do: assert(length(batch.events) < 60)
       end
+    end
+
+    test "a stored over-long service still sends", ctx do
+      service = String.duplicate("s", 1_000)
+      settings = %{"site" => "datadoghq.eu", "service" => service}
+      datadog = stored(destination_fixture(ctx.organization, :datadog), settings)
+      assert {:error, _} = Kanban.AuditStream.Adapters.Datadog.validate(datadog.settings)
+
+      # Recent events, since Datadog refuses one older than 17 hours.
+      for txid <- 1..2,
+          do: event!(ctx.organization, txid, "organization_updated", NaiveDateTime.utc_now())
+
+      test = self()
+
+      Req.Test.stub(Transport, fn conn ->
+        {:ok, body, conn} = Plug.Conn.read_body(conn)
+        send(test, {:body, body})
+        Plug.Conn.send_resp(conn, 202, "{}")
+      end)
+
+      assert :ok = run(datadog)
+      assert_received {:body, body}
+
+      entries = Jason.decode!(body)
+      assert length(entries) == 2
+      assert Enum.all?(entries, &(&1["service"] == service))
+      assert [%{outcome: :delivered}] = attempts(datadog)
     end
 
     test "attempt bytes and delivered telemetry bytes keep their documented meaning", ctx do
