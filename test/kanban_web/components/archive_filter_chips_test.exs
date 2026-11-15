@@ -344,8 +344,25 @@ defmodule KanbanWeb.ArchiveFilterChipsTest do
 
       assert chip =~ "background: var(--ink)"
       assert chip =~ ~s(aria-pressed="true")
-      assert chip =~ "2026-01-10"
-      assert chip =~ "2026-01-20"
+      assert chip =~ "Jan 10, 2026 – Jan 20, 2026"
+    end
+
+    test "the range label follows the UI language and never shifts the dates" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_chips(%{date_from: ~D[2026-01-10], date_to: ~D[2026-01-20]})
+        end)
+
+      # Dates are formatted as-is: a zone far east of UTC moves neither bound.
+      assert html =~ "10. Jan. 2026 – 20. Jan. 2026"
+    end
+
+    test "an open-ended range keeps the empty side blank" do
+      html = render_chips(%{date_from: ~D[2026-01-10], date_to: nil})
+
+      assert html =~ "Jan 10, 2026 – <"
     end
 
     test "no active range leaves the chip un-pressed with the generic label" do

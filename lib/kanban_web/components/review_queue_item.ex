@@ -14,6 +14,7 @@ defmodule KanbanWeb.ReviewQueueItem do
   use KanbanWeb, :html
 
   alias Kanban.Reviews
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TimeAgo
 
   alias KanbanWeb.Avatar
@@ -129,7 +130,8 @@ defmodule KanbanWeb.ReviewQueueItem do
         <time
           :if={@waiting_since}
           data-review-queue-item-timestamp
-          datetime={DateTime.to_iso8601(@waiting_since)}
+          datetime={LocalTime.utc_iso8601(@waiting_since)}
+          title={LocalTime.format_full(@waiting_since)}
           style={[
             "font-size: 11px; font-family: var(--font-mono);",
             "color: var(--ink-3);"

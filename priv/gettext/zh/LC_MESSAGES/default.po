@@ -60,7 +60,7 @@ msgstr " · 任务管理"
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:613
 #: lib/kanban_web/emails/digest_email.ex:135
 #: lib/kanban_web/emails/digest_email.ex:195
-#: lib/kanban_web/live/goal_live/show.ex:291
+#: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
 msgid "Done"
@@ -358,8 +358,8 @@ msgstr "列"
 msgid "Create a new task"
 msgstr "创建新任务"
 
-#: lib/kanban_web/live/archive_live/index.ex:433
-#: lib/kanban_web/live/archive_live/index.ex:458
+#: lib/kanban_web/live/archive_live/index.ex:437
+#: lib/kanban_web/live/archive_live/index.ex:462
 #: lib/kanban_web/live/board_live/show.ex:190
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
@@ -376,7 +376,7 @@ msgstr "保存任务"
 msgid "Task created successfully"
 msgstr "任务创建成功"
 
-#: lib/kanban_web/live/archive_live/index.ex:429
+#: lib/kanban_web/live/archive_live/index.ex:433
 #: lib/kanban_web/live/board_live/task_actions.ex:309
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
@@ -722,8 +722,8 @@ msgstr "搜索"
 msgid "Select a user"
 msgstr "选择用户"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:336
-#: lib/kanban_web/components/archive_filter_chips.ex:424
+#: lib/kanban_web/components/archive_filter_chips.ex:337
+#: lib/kanban_web/components/archive_filter_chips.ex:425
 #: lib/kanban_web/components/board_filter_bar.ex:182
 #: lib/kanban_web/components/bulk_action_bar.ex:187
 #: lib/kanban_web/live/task_live/form/option_builders.ex:125
@@ -806,7 +806,7 @@ msgid "No history available"
 msgstr "无可用历史"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:62
-#: lib/kanban_web/live/board_live/webhook_views.ex:366
+#: lib/kanban_web/live/board_live/webhook_views.ex:367
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:124
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:48
@@ -1173,7 +1173,7 @@ msgstr "代理"
 msgid "Approved"
 msgstr "已批准"
 
-#: lib/kanban_web/components/goal_sidebar.ex:68
+#: lib/kanban_web/components/goal_sidebar.ex:70
 #: lib/kanban_web/components/task_card.ex:127
 #: lib/kanban_web/components/task_card.ex:129
 #: lib/kanban_web/live/task_live/form_component.html.heex:134
@@ -1229,7 +1229,7 @@ msgstr "常见陷阱"
 msgid "Common pitfall to avoid"
 msgstr "需要避免的常见陷阱"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:417
+#: lib/kanban_web/components/archive_filter_chips.ex:418
 #: lib/kanban_web/components/archive_stats_strip.ex:48
 #: lib/kanban_web/components/task_metadata_grid.ex:125
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:62
@@ -1419,7 +1419,7 @@ msgstr "失败时(将发生什么)"
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
 
-#: lib/kanban_web/live/goal_live/show.ex:292
+#: lib/kanban_web/live/goal_live/show.ex:293
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
 #: lib/kanban_web/task_tokens.ex:25
@@ -1446,7 +1446,7 @@ msgstr "需遵循的模式"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:203
 #: lib/kanban_web/components/acceptance_checklist.ex:289
-#: lib/kanban_web/live/board_live/webhook_views.ex:431
+#: lib/kanban_web/live/board_live/webhook_views.ex:435
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:409
 #: lib/kanban_web/live/workspace_live/exports.ex:56
@@ -1454,7 +1454,7 @@ msgstr "需遵循的模式"
 msgid "Pending"
 msgstr "待处理"
 
-#: lib/kanban_web/components/review_queue_item.ex:268
+#: lib/kanban_web/components/review_queue_item.ex:270
 #: lib/kanban_web/components/review_report_panel.ex:446
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
@@ -1694,7 +1694,7 @@ msgstr "确定要撤销此 token 吗?"
 
 #: lib/kanban_web/live/board_live/show.html.heex:646
 #: lib/kanban_web/live/board_live/show.html.heex:676
-#: lib/kanban_web/live/board_live/webhook_views.ex:83
+#: lib/kanban_web/live/board_live/webhook_views.ex:84
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:95
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:71
 #: lib/kanban_web/live/org_live/scim.html.heex:72
@@ -1851,7 +1851,7 @@ msgid "topic:event"
 msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:683
-#: lib/kanban_web/live/board_live/webhook_views.ex:106
+#: lib/kanban_web/live/board_live/webhook_views.ex:107
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:117
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:407
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:93
@@ -1862,7 +1862,7 @@ msgid "Dismiss"
 msgstr "关闭"
 
 #: lib/kanban_web/live/board_live/show.html.heex:647
-#: lib/kanban_web/live/board_live/webhook_views.ex:90
+#: lib/kanban_web/live/board_live/webhook_views.ex:91
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:102
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:78
 #: lib/kanban_web/live/org_live/scim.html.heex:79
@@ -1912,7 +1912,7 @@ msgstr "完整的 API 文档"
 #: lib/kanban_web/components/goal_progress_header.ex:69
 #: lib/kanban_web/components/task_metadata_grid.ex:86
 #: lib/kanban_web/live/archive_live/index.html.heex:271
-#: lib/kanban_web/live/goal_live/show.ex:241
+#: lib/kanban_web/live/goal_live/show.ex:242
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:56
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
@@ -2022,7 +2022,7 @@ msgid "Archive task"
 msgstr "归档任务"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:65
-#: lib/kanban_web/live/goal_live/show.ex:119
+#: lib/kanban_web/live/goal_live/show.ex:120
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Back to Board"
@@ -2043,7 +2043,7 @@ msgstr "看板:"
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:913
-#: lib/kanban_web/live/board_live/webhook_views.ex:286
+#: lib/kanban_web/live/board_live/webhook_views.ex:287
 #: lib/kanban_web/live/org_live/audit_streaming.html.heex:247
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:121
 #: lib/kanban_web/live/task_live/components/comment_row.ex:133
@@ -2057,8 +2057,8 @@ msgstr "删除"
 msgid "Failed to archive task"
 msgstr "归档任务失败"
 
-#: lib/kanban_web/live/archive_live/index.ex:420
-#: lib/kanban_web/live/archive_live/index.ex:454
+#: lib/kanban_web/live/archive_live/index.ex:424
+#: lib/kanban_web/live/archive_live/index.ex:458
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive task"
 msgstr "取消归档任务失败"
@@ -2068,7 +2068,7 @@ msgstr "取消归档任务失败"
 msgid "Task archived successfully"
 msgstr "任务归档成功"
 
-#: lib/kanban_web/live/archive_live/index.ex:416
+#: lib/kanban_web/live/archive_live/index.ex:420
 #, elixir-autogen, elixir-format
 msgid "Task unarchived successfully"
 msgstr "已成功取消归档任务"
@@ -2352,7 +2352,7 @@ msgstr "返回仪表盘"
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:88
 #: lib/kanban_web/components/target_progress_header.ex:207
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:609
-#: lib/kanban_web/live/goal_live/show.ex:287
+#: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
 msgid "Backlog"
@@ -2614,7 +2614,7 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
 #: lib/kanban_web/emails/digest_email.ex:134
 #: lib/kanban_web/emails/digest_email.ex:195
-#: lib/kanban_web/live/goal_live/show.ex:290
+#: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
 #, elixir-autogen, elixir-format
@@ -3102,7 +3102,7 @@ msgstr "尽管许多大型组织试图通过衡量生产力来改进成果,但�
 msgid "You do not have permission to archive tasks on this board"
 msgstr "您没有权限在此看板归档任务"
 
-#: lib/kanban_web/live/archive_live/index.ex:449
+#: lib/kanban_web/live/archive_live/index.ex:453
 #: lib/kanban_web/live/board_live/show.ex:186
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
@@ -3127,7 +3127,7 @@ msgstr "您没有权限在此看板移动任务"
 msgid "You do not have permission to promote goals on this board"
 msgstr "您没有权限在此看板提升目标"
 
-#: lib/kanban_web/live/archive_live/index.ex:441
+#: lib/kanban_web/live/archive_live/index.ex:445
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to unarchive tasks on this board"
 msgstr "您没有权限在此看板取消归档任务"
@@ -3318,7 +3318,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
 #: lib/kanban_web/emails/digest_email.ex:133
 #: lib/kanban_web/emails/digest_email.ex:194
-#: lib/kanban_web/live/goal_live/show.ex:289
+#: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
 msgid "Doing"
@@ -3404,13 +3404,13 @@ msgid "Product"
 msgstr "产品"
 
 #: lib/kanban_web/components/goal_progress_header.ex:205
-#: lib/kanban_web/components/goal_sidebar.ex:65
+#: lib/kanban_web/components/goal_sidebar.ex:67
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:89
 #: lib/kanban_web/components/target_progress_header.ex:208
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex:58
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:610
-#: lib/kanban_web/live/goal_live/show.ex:288
+#: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
 msgid "Ready"
@@ -4115,7 +4115,6 @@ msgid "Your rights"
 msgstr "您的权利"
 
 #: lib/kanban_web/components/board_pulse_card.ex:225
-#: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
 #: lib/kanban_web/live/review_live.ex:349
@@ -4140,7 +4139,7 @@ msgstr[0] "%{count} 个活跃"
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:8
-#: lib/kanban_web/live/goal_live/show.ex:91
+#: lib/kanban_web/live/goal_live/show.ex:92
 #: lib/kanban_web/live/workspace_live/settings.ex:459
 #: lib/kanban_web/live/workspace_live/settings.html.heex:145
 #, elixir-autogen, elixir-format
@@ -4267,7 +4266,7 @@ msgstr "Stride 首页"
 #: lib/kanban_web/live/agents_live.ex:335
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
-#: lib/kanban_web/live/goal_live/show.ex:87
+#: lib/kanban_web/live/goal_live/show.ex:88
 #: lib/kanban_web/live/metrics_live/workspace.ex:203
 #: lib/kanban_web/live/my_work_live.ex:37
 #: lib/kanban_web/live/notification_live/index.html.heex:3
@@ -4372,7 +4371,7 @@ msgid_plural "%{count} criteria"
 msgstr[0] "%{count} 项标准"
 
 #: lib/kanban_web/components/review_diff_panel.ex:131
-#: lib/kanban_web/components/review_queue_item.ex:178
+#: lib/kanban_web/components/review_queue_item.ex:180
 #: lib/kanban_web/components/task_card.ex:280
 #: lib/kanban_web/components/task_card.ex:324
 #, elixir-autogen, elixir-format
@@ -4523,7 +4522,7 @@ msgstr "已开始"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:84
 #: lib/kanban_web/components/acceptance_checklist.ex:154
-#: lib/kanban_web/components/review_queue_item.ex:250
+#: lib/kanban_web/components/review_queue_item.ex:252
 #: lib/kanban_web/live/task_live/view_component.ex:201
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
@@ -4574,23 +4573,23 @@ msgstr "按子项状态显示的目标进度"
 msgid "unassigned"
 msgstr "未分配"
 
-#: lib/kanban_web/live/goal_live/show.ex:77
+#: lib/kanban_web/live/goal_live/show.ex:78
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
 msgstr "未找到目标"
 
-#: lib/kanban_web/live/goal_live/show.ex:142
+#: lib/kanban_web/live/goal_live/show.ex:143
 #, elixir-autogen, elixir-format
 msgid "%{count} child"
 msgid_plural "%{count} children"
 msgstr[0] "%{count} 个子项"
 
-#: lib/kanban_web/live/goal_live/show.ex:139
+#: lib/kanban_web/live/goal_live/show.ex:140
 #, elixir-autogen, elixir-format
 msgid "Hierarchy"
 msgstr "层级"
 
-#: lib/kanban_web/live/goal_live/show.ex:156
+#: lib/kanban_web/live/goal_live/show.ex:157
 #, elixir-autogen, elixir-format
 msgid "This goal has no children yet."
 msgstr "此目标暂无子项。"
@@ -4695,7 +4694,7 @@ msgid "Comma-separated. Valid: api_design, code_generation, code_review, databas
 msgstr "以逗号分隔。有效值:api_design、code_generation、code_review、database_design、debugging、devops、documentation、file_operations、git、performance_optimization、refactoring、security_analysis、testing、ui_design、ui_implementation、web_browsing。留空表示允许所有任务。"
 
 #: lib/kanban_web/live/board_live/show.html.heex:629
-#: lib/kanban_web/live/board_live/webhook_views.ex:55
+#: lib/kanban_web/live/board_live/webhook_views.ex:56
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:56
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:44
 #: lib/kanban_web/live/org_live/scim.html.heex:45
@@ -4746,30 +4745,30 @@ msgstr "已撤销"
 msgid "Working on it"
 msgstr "处理中"
 
-#: lib/kanban_web/components/goal_sidebar.ex:189
+#: lib/kanban_web/components/goal_sidebar.ex:210
 #, elixir-autogen, elixir-format
 msgid "%{n} days"
 msgstr "%{n} 天"
 
-#: lib/kanban_web/components/goal_sidebar.ex:188
+#: lib/kanban_web/components/goal_sidebar.ex:209
 #, elixir-autogen, elixir-format
 msgid "1 day"
 msgstr "1 天"
 
-#: lib/kanban_web/components/goal_sidebar.ex:85
+#: lib/kanban_web/components/goal_sidebar.ex:87
 #, elixir-autogen, elixir-format
 msgid "Avg cycle"
 msgstr "平均周期"
 
 #: lib/kanban_web/components/delivery_health_band.ex:175
-#: lib/kanban_web/components/goal_sidebar.ex:58
+#: lib/kanban_web/components/goal_sidebar.ex:60
 #: lib/kanban_web/components/target_progress_header.ex:217
 #: lib/kanban_web/components/targets_strip.ex:278
 #, elixir-autogen, elixir-format
 msgid "Complete"
 msgstr "已完成"
 
-#: lib/kanban_web/components/goal_sidebar.ex:72
+#: lib/kanban_web/components/goal_sidebar.ex:74
 #, elixir-autogen, elixir-format
 msgid "Contributors"
 msgstr "贡献者"
@@ -4779,12 +4778,12 @@ msgstr "贡献者"
 msgid "Database changes"
 msgstr "数据库更改"
 
-#: lib/kanban_web/components/goal_sidebar.ex:77
+#: lib/kanban_web/components/goal_sidebar.ex:79
 #, elixir-autogen, elixir-format
 msgid "Days in flight"
 msgstr "进行中的天数"
 
-#: lib/kanban_web/components/goal_sidebar.ex:59
+#: lib/kanban_web/components/goal_sidebar.ex:61
 #, elixir-autogen, elixir-format
 msgid "Done / total"
 msgstr "完成 / 总数"
@@ -4794,7 +4793,7 @@ msgstr "完成 / 总数"
 msgid "Error handling"
 msgstr "错误处理"
 
-#: lib/kanban_web/components/goal_sidebar.ex:61
+#: lib/kanban_web/components/goal_sidebar.ex:63
 #, elixir-autogen, elixir-format
 msgid "In flight"
 msgstr "进行中"
@@ -4804,7 +4803,7 @@ msgstr "进行中"
 msgid "Key files"
 msgstr "关键文件"
 
-#: lib/kanban_web/components/goal_sidebar.ex:89
+#: lib/kanban_web/components/goal_sidebar.ex:90
 #, elixir-autogen, elixir-format
 msgid "Last activity"
 msgstr "最后活动"
@@ -4829,7 +4828,7 @@ msgstr "范围之外"
 msgid "Patterns to follow"
 msgstr "需遵循的模式"
 
-#: lib/kanban_web/components/goal_sidebar.ex:57
+#: lib/kanban_web/components/goal_sidebar.ex:59
 #, elixir-autogen, elixir-format
 msgid "Progress"
 msgstr "进度"
@@ -4852,23 +4851,23 @@ msgstr "安全注意事项"
 msgid "Technology requirements"
 msgstr "技术要求"
 
-#: lib/kanban_web/components/goal_sidebar.ex:129
+#: lib/kanban_web/components/goal_sidebar.ex:130
 #, elixir-autogen, elixir-format
 msgid "Throughput · last 12 days"
 msgstr "吞吐量 · 最近 12 天"
 
-#: lib/kanban_web/components/goal_sidebar.ex:128
+#: lib/kanban_web/components/goal_sidebar.ex:129
 #, elixir-autogen, elixir-format
 msgid "Throughput · last 12 hours"
 msgstr "吞吐量 · 最近 12 小时"
 
-#: lib/kanban_web/components/goal_sidebar.ex:75
-#: lib/kanban_web/live/board_live/webhook_views.ex:370
+#: lib/kanban_web/components/goal_sidebar.ex:77
+#: lib/kanban_web/live/board_live/webhook_views.ex:371
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "时间"
 
-#: lib/kanban_web/components/goal_sidebar.ex:81
+#: lib/kanban_web/components/goal_sidebar.ex:83
 #, elixir-autogen, elixir-format
 msgid "Time spent"
 msgstr "耗时"
@@ -4883,7 +4882,7 @@ msgstr "验证规则"
 msgid "Verification steps"
 msgstr "验证步骤"
 
-#: lib/kanban_web/components/goal_sidebar.ex:187
+#: lib/kanban_web/components/goal_sidebar.ex:208
 #, elixir-autogen, elixir-format
 msgid "today"
 msgstr "今天"
@@ -4957,7 +4956,7 @@ msgstr "审核状态"
 msgid "Success"
 msgstr "成功"
 
-#: lib/kanban_web/components/review_queue_item.ex:256
+#: lib/kanban_web/components/review_queue_item.ex:258
 #: lib/kanban_web/components/review_stats_strip.ex:72
 #: lib/kanban_web/live/task_live/view_component.ex:368
 #: lib/kanban_web/review_report_helpers.ex:54
@@ -5008,7 +5007,7 @@ msgid "%{m}m"
 msgstr "%{m}分"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:419
-#: lib/kanban_web/components/archive_filter_chips.ex:88
+#: lib/kanban_web/components/archive_filter_chips.ex:89
 #: lib/kanban_web/live/notification_live/index.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "All"
@@ -5097,24 +5096,24 @@ msgstr "%{s} 秒前"
 msgid "Acceptance"
 msgstr "验收"
 
-#: lib/kanban_web/components/review_detail_header.ex:157
+#: lib/kanban_web/components/review_detail_header.ex:159
 #, elixir-autogen, elixir-format
 msgid "Approve"
 msgstr "批准"
 
-#: lib/kanban_web/components/review_detail_header.ex:150
+#: lib/kanban_web/components/review_detail_header.ex:152
 #, elixir-autogen, elixir-format
 msgid "Request changes"
 msgstr "请求更改"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:316
 #: lib/kanban_web/components/agent_activity_feed.ex:318
-#: lib/kanban_web/components/review_detail_header.ex:77
+#: lib/kanban_web/components/review_detail_header.ex:78
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
 msgstr "未知代理"
 
-#: lib/kanban_web/components/review_queue_item.ex:124
+#: lib/kanban_web/components/review_queue_item.ex:125
 #, elixir-autogen, elixir-format
 msgid "needs attention"
 msgstr "需要关注"
@@ -5231,41 +5230,41 @@ msgstr "贯穿整个工作区"
 msgid "reached Done before archive"
 msgstr "归档前已到达「完成」"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:423
-#: lib/kanban_web/components/archive_filter_chips.ex:429
+#: lib/kanban_web/components/archive_filter_chips.ex:424
+#: lib/kanban_web/components/archive_filter_chips.ex:430
 #: lib/kanban_web/components/board_filter_bar.ex:117
 #: lib/kanban_web/live/archive_live/index.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Assignee"
 msgstr "分配给"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:435
+#: lib/kanban_web/components/archive_filter_chips.ex:437
 #, elixir-autogen, elixir-format
 msgid "Date range"
 msgstr "日期范围"
 
-#: lib/kanban_web/components/archive_row.ex:111
+#: lib/kanban_web/components/archive_row.ex:112
 #, elixir-autogen, elixir-format
 msgid "Open archive actions"
 msgstr "打开归档操作"
 
-#: lib/kanban_web/components/archive_row.ex:351
-#: lib/kanban_web/components/review_detail_header.ex:118
+#: lib/kanban_web/components/archive_row.ex:357
+#: lib/kanban_web/components/review_detail_header.ex:120
 #, elixir-autogen, elixir-format
 msgid "by"
 msgstr "由"
 
-#: lib/kanban_web/components/archive_row.ex:298
+#: lib/kanban_web/components/archive_row.ex:299
 #, elixir-autogen, elixir-format
 msgid "died at"
 msgstr "结束于"
 
-#: lib/kanban_web/components/archive_row.ex:230
+#: lib/kanban_web/components/archive_row.ex:231
 #, elixir-autogen, elixir-format
 msgid "goal:"
 msgstr "目标:"
 
-#: lib/kanban_web/components/archive_row.ex:288
+#: lib/kanban_web/components/archive_row.ex:289
 #, elixir-autogen, elixir-format
 msgid "unknown"
 msgstr "未知"
@@ -6035,12 +6034,12 @@ msgstr "违反"
 msgid "Completion summary"
 msgstr "完成摘要"
 
-#: lib/kanban_web/components/review_detail_header.ex:129
+#: lib/kanban_web/components/review_detail_header.ex:131
 #, elixir-autogen, elixir-format
 msgid "Email %{name}"
 msgstr "给 %{name} 发邮件"
 
-#: lib/kanban_web/components/review_queue_item.ex:187
+#: lib/kanban_web/components/review_queue_item.ex:189
 #, elixir-autogen, elixir-format
 msgid "Completed by %{name}"
 msgstr "完成人:%{name}"
@@ -6117,27 +6116,27 @@ msgstr "未评估"
 msgid "passed"
 msgstr "通过"
 
-#: lib/kanban_web/components/review_queue_item.ex:248
+#: lib/kanban_web/components/review_queue_item.ex:250
 #, elixir-autogen, elixir-format
 msgid "ACC"
 msgstr "ACC"
 
-#: lib/kanban_web/components/review_queue_item.ex:260
+#: lib/kanban_web/components/review_queue_item.ex:262
 #, elixir-autogen, elixir-format
 msgid "PAT"
 msgstr "PAT"
 
-#: lib/kanban_web/components/review_queue_item.ex:266
+#: lib/kanban_web/components/review_queue_item.ex:268
 #, elixir-autogen, elixir-format
 msgid "PIT"
 msgstr "PIT"
 
-#: lib/kanban_web/components/review_queue_item.ex:262
+#: lib/kanban_web/components/review_queue_item.ex:264
 #, elixir-autogen, elixir-format
 msgid "Patterns followed"
 msgstr "已遵循的模式"
 
-#: lib/kanban_web/components/review_queue_item.ex:254
+#: lib/kanban_web/components/review_queue_item.ex:256
 #, elixir-autogen, elixir-format
 msgid "TST"
 msgstr "TST"
@@ -6188,17 +6187,17 @@ msgstr "归档所有 30 天前已完成的任务？"
 msgid "Archive old (30d+)"
 msgstr "归档旧任务（30天+）"
 
-#: lib/kanban_web/live/archive_live/index.ex:408
+#: lib/kanban_web/live/archive_live/index.ex:412
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} completed tasks older than 30 days."
 msgstr "已归档 %{count} 个 30 天前完成的任务。"
 
-#: lib/kanban_web/live/archive_live/index.ex:404
+#: lib/kanban_web/live/archive_live/index.ex:408
 #, elixir-autogen, elixir-format
 msgid "Archived 1 completed task older than 30 days."
 msgstr "已归档 1 个 30 天前完成的任务。"
 
-#: lib/kanban_web/live/archive_live/index.ex:400
+#: lib/kanban_web/live/archive_live/index.ex:404
 #, elixir-autogen, elixir-format
 msgid "No completed tasks older than 30 days were found."
 msgstr "未找到 30 天前已完成的任务。"
@@ -7041,7 +7040,7 @@ msgstr "技术细节（JSON 对象）"
 msgid "Filtering by %{agent}"
 msgstr "按 %{agent} 筛选"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:220
+#: lib/kanban_web/components/archive_filter_chips.ex:221
 #: lib/kanban_web/live/agents_live/components/roster.ex:149
 #, elixir-autogen, elixir-format
 msgid "Clear"
@@ -7240,13 +7239,13 @@ msgstr "最近 %{count} 天"
 msgid "Tasks Without Goals"
 msgstr "无目标的任务"
 
-#: lib/kanban_web/components/archive_row.ex:153
+#: lib/kanban_web/components/archive_row.ex:154
 #: lib/kanban_web/live/archive_live/index.html.heex:228
 #, elixir-autogen, elixir-format
 msgid "Toggle group"
 msgstr "切换分组"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:306
+#: lib/kanban_web/components/archive_filter_chips.ex:307
 #: lib/kanban_web/components/board_filter_bar.ex:115
 #, elixir-autogen, elixir-format
 msgid "All assignees"
@@ -7257,17 +7256,17 @@ msgstr "分配给"
 msgid "Archived tasks stay searchable and in the audit log, and can be restored or deleted at any time by users with edit access."
 msgstr "已归档的任务仍可搜索并保留在审计日志中，拥有编辑权限的用户可以随时恢复或删除它们。"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:231
+#: lib/kanban_web/components/archive_filter_chips.ex:232
 #, elixir-autogen, elixir-format
 msgid "Apply"
 msgstr "应用"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:199
+#: lib/kanban_web/components/archive_filter_chips.ex:200
 #, elixir-autogen, elixir-format
 msgid "From"
 msgstr "从"
 
-#: lib/kanban_web/components/archive_filter_chips.ex:206
+#: lib/kanban_web/components/archive_filter_chips.ex:207
 #, elixir-autogen, elixir-format
 msgid "To"
 msgstr "至"
@@ -7759,7 +7758,7 @@ msgstr "已确认"
 #: lib/kanban_web/components/account_status.ex:34
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
 #: lib/kanban_web/live/board_live/members_form_component.ex:281
-#: lib/kanban_web/live/board_live/webhook_views.ex:159
+#: lib/kanban_web/live/board_live/webhook_views.ex:160
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "已停用"
@@ -7824,7 +7823,7 @@ msgid "Delete this account permanently? This cannot be undone."
 msgstr "永久删除此账户？此操作无法撤销。"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:182
-#: lib/kanban_web/live/board_live/webhook_views.ex:235
+#: lib/kanban_web/live/board_live/webhook_views.ex:236
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "停用"
@@ -7835,7 +7834,7 @@ msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "停用此账户？该用户将被登出且无法登录。"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:193
-#: lib/kanban_web/live/board_live/webhook_views.ex:235
+#: lib/kanban_web/live/board_live/webhook_views.ex:236
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "启用"
@@ -9330,7 +9329,7 @@ msgstr "您确定要删除此评论吗？"
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:90
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:26
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
-#: lib/kanban_web/live/board_live/webhook_views.ex:219
+#: lib/kanban_web/live/board_live/webhook_views.ex:220
 #: lib/kanban_web/live/org_live/audit_streaming.html.heex:223
 #: lib/kanban_web/live/task_live/components/comment_row.ex:121
 #, elixir-autogen, elixir-format
@@ -9404,7 +9403,7 @@ msgctxt "agent action"
 msgid "claimed"
 msgstr "已认领"
 
-#: lib/kanban_web/components/review_detail_header.ex:84
+#: lib/kanban_web/components/review_detail_header.ex:85
 #: lib/kanban_web/task_tokens.ex:174
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
@@ -10072,7 +10071,7 @@ msgstr "添加端点"
 msgid "Add endpoint"
 msgstr "添加端点"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:367
+#: lib/kanban_web/live/board_live/webhook_views.ex:368
 #, elixir-autogen, elixir-format
 msgid "Attempt"
 msgstr "尝试"
@@ -10082,12 +10081,12 @@ msgstr "尝试"
 msgid "Could not update the endpoint. Reload and try again."
 msgstr "无法更新端点。请刷新后重试。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:282
+#: lib/kanban_web/live/board_live/webhook_views.ex:283
 #, elixir-autogen, elixir-format
 msgid "Delete this endpoint and its delivery log?"
 msgstr "删除此端点及其投递日志？"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:259
+#: lib/kanban_web/live/board_live/webhook_views.ex:260
 #, elixir-autogen, elixir-format
 msgid "Deliveries"
 msgstr "投递"
@@ -10123,13 +10122,13 @@ msgstr "端点已启用"
 msgid "Endpoint not found"
 msgstr "未找到端点"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:369
+#: lib/kanban_web/live/board_live/webhook_views.ex:370
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:454
 #, elixir-autogen, elixir-format
 msgid "Error"
 msgstr "错误"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:365
+#: lib/kanban_web/live/board_live/webhook_views.ex:366
 #, elixir-autogen, elixir-format
 msgid "Event"
 msgstr "事件"
@@ -10141,7 +10140,7 @@ msgstr "事件"
 msgid "Events"
 msgstr "事件"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:430
+#: lib/kanban_web/live/board_live/webhook_views.ex:434
 #: lib/kanban_web/live/workspace_live/exports.ex:59
 #, elixir-autogen, elixir-format
 msgid "Failed"
@@ -10167,7 +10166,7 @@ msgstr "集成"
 msgid "Kind"
 msgstr "类型"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:359
+#: lib/kanban_web/live/board_live/webhook_views.ex:360
 #, elixir-autogen, elixir-format
 msgid "No deliveries yet."
 msgstr "暂无投递。"
@@ -10188,27 +10187,27 @@ msgstr "只有看板所有者才能管理集成"
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "粘贴 Slack 传入 Webhook URL（https://hooks.slack.com/…）。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:340
+#: lib/kanban_web/live/board_live/webhook_views.ex:341
 #, elixir-autogen, elixir-format
 msgid "Recent deliveries"
 msgstr "最近的投递"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:351
+#: lib/kanban_web/live/board_live/webhook_views.ex:352
 #, elixir-autogen, elixir-format
 msgid "Refresh"
 msgstr "刷新"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:368
+#: lib/kanban_web/live/board_live/webhook_views.ex:369
 #, elixir-autogen, elixir-format
 msgid "Response"
 msgstr "响应"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:274
+#: lib/kanban_web/live/board_live/webhook_views.ex:275
 #, elixir-autogen, elixir-format
 msgid "Rotate secret"
 msgstr "轮换密钥"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:269
+#: lib/kanban_web/live/board_live/webhook_views.ex:270
 #, elixir-autogen, elixir-format
 msgid "Rotate the signing secret? The old secret stops working immediately."
 msgstr "要轮换签名密钥吗？旧密钥将立即失效。"
@@ -10218,12 +10217,12 @@ msgstr "要轮换签名密钥吗？旧密钥将立即失效。"
 msgid "Secret rotated"
 msgstr "密钥已轮换"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:247
+#: lib/kanban_web/live/board_live/webhook_views.ex:248
 #, elixir-autogen, elixir-format
 msgid "Send test"
 msgstr "发送测试"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:52
+#: lib/kanban_web/live/board_live/webhook_views.ex:53
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "Signing secret"
@@ -10239,7 +10238,7 @@ msgstr "Slack"
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride 会向此 HTTPS 地址发送签名的 JSON POST。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:429
+#: lib/kanban_web/live/board_live/webhook_views.ex:433
 #, elixir-autogen, elixir-format
 msgid "Succeeded"
 msgstr "成功"
@@ -10257,7 +10256,7 @@ msgstr "测试事件已加入队列。请几秒后刷新投递记录。"
 msgid "URL"
 msgstr "URL"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:56
+#: lib/kanban_web/live/board_live/webhook_views.ex:57
 #, elixir-autogen, elixir-format
 msgid "Use it to verify the X-Stride-Signature header on each request."
 msgstr "用它来验证每个请求的 X-Stride-Signature 请求头。"
@@ -10267,8 +10266,8 @@ msgstr "用它来验证每个请求的 X-Stride-Signature 请求头。"
 msgid "Webhooks"
 msgstr "Webhook"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:442
 #: lib/kanban_web/live/board_live/webhook_views.ex:446
+#: lib/kanban_web/live/board_live/webhook_views.ex:450
 #, elixir-autogen, elixir-format
 msgid "unknown host"
 msgstr "未知主机"
@@ -10318,7 +10317,7 @@ msgstr "将此看板的任务事件发送到你自己的服务，或发送到 Sl
 msgid "Paste the webhook URL you copied from Discord (for example https://discord.com/api/webhooks/…)."
 msgstr "粘贴你从 Discord 复制的 Webhook URL（例如 https://discord.com/api/webhooks/…）。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:97
+#: lib/kanban_web/live/board_live/webhook_views.ex:98
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:109
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:85
 #, elixir-autogen, elixir-format
@@ -10952,7 +10951,7 @@ msgstr "批量操作仅对组织开放，未做任何更改。"
 msgid "Integrations are available to organizations. Nothing was changed."
 msgstr "集成仅对组织开放，未做任何更改。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:169
+#: lib/kanban_web/live/board_live/webhook_views.ex:170
 #: lib/kanban_web/live/org_live/audit_streaming_row.ex:112
 #, elixir-autogen, elixir-format
 msgid "Paused"
@@ -11855,7 +11854,7 @@ msgstr "由 %{name} 添加"
 msgid "Added by a deleted account"
 msgstr "由已删除的账户添加"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:179
+#: lib/kanban_web/live/board_live/webhook_views.ex:180
 #, elixir-autogen, elixir-format
 msgid "Not sending"
 msgstr "暂不发送"

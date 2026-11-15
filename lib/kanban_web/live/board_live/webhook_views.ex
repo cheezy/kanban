@@ -19,6 +19,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   alias KanbanWeb.BoardLive.WebhookForm
   alias KanbanWeb.BoardLive.WebhookKinds
   alias KanbanWeb.BoardLive.WebhookState
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskTokens
   alias KanbanWeb.TimeAgo
 
@@ -390,7 +391,10 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
                 {truncate(delivery.error, error_preview())}
               </td>
               <td style={[cell_style(), "white-space: nowrap;"]}>
-                <time datetime={DateTime.to_iso8601(delivery.inserted_at)}>
+                <time
+                  datetime={LocalTime.utc_iso8601(delivery.inserted_at)}
+                  title={LocalTime.format_full(delivery.inserted_at)}
+                >
                   {TimeAgo.format_age(delivery.inserted_at, :coarse)}
                 </time>
               </td>

@@ -91,6 +91,35 @@ defmodule KanbanWeb.ArchiveLive.FiltersTest do
     end
   end
 
+  describe "apply_date_range/4 — the viewer's local day" do
+    # 03:00 UTC on the 11th is 10 PM on the 10th in Toronto.
+    @late_evening ~U[2026-01-11 03:00:00Z]
+
+    test "counts a row towards the local day in the given zone" do
+      row = task(archived_at: @late_evening)
+
+      assert Filters.apply_date_range([row], ~D[2026-01-10], ~D[2026-01-10], "America/Toronto") ==
+               [row]
+
+      assert Filters.apply_date_range([row], ~D[2026-01-11], ~D[2026-01-11], "America/Toronto") ==
+               []
+    end
+
+    test "defaults to the UTC day" do
+      row = task(archived_at: @late_evening)
+
+      assert Filters.apply_date_range([row], ~D[2026-01-10], ~D[2026-01-10]) == []
+      assert Filters.apply_date_range([row], ~D[2026-01-11], ~D[2026-01-11]) == [row]
+    end
+
+    test "an unknown zone falls back to the UTC day without raising" do
+      row = task(archived_at: @late_evening)
+
+      assert Filters.apply_date_range([row], ~D[2026-01-11], ~D[2026-01-11], "Mars/Olympus") ==
+               [row]
+    end
+  end
+
   describe "reason_matches?/2" do
     test "a nil reason matches :completed only when the task completed" do
       assert [archive_reason: nil, status: :completed]

@@ -298,7 +298,11 @@ defmodule KanbanWeb.ArchiveLive.Index do
       socket.assigns.all_rows
       |> Filters.apply_reason(socket.assigns.filter)
       |> Filters.apply_assignee(socket.assigns.assignee_filter)
-      |> Filters.apply_date_range(socket.assigns.date_from, socket.assigns.date_to)
+      |> Filters.apply_date_range(
+        socket.assigns.date_from,
+        socket.assigns.date_to,
+        socket.assigns.timezone
+      )
       |> Filters.apply_search(socket.assigns.search_query)
 
     assign(socket, :rows, rows)

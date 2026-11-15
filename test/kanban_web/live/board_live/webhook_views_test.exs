@@ -228,5 +228,36 @@ defmodule KanbanWeb.BoardLive.WebhookViewsTest do
       assert html =~ "&lt;b&gt;boom&lt;/b&gt;"
       refute html =~ "<b>boom</b>"
     end
+
+    test "titles each delivery's age with the local time and keeps a UTC datetime" do
+      KanbanWeb.LocalTime.put_timezone("America/Toronto")
+
+      deliveries = [
+        %Delivery{
+          id: 1,
+          event: "ping",
+          status: :succeeded,
+          attempt: 1,
+          response_status: 204,
+          inserted_at: ~U[2026-11-11 04:56:00Z]
+        }
+      ]
+
+      assigns = %{deliveries: deliveries}
+
+      render = fn ->
+        rendered_to_string(~H"""
+        <WebhookViews.delivery_log endpoint_id={7} deliveries={@deliveries} myself={nil} />
+        """)
+      end
+
+      html = render.()
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+      assert html =~ ~r/\d+d ago/
+
+      de_html = Gettext.with_locale(KanbanWeb.Gettext, "de", render)
+      assert de_html =~ ~s(title="10. November 2026, 23:56 EST")
+    end
   end
 end

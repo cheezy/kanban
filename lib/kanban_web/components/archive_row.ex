@@ -26,6 +26,7 @@ defmodule KanbanWeb.ArchiveRow do
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.Duration
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskTokens
   alias KanbanWeb.TimeAgo
 
@@ -342,13 +343,18 @@ defmodule KanbanWeb.ArchiveRow do
     ~H"""
     <div data-archive-row-archived-by style="display: flex; flex-direction: column; gap: 2px;">
       <span style="font-size: 11.5px; color: var(--ink-2);">
-        {format_date(@task.archived_at)}
+        <.local_time value={@task.archived_at} style={:short_date} />
       </span>
       <span
         :if={@user}
         style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono);"
       >
-        {TimeAgo.format_age(@task.archived_at, :coarse)} · {gettext("by")} {user_name(@user)}
+        <time
+          :if={@task.archived_at}
+          datetime={LocalTime.utc_iso8601(@task.archived_at)}
+          title={LocalTime.format_full(@task.archived_at)}
+        >{TimeAgo.format_age(@task.archived_at, :coarse)}</time>
+        · {gettext("by")} {user_name(@user)}
       </span>
     </div>
     """
@@ -394,10 +400,4 @@ defmodule KanbanWeb.ArchiveRow do
   defp user_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp user_name(%{email: email}) when is_binary(email), do: email
   defp user_name(_), do: "?"
-
-  defp format_date(nil), do: ""
-
-  defp format_date(%DateTime{} = dt) do
-    Calendar.strftime(dt, "%b %-d")
-  end
 end

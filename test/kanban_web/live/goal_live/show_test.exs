@@ -569,8 +569,8 @@ defmodule KanbanWeb.GoalLive.ShowTest do
         )
 
       # Push the goal's inserted_at and the child's completed_at back 5 days
-      # so bucket_unit/2 returns :day and bucket_label/2 + format_short_date/1
-      # exercise the daily-cadence formatting branch.
+      # so bucket_unit/2 returns :day and bucket_label/2 + range_label/3
+      # (LocalTime :short_date) exercise the daily-cadence formatting branch.
       five_days_ago_naive =
         DateTime.utc_now()
         |> DateTime.add(-5 * 86_400, :second)
@@ -593,9 +593,210 @@ defmodule KanbanWeb.GoalLive.ShowTest do
 
       {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
 
-      # The day-cadence label is "Mon DD — Mon DD" via Calendar.strftime("%b %d").
-      # Assert the dash-separator format characteristic of the daily branch.
-      assert html =~ ~r/[A-Z][a-z]{2} \d{1,2} — [A-Z][a-z]{2} \d{1,2}/
+      # The day-cadence label is "Mon D, YYYY — Mon D, YYYY": LocalTime's
+      # :short_date in the viewer's zone and language (en here).
+      assert html =~ ~r/[A-Z][a-z]{2} \d{1,2}, \d{4} — [A-Z][a-z]{2} \d{1,2}, \d{4}/
     end
+  end
+
+  describe "local time — timestamps follow the viewer's zone and language" do
+    setup [:register_and_log_in_user]
+
+    test "renders timestamps in the viewer's timezone", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-07-15 16:30:00])
+
+      conn = init_test_session(conn, %{"timezone" => "America/Toronto"})
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # 16:30 UTC is 12:30 PM in Toronto (EDT in July).
+      assert html =~ "July 15, 2026 at 12:30 PM"
+      refute html =~ "4:30 PM"
+
+      assert view |> element("[data-goal-last-activity]") |> render() =~
+               ~s(title="July 15, 2026 at 12:30 PM EDT")
+    end
+
+    test "rolls a late-evening timestamp back to the local day", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-11-11 02:15:00])
+
+      conn = init_test_session(conn, %{"timezone" => "America/Los_Angeles"})
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # 02:15 UTC on the 11th is still the evening of the 10th in Los Angeles.
+      assert html =~ "November 10, 2026 at 6:15 PM"
+      refute html =~ "November 11, 2026"
+
+      assert view |> element("[data-goal-last-activity]") |> render() =~
+               ~s(title="November 10, 2026 at 6:15 PM PST")
+    end
+
+    test "falls back to UTC for an unknown zone", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-11-11 02:15:00])
+
+      conn =
+        conn
+        |> init_test_session(%{"timezone" => "Mars/Olympus"})
+        |> put_connect_params(%{"timezone" => "Not/AZone"})
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "November 11, 2026 at 2:15 AM"
+
+      assert view |> element("[data-goal-last-activity]") |> render() =~
+               ~s(datetime="2026-11-11T02:15:00Z")
+    end
+
+    test "renders nothing for a nil timestamp", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-11-11 02:15:00])
+
+      from(h in Kanban.Tasks.TaskHistory, where: h.task_id == ^goal.id)
+      |> Kanban.Repo.delete_all()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      refute view |> element("[data-goal-activity]") |> render() =~ "<time"
+
+      # A goal with no recorded activity: the sidebar shows a dash, no <time>.
+      sidebar =
+        render_component(&KanbanWeb.GoalSidebar.goal_sidebar/1,
+          metrics: sidebar_metrics(%{last_activity: nil})
+        )
+
+      refute sidebar =~ "data-goal-last-activity"
+      refute sidebar =~ "<time"
+      assert sidebar =~ "—"
+    end
+
+    test "uses the session timezone and locale on mount", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-11-11 04:56:00])
+
+      conn = init_test_session(conn, %{"locale" => "de", "timezone" => "America/Toronto"})
+      path = ~p"/boards/#{board}/goals/#{goal.id}"
+
+      static_html = conn |> get(path) |> html_response(200)
+      {:ok, _view, connected_html} = live(conn, path)
+
+      for html <- [static_html, connected_html] do
+        assert html =~ "10. November 2026, 23:56"
+        assert html =~ ~s(title="10. November 2026, 23:56 EST")
+        # The daily sparkline caption uses the German short date on both ends.
+        assert html =~ ~r/\d{1,2}\. \S+ \d{4} — \d{1,2}\. \S+ \d{4}/
+        refute html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+      end
+    end
+
+    test "renders French month names on the goal page in fr", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-11-11 04:56:00])
+
+      conn = init_test_session(conn, %{"locale" => "fr", "timezone" => "America/Toronto"})
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert html =~ "10 novembre 2026 à 23:56"
+
+      assert view |> element("[data-goal-last-activity]") |> render() =~
+               ~s(title="10 novembre 2026 à 23:56 EST")
+
+      refute html =~ "November"
+    end
+
+    test "renders the hourly sparkline clock in the viewer's zone and language",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, %{goal: goal, child_tasks: [child]}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{"title" => "Fresh goal", "created_by_id" => user.id},
+          [%{"title" => "Just started", "type" => "work", "created_by_id" => user.id}]
+        )
+
+      one_hour_ago = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-3600)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^child.id)
+      |> Kanban.Repo.update_all(set: [claimed_at: one_hour_ago])
+
+      conn = init_test_session(conn, %{"locale" => "de", "timezone" => "America/Toronto"})
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      # The caption is "HH:MM — HH:MM": the German 24-hour clock, shifted to
+      # Toronto, spanning the last 12 hours.
+      [_, from_h, from_m, to_h, to_m] =
+        Regex.run(~r/(\d{2}):(\d{2}) — (\d{2}):(\d{2})/, html)
+
+      refute html =~ ~r/\d{1,2}:\d{2} (AM|PM)/
+
+      minutes = fn h, m -> String.to_integer(h) * 60 + String.to_integer(m) end
+      local_now = DateTime.now!("America/Toronto")
+      now_minutes = local_now.hour * 60 + local_now.minute
+
+      # The right end is the local "now" (allowing a minute's rollover); the
+      # left end is twelve hours before it.
+      assert Integer.mod(now_minutes - minutes.(to_h, to_m), 1440) in [0, 1]
+      assert Integer.mod(minutes.(to_h, to_m) - minutes.(from_h, from_m), 1440) == 720
+    end
+
+    test "keeps an ISO 8601 UTC datetime attribute", %{conn: conn, user: user} do
+      {board, goal} = goal_stamped_at(user, ~N[2026-11-11 04:56:00])
+
+      conn = init_test_session(conn, %{"timezone" => "Asia/Tokyo"})
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      last_activity = view |> element("[data-goal-last-activity]") |> render()
+      assert last_activity =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert last_activity =~ ~s(title="November 11, 2026 at 1:56 PM JST")
+      refute html =~ "+09:00"
+    end
+  end
+
+  # A goal with one child whose updated_at, inserted_at and activity-log
+  # history are all pinned to `at` (a UTC NaiveDateTime).
+  defp goal_stamped_at(user, at) do
+    board = board_fixture(user)
+    column = column_fixture(board)
+
+    {:ok, %{goal: goal, child_tasks: [child]}} =
+      Tasks.create_goal_with_tasks(
+        column,
+        %{"title" => "Local time goal", "created_by_id" => user.id},
+        [%{"title" => "Child", "type" => "work", "created_by_id" => user.id}]
+      )
+
+    from(t in Kanban.Tasks.Task, where: t.id in ^[goal.id, child.id])
+    |> Kanban.Repo.update_all(set: [updated_at: at, inserted_at: at])
+
+    Kanban.Repo.insert!(%Kanban.Tasks.TaskHistory{
+      task_id: goal.id,
+      type: :creation,
+      inserted_at: at
+    })
+
+    from(h in Kanban.Tasks.TaskHistory, where: h.task_id in ^[goal.id, child.id])
+    |> Kanban.Repo.update_all(set: [inserted_at: at])
+
+    {board, goal}
+  end
+
+  defp sidebar_metrics(overrides) do
+    Map.merge(
+      %{
+        percent: 0,
+        done: 0,
+        total: 1,
+        in_flight: 0,
+        ready: 1,
+        backlog: 0,
+        blocked: 0,
+        contributor_count: 0,
+        days_in_flight: nil,
+        time_spent_minutes: 0,
+        avg_cycle_minutes: 0,
+        last_activity: ~U[2026-11-11 04:56:00Z],
+        sparkline_data: List.duplicate(0, 12),
+        sparkline_label: "",
+        sparkline_unit: :day
+      },
+      overrides
+    )
   end
 end

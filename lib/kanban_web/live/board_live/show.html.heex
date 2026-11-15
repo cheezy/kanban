@@ -875,7 +875,7 @@
               <div style="font-size: 11.5px; color: var(--ink-3); white-space: nowrap;">
                 <%= if token.last_used_at do %>
                   <span class="ident">
-                    {Calendar.strftime(token.last_used_at, "%Y-%m-%d %H:%M")}
+                    <.local_time value={token.last_used_at} />
                   </span>
                 <% else %>
                   <span style="color: var(--ink-4);">{gettext("Never used")}</span>

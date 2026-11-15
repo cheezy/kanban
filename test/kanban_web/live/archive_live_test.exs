@@ -1179,6 +1179,25 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert opened =~ "data-archive-date-to"
     end
 
+    test "the date range filter uses the viewer's local day",
+         %{conn: conn, board: board, column: column} do
+      # 03:00 UTC on Jan 11 is 10 PM on Jan 10 in Toronto.
+      archive_on(column, "Late Evening", ~U[2026-01-11 03:00:00Z])
+      archive_on(column, "Next Day", ~U[2026-01-11 18:00:00Z])
+
+      conn = init_test_session(conn, %{"timezone" => "America/Toronto"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+      render_click(view, "toggle_date_menu", %{})
+
+      html =
+        view
+        |> element("[data-archive-date-menu] form")
+        |> render_submit(%{"from" => "2026-01-10", "to" => "2026-01-10"})
+
+      assert html =~ "Late Evening"
+      refute html =~ "Next Day"
+    end
+
     test "submitting the From/To popover form narrows the rows and closes the popover",
          %{conn: conn, board: board, column: column} do
       archive_on(column, "In Range", ~U[2026-01-15 12:00:00Z])
@@ -1196,8 +1215,7 @@ defmodule KanbanWeb.ArchiveLiveTest do
       refute html =~ "Out Of Range"
       # The popover closes after Apply, and the chip reflects the active range.
       refute html =~ "data-archive-date-menu"
-      assert html =~ "2026-01-01"
-      assert html =~ "2026-01-31"
+      assert html =~ "Jan 1, 2026 – Jan 31, 2026"
     end
 
     test "the Date range chip Clear button resets the range and restores rows",

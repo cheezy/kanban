@@ -20,6 +20,7 @@ defmodule KanbanWeb.GoalLive.Show do
   alias KanbanWeb.GoalChildRow
   alias KanbanWeb.GoalProgressHeader
   alias KanbanWeb.GoalSidebar
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskActivityLog
 
   # Section render order — mirrors the column flow on the board. Children
@@ -487,16 +488,18 @@ defmodule KanbanWeb.GoalLive.Show do
 
   defp bucket_label(:hour, now) do
     earliest = DateTime.add(now, -@bucket_count * 3600, :second)
-    "#{format_clock(earliest)} — #{format_clock(now)}"
+    range_label(earliest, now, :time)
   end
 
   defp bucket_label(:day, now) do
     earliest = DateTime.add(now, -@bucket_count * 86_400, :second)
-    "#{format_short_date(earliest)} — #{format_short_date(now)}"
+    range_label(earliest, now, :short_date)
   end
 
-  defp format_clock(%DateTime{} = dt), do: Calendar.strftime(dt, "%H:%M")
-  defp format_short_date(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %d")
+  # Both ends shift to the viewer's zone and follow the UI language: the
+  # zone and locale are per-process, set by the on_mount hooks before mount/3.
+  defp range_label(from, to, style),
+    do: "#{LocalTime.format(from, style)} — #{LocalTime.format(to, style)}"
 
   defp to_datetime(%DateTime{} = dt), do: dt
   defp to_datetime(%NaiveDateTime{} = dt), do: DateTime.from_naive!(dt, "Etc/UTC")

@@ -403,4 +403,46 @@ defmodule KanbanWeb.ArchiveRowTest do
       assert html =~ "data-archive-row-type-icon"
     end
   end
+
+  describe "archive_row/1 — local time" do
+    setup do
+      KanbanWeb.LocalTime.put_timezone("America/Toronto")
+      :ok
+    end
+
+    test "shows the archived date on the viewer's local day with an absolute title" do
+      html = render_row(%{archived_at: ~U[2026-11-11 04:56:00Z]})
+
+      # 04:56 UTC on the 11th is 11:56 PM on the 10th in Toronto.
+      assert html =~ "Nov 10, 2026"
+      refute html =~ "Nov 11"
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      # Both the date and the relative age carry the absolute local title.
+      assert length(Regex.scan(~r/title="November 10, 2026 at 11:56 PM EST"/, html)) == 2
+      refute html =~ "UTC"
+    end
+
+    test "follows the UI language" do
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+          render_row(%{archived_at: ~U[2026-11-11 04:56:00Z]})
+        end)
+
+      assert html =~ "2026/11/10"
+      refute html =~ "Nov"
+    end
+
+    test "still renders the date when archived_by is not loaded" do
+      html = render_row(%{archived_at: ~U[2026-11-11 04:56:00Z], archived_by: nil})
+
+      assert html =~ "Nov 10, 2026"
+      refute html =~ " ago"
+    end
+
+    test "renders no <time> for a nil archived_at" do
+      html = render_row(%{archived_at: nil})
+
+      refute html =~ "<time"
+    end
+  end
 end

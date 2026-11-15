@@ -196,6 +196,37 @@ defmodule KanbanWeb.ReviewQueueItemTest do
     end
   end
 
+  describe "review_queue_item/1 — local time" do
+    setup do
+      KanbanWeb.LocalTime.put_timezone("America/Toronto")
+      :ok
+    end
+
+    test "titles the age with the absolute local time and keeps a UTC datetime" do
+      html = render_item(%{review_requested_at: ~U[2026-11-11 04:56:00Z]})
+
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+      assert html =~ ~r/\d+d ago/
+    end
+
+    test "the title follows the UI language" do
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_item(%{review_requested_at: ~U[2026-11-11 04:56:00Z]})
+        end)
+
+      assert html =~ ~s(title="10. November 2026, 23:56 EST")
+    end
+
+    test "a NaiveDateTime updated_at fallback keeps a UTC datetime attribute" do
+      html = render_item(%{review_requested_at: nil, updated_at: ~N[2026-11-11 04:56:00]})
+
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+    end
+  end
+
   describe "review_queue_item/1 — agent fallback" do
     test "falls back to created_by_agent when completed_by_agent is nil" do
       html = render_item(%{completed_by_agent: nil, created_by_agent: "Codex"})

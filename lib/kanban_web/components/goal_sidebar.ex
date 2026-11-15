@@ -17,7 +17,9 @@ defmodule KanbanWeb.GoalSidebar do
   use KanbanWeb, :html
 
   alias KanbanWeb.Duration
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.PulseSparkline
+  alias KanbanWeb.TimeAgo
 
   @doc """
   Renders the goal-sidebar metric pack.
@@ -85,10 +87,9 @@ defmodule KanbanWeb.GoalSidebar do
           label={gettext("Avg cycle")}
           value={Duration.format_minutes(@metrics.avg_cycle_minutes, zero_label: "—")}
         />
-        <.metric_row
-          label={gettext("Last activity")}
-          value={format_relative(@metrics.last_activity)}
-        />
+        <.metric_row label={gettext("Last activity")}>
+          <.last_activity at={to_utc(@metrics.last_activity)} />
+        </.metric_row>
       </.section>
     </aside>
     """
@@ -164,8 +165,9 @@ defmodule KanbanWeb.GoalSidebar do
   end
 
   attr :label, :string, required: true
-  attr :value, :any, required: true
+  attr :value, :any, default: nil
   attr :tone, :string, default: "var(--ink)"
+  slot :inner_block
 
   defp metric_row(assigns) do
     ~H"""
@@ -175,9 +177,28 @@ defmodule KanbanWeb.GoalSidebar do
         "font-size: 13px; font-weight: 600; color: #{@tone};",
         "font-variant-numeric: tabular-nums;"
       ]}>
-        {@value}
+        {if @inner_block != [], do: render_slot(@inner_block), else: @value}
       </span>
     </div>
+    """
+  end
+
+  # The relative age is the visible text; the absolute time, shifted to the
+  # viewer's zone and in the UI language, is the title. The datetime
+  # attribute stays ISO 8601 UTC for machines.
+  attr :at, DateTime, default: nil
+
+  defp last_activity(assigns) do
+    ~H"""
+    <time
+      :if={@at}
+      data-goal-last-activity
+      datetime={LocalTime.utc_iso8601(@at)}
+      title={LocalTime.format_full(@at)}
+    >
+      {TimeAgo.format_age(@at, :coarse)}
+    </time>
+    <span :if={!@at}>—</span>
     """
   end
 
@@ -189,20 +210,8 @@ defmodule KanbanWeb.GoalSidebar do
   defp format_days(n) when is_integer(n), do: gettext("%{n} days", n: n)
   defp format_days(_), do: "—"
 
-  defp format_relative(nil), do: "—"
-
-  defp format_relative(%DateTime{} = dt) do
-    relative_string(DateTime.diff(DateTime.utc_now(), dt, :second))
-  end
-
-  defp format_relative(%NaiveDateTime{} = dt) do
-    relative_string(NaiveDateTime.diff(NaiveDateTime.utc_now(), dt, :second))
-  end
-
-  defp format_relative(_), do: "—"
-
-  defp relative_string(seconds) when seconds < 60, do: gettext("just now")
-  defp relative_string(seconds) when seconds < 3600, do: "#{div(seconds, 60)}m ago"
-  defp relative_string(seconds) when seconds < 86_400, do: "#{div(seconds, 3600)}h ago"
-  defp relative_string(seconds), do: "#{div(seconds, 86_400)}d ago"
+  # A NaiveDateTime is a stored UTC value with no zone attached.
+  defp to_utc(%DateTime{} = dt), do: dt
+  defp to_utc(%NaiveDateTime{} = dt), do: DateTime.from_naive!(dt, "Etc/UTC")
+  defp to_utc(_), do: nil
 end

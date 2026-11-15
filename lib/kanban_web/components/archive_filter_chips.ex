@@ -24,6 +24,7 @@ defmodule KanbanWeb.ArchiveFilterChips do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.LocalTime
 
   @reasons [
     {:completed, "completed", "done"}
@@ -431,11 +432,12 @@ defmodule KanbanWeb.ArchiveFilterChips do
   end
 
   # Chip label: the generic "Date range" when no bound is set, otherwise a
-  # compact "from – to" / "from – " / " – to" using ISO dates.
+  # compact "from – to" / "from – " / " – to" in the UI language. The bounds
+  # are plain Dates, so they are formatted and never shifted to a zone.
   defp date_range_label(nil, nil), do: gettext("Date range")
 
   defp date_range_label(from, to) do
-    "#{format_date_input(from)} – #{format_date_input(to)}"
+    "#{LocalTime.format(from, :short_date)} – #{LocalTime.format(to, :short_date)}"
   end
 
   # A Date.t() as an ISO yyyy-mm-dd string for the <input type="date"> value,

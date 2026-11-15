@@ -130,6 +130,30 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
     button != nil and button =~ ~s(phx-click="#{event}")
   end
 
+  describe "review_detail_header/1 — local time" do
+    setup do
+      KanbanWeb.LocalTime.put_timezone("America/Toronto")
+      :ok
+    end
+
+    test "titles the age with the absolute local time and keeps a UTC datetime" do
+      html = render_header(%{review_requested_at: ~U[2026-11-11 04:56:00Z]})
+
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+      assert html =~ ~r/\d+d ago/
+    end
+
+    test "the title follows the UI language" do
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "fr", fn ->
+          render_header(%{review_requested_at: ~U[2026-11-11 04:56:00Z]})
+        end)
+
+      assert html =~ ~s(title="10 novembre 2026 à 23:56 EST")
+    end
+  end
+
   describe "review_detail_header/1 — edge cases" do
     test "missing completed_by_agent renders neutral avatar and 'Unknown agent'" do
       html = render_header(%{completed_by_agent: nil})

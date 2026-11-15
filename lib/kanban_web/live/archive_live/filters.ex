@@ -59,13 +59,20 @@ defmodule KanbanWeb.ArchiveLive.Filters do
   Both bounds are `Date.t() | nil`; a nil bound is open-ended, and both nil is a
   no-op that returns every row. When a bound is set, rows whose `archived_at` is
   nil are excluded rather than raising.
-  """
-  def apply_date_range(rows, nil, nil), do: rows
 
-  def apply_date_range(rows, from, to) do
+  The day a row was archived on is its local calendar day in `zone` (the
+  viewer's timezone, default `"Etc/UTC"`), so a row archived late in the
+  evening west of UTC counts towards that evening's date, not the next UTC
+  day. A zone the time zone database rejects falls back to the UTC day.
+  """
+  def apply_date_range(rows, from, to, zone \\ "Etc/UTC")
+
+  def apply_date_range(rows, nil, nil, _zone), do: rows
+
+  def apply_date_range(rows, from, to, zone) do
     Enum.filter(rows, fn task ->
       case task.archived_at do
-        %DateTime{} = at -> date_in_range?(DateTime.to_date(at), from, to)
+        %DateTime{} = at -> date_in_range?(Kanban.Timezone.local_date(at, zone), from, to)
         _ -> false
       end
     end)

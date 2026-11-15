@@ -358,4 +358,58 @@ defmodule KanbanWeb.GoalSidebarTest do
       assert html =~ "—"
     end
   end
+
+  describe "goal_sidebar/1 — last_activity local time" do
+    setup do
+      KanbanWeb.LocalTime.put_timezone("America/Toronto")
+      :ok
+    end
+
+    defp render_sidebar(last_activity) do
+      assigns = %{metrics: metrics(%{last_activity: last_activity})}
+
+      rendered_to_string(~H"""
+      <GoalSidebar.goal_sidebar metrics={@metrics} />
+      """)
+    end
+
+    test "titles the relative age with the absolute local time" do
+      html = render_sidebar(~U[2026-11-11 04:56:00Z])
+
+      assert html =~ "data-goal-last-activity"
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+      assert html =~ ~r/\d+d ago/
+    end
+
+    test "treats a NaiveDateTime as UTC" do
+      html = render_sidebar(~N[2026-11-11 04:56:00])
+
+      assert html =~ ~s(datetime="2026-11-11T04:56:00Z")
+      assert html =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+    end
+
+    test "the relative age and title follow the UI language" do
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_sidebar(~U[2026-11-11 04:56:00Z])
+        end)
+
+      assert html =~ ~s(title="10. November 2026, 23:56 EST")
+      refute html =~ ~r/\d+d ago/
+    end
+
+    test "uses the zone abbreviation in force on each side of a DST change" do
+      # Toronto springs forward at 2:00 AM local on March 8, 2026.
+      assert render_sidebar(~U[2026-03-08 06:30:00Z]) =~ "March 8, 2026 at 1:30 AM EST"
+      assert render_sidebar(~U[2026-03-08 07:30:00Z]) =~ "March 8, 2026 at 3:30 AM EDT"
+    end
+
+    test "renders a dash and no <time> for nil" do
+      html = render_sidebar(nil)
+
+      refute html =~ "data-goal-last-activity"
+      assert html =~ "—"
+    end
+  end
 end
