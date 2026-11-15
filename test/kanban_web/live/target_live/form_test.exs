@@ -303,8 +303,7 @@ defmodule KanbanWeb.TargetLive.FormTest do
 
       {:ok, _form_live, html} = live(conn, ~p"/targets/#{target}/edit")
 
-      positions = Enum.map(["G9", "G18", "G131"], &index_of(html, &1))
-      assert positions == Enum.sort(positions)
+      assert goal_identifiers(html, "[data-member-goals]") == ["G9", "G18", "G131"]
     end
 
     test "renders the assignable goals table in ascending numeric identifier order, including after toggling hide-archived",
@@ -319,8 +318,7 @@ defmodule KanbanWeb.TargetLive.FormTest do
 
       {:ok, form_live, html} = live(conn, ~p"/targets/#{target}/edit")
 
-      positions = Enum.map(["G9", "G18", "G131"], &index_of(html, &1))
-      assert positions == Enum.sort(positions)
+      assert goal_identifiers(html, "[data-assignable-goals]") == ["G9", "G18", "G131"]
 
       # Toggling the hide-archived checkbox re-runs the query; order must hold.
       toggled_html =
@@ -328,8 +326,7 @@ defmodule KanbanWeb.TargetLive.FormTest do
         |> element("[data-hide-archived-toggle]")
         |> render_click()
 
-      toggled_positions = Enum.map(["G9", "G18", "G131"], &index_of(toggled_html, &1))
-      assert toggled_positions == Enum.sort(toggled_positions)
+      assert goal_identifiers(toggled_html, "[data-assignable-goals]") == ["G9", "G18", "G131"]
     end
   end
 
@@ -353,11 +350,14 @@ defmodule KanbanWeb.TargetLive.FormTest do
     |> Repo.update!()
   end
 
-  defp index_of(haystack, needle) do
-    case :binary.match(haystack, needle) do
-      {start, _len} -> start
-      :nomatch -> -1
-    end
+  # The identifiers in one goals table, in row order. Searching the whole page
+  # for "G18" could match a random token (the CSRF token, the LiveView
+  # session) before the table, so the order check would fail at random.
+  defp goal_identifiers(html, container) do
+    html
+    |> LazyHTML.from_document()
+    |> LazyHTML.query(~s(#{container} [data-goal-col="identifier"]))
+    |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
   end
 
   describe "anonymous" do
