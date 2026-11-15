@@ -2,7 +2,7 @@
 
 **Roadmap item:** *Native mobile apps*, under *Planned*: "iPhone, iPad and Android apps for the human side of the loop: hear when work is waiting on you, review with the verdicts first, approve with Face ID or a fingerprint, and keep Ready full." ([ROADMAP](../../ROADMAP.md))
 
-**Status:** proposal; the decisions in [§24](#24-decisions-needed) were settled on 2026-11-15, including decision 13, which added the status screens. Nothing in this document is built yet. Every statement about today's code was checked against the source on 2026-11-11; references are given as `path:line` so they can be re-checked.
+**Status:** proposal; the decisions in [§24](#24-decisions-needed) were settled on 2026-11-15, including decision 13, which added the status screens. Nothing in this document is built yet. The statements about today's code were checked against the source on 2026-11-11. The status sections ([§6.16](#616-targets-status-at-a-glance)–§6.19) and the fixes from the review of this document were checked on 2026-11-15. References are given as `path:line` so they can be re-checked.
 
 **Date:** 2026-11-11.
 
@@ -74,7 +74,7 @@ The task, agent and metric data in the designs are realistic examples, not real 
 - **Running agents or hooks on the phone.** Hooks run on developers' machines by design.
 - **Board configuration.** Columns, hooks, API tokens, integrations, members, the org console, SSO, SCIM and security policies all stay on the web. The app links to the right web page.
 - **Writing full tasks.** The phone captures short tasks. Agents and ideation write the rich specification.
-- **Metrics.** Beyond the status of targets, goals and tasks ([§6.16](#616-targets-status-at-a-glance)), the apps show no metrics: no cycle time, throughput or charts. The only count outside those screens is "waiting on you", in the widget.
+- **Metrics.** Beyond the status of targets, goals and tasks ([§6.16](#616-targets-status-at-a-glance)), the apps show no metrics and no charts: no cycle time, throughput or wait times. Counts that say what's waiting or in progress are fine, on Now, Boards, Agents and the widget.
 - **Everything in [§21](#21-not-in-phase-1):** Live Activities, screenshot bug capture, offline decisions, pen notes, planning mode, mission control and the watch.
 - **An installable web app (PWA) with web push.** The analysis behind this plan proposed one as a cheaper first step. The backend here would serve it too, but this document covers the native apps ([decision 1](#24-decisions-needed)).
 
@@ -89,7 +89,7 @@ The task, agent and metric data in the designs are realistic examples, not real 
 | **Device** | One installation of the app, signed in as one person. A device has its own tokens and push token, and the person or an org-admin can revoke it. |
 | **Device class** | `phone` or `tablet`. The large-change guard applies to phones only. |
 | **Large change** | A task whose changed files are more than 10 files or more than 500 changed lines, or whose diff was cut at the per-diff cap ([§7.6](#76-large-change-guard-and-highlighted-diffs)). |
-| **Verdicts** | The sections of `reviewer_result`: acceptance criteria, project checks, testing strategy, patterns, pitfalls and security considerations. |
+| **Verdicts** | The sections of `reviewer_result`: acceptance criteria, project checks, testing strategy, patterns, pitfalls and security considerations. The app shows a fixed four as pills and tiles: Acceptance, Testing, Patterns and Security ([§6.4](#64-review-verdicts-first)). |
 | **Flagged file** | A changed file that a reviewer issue or the security section points at. Flagged files are listed first. |
 | **Captured task** | A task created on the phone with only a title and one sentence. It's saved in Backlog like any other task, with `created_via: "mobile"` ([§8](#8-database-changes)). There's no draft flag ([decision 6](#24-decisions-needed)). |
 
@@ -101,16 +101,16 @@ The task, agent and metric data in the designs are realistic examples, not real 
 
 - **The event types.** `Kanban.Notifications.Preference` defines 12 event types (`lib/kanban/notifications/preference.ex:15-28`): `review_requested`, `task_assigned`, `task_reviewed`, `task_unclaimed`, `claim_expired`, `goal_completed`, `after_goal_failed`, `board_access_changed`, `target_status_changed`, `weekly_digest`, `comment_added` and `mentioned`. Nothing emits `comment_added` yet.
 - **The emitter.** `Kanban.Notifications.Events` (`lib/kanban/notifications/events.ex:1`) turns lifecycle moments into notifications, for example `review_requested` at `:74` and `after_goal_failed` at `:205`.
-- **One entry point.** Every event goes through `Kanban.Notifications.notify/3` (`lib/kanban/notifications.ex:179-188`).
-  - It checks the plan (`check_board_plan`, `:444-449`).
-  - In one transaction it resolves the recipients (`Recipients.resolve/4`, `recipients.ex:29`), inserts a row for each, and enqueues the email jobs (`enqueue_emails!`, `:402-413`).
-  - After the commit it broadcasts on `"user:<id>:notifications"` (`:128-130`, `:415-421`).
+- **One entry point.** Every event goes through `Kanban.Notifications.notify/3` (`lib/kanban/notifications.ex:188-197`).
+  - It checks the plan (`check_board_plan`, `:470-475`).
+  - In one transaction it resolves the recipients (`Recipients.resolve/4`, `recipients.ex:29`), inserts a row for each, and enqueues the email jobs (`enqueue_emails!`, `:428-438`).
+  - After the commit it broadcasts on `"user:<id>:notifications"` (`topic/1`, `:137-139`; the broadcast helpers, `:441-447`).
 - **Two channels today, with no channel abstraction.**
   - **In app:** the bell (`lib/kanban_web/components/notification_bell.ex:19`) and `/notifications`.
-  - **Email:** `Kanban.Notifications.EmailWorker` on the Oban `:notifications` queue (`lib/kanban/notifications/email_worker.ex:36-39`). It checks the plan again when it runs (`:127-133`).
+  - **Email:** `Kanban.Notifications.EmailWorker` on the Oban `:notifications` queue (`lib/kanban/notifications/email_worker.ex:36-39`). It checks the plan again when it runs (`check_plan`, `:126-133`): the user always, and the board when the notification has one.
   - **The weekly digest** is a separate Oban cron path. It doesn't go through `notify/3`.
 - **Privacy is already right for a lock screen.** Titles carry only the task identifier and title, never agent free text (`events.ex:11-16`). The only stored free text is review notes and the unclaim reason, cut to 500 characters (`:63`, `:313-331`). `after_goal_failed` stores the exit code and duration, never the hook output (`:464-474`).
-- **Preferences.** `notification_preferences` has `in_app` and `email` for each event type (`preference.ex:32-40`). A row exists only once a setting has been changed; defaults come from `default_preference/1` (`notifications.ex:114-122`). **There are no quiet hours, no snooze and no "only when it blocks" mode.**
+- **Preferences.** `notification_preferences` has `in_app` and `email` for each event type (`preference.ex:32-40`). A row exists only once a setting has been changed; defaults come from `default_preference/1` (`notifications.ex:123-131`). **There are no quiet hours, no snooze and no "only when it blocks" mode.**
 
 ### 3.2 Reviews
 
@@ -145,10 +145,10 @@ The task, agent and metric data in the designs are realistic examples, not real 
 
 ### 3.3 Dependencies, claims and goals
 
-- **Dependencies.** A task's `dependencies` is an array of identifiers (`task.ex:301`), with no join table. `Kanban.Tasks.Dependencies.get_dependent_tasks/1` (`lib/kanban/tasks/dependencies.ex:189-201`) finds a task's dependents. **Nothing counts or ranks by dependents today.**
+- **Dependencies.** A task's `dependencies` is an array of identifiers (`task.ex:301`), with no join table. `Kanban.Tasks.Dependencies.get_dependent_tasks/1` (`lib/kanban/tasks/dependencies.ex:189-201`) finds a task's dependents. The agent API exposes them at `GET /api/tasks/:id/dependents` (`router.ex:225`). **Nothing counts or ranks by dependents today.**
 - **Claims.**
   - A claim lasts 60 minutes, written inline at `lib/kanban/tasks/agent_workflow/claiming.ex:87`.
-  - Nothing releases an expired claim: the claim queries just treat it as claimable again (`claiming.ex:109`, `lib/kanban/tasks/agent_queries.ex:130`).
+  - Nothing releases an expired claim: the claim queries just treat it as claimable again (`claiming.ex:109`, `lib/kanban/tasks/agent_queries.ex:131`).
   - `Kanban.Notifications.ClaimExpiryWorker` sends `claim_expired`.
 - **Released tasks.** The unclaim reason is not stored on the task. It's logged, then copied into the notification body (`claiming.ex:244-262`, `events.ex:298-308`).
 - **`after_goal` failures.** They're recorded by `Goals.record_after_goal_failure/2` (`lib/kanban/tasks/goals.ex:275-280`). Each attempt `{exit_code, output, duration_ms}` is kept on the goal (`task.ex:378-387`).
@@ -160,7 +160,7 @@ The task, agent and metric data in the designs are realistic examples, not real 
 ### 3.4 Sign-in and access
 
 - **The web sign-in.** `KanbanWeb.UserAuth` follows the `phx.gen.auth` layout (`lib/kanban_web/user_auth.ex:1`).
-  - **Sudo mode** is a 10-minute window (`:400-416`).
+  - **Sudo mode** on the sudo-gated pages is a 10-minute window: `Accounts.sudo_mode?(user, -10)` (`:373`). The function's default window is 20 minutes (`lib/kanban/accounts.ex:169`).
   - **Two-factor sign-in** uses TOTP, in `Kanban.Accounts.TwoFactor` (`lib/kanban/accounts/two_factor.ex:1`).
   - **Company SSO** supports both OIDC and SAML (`lib/kanban/sso.ex:1-18`).
   - **An Organization can require two-factor.** `OrganizationTwoFactorGate` enforces it (`lib/kanban_web/user_auth/organization_two_factor_gate.ex:1`).
@@ -185,13 +185,13 @@ The task, agent and metric data in the designs are realistic examples, not real 
 
 ### 3.6 Metrics: Review wait reads as zero today
 
-The measure that judges Phase 1 is how long tasks wait in Review. As written today, that metric comes out near zero for approved tasks:
+The measure that judges Phase 1 is how long tasks wait in Review. As written today, that metric comes out as zero for approved tasks:
 
-- `fetch_review_wait_times` measures `reviewed_at - completed_at`, clamped at 0 (`lib/kanban/metrics.ex:419-442`).
+- `fetch_review_wait_times` measures `reviewed_at - completed_at`, clamped with `GREATEST(0, ...)` (`lib/kanban/metrics.ex:419-442`, the clamp at `:432`).
 - On a `needs_review` task, completion doesn't stamp `completed_at` (`lib/kanban/reviews.ex:12-14`).
 - At approval, `persist_review_fields` stamps `reviewed_at` first (`reviews.ex:374-383`). `move_to_done` stamps `completed_at` afterwards (`lib/kanban/tasks/agent_workflow/review.ex:145`).
 
-So the measured wait is a fraction of a second. The real wait runs from `review_requested_at` (`task.ex:368`), which completion stamps, to `reviewed_at`. **This has to be fixed before Phase 1 starts, so there's a baseline to compare against** ([§20](#20-phased-delivery), task 0).
+So `completed_at` is never earlier than `reviewed_at`, the difference is zero or negative, and the clamp makes the measured wait exactly 0. The real wait runs from `review_requested_at` (`task.ex:368`), which completion stamps, to `reviewed_at`. **This has to be fixed before Phase 1 starts, so there's a baseline to compare against** ([§20](#20-phased-delivery), task 0).
 
 ### 3.7 CI and packaging
 
@@ -213,8 +213,8 @@ So the measured wait is a fraction of a second. The real wait runs from `review_
         ▼   │                              ▼   │
  ┌────────────────────────── Phoenix (this repo) ──────────────────────────┐
  │ /oauth/*        sign-in for a device: PKCE, rotating refresh tokens     │
- │ /api/me/*       the person API: decisions, reviews, boards, agents,     │
- │                 targets, capture, settings, devices (device tokens)     │
+ │ /api/me/*       the person API: decisions, reviews, boards, tasks,      │
+ │                 agents, targets, goals, capture, settings, devices      │
  │ /api/socket     UserSocket: me:inbox and me:agents channels             │
  │ Kanban.Decisions    builds and ranks Now                                │
  │ Kanban.Devices      devices, tokens, approval keys                      │
@@ -227,7 +227,7 @@ So the measured wait is a fraction of a second. The real wait runs from `review_
 ```
 
 **The person API is separate from the agent API.**
-- A device token works only on `/oauth/*`, `/api/me/*` and `/api/socket`.
+- A device token works only on `/api/me/*` and `/api/socket`, plus the refresh token on `/oauth/token` and `/oauth/revoke`, where it's sent in the body ([§9.2](#92-two-kinds-of-token-never-mixed)).
 - An agent's API token works only on the existing agent routes.
 - A phone can never claim, complete or `mark_reviewed` a task ([§9.2](#92-two-kinds-of-token-never-mixed)).
 
@@ -249,6 +249,11 @@ So the measured wait is a fraction of a second. The real wait runs from `review_
 The analysis proposed four tabs: Now, Agents, Boards and Me. The design puts **Review** in Me's place. Review is the screen Phase 1 is built around, so it gets one tap. Settings is used rarely, so it moved to the avatar. **This document follows the design.**
 
 **Status lives in Agents,** behind a switch with three options, Agents, Targets and Goals, not in a fifth tab. The web shows targets on `/agents` (the delivery health band), and a fifth tab would crowd a phone's tab bar ([decision 13](#24-decisions-needed)).
+
+**No current workspace.** The web keeps a current workspace in the session, `current_workspace_id`, switched by `POST /workspace/switch` (`lib/kanban/workspaces/current.ex:1-23`, `router.ex:505`). A device's scope has none: `Scope.for_user` leaves `workspace` nil (`lib/kanban/accounts/scope.ex:74-76`). Visibility doesn't depend on it anyway, because board access goes through `Policy.accessible_board_ids/1` across every workspace (`lib/kanban/workspaces/policy.ex:174`). So the app follows one rule:
+- every list spans all the boards the person can see: Now, Boards, Agents, Targets and Goals;
+- each row that comes from a board names it;
+- the board picker groups boards by workspace: one group per Organization workspace, then Personal, then other boards shared with the person. `/boards` also loads every accessible board (`Boards.list_boards_with_metrics/1`), then splits them into the current workspace, Personal and the rest (`current.ex:96-122`). The app has no current workspace, so it gives each workspace its own group.
 
 ### 5.2 iOS and iPadOS conventions
 
@@ -281,6 +286,11 @@ Tablets get the same app with a split layout: navigation, then the review queue,
 
 The layout switches on the available width, not the device, so an iPad in narrow split view gets the phone layout. The phone size limit doesn't apply on a tablet ([§6.15](#615-tablet-review-workspace)).
 
+**Status on a tablet.** The sidebar's Agents entry opens status as a list and a detail:
+- the list column holds Agents, Targets or Goals, picked with the same switch as on a phone;
+- the detail column holds the Target ([§6.17](#617-target-goal-status)) or the Goal ([§6.18](#618-goal-task-status)) picked in the list;
+- a task opens over the detail column, as a sheet on iPad and a pane on Android.
+
 ---
 
 ## 6. Screens
@@ -307,10 +317,10 @@ Each section gives the screen's job, what it shows, its actions and states, and 
 - **Shows:**
   - three sample notifications: "W2701 is ready for review now · Holds up 3 tasks", "Codex's claim on W2702 expired" and "G509 goal hook failed";
   - the promise: "Stride only sends a notification when something holds up your agents. Each one opens the app. Nothing is approved from a notification."
-- **Choices:**
-  - **"Only when it blocks something"** (Recommended): reviews, released tasks, expired claims and failed goal hooks.
-  - **"Every event"**: also when a task moves or a goal finishes.
-  - **Quiet hours:** 22:00 to 07:00 by default, in the device's time zone.
+- **Choices** ([§7.9](#79-notification-settings-for-push)):
+  - **"Decisions only"** (Recommended): the four decision events, which are reviews, released tasks, expired claims and failed goal hooks.
+  - **"Every event"**: those four, plus a recorded review, a finished goal, a target's status change and a mention.
+  - **Quiet hours:** 22:00 to 07:00 by default, in your time zone. It starts as this device's zone and can be changed in Settings.
 - **Actions:**
   - **Turn on notifications** asks for the system permission: iOS authorization; on Android 13 and later, `POST_NOTIFICATIONS`. It then registers the push token ([§7.8](#78-push-delivery)).
   - **Not now** skips the prompt; it can be turned on later in Settings.
@@ -326,7 +336,7 @@ Each section gives the screen's job, what it shows, its actions and states, and 
 
 | Card | Shows | Actions |
 |---|---|---|
-| **Review** | "holds up 3", age, identifier and title, agent avatar, "Claude · 6 files · +41 −6", verdict pills (Acceptance, Tests, Patterns, Security) and the first failed verdict's note | **Open review** |
+| **Review** | "holds up 3", age, identifier and title, agent avatar, "Claude · 6 files · +41 −6", verdict pills (Acceptance, Testing, Patterns, Security, the same four as the review tiles in §6.4) and the first failed verdict's note | **Open review** |
 | **Claim expired** | "holds up 2", "Codex held it for 60 minutes with no update. It is back in Ready for another agent." | **Move to Backlog**, **Open on the web** |
 | **Goal hook failed** | "holds up 1", the goal, "after_goal failed · exit 1 · 4s" | **View attempt** (exit code and duration; the output only once the web goal page shows it, [decision 9](#24-decisions-needed)), **Open on the web** |
 | **Released by agent** | the agent's reason in quotes, from the `task_unclaimed` notification body | **Reply** (adds a comment), **Move to Backlog** |
@@ -345,9 +355,9 @@ Each section gives the screen's job, what it shows, its actions and states, and 
 
 1. **The header:** identifier and title, the priority dot, "holds up W2702, W2703, W2710", the agent and the time it took, and the goal.
 2. **"What the agent says it did":** `completion_summary`.
-3. **"Reviewer verdicts":** "3 of 4 passed", with tiles for Acceptance (4/4), Testing, Patterns and Pitfalls. A failed tile shows its note, for example "The member query is written in OrgLive.Show. Project rule: queries belong in the context module."
-4. **"Tests and checks":** the `project_checks` result ("All passed").
-5. **"Security review":** the `security_considerations` section ("No findings", or the count by severity).
+3. **"Reviewer verdicts":** "3 of 4 passed", with one tile each for the fixed four: Acceptance (4/4), Testing, Patterns and Security. Here Patterns failed. A failed tile shows its note, for example "The member query is written in OrgLive.Show. Project rule: queries belong in the context module." Now's pills (§6.3) use the same four.
+4. **"Tests and checks":** below the tiles, the `pitfalls` verdict and the `project_checks` result ("All passed").
+5. **"Security review":** the detail behind the Security tile, from the `security_considerations` section ("No findings", or the count by severity).
 6. **"Exploratory testing":** the findings count ("1 low finding").
 7. **"Files · 6 · Flagged first":** flagged files first, each with `+`/`−` counts. A row opens the diff (§6.5).
 8. **Bottom bar:** **Request changes** and **Approve** (with the Face ID or fingerprint glyph).
@@ -359,7 +369,7 @@ Each section gives the screen's job, what it shows, its actions and states, and 
 | **Approving** | the biometric prompt (§6.6) |
 | **Approved** | "Approved. W2702, W2703 and W2710 can start." with **Next**, which opens the next review |
 | **Requesting changes** | the sheet (§6.7) |
-| **Changes sent** | "Changes requested. W2701 is back in Doing for Claude." with **Next** |
+| **Changes sent** | "Changes requested. W2701 is waiting for Claude to pick up the changes." with **Next** |
 | **Large change** | Approve is replaced by "Approve on tablet or web" (§6.8) |
 | **Already decided** | "Sam approved this 2 minutes ago." The card leaves the queue (an HTTP 409 from the server) |
 | **Resubmitted** | "Claude sent a new version. Reload to review it." (409, `review_requested_at` changed) |
@@ -424,7 +434,7 @@ A biometric check on its own happens only in the app. A compromised app could sk
 - **Header:**
   - the board name;
   - "1 agent idle · Ready is empty";
-  - a board picker for the user's boards in the current workspace.
+  - a board picker for every board the user can see, grouped by workspace ([§5.1](#51-one-navigation-on-both-platforms)).
 - **Column chips:** "Backlog 5", "Ready 0", "Doing 1" and "Review 1". Done is behind "Done", read-only.
 - **Backlog cards:**
   - identifier and title, the priority dot and the first label;
@@ -442,8 +452,8 @@ A biometric check on its own happens only in the app. A compromised app could sk
   - **Review** ("W2701 waiting for your review");
   - **Doing** ("W2711 implementing · 22 min");
   - **Idle** ("Idle · Sales has nothing in Ready");
-  - **Stuck**: over 60 minutes on a task (`roster.ex:37`).
-- **"Goals · 3 open":** each goal shows its progress ("4/9"), what's waiting on you, what's in progress, and "Hook failed" when its last `after_goal` attempt failed.
+  - **Stuck**: holding a Doing or Review task with no activity for 60 minutes (`roster.ex:35-38`).
+- **"Goals · 3 open":** the open goals that have an agent on them now. The full list of goals, with or without an agent, is the Goals side of the switch ([§6.19](#619-goals-every-goal)). Each goal shows its progress ("4/9"), what's waiting on you, what's in progress, and "Hook failed" when its last `after_goal` attempt failed.
 - **Switch at the top:** Agents | Targets | Goals. Targets opens [§6.16](#616-targets-status-at-a-glance), and Goals opens [§6.19](#619-goals-every-goal). Tapping a goal here opens the goal's task status ([§6.18](#618-goal-task-status)).
 - **Live:** `me:agents` ([§7.7](#77-live-updates)).
 - **Gap: the hook chip.** The design shows "running checks · after_doing". The roster doesn't know which hook an agent is running: it derives status from columns. **1.0 shows the column and time on task**, and the hook chip waits until the server records the running hook.
@@ -462,9 +472,11 @@ A biometric check on its own happens only in the app. A compromised app could sk
 ### 6.12 Settings
 
 - **Account:** "Sam Rivera · Northwind · Organization plan".
-- **Notify me:** "Only when it blocks something" (Recommended) or "Every event".
-- **Events:** a switch each for Review requested, Task released, Claim expired and Goal hook failed, with the one-line explanations from the design.
-- **Quiet hours:** a switch and a time range.
+- **Notify me:** "Decisions only" (Recommended) or "Every event". The mode sets the switches below to its defaults; each switch can then be changed ([§7.9](#79-notification-settings-for-push)).
+- **Events:** all eight switches, in two groups, with the one-line explanations from the design:
+  - **Decisions:** Review requested, Task released, Claim expired and Goal hook failed;
+  - **Updates:** Review recorded, Goal completed, Target status changed and Mentioned.
+- **Quiet hours:** a switch, a time range and the time zone they follow, `user_push_settings.time_zone`. It starts as the first device's zone; changing the phone's zone doesn't move it.
 - **The system setting for sounds:** "Sounds and banners in iOS Settings", or on Android "Sound and vibration for each event in Android settings", which opens the app's notification settings.
 - **This device:** "iPhone 15" or "Pixel 8", and **Sign out of this device**, which revokes the device on the server and wipes the cache.
 - **Language and theme:** "Language and light or dark follow your iOS settings" (Android on Android).
@@ -483,6 +495,7 @@ A biometric check on its own happens only in the app. A compromised app could sk
   - On iOS each event type has its own notification category.
   - On Android each event type has its own notification channel, so it can be muted in system settings.
 - **The body's facts come from structured fields only:** verdict counts, the holds-up count and the identifier and title ([§9.4](#94-what-a-notification-and-the-widget-may-show)).
+- **Where a tap goes** is set per event in [§6.20](#620-routes-where-a-tap-opens).
 - **The widget:**
 
   | Size | Shows |
@@ -490,7 +503,7 @@ A biometric check on its own happens only in the app. A compromised app could sk
   | Small | "5 waiting on you · 1 review · 3 problems" |
   | Medium | the top three decisions by identifier and kind, for example "W2701 Review · holds up 3" |
 
-  Tapping it opens Now.
+  Tapping the small widget opens Now. Tapping a row of the medium widget opens that decision ([§6.20](#620-routes-where-a-tap-opens)).
 
 ### 6.14 Dark theme
 
@@ -524,27 +537,38 @@ A biometric check on its own happens only in the app. A compromised app could sk
   - A to approve;
   - R to request changes.
 - **Portrait.** The sidebar folds away; in landscape all three columns show.
+- **Status.** The sidebar's Agents entry uses the same three columns for status: Agents, Targets or Goals in the list column, the Target or Goal in the detail column, and a task opened over the detail ([§5.4](#54-tablets)).
 
 ### 6.16 Targets: status at a glance
 
 - **Reached from** the Targets side of the switch at the top of Agents (§6.10).
-- **Header:** "Targets · 2 at risk", with a count for each status, as the web's delivery health band shows them (`lib/kanban_web/components/delivery_health_band.ex`): On track, At risk, Missed and Complete.
-- **One row per target**, in the web's order:
+- **Header:** "Targets · 2 at risk", with a count for each status, as the web's delivery health band shows them: On-track, At-risk, Missed and Complete (`lib/kanban_web/components/delivery_health_band.ex:172-175`).
+- **Which targets.** The same targets as the web: every active target with at least one member goal on a board the person can see (`Targets.list_targets/1`, `lib/kanban/targets/queries.ex:60`). Ownership doesn't limit the list. Archived targets stay on the web.
+- **One row per target**, in the web's order, soonest target date first:
   - the name and the status pill;
   - the target date;
-  - goal progress ("3 of 5 goals");
+  - task progress across its goals, "6 of 20 tasks · 5 goals". The task counts are `completed` and `total` from the target's summary, which count child tasks, not goals (`lib/kanban/targets/progress.ex:351-359`). The goal count is the number of member goals;
   - the estimated completion date, when there is one.
-- **Tapping a row** opens the target ([§6.17](#617-target-goal-status)). Archived targets stay on the web.
-- **The status is the web's, never the app's.** `Kanban.Targets.Status` derives it at read time against the viewer's local time, so the badge agrees across the web's pages (D123, D212; `lib/kanban_web/live/target_live/show.ex`). The server derives it with the device's time zone from `PUT /api/me/devices/current`. The app never computes a status.
-- **Behind it:** `GET /api/me/targets`.
+- **Tapping a row** opens the target ([§6.17](#617-target-goal-status)), but only for its owner, because the web's target page is owner-only (`Targets.get_owned_target/2`, `lib/kanban/targets.ex:144`; `lib/kanban_web/live/target_live/show.ex:55`).
+  - **The owner's rows** have a chevron.
+  - **Everyone else's rows** have no chevron, and a line under the row: "Only the owner can open this target. Its goals are in Goals." Those goals can still be reached from the Goals list ([§6.19](#619-goals-every-goal)).
+- **The status is the web's, never the app's.** The list reads `Kanban.Targets.DeliveryRollup.build/2` (`lib/kanban/targets/delivery_rollup.ex:147-161`), the same call behind the web's delivery health band and risk explanation on `/agents` (`lib/kanban_web/live/agents_live/data_loader.ex:63`). It's built with `timezone:` set to the device's time zone from `PUT /api/me/devices/current`, as `/agents` passes the browser's. `Kanban.Targets.Status` derives the status at read time against that local time, so the badge agrees with the web's pages (D123, D212). The app never computes a status.
+- **Behind it:** `GET /api/me/targets` ([§7.10](#710-boards-tasks-agents-and-capture)).
 
 ### 6.17 Target: goal status
 
-- **Header:** the name, the status pill, the target date and the estimated completion. An at-risk or missed target says why, in the same words as the web's risk explanation (`lib/kanban_web/components/target_risk_explainer.ex`).
-- **Progress:** the work done across the target's goals, as on `/targets/:id`.
-- **One row per member goal:** the identifier and title, its board, its progress ("4/9"), what's waiting on you, and "Hook failed" when its last `after_goal` attempt failed. It's the same goal row as on Agents (§6.10).
+- **Owner only,** as on the web ([§6.16](#616-targets-status-at-a-glance)). The endpoint answers 404 to anyone else, as `/targets/:id` shows its not-found page (`target_live/show.ex:55-61`).
+- **Header:** the name, the status pill, the target date and the estimated completion.
+- **Why it's at risk.** A box appears only when the target is at risk and there's a reason to give: stalled goals, or an estimate that has slipped past the target date (`lib/kanban_web/components/target_risk_explainer.ex:270-287`). It uses the web's words:
+  - a slipped estimate gives the estimate and the target date (`:139-141`);
+  - each stalled goal is named with the agents stalling it, each marked Stuck or Dormant (`:147`, `:226-248`).
+
+  The data is the target's `stalled_details` and `estimated_completion_date` from `DeliveryRollup.build/2` (`delivery_rollup.ex:200-214`). The web shows this explanation only on `/agents`; `/targets/:id` gives no reason. The web's Reassign and Reprioritize buttons stay on the web.
+- **A missed target** shows its date and the estimate only, with no box. An on-track or complete target has no box either.
+- **Progress:** "6 of 20 tasks" across the target's goals, from `Targets.get_target_progress/3` (`targets.ex:566-577`), as on `/targets/:id`.
+- **One row per member goal:** the identifier and title, its board, its progress ("4/9" tasks), what's waiting on you, and "Hook failed" when its last `after_goal` attempt failed. The app draws it like the Agents goal rows (§6.10). The data is new, though: the web's `TargetGoalRow` shows the identifier, title, progress and owner only (`lib/kanban_web/components/target_goal_row.ex:1-18`), so the board, "waiting on you" and "Hook failed" are added fields ([§7.10](#710-boards-tasks-agents-and-capture)).
 - **Tapping a goal** opens its task status ([§6.18](#618-goal-task-status)).
-- **From a push:** tapping a `target_status_changed` notification opens this screen.
+- **From a push:** tapping a `target_status_changed` notification opens this screen. That event goes only to the target's owner (`lib/kanban/notifications/events.ex:156-166`), which matches the owner-only rule ([§6.20](#620-routes-where-a-tap-opens)).
 - **On the web only:** editing the target, assigning goals and archiving. The screen links to the web page.
 - **Behind it:** `GET /api/me/targets/:id`.
 
@@ -552,8 +576,10 @@ A biometric check on its own happens only in the app. A compromised app could sk
 
 - **Reached from** a goal on a target (§6.17), on the goals list ([§6.19](#619-goals-every-goal)) or on Agents (§6.10). All three open this one screen.
 - **Header:** the identifier and title, the board, the progress and the agents who worked on it, as on `/boards/:id/goals/:goal_id`.
-- **Tasks grouped by status,** in the web's order: Backlog, Ready, Doing, Review and Done (`lib/kanban_web/live/goal_live/show.ex:30`). Each row shows the identifier, the title, the agent on it and the time in its column.
-- **Tapping a task** opens the read-only task (§6.9). A task in Review opens its review (§6.4) instead.
+- **The header's counts are the target's counts.** Target progress credits archived done work and drops archived unfinished work (D124, `lib/kanban/targets/progress.ex:40-50`, `:476-481`). The task list leaves archived tasks out, as the web goal page does (`list_children_for_goal/2`, `lib/kanban/tasks/queries.ex:399`). So "4/9" on this screen matches the same goal's row on the Target, even when some of its done work is archived.
+- **Tasks grouped by status,** in the web's order: Backlog, Ready, Doing, Review and Done (`lib/kanban_web/live/goal_live/show.ex:30`). Each row shows the identifier, the title, the agent on it and the time in its column. The time in column is a new field ([§7.10](#710-boards-tasks-agents-and-capture)).
+- **Archived work.** When some of the goal's done tasks are archived, the Done section ends with a line, "2 archived". The archived tasks themselves stay on the web.
+- **Tapping a task** opens the read-only task (§6.9). A task in Review opens its review (§6.4) instead, but only when it's a pending review the viewer can review. A task in Review with `needs_review` false, or one the viewer can't review, opens the read-only task.
 - **Behind it:** `GET /api/me/goals/:id`.
 
 ### 6.19 Goals: every goal
@@ -561,13 +587,13 @@ A biometric check on its own happens only in the app. A compromised app could sk
 - **Why it's here.** Not every goal belongs to a target, and Agents lists only the goals agents are working on now. Without this list, a goal with no target drops off the phone once agents leave it.
 - **Reached from** the Goals side of the switch at the top of Agents (§6.10).
 - **Filters:** Open (the default), Done and No target, each with its count.
-- **One row per goal** on the boards the person can see in the current workspace, newest first:
+- **One row per goal** on every board the person can see, across all their workspaces, as for targets ([§5.1](#51-one-navigation-on-both-platforms)). Newest first, each row labelled with its board:
   - the identifier, the title and its progress ("4/9"), or "Hook failed" when its last `after_goal` attempt failed;
   - the progress bar;
   - what's waiting on you, or what's in progress;
   - its board, and its target or "No target".
 - **Tapping a goal** opens its task status ([§6.18](#618-goal-task-status)).
-- **The web has no page like this.** The web shows goals one board at a time, in each board's goals strip (`lib/kanban_web/live/board_live/goals.ex`). This list puts those goals together across boards.
+- **The web has no page like this.** Each board's goals strip shows that board's goals (`lib/kanban_web/live/board_live/goals.ex`). `/targets/:id` lists a target's goals, and `/agents` lists the goals agents are on. No page lists all of them. This list puts them together across boards.
 - **Behind it:** `GET /api/me/goals`.
 
 **What the four status screens share:**
@@ -575,7 +601,43 @@ A biometric check on its own happens only in the app. A compromised app could sk
 - **Read-only.** Nothing on them changes a target, a goal or a task.
 - **Pull to refresh.** 1.0 has no live channel for them. The Agents goal rows stay live through `me:agents`.
 - **Cached for offline reading** ([§11](#11-offline-and-caching)).
-- **The web's access rules.** Each endpoint calls the same context functions as the web page with the device's scope, so a person sees only the targets, goals and tasks the web shows them, and the plan check of [§10](#10-plans-and-access) applies.
+- **The web's access rules.** Each endpoint calls the same context functions as the web page with the device's scope, so a person sees only the targets, goals and tasks the web shows them. A target's detail is owner-only, as on the web. The plan check of [§10](#10-plans-and-access) applies.
+- **Accessible text.** A status pill reads its status in words ("At-risk"). A progress bar reads its counts, for example "4 of 9 done, 1 in review, 2 in progress" ([§17](#17-translations-accessibility-and-dark-mode)).
+
+### 6.20 Routes: where a tap opens
+
+One route table covers push taps, widget taps and web links that open the app. When a destination no longer applies (the review was decided, the card cleared), the app opens the next screen in the row.
+
+**Push notifications,** one row per event that can push ([§7.9](#79-notification-settings-for-push)):
+
+| Event | Group | Opens |
+|---|---|---|
+| `review_requested` | Decisions | the review (§6.4); if it's already decided, the read-only task with the "Already decided" state |
+| `task_unclaimed` | Decisions | Now, on the "Released by agent" card; if the card has cleared, the read-only task |
+| `claim_expired` | Decisions | Now, on the "Claim expired" card; if the card has cleared, the read-only task |
+| `after_goal_failed` | Decisions | Now, on the "Goal hook failed" card; if a later attempt succeeded, the Goal (§6.18) |
+| `task_reviewed` | Updates | the read-only task (§6.9) |
+| `goal_completed` | Updates | the Goal (§6.18) |
+| `target_status_changed` | Updates | the Target (§6.17), or the Goals list (§6.19) if you aren't the owner |
+| `mentioned` | Updates | the read-only task, scrolled to its comments |
+| the quiet-hours summary | — | Now |
+
+**The widget:** the small widget opens Now. A row of the medium widget opens what that decision's push would open.
+
+**Web links.** Universal links (iOS) and App Links (Android) open the app on the web's existing paths, the ones notifications already link to (`events.ex:237`, `:383`, `:403`):
+
+| Web path | Opens in the app |
+|---|---|
+| `/review` | the Review queue |
+| `/boards/:id/tasks/:task_id/edit` | the review, when it's a pending review the person can review; otherwise the read-only task |
+| `/boards/:id/goals/:goal_id` | the Goal (§6.18) |
+| `/targets/:id` | the Target for its owner; the Targets list for anyone else |
+| `/boards/:id` | Boards, on that board |
+| `/agents` | Agents |
+| any other path | stays in the system browser, on the web |
+
+- **Falling back to the web.** A link to something the app can't show (an archived task, a board outside the plan, a page with no app screen) opens in the system browser.
+- **The site files.** The server serves `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json`, listing only the paths above, so other web pages never open the app.
 
 ---
 
@@ -604,7 +666,7 @@ OAuth 2.0 for native apps (RFC 8252) with PKCE (RFC 7636). Stride is both the au
 - **The `refresh_token` grant** rotates the refresh token. **Reusing an old refresh token revokes the device** and records `:device_refresh_reuse_detected` in the audit log, because that's the sign of a stolen token.
 - **Refresh is refused** when the user is disabled, the device is revoked, or the user no longer meets the Organization's two-factor requirement. The app then returns to Sign in.
 
-**Revoke:** `POST /oauth/revoke` revokes the device's tokens. Sign out of this device calls it.
+**Revoke:** `POST /oauth/revoke` revokes the device's tokens. It takes the refresh token in the body, as RFC 7009 describes, with no bearer header ([§7.11](#711-the-openapi-contract)). Sign out of this device calls it.
 
 **The person-API pipeline.** A new plug, `KanbanWeb.Plugs.AuthenticateDeviceToken`, reads `Authorization: Bearer`, looks the token up by its hash, and builds the same `Scope` the web uses (`Scope.for_user`). It also adds `current_device`. Every `/api/me/*` route then calls the same scope-first context functions as the LiveViews.
 
@@ -623,7 +685,7 @@ OAuth 2.0 for native apps (RFC 8252) with PKCE (RFC 7636). Stride is both the au
 
 Returns:
 - the user's display name and avatar initials;
-- their Organizations and current workspace;
+- their Organization and its workspaces, which the board picker groups by. There's no current workspace ([§5.1](#51-one-navigation-on-both-platforms));
 - the plan status (`app_unlocked`);
 - the minimum app versions;
 - the guard limits (`phone_max_files: 10`, `phone_max_lines: 500`);
@@ -705,7 +767,7 @@ The issue entries' file and line fields must be checked against `review_contract
 
   Then it calls `Reviews.approve_review/3` unchanged and writes the audit event ([§9.5](#95-audit-log)).
 - **`POST /api/me/reviews/:task_id/request_changes`** takes `review_requested_at` and `notes` (required). It runs the same checks 1–3, then calls `Reviews.request_changes_review/3` and writes the audit event.
-- **Idempotency.** Both actions take an `Idempotency-Key` header. A retried request with the same key returns the first result instead of a 409, so a dropped response on a train doesn't look like a conflict.
+- **Idempotency.** Both actions take an `Idempotency-Key` header. A retried request with the same key returns the first result instead of a 409, so a dropped response on a train doesn't look like a conflict. The first result is kept in `device_nonces` for 24 hours ([§8](#8-database-changes)).
 
 ### 7.6 Large-change guard and highlighted diffs
 
@@ -748,11 +810,11 @@ The web review could use the same highlighter later. That's a separate task, not
 
 **A new socket,** `KanbanWeb.UserSocket`, at `/api/socket`.
 
-- **Connecting.** The app first calls `POST /api/me/socket_token` with its access token. That returns a single-use socket token valid for 60 seconds, which the app passes as the `token` connect parameter. `filter_parameters` keeps it out of the logs. The socket assigns the scope and the device.
+- **Connecting.** The app first calls `POST /api/me/socket_token` with its access token. That returns a single-use socket token valid for 60 seconds, which the app passes as the `token` connect parameter. Its id is recorded in `device_nonces` when it's used, so it can't connect twice ([§8](#8-database-changes)). `filter_parameters` keeps it out of the logs. The socket assigns the scope and the device.
 - **Dropped devices.** When a device is revoked, the socket is disconnected through the device's own topic, `"device:<id>"`, which is broadcast on revoke.
 
 **`me:inbox` channel:**
-- **On join,** it subscribes the channel process to `Notifications.topic(user_id)` (`notifications.ex:128-130`) and to `"board:<id>"` for each board the person can see in the current workspace.
+- **On join,** it subscribes the channel process to `Notifications.topic(user_id)` (`notifications.ex:137-139`) and to `"board:<id>"` for each board the person can see, in every workspace ([§5.1](#51-one-navigation-on-both-platforms)).
 - **On any message,** it schedules a rebuild of `Kanban.Decisions.build/1`, coalesced to one per second. It then pushes `decisions` with the full list, or nothing when nothing changed.
 - **Board access.** When `board_access_changed` arrives, it re-reads the person's boards and re-subscribes.
 
@@ -766,37 +828,45 @@ The web review could use the same highlighter later. That's a separate task, not
 
 **A third delivery channel** inside `Kanban.Notifications`, beside in-app and email.
 
-- **Where it hooks in.** In `notify/3`, in the same transaction that inserts the rows and enqueues the emails (`notifications.ex:388-413`), a new `enqueue_pushes!` enqueues one `Kanban.Push.PushWorker` job per recipient. It does so only when:
-  - the recipient has at least one active device with a push token, and
-  - push is on for that event type.
+- **Where it hooks in.** In `notify/3`, in the same transaction that inserts the rows and enqueues the emails (`insert_for_recipients`, `notifications.ex:414-425`; `enqueue_emails!`, `:428-438`), a new `enqueue_pushes!` enqueues one `Kanban.Push.PushWorker` job per recipient. It does so only when:
+  - the recipient has at least one active device with a push token,
+  - push is on for that event type, and
+  - the recipient has paid access, as `enqueue_emails!` checks (`Plans.unlocked_user_ids/1`, `:430`).
 - **The worker** runs on a new Oban queue, `:push` (5 attempts, backoff). It:
-  1. re-checks the plan, as `EmailWorker` does (`email_worker.ex:127-133`);
+  1. re-checks the plan, as `EmailWorker` does: the user always, and the board when there is one (`check_plan`, `email_worker.ex:126-133`; [§10](#10-plans-and-access));
   2. re-checks the person's push settings and quiet hours ([§7.9](#79-notification-settings-for-push));
-  3. checks that the decision is still open. A review that was approved in the meantime isn't pushed;
+  3. for the four decision events only, checks that the decision is still open. A review that was approved in the meantime isn't pushed. Update events have no decision to check, so they're sent as they are;
   4. builds the payload in the device's locale ([§9.4](#94-what-a-notification-and-the-widget-may-show));
   5. sends it to each of the person's active devices.
 - **The senders** go through Pigeon, a new dependency: APNs with token-based (`.p8`) authentication, and FCM HTTP v1 with a service account.
   - The Pigeon calls sit behind a behaviour, `Kanban.Push.Adapter`, so tests use a Mox double.
   - The credentials come from runtime config and secrets ([§15](#15-ci-signing-and-releases)).
 - **Dead tokens.** An APNs `410 Unregistered` or an FCM `UNREGISTERED` clears that device's push token.
-- **Collapsing.** iOS uses `apns-collapse-id`, and Android a tag, both set to the decision id, so a newer push about the same task replaces the older one.
+- **Collapsing.** iOS uses `apns-collapse-id`, and Android a tag. For a decision event both are set to the decision id, such as `review:task:4812`. For an update event they're `event_type:subject_id`, such as `goal_completed:977`. A newer push about the same thing then replaces the older one.
+- **Where a tap goes:** the route table in [§6.20](#620-routes-where-a-tap-opens).
 - **The badge** is set to the decisions count on iOS.
 - **The widget** is refreshed on each push: through the iOS Notification Service Extension, and on Android through `onMessageReceived` updating the Glance state.
 
 ### 7.9 Notification settings for push
 
-- **Per event type:** a new `push` column on `notification_preferences`, beside `in_app` and `email` (`preference.ex:32-40`). `default_preference/1` gives:
-  - `push: true` for `review_requested`, `task_unclaimed`, `claim_expired` and `after_goal_failed`;
+- **The eight push events,** in two groups:
+  - **Decisions:** `review_requested`, `task_unclaimed`, `claim_expired` and `after_goal_failed`;
+  - **Updates:** `task_reviewed`, `goal_completed`, `target_status_changed` and `mentioned`.
+
+  The other four event types (`task_assigned`, `board_access_changed`, `weekly_digest` and `comment_added`) never push.
+- **Per event type:** a new `push` column on `notification_preferences`, beside `in_app` and `email` (`preference.ex:32-40`). `default_preference/1` (`notifications.ex:123-131`) gives:
+  - `push: true` for the four decision events;
   - `false` for everything else.
 - **Per person:** a new table, `user_push_settings`, holds:
-  - `mode`: `blocking` (the default) or `every`;
+  - `mode`: `decisions` (the default) or `every`;
   - `quiet_hours_enabled`, `quiet_start` and `quiet_end`;
-  - `time_zone`, taken from the device when it's set up.
-- **The modes:**
-  - **"Only when it blocks something"** pushes only the four blocking event types, and only when the item holds up at least one task or the event is a review.
-  - **"Every event"** also pushes `task_reviewed`, `goal_completed`, `target_status_changed` and `mentioned`.
+  - `time_zone`, the one time zone quiet hours follow. It's set from the first device's zone when the row is created, and Settings changes it ([§6.12](#612-settings)). A later device, or a phone that changes zone, doesn't move it.
+- **The modes are presets for the switches.** Settings shows all eight switches ([§6.12](#612-settings)), and choosing a mode sets them to its defaults. Each switch can then be changed on its own, and the worker reads only the switches.
+  - **"Decisions only"** turns on the four decision events and turns off the four updates.
+  - **"Every event"** turns on all eight.
+- **Two time zones, two jobs.** Quiet hours use only `user_push_settings.time_zone`. A device's own `time_zone` (`user_devices`, [§8](#8-database-changes)) is used only to anchor target status for that device ([§6.16](#616-targets-status-at-a-glance)).
 - **Quiet hours.** Pushes are held. When quiet hours end, the person gets **one** summary push if anything is still waiting, for example "3 things waited overnight", rather than a burst. A small Oban cron job (every 15 minutes) sends the summaries. Held pushes are never dropped ([decision 5](#24-decisions-needed), decided).
-- **The endpoints:** `GET/PUT /api/me/notification_settings`. The web preferences page `/users/notifications` (`router.ex:425`) gets a Push column and the quiet-hours setting, so the two never disagree.
+- **The endpoints:** `GET/PUT /api/me/notification_settings`, which read and write the mode, the eight switches, quiet hours and the time zone. The web preferences page `/users/notifications` (`router.ex:425`) gets a Push column and the quiet-hours setting, so the two never disagree.
 
 ### 7.10 Boards, tasks, agents and capture
 
@@ -804,28 +874,36 @@ All of these call existing context functions with the device's scope. Each one c
 
 | Endpoint | Calls | Notes |
 |---|---|---|
-| `GET /api/me/boards` | the board list for the current workspace | name, per-column counts, idle agents |
+| `GET /api/me/boards` | every board the person can see, as `/boards` loads them (`Boards.list_boards_with_metrics/1`) | name, workspace (for the picker's groups, [§5.1](#51-one-navigation-on-both-platforms)), per-column counts, idle agents |
 | `GET /api/me/boards/:id/columns/:name` | tasks in one column, by position | the card fields from §6.9; 100 per page |
 | `POST /api/me/boards/:id/promote` | the existing move-to-column path, for several tasks in one transaction | sets `needs_review` when asked; needs board write access |
 | `GET /api/me/tasks/:id` | the task, read-only | title, description, acceptance criteria, key files, security considerations, last 20 comments |
 | `POST /api/me/tasks/:id/comments` | the existing comment path | Reply on a released card |
 | `POST /api/me/tasks/:id/move_to_backlog` | the existing move path | released and expired cards |
 | `POST /api/me/tasks` | the existing task creation, into Backlog | `created_via: "mobile"`, type `work` or `defect` only |
-| `GET /api/me/agents` | `Kanban.Agents.Roster` and the goal trees (`goals.ex:83-104`) | the Agents screen |
+| `GET /api/me/agents` | `Kanban.Agents.Roster` and the goal trees (`goals.ex:83-104`) | the Agents screen. The tree counts include the goal itself (`total = 1 + children`, `goals.ex:84`), so the endpoint subtracts it to give the goal's task counts |
 | `GET /api/me/goals/:id/after_goal` | the goal's last attempt | exit code, duration, and the output only if the web goal page shows it ([decision 9](#24-decisions-needed)) |
-| `GET /api/me/targets` | `Targets.list_targets_with_status/2`, anchored on the device's local time | name, status, target date, goal counts and estimate; archived targets left out |
-| `GET /api/me/targets/:id` | `Targets.get_target_progress/3`, anchored the same way | the summary and member goals that `/targets/:id` renders |
-| `GET /api/me/goals` | a new query in `Kanban.Tasks.Goals`: the goals on every board the person can see in the workspace, with their progress and target | `filter` is `open` (the default), `done` or `no_target`; newest first; 100 per page |
-| `GET /api/me/goals/:id` | `Tasks.list_children_for_goal/2`, as `GoalLive.Show` does | the goal and its tasks grouped by status |
+| `GET /api/me/targets` | `DeliveryRollup.build/2` with `timezone:` set to the device's time zone, as `/agents` calls it (`agents_live/data_loader.ex:63`) | every target the web lists ([§6.16](#616-targets-status-at-a-glance)): name, status, target date, the estimate, the member-goal count, `completed` and `total` task counts, and `owner`, true when `Targets.owner?/2` holds. The rollup's entries don't carry `completed` and `total` today (`delivery_rollup.ex:200-214`), so it passes them through from the summary it already builds. Archived targets are left out (`targets.ex:59-63`) |
+| `GET /api/me/targets/:id` | `Targets.get_owned_target/2` (`targets.ex:144`), then `Targets.get_target_progress/3` for the task counts and member goals, and that target's `DeliveryRollup.build/2` entry for the status, the estimate and `stalled_details` | owner only: 404 for anyone else, as `/targets/:id` (`target_live/show.ex:55`). `risk` is structured data, present only when the status is `at_risk` and there are stalled goals or a slipped estimate: `slipped` with the estimate and target date, and `stalled` with each goal's identifier and title and its agents' names and reasons (`stuck`, `dormant`). The rollup builds every visible target; a one-target version can come later if it's slow |
+| `GET /api/me/goals` | a new query in `Kanban.Tasks.Goals`: the goals on every board the person can see, across workspaces (`BoardScope` and `Policy.accessible_board_ids/1`, `policy.ex:174`), with their progress and target | `filter` is `open` (the default), `done` or `no_target`; newest first; 100 per page; each goal names its board |
+| `GET /api/me/goals/:id` | `Tasks.list_children_for_goal/2` (`tasks/queries.ex:272`), as `GoalLive.Show` does (`goal_live/show.ex:38`). It takes the user, not a scope. The header counts use the target's rule instead: `Tasks.get_task_children_including_archived/2` with D124's crediting (`progress.ex:466-481`) | the goal, its tasks grouped by status, its counts, and `archived_done`, the number of archived done tasks for the "N archived" line ([§6.18](#618-goal-task-status)). The children list leaves archived tasks out (`tasks/queries.ex:399`) |
 | `GET /api/me/devices`, `DELETE /api/me/devices/:id` | `Kanban.Devices` | `DELETE .../current` signs out |
 | `PUT /api/me/devices/current` | `Kanban.Devices` | updates the push token, locale, time zone and app version |
+
+**New fields for the status screens.** The web functions these endpoints call don't return the following, so they're new work, not reuse:
+- on goal rows (the Target and Goals screens): the board name, "waiting on you" and "Hook failed". The web's `TargetGoalRow` shows the identifier, title, progress and owner only (`target_goal_row.ex:1-18`);
+- on task rows (the Goal screen): the time in its column, from the task's latest `:move` row in `task_history` (`lib/kanban/tasks/task_history.ex:6-8`). The web's `GoalChildRow` shows no time (`lib/kanban_web/components/goal_child_row.ex:1-9`);
+- on the targets list: the `completed` and `total` task counts and `owner`;
+- on a target: the structured `risk` reason.
+
+**Plans on cross-board lists.** The targets and goals lists span boards, so they leave out goals on boards outside the plan (`Plans.unlocked_board_ids/1`, `plans.ex:343`), as the digest does (`digest.ex:234`). A target's status and counts stay the web's.
 
 Drag-and-drop ordering, edits beyond `needs_review`, goal promotion and editing targets stay on the web.
 
 ### 7.11 The OpenAPI contract
 
 - **Documented first.** Every route in §7.1–§7.10 goes into `priv/openapi/stride-api.json`, with its request and response schemas, before the apps are built against it.
-- **A second security scheme.** Add `deviceAuth` (bearer) beside `bearerAuth`. Extend `open_api_contract_test.exs` so that each route's scheme matches its pipeline: `deviceAuth` for `/api/me/*`, `bearerAuth` for agent routes, none for `/oauth/token`.
+- **A second security scheme.** Add `deviceAuth` (bearer) beside `bearerAuth`. Extend `open_api_contract_test.exs` so that each route's scheme matches its pipeline: `deviceAuth` for `/api/me/*`, `bearerAuth` for agent routes, none for `/oauth/token` and `/oauth/revoke`. `/oauth/revoke` takes the refresh token in the body, as RFC 7009 describes, with no bearer.
 - **Fixtures.** `mobile/shared/fixtures/*.json` holds example responses for previews, tests and screenshots. A new ExUnit test checks each fixture against its schema in the contract, so the fixtures can't drift from the API.
 
 ---
@@ -836,11 +914,12 @@ New tables:
 
 | Table | Columns | Notes |
 |---|---|---|
-| `user_devices` | `id`, `user_id`, `client_id`, `platform` (`ios`, `android`), `device_class` (`phone`, `tablet`), `name`, `model`, `os_version`, `app_version`, `locale`, `time_zone`, `push_token`, `push_environment` (`sandbox`, `production`), `approval_public_key`, `last_seen_at`, `revoked_at`, `revoked_by_id`, timestamps | index on `user_id`; unique on `push_token` where not null |
+| `user_devices` | `id`, `user_id`, `client_id`, `platform` (`ios`, `android`), `device_class` (`phone`, `tablet`), `name`, `model`, `os_version`, `app_version`, `locale`, `time_zone`, `push_token`, `push_environment` (`sandbox`, `production`), `approval_public_key`, `last_seen_at`, `revoked_at`, `revoked_by_id`, timestamps | index on `user_id`; unique on `push_token` where not null; `time_zone` anchors target status only, never quiet hours ([§7.9](#79-notification-settings-for-push)) |
 | `device_tokens` | `id`, `device_id`, `kind` (`access`, `refresh`), `token_hash`, `family_id`, `expires_at`, `used_at`, `inserted_at` | unique on `token_hash`; a refresh token family is revoked as a whole on reuse |
 | `oauth_authorization_codes` | `id`, `user_id`, `client_id`, `code_hash`, `code_challenge`, `redirect_uri`, `device_name`, `expires_at`, `used_at`, `inserted_at` | purged daily |
 | `approval_challenges` | `id`, `device_id`, `task_id`, `nonce_hash`, `review_requested_at`, `expires_at`, `used_at` | purged daily |
-| `user_push_settings` | `user_id` (primary key), `mode`, `quiet_hours_enabled`, `quiet_start`, `quiet_end`, `time_zone`, `last_summary_at`, timestamps | one row per person, created on first change |
+| `user_push_settings` | `user_id` (primary key), `mode` (`decisions`, `every`), `quiet_hours_enabled`, `quiet_start`, `quiet_end`, `time_zone`, `last_summary_at`, timestamps | one row per person, created on first change or when the first device registers; `time_zone` starts as that device's zone and is the only zone quiet hours use |
+| `device_nonces` | `id`, `device_id`, `kind` (`idempotency`, `socket_token`), `key_hash`, `response_status`, `response_body`, `expires_at`, `inserted_at` | short-lived; unique on (`device_id`, `kind`, `key_hash`). An `idempotency` row keeps the first result of an approve or request changes for 24 hours ([§7.5](#75-review-api)). A `socket_token` row records a used socket token's id until it expires, 60 seconds after issue ([§7.7](#77-live-updates)). An Oban cron job deletes expired rows every hour |
 
 Changed tables:
 
@@ -848,8 +927,9 @@ Changed tables:
 |---|---|
 | `notification_preferences` | add `push` boolean, default false; the defaults come from `default_preference/1` as today |
 | `tasks` | add `created_via` string, nullable (no `draft` flag, [decision 6](#24-decisions-needed)) |
+| `organization_security_policies` | add `hide_titles_in_notifications` boolean, default false (`lib/kanban/organizations/security_policy.ex:37-41`; [§9.4](#94-what-a-notification-and-the-widget-may-show), [decision 8](#24-decisions-needed)) |
 
-The token and code values are stored only as hashes, as `api_tokens` and `users_tokens` do today. Every table cascades on user delete.
+The token, code and nonce values are stored only as hashes, as `api_tokens` and `users_tokens` do today. Every table cascades on user delete.
 
 Migrations need no backfill. Following the dev-database practice, run them as soon as they're written.
 
@@ -870,7 +950,7 @@ Migrations need no backfill. Following the dev-database practice, run them as so
 
 ### 9.2 Two kinds of token, never mixed
 
-- **A device token** works only on `/oauth/revoke`, `/api/me/*` and `/api/socket`.
+- **A device token** works only on `/api/me/*` and `/api/socket`, as a bearer access token. The device's refresh token is sent only in the body of `/oauth/token` and `/oauth/revoke` (RFC 7009), never as a bearer.
 - **An agent's API token** is refused on those routes.
 - **The agent routes** (claim, complete, `mark_reviewed`, `after_goal` and the rest) refuse device tokens.
 
@@ -893,7 +973,7 @@ That keeps the rule that a phone never becomes an agent, and the rule that an ag
 
 ### 9.4 What a notification and the widget may show
 
-- **Allowed:** the event kind, the identifier, the task or goal title, counts (holds up, verdicts passed and failed, files), and agent names.
+- **Allowed:** the event kind, the identifier, the task or goal title, a target's name and date, counts (holds up, verdicts passed and failed, files), and agent names. A target's name follows the same rule as a task or goal title.
 - **Never:**
   - agent free text: summaries, reasons and notes;
   - review notes;
@@ -902,7 +982,7 @@ That keeps the rule that a phone never becomes an agent, and the rule that an ag
   - comment text.
 
   This matches the existing rule (`events.ex:11-16`). The released-task reason appears only inside the app, after sign-in.
-- **Hiding titles.** An Organization security policy, a new `hide_titles_in_notifications` on `organization_security_policies` (`lib/kanban/organizations/security_policy.ex:37-41`), replaces the title with the kind alone: "W2701 is ready for review". The widget follows the same setting.
+- **Hiding titles.** An Organization security policy, a new `hide_titles_in_notifications` on `organization_security_policies` (`lib/kanban/organizations/security_policy.ex:37-41`), replaces the title with the kind alone: "W2701 is ready for review". It hides target names too, so a `target_status_changed` push reads "A target is at risk". The widget follows the same setting.
 
 ### 9.5 Audit log
 
@@ -915,6 +995,7 @@ New `Kanban.AuditLog.event/2` actions:
 | `:device_signed_in` | a device is created | `device_id`, `platform`, `device_class`, `app_version` |
 | `:device_revoked` | sign-out, revoke by the person, by an org-admin, or by reuse detection | `device_id`, `reason` |
 | `:device_refresh_reuse_detected` | an old refresh token is reused | `device_id` |
+| `:approval_signature_rejected` | an approval's signature is missing, doesn't verify, or its nonce is expired or already used ([§7.5](#75-review-api)) | `task_id`, `board_id`, `device_id`, `device_class`, `reason` (`missing`, `invalid`, `expired`, `reused`) |
 
 Reviews write no audit event today (§3.2), so **web reviews start writing one too.** Then "approved from a phone" can be compared with "approved on the web". These rows follow the existing Organization scoping and redaction (`lib/kanban/audit_log/organization_scope.ex:1`), and appear on `/org/audit`.
 
@@ -930,7 +1011,7 @@ Phase 1 adds an authorization server, a new token type, a socket and a push path
 
 - **Signing in.** Anyone can sign in. `GET /api/me` returns `app_unlocked: false` for a person who isn't in an Organization while enforcement is on. The app then shows the locked panel: what the app does, that it's part of the Organization plan, and a link to the pricing page.
 - **The server checks every call.** Each `/api/me/*` route except `/api/me` and the device routes calls `Plans.check_user(scope, :mobile_app, ...)`. Board routes also call `check_board`, so a person in an Organization still can't use the app on a board outside it.
-- **Push respects the plan too.** It's sent only for events the plan allows, because `notify/3` already drops events on free boards (`notifications.ex:444-449`).
+- **Push respects the plan too, with its own per-user check.** `notify/3` drops only events whose `board_id` is on a free board (`check_board_plan`, `notifications.ex:470-475`). Events with no board aren't dropped there. The code that sends them does its own gating: `board_access_changed` (`events.ex:351`), `weekly_digest`'s recipients query (`digest_recipients.ex:66-67`) and the `target_status_changed` sweeper (`target_status_worker.ex:60`). `EmailWorker.check_plan` then checks the user before any email goes out (`email_worker.ex:126-133`). Push needs the same per-user check, so `enqueue_pushes!` and `PushWorker` both check the recipient's paid access, and the board's when there is one ([§7.8](#78-push-delivery)).
 - **Without enforcement.** With `:plans_enforced` off (dev and review), everything is unlocked, as for the other features.
 
 Free users don't get a read-only app in Phase 1. They can sign in and see the locked panel ([decision 2](#24-decisions-needed), decided).
@@ -945,6 +1026,7 @@ Free users don't get a read-only app in Phase 1. They can sign in and see the lo
   - the decisions list;
   - the review queue;
   - the last 20 reviews opened, with their highlighted diffs;
+  - the last 20 read-only tasks opened;
   - the boards' column counts and Backlog cards;
   - the agents list;
   - the targets and goals lists, and the last 20 targets and goals opened;
@@ -955,7 +1037,7 @@ Free users don't get a read-only app in Phase 1. They can sign in and see the lo
   - on both, keyed by the API's ids, with each response's fetch time.
 - **Offline:**
   - a banner says when the data is from: "Offline · showing what you had at 14:02";
-  - Approve, Request changes, Move to Ready, Reply and Save are disabled, with "Needs a connection";
+  - Approve, Request changes, Move to Ready, Move to Backlog, Reply and Save are disabled, with "Needs a connection";
   - nothing is queued.
 - **Back online:**
   - the app refetches the open screen and rejoins its channels;
@@ -1122,9 +1204,17 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 | `[:kanban, :push, :held]` | `count` | `event_type`, `reason` (`quiet_hours`, `mode`, `resolved`) | how often pushes are held back |
 | `[:kanban, :review, :approved]` | `count`, `files`, `changed_lines` | `via`, `device_class`, `board_id` | phone versus web approvals ([§23](#23-how-to-judge-it)) |
 | `[:kanban, :review, :changes_requested]` | `count` | `via`, `device_class`, `board_id` | the same for change requests |
-| `[:kanban, :review, :phone_approval_refused]` | `count`, `files`, `changed_lines` | `board_id` | how often the guard stops a phone |
+| `[:kanban, :review, :phone_approval_refused]` | `count`, `files`, `changed_lines` | `task_id`, `board_id` | how often the guard stops a phone, and, through `task_id`, whether that review is finished elsewhere ([§23](#23-how-to-judge-it)) |
+| `[:kanban, :review, :approval_signature_rejected]` | `count` | `task_id`, `board_id`, `device_class`, `reason` (`missing`, `invalid`, `expired`, `reused`) | signatures the server refuses; the audit event in [§9.5](#95-audit-log) records the same |
+| `[:kanban, :decision, :acted_on]` | `count`, `wait_seconds` | `kind`, `action`, `via` (`web`, `ios`, `android`), `task_id`, `board_id` | a decision's first action only, with the time since the decision began; time to act on released tasks, expired claims, failed hooks and empty Ready ([§23](#23-how-to-judge-it)) |
+| `[:kanban, :push, :settings_changed]` | `count` | `mode` (`decisions`, `every`), `fields` (the names of the settings changed), `via` | push opt-in, and people turning push off ([§23](#23-how-to-judge-it)) |
+| `[:kanban, :status, :viewed]` | `count` | `surface` (`targets`, `target`, `goals`, `goal`), `via` (`ios`, `android`) | how often the status screens are opened, to test the reason for [decision 13](#24-decisions-needed) |
 | `[:kanban, :decisions, :built]` | `duration`, `count` | `source` (`api`, `channel`) | the cost of Now |
 | `[:kanban, :api, :outdated_app_refused]` | `count` | `platform` | who is stuck below the minimum |
+
+- **Following the rules in [`docs/telemetry.md`](../telemetry.md#naming-rule).** Each name is `[:kanban, domain, past_tense_action]` with a singular domain. Metadata carries only row ids, fixed labels, field names and counts, never a title, a target name or notes. A metric's tags come only from the [tag rule](../telemetry.md#tag-rule)'s list, such as `via`, `source`, `reason`, `surface` and `kind`, and never from an id.
+- **When the decision event fires.** A person's first action on a decision emits it, from the app or the web: approve, request changes, move, promote or reply. `wait_seconds` runs from the decision's `since` ([§7.4](#74-decisions-api)). `task_id` is left out for `ready_empty`, which has no task.
+- **Where the status event comes from.** The four status endpoints emit `[:kanban, :status, :viewed]`, so a pull to refresh counts as a view.
 
 - **Request telemetry.** The `/api/me/*` routes are covered by the existing API request telemetry through `ApiTelemetry` in the new pipeline.
 - **The docs.** After changing the catalog, refresh the event reference in `docs/telemetry.md`; `test/kanban/telemetry_docs_test.exs` fails until it matches.
@@ -1137,9 +1227,12 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 - **Push text** is built on the server in the device's locale, so a notification arrives in the language the phone uses even when the web account is set to another.
 - **Layouts survive longer translations.** German and Portuguese labels run long, so the screens are checked at the largest text size in German.
 - **Dark mode on the new web pages** follows [`docs/dark-mode-contract.md`](../dark-mode-contract.md), with `mix dark_mode.scan` as part of precommit.
+- **Status values arrive as data, not text.** The server sends a target's status as an enum, `on_track`, `at_risk`, `missed` or `complete`, and the risk reason as structured data ([§7.10](#710-boards-tasks-agents-and-capture)). The app shows the web's labels, "On-track", "At-risk", "Missed" and "Complete" (`delivery_health_band.ex:172-175`), and the risk explainer's sentences, as copies in its `mobile` strings. They're translated with the web's, so the two never read differently.
 - **Accessibility:**
   - every control has a label;
   - verdict pills say their state in words ("Patterns failed"), not by colour only;
+  - status pills say their status in words ("At-risk");
+  - progress bars read their counts, for example "4 of 9 done, 1 in review, 2 in progress";
   - the diff reads line by line with "added" or "removed";
   - nothing depends on swipes alone.
 
@@ -1147,7 +1240,7 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 
 ## 18. Docs
 
-- **A user guide,** `docs/mobile-apps.md`: what the apps do, signing in, notifications and quiet hours, reviewing on a phone and the size limit, devices and revoking them, and the Organization plan.
+- **A user guide,** `docs/mobile-apps.md`: what the apps do, signing in, notifications and quiet hours, reviewing on a phone and the size limit, the status screens (targets, a target's goals, a goal's tasks and the goals list, and why only a target's owner can open it), devices and revoking them, and the Organization plan.
 - **API reference:** `docs/api/` pages for the `/api/me` endpoints and the OAuth flow, linked from `docs/api/README.md`. They say the endpoints are for the Stride apps, not for agents.
 - **Telemetry:** `docs/telemetry.md`, as in §16.
 - **The developer README:** a mobile section with the Mac, Xcode, JDK and Android SDK setup, and how to run each app against a local server.
@@ -1184,13 +1277,16 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
   - idempotent retries;
   - the guard at 10 and 11 files, 500 and 501 lines, and a capped diff;
   - a tablet approving a large change;
-  - a missing, wrong, reused or expired signature;
+  - a missing, wrong, reused or expired signature, each refused with an `:approval_signature_rejected` audit row;
   - audit rows for web and app.
 - **The diff highlighter:** Elixir, HEEx and an unknown language; a hunk starting inside a string; caching by diff hash.
 - **Channels:** `Phoenix.ChannelTest` for join, the coalesced rebuild, re-subscribing after `board_access_changed`, and the disconnect on revoke.
 - **Push:**
   - the worker against a Mox `Kanban.Push.Adapter`;
-  - modes and quiet hours across time zones and daylight-saving changes;
+  - modes as presets for the eight switches, and the "decision still open" check skipped for update events;
+  - quiet hours follow `user_push_settings.time_zone`, not the device's, across daylight-saving changes;
+  - collapse keys: the decision id for decisions, `event_type:subject_id` for updates;
+  - `device_nonces` rows expire and the sweep deletes them;
   - the morning summary;
   - dead-token cleanup;
   - holding a push for an already-resolved decision;
@@ -1200,8 +1296,13 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 - **Status:**
   - a target's status matches the web's for the same viewer time zone, including across the local day boundary (D123);
   - targets and goals on boards the person can't see never show;
+  - the plan check: a person without paid access gets the locked answer on every status endpoint;
+  - the targets list shows targets the person doesn't own, with `owner` false, and the detail answers 404 to anyone but the owner;
+  - a goal on a Free board is left out of the goals list and a target's goal rows;
+  - the risk reason appears only for an at-risk target with stalled goals or a slipped estimate, and never for a missed one;
+  - a goal's header counts match its target row when some done tasks are archived, and `archived_done` counts them;
   - a goal's tasks are grouped in the web's order;
-  - the goals list covers every board the person can see and none they can't, and `no_target` returns only goals outside every target.
+  - the goals list covers every board the person can see, across workspaces, and none they can't, and `no_target` returns only goals outside every target.
 - **Telemetry:** each new event through `Kanban.TelemetryHelpers.attach_telemetry/2`.
 
 ### 19.2 iOS
@@ -1218,7 +1319,7 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 
 ### 19.4 Exploratory and beta
 
-- **Exploratory charters** before the beta: the token lifecycle (sign-in, refresh, revoke, two devices), approving at the guard boundaries, Now under rapid change (two reviewers on one task), push during quiet hours across a time-zone change, and offline-then-online on the review screen.
+- **Exploratory charters** before the beta: the token lifecycle (sign-in, refresh, revoke, two devices), approving at the guard boundaries, Now under rapid change (two reviewers on one task), push during quiet hours after the phone changes time zone (quiet hours stay on `user_push_settings.time_zone`, while target status follows the device), and offline-then-online on the review screen.
 - **The beta:** with the first Organizations, through TestFlight and a Play closed test, before the stores.
 
 ---
@@ -1235,9 +1336,9 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 3. The review API: detail, approve, request changes, the 409 rules, idempotency, the approval challenge and signature, `MobileGuard`, and the review audit events for web and app.
 4. `Kanban.Reviews.DiffHighlighter` (Makeup) and the file endpoint.
 5. `Kanban.Decisions` with holds-up ranking, and `GET /api/me/decisions` and `/reviews`.
-6. Boards, column reads, promote with `needs_review`, task detail, comment, move to Backlog, capture with `created_via`, the agents endpoint, and the status endpoints for targets and goals.
+6. Boards, column reads, promote with `needs_review`, task detail, comment, move to Backlog, capture with `created_via`, the agents endpoint, the status endpoints for targets and goals with their new fields ([§7.10](#710-boards-tasks-agents-and-capture)), and the universal-link and App Links site files ([§6.20](#620-routes-where-a-tap-opens)).
 7. `UserSocket` with the `me:inbox` and `me:agents` channels.
-8. Push: Pigeon, `Kanban.Push`, `PushWorker`, the `push` preference column, `user_push_settings`, quiet hours with the summary job, the web preferences page, and the lock-screen policy.
+8. Push: Pigeon, `Kanban.Push`, `PushWorker`, the `push` preference column, `user_push_settings`, quiet hours with the summary job, the web preferences page, the lock-screen policy, and `device_nonces` with its sweep job.
 9. The OpenAPI additions, `deviceAuth` in the contract test, and the fixtures with their schema test.
 10. Telemetry events and `docs/telemetry.md`.
 11. The monorepo groundwork:
@@ -1255,7 +1356,7 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 3. Now with the live channel, the cache and its states (§6.3).
 4. Review, the flagged file, the approval key and approve, request changes, and the large-change guard (§6.4–§6.8).
 5. Boards and promote (§6.9), Agents (§6.10), the status screens (§6.16–§6.19), New task (§6.11).
-6. Push registration, notification categories, the service extension, and the onboarding prompt (§6.2, §6.13).
+6. Push registration, notification categories, the service extension, the onboarding prompt, and the routes for push, widget and web-link taps (§6.2, §6.13, §6.20).
 7. Settings (§6.12) and the widget (§6.13).
 8. The iPad split layout, the review workspace and keyboard shortcuts (§6.15).
 9. The accessibility and localisation pass, snapshot tests in both themes, and UI tests.
@@ -1299,10 +1400,14 @@ Phase 1c starts when the iOS beta is with the first Organizations ([decision 3](
   - the measure in §23 that compares later change requests on phone and web approvals.
 - **The guard trusts the app's device class.** A modified app could claim to be a tablet. In 1.0 the approval key still proves which device approved, and the audit log records it. 1.1 adds App Attest and Play Integrity before Organizations can set their own limits.
 - **Too many notifications.** If every event pushes, people mute the app within a week. The mitigations:
-  - "Only when it blocks something" is the default;
+  - "Decisions only" is the default;
   - pushes are collapsed per decision;
   - quiet hours end with a single summary;
   - resolved decisions aren't pushed.
+- **A target's status push runs on UTC.** `TargetStatusWorker` derives status against UTC, because no user time zone is stored today (`lib/kanban/notifications/target_status_worker.ex:26-29`, `:106-107`). The status screens use the device's local time ([§6.16](#616-targets-status-at-a-glance)). So near the local day boundary, a `target_status_changed` push can arrive hours before or after the badge on the phone changes. The mitigations:
+  - the push is an update event, off by default and on only in "Every event" or by its own switch ([§7.9](#79-notification-settings-for-push));
+  - the push opens the Target, which derives the status fresh in local time, so the person sees the current status, not the push's;
+  - once `user_push_settings` exists, its `time_zone` gives the worker an owner's zone to anchor on. Moving the worker onto it is a small follow-up, outside Phase 1.
 - **Two clients to maintain.** Every API change, string and policy now has two more consumers. Contract-first changes, generated clients, generated tokens and strings, and the staleness tests keep that cost down.
 - **Old app versions.** A store release can't be rolled back like a deploy. The API stays additive, and the minimum version is a last resort.
 - **App store review** slows fixes compared with the web. Keep logic on the server where it's cheap, such as the guard, the ranking and the push text.
@@ -1316,13 +1421,16 @@ Phase 1c starts when the iOS beta is with the first Organizations ([decision 3](
 
 **After,** comparing boards whose reviewers use the app with the baseline and with boards whose reviewers don't:
 
-- the median and 90th-percentile Review wait, `review_requested_at → reviewed_at`;
-- time from `claim_expired`, `task_unclaimed` or `after_goal_failed` to the first action on that task;
-- time Ready sits empty while an agent is idle;
-- the share of approvals made on a phone, and how often changes are later requested, or a defect is filed, against tasks approved on a phone compared with on the web. If phone approvals do worse, the guard needs tightening;
-- how often the guard refuses a phone approval, and how often that review is then finished on a tablet or the web within the hour;
-- push opt-in, and how many people turn push off within two weeks;
-- Organizations that name the app as a reason to buy.
+Each measure names its source.
+
+- **The median and 90th-percentile Review wait,** `review_requested_at → reviewed_at`. Source: `fetch_review_wait_times` in `Kanban.Metrics` once task 0 fixes it ([§3.6](#36-metrics-review-wait-reads-as-zero-today)).
+- **Time from `claim_expired`, `task_unclaimed` or `after_goal_failed` to the first action on that task.** Source: `wait_seconds` on `[:kanban, :decision, :acted_on]` ([§16](#16-telemetry)). The baseline, from before the event exists, is the notification's `inserted_at` to the task's next `task_history` row.
+- **Time Ready sits empty while an agent is idle.** Source: `wait_seconds` on `[:kanban, :decision, :acted_on]` with `kind: ready_empty`. Nothing records it today, so it has no baseline and is measured from launch.
+- **The share of approvals made on a phone,** and how often changes are later requested, or a defect is filed, against tasks approved on a phone compared with on the web. If phone approvals do worse, the guard needs tightening. Source: the `:review_approved` and `:review_changes_requested` audit rows, by `via` and `task_id` ([§9.5](#95-audit-log)). A defect has no link to the task it's about, so defects are matched by hand.
+- **How often the guard refuses a phone approval,** and how often that review is then finished on a tablet or the web within the hour. Source: `[:kanban, :review, :phone_approval_refused]`, joined by `task_id` to the next `:review_approved` audit row.
+- **Push opt-in, and how many people turn push off within two weeks.** Source: `[:kanban, :push, :settings_changed]` and the `push_token` on `user_devices`.
+- **How often the status screens are opened,** to check the reason for [decision 13](#24-decisions-needed). Source: `[:kanban, :status, :viewed]`, by `surface`.
+- **Organizations that name the app as a reason to buy.** Source: the sales notes for each Organization; there's no telemetry for this.
 
 ---
 
@@ -1344,4 +1452,4 @@ All thirteen were decided on 2026-11-15; decision 13 was added after the first t
 | 10 | Request changes leaves the task in Review today (§3.2). Should the phone copy say "back in Doing", or match what happens? | **Decided (2026-11-15): match what happens.** The copy says the task is waiting for the agent to pick up the changes. Reason: "back in Doing" would be wrong, and the web board would contradict the phone. Changing where the task goes is a separate workflow decision. |
 | 11 | Which languages does the diff highlighter cover at launch? | **Decided (2026-11-15): Elixir, HEEx, Erlang, JavaScript and CSS,** only where the Makeup lexer is maintained; plain text otherwise. Reason: each lexer is a dependency to keep up, and plain text still reads fine for the rest. |
 | 12 | Start the backend now, or after the five-Organization sales goal? | **Decided (2026-11-15): task 0 now.** The rest of Phase 1a starts when the baseline shows real waits on paying boards. Reason: the metric is a defect worth fixing anyway, and gating the rest protects sales time until the waits are proven. |
-| 13 | Add a status section to Phase 1: targets, then a target's goals, then a goal's tasks, each matching the web, plus a list of every goal? | **Decided (2026-11-15): yes, in Phase 1, inside Agents,** behind a switch with Agents, Targets and Goals ([§6.16](#616-targets-status-at-a-glance)–§6.19). The screens are read-only, refresh by pulling, and have no live channel in 1.0. Reason: high-level status is what a person checks most between decisions, and the web already shows targets on `/agents`. The backend reuses `Kanban.Targets` and the goal page's functions for three read endpoints. The goals list needs one new query, because the web shows goals only one board at a time. The cost is four read endpoints and four screens. The goals list was added because a goal with no target would otherwise drop off the phone once agents leave it. This widens the metrics non-goal in [§1](#1-goals-and-non-goals). |
+| 13 | Add a status section to Phase 1: targets, then a target's goals, then a goal's tasks, each matching the web, plus a list of every goal? | **Decided (2026-11-15): yes, in Phase 1, inside Agents,** behind a switch with Agents, Targets and Goals ([§6.16](#616-targets-status-at-a-glance)–§6.19). The screens are read-only, refresh by pulling, and have no live channel in 1.0. Access follows the web: the targets list shows every target with a member goal on a board the person can see, but only a target's owner can open its detail, as `/targets/:id` is owner-only. Others see the row without a chevron and reach its goals from the Goals list. Lists span every board the person can see; the app has no current workspace ([§5.1](#51-one-navigation-on-both-platforms)). Reason: high-level status is what a person checks most between decisions, and the web already shows targets on `/agents`. The backend reuses `DeliveryRollup.build/2`, `Kanban.Targets` and the goal page's functions for three read endpoints, plus a few new fields ([§7.10](#710-boards-tasks-agents-and-capture)). The goals list needs one new query, because no web page lists every goal. The cost is four read endpoints and four screens. The goals list was added because a goal with no target would otherwise drop off the phone once agents leave it. This widens the metrics non-goal in [§1](#1-goals-and-non-goals). |
