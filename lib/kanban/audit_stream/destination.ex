@@ -25,7 +25,14 @@ defmodule Kanban.AuditStream.Destination do
   Names are normalized before they are checked: NFC, with characters that
   render as nothing removed and surrounding whitespace trimmed, as
   `Kanban.Workspaces.Workspace` does, so two names that look the same are
-  the same name for the uniqueness check.
+  the same name for the uniqueness check. Within an Organization a name is
+  unique ignoring case, so "Splunk" and "splunk" are the same name. The
+  unique index `audit_stream_destinations_organization_id_lower_name_index`
+  on `(organization_id, lower(name))` decides, and `changeset/2` maps it to
+  "has already been taken" on `:name`. The name is stored as typed; only the
+  index folds case. `lower()` follows the database's collation, so whether
+  non-ASCII letters such as "É" and "é" fold together depends on it: under
+  the C collation only ASCII letters do.
 
   `excluded_actions` names audit actions never streamed. Every
   `audit_stream_` action is refused there, so changes to streaming stay
@@ -89,6 +96,8 @@ defmodule Kanban.AuditStream.Destination do
 
   @max_host_length 253
 
+  @name_index :audit_stream_destinations_organization_id_lower_name_index
+
   # Characters that render as nothing, removed from names: format characters
   # except the joiners some scripts and emoji need, and the invisible letters
   # Kanban.ChangesetText.visible?/1 lists. The same set as Workspace names.
@@ -147,7 +156,7 @@ defmodule Kanban.AuditStream.Destination do
   `created_by` are set on the struct by the caller, never cast.
 
   Validates the kind, the name (at most 80 characters, unique in the
-  Organization), the secrets each kind needs, the settings keys for the kind,
+  Organization ignoring case), the secrets each kind needs, the settings keys for the kind,
   the kind's own settings, credential and URL rules (its
   `Kanban.AuditStream.Adapter`'s `validate/1` and optional
   `validate_credential/2` and `validate_url/1`, when the kind has an
@@ -176,7 +185,7 @@ defmodule Kanban.AuditStream.Destination do
     |> validate_excluded_actions()
     |> validate_url()
     |> validate_adapter_url()
-    |> unique_constraint([:organization_id, :name], error_key: :name)
+    |> unique_constraint(:name, name: @name_index)
     |> foreign_key_constraint(:organization_id)
     |> put_hints()
   end

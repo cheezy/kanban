@@ -819,7 +819,7 @@ seen by all of them. Rotating a signing secret sends no email.
 | Destinations per Organization | 3, unless the operator changes it with `AUDIT_STREAM_MAX_DESTINATIONS`. At the limit, **Add destination** is disabled |
 | Events per batch | 500, and at most 900,000 bytes of request body before compression, as each type writes it |
 | Test events | 10 an hour per Organization |
-| Destination name | 80 characters, unique in the Organization |
+| Destination name | 80 characters, unique in the Organization ignoring case, so "Splunk" and "splunk" are the same name |
 | URL | 2,048 characters |
 | Token, API key or header value | 4,096 characters |
 | Datadog tags | 90, of at most 200 characters each |

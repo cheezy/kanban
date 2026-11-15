@@ -923,6 +923,31 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
       end
     end
 
+    test "a name that differs only in case from an existing destination shows the duplicate-name error",
+         %{conn: conn, org: org} do
+      taken = destination_fixture(org, :datadog)
+
+      for locale <- ~w(de en es fr ja pt zh) do
+        conn = Plug.Test.init_test_session(conn, %{"locale" => locale})
+        {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+
+        html = submit(lv, Map.put(@datadog, "name", String.upcase(taken.name)))
+
+        text =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            Gettext.dgettext(KanbanWeb.Gettext, "errors", "has already been taken")
+          end)
+
+        assert locale == "en" or text != "has already been taken",
+               "#{locale} lacks a translation of the duplicate-name error"
+
+        assert html =~ text, "#{locale}: duplicate-name error"
+      end
+
+      only_one = from(d in Destination, where: d.organization_id == ^org.id)
+      assert [_only] = Repo.all(only_one)
+    end
+
     test "renders in every locale", %{conn: conn, org: org} do
       destination = destination_fixture(org, :datadog)
       make_unreadable!(destination, :credential)

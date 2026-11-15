@@ -305,6 +305,53 @@ defmodule Kanban.AuditStream.SchemasTest do
       other = %{ctx | organization: organization_fixture()}
       assert {:ok, _destination} = other |> changeset(attrs(:https)) |> Repo.insert()
     end
+
+    test "names that differ only in case are the same name", ctx do
+      insert!(ctx, :https, %{name: "Siem"})
+
+      for variant <- ["SIEM", "siem", "sIeM", " SIEM\u200B"] do
+        assert {:error, changeset} = ctx |> changeset(:https, %{name: variant}) |> Repo.insert()
+        assert errors_on_field(changeset, :name) == ["has already been taken"]
+      end
+
+      other = %{ctx | organization: organization_fixture()}
+      assert {:ok, destination} = other |> changeset(:https, %{name: "SIEM"}) |> Repo.insert()
+      assert destination.name == "SIEM"
+    end
+
+    test "non-ASCII names collide ignoring case exactly when the database's lower() folds them",
+         ctx do
+      insert!(ctx, :https, %{name: "ÉCOLE"})
+      %{rows: [[folds?]]} = Repo.query!("SELECT lower('ÉCOLE') = lower('école')")
+
+      result = ctx |> changeset(:https, %{name: "école"}) |> Repo.insert()
+
+      if folds? do
+        assert {:error, changeset} = result
+        assert errors_on_field(changeset, :name) == ["has already been taken"]
+      else
+        assert {:ok, _destination} = result
+      end
+    end
+
+    test "renaming a destination to a different case of its own name is allowed", ctx do
+      destination = insert!(ctx, :https, %{name: "siem"})
+
+      assert {:ok, renamed} =
+               destination |> Destination.changeset(%{name: "SIEM"}) |> Repo.update()
+
+      assert Repo.get!(Destination, renamed.id).name == "SIEM"
+    end
+
+    test "renaming a destination to another's name in a different case is refused", ctx do
+      insert!(ctx, :https, %{name: "Siem"})
+      other = insert!(ctx, :https, %{name: "Ops"})
+
+      assert {:error, changeset} =
+               other |> Destination.changeset(%{name: "sIEM"}) |> Repo.update()
+
+      assert errors_on_field(changeset, :name) == ["has already been taken"]
+    end
   end
 
   describe "Destination.changeset/2 settings" do
@@ -926,5 +973,91 @@ defmodule Kanban.AuditStream.SchemasTest do
       assert Repo.get!(Destination, destination.id).created_by_id == nil
       assert Repo.get!(Gap, gap.id).dismissed_by_id == nil
     end
+  end
+end
+
+defmodule Kanban.AuditStream.SchemasLockTest do
+  @moduledoc """
+  Shows that the `(organization_id, lower(name))` unique index decides between
+  two destinations created at the same moment whose names differ only in case
+  (D445).
+
+  The test sandbox shares one connection, so the race cannot happen inside it.
+  This module checks out unsandboxed connections and commits for real, which
+  is why it is not async: ExUnit runs it after every async module, so no
+  sandboxed test sees its rows. `on_exit` deletes the Organization, and its
+  destinations go with it.
+  """
+  use ExUnit.Case, async: false
+
+  import Ecto.Query
+  import Kanban.OrganizationsFixtures
+
+  alias Ecto.Adapters.SQL.Sandbox
+  alias Kanban.AuditStream.Destination
+  alias Kanban.Organizations.Organization
+  alias Kanban.Repo
+
+  @hold_ms 300
+
+  setup do
+    :ok = Sandbox.checkout(Repo, sandbox: false)
+
+    organization = organization_fixture()
+    on_exit(fn -> delete_committed(organization.id) end)
+
+    %{organization: organization}
+  end
+
+  test "two concurrent inserts of names differing only in case leave one row", %{
+    organization: organization
+  } do
+    test_pid = self()
+
+    competitor =
+      Task.async(fn ->
+        :ok = Sandbox.checkout(Repo, sandbox: false)
+
+        Repo.transaction(fn ->
+          inserted = organization |> changeset("Siem") |> Repo.insert!()
+          send(test_pid, :competitor_holding)
+          Process.sleep(@hold_ms)
+          inserted
+        end)
+      end)
+
+    assert_receive :competitor_holding, 5_000
+
+    # The index makes this insert wait for the competitor's uncommitted row,
+    # then refuse it once that row commits.
+    result = organization |> changeset("SIEM") |> Repo.insert()
+
+    assert {:ok, %Destination{name: "Siem"}} = Task.await(competitor)
+    assert {:error, changeset} = result
+    assert {"has already been taken", _opts} = changeset.errors[:name]
+
+    names =
+      from(d in Destination, where: d.organization_id == ^organization.id, select: d.name)
+      |> Repo.all()
+
+    assert names == ["Siem"]
+  end
+
+  defp changeset(organization, name) do
+    %Destination{organization_id: organization.id}
+    |> Destination.changeset(%{
+      kind: "https",
+      name: name,
+      url: "https://siem.example.org/ingest",
+      credential: "https-header-value-0123456789",
+      settings: %{"format" => "ndjson", "header_name" => "X-Api-Key"}
+    })
+  end
+
+  # on_exit runs in its own process, which needs its own connection. The
+  # destinations cascade from the Organization.
+  defp delete_committed(organization_id) do
+    :ok = Sandbox.checkout(Repo, sandbox: false)
+    from(o in Organization, where: o.id == ^organization_id) |> Repo.delete_all()
   end
 end
