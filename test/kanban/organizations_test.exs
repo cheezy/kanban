@@ -10,6 +10,9 @@ defmodule Kanban.OrganizationsTest do
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
   alias Kanban.Organizations
+  alias Kanban.Organizations.Memberships
+  alias Kanban.Organizations.OrgAdminByEmail
+  alias Kanban.Organizations.OrgAdmins
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
@@ -1773,8 +1776,13 @@ defmodule Kanban.OrganizationsTest do
   end
 
   describe "the context's public functions" do
-    test "include no delete or downgrade function" do
-      functions = Organizations.__info__(:functions) |> Keyword.keys()
+    test "include no delete or downgrade function, in the facade or its read and appoint helpers" do
+      functions =
+        for module <- [Organizations, Memberships, OrgAdmins, OrgAdminByEmail],
+            {name, _arity} <- module.__info__(:functions),
+            do: name
+
+      assert :appoint in functions
 
       refute Enum.any?(functions, fn name ->
                name |> Atom.to_string() |> String.contains?(["delete", "downgrade"])

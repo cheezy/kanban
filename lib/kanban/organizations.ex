@@ -52,16 +52,17 @@ defmodule Kanban.Organizations do
   through `Kanban.Organizations.OrganizationTelemetry`, and only after the
   write has committed, so a refusal emits and records nothing.
 
-  The membership functions check the actor here and leave the locked
-  transaction to `Kanban.Organizations.MembershipWrites`.
+  These functions check the actor; the `Kanban.Organizations.*` modules
+  `MembershipWrites`, `Memberships`, `OrgAdmins` and `OrgAdminByEmail` do the work.
   """
 
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
+  alias Kanban.Organizations.Memberships
   alias Kanban.Organizations.MembershipWrites
-  alias Kanban.Organizations.OrgAdminNotice
+  alias Kanban.Organizations.OrgAdminByEmail
   alias Kanban.Organizations.OrgAdminProvisioning
   alias Kanban.Organizations.OrgAdmins
   alias Kanban.Organizations.Organization
@@ -218,21 +219,7 @@ defmodule Kanban.Organizations do
 
   """
   @spec get_membership(User.t()) :: OrganizationMember.t() | nil
-  def get_membership(%User{id: user_id}) do
-    # One query (a join, not a preload): UserAuth runs this on every request.
-    from(m in OrganizationMember,
-      join: o in assoc(m, :organization),
-      where: m.user_id == ^user_id,
-      select: {m, struct(o, ^fields_without_contact())}
-    )
-    |> Repo.one()
-    |> put_membership_organization()
-  end
-
-  defp put_membership_organization(nil), do: nil
-
-  defp put_membership_organization({%OrganizationMember{} = membership, organization}),
-    do: %{membership | organization: organization}
+  defdelegate get_membership(user), to: Memberships
 
   @doc """
   Returns true when `user` is an org-admin of `organization` and their
@@ -241,13 +228,7 @@ defmodule Kanban.Organizations do
   `organization` is an `%Organization{}` or its id.
   """
   @spec org_admin?(User.t(), Organization.t() | integer()) :: boolean()
-  def org_admin?(%User{} = user, organization) do
-    user
-    |> membership_query(organization)
-    |> join(:inner, [m], u in assoc(m, :user), on: is_nil(u.disabled_at))
-    |> where([m], m.role == ^:org_admin)
-    |> Repo.exists?()
-  end
+  defdelegate org_admin?(user, organization), to: Memberships
 
   @doc """
   The number of org-admins of `organization` whose account is enabled, read
@@ -256,14 +237,7 @@ defmodule Kanban.Organizations do
   `organization` is an `%Organization{}` or its id.
   """
   @spec count_enabled_org_admins(Organization.t() | integer()) :: non_neg_integer()
-  def count_enabled_org_admins(organization) do
-    organization_id = organization_id(organization)
-
-    OrganizationMember
-    |> where([m], m.organization_id == ^organization_id and m.role == ^:org_admin)
-    |> join(:inner, [m], u in assoc(m, :user), on: is_nil(u.disabled_at))
-    |> Repo.aggregate(:count)
-  end
+  defdelegate count_enabled_org_admins(organization), to: OrgAdmins
 
   @doc """
   The enabled org-admins of `organization`, as users ordered by id, for the
@@ -289,11 +263,7 @@ defmodule Kanban.Organizations do
   `organization` is an `%Organization{}` or its id.
   """
   @spec member?(User.t(), Organization.t() | integer()) :: boolean()
-  def member?(%User{} = user, organization) do
-    user
-    |> membership_query(organization)
-    |> Repo.exists?()
-  end
+  defdelegate member?(user, organization), to: Memberships
 
   @doc """
   Returns `organization`'s memberships with each member's user preloaded,
@@ -303,22 +273,7 @@ defmodule Kanban.Organizations do
   see the list.
   """
   @spec list_members(Organization.t() | integer()) :: [OrganizationMember.t()]
-  def list_members(organization) do
-    organization_id = organization_id(organization)
-
-    from(m in OrganizationMember,
-      join: u in assoc(m, :user),
-      where: m.organization_id == ^organization_id,
-      # role is stored as a string, and "org_admin" sorts after "member".
-      order_by: [
-        desc: m.role,
-        asc: u.email,
-        asc: m.id
-      ],
-      preload: [user: u]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_members(organization), to: Memberships
 
   @doc """
   Adds `user` to `organization` with role `:member`.
@@ -459,7 +414,7 @@ defmodule Kanban.Organizations do
     urls = OrgAdminProvisioning.validate_urls!(urls)
 
     if site_admin?(actor) do
-      appoint_by_email(actor, organization, String.trim(email), urls)
+      OrgAdminByEmail.appoint(actor, organization, String.trim(email), urls)
     else
       {:error, :unauthorized}
     end
@@ -502,53 +457,6 @@ defmodule Kanban.Organizations do
     else
       {:error, :unauthorized}
     end
-  end
-
-  defp appoint_by_email(actor, organization, email, urls) do
-    case Accounts.get_user_by_email(email) do
-      %User{} = user ->
-        appoint_existing_account(actor, organization, user)
-
-      nil ->
-        actor
-        |> OrgAdminProvisioning.provision(organization_id(organization), email, urls)
-        |> appoint_if_registered_meanwhile(actor, organization, email)
-    end
-  end
-
-  defp appoint_existing_account(_actor, _organization, %User{disabled_at: %DateTime{}}),
-    do: {:error, :user_disabled}
-
-  # The actor was checked by appoint_org_admin_by_email/4.
-  defp appoint_existing_account(actor, organization, %User{} = user) do
-    MembershipWrites.appoint_org_admin(actor, organization_id(organization), user,
-      on_appointed: &OrgAdminNotice.deliver(user, &1)
-    )
-  end
-
-  # Another write registered the email between the lookup and the insert, so
-  # that account is appointed instead of creating a second one.
-  defp appoint_if_registered_meanwhile({:error, :email_taken}, actor, organization, email) do
-    case Accounts.get_user_by_email(email) do
-      %User{} = user -> appoint_existing_account(actor, organization, user)
-      nil -> {:error, :not_found}
-    end
-  end
-
-  defp appoint_if_registered_meanwhile(result, _actor, _organization, _email), do: result
-
-  defp membership_query(%User{id: user_id}, organization) do
-    organization_id = organization_id(organization)
-
-    where(
-      OrganizationMember,
-      [m],
-      m.user_id == ^user_id and m.organization_id == ^organization_id
-    )
-  end
-
-  defp fields_without_contact do
-    Organization.__schema__(:fields) -- Organization.contact_fields()
   end
 
   defp organization_id(%Organization{id: id}), do: id

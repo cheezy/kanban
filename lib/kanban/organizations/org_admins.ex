@@ -1,14 +1,15 @@
 defmodule Kanban.Organizations.OrgAdmins do
   @moduledoc """
   Reads the enabled org-admins of an Organization, for
-  `Kanban.Organizations.list_enabled_org_admins/1`.
+  `Kanban.Organizations.list_enabled_org_admins/1` and
+  `Kanban.Organizations.count_enabled_org_admins/1`.
 
-  An org-admin is enabled when their account has no `disabled_at`, the same
-  rule `Kanban.Organizations.org_admin?/2` and
-  `Kanban.Organizations.count_enabled_org_admins/1` apply.
+  An org-admin is enabled when their account has no `disabled_at`, read from
+  the database. `Kanban.Organizations.org_admin?/2` (in
+  `Kanban.Organizations.Memberships`) applies the same rule.
   """
 
-  import Ecto.Query, only: [from: 2]
+  import Ecto.Query, only: [from: 2, join: 5, where: 3]
 
   alias Kanban.Accounts.User
   alias Kanban.Organizations.Organization
@@ -35,4 +36,23 @@ defmodule Kanban.Organizations.OrgAdmins do
     )
     |> Repo.all()
   end
+
+  @doc """
+  The number of enabled org-admins of `organization`. An Organization with
+  none gets 0.
+
+  `organization` is an `%Organization{}` or its id.
+  """
+  @spec count_enabled_org_admins(Organization.t() | integer()) :: non_neg_integer()
+  def count_enabled_org_admins(organization) do
+    organization_id = organization_id(organization)
+
+    OrganizationMember
+    |> where([m], m.organization_id == ^organization_id and m.role == ^:org_admin)
+    |> join(:inner, [m], u in assoc(m, :user), on: is_nil(u.disabled_at))
+    |> Repo.aggregate(:count)
+  end
+
+  defp organization_id(%Organization{id: id}), do: id
+  defp organization_id(id) when is_integer(id), do: id
 end
