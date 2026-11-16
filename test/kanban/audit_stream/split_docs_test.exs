@@ -5,12 +5,15 @@ defmodule Kanban.AuditStream.SplitDocsTest do
   `Kanban.AuditStream.DispatchWorker` to `Kanban.AuditStream.Send`, the rows
   both phases write to `Kanban.AuditStream.DispatchRows`, and the retention
   gap steps to `Kanban.AuditStream.Retention.Leases`, `.Snapshot` and
-  `.Losses`. These tests fail if a doc stops naming the module that now
-  does the work.
+  `.Losses`. W2741 moved the access checks and the update changeset of
+  `Kanban.AuditStream.Destinations` to `.Destinations.Access` and
+  `.Destinations.UpdateChangeset`. These tests fail if a doc stops naming
+  the module that now does the work.
   """
   use ExUnit.Case, async: true
 
   alias Kanban.AuditStream.DestinationEvents
+  alias Kanban.AuditStream.Destinations
   alias Kanban.AuditStream.DispatchWorker
   alias Kanban.AuditStream.Gaps
   alias Kanban.AuditStream.Lease
@@ -67,5 +70,20 @@ defmodule Kanban.AuditStream.SplitDocsTest do
     for module <- ["Retention.Leases", "Retention.Snapshot", "Retention.Losses"] do
       assert doc =~ "`Kanban.AuditStream.#{module}`"
     end
+  end
+
+  test "Destinations' moduledoc names Access and UpdateChangeset, and the facade keeps its docs" do
+    doc = moduledoc(Destinations)
+
+    for module <- ["Destinations.Access", "Destinations.UpdateChangeset"] do
+      assert doc =~ "`Kanban.AuditStream.#{module}`"
+    end
+
+    for {name, arity} <- [authorize: 1, fetch: 3, fetch_authorized: 3] do
+      assert function_doc(Destinations, name, arity)
+    end
+
+    Code.ensure_loaded!(Destinations)
+    assert function_exported?(Destinations, :fetch, 2)
   end
 end
