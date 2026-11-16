@@ -35,6 +35,7 @@ defmodule KanbanWeb.OrgLive.SCIM do
   alias Kanban.Accounts.User
   alias Kanban.SCIM
   alias Kanban.SCIM.ScimToken
+  alias KanbanWeb.LocalTime
 
   defmodule ShownToken do
     @moduledoc """
@@ -169,5 +170,5 @@ defmodule KanbanWeb.OrgLive.SCIM do
   defp creator(_token), do: "—"
 
   defp date(nil), do: gettext("never")
-  defp date(%DateTime{} = datetime), do: Calendar.strftime(datetime, "%Y-%m-%d")
+  defp date(%DateTime{} = datetime), do: LocalTime.format(datetime, :short_date)
 end

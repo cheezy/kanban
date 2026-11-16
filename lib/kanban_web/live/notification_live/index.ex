@@ -19,6 +19,7 @@ defmodule KanbanWeb.NotificationLive.Index do
 
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.NotificationLabels
   alias KanbanWeb.NotificationsLocked
   alias KanbanWeb.TimeAgo

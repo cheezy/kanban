@@ -43,6 +43,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   alias Kanban.SSO.DomainRecheck
   alias Kanban.SSO.DomainVerification
   alias Kanban.SSO.SAML
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.OrgLive.FormParams
 
   require Logger
@@ -270,7 +271,7 @@ defmodule KanbanWeb.OrgLive.SSO do
       "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on.",
       "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on.",
       remaining,
-      date: Calendar.strftime(domain.failing_since, "%Y-%m-%d")
+      date: LocalTime.format(domain.failing_since, :short_date)
     )
   end
 

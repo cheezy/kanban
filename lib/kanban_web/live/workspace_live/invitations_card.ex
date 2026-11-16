@@ -13,6 +13,7 @@ defmodule KanbanWeb.WorkspaceLive.InvitationsCard do
   import KanbanWeb.UserLive.SettingsComponents, only: [settings_card: 1]
 
   alias Kanban.Workspaces.Invitation
+  alias KanbanWeb.LocalTime
 
   attr :form, Phoenix.HTML.Form, required: true
   attr :boards, :list, required: true
@@ -155,7 +156,7 @@ defmodule KanbanWeb.WorkspaceLive.InvitationsCard do
 
   defp expiry_text(%Invitation{expires_at: expires_at}) do
     if DateTime.compare(expires_at, DateTime.utc_now()) == :gt do
-      gettext("Expires %{date}", date: Calendar.strftime(expires_at, "%Y-%m-%d"))
+      gettext("Expires %{date}", date: LocalTime.format(expires_at, :short_date))
     else
       gettext("Expired")
     end

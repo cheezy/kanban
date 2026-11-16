@@ -15,6 +15,7 @@ defmodule KanbanWeb.WorkspaceLive.ExportCard do
 
   alias Kanban.Workspaces.Export
   alias Kanban.Workspaces.Export.WorkspaceExport
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.WorkspaceLive.Exports
 
   attr :exports, :list, required: true
@@ -129,6 +130,6 @@ defmodule KanbanWeb.WorkspaceLive.ExportCard do
   defp requester(%WorkspaceExport{requested_by: %{email: email}}) when is_binary(email), do: email
   defp requester(_export), do: "—"
 
-  defp date(%DateTime{} = datetime), do: Calendar.strftime(datetime, "%Y-%m-%d %H:%M UTC")
+  defp date(%DateTime{} = datetime), do: LocalTime.format(datetime, :datetime)
   defp date(_none), do: "—"
 end

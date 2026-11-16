@@ -132,7 +132,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamingTest do
       assert has_element?(
                lv,
                "#destination-gap-warning-#{gapped.id}",
-               "5 events will never reach this destination (2026-10-01 to 2026-10-05 UTC)"
+               "5 events will never reach this destination (Oct 1, 2026 to Oct 5, 2026)"
              )
 
       refute has_element?(lv, "#destination-gap-warning-#{dismissed.id}")
@@ -155,7 +155,8 @@ defmodule KanbanWeb.OrgLive.AuditStreamingTest do
       assert splunk_row =~ "Splunk"
       assert splunk_row =~ "collector.example.com"
       assert splunk_row =~ "•••• " <> splunk.credential_hint
-      assert splunk_row =~ "2026-11-01 09:30:00 UTC"
+      assert splunk_row =~ "November 1, 2026 at 9:30 AM"
+      refute splunk_row =~ "UTC"
       assert has_element?(lv, "#destination-status-#{splunk.id}[data-status-pill=healthy]")
       assert has_element?(lv, "#destination-behind-by-#{splunk.id}", "Up to date")
 

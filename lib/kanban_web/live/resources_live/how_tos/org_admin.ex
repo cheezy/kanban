@@ -100,13 +100,13 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Opening the Audit Log",
             content:
-              "In the Organization console, click **Audit log**. **Organization audit log** lists events newest first, with the **Time (UTC)**, **Action**, **Actor**, **IP** and **Details** of each. All times are in UTC. **Back to Organization** returns to the console.\n\n**Streaming** opens audit streaming, which sends these events to a security tool such as Splunk or Datadog: [Streaming Your Audit Log to a Security Tool](/resources/streaming-your-audit-log-to-a-security-tool) explains it.",
+              "In the Organization console, click **Audit log**. **Organization audit log** lists events newest first, with the **Time**, **Action**, **Actor**, **IP** and **Details** of each. Times are shown in your own timezone and language. **Back to Organization** returns to the console.\n\n**Streaming** opens audit streaming, which sends these events to a security tool such as Splunk or Datadog: [Streaming Your Audit Log to a Security Tool](/resources/streaming-your-audit-log-to-a-security-tool) explains it.",
             image: nil
           },
           %{
             title: "Filtering",
             content:
-              "Choose an **Action** to see one kind of event. The list offers only the actions that have happened in your Organization, and **All actions** shows everything again. Set **From (UTC)** and **To (UTC)** to limit the dates.\n\n**Clear filters** removes them all. There is no filter by person, on purpose.",
+              "Choose an **Action** to see one kind of event. The list offers only the actions that have happened in your Organization, and **All actions** shows everything again. Set **From** and **To** to limit the dates. Each covers whole days in Coordinated Universal Time, the same days an export of those filters records.\n\n**Clear filters** removes them all. There is no filter by person, on purpose.",
             image: "/images/resources/guides/reading-the-organization-audit-log-step-3.png",
             image_width: 1162,
             image_height: 190

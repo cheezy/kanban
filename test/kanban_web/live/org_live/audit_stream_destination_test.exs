@@ -332,8 +332,8 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
       assert has_element?(lv, "#destination-reason[data-halted-reason=rejected_batch]")
       assert has_element?(lv, "#rejected-batch-answer", "Rejected by the destination (HTTP 400)")
       assert has_element?(lv, "#rejected-batch-events", "2")
-      assert has_element?(lv, "#rejected-batch-first", "2026-11-01 00:00:00 UTC")
-      assert has_element?(lv, "#rejected-batch-last", "2026-11-01 00:05:00 UTC")
+      assert has_element?(lv, "#rejected-batch-first", "November 1, 2026 at 12:00 AM")
+      assert has_element?(lv, "#rejected-batch-last", "November 1, 2026 at 12:05 AM")
       assert has_element?(lv, "#retry-now")
 
       assert has_element?(

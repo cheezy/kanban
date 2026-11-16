@@ -124,7 +124,7 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert has_element?(
                live,
                "#user-#{active.id}-last-activity",
-               ~r/^\s*\w{3} \d{2}, \d{4} \d{2}:\d{2}\s*$/
+               ~r/^\s*\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} [AP]M\s*$/
              )
     end
 
@@ -237,9 +237,37 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       {:ok, _live, html} = live(conn, ~p"/admin/users")
 
       assert html =~ "Created"
-      assert html =~ "Mar 05, 2024"
-      assert html =~ Calendar.strftime(admin.inserted_at, "%b %d, %Y")
+      assert html =~ "Mar 5, 2024"
+      assert html =~ KanbanWeb.LocalTime.format(admin.inserted_at, :short_date, "Etc/UTC")
       refute html =~ to_string(back_dated.inserted_at)
+    end
+
+    test "renders created and last activity in the viewer's zone and language", %{conn: conn} do
+      user =
+        user_fixture()
+        |> Ecto.Changeset.change(inserted_at: ~U[2024-03-05 03:30:00Z])
+        |> Kanban.Repo.update!()
+
+      # metrics_events rows come back as a NaiveDateTime, which is UTC.
+      Kanban.Repo.insert_all("metrics_events", [
+        %{
+          metric_name: "kanban.api.task_claimed",
+          measurement: 1.0,
+          metadata: %{"user_id" => to_string(user.id)},
+          recorded_at: ~U[2026-10-01 09:00:00Z],
+          inserted_at: ~U[2026-10-01 09:00:00Z]
+        }
+      ])
+
+      {:ok, live, html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto", "locale" => "de"})
+        |> live(~p"/admin/users")
+
+      # 03:30 UTC on 5 March is the evening of 4 March in Toronto.
+      assert html =~ "4. März 2024"
+      refute html =~ "5. März 2024"
+      assert has_element?(live, "#user-#{user.id}-last-activity", "1. Oktober 2026, 05:00")
     end
 
     test "renders the Created column between the Type and Confirmed columns", %{conn: conn} do

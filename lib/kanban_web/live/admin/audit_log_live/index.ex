@@ -2,7 +2,7 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
   @moduledoc """
   Site-admin viewer for the persisted audit trail (`Kanban.AuditLog`).
 
-  Filters (action, actor email, from/to UTC dates) live in the URL: the filter
+  Filters (action, actor email, from/to dates as whole UTC days) live in the URL: the filter
   form patches the query string and `handle_params/3` re-reads it, so a view is
   bookmarkable and the export links carry exactly the filters on screen. Pages
   are keyset-paginated (an opaque `cursor` param), never offset-scanned.
@@ -66,8 +66,6 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
 
   defp export_path(params, format),
     do: ~p"/admin/audit-log/export?#{Map.put(params, "format", format)}"
-
-  defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
 
   # The actor's current email; for an actor whose account has since been
   # deleted (the foreign key nulled) the id kept in the metadata is shown.

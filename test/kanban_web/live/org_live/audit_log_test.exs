@@ -564,7 +564,9 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
         {"#audit-log-signing-keys-link", "Public key set"},
         {"#audit-log-signing-key-pem-link", "This key as PEM"},
         {"#audit-log-signing-key-advice",
-         "Signed exports are signed with this key. Record its fingerprint somewhere outside Stride, so you can later confirm that the key that verifies an export is this one."}
+         "Signed exports are signed with this key. Record its fingerprint somewhere outside Stride, so you can later confirm that the key that verifies an export is this one."},
+        {"#audit-log-filter-days",
+         "Date filters cover whole days in Coordinated Universal Time, as exports record them."}
       ]
 
       for locale <- ~w(de en es fr ja pt zh) do
@@ -595,6 +597,85 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
 
       assert text_of(first, "#audit-log-signing-key-id") == key_id
       assert text_of(second, "#audit-log-signing-key-id") == key_id
+    end
+  end
+
+  describe "local times (W2733)" do
+    setup :org_admin_setup
+
+    setup %{org_a: org_a} do
+      %{event: insert_event!("organization_updated", org_a, ~U[2026-10-01 09:00:00.000000Z])}
+    end
+
+    defp live_in(conn, session) do
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(session)
+        |> live(~p"/org/audit")
+
+      view
+    end
+
+    test "renders timestamps in the viewer's timezone", %{conn: conn, event: event} do
+      view = live_in(conn, %{"timezone" => "America/Toronto"})
+
+      assert has_element?(view, "#events-#{event.id} time", "October 1, 2026 at 5:00 AM")
+
+      assert has_element?(
+               view,
+               ~s(#events-#{event.id} time[title="October 1, 2026 at 5:00 AM EDT"])
+             )
+
+      refute has_element?(view, "#events-#{event.id}", "9:00 AM")
+      refute render(view) =~ "UTC"
+    end
+
+    test "rolls a late-evening timestamp back to the local day", %{conn: conn, org_a: org_a} do
+      late = insert_event!("organization_updated", org_a, ~U[2026-10-03 00:30:00.000000Z])
+      view = live_in(conn, %{"timezone" => "America/Toronto"})
+
+      assert has_element?(view, "#events-#{late.id} time", "October 2, 2026 at 8:30 PM")
+      refute has_element?(view, "#events-#{late.id} time", "October 3")
+    end
+
+    test "falls back to UTC for an unknown zone", %{conn: conn, event: event} do
+      view = live_in(conn, %{"timezone" => "Not/AZone"})
+
+      assert has_element?(view, "#events-#{event.id} time", "October 1, 2026 at 9:00 AM")
+    end
+
+    test "renders nothing for a nil timestamp" do
+      # Audit events always carry inserted_at, so the nil case is pinned on the
+      # component and formatter the row renders through.
+      html =
+        render_component(&KanbanWeb.LocalTimeComponent.local_time/1,
+          value: nil,
+          class: "whitespace-nowrap"
+        )
+
+      assert html == ""
+      assert KanbanWeb.LocalTime.format(nil, :datetime) == ""
+    end
+
+    test "uses the session timezone and locale on mount", %{conn: conn, event: event} do
+      conn = Plug.Test.init_test_session(conn, %{"timezone" => "Asia/Tokyo", "locale" => "de"})
+
+      static = conn |> get(~p"/org/audit") |> html_response(200)
+      assert static =~ "1. Oktober 2026, 18:00"
+
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+      assert has_element?(view, "#events-#{event.id} time", "1. Oktober 2026, 18:00")
+      assert has_element?(view, "table th", "Zeit")
+    end
+
+    test "keeps an ISO 8601 UTC datetime attribute", %{conn: conn, event: event} do
+      view = live_in(conn, %{"timezone" => "Asia/Tokyo", "locale" => "ja"})
+
+      assert has_element?(
+               view,
+               ~s(#events-#{event.id} time[datetime="2026-10-01T09:00:00.000000Z"]),
+               "2026年10月1日 18:00"
+             )
     end
   end
 

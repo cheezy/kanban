@@ -26,6 +26,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
 
   alias Kanban.AuditStream.Adapters.SplunkHec
   alias Kanban.AuditStream.Destination
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.OrgLive.AuditStreamingRow
   alias KanbanWeb.OrgLive.AuditStreamKinds
 
@@ -253,10 +254,13 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
       else: error
   end
 
-  @doc "A time in UTC, to the second; a dash for none."
-  @spec utc(DateTime.t() | nil) :: String.t()
-  def utc(nil), do: "—"
-  def utc(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
+  @doc """
+  A time in the viewer's timezone and language (`KanbanWeb.LocalTime`); a
+  dash for none.
+  """
+  @spec local(DateTime.t() | nil) :: String.t()
+  def local(nil), do: "—"
+  def local(%DateTime{} = at), do: LocalTime.format(at, :datetime)
 
   @doc "The path to the destination's edit form (B3)."
   @spec edit_path(integer()) :: String.t()

@@ -118,6 +118,29 @@ defmodule KanbanWeb.OrgLive.SCIMTest do
              3
   end
 
+  test "token dates render in the viewer's zone and language", %{conn: conn, org: org} do
+    {:ok, lv, _html} = live(conn, ~p"/org/scim")
+    lv |> form("#scim-token-form", token: %{name: "Okta"}) |> render_submit()
+    assert [token] = SCIM.list_tokens(org.id)
+
+    {1, _} =
+      from(t in ScimToken, where: t.id == ^token.id)
+      |> Repo.update_all(
+        set: [inserted_at: ~U[2026-03-01 02:00:00Z], last_used_at: ~U[2026-03-01 02:00:00Z]]
+      )
+
+    {:ok, lv, _html} =
+      conn
+      |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto", "locale" => "es"})
+      |> live(~p"/org/scim")
+
+    row = lv |> element("#scim-token-#{token.id}") |> render()
+
+    # 02:00 UTC on 1 March is the evening of 28 February in Toronto.
+    assert row =~ "28 feb 2026"
+    refute row =~ "2026-03-01"
+  end
+
   describe "a revealed token (D437)" do
     test "reveals the token once", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/org/scim")

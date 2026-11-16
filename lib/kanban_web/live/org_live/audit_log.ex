@@ -4,7 +4,7 @@ defmodule KanbanWeb.OrgLive.AuditLog do
   org-admin's own Organization.
 
   It mirrors the site-admin viewer (`KanbanWeb.Admin.AuditLogLive.Index`):
-  action and from/to UTC date filters live in the URL (the actor-email filter
+  action and from/to date filters (whole UTC days) live in the URL (the actor-email filter
   is left out, because it would confirm a guessed email of a redacted outside
   actor), `handle_params/3`
   re-reads them, pages are keyset-paginated by an opaque `cursor` param, and
@@ -126,8 +126,6 @@ defmodule KanbanWeb.OrgLive.AuditLog do
       nil -> nil
     end
   end
-
-  defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
 
   # An actor who is not a member of this Organization (a site admin who
   # created it or appointed its org-admins) is never identified to the org-admin.

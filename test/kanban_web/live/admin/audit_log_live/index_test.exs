@@ -77,11 +77,34 @@ defmodule KanbanWeb.Admin.AuditLogLive.IndexTest do
       assert has_element?(view, "#events-#{new.id}", admin.email)
       assert has_element?(view, "#events-#{old.id}", "198.51.100.7")
       assert has_element?(view, "#events-#{old.id}", "victim@example.com")
-      assert has_element?(view, "#events-#{old.id}", "2026-10-01 09:00:00")
+      assert has_element?(view, "#events-#{old.id} time", "October 1, 2026 at 9:00 AM")
+
+      assert has_element?(
+               view,
+               ~s(#events-#{old.id} time[datetime="2026-10-01T09:00:00.000000Z"])
+             )
 
       {new_pos, _} = :binary.match(html, "events-#{new.id}")
       {old_pos, _} = :binary.match(html, "events-#{old.id}")
       assert new_pos < old_pos
+    end
+
+    test "renders row times in the viewer's zone and language, without UTC labels",
+         %{conn: conn, old: old} do
+      {:ok, view, html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto", "locale" => "es"})
+        |> live(~p"/admin/audit-log")
+
+      assert has_element?(view, "#events-#{old.id} time", "1 de octubre de 2026, 05:00")
+
+      assert has_element?(
+               view,
+               ~s(#events-#{old.id} time[datetime="2026-10-01T09:00:00.000000Z"])
+             )
+
+      refute html =~ "(UTC)"
+      refute html =~ "Times are in UTC"
     end
 
     test "the action filter patches the URL and shows only matching rows",

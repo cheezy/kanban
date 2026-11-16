@@ -1,6 +1,7 @@
 defmodule KanbanWeb.NotificationLive.IndexTest do
   use KanbanWeb.ConnCase, async: true
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
@@ -42,6 +43,25 @@ defmodule KanbanWeb.NotificationLive.IndexTest do
       assert row_ids(render(view)) == [newer.id, older.id]
       refute has_element?(view, row(other))
       assert has_element?(view, row(newer), "Board access changes")
+    end
+
+    test "the relative age carries the UTC instant and the local time as its title",
+         %{conn: conn, user: user} do
+      notification = notification_fixture(user, %{title: "Timed"})
+
+      {1, _} =
+        from(n in Notification, where: n.id == ^notification.id)
+        |> Repo.update_all(set: [inserted_at: ~U[2026-11-01 06:30:00.000000Z]])
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto"})
+        |> live(~p"/notifications")
+
+      assert has_element?(
+               view,
+               ~s(#{row(notification)} time[datetime="2026-11-01T06:30:00.000000Z"][title="November 1, 2026 at 1:30 AM EST"])
+             )
     end
 
     test "renders the actor and body", %{conn: conn, user: user} do

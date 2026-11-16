@@ -140,8 +140,8 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestination do
 
   defp error_text({:rotation_overlap, %DateTime{} = at}),
     do:
-      gettext("You can rotate the signing secret again after %{time} UTC.",
-        time: AuditStreamDestinationView.utc(at)
+      gettext("You can rotate the signing secret again after %{time}.",
+        time: AuditStreamDestinationView.local(at)
       )
 
   defp error_text(_changed),

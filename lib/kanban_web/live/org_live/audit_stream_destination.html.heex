@@ -60,8 +60,8 @@
             id="destination-secret-overlap"
             style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.5;"
           >
-            {gettext("The old secret stays valid until %{time} UTC.",
-              time: AuditStreamDestinationView.utc(@new_secret_valid_until)
+            {gettext("The old secret stays valid until %{time}.",
+              time: AuditStreamDestinationView.local(@new_secret_valid_until)
             )}
           </p>
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
@@ -206,13 +206,13 @@
             <div class="flex flex-wrap gap-2">
               <dt style="color: var(--ink-3);">{gettext("First event")}</dt>
               <dd id="rejected-batch-first" style="margin: 0; color: var(--ink);">
-                {gettext("%{time} UTC", time: AuditStreamDestinationView.utc(@batch.first_at))}
+                {AuditStreamDestinationView.local(@batch.first_at)}
               </dd>
             </div>
             <div class="flex flex-wrap gap-2">
               <dt style="color: var(--ink-3);">{gettext("Last event")}</dt>
               <dd id="rejected-batch-last" style="margin: 0; color: var(--ink);">
-                {gettext("%{time} UTC", time: AuditStreamDestinationView.utc(@batch.last_at))}
+                {AuditStreamDestinationView.local(@batch.last_at)}
               </dd>
             </div>
           </dl>
@@ -331,8 +331,8 @@
             id="rotate-again-note"
             style="margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5;"
           >
-            {gettext("You can rotate the signing secret again after %{time} UTC.",
-              time: AuditStreamDestinationView.utc(@view.rotate_again_at)
+            {gettext("You can rotate the signing secret again after %{time}.",
+              time: AuditStreamDestinationView.local(@view.rotate_again_at)
             )}
           </p>
           <div>
@@ -392,9 +392,9 @@
               </span>
             </div>
             <p style="margin: 0; font-size: 12px; color: var(--ink-2);">
-              {gettext("%{first} to %{last} UTC",
-                first: AuditStreamDestinationView.utc(gap.first_occurred_at),
-                last: AuditStreamDestinationView.utc(gap.last_occurred_at)
+              {gettext("%{first} to %{last}",
+                first: AuditStreamDestinationView.local(gap.first_occurred_at),
+                last: AuditStreamDestinationView.local(gap.last_occurred_at)
               )}
             </p>
             <div :if={is_nil(gap.dismissed_at)}>
@@ -426,8 +426,8 @@
         </p>
         <div :if={@attempts != []} style="overflow-x: auto; font-size: 12px;">
           <.table id="attempt-rows" rows={@attempts} row_id={&"attempt-#{&1.id}"}>
-            <:col :let={attempt} label={gettext("Time (UTC)")}>
-              <span style="white-space: nowrap;">{AuditStreamDestinationView.utc(
+            <:col :let={attempt} label={gettext("Time")}>
+              <span style="white-space: nowrap;">{AuditStreamDestinationView.local(
                 attempt.started_at
               )}</span>
             </:col>

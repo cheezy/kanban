@@ -32,6 +32,7 @@ defmodule KanbanWeb.OrgLive.Security do
 
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.OrgLive.FormParams
 
   @impl true
@@ -92,7 +93,7 @@ defmodule KanbanWeb.OrgLive.Security do
     |> assign(:form, policy |> SecurityPolicies.change_policy() |> to_form())
   end
 
-  defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M UTC")
+  defp format_time(%DateTime{} = at), do: LocalTime.format(at, :datetime)
 
   defp grace_range, do: SecurityPolicy.grace_days_range()
   defp retention_range, do: SecurityPolicy.retention_days_range()

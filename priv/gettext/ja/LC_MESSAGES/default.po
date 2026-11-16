@@ -131,7 +131,7 @@ msgstr "アカウントを作成中..."
 #: lib/kanban_web/live/user_live/notification_preferences.ex:212
 #: lib/kanban_web/live/user_live/registration.ex:66
 #: lib/kanban_web/live/user_live/settings.ex:50
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:41
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:42
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr "メール"
@@ -1465,7 +1465,7 @@ msgstr "保留中"
 msgid "Pitfalls"
 msgstr "落とし穴"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:214
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:215
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:78
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #, elixir-autogen, elixir-format
@@ -1702,7 +1702,7 @@ msgstr "このトークンを取り消してもよろしいですか?"
 #: lib/kanban_web/live/user_live/confirmation.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #: lib/kanban_web/live/user_live/confirmation.ex:393
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:187
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:188
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "コピー"
@@ -1710,7 +1710,7 @@ msgstr "コピー"
 #: lib/kanban_web/live/board_live/show.html.heex:796
 #: lib/kanban_web/live/org_live/console.html.heex:227
 #: lib/kanban_web/live/org_live/scim.html.heex:146
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:64
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:65
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "作成中..."
@@ -1780,8 +1780,8 @@ msgstr "PubSubブロードキャスト"
 
 #: lib/kanban_web/live/board_live/show.html.heex:898
 #: lib/kanban_web/live/org_live/scim.html.heex:206
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:129
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:125
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:130
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:126
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "取り消し"
@@ -1856,7 +1856,7 @@ msgstr "topic:event"
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:407
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:93
 #: lib/kanban_web/live/org_live/scim.html.heex:94
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:209
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:210
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "閉じる"
@@ -1868,7 +1868,7 @@ msgstr "閉じる"
 #: lib/kanban_web/live/org_live/scim.html.heex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:194
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:195
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "コピーしました！"
@@ -2147,8 +2147,8 @@ msgid "Clear all filters"
 msgstr "すべてのフィルターをクリア"
 
 #: lib/kanban_web/components/board_filter_bar.ex:152
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:47
-#: lib/kanban_web/live/org_live/audit_log.html.heex:127
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:52
+#: lib/kanban_web/live/org_live/audit_log.html.heex:132
 #: lib/kanban_web/live/resources_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
@@ -2834,7 +2834,7 @@ msgstr "未ディスパッチ"
 msgid "Reason"
 msgstr "理由"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:218
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:219
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:77
 #, elixir-autogen, elixir-format
 msgid "Skipped"
@@ -3234,8 +3234,8 @@ msgstr "このタスクにコメントするにはボードメンバーである
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
 #: lib/kanban_web/live/admin/organization_live/form.ex:156
-#: lib/kanban_web/live/admin/user_live/index.ex:139
-#: lib/kanban_web/live/admin/user_live/index.ex:183
+#: lib/kanban_web/live/admin/user_live/index.ex:140
+#: lib/kanban_web/live/admin/user_live/index.ex:184
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "この操作を実行するには管理者である必要があります。"
@@ -4698,7 +4698,7 @@ msgstr "カンマ区切り。有効な値: api_design, code_generation, code_rev
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:56
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:44
 #: lib/kanban_web/live/org_live/scim.html.heex:45
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:157
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:158
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "今すぐコピーしてください — 二度と見ることはできません。"
@@ -4730,7 +4730,7 @@ msgstr "トークンを作成しました"
 
 #: lib/kanban_web/live/board_live/show.html.heex:711
 #: lib/kanban_web/live/org_live/scim.html.heex:136
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:46
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:47
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "トークン名"
@@ -4862,7 +4862,10 @@ msgid "Throughput · last 12 hours"
 msgstr "スループット · 過去12時間"
 
 #: lib/kanban_web/components/goal_sidebar.ex:77
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
 #: lib/kanban_web/live/board_live/webhook_views.ex:371
+#: lib/kanban_web/live/org_live/audit_log.html.heex:143
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:429
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "時間"
@@ -6355,10 +6358,10 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:385
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:443
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:531
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:76
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:82
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
-#: lib/kanban_web/live/org_live/audit_log.html.heex:156
+#: lib/kanban_web/live/org_live/audit_log.html.heex:162
 #: lib/kanban_web/live/org_live/console.ex:371
 #: lib/kanban_web/live/org_live/console.html.heex:67
 #, elixir-autogen, elixir-format
@@ -7255,11 +7258,15 @@ msgid "Apply"
 msgstr "適用"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:200
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
+#: lib/kanban_web/live/org_live/audit_log.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "From"
 msgstr "開始"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:207
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
+#: lib/kanban_web/live/org_live/audit_log.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "To"
 msgstr "終了"
@@ -7773,7 +7780,7 @@ msgstr "いいえ"
 msgid "No users yet."
 msgstr "ユーザーはまだいません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:21
+#: lib/kanban_web/live/admin/user_live/index.ex:22
 #: lib/kanban_web/live/admin/user_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "User Administration"
@@ -7790,22 +7797,22 @@ msgstr "管理者"
 msgid "User"
 msgstr "ユーザー"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:60
+#: lib/kanban_web/live/admin/user_live/index.ex:61
 #, elixir-autogen, elixir-format
 msgid "Account deleted."
 msgstr "アカウントを削除しました。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:33
+#: lib/kanban_web/live/admin/user_live/index.ex:34
 #, elixir-autogen, elixir-format
 msgid "Account disabled."
 msgstr "アカウントを無効にしました。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:42
+#: lib/kanban_web/live/admin/user_live/index.ex:43
 #, elixir-autogen, elixir-format
 msgid "Account enabled."
 msgstr "アカウントを有効にしました。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:51
+#: lib/kanban_web/live/admin/user_live/index.ex:52
 #, elixir-autogen, elixir-format
 msgid "Confirmation email sent."
 msgstr "確認メールを送信しました。"
@@ -7848,41 +7855,41 @@ msgid "Send another confirmation email to this account?"
 msgstr "このアカウントに確認メールをもう一度送信しますか？"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
-#: lib/kanban_web/live/admin/user_live/index.ex:164
+#: lib/kanban_web/live/admin/user_live/index.ex:165
 #: lib/kanban_web/live/org_live/audit_stream_form.ex:199
-#: lib/kanban_web/live/org_live/sso.ex:160
+#: lib/kanban_web/live/org_live/sso.ex:161
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "問題が発生しました。もう一度お試しください。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:163
+#: lib/kanban_web/live/admin/user_live/index.ex:164
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "このアカウントはすでに確認済みです。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:151
+#: lib/kanban_web/live/admin/user_live/index.ex:152
 #: lib/kanban_web/live/admin/user_live/index.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "このユーザーはまだボードに所属しているため削除できません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:93
+#: lib/kanban_web/live/admin/user_live/index.ex:94
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "ユーザーが見つかりません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:141
+#: lib/kanban_web/live/admin/user_live/index.ex:142
 #, elixir-autogen, elixir-format
 msgid "You cannot delete your own account."
 msgstr "自分のアカウントは削除できません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:140
+#: lib/kanban_web/live/admin/user_live/index.ex:141
 #, elixir-autogen, elixir-format
 msgid "You cannot disable your own account."
 msgstr "自分のアカウントは無効にできません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:142
+#: lib/kanban_web/live/admin/user_live/index.ex:143
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last admin."
 msgstr "最後の管理者は削除できません。"
@@ -8452,7 +8459,7 @@ msgid "Error / exception"
 msgstr "エラー / 例外"
 
 #: lib/kanban_web/components/behaviour_test_labels.ex:41
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:111
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:112
 #, elixir-autogen, elixir-format
 msgid "Failing"
 msgstr "失敗"
@@ -8858,7 +8865,7 @@ msgstr[0] "未読の通知 %{count} 件"
 msgid "Filter notifications"
 msgstr "通知を絞り込む"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:201
+#: lib/kanban_web/live/notification_live/index.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "さらに読み込む"
@@ -8868,12 +8875,12 @@ msgstr "さらに読み込む"
 msgid "Mark all read"
 msgstr "すべて既読にする"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:189
+#: lib/kanban_web/live/notification_live/index.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "既読にする"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:185
+#: lib/kanban_web/live/notification_live/index.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Mark as read: %{title}"
 msgstr "既読にする: %{title}"
@@ -8888,7 +8895,7 @@ msgstr "通知はまだありません。"
 msgid "No unread notifications."
 msgstr "未読の通知はありません。"
 
-#: lib/kanban_web/live/notification_live/index.ex:160
+#: lib/kanban_web/live/notification_live/index.ex:161
 #, elixir-autogen, elixir-format
 msgid "Notification not found."
 msgstr "通知が見つかりません。"
@@ -8897,7 +8904,7 @@ msgstr "通知が見つかりません。"
 #: lib/kanban_web/components/notification_bell.ex:93
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:99
 #: lib/kanban_web/emails/announcement_email.ex:101
-#: lib/kanban_web/live/notification_live/index.ex:38
+#: lib/kanban_web/live/notification_live/index.ex:39
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:16
 #: lib/kanban_web/live/notification_live/index.html.heex:35
@@ -9149,7 +9156,7 @@ msgid "Missed its target date."
 msgstr "目標日を過ぎました。"
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex:132
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:54
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:55
 #, elixir-autogen, elixir-format
 msgid "Board access"
 msgstr "ボードへのアクセス"
@@ -9215,15 +9222,15 @@ msgid "We couldn't complete your request. Please go back and try again."
 msgstr "リクエストを完了できませんでした。前のページに戻って、もう一度お試しください。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:30
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:69
 #: lib/kanban_web/live/org_live/audit_log.html.heex:117
-#: lib/kanban_web/live/org_live/audit_log.html.heex:143
+#: lib/kanban_web/live/org_live/audit_log.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "アクション"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:68
-#: lib/kanban_web/live/org_live/audit_log.html.heex:148
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
+#: lib/kanban_web/live/org_live/audit_log.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "実行者"
@@ -9248,8 +9255,8 @@ msgstr "すべてのアクション"
 msgid "Audit Log"
 msgstr "監査ログ"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:84
-#: lib/kanban_web/live/org_live/audit_log.html.heex:164
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
+#: lib/kanban_web/live/org_live/audit_log.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Audit log pages"
 msgstr "監査ログのページ"
@@ -9260,47 +9267,23 @@ msgstr "監査ログのページ"
 msgid "Export JSON"
 msgstr "JSONをエクスポート"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
-#: lib/kanban_web/live/org_live/audit_log.html.heex:121
-#, elixir-autogen, elixir-format
-msgid "From (UTC)"
-msgstr "開始日 (UTC)"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:71
-#: lib/kanban_web/live/org_live/audit_log.html.heex:151
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:77
+#: lib/kanban_web/live/org_live/audit_log.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "IP"
 msgstr "IP"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:53
-#: lib/kanban_web/live/org_live/audit_log.html.heex:133
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
+#: lib/kanban_web/live/org_live/audit_log.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "No audit events match these filters."
 msgstr "これらのフィルターに一致する監査イベントはありません。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:99
-#: lib/kanban_web/live/org_live/audit_log.html.heex:179
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:105
+#: lib/kanban_web/live/org_live/audit_log.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Older events"
 msgstr "古いイベント"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:6
-#, elixir-autogen, elixir-format
-msgid "Security events recorded on this instance, newest first. Times are in UTC."
-msgstr "このインスタンスで記録されたセキュリティイベント（新しい順）。時刻はUTCです。"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
-#: lib/kanban_web/live/org_live/audit_log.html.heex:138
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:429
-#, elixir-autogen, elixir-format
-msgid "Time (UTC)"
-msgstr "日時 (UTC)"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
-#: lib/kanban_web/live/org_live/audit_log.html.heex:122
-#, elixir-autogen, elixir-format
-msgid "To (UTC)"
-msgstr "終了日 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
 #: lib/kanban_web/controllers/org_audit_log_export_controller.ex:188
@@ -9308,8 +9291,8 @@ msgstr "終了日 (UTC)"
 msgid "Unsupported export format."
 msgstr "サポートされていないエクスポート形式です。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:141
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:75
+#: lib/kanban_web/live/org_live/audit_log.ex:139
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "ユーザー #%{id}（削除済み）"
@@ -9421,15 +9404,15 @@ msgctxt "agent action"
 msgid "unclaimed"
 msgstr "クレーム解除"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:143
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:79
+#: lib/kanban_web/live/org_live/audit_log.ex:141
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
 msgstr "なし"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:92
-#: lib/kanban_web/live/org_live/audit_log.html.heex:172
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:98
+#: lib/kanban_web/live/org_live/audit_log.html.heex:178
 #, elixir-autogen, elixir-format
 msgctxt "audit log pages"
 msgid "Newest"
@@ -10487,8 +10470,8 @@ msgstr "有効なメールアドレスを入力してください。変更は行
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
 #: lib/kanban_web/live/org_live/console.ex:378
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:138
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:152
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:139
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:153
 #: lib/kanban_web/live/workspace_live/settings.ex:470
 #: lib/kanban_web/live/workspace_live/settings.ex:475
 #, elixir-autogen, elixir-format
@@ -10527,7 +10510,7 @@ msgid "Remove %{email} as an org-admin of this Organization?"
 msgstr "%{email} をこの組織の組織管理者から解任しますか？"
 
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:92
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:43
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:44
 #: lib/kanban_web/live/workspace_live/settings.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "Role"
@@ -10613,17 +10596,12 @@ msgstr "組織に戻る"
 msgid "Organization audit log"
 msgstr "組織の監査ログ"
 
-#: lib/kanban_web/live/org_live/audit_log.html.heex:10
-#, elixir-autogen, elixir-format
-msgid "Security events recorded for %{name}, newest first. Times are in UTC."
-msgstr "%{name} について記録されたセキュリティイベント（新しい順）。時刻はUTCです。"
-
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Organization administrators"
 msgstr "組織の管理者"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:134
+#: lib/kanban_web/live/org_live/audit_log.ex:132
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "組織外のユーザー"
@@ -10711,7 +10689,7 @@ msgstr "組織の詳細、メンバー、ワークスペースです。詳細の
 msgid "create · rename · archive"
 msgstr "作成 · 名前変更 · アーカイブ"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:161
+#: lib/kanban_web/live/admin/user_live/index.ex:162
 #, elixir-autogen, elixir-format
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "このユーザーの個人ワークスペースにまだボードがあるため、削除できません。"
@@ -10945,7 +10923,7 @@ msgid "Integrations are available to organizations. Nothing was changed."
 msgstr "連携は組織で利用できます。変更は行われていません。"
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:170
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:112
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:113
 #, elixir-autogen, elixir-format
 msgid "Paused"
 msgstr "一時停止中"
@@ -10981,7 +10959,7 @@ msgstr "このアカウントはまだメールアドレスを確認していま
 msgid "This account is disabled and can't sign in."
 msgstr "このアカウントは無効化されており、サインインできません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:146
+#: lib/kanban_web/live/admin/user_live/index.ex:147
 #, elixir-autogen, elixir-format
 msgid "This user is the only enabled org-admin of an Organization that still has members. Appoint another org-admin first."
 msgstr "このユーザーは、まだメンバーがいる組織で唯一の有効な組織管理者です。先に別の組織管理者を任命してください。"
@@ -11021,8 +10999,8 @@ msgstr "このワークスペースのすべてのボード。"
 msgid "Everyone in your Organization, org-admins first. Removing a member also removes them from every workspace and its boards."
 msgstr "組織のメンバー全員（組織管理者が先頭）。メンバーを削除すると、すべてのワークスペースとそのボードからも削除されます。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:138
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:153
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:139
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:154
 #: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/live/workspace_live/settings.ex:475
 #, elixir-autogen, elixir-format
@@ -11204,7 +11182,7 @@ msgctxt "audit action"
 msgid "Organization member removed"
 msgstr "組織メンバーを削除しました"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:147
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:148
 #, elixir-autogen, elixir-format
 msgid "%{role} · %{board}"
 msgstr "%{role} · %{board}"
@@ -11214,17 +11192,17 @@ msgstr "%{role} · %{board}"
 msgid "Accept invitation"
 msgstr "招待を承諾"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:47
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:48
 #, elixir-autogen, elixir-format
 msgid "Board (optional)"
 msgstr "ボード（任意）"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:154
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:155
 #, elixir-autogen, elixir-format
 msgid "Board only"
 msgstr "ボードのみ"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:141
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:142
 #, elixir-autogen, elixir-format
 msgid "Can edit"
 msgstr "編集可能"
@@ -11240,13 +11218,13 @@ msgid "Create an account with the email address this invitation was sent to, or 
 msgstr "この招待が送信されたメールアドレスでアカウントを作成するか、すでにアカウントをお持ちの場合はサインインしてから、このリンクをもう一度開いてください。"
 
 #: lib/kanban_web/live/workspace_live/exports.ex:60
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:160
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:240
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:161
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:241
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr "期限切れ"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:158
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:159
 #, elixir-autogen, elixir-format
 msgid "Expires %{date}"
 msgstr "%{date} に期限切れ"
@@ -11304,12 +11282,12 @@ msgstr "%{email} をメールでこのボードに招待します。"
 msgid "Invite as Read Only"
 msgstr "閲覧のみで招待"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:26
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:27
 #, elixir-autogen, elixir-format
 msgid "Invite people"
 msgstr "メンバーを招待"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:28
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:29
 #, elixir-autogen, elixir-format
 msgid "Invite someone by email to join this workspace and your Organization. The link works once and expires in %{days} days."
 msgstr "メールで招待して、このワークスペースと組織に参加してもらいます。リンクは 1 回だけ使用でき、%{days} 日で期限切れになります。"
@@ -11345,37 +11323,37 @@ msgstr "参加中..."
 msgid "No account uses that email address. You can invite them by email."
 msgstr "そのメールアドレスを使用しているアカウントはありません。メールで招待できます。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:48
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:49
 #, elixir-autogen, elixir-format
 msgid "No board"
 msgstr "ボードなし"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:83
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:84
 #, elixir-autogen, elixir-format
 msgid "No pending invitations."
 msgstr "保留中の招待はありません。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:74
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:75
 #, elixir-autogen, elixir-format
 msgid "Pending invitations"
 msgstr "保留中の招待"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:141
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:142
 #, elixir-autogen, elixir-format
 msgid "Read only"
 msgstr "閲覧のみ"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:119
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:120
 #, elixir-autogen, elixir-format
 msgid "Resend"
 msgstr "再送信"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:75
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:76
 #, elixir-autogen, elixir-format
 msgid "Resending sends a new link and the old one stops working."
 msgstr "再送信すると新しいリンクが送られ、古いリンクは使えなくなります。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:126
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:127
 #, elixir-autogen, elixir-format
 msgid "Revoke this invitation? Its link stops working."
 msgstr "この招待を取り消しますか？リンクは使えなくなります。"
@@ -11385,13 +11363,13 @@ msgstr "この招待を取り消しますか？リンクは使えなくなりま
 msgid "Search for an email address first."
 msgstr "先にメールアドレスを検索してください。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:66
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:67
 #, elixir-autogen, elixir-format
 msgid "Send invitation"
 msgstr "招待を送信"
 
 #: lib/kanban_web/live/org_live/audit_streaming.html.heex:233
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:64
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:65
 #, elixir-autogen, elixir-format
 msgid "Sending..."
 msgstr "送信中..."
@@ -11450,7 +11428,7 @@ msgctxt "audit action"
 msgid "Organization member added"
 msgstr "組織メンバーを追加しました"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:76
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:77
 #, elixir-autogen, elixir-format
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr "トークンは、取り消されたとき、有効期限が切れたとき、またはトークンが代理する組織管理者がこのワークスペースまたは組織から外れたときに使えなくなります。"
@@ -11461,55 +11439,55 @@ msgid "API tokens · create · revoke"
 msgstr "APIトークン · 作成 · 取り消し"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:191
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:238
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr "有効"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:55
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:56
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities (comma-separated, optional)"
 msgstr "エージェントの機能(カンマ区切り、任意)"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:223
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:224
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used} · expires %{expires}"
 msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used} · 有効期限 %{expires}"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:86
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:201
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:202
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the token and copy it yourself."
 msgstr "コピーできませんでした。トークンを選択して手動でコピーしてください。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:29
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:30
 #, elixir-autogen, elixir-format
 msgid "Create a workspace token"
 msgstr "ワークスペーストークンを作成"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:148
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:66
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:67
 #, elixir-autogen, elixir-format
 msgid "Create token"
 msgstr "トークンを作成"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:87
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:88
 #, elixir-autogen, elixir-format
 msgid "No workspace tokens yet."
 msgstr "ワークスペーストークンはまだありません。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:31
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:32
 #, elixir-autogen, elixir-format
 msgid "One token for every board in this workspace. It acts as you, reaches the AI Optimized boards you can modify, and names its board on each request with the X-Stride-Board header. It expires in 90 days."
 msgstr "このワークスペースのすべてのボードで使える1つのトークンです。あなたとして動作し、あなたが編集できるAI最適化ボードにアクセスし、リクエストごとにX-Stride-Boardヘッダーで対象のボードを指定します。有効期限は90日です。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:122
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:123
 #, elixir-autogen, elixir-format
 msgid "Revoke this token? Agents using it lose access immediately."
 msgstr "このトークンを取り消しますか?使用中のエージェントはすぐにアクセスできなくなります。"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:191
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:239
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "取り消し済み"
@@ -11539,18 +11517,18 @@ msgstr "ワークスペーストークンを作成しました。今すぐコピ
 msgid "Workspace token revoked."
 msgstr "ワークスペーストークンを取り消しました。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:74
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:75
 #, elixir-autogen, elixir-format
 msgid "Workspace tokens"
 msgstr "ワークスペーストークン"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:154
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:155
 #, elixir-autogen, elixir-format
 msgid "Your new workspace token"
 msgstr "新しいワークスペーストークン"
 
-#: lib/kanban_web/live/org_live/scim.ex:171
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:235
+#: lib/kanban_web/live/org_live/scim.ex:172
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:236
 #, elixir-autogen, elixir-format
 msgid "never"
 msgstr "なし"
@@ -11704,12 +11682,12 @@ msgstr "アカウントを削除すると、すべての場所からサインア
 msgid "Logged out successfully."
 msgstr "ログアウトしました。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:31
+#: lib/kanban_web/live/workspace_live/export_card.ex:32
 #, elixir-autogen, elixir-format
 msgid "A zip archive of this workspace's boards, columns, labels, tasks, comments, history and memberships, for a backup or to move the workspace to another Stride instance. It is prepared in the background; its status and download link appear below. Archives are kept for %{days} days."
 msgstr "このワークスペースのボード、列、ラベル、タスク、コメント、履歴、メンバーシップをまとめた ZIP アーカイブです。バックアップや、別の Stride インスタンスへのワークスペースの移行に使えます。バックグラウンドで作成され、状態とダウンロードリンクは下に表示されます。アーカイブは %{days} 日間保存されます。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:55
+#: lib/kanban_web/live/workspace_live/export_card.ex:56
 #, elixir-autogen, elixir-format
 msgid "An export is being prepared. You can leave this page; it keeps going."
 msgstr "エクスポートを作成中です。このページを離れても処理は続きます。"
@@ -11719,14 +11697,14 @@ msgstr "エクスポートを作成中です。このページを離れても処
 msgid "An export of this workspace is already in progress."
 msgstr "このワークスペースのエクスポートはすでに進行中です。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:117
+#: lib/kanban_web/live/workspace_live/export_card.ex:118
 #, elixir-autogen, elixir-format
 msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
 msgstr "%{requester} · リクエスト日時 %{requested} · %{size} · 有効期限 %{expires}"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:108
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:213
-#: lib/kanban_web/live/workspace_live/export_card.ex:107
+#: lib/kanban_web/live/workspace_live/export_card.ex:108
 #, elixir-autogen, elixir-format
 msgid "Download"
 msgstr "ダウンロード"
@@ -11736,32 +11714,32 @@ msgstr "ダウンロード"
 msgid "Export requested. Its status and download link appear here when it is ready."
 msgstr "エクスポートをリクエストしました。準備ができると、状態とダウンロードリンクがここに表示されます。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:29
+#: lib/kanban_web/live/workspace_live/export_card.ex:30
 #, elixir-autogen, elixir-format
 msgid "Export this workspace"
 msgstr "このワークスペースをエクスポート"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:71
+#: lib/kanban_web/live/workspace_live/export_card.ex:72
 #, elixir-autogen, elixir-format
 msgid "No exports yet."
 msgstr "エクスポートはまだありません。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:63
+#: lib/kanban_web/live/workspace_live/export_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Only org-admins of this workspace's Organization can download an archive."
 msgstr "アーカイブをダウンロードできるのは、このワークスペースの組織の組織管理者だけです。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:62
+#: lib/kanban_web/live/workspace_live/export_card.ex:63
 #, elixir-autogen, elixir-format
 msgid "Recent exports"
 msgstr "最近のエクスポート"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:47
+#: lib/kanban_web/live/workspace_live/export_card.ex:48
 #, elixir-autogen, elixir-format
 msgid "Request export"
 msgstr "エクスポートをリクエスト"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:44
+#: lib/kanban_web/live/workspace_live/export_card.ex:45
 #, elixir-autogen, elixir-format
 msgid "Requesting..."
 msgstr "リクエスト中..."
@@ -11893,7 +11871,7 @@ msgstr "猶予期間（日数、%{min}〜%{max}）"
 msgid "Keep forever"
 msgstr "無期限に保持"
 
-#: lib/kanban_web/live/org_live/security.ex:44
+#: lib/kanban_web/live/org_live/security.ex:45
 #, elixir-autogen, elixir-format
 msgid "Organization security"
 msgstr "組織のセキュリティ"
@@ -11928,7 +11906,7 @@ msgstr "セキュリティポリシーを保存"
 msgid "Security policy for %{name}. Only its org-admins can change it."
 msgstr "%{name} のセキュリティポリシーです。変更できるのはその組織管理者だけです。"
 
-#: lib/kanban_web/live/org_live/security.ex:81
+#: lib/kanban_web/live/org_live/security.ex:82
 #, elixir-autogen, elixir-format
 msgid "Security policy saved."
 msgstr "セキュリティポリシーを保存しました。"
@@ -11970,7 +11948,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "保持期間による削除を実行"
 
-#: lib/kanban_web/live/org_live/sso.ex:310
+#: lib/kanban_web/live/org_live/sso.ex:311
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} は確認済みです。"
@@ -11995,7 +11973,7 @@ msgstr "メンバーが使用する各メールドメインを追加し、DNS �
 msgid "Allow sign-in through this identity provider"
 msgstr "この ID プロバイダーでのサインインを許可する"
 
-#: lib/kanban_web/live/org_live/sso.ex:258
+#: lib/kanban_web/live/org_live/sso.ex:259
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr "このドメインはすでに別の組織によって確認されています。"
@@ -12010,12 +11988,12 @@ msgstr "クライアント ID"
 msgid "Client secret"
 msgstr "クライアントシークレット"
 
-#: lib/kanban_web/live/org_live/sso.ex:283
+#: lib/kanban_web/live/org_live/sso.ex:284
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr "ドメインを追加しました。TXT レコードを公開してから確認してください。"
 
-#: lib/kanban_web/live/org_live/sso.ex:90
+#: lib/kanban_web/live/org_live/sso.ex:91
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr "ドメインを削除しました。"
@@ -12102,7 +12080,7 @@ msgstr "SSO でサインイン"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:58
+#: lib/kanban_web/live/org_live/sso.ex:59
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12110,7 +12088,7 @@ msgstr "SSO でサインイン"
 msgid "Single sign-on"
 msgstr "シングルサインオン"
 
-#: lib/kanban_web/live/org_live/sso.ex:195
+#: lib/kanban_web/live/org_live/sso.ex:196
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr "シングルサインオンの接続を保存しました。"
@@ -12137,12 +12115,12 @@ msgstr "TXT レコード名"
 msgid "TXT record value"
 msgstr "TXT レコードの値"
 
-#: lib/kanban_web/live/org_live/sso.ex:318
+#: lib/kanban_web/live/org_live/sso.ex:319
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "TXT レコードが見つかりませんでした。DNS の変更が反映されるまで時間がかかる場合があります。後でもう一度お試しください。"
 
-#: lib/kanban_web/live/org_live/sso.ex:202
+#: lib/kanban_web/live/org_live/sso.ex:203
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr "発行者 URL は公開されている https アドレスである必要があります。"
@@ -12273,7 +12251,7 @@ msgstr "IDプロバイダーのメタデータXML"
 msgid "Paste the metadata XML to fill the fields below"
 msgstr "メタデータXMLを貼り付けると下のフィールドに入力されます"
 
-#: lib/kanban_web/live/org_live/sso.ex:297
+#: lib/kanban_web/live/org_live/sso.ex:298
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr "SAML接続を保存しました。"
@@ -12364,7 +12342,7 @@ msgstr "SCIM トークンは、組織内のユーザーとそのワークスペ�
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr "取り消したトークンは直ちに使用できなくなり、復元できません。"
 
-#: lib/kanban_web/live/org_live/scim.ex:158
+#: lib/kanban_web/live/org_live/scim.ex:159
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used}"
@@ -12400,7 +12378,7 @@ msgid "SCIM base URL"
 msgstr "SCIM ベース URL"
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:57
+#: lib/kanban_web/live/org_live/scim.ex:58
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12411,7 +12389,7 @@ msgstr "SCIM プロビジョニング"
 msgid "SCIM tokens"
 msgstr "SCIM トークン"
 
-#: lib/kanban_web/live/org_live/scim.ex:102
+#: lib/kanban_web/live/org_live/scim.ex:103
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr "トークンを取り消しました。"
@@ -12473,7 +12451,7 @@ msgstr "シングルサインオンを続けるには、仕事用のメールア
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr "シングルサインオンをこのアカウントに接続しています。今回だけご本人であることを確認してください。以降のシングルサインオンでは確認されません。"
 
-#: lib/kanban_web/live/org_live/sso.ex:269
+#: lib/kanban_web/live/org_live/sso.ex:270
 #, elixir-autogen, elixir-format
 msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
 msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."
@@ -12714,7 +12692,7 @@ msgstr "組織のセキュリティ監査イベントは、その組織の保持
 msgid "Security audit events that record what you did, including your email address and IP address, are not removed when you delete your account: they are kept for the retention period below, and an Organization's org-admins can still see the events that belong to it."
 msgstr "あなたの操作を記録したセキュリティ監査イベントは、メールアドレスやIPアドレスを含め、アカウントを削除しても消去されません。これらは下記の保持期間のあいだ保持され、組織の組織管理者は、その組織に属するイベントを引き続き閲覧できます。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:155
+#: lib/kanban_web/live/admin/user_live/index.ex:156
 #, elixir-autogen, elixir-format
 msgid "This user owns a board other people still use. Transfer it or remove its other members first."
 msgstr "このユーザーは、ほかのユーザーがまだ使用しているボードを所有しています。先にボードを譲渡するか、ほかのメンバーを削除してください。"
@@ -14202,18 +14180,13 @@ msgstr "この HEC トークンのインデクサー確認応答をオフにし�
 msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
 msgstr "確認応答なしの HEC URL を使用してください。Stride はインデクサー確認応答を使用しません"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:147
-#, elixir-autogen, elixir-format
-msgid "%{age} · %{time} UTC"
-msgstr "%{age} · %{time} UTC"
-
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:140
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:141
 #, elixir-autogen, elixir-format
 msgid "%{count} event waiting"
 msgid_plural "%{count} events waiting"
 msgstr[0] "%{count} 件のイベントが待機中"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:131
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:132
 #, elixir-autogen, elixir-format
 msgid "%{count} event waiting, the oldest from %{age}"
 msgid_plural "%{count} events waiting, the oldest from %{age}"
@@ -14243,17 +14216,17 @@ msgstr "監査ログに戻る"
 msgid "Behind by"
 msgstr "遅れ"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:160
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:161
 #, elixir-autogen, elixir-format
 msgid "Could not connect"
 msgstr "接続できませんでした"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:188
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:189
 #, elixir-autogen, elixir-format
 msgid "Credentials can't be read. Enter them again."
 msgstr "認証情報を読み取れません。もう一度入力してください。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:80
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:81
 #, elixir-autogen, elixir-format
 msgid "Datadog"
 msgstr "Datadog"
@@ -14283,12 +14256,12 @@ msgstr "送信先を再開しました。"
 msgid "Destinations"
 msgstr "送信先"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:81
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:82
 #, elixir-autogen, elixir-format
 msgid "HTTPS endpoint"
 msgstr "HTTPS エンドポイント"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:109
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:110
 #, elixir-autogen, elixir-format
 msgid "Healthy"
 msgstr "正常"
@@ -14299,12 +14272,12 @@ msgstr "正常"
 msgid "Last delivered"
 msgstr "最終配信"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:113
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:114
 #, elixir-autogen, elixir-format
 msgid "Needs attention"
 msgstr "要対応"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:144
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:145
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "なし"
@@ -14329,7 +14302,7 @@ msgstr "この送信先を一時停止しますか？イベントは監査ログ
 msgid "Resume"
 msgstr "再開"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:110
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:111
 #, elixir-autogen, elixir-format
 msgid "Retrying"
 msgstr "再試行中"
@@ -14344,7 +14317,7 @@ msgstr "シークレットはここには表示されません。各送信先に
 msgid "Send test event"
 msgstr "テストイベントを送信"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:79
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:80
 #, elixir-autogen, elixir-format
 msgid "Splunk"
 msgstr "Splunk"
@@ -14354,7 +14327,7 @@ msgstr "Splunk"
 msgid "Streaming"
 msgstr "ストリーミング"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:159
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:160
 #, elixir-autogen, elixir-format
 msgid "Test event delivered"
 msgstr "テストイベントを配信しました"
@@ -14367,33 +14340,33 @@ msgstr "テストイベントを配信しました"
 msgid "That destination no longer exists."
 msgstr "その送信先はもう存在しません。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:163
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:164
 #, elixir-autogen, elixir-format
 msgid "The certificate could not be verified"
 msgstr "証明書を検証できませんでした"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:169
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:170
 #, elixir-autogen, elixir-format
 msgid "The destination answered with an error (%{status})"
 msgstr "送信先がエラーを返しました（%{status}）"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:166
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:167
 #, elixir-autogen, elixir-format
 msgid "The destination refused the credentials"
 msgstr "送信先が認証情報を拒否しました"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:184
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:185
 #, elixir-autogen, elixir-format
 msgid "The test event could not be sent."
 msgstr "テストイベントを送信できませんでした。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:177
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:178
 #, elixir-autogen, elixir-format
 msgid "This Organization has sent as many test events as it can this hour. Try again in %{count} minute."
 msgid_plural "This Organization has sent as many test events as it can this hour. Try again in %{count} minutes."
 msgstr[0] "この組織は今の 1 時間に送信できるテストイベントの上限に達しました。%{count} 分後にもう一度お試しください。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:128
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:129
 #, elixir-autogen, elixir-format
 msgid "Up to date"
 msgstr "最新"
@@ -14408,43 +14381,26 @@ msgstr "%{name} の監査ログが書き込まれるたびに送信される場�
 msgid "Your Organization has only one org-admin, so emails about changes to its destinations go only to that person. Ask a site admin to appoint another org-admin."
 msgstr "組織の管理者が 1 人しかいないため、送信先の変更に関するメールはその人にだけ届きます。サイト管理者に別の組織管理者を任命するよう依頼してください。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:230
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:231
 #, elixir-autogen, elixir-format
 msgid "%{count} B"
 msgstr "%{count} B"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:233
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:234
 #, elixir-autogen, elixir-format
 msgid "%{count} KB"
 msgstr "%{count} KB"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:235
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:236
 #, elixir-autogen, elixir-format
 msgid "%{count} MB"
 msgstr "%{count} MB"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:208
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:209
 #, elixir-autogen, elixir-format
 msgid "%{count} event lost"
 msgid_plural "%{count} events lost"
 msgstr[0] "%{count} 件のイベントが失われました"
-
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:68
-#, elixir-autogen, elixir-format
-msgid "%{count} event will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap."
-msgid_plural "%{count} events will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap."
-msgstr[0] "%{count} 件のイベントはこの送信先に届きません（%{first} ～ %{last} UTC）。送信先を開いて欠落を確認し、閉じてください。"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:395
-#, elixir-autogen, elixir-format
-msgid "%{first} to %{last} UTC"
-msgstr "%{first} ～ %{last} UTC"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:209
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:215
-#, elixir-autogen, elixir-format
-msgid "%{time} UTC"
-msgstr "%{time} UTC"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.ex:137
 #, elixir-autogen, elixir-format
@@ -14477,18 +14433,18 @@ msgstr "監査ストリーミングに戻る"
 msgid "Batch skipped."
 msgstr "バッチをスキップしました。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:217
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:218
 #, elixir-autogen, elixir-format
 msgid "Blocked address"
 msgstr "ブロックされたアドレス"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:164
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:165
 #, elixir-autogen, elixir-format
 msgid "Check this destination's settings."
 msgstr "この送信先の設定を確認してください。"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:153
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:216
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:217
 #, elixir-autogen, elixir-format
 msgid "Configuration error"
 msgstr "設定エラー"
@@ -14499,17 +14455,17 @@ msgstr "設定エラー"
 msgid "Credential"
 msgstr "認証情報"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:215
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:216
 #, elixir-autogen, elixir-format
 msgid "Credentials refused"
 msgstr "認証情報が拒否されました"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:201
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:202
 #, elixir-autogen, elixir-format
 msgid "Deleted by retention before it was sent"
 msgstr "送信前に保持期間により削除されました"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:212
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:213
 #, elixir-autogen, elixir-format
 msgid "Delivered"
 msgstr "配信済み"
@@ -14558,7 +14514,7 @@ msgstr "除外するアクション"
 msgid "First event"
 msgstr "最初のイベント"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:98
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:99
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "Format"
@@ -14574,7 +14530,7 @@ msgstr "欠落を閉じました。"
 msgid "Gaps"
 msgstr "欠落"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:185
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:186
 #, elixir-autogen, elixir-format
 msgid "HTTP %{status}"
 msgstr "HTTP %{status}"
@@ -14591,7 +14547,7 @@ msgid "Host"
 msgstr "ホスト"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:347
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:92
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:93
 #, elixir-autogen, elixir-format
 msgid "Index"
 msgstr "インデックス"
@@ -14601,7 +14557,7 @@ msgstr "インデックス"
 msgid "Last event"
 msgstr "最後のイベント"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:203
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:204
 #, elixir-autogen, elixir-format
 msgid "Left behind by a database move"
 msgstr "データベースの移行で取り残されました"
@@ -14611,7 +14567,7 @@ msgstr "データベースの移行で取り残されました"
 msgid "Left out"
 msgstr "含めない"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:187
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:188
 #, elixir-autogen, elixir-format
 msgid "No answer was recorded."
 msgstr "応答は記録されていません。"
@@ -14672,7 +14628,7 @@ msgid "Secrets are never shown: only the host and the last 4 characters of the c
 msgstr "シークレットは表示されません。表示されるのはホストと、認証情報または URL の末尾 4 文字だけです。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:349
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:96
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:261
 #, elixir-autogen, elixir-format
 msgid "Service"
@@ -14684,7 +14640,7 @@ msgid "Signing secret rotated."
 msgstr "署名シークレットを再生成しました。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:348
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:96
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:253
 #, elixir-autogen, elixir-format
 msgid "Site"
@@ -14700,7 +14656,7 @@ msgstr "サイズ"
 msgid "Skip this batch"
 msgstr "このバッチをスキップ"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:92
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:93
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:243
 #, elixir-autogen, elixir-format
 msgid "Source type"
@@ -14717,12 +14673,12 @@ msgid "Stride keeps trying, and delivery carries on once the destination is fixe
 msgstr "Stride は試行を続け、送信先が修正されると配信が再開されます。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:350
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:96
 #, elixir-autogen, elixir-format
 msgid "Tags"
 msgstr "タグ"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:136
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:137
 #, elixir-autogen, elixir-format
 msgid "The URL's host resolves only to addresses Stride may not send to. Nothing is sent until the URL is changed."
 msgstr "URL のホストは、Stride が送信できないアドレスにしか解決されません。URL を変更するまで何も送信されません。"
@@ -14732,12 +14688,12 @@ msgstr "URL のホストは、Stride が送信できないアドレスにしか�
 msgid "The current signing secret can't be read, so there is no 24-hour overlap this time: the new secret replaces it at once."
 msgstr "現在の署名シークレットを読み取れないため、今回は 24 時間の重複期間はありません。新しいシークレットがすぐに置き換わります。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:141
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:142
 #, elixir-autogen, elixir-format
 msgid "The database was moved. An operator must re-seed audit streaming."
 msgstr "データベースが移行されました。オペレーターが監査ストリーミングを再シードする必要があります。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:130
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:131
 #, elixir-autogen, elixir-format
 msgid "The destination rejected the same batch on every try. Stride never skips a batch on its own: fix the cause at the destination and choose Retry now, or skip the batch."
 msgstr "送信先は同じバッチを毎回拒否しました。Stride がバッチを自動でスキップすることはありません。送信先で原因を修正して「今すぐ再試行」を選ぶか、バッチをスキップしてください。"
@@ -14746,11 +14702,6 @@ msgstr "送信先は同じバッチを毎回拒否しました。Stride がバ�
 #, elixir-autogen, elixir-format
 msgid "The last 50 attempts to send to this destination, newest first."
 msgstr "この送信先への直近 50 件の送信試行（新しい順）。"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:63
-#, elixir-autogen, elixir-format
-msgid "The old secret stays valid until %{time} UTC."
-msgstr "古いシークレットは %{time} UTC まで有効です。"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.ex:148
 #, elixir-autogen, elixir-format
@@ -14762,27 +14713,21 @@ msgstr "ページの読み込み後にこの送信先が変更されました。
 msgid "This destination is no longer waiting on a rejected batch."
 msgstr "この送信先は拒否されたバッチで停止していません。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:192
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:193
 #, elixir-autogen, elixir-format
 msgid "This event will not be sent to this destination. It stays in the audit log and in exports."
 msgid_plural "These %{count} events will not be sent to this destination. They stay in the audit log and in exports."
 msgstr[0] "これら %{count} 件のイベントはこの送信先に送信されません。監査ログとエクスポートには残ります。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:202
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:203
 #, elixir-autogen, elixir-format
 msgid "Too old for Datadog"
 msgstr "Datadog には古すぎます"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:213
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:214
 #, elixir-autogen, elixir-format
 msgid "Will retry"
 msgstr "再試行予定"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.ex:143
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:334
-#, elixir-autogen, elixir-format
-msgid "You can rotate the signing secret again after %{time} UTC."
-msgstr "%{time} UTC 以降に、署名シークレットを再度再生成できます。"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:53
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:41
@@ -15574,3 +15519,46 @@ msgstr "火曜日"
 msgctxt "weekday name"
 msgid "Wednesday"
 msgstr "水曜日"
+
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:148
+#, elixir-autogen, elixir-format
+msgid "%{age} · %{time}"
+msgstr "%{age} · %{time}"
+
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:69
+#, elixir-autogen, elixir-format
+msgid "%{count} event will never reach this destination (%{first} to %{last}). Open it to see and dismiss the gap."
+msgid_plural "%{count} events will never reach this destination (%{first} to %{last}). Open it to see and dismiss the gap."
+msgstr[0] "%{count} 件のイベントはこの送信先に届きません（%{first} ～ %{last}）。送信先を開いて欠落を確認し、閉じてください。"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:395
+#, elixir-autogen, elixir-format
+msgid "%{first} to %{last}"
+msgstr "%{first} ～ %{last}"
+
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:45
+#: lib/kanban_web/live/org_live/audit_log.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Date filters cover whole days in Coordinated Universal Time, as exports record them."
+msgstr "日付フィルターは、エクスポートの記録と同じく、協定世界時の丸一日を対象とします。"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Security events recorded for %{name}, newest first."
+msgstr "%{name} について記録されたセキュリティイベント（新しい順）。"
+
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Security events recorded on this instance, newest first."
+msgstr "このインスタンスで記録されたセキュリティイベント（新しい順）。"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "The old secret stays valid until %{time}."
+msgstr "古いシークレットは %{time} まで有効です。"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:143
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:334
+#, elixir-autogen, elixir-format
+msgid "You can rotate the signing secret again after %{time}."
+msgstr "%{time} 以降に、署名シークレットを再度再生成できます。"

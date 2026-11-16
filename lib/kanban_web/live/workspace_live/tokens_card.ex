@@ -13,6 +13,7 @@ defmodule KanbanWeb.WorkspaceLive.TokensCard do
   import KanbanWeb.UserLive.SettingsComponents, only: [settings_card: 1]
 
   alias Kanban.ApiTokens.ApiToken
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.WorkspaceLive.Tokens
 
   attr :form, Phoenix.HTML.Form, required: true
@@ -233,7 +234,7 @@ defmodule KanbanWeb.WorkspaceLive.TokensCard do
   defp creator(_token), do: "—"
 
   defp date(nil), do: gettext("never")
-  defp date(%DateTime{} = datetime), do: Calendar.strftime(datetime, "%Y-%m-%d")
+  defp date(%DateTime{} = datetime), do: LocalTime.format(datetime, :short_date)
 
   defp status_label(:active), do: gettext("Active")
   defp status_label(:revoked), do: gettext("Revoked")

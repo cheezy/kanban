@@ -17,6 +17,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamingRow do
 
   alias Kanban.AuditStream.Adapters.Datadog
   alias Kanban.AuditStream.Destination
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TimeAgo
 
   @typedoc "One destination row, with no secret in it."
@@ -66,11 +67,11 @@ defmodule KanbanWeb.OrgLive.AuditStreamingRow do
           String.t()
   def gap_warning(%{events: events, first_at: first_at, last_at: last_at}) do
     ngettext(
-      "%{count} event will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap.",
-      "%{count} events will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap.",
+      "%{count} event will never reach this destination (%{first} to %{last}). Open it to see and dismiss the gap.",
+      "%{count} events will never reach this destination (%{first} to %{last}). Open it to see and dismiss the gap.",
       events,
-      first: Calendar.strftime(first_at, "%Y-%m-%d"),
-      last: Calendar.strftime(last_at, "%Y-%m-%d")
+      first: LocalTime.format(first_at, :short_date),
+      last: LocalTime.format(last_at, :short_date)
     )
   end
 
@@ -139,14 +140,14 @@ defmodule KanbanWeb.OrgLive.AuditStreamingRow do
   def behind_by(%{events_waiting: count}),
     do: ngettext("%{count} event waiting", "%{count} events waiting", count)
 
-  @doc "**Last delivered**: how long ago and the time in UTC, or Never."
+  @doc "**Last delivered**: how long ago and the time in the viewer's zone, or Never."
   @spec last_delivered(DateTime.t() | nil) :: String.t()
   def last_delivered(nil), do: gettext("Never")
 
   def last_delivered(%DateTime{} = at) do
-    gettext("%{age} · %{time} UTC",
+    gettext("%{age} · %{time}",
       age: TimeAgo.format_age(at, :coarse),
-      time: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
+      time: LocalTime.format(at, :datetime)
     )
   end
 

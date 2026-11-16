@@ -60,6 +60,26 @@ Every HTML module imports `<.local_time>`. It renders a `<time>` element:
 - The text is the requested style.
 - A `nil` value renders nothing.
 
+## Audit log rows and date filters
+
+The organization and site-admin audit logs render each row's time with
+`<.local_time>`. The text is the local `:datetime` style, which has no seconds.
+The exact instant, to the microsecond, stays in the `datetime` attribute for
+investigators.
+
+The **From** and **To** date filters are not shifted. They still select whole
+UTC days. The CSV, JSON and signed exports read the same filters, and the
+signed manifest records them, so one URL returns the same events for every
+viewer. A note under the filter form says this. A notification's relative age,
+such as "5m ago", keeps its `KanbanWeb.TimeAgo` text and gets the UTC instant
+as its `datetime` attribute and the full local time as its `title`. Other
+relative ages, such as the audit-streaming backlog's "oldest from" age, are
+still bare `KanbanWeb.TimeAgo` text.
+
+Inside a gettext string, use `KanbanWeb.LocalTime.format/2`, not
+`format_full/1`. For a viewer in UTC, `format_full/1` adds the abbreviation
+"UTC", which would put the literal back into the sentence.
+
 ## Translations
 
 The strftime patterns are code constants in `KanbanWeb.LocalTime`. They are

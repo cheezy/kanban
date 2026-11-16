@@ -98,6 +98,23 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
       assert has_element?(console, ~s(#org-security-link[href="/org/security"]))
     end
 
+    test "the 2FA enforcement time renders local and localised", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+      submit(lv, %{"require_two_factor" => "true"})
+
+      {1, _} =
+        from(p in SecurityPolicy, where: p.organization_id == ^org.id)
+        |> Repo.update_all(set: [two_factor_enforced_at: ~U[2026-10-01 09:00:00Z]])
+
+      {:ok, lv, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto", "locale" => "es"})
+        |> live(~p"/org/security")
+
+      assert has_element?(lv, "#two-factor-enforced-at", "1 de octubre de 2026, 05:00")
+      refute lv |> element("#two-factor-enforced-at") |> render() =~ "UTC"
+    end
+
     test "an org-admin saves require-2FA, grace days and retention, and it is audited",
          %{conn: conn, org: org, org_admin: org_admin} do
       {:ok, lv, _html} = live(conn, ~p"/org/security")

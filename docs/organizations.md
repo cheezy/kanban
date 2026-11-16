@@ -352,7 +352,9 @@ be an org-admin of an Organization to access this page." That refused visit is
 recorded in Stride's own site audit log, not in the Organization's.
 
 The log shows the Organization's events newest first, 50 to a page, with times
-in UTC. It can be filtered by action and by date. The events include:
+in the viewer's own timezone and language. It can be filtered by action and by
+date; the date filter covers whole UTC days, so an export of the same filters
+holds the same events for everyone. The events include:
 
 - the Organization's creation and changes to it, and org-admins appointed or
   removed;

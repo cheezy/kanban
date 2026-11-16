@@ -131,7 +131,7 @@ msgstr "正在创建账户..."
 #: lib/kanban_web/live/user_live/notification_preferences.ex:212
 #: lib/kanban_web/live/user_live/registration.ex:66
 #: lib/kanban_web/live/user_live/settings.ex:50
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:41
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:42
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr "邮箱"
@@ -1465,7 +1465,7 @@ msgstr "待处理"
 msgid "Pitfalls"
 msgstr "陷阱"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:214
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:215
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:78
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #, elixir-autogen, elixir-format
@@ -1702,7 +1702,7 @@ msgstr "确定要撤销此 token 吗?"
 #: lib/kanban_web/live/user_live/confirmation.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #: lib/kanban_web/live/user_live/confirmation.ex:393
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:187
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:188
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "复制"
@@ -1710,7 +1710,7 @@ msgstr "复制"
 #: lib/kanban_web/live/board_live/show.html.heex:796
 #: lib/kanban_web/live/org_live/console.html.heex:227
 #: lib/kanban_web/live/org_live/scim.html.heex:146
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:64
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:65
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "创建中..."
@@ -1780,8 +1780,8 @@ msgstr "PubSub 广播"
 
 #: lib/kanban_web/live/board_live/show.html.heex:898
 #: lib/kanban_web/live/org_live/scim.html.heex:206
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:129
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:125
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:130
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:126
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "撤销"
@@ -1856,7 +1856,7 @@ msgstr "topic:event"
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:407
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:93
 #: lib/kanban_web/live/org_live/scim.html.heex:94
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:209
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:210
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "关闭"
@@ -1868,7 +1868,7 @@ msgstr "关闭"
 #: lib/kanban_web/live/org_live/scim.html.heex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:194
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:195
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "已复制！"
@@ -2147,8 +2147,8 @@ msgid "Clear all filters"
 msgstr "清除所有筛选"
 
 #: lib/kanban_web/components/board_filter_bar.ex:152
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:47
-#: lib/kanban_web/live/org_live/audit_log.html.heex:127
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:52
+#: lib/kanban_web/live/org_live/audit_log.html.heex:132
 #: lib/kanban_web/live/resources_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
@@ -2834,7 +2834,7 @@ msgstr "未派发"
 msgid "Reason"
 msgstr "原因"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:218
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:219
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:77
 #, elixir-autogen, elixir-format
 msgid "Skipped"
@@ -3234,8 +3234,8 @@ msgstr "您必须是看板成员才能对此任务发表评论"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
 #: lib/kanban_web/live/admin/organization_live/form.ex:156
-#: lib/kanban_web/live/admin/user_live/index.ex:139
-#: lib/kanban_web/live/admin/user_live/index.ex:183
+#: lib/kanban_web/live/admin/user_live/index.ex:140
+#: lib/kanban_web/live/admin/user_live/index.ex:184
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "您必须是管理员才能执行此操作。"
@@ -4698,7 +4698,7 @@ msgstr "以逗号分隔。有效值:api_design、code_generation、code_review�
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:56
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:44
 #: lib/kanban_web/live/org_live/scim.html.heex:45
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:157
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:158
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "请立即复制 — 您将无法再次查看。"
@@ -4730,7 +4730,7 @@ msgstr "已创建 token"
 
 #: lib/kanban_web/live/board_live/show.html.heex:711
 #: lib/kanban_web/live/org_live/scim.html.heex:136
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:46
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:47
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "令牌名称"
@@ -4862,7 +4862,10 @@ msgid "Throughput · last 12 hours"
 msgstr "吞吐量 · 最近 12 小时"
 
 #: lib/kanban_web/components/goal_sidebar.ex:77
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
 #: lib/kanban_web/live/board_live/webhook_views.ex:371
+#: lib/kanban_web/live/org_live/audit_log.html.heex:143
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:429
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "时间"
@@ -6370,10 +6373,10 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:385
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:443
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:531
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:76
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:82
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
-#: lib/kanban_web/live/org_live/audit_log.html.heex:156
+#: lib/kanban_web/live/org_live/audit_log.html.heex:162
 #: lib/kanban_web/live/org_live/console.ex:371
 #: lib/kanban_web/live/org_live/console.html.heex:67
 #, elixir-autogen, elixir-format
@@ -7258,11 +7261,15 @@ msgid "Apply"
 msgstr "应用"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:200
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
+#: lib/kanban_web/live/org_live/audit_log.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "From"
 msgstr "从"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:207
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
+#: lib/kanban_web/live/org_live/audit_log.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "To"
 msgstr "至"
@@ -7776,7 +7783,7 @@ msgstr "否"
 msgid "No users yet."
 msgstr "暂无用户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:21
+#: lib/kanban_web/live/admin/user_live/index.ex:22
 #: lib/kanban_web/live/admin/user_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "User Administration"
@@ -7793,22 +7800,22 @@ msgstr "管理员"
 msgid "User"
 msgstr "用户"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:60
+#: lib/kanban_web/live/admin/user_live/index.ex:61
 #, elixir-autogen, elixir-format
 msgid "Account deleted."
 msgstr "账户已删除。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:33
+#: lib/kanban_web/live/admin/user_live/index.ex:34
 #, elixir-autogen, elixir-format
 msgid "Account disabled."
 msgstr "账户已停用。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:42
+#: lib/kanban_web/live/admin/user_live/index.ex:43
 #, elixir-autogen, elixir-format
 msgid "Account enabled."
 msgstr "账户已启用。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:51
+#: lib/kanban_web/live/admin/user_live/index.ex:52
 #, elixir-autogen, elixir-format
 msgid "Confirmation email sent."
 msgstr "确认邮件已发送。"
@@ -7851,41 +7858,41 @@ msgid "Send another confirmation email to this account?"
 msgstr "向此账户再发送一封确认邮件？"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
-#: lib/kanban_web/live/admin/user_live/index.ex:164
+#: lib/kanban_web/live/admin/user_live/index.ex:165
 #: lib/kanban_web/live/org_live/audit_stream_form.ex:199
-#: lib/kanban_web/live/org_live/sso.ex:160
+#: lib/kanban_web/live/org_live/sso.ex:161
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "出了点问题。请重试。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:163
+#: lib/kanban_web/live/admin/user_live/index.ex:164
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "此账户已确认。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:151
+#: lib/kanban_web/live/admin/user_live/index.ex:152
 #: lib/kanban_web/live/admin/user_live/index.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "该用户仍属于某个看板，无法删除。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:93
+#: lib/kanban_web/live/admin/user_live/index.ex:94
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "未找到用户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:141
+#: lib/kanban_web/live/admin/user_live/index.ex:142
 #, elixir-autogen, elixir-format
 msgid "You cannot delete your own account."
 msgstr "您不能删除自己的账户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:140
+#: lib/kanban_web/live/admin/user_live/index.ex:141
 #, elixir-autogen, elixir-format
 msgid "You cannot disable your own account."
 msgstr "您不能停用自己的账户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:142
+#: lib/kanban_web/live/admin/user_live/index.ex:143
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last admin."
 msgstr "您不能移除最后一位管理员。"
@@ -8455,7 +8462,7 @@ msgid "Error / exception"
 msgstr "错误 / 异常"
 
 #: lib/kanban_web/components/behaviour_test_labels.ex:41
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:111
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:112
 #, elixir-autogen, elixir-format
 msgid "Failing"
 msgstr "失败"
@@ -8861,7 +8868,7 @@ msgstr[0] "%{count} 条未读通知"
 msgid "Filter notifications"
 msgstr "筛选通知"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:201
+#: lib/kanban_web/live/notification_live/index.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "加载更多"
@@ -8871,12 +8878,12 @@ msgstr "加载更多"
 msgid "Mark all read"
 msgstr "全部标为已读"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:189
+#: lib/kanban_web/live/notification_live/index.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "标为已读"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:185
+#: lib/kanban_web/live/notification_live/index.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Mark as read: %{title}"
 msgstr "标为已读：%{title}"
@@ -8891,7 +8898,7 @@ msgstr "暂无通知。"
 msgid "No unread notifications."
 msgstr "没有未读通知。"
 
-#: lib/kanban_web/live/notification_live/index.ex:160
+#: lib/kanban_web/live/notification_live/index.ex:161
 #, elixir-autogen, elixir-format
 msgid "Notification not found."
 msgstr "未找到通知。"
@@ -8900,7 +8907,7 @@ msgstr "未找到通知。"
 #: lib/kanban_web/components/notification_bell.ex:93
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:99
 #: lib/kanban_web/emails/announcement_email.ex:101
-#: lib/kanban_web/live/notification_live/index.ex:38
+#: lib/kanban_web/live/notification_live/index.ex:39
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:16
 #: lib/kanban_web/live/notification_live/index.html.heex:35
@@ -9152,7 +9159,7 @@ msgid "Missed its target date."
 msgstr "已错过目标日期。"
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex:132
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:54
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:55
 #, elixir-autogen, elixir-format
 msgid "Board access"
 msgstr "看板访问权限"
@@ -9218,15 +9225,15 @@ msgid "We couldn't complete your request. Please go back and try again."
 msgstr "我们无法完成您的请求。请返回后重试。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:30
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:69
 #: lib/kanban_web/live/org_live/audit_log.html.heex:117
-#: lib/kanban_web/live/org_live/audit_log.html.heex:143
+#: lib/kanban_web/live/org_live/audit_log.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "操作"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:68
-#: lib/kanban_web/live/org_live/audit_log.html.heex:148
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
+#: lib/kanban_web/live/org_live/audit_log.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "执行者"
@@ -9251,8 +9258,8 @@ msgstr "所有操作"
 msgid "Audit Log"
 msgstr "审计日志"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:84
-#: lib/kanban_web/live/org_live/audit_log.html.heex:164
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
+#: lib/kanban_web/live/org_live/audit_log.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Audit log pages"
 msgstr "审计日志分页"
@@ -9263,47 +9270,23 @@ msgstr "审计日志分页"
 msgid "Export JSON"
 msgstr "导出 JSON"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
-#: lib/kanban_web/live/org_live/audit_log.html.heex:121
-#, elixir-autogen, elixir-format
-msgid "From (UTC)"
-msgstr "开始日期 (UTC)"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:71
-#: lib/kanban_web/live/org_live/audit_log.html.heex:151
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:77
+#: lib/kanban_web/live/org_live/audit_log.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "IP"
 msgstr "IP"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:53
-#: lib/kanban_web/live/org_live/audit_log.html.heex:133
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
+#: lib/kanban_web/live/org_live/audit_log.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "No audit events match these filters."
 msgstr "没有符合这些筛选条件的审计事件。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:99
-#: lib/kanban_web/live/org_live/audit_log.html.heex:179
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:105
+#: lib/kanban_web/live/org_live/audit_log.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Older events"
 msgstr "更早的事件"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:6
-#, elixir-autogen, elixir-format
-msgid "Security events recorded on this instance, newest first. Times are in UTC."
-msgstr "此实例记录的安全事件，按时间倒序排列。时间为 UTC。"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
-#: lib/kanban_web/live/org_live/audit_log.html.heex:138
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:429
-#, elixir-autogen, elixir-format
-msgid "Time (UTC)"
-msgstr "时间 (UTC)"
-
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
-#: lib/kanban_web/live/org_live/audit_log.html.heex:122
-#, elixir-autogen, elixir-format
-msgid "To (UTC)"
-msgstr "结束日期 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
 #: lib/kanban_web/controllers/org_audit_log_export_controller.ex:188
@@ -9311,8 +9294,8 @@ msgstr "结束日期 (UTC)"
 msgid "Unsupported export format."
 msgstr "不支持的导出格式。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:141
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:75
+#: lib/kanban_web/live/org_live/audit_log.ex:139
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "用户 #%{id}（已删除）"
@@ -9424,15 +9407,15 @@ msgctxt "agent action"
 msgid "unclaimed"
 msgstr "已取消认领"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:143
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:79
+#: lib/kanban_web/live/org_live/audit_log.ex:141
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
 msgstr "无"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:92
-#: lib/kanban_web/live/org_live/audit_log.html.heex:172
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:98
+#: lib/kanban_web/live/org_live/audit_log.html.heex:178
 #, elixir-autogen, elixir-format
 msgctxt "audit log pages"
 msgid "Newest"
@@ -10490,8 +10473,8 @@ msgstr "请输入有效的电子邮件地址。未做任何更改。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
 #: lib/kanban_web/live/org_live/console.ex:378
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:138
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:152
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:139
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:153
 #: lib/kanban_web/live/workspace_live/settings.ex:470
 #: lib/kanban_web/live/workspace_live/settings.ex:475
 #, elixir-autogen, elixir-format
@@ -10530,7 +10513,7 @@ msgid "Remove %{email} as an org-admin of this Organization?"
 msgstr "要将 %{email} 从此组织的组织管理员中移除吗？"
 
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:92
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:43
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:44
 #: lib/kanban_web/live/workspace_live/settings.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "Role"
@@ -10616,17 +10599,12 @@ msgstr "返回组织"
 msgid "Organization audit log"
 msgstr "组织审计日志"
 
-#: lib/kanban_web/live/org_live/audit_log.html.heex:10
-#, elixir-autogen, elixir-format
-msgid "Security events recorded for %{name}, newest first. Times are in UTC."
-msgstr "为 %{name} 记录的安全事件，按时间倒序排列。时间为 UTC。"
-
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Organization administrators"
 msgstr "组织管理员"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:134
+#: lib/kanban_web/live/org_live/audit_log.ex:132
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "组织外部人员"
@@ -10714,7 +10692,7 @@ msgstr "您组织的详细信息、成员和工作区。只有站点管理员可
 msgid "create · rename · archive"
 msgstr "创建 · 重命名 · 归档"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:161
+#: lib/kanban_web/live/admin/user_live/index.ex:162
 #, elixir-autogen, elixir-format
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "该用户的个人工作区中仍有看板，因此无法删除。"
@@ -10948,7 +10926,7 @@ msgid "Integrations are available to organizations. Nothing was changed."
 msgstr "集成仅对组织开放，未做任何更改。"
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:170
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:112
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:113
 #, elixir-autogen, elixir-format
 msgid "Paused"
 msgstr "已暂停"
@@ -10984,7 +10962,7 @@ msgstr "此账户尚未确认其电子邮件地址。"
 msgid "This account is disabled and can't sign in."
 msgstr "此账户已停用，无法登录。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:146
+#: lib/kanban_web/live/admin/user_live/index.ex:147
 #, elixir-autogen, elixir-format
 msgid "This user is the only enabled org-admin of an Organization that still has members. Appoint another org-admin first."
 msgstr "此用户是一个仍有成员的组织中唯一启用的组织管理员。请先任命另一位组织管理员。"
@@ -11024,8 +11002,8 @@ msgstr "此工作区中的所有看板。"
 msgid "Everyone in your Organization, org-admins first. Removing a member also removes them from every workspace and its boards."
 msgstr "您组织中的所有人，组织管理员排在前面。移除成员也会将其从每个工作区及其看板中移除。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:138
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:153
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:139
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:154
 #: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/live/workspace_live/settings.ex:475
 #, elixir-autogen, elixir-format
@@ -11207,7 +11185,7 @@ msgctxt "audit action"
 msgid "Organization member removed"
 msgstr "已移除组织成员"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:147
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:148
 #, elixir-autogen, elixir-format
 msgid "%{role} · %{board}"
 msgstr "%{role} · %{board}"
@@ -11217,17 +11195,17 @@ msgstr "%{role} · %{board}"
 msgid "Accept invitation"
 msgstr "接受邀请"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:47
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:48
 #, elixir-autogen, elixir-format
 msgid "Board (optional)"
 msgstr "看板（可选）"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:154
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:155
 #, elixir-autogen, elixir-format
 msgid "Board only"
 msgstr "仅看板"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:141
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:142
 #, elixir-autogen, elixir-format
 msgid "Can edit"
 msgstr "可编辑"
@@ -11243,13 +11221,13 @@ msgid "Create an account with the email address this invitation was sent to, or 
 msgstr "请使用接收此邀请的电子邮件地址创建账户；如果已有账户，请登录后再次打开此链接。"
 
 #: lib/kanban_web/live/workspace_live/exports.ex:60
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:160
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:240
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:161
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:241
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr "已过期"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:158
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:159
 #, elixir-autogen, elixir-format
 msgid "Expires %{date}"
 msgstr "%{date} 过期"
@@ -11307,12 +11285,12 @@ msgstr "通过电子邮件邀请 %{email} 加入此看板。"
 msgid "Invite as Read Only"
 msgstr "以只读权限邀请"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:26
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:27
 #, elixir-autogen, elixir-format
 msgid "Invite people"
 msgstr "邀请成员"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:28
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:29
 #, elixir-autogen, elixir-format
 msgid "Invite someone by email to join this workspace and your Organization. The link works once and expires in %{days} days."
 msgstr "通过电子邮件邀请他人加入此工作区和你的组织。链接仅可使用一次，%{days} 天后过期。"
@@ -11348,37 +11326,37 @@ msgstr "正在加入..."
 msgid "No account uses that email address. You can invite them by email."
 msgstr "没有账户使用该电子邮件地址。你可以通过电子邮件邀请对方。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:48
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:49
 #, elixir-autogen, elixir-format
 msgid "No board"
 msgstr "无看板"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:83
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:84
 #, elixir-autogen, elixir-format
 msgid "No pending invitations."
 msgstr "没有待处理的邀请。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:74
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:75
 #, elixir-autogen, elixir-format
 msgid "Pending invitations"
 msgstr "待处理的邀请"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:141
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:142
 #, elixir-autogen, elixir-format
 msgid "Read only"
 msgstr "只读"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:119
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:120
 #, elixir-autogen, elixir-format
 msgid "Resend"
 msgstr "重新发送"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:75
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:76
 #, elixir-autogen, elixir-format
 msgid "Resending sends a new link and the old one stops working."
 msgstr "重新发送会发出新链接，旧链接将失效。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:126
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:127
 #, elixir-autogen, elixir-format
 msgid "Revoke this invitation? Its link stops working."
 msgstr "撤销此邀请？其链接将失效。"
@@ -11388,13 +11366,13 @@ msgstr "撤销此邀请？其链接将失效。"
 msgid "Search for an email address first."
 msgstr "请先搜索电子邮件地址。"
 
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:66
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:67
 #, elixir-autogen, elixir-format
 msgid "Send invitation"
 msgstr "发送邀请"
 
 #: lib/kanban_web/live/org_live/audit_streaming.html.heex:233
-#: lib/kanban_web/live/workspace_live/invitations_card.ex:64
+#: lib/kanban_web/live/workspace_live/invitations_card.ex:65
 #, elixir-autogen, elixir-format
 msgid "Sending..."
 msgstr "正在发送..."
@@ -11453,7 +11431,7 @@ msgctxt "audit action"
 msgid "Organization member added"
 msgstr "已添加组织成员"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:76
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:77
 #, elixir-autogen, elixir-format
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr "令牌在被撤销、过期,或其代表的组织管理员离开此工作区或组织时将停止工作。"
@@ -11464,55 +11442,55 @@ msgid "API tokens · create · revoke"
 msgstr "API 令牌 · 创建 · 撤销"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:191
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:238
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr "有效"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:55
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:56
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities (comma-separated, optional)"
 msgstr "代理能力(逗号分隔,可选)"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:223
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:224
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used} · expires %{expires}"
 msgstr "创建者 %{creator} · 创建于 %{created} · 最后使用 %{used} · 过期于 %{expires}"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:86
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:201
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:202
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the token and copy it yourself."
 msgstr "无法复制。请选中令牌并手动复制。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:29
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:30
 #, elixir-autogen, elixir-format
 msgid "Create a workspace token"
 msgstr "创建工作区令牌"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:148
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:66
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:67
 #, elixir-autogen, elixir-format
 msgid "Create token"
 msgstr "创建令牌"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:87
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:88
 #, elixir-autogen, elixir-format
 msgid "No workspace tokens yet."
 msgstr "还没有工作区令牌。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:31
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:32
 #, elixir-autogen, elixir-format
 msgid "One token for every board in this workspace. It acts as you, reaches the AI Optimized boards you can modify, and names its board on each request with the X-Stride-Board header. It expires in 90 days."
 msgstr "一个令牌适用于此工作区中的所有看板。它以你的身份操作,可访问你能编辑的 AI 优化看板,并在每个请求中通过 X-Stride-Board 请求头指定其看板。它将在 90 天后过期。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:122
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:123
 #, elixir-autogen, elixir-format
 msgid "Revoke this token? Agents using it lose access immediately."
 msgstr "撤销此令牌?使用它的代理将立即失去访问权限。"
 
 #: lib/kanban_web/live/org_live/scim.html.heex:191
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:239
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "已撤销"
@@ -11542,18 +11520,18 @@ msgstr "工作区令牌已创建。请立即复制;它不会再次显示。"
 msgid "Workspace token revoked."
 msgstr "工作区令牌已撤销。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:74
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:75
 #, elixir-autogen, elixir-format
 msgid "Workspace tokens"
 msgstr "工作区令牌"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:154
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:155
 #, elixir-autogen, elixir-format
 msgid "Your new workspace token"
 msgstr "你的新工作区令牌"
 
-#: lib/kanban_web/live/org_live/scim.ex:171
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:235
+#: lib/kanban_web/live/org_live/scim.ex:172
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:236
 #, elixir-autogen, elixir-format
 msgid "never"
 msgstr "从未"
@@ -11707,12 +11685,12 @@ msgstr "删除账户会让你在所有地方退出登录，并移除你的 API �
 msgid "Logged out successfully."
 msgstr "已成功退出登录。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:31
+#: lib/kanban_web/live/workspace_live/export_card.ex:32
 #, elixir-autogen, elixir-format
 msgid "A zip archive of this workspace's boards, columns, labels, tasks, comments, history and memberships, for a backup or to move the workspace to another Stride instance. It is prepared in the background; its status and download link appear below. Archives are kept for %{days} days."
 msgstr "包含此工作区的看板、列、标签、任务、评论、历史记录和成员关系的 zip 归档，可用于备份或将工作区迁移到另一个 Stride 实例。它在后台生成；状态和下载链接显示在下方。归档保留 %{days} 天。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:55
+#: lib/kanban_web/live/workspace_live/export_card.ex:56
 #, elixir-autogen, elixir-format
 msgid "An export is being prepared. You can leave this page; it keeps going."
 msgstr "正在准备导出。你可以离开此页面，导出会继续进行。"
@@ -11722,14 +11700,14 @@ msgstr "正在准备导出。你可以离开此页面，导出会继续进行。
 msgid "An export of this workspace is already in progress."
 msgstr "此工作区已有一个导出正在进行。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:117
+#: lib/kanban_web/live/workspace_live/export_card.ex:118
 #, elixir-autogen, elixir-format
 msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
 msgstr "由 %{requester} · 请求于 %{requested} · %{size} · 过期于 %{expires}"
 
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:108
 #: lib/kanban_web/live/task_live/components/attachment_items.ex:213
-#: lib/kanban_web/live/workspace_live/export_card.ex:107
+#: lib/kanban_web/live/workspace_live/export_card.ex:108
 #, elixir-autogen, elixir-format
 msgid "Download"
 msgstr "下载"
@@ -11739,32 +11717,32 @@ msgstr "下载"
 msgid "Export requested. Its status and download link appear here when it is ready."
 msgstr "已请求导出。准备就绪后，其状态和下载链接会显示在这里。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:29
+#: lib/kanban_web/live/workspace_live/export_card.ex:30
 #, elixir-autogen, elixir-format
 msgid "Export this workspace"
 msgstr "导出此工作区"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:71
+#: lib/kanban_web/live/workspace_live/export_card.ex:72
 #, elixir-autogen, elixir-format
 msgid "No exports yet."
 msgstr "还没有导出。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:63
+#: lib/kanban_web/live/workspace_live/export_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Only org-admins of this workspace's Organization can download an archive."
 msgstr "只有此工作区所属组织的组织管理员才能下载归档。"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:62
+#: lib/kanban_web/live/workspace_live/export_card.ex:63
 #, elixir-autogen, elixir-format
 msgid "Recent exports"
 msgstr "最近的导出"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:47
+#: lib/kanban_web/live/workspace_live/export_card.ex:48
 #, elixir-autogen, elixir-format
 msgid "Request export"
 msgstr "请求导出"
 
-#: lib/kanban_web/live/workspace_live/export_card.ex:44
+#: lib/kanban_web/live/workspace_live/export_card.ex:45
 #, elixir-autogen, elixir-format
 msgid "Requesting..."
 msgstr "正在请求..."
@@ -11896,7 +11874,7 @@ msgstr "宽限期天数（%{min} 至 %{max}）"
 msgid "Keep forever"
 msgstr "永久保留"
 
-#: lib/kanban_web/live/org_live/security.ex:44
+#: lib/kanban_web/live/org_live/security.ex:45
 #, elixir-autogen, elixir-format
 msgid "Organization security"
 msgstr "组织安全"
@@ -11931,7 +11909,7 @@ msgstr "保存安全策略"
 msgid "Security policy for %{name}. Only its org-admins can change it."
 msgstr "%{name} 的安全策略。只有其组织管理员可以更改。"
 
-#: lib/kanban_web/live/org_live/security.ex:81
+#: lib/kanban_web/live/org_live/security.ex:82
 #, elixir-autogen, elixir-format
 msgid "Security policy saved."
 msgstr "安全策略已保存。"
@@ -11973,7 +11951,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "已执行保留期清理"
 
-#: lib/kanban_web/live/org_live/sso.ex:310
+#: lib/kanban_web/live/org_live/sso.ex:311
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} 已验证。"
@@ -11998,7 +11976,7 @@ msgstr "添加您的成员使用的每个电子邮件域名，在您的 DNS 服�
 msgid "Allow sign-in through this identity provider"
 msgstr "允许通过此身份提供商登录"
 
-#: lib/kanban_web/live/org_live/sso.ex:258
+#: lib/kanban_web/live/org_live/sso.ex:259
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr "另一个组织已验证此域名。"
@@ -12013,12 +11991,12 @@ msgstr "客户端 ID"
 msgid "Client secret"
 msgstr "客户端密钥"
 
-#: lib/kanban_web/live/org_live/sso.ex:283
+#: lib/kanban_web/live/org_live/sso.ex:284
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr "已添加域名。请发布其 TXT 记录，然后进行验证。"
 
-#: lib/kanban_web/live/org_live/sso.ex:90
+#: lib/kanban_web/live/org_live/sso.ex:91
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr "已移除域名。"
@@ -12105,7 +12083,7 @@ msgstr "使用 SSO 登录"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:58
+#: lib/kanban_web/live/org_live/sso.ex:59
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12113,7 +12091,7 @@ msgstr "使用 SSO 登录"
 msgid "Single sign-on"
 msgstr "单点登录"
 
-#: lib/kanban_web/live/org_live/sso.ex:195
+#: lib/kanban_web/live/org_live/sso.ex:196
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr "已保存单点登录连接。"
@@ -12140,12 +12118,12 @@ msgstr "TXT 记录名称"
 msgid "TXT record value"
 msgstr "TXT 记录值"
 
-#: lib/kanban_web/live/org_live/sso.ex:318
+#: lib/kanban_web/live/org_live/sso.ex:319
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "未找到 TXT 记录。DNS 更改可能需要一段时间才能生效，请稍后重试。"
 
-#: lib/kanban_web/live/org_live/sso.ex:202
+#: lib/kanban_web/live/org_live/sso.ex:203
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr "颁发者 URL 必须是公开的 https 地址。"
@@ -12276,7 +12254,7 @@ msgstr "身份提供商元数据 XML"
 msgid "Paste the metadata XML to fill the fields below"
 msgstr "粘贴元数据 XML 以填写下方字段"
 
-#: lib/kanban_web/live/org_live/sso.ex:297
+#: lib/kanban_web/live/org_live/sso.ex:298
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr "SAML 连接已保存。"
@@ -12367,7 +12345,7 @@ msgstr "SCIM 令牌可以添加、更改和移除您组织中的人员及其工�
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr "已撤销的令牌会立即失效，且无法恢复。"
 
-#: lib/kanban_web/live/org_live/scim.ex:158
+#: lib/kanban_web/live/org_live/scim.ex:159
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr "创建者 %{creator} · 创建于 %{created} · 最后使用 %{used}"
@@ -12403,7 +12381,7 @@ msgid "SCIM base URL"
 msgstr "SCIM 基础 URL"
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:57
+#: lib/kanban_web/live/org_live/scim.ex:58
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12414,7 +12392,7 @@ msgstr "SCIM 预配"
 msgid "SCIM tokens"
 msgstr "SCIM 令牌"
 
-#: lib/kanban_web/live/org_live/scim.ex:102
+#: lib/kanban_web/live/org_live/scim.ex:103
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr "令牌已撤销。"
@@ -12476,7 +12454,7 @@ msgstr "请输入您的工作电子邮件地址以继续使用单点登录。"
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr "正在将单点登录连接到此账户。请仅此一次确认是您本人；之后通过单点登录登录时将不再询问。"
 
-#: lib/kanban_web/live/org_live/sso.ex:269
+#: lib/kanban_web/live/org_live/sso.ex:270
 #, elixir-autogen, elixir-format
 msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
 msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."
@@ -12717,7 +12695,7 @@ msgstr "组织的安全审计事件按该组织的保留设置保存；其组织
 msgid "Security audit events that record what you did, including your email address and IP address, are not removed when you delete your account: they are kept for the retention period below, and an Organization's org-admins can still see the events that belong to it."
 msgstr "记录你所做操作的安全审计事件（包括你的电子邮件地址和 IP 地址）不会在你删除账户时移除：它们会按下文所述的保留期限保存，组织的组织管理员仍可查看属于该组织的事件。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:155
+#: lib/kanban_web/live/admin/user_live/index.ex:156
 #, elixir-autogen, elixir-format
 msgid "This user owns a board other people still use. Transfer it or remove its other members first."
 msgstr "该用户拥有一个其他人仍在使用的看板。请先转让该看板，或移除它的其他成员。"
@@ -14205,18 +14183,13 @@ msgstr "请关闭此 HEC 令牌的索引器确认"
 msgid "Use a HEC URL without acknowledgement; Stride does not use indexer acknowledgement"
 msgstr "请使用不带确认的 HEC URL；Stride 不使用索引器确认"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:147
-#, elixir-autogen, elixir-format
-msgid "%{age} · %{time} UTC"
-msgstr "%{age} · %{time} UTC"
-
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:140
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:141
 #, elixir-autogen, elixir-format
 msgid "%{count} event waiting"
 msgid_plural "%{count} events waiting"
 msgstr[0] "%{count} 个事件等待中"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:131
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:132
 #, elixir-autogen, elixir-format
 msgid "%{count} event waiting, the oldest from %{age}"
 msgid_plural "%{count} events waiting, the oldest from %{age}"
@@ -14246,17 +14219,17 @@ msgstr "返回审计日志"
 msgid "Behind by"
 msgstr "落后"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:160
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:161
 #, elixir-autogen, elixir-format
 msgid "Could not connect"
 msgstr "无法连接"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:188
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:189
 #, elixir-autogen, elixir-format
 msgid "Credentials can't be read. Enter them again."
 msgstr "无法读取凭据。请重新输入。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:80
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:81
 #, elixir-autogen, elixir-format
 msgid "Datadog"
 msgstr "Datadog"
@@ -14286,12 +14259,12 @@ msgstr "目标已恢复。"
 msgid "Destinations"
 msgstr "目标"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:81
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:82
 #, elixir-autogen, elixir-format
 msgid "HTTPS endpoint"
 msgstr "HTTPS 端点"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:109
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:110
 #, elixir-autogen, elixir-format
 msgid "Healthy"
 msgstr "正常"
@@ -14302,12 +14275,12 @@ msgstr "正常"
 msgid "Last delivered"
 msgstr "上次送达"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:113
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:114
 #, elixir-autogen, elixir-format
 msgid "Needs attention"
 msgstr "需要处理"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:144
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:145
 #, elixir-autogen, elixir-format
 msgid "Never"
 msgstr "从未"
@@ -14332,7 +14305,7 @@ msgstr "暂停此目标？事件会在审计日志中等待，恢复后再发送
 msgid "Resume"
 msgstr "恢复"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:110
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:111
 #, elixir-autogen, elixir-format
 msgid "Retrying"
 msgstr "重试中"
@@ -14347,7 +14320,7 @@ msgstr "此处从不显示机密：每个目标显示其主机以及其凭据或
 msgid "Send test event"
 msgstr "发送测试事件"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:79
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:80
 #, elixir-autogen, elixir-format
 msgid "Splunk"
 msgstr "Splunk"
@@ -14357,7 +14330,7 @@ msgstr "Splunk"
 msgid "Streaming"
 msgstr "流式传输"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:159
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:160
 #, elixir-autogen, elixir-format
 msgid "Test event delivered"
 msgstr "测试事件已送达"
@@ -14370,33 +14343,33 @@ msgstr "测试事件已送达"
 msgid "That destination no longer exists."
 msgstr "该目标已不存在。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:163
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:164
 #, elixir-autogen, elixir-format
 msgid "The certificate could not be verified"
 msgstr "无法验证证书"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:169
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:170
 #, elixir-autogen, elixir-format
 msgid "The destination answered with an error (%{status})"
 msgstr "目标返回了错误（%{status}）"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:166
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:167
 #, elixir-autogen, elixir-format
 msgid "The destination refused the credentials"
 msgstr "目标拒绝了凭据"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:184
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:185
 #, elixir-autogen, elixir-format
 msgid "The test event could not be sent."
 msgstr "无法发送测试事件。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:177
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:178
 #, elixir-autogen, elixir-format
 msgid "This Organization has sent as many test events as it can this hour. Try again in %{count} minute."
 msgid_plural "This Organization has sent as many test events as it can this hour. Try again in %{count} minutes."
 msgstr[0] "本组织本小时发送的测试事件已达上限。请在 %{count} 分钟后重试。"
 
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:128
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:129
 #, elixir-autogen, elixir-format
 msgid "Up to date"
 msgstr "已是最新"
@@ -14411,43 +14384,26 @@ msgstr "%{name} 的审计日志在写入时发送到的位置，以及每个目�
 msgid "Your Organization has only one org-admin, so emails about changes to its destinations go only to that person. Ask a site admin to appoint another org-admin."
 msgstr "您的组织只有一位组织管理员，因此关于其目标变更的邮件只会发给此人。请让站点管理员再任命一位组织管理员。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:230
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:231
 #, elixir-autogen, elixir-format
 msgid "%{count} B"
 msgstr "%{count} B"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:233
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:234
 #, elixir-autogen, elixir-format
 msgid "%{count} KB"
 msgstr "%{count} KB"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:235
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:236
 #, elixir-autogen, elixir-format
 msgid "%{count} MB"
 msgstr "%{count} MB"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:208
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:209
 #, elixir-autogen, elixir-format
 msgid "%{count} event lost"
 msgid_plural "%{count} events lost"
 msgstr[0] "丢失了 %{count} 个事件"
-
-#: lib/kanban_web/live/org_live/audit_streaming_row.ex:68
-#, elixir-autogen, elixir-format
-msgid "%{count} event will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap."
-msgid_plural "%{count} events will never reach this destination (%{first} to %{last} UTC). Open it to see and dismiss the gap."
-msgstr[0] "有 %{count} 个事件永远不会到达此目标（%{first} 至 %{last} UTC）。打开它以查看并忽略该缺口。"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:395
-#, elixir-autogen, elixir-format
-msgid "%{first} to %{last} UTC"
-msgstr "%{first} 至 %{last} UTC"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:209
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:215
-#, elixir-autogen, elixir-format
-msgid "%{time} UTC"
-msgstr "%{time} UTC"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.ex:137
 #, elixir-autogen, elixir-format
@@ -14480,18 +14436,18 @@ msgstr "返回审计流式传输"
 msgid "Batch skipped."
 msgstr "已跳过该批次。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:217
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:218
 #, elixir-autogen, elixir-format
 msgid "Blocked address"
 msgstr "地址被阻止"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:164
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:165
 #, elixir-autogen, elixir-format
 msgid "Check this destination's settings."
 msgstr "请检查此目标的设置。"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:153
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:216
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:217
 #, elixir-autogen, elixir-format
 msgid "Configuration error"
 msgstr "配置错误"
@@ -14502,17 +14458,17 @@ msgstr "配置错误"
 msgid "Credential"
 msgstr "凭据"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:215
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:216
 #, elixir-autogen, elixir-format
 msgid "Credentials refused"
 msgstr "凭据被拒绝"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:201
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:202
 #, elixir-autogen, elixir-format
 msgid "Deleted by retention before it was sent"
 msgstr "在发送前已被保留策略删除"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:212
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:213
 #, elixir-autogen, elixir-format
 msgid "Delivered"
 msgstr "已投递"
@@ -14561,7 +14517,7 @@ msgstr "排除的操作"
 msgid "First event"
 msgstr "第一个事件"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:98
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:99
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "Format"
@@ -14577,7 +14533,7 @@ msgstr "已忽略该缺口。"
 msgid "Gaps"
 msgstr "缺口"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:185
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:186
 #, elixir-autogen, elixir-format
 msgid "HTTP %{status}"
 msgstr "HTTP %{status}"
@@ -14594,7 +14550,7 @@ msgid "Host"
 msgstr "主机"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:347
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:92
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:93
 #, elixir-autogen, elixir-format
 msgid "Index"
 msgstr "索引"
@@ -14604,7 +14560,7 @@ msgstr "索引"
 msgid "Last event"
 msgstr "最后一个事件"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:203
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:204
 #, elixir-autogen, elixir-format
 msgid "Left behind by a database move"
 msgstr "因数据库迁移而遗留"
@@ -14614,7 +14570,7 @@ msgstr "因数据库迁移而遗留"
 msgid "Left out"
 msgstr "不包含"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:187
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:188
 #, elixir-autogen, elixir-format
 msgid "No answer was recorded."
 msgstr "未记录任何响应。"
@@ -14675,7 +14631,7 @@ msgid "Secrets are never shown: only the host and the last 4 characters of the c
 msgstr "从不显示密钥：只显示主机以及凭据或 URL 的最后 4 个字符。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:349
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:96
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:261
 #, elixir-autogen, elixir-format
 msgid "Service"
@@ -14687,7 +14643,7 @@ msgid "Signing secret rotated."
 msgstr "签名密钥已轮换。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:348
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:96
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:253
 #, elixir-autogen, elixir-format
 msgid "Site"
@@ -14703,7 +14659,7 @@ msgstr "大小"
 msgid "Skip this batch"
 msgstr "跳过此批次"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:92
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:93
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:243
 #, elixir-autogen, elixir-format
 msgid "Source type"
@@ -14720,12 +14676,12 @@ msgid "Stride keeps trying, and delivery carries on once the destination is fixe
 msgstr "Stride 会继续尝试，目标修复后投递即会继续。"
 
 #: lib/kanban_web/emails/audit_stream_email.ex:350
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:95
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:96
 #, elixir-autogen, elixir-format
 msgid "Tags"
 msgstr "标签"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:136
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:137
 #, elixir-autogen, elixir-format
 msgid "The URL's host resolves only to addresses Stride may not send to. Nothing is sent until the URL is changed."
 msgstr "该 URL 的主机只解析到 Stride 不允许发送的地址。在更改 URL 之前不会发送任何内容。"
@@ -14735,12 +14691,12 @@ msgstr "该 URL 的主机只解析到 Stride 不允许发送的地址。在更�
 msgid "The current signing secret can't be read, so there is no 24-hour overlap this time: the new secret replaces it at once."
 msgstr "无法读取当前的签名密钥，因此这次没有 24 小时的重叠期：新密钥会立即替换它。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:141
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:142
 #, elixir-autogen, elixir-format
 msgid "The database was moved. An operator must re-seed audit streaming."
 msgstr "数据库已迁移。需要由运维人员重新初始化审计流式传输。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:130
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:131
 #, elixir-autogen, elixir-format
 msgid "The destination rejected the same batch on every try. Stride never skips a batch on its own: fix the cause at the destination and choose Retry now, or skip the batch."
 msgstr "目标在每次尝试时都拒绝了同一批次。Stride 绝不会自行跳过批次：请在目标端修复原因后选择“立即重试”，或跳过该批次。"
@@ -14749,11 +14705,6 @@ msgstr "目标在每次尝试时都拒绝了同一批次。Stride 绝不会自�
 #, elixir-autogen, elixir-format
 msgid "The last 50 attempts to send to this destination, newest first."
 msgstr "向此目标发送的最近 50 次尝试，最新的在前。"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:63
-#, elixir-autogen, elixir-format
-msgid "The old secret stays valid until %{time} UTC."
-msgstr "旧密钥在 %{time} UTC 之前仍然有效。"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.ex:148
 #, elixir-autogen, elixir-format
@@ -14765,27 +14716,21 @@ msgstr "自页面加载以来此目标已更改。请重试。"
 msgid "This destination is no longer waiting on a rejected batch."
 msgstr "此目标已不再因被拒绝的批次而等待。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:192
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:193
 #, elixir-autogen, elixir-format
 msgid "This event will not be sent to this destination. It stays in the audit log and in exports."
 msgid_plural "These %{count} events will not be sent to this destination. They stay in the audit log and in exports."
 msgstr[0] "这 %{count} 个事件不会发送到此目标。它们仍保留在审计日志和导出中。"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:202
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:203
 #, elixir-autogen, elixir-format
 msgid "Too old for Datadog"
 msgstr "对 Datadog 来说太旧"
 
-#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:213
+#: lib/kanban_web/live/org_live/audit_stream_destination_view.ex:214
 #, elixir-autogen, elixir-format
 msgid "Will retry"
 msgstr "将重试"
-
-#: lib/kanban_web/live/org_live/audit_stream_destination.ex:143
-#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:334
-#, elixir-autogen, elixir-format
-msgid "You can rotate the signing secret again after %{time} UTC."
-msgstr "您可以在 %{time} UTC 之后再次轮换签名密钥。"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:53
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex:41
@@ -15577,3 +15522,46 @@ msgstr "星期二"
 msgctxt "weekday name"
 msgid "Wednesday"
 msgstr "星期三"
+
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:148
+#, elixir-autogen, elixir-format
+msgid "%{age} · %{time}"
+msgstr "%{age} · %{time}"
+
+#: lib/kanban_web/live/org_live/audit_streaming_row.ex:69
+#, elixir-autogen, elixir-format
+msgid "%{count} event will never reach this destination (%{first} to %{last}). Open it to see and dismiss the gap."
+msgid_plural "%{count} events will never reach this destination (%{first} to %{last}). Open it to see and dismiss the gap."
+msgstr[0] "有 %{count} 个事件永远不会到达此目标（%{first} 至 %{last}）。打开它以查看并忽略该缺口。"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:395
+#, elixir-autogen, elixir-format
+msgid "%{first} to %{last}"
+msgstr "%{first} 至 %{last}"
+
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:45
+#: lib/kanban_web/live/org_live/audit_log.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "Date filters cover whole days in Coordinated Universal Time, as exports record them."
+msgstr "日期筛选按协调世界时的整天计算，与导出记录的方式一致。"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Security events recorded for %{name}, newest first."
+msgstr "为 %{name} 记录的安全事件，按时间倒序排列。"
+
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Security events recorded on this instance, newest first."
+msgstr "此实例记录的安全事件，按时间倒序排列。"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "The old secret stays valid until %{time}."
+msgstr "旧密钥在 %{time} 之前仍然有效。"
+
+#: lib/kanban_web/live/org_live/audit_stream_destination.ex:143
+#: lib/kanban_web/live/org_live/audit_stream_destination.html.heex:334
+#, elixir-autogen, elixir-format
+msgid "You can rotate the signing secret again after %{time}."
+msgstr "您可以在 %{time} 之后再次轮换签名密钥。"

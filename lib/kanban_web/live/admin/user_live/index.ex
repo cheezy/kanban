@@ -13,6 +13,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   alias Kanban.Boards
   alias Kanban.Metrics.UserActivity
   alias Kanban.Tasks
+  alias KanbanWeb.LocalTime
 
   @impl true
   def mount(_params, _session, socket) do
@@ -241,12 +242,11 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   end
 
   # metrics_events has no Ecto schema, so last_activity arrives as a
-  # NaiveDateTime rather than a cast DateTime. Both are matched; anything else
-  # (including nil, for a user with no activity) renders the placeholder.
-  defp format_last_activity(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %d, %Y %H:%M")
-
-  defp format_last_activity(%NaiveDateTime{} = ndt),
-    do: Calendar.strftime(ndt, "%b %d, %Y %H:%M")
+  # NaiveDateTime (UTC) rather than a cast DateTime. Both are matched and shown
+  # in the viewer's zone and language; anything else (including nil, for a user
+  # with no activity) renders the placeholder.
+  defp format_last_activity(%DateTime{} = dt), do: LocalTime.format(dt, :datetime)
+  defp format_last_activity(%NaiveDateTime{} = ndt), do: LocalTime.format(ndt, :datetime)
 
   defp format_last_activity(_last_activity), do: gettext("N/A")
 
@@ -258,7 +258,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp display_name(_user), do: "—"
 
   defp format_created(%{inserted_at: inserted_at}),
-    do: Calendar.strftime(inserted_at, "%b %d, %Y")
+    do: LocalTime.format(inserted_at, :short_date)
 
   defp disabled?(%{disabled_at: nil}), do: false
   defp disabled?(_user), do: true

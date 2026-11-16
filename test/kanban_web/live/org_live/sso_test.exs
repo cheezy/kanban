@@ -168,7 +168,7 @@ defmodule KanbanWeb.OrgLive.SSOTest do
 
       {:ok, lv, _html} = live(conn, ~p"/org/sso")
       assert has_element?(lv, "#sso-domain-#{domain.id}-verified")
-      assert has_element?(lv, "#sso-domain-#{domain.id}-failing", "since 2026-10-20")
+      assert has_element?(lv, "#sso-domain-#{domain.id}-failing", "since Oct 20, 2026")
       assert has_element?(lv, "#sso-domain-#{domain.id}-failing", "the next 2 checks")
       assert has_element?(lv, "#sso-domain-#{domain.id}-value")
 
