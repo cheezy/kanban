@@ -53,6 +53,8 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
   alias Kanban.Metrics.Workspace
+  alias Kanban.Timezone
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.MetricsAgentLeaderboard
   alias KanbanWeb.MetricsCumulativeFlow
   alias KanbanWeb.MetricsCycleTimeChart
@@ -192,7 +194,15 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     |> assign(:throughput_series, overview.throughput_series)
     |> assign(:leaderboard, overview.leaderboard)
     |> assign(:flow_snapshots, overview.flow_snapshots)
-    |> assign(:window_label, window_label(window_days, boards, selected_ids))
+    |> assign(
+      :window_label,
+      window_label(
+        window_days,
+        boards,
+        selected_ids,
+        Map.get(socket.assigns, :timezone, "Etc/UTC")
+      )
+    )
   end
 
   @impl true
@@ -540,10 +550,12 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     end
   end
 
-  defp window_label(window_days, boards, selected_ids) do
-    today = Date.utc_today()
+  # The window ends on the viewer's local today, the same day the series buckets
+  # end on, and both ends are localised short dates.
+  defp window_label(window_days, boards, selected_ids, timezone) do
+    today = Timezone.local_today(timezone)
     start = Date.add(today, -(window_days - 1))
-    range = "#{Calendar.strftime(start, "%b %-d")} – #{Calendar.strftime(today, "%b %-d")}"
+    range = "#{LocalTime.format(start, :month_day)} – #{LocalTime.format(today, :month_day)}"
 
     "#{range} · #{board_scope_label(boards, selected_ids)}"
   end

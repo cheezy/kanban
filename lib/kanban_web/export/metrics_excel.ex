@@ -358,7 +358,9 @@ defmodule KanbanWeb.MetricsExcelExport do
   defp safe_text(s), do: s
 
   defp format_datetime_cell(nil), do: gettext("N/A")
-  defp format_datetime_cell(datetime), do: Helpers.format_datetime(datetime)
+  # Exports keep their existing UTC cell text; only the on-screen metrics are
+  # localised to the viewer's zone and language.
+  defp format_datetime_cell(datetime), do: Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
 
   defp format_time_cell(nil), do: gettext("N/A")
   defp format_time_cell(seconds), do: Helpers.format_time(seconds)

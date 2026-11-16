@@ -64,6 +64,33 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert :sys.get_state(view.pid).socket.assigns.timezone == "Etc/UTC"
     end
 
+    test "the window label ends on the viewer's local today, in the current locale",
+         %{conn: conn} do
+      # Kiritimati (UTC+14) and Pago Pago (UTC-11) are 25 hours apart, so their
+      # local calendar days always differ.
+      labels =
+        for zone <- ["Pacific/Kiritimati", "Pacific/Pago_Pago"] do
+          {:ok, view, html} =
+            conn
+            |> Plug.Test.init_test_session(%{"timezone" => zone, "locale" => "de"})
+            |> live(~p"/metrics")
+
+          window_days = :sys.get_state(view.pid).socket.assigns.selected_window_days
+          today = Kanban.Timezone.local_today(zone)
+
+          label =
+            Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+              start = KanbanWeb.LocalTime.format(Date.add(today, -(window_days - 1)), :month_day)
+              "#{start} – #{KanbanWeb.LocalTime.format(today, :month_day)}"
+            end)
+
+          assert html =~ label
+          label
+        end
+
+      assert Enum.uniq(labels) == labels
+    end
+
     test "renders no decorative placeholder toolbar buttons — only the working selectors",
          %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/metrics")

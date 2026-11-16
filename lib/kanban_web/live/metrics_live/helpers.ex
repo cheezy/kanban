@@ -19,6 +19,8 @@ defmodule KanbanWeb.MetricsLive.Helpers do
 
   use Gettext, backend: KanbanWeb.Gettext
 
+  alias KanbanWeb.LocalTime
+
   alias Kanban.Timezone
 
   @doc """
@@ -70,23 +72,16 @@ defmodule KanbanWeb.MetricsLive.Helpers do
 
   def format_time_hours(_), do: "N/A"
 
-  def format_datetime(nil), do: "N/A"
+  @doc """
+  A localised short date for a metrics label, through `KanbanWeb.LocalTime`.
 
-  def format_datetime(datetime) do
-    Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
-  end
-
-  def format_date(nil), do: "N/A"
-
-  def format_date(date) do
-    Calendar.strftime(date, "%b %d, %Y")
-  end
-
-  def format_time_only(nil), do: "N/A"
-
-  def format_time_only(datetime) do
-    Calendar.strftime(datetime, "%I:%M %p")
-  end
+  A `Date` (a local-day bucket) is formatted but never shifted; a `DateTime`
+  is shifted to the viewer's zone first. `nil` renders a translated "N/A".
+  Timestamps that sit in the page as a `<time>` element use the
+  `<.local_time>` component instead.
+  """
+  def format_date(nil), do: gettext("N/A")
+  def format_date(value), do: LocalTime.format(value, :short_date)
 
   # Local-calendar-day windows anchored to the viewer's `timezone` (default
   # "Etc/UTC" for back-compat): `:today` anchors to the viewer's local midnight,

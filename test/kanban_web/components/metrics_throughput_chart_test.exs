@@ -17,10 +17,10 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
     """)
   end
 
-  # The "%b %-d" label for a point `days_ago` before today (the trailing window
-  # the throughput chart derives its x-axis from).
+  # The :month_day label for a point `days_ago` before today (the trailing
+  # window the throughput chart derives its x-axis from).
   defp day_label(days_ago) do
-    Date.utc_today() |> Date.add(-days_ago) |> Calendar.strftime("%b %-d")
+    Date.utc_today() |> Date.add(-days_ago) |> KanbanWeb.LocalTime.format(:month_day)
   end
 
   describe "throughput_chart/1 — markers and structure" do
@@ -285,6 +285,41 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
       # The skipped weekend must not appear.
       refute html =~ "Jan 31"
       refute html =~ "Feb 1"
+    end
+
+    test "localises the date labels to the current locale" do
+      dates = [~D[2026-01-30], ~D[2026-02-02], ~D[2026-02-03]]
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_chart_with_dates([1, 2, 3], dates)
+        end)
+
+      assert html =~ "30. Jan."
+      assert html =~ "3. Feb."
+      refute html =~ "Feb 3"
+
+      ja_html =
+        Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+          render_chart_with_dates([1, 2, 3], dates)
+        end)
+
+      assert ja_html =~ "2月3日"
+    end
+
+    test "the fallback window ends on the viewer's local today" do
+      # Kiritimati (UTC+14) and Pago Pago (UTC-11) are 25 hours apart, so their
+      # local calendar days always differ.
+      labels =
+        for zone <- ["Pacific/Kiritimati", "Pacific/Pago_Pago"] do
+          KanbanWeb.LocalTime.put_timezone(zone)
+          label = zone |> Kanban.Timezone.local_today() |> KanbanWeb.LocalTime.format(:month_day)
+          # One point, so the only label is the window's last day.
+          assert render_chart([1]) =~ label
+          label
+        end
+
+      assert Enum.uniq(labels) == labels
     end
 
     test "falls back to consecutive days when no dates are supplied" do

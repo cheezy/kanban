@@ -14,6 +14,8 @@ defmodule KanbanWeb.MetricsLive.Components.TrendChart do
 
   import KanbanWeb.MetricsLive.Components.Icon
 
+  alias KanbanWeb.LocalTime
+
   @doc """
   Renders an SVG trend chart with optional trend line.
   """
@@ -139,7 +141,7 @@ defmodule KanbanWeb.MetricsLive.Components.TrendChart do
                   font-size="11"
                   font-family="var(--font-mono)"
                 >
-                  {Calendar.strftime(day.date, "%m/%d")}
+                  {LocalTime.format(day.date, :month_day)}
                 </text>
               <% end %>
             <% end %>

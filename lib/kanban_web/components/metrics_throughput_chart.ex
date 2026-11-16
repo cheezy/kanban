@@ -19,6 +19,9 @@ defmodule KanbanWeb.MetricsThroughputChart do
   """
   use KanbanWeb, :html
 
+  alias Kanban.Timezone
+  alias KanbanWeb.LocalTime
+
   @view_w 600
   @view_h 140
   @top_padding_px 20
@@ -292,13 +295,13 @@ defmodule KanbanWeb.MetricsThroughputChart do
   defp point_dates(dates, total) when is_list(dates) and length(dates) == total, do: dates
 
   defp point_dates(_dates, total) do
-    today = Date.utc_today()
+    today = Timezone.local_today(LocalTime.timezone())
     Enum.map(0..(total - 1)//1, &Date.add(today, -(total - 1 - &1)))
   end
 
   defp date_label({x, _y}, date, index, total) do
     %{
-      label: Calendar.strftime(date, "%b %-d"),
+      label: LocalTime.format(date, :month_day),
       left_pct: Float.round(x / @view_w * 100, 2),
       shift_x: label_shift_x(index, total)
     }

@@ -83,12 +83,14 @@
             <span>
               {if @board.ai_optimized_board,
                 do: gettext("Claimed:"),
-                else: gettext("Started:")} {format_datetime(task.claimed_at)}
+                else: gettext("Started:")}
+              <.local_time value={task.claimed_at} style={:short_datetime} />
             </span>
           </span>
           <span style="display: inline-flex; align-items: center; gap: 4px;">
             <.icon name="hero-clock" class="h-3 w-3" />
-            <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
+            <span>{gettext("Completed:")}
+            <.local_time value={task.completed_at} style={:short_datetime} /></span>
           </span>
           <span
             :if={@board.ai_optimized_board}

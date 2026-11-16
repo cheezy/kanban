@@ -92,11 +92,12 @@
           <:task_metadata :let={task}>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <.icon name="hero-check-circle" class="h-3 w-3" />
-              <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
+              <span>{gettext("Completed:")}
+              <.local_time value={task.completed_at} style={:short_datetime} /></span>
             </span>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <.icon name="hero-clock" class="h-3 w-3" />
-              <span>{gettext("Reviewed:")} {format_time(task.reviewed_at)}</span>
+              <span>{gettext("Reviewed:")} <.local_time value={task.reviewed_at} style={:time} /></span>
             </span>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <.icon name="hero-user-circle" class="h-3 w-3" />
@@ -162,14 +163,16 @@
           <:task_metadata :let={task}>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <.icon name="hero-plus-circle" class="h-3 w-3" />
-              <span>{gettext("Created:")} {format_datetime(task.inserted_at)}</span>
+              <span>{gettext("Created:")}
+              <.local_time value={task.inserted_at} style={:short_datetime} /></span>
             </span>
             <span style="display: inline-flex; align-items: center; gap: 4px;">
               <.icon name="hero-clock" class="h-3 w-3" />
               <span>
                 {if @board.ai_optimized_board,
                   do: gettext("Claimed:"),
-                  else: gettext("Started:")} {format_datetime(task.claimed_at)}
+                  else: gettext("Started:")}
+                <.local_time value={task.claimed_at} style={:short_datetime} />
               </span>
             </span>
             <span

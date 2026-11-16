@@ -489,7 +489,7 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/cycle-time")
 
       assert html =~ "text-anchor=\"middle\""
-      assert html =~ ~r/\d{2}\/\d{2}/
+      assert html =~ ~r/>\s*[A-Z][a-z]{2} \d{1,2}\s*<\/text>/
     end
 
     test "chart calculates daily averages for multiple tasks on same day", %{

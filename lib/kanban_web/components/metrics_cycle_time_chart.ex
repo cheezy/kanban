@@ -27,6 +27,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.LocalTime.Names
   alias KanbanWeb.MetricsLive.Helpers
   alias KanbanWeb.MetricsYAxisScale
 
@@ -346,17 +347,15 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
     tick / chart_max * 100
   end
 
-  # Returns the first letter of the localized weekday name. Mirrors the
-  # design's single-letter axis (`'M', 'T', 'W', ...`).
+  # Returns the first letter of the localized weekday abbreviation. Mirrors the
+  # design's single-letter axis (`'M', 'T', 'W', ...`). Chinese abbreviations
+  # carry a leading "周" ("week") shared by every day, so it is dropped first.
   defp day_letter(%Date{} = date) do
-    case Date.day_of_week(date) do
-      1 -> "M"
-      2 -> "T"
-      3 -> "W"
-      4 -> "T"
-      5 -> "F"
-      6 -> "S"
-      7 -> "S"
-    end
+    date
+    |> Date.day_of_week()
+    |> Names.weekday_abbr()
+    |> String.trim_leading("周")
+    |> String.first()
+    |> String.upcase()
   end
 end

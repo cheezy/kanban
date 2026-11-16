@@ -30,7 +30,16 @@ defmodule KanbanWeb.LocalTimeComponent do
 
   attr :style, :atom,
     default: :datetime,
-    values: [:datetime, :date, :short_date, :short_datetime, :time, :month_year, :weekday_date]
+    values: [
+      :datetime,
+      :date,
+      :short_date,
+      :short_datetime,
+      :month_day,
+      :time,
+      :month_year,
+      :weekday_date
+    ]
 
   attr :rest, :global
 

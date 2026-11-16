@@ -78,11 +78,13 @@
         <:task_metadata :let={task}>
           <span style="display: inline-flex; align-items: center; gap: 4px;">
             <.icon name="hero-plus-circle" class="h-3 w-3" />
-            <span>{gettext("Created:")} {format_datetime(task.inserted_at)}</span>
+            <span>{gettext("Created:")}
+            <.local_time value={task.inserted_at} style={:short_datetime} /></span>
           </span>
           <span style="display: inline-flex; align-items: center; gap: 4px;">
             <.icon name="hero-clock" class="h-3 w-3" />
-            <span>{gettext("Completed:")} {format_datetime(task.completed_at)}</span>
+            <span>{gettext("Completed:")}
+            <.local_time value={task.completed_at} style={:short_datetime} /></span>
           </span>
           <span
             :if={@board.ai_optimized_board}

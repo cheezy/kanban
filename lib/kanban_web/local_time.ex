@@ -26,6 +26,7 @@ defmodule KanbanWeb.LocalTime do
   | `:date`           | `November 10, 2026`              |
   | `:short_date`     | `Nov 10, 2026`                   |
   | `:short_datetime` | `Nov 10, 6:56 PM`                |
+  | `:month_day`      | `Nov 10`                         |
   | `:time`           | `6:56 PM`                        |
   | `:month_year`     | `November 2026`                  |
   | `:weekday_date`   | `Tue, Nov 10`                    |
@@ -39,12 +40,22 @@ defmodule KanbanWeb.LocalTime do
   @default "Etc/UTC"
   @key {__MODULE__, :timezone}
 
-  @styles [:datetime, :date, :short_date, :short_datetime, :time, :month_year, :weekday_date]
+  @styles [
+    :datetime,
+    :date,
+    :short_date,
+    :short_datetime,
+    :month_day,
+    :time,
+    :month_year,
+    :weekday_date
+  ]
 
   @ja_zh %{
     datetime: "%Y年%-m月%-d日 %H:%M",
     date: "%Y年%-m月%-d日",
     short_datetime: "%-m月%-d日 %H:%M",
+    month_day: "%-m月%-d日",
     month_year: "%Y年%-m月",
     time: "%H:%M",
     weekday_date: "%-m月%-d日 (%a)"
@@ -58,6 +69,7 @@ defmodule KanbanWeb.LocalTime do
       date: "%B %-d, %Y",
       short_date: "%b %-d, %Y",
       short_datetime: "%b %-d, %-I:%M %p",
+      month_day: "%b %-d",
       time: "%-I:%M %p",
       month_year: "%B %Y",
       weekday_date: "%a, %b %-d"
@@ -67,6 +79,7 @@ defmodule KanbanWeb.LocalTime do
       date: "%-d. %B %Y",
       short_date: "%-d. %b %Y",
       short_datetime: "%-d. %b, %H:%M",
+      month_day: "%-d. %b",
       time: "%H:%M",
       month_year: "%B %Y",
       weekday_date: "%a, %-d. %b"
@@ -76,6 +89,7 @@ defmodule KanbanWeb.LocalTime do
       date: "%-d de %B de %Y",
       short_date: "%-d %b %Y",
       short_datetime: "%-d %b, %H:%M",
+      month_day: "%-d %b",
       time: "%H:%M",
       month_year: "%B de %Y",
       weekday_date: "%a %-d %b"
@@ -85,6 +99,7 @@ defmodule KanbanWeb.LocalTime do
       date: "%-d %B %Y",
       short_date: "%-d %b %Y",
       short_datetime: "%-d %b à %H:%M",
+      month_day: "%-d %b",
       time: "%H:%M",
       month_year: "%B %Y",
       weekday_date: "%a %-d %b"
@@ -94,6 +109,7 @@ defmodule KanbanWeb.LocalTime do
       date: "%-d de %B de %Y",
       short_date: "%-d de %b de %Y",
       short_datetime: "%-d de %b, %H:%M",
+      month_day: "%-d de %b",
       time: "%H:%M",
       month_year: "%B de %Y",
       weekday_date: "%a, %-d %b"
@@ -103,7 +119,14 @@ defmodule KanbanWeb.LocalTime do
   }
 
   @type style ::
-          :datetime | :date | :short_date | :short_datetime | :time | :month_year | :weekday_date
+          :datetime
+          | :date
+          | :short_date
+          | :short_datetime
+          | :month_day
+          | :time
+          | :month_year
+          | :weekday_date
   @type value :: DateTime.t() | NaiveDateTime.t() | Date.t() | nil
 
   @doc """

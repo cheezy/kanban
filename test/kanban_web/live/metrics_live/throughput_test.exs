@@ -8,6 +8,7 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Tasks
+  alias KanbanWeb.LocalTime
 
   describe "Throughput - Basic Display" do
     setup [:register_and_log_in_user, :create_board_with_column]
@@ -826,7 +827,8 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
 
-      assert html =~ "02:30 PM"
+      assert html =~ "2:30 PM"
+      refute html =~ "02:30 PM"
     end
 
     test "displays empty state when no grouped tasks", %{conn: conn, board: board} do
@@ -866,15 +868,201 @@ defmodule KanbanWeb.MetricsLive.ThroughputTest do
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/throughput")
 
-      today_formatted = Calendar.strftime(today, "%b %d, %Y")
-      yesterday_formatted = Calendar.strftime(yesterday, "%b %d, %Y")
-      two_days_ago_formatted = Calendar.strftime(two_days_ago, "%b %d, %Y")
+      today_formatted = LocalTime.format(today, :short_date)
+      yesterday_formatted = LocalTime.format(yesterday, :short_date)
+      two_days_ago_formatted = LocalTime.format(two_days_ago, :short_date)
 
       assert html =~ today_formatted
       assert html =~ yesterday_formatted
       assert html =~ two_days_ago_formatted
 
       assert html =~ "1 task"
+    end
+  end
+
+  describe "Throughput - Local time" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    @path_suffix "/metrics/throughput"
+
+    defp local_day_task(column, completed_at, attrs \\ %{}) do
+      task = task_fixture(column, %{title: "Local Time Task"})
+
+      {:ok, task} =
+        complete_task(
+          task,
+          Map.merge(
+            %{completed_at: completed_at, claimed_at: DateTime.add(completed_at, -3600)},
+            attrs
+          )
+        )
+
+      task
+    end
+
+    defp task_list_html(view), do: view |> element("[data-metric-task-list]") |> render()
+
+    test "renders timestamps in the viewer's timezone", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      completed_at = Date.utc_today() |> Date.add(-3) |> DateTime.new!(~T[23:56:00])
+      local_day_task(column, completed_at)
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto"})
+        |> live(~p"/boards/#{board}" <> @path_suffix)
+
+      panel = task_list_html(view)
+
+      assert panel =~ LocalTime.format(completed_at, :short_datetime, "America/Toronto")
+      refute panel =~ "11:56 PM"
+    end
+
+    test "rolls a late-evening timestamp back to the local day", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      day = Date.add(Date.utc_today(), -3)
+      local_day_task(column, DateTime.new!(day, ~T[02:30:00]))
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Los_Angeles"})
+        |> live(~p"/boards/#{board}" <> @path_suffix)
+
+      panel = task_list_html(view)
+
+      assert panel =~ day |> Date.add(-1) |> LocalTime.format(:short_date)
+      refute panel =~ LocalTime.format(day, :short_date)
+    end
+
+    test "falls back to UTC for an unknown zone", %{conn: conn, board: board, column: column} do
+      completed_at = Date.utc_today() |> Date.add(-3) |> DateTime.new!(~T[23:56:00])
+      local_day_task(column, completed_at)
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "Mars/Olympus_Mons"})
+        |> put_connect_params(%{"timezone" => "Mars/Olympus_Mons"})
+        |> live(~p"/boards/#{board}" <> @path_suffix)
+
+      panel = task_list_html(view)
+
+      assert panel =~ LocalTime.format(completed_at, :short_datetime, "Etc/UTC")
+      assert panel =~ "11:56 PM"
+    end
+
+    test "renders nothing for a nil timestamp", %{conn: conn, board: board, column: column} do
+      completed_at = Date.utc_today() |> Date.add(-3) |> DateTime.new!(~T[12:00:00])
+      local_day_task(column, completed_at, %{claimed_at: nil})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}" <> @path_suffix)
+
+      panel = task_list_html(view)
+
+      assert panel =~ "Claimed:"
+      # Created and Completed render a <time>; the nil Claimed renders none.
+      assert length(Regex.scan(~r/<time /, panel)) == 2
+      refute panel =~ "N/A"
+    end
+
+    test "uses the session timezone and locale on mount", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      completed_at = Date.utc_today() |> Date.add(-3) |> DateTime.new!(~T[23:56:00])
+      local_day_task(column, completed_at)
+
+      conn =
+        Plug.Test.init_test_session(conn, %{"timezone" => "America/Toronto", "locale" => "de"})
+
+      path = ~p"/boards/#{board}" <> @path_suffix
+
+      expected =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          LocalTime.format(completed_at, :short_datetime, "America/Toronto")
+        end)
+
+      assert html_response(get(conn, path), 200) =~ expected
+
+      {:ok, view, _html} = live(conn, path)
+      assert task_list_html(view) =~ expected
+    end
+
+    test "keeps an ISO 8601 UTC datetime attribute", %{conn: conn, board: board, column: column} do
+      completed_at = Date.utc_today() |> Date.add(-3) |> DateTime.new!(~T[23:56:00])
+      local_day_task(column, completed_at)
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"timezone" => "America/Toronto"})
+        |> live(~p"/boards/#{board}" <> @path_suffix)
+
+      panel = task_list_html(view)
+
+      assert panel =~ ~s(datetime="#{DateTime.to_iso8601(completed_at)}")
+      assert panel =~ ~r/title="[^"]+ E[SD]T"/
+      refute panel =~ ~r/title="[^"]+ UTC"/
+    end
+
+    test "metrics pages in pt render Portuguese short dates on every chart", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      day = Date.add(Date.utc_today(), -3)
+      local_day_task(column, DateTime.new!(day, ~T[12:00:00]))
+      conn = Plug.Test.init_test_session(conn, %{"locale" => "pt"})
+
+      # Each static render runs the locale plug in this test process, so both
+      # expectations pin their locale explicitly.
+      pt = fn value, style ->
+        Gettext.with_locale(KanbanWeb.Gettext, "pt", fn -> LocalTime.format(value, style) end)
+      end
+
+      en = fn value, style ->
+        Gettext.with_locale(KanbanWeb.Gettext, "en", fn -> LocalTime.format(value, style) end)
+      end
+
+      # The cycle-time and lead-time trend charts label the bucket day.
+      for page <- ["/metrics/cycle-time", "/metrics/lead-time"] do
+        {:ok, view, _html} = live(conn, ~p"/boards/#{board}" <> page)
+        chart = view |> element("[data-metric-trend-chart]") |> render()
+        assert chart =~ pt.(day, :month_day), page
+        refute chart =~ en.(day, :month_day), page
+      end
+
+      # The throughput page's per-day rows use the pt short date.
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}" <> @path_suffix)
+      assert render(view) =~ pt.(day, :short_date)
+
+      # The workspace charts' axis always labels the window's last day.
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+      chart = view |> element("[data-metrics-throughput-chart]") |> render()
+      today = Date.utc_today()
+      assert chart =~ pt.(today, :month_day)
+      refute chart =~ en.(today, :month_day)
+    end
+
+    test "renders Portuguese short dates in pt", %{conn: conn, board: board, column: column} do
+      day = Date.add(Date.utc_today(), -3)
+      local_day_task(column, DateTime.new!(day, ~T[12:00:00]))
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "pt"})
+        |> live(~p"/boards/#{board}" <> @path_suffix)
+
+      expected =
+        Gettext.with_locale(KanbanWeb.Gettext, "pt", fn -> LocalTime.format(day, :short_date) end)
+
+      assert expected =~ " de "
+      assert task_list_html(view) =~ expected
     end
   end
 

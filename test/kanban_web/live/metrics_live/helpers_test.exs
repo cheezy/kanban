@@ -68,36 +68,43 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
     end
   end
 
-  describe "format_datetime/1" do
-    test "formats DateTime with proper format" do
-      datetime = ~U[2024-03-15 14:30:00Z]
-      assert Helpers.format_datetime(datetime) == "Mar 15, 2024 02:30 PM"
-    end
-
-    test "returns N/A for nil" do
-      assert Helpers.format_datetime(nil) == "N/A"
-    end
-  end
-
   describe "format_date/1" do
     test "formats Date with proper format" do
       date = ~D[2024-03-15]
       assert Helpers.format_date(date) == "Mar 15, 2024"
     end
 
+    test "does not zero-pad the day" do
+      assert Helpers.format_date(~D[2024-03-05]) == "Mar 5, 2024"
+    end
+
+    test "never shifts a Date to the viewer's zone" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+      assert Helpers.format_date(~D[2024-03-15]) == "Mar 15, 2024"
+    end
+
+    test "shifts a DateTime to the viewer's zone" do
+      KanbanWeb.LocalTime.put_timezone("America/Los_Angeles")
+      assert Helpers.format_date(~U[2024-03-15 02:30:00Z]) == "Mar 14, 2024"
+    end
+
+    test "follows the current locale" do
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert Helpers.format_date(~D[2024-03-15]) == "15. März 2024"
+      end)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+        assert Helpers.format_date(~D[2024-03-15]) == "2024/03/15"
+      end)
+    end
+
     test "returns N/A for nil" do
       assert Helpers.format_date(nil) == "N/A"
     end
-  end
 
-  describe "format_time_only/1" do
-    test "formats DateTime to time only" do
-      datetime = ~U[2024-03-15 14:30:00Z]
-      assert Helpers.format_time_only(datetime) == "02:30 PM"
-    end
-
-    test "returns N/A for nil" do
-      assert Helpers.format_time_only(nil) == "N/A"
+    test "returns a translated N/A for nil" do
+      assert Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> Helpers.format_date(nil) end) ==
+               "k. A."
     end
   end
 

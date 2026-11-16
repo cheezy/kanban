@@ -723,7 +723,36 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         />
         """)
 
-      assert html =~ "01/15"
+      assert html =~ "Jan 15"
+      refute html =~ "01/15"
+    end
+
+    test "localises chart date labels" do
+      assigns = %{
+        daily_times: [%{date: ~D[2024-01-15], average_hours: 1.0}],
+        format_fn: fn hours -> "#{hours}h" end
+      }
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          rendered_to_string(~H"""
+          <TrendChart.trend_chart
+            title="Chart"
+            subtitle="Sub"
+            daily_times={@daily_times}
+            format_fn={@format_fn}
+            empty_message="No data"
+          />
+          """)
+        end)
+
+      expected =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          KanbanWeb.LocalTime.format(~D[2024-01-15], :month_day)
+        end)
+
+      assert expected =~ "15."
+      assert html =~ expected
     end
 
     test "uses stride-screen theme tokens" do

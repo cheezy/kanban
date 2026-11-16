@@ -900,6 +900,72 @@ defmodule Kanban.Metrics.WorkspaceTest do
     end
   end
 
+  describe "throughput_daily/1 — a 90-day window across a DST change" do
+    # The window always ends on the local today, so no fixed zone crosses a DST
+    # change on every run date. Take the first of these zones (east of UTC first,
+    # so a UTC-day bucketing error also shows) whose trailing 90 days do; in the
+    # few weeks a year when none does, the property is still checked in Berlin.
+    @dst_zones [
+      "Europe/Berlin",
+      "Australia/Sydney",
+      "Africa/Cairo",
+      "America/New_York",
+      "America/Santiago"
+    ]
+
+    defp offset_at_noon(date, tz) do
+      dt = DateTime.new!(date, ~T[12:00:00], tz)
+      dt.utc_offset + dt.std_offset
+    end
+
+    defp dst_change_in_window(tz, days) do
+      today = Kanban.Timezone.local_today(tz)
+      dates = Enum.map((-days + 1)..-2//1, &Date.add(today, &1))
+
+      dates
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.find_value(fn [prev, day] ->
+        if offset_at_noon(prev, tz) != offset_at_noon(day, tz), do: day
+      end)
+    end
+
+    test "keeps one bar per local day, and buckets completions either side of the change" do
+      %{column: column, scope: scope} = ws_setup()
+
+      {tz, change} =
+        Enum.find_value(@dst_zones, {"Europe/Berlin", nil}, fn tz ->
+          if day = dst_change_in_window(tz, 90), do: {tz, day}
+        end)
+
+      dates = Kanban.Metrics.Workspace.Windows.day_range(90, tz)
+      assert length(dates) == 90
+
+      assert dates
+             |> Enum.chunk_every(2, 1, :discard)
+             |> Enum.all?(fn [a, b] -> Date.diff(b, a) == 1 end)
+
+      # Half past local midnight: an hour's offset error moves it to another day.
+      days =
+        if change,
+          do: [Date.add(change, -1), change, Date.add(change, 1)],
+          else: Enum.slice(dates, 1, 3)
+
+      for day <- days do
+        at = day |> Kanban.Timezone.start_of_local_day(tz) |> DateTime.add(30 * 60, :second)
+        {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{completed_at: at})
+      end
+
+      counts = Workspace.throughput_daily(scope: scope, timezone: tz, window_days: 90)
+      assert length(counts) == 90
+
+      for day <- days do
+        assert Enum.at(counts, Date.diff(day, hd(dates))) == 1, "#{tz} #{day}"
+      end
+
+      assert Enum.sum(counts) == 3
+    end
+  end
+
   describe "cross-timezone correctness audit (W1268)" do
     test "workspace cycle-time median is zone-independent for mid-window completions" do
       %{column: column, scope: scope} = ws_setup()

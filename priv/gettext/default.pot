@@ -2291,8 +2291,8 @@ msgstr ""
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
 #: lib/kanban_web/export/workspace_metrics_excel.ex:113
-#: lib/kanban_web/live/metrics_live/workspace.ex:205
-#: lib/kanban_web/live/metrics_live/workspace.ex:227
+#: lib/kanban_web/live/metrics_live/workspace.ex:215
+#: lib/kanban_web/live/metrics_live/workspace.ex:237
 #: lib/kanban_web/live/task_live/view_component.ex:339
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2303,11 +2303,11 @@ msgstr ""
 msgid "Agent Filter"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:98
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:92
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:335
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:103
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:180
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:100
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:94
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:342
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:104
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "Agent Unknown"
 msgstr ""
@@ -2320,7 +2320,7 @@ msgid "All Agents"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/components/filters.ex:90
-#: lib/kanban_web/live/metrics_live/helpers.ex:39
+#: lib/kanban_web/live/metrics_live/helpers.ex:41
 #, elixir-autogen, elixir-format
 msgid "All Time"
 msgstr ""
@@ -2361,20 +2361,20 @@ msgid "Backlog"
 msgstr ""
 
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:207
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:133
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Time"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:319
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:171
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:324
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "Claimed:"
 msgstr ""
 
 #: lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:255
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:250
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:252
 #, elixir-autogen, elixir-format
 msgid "Completed Goals"
 msgstr ""
@@ -2384,24 +2384,24 @@ msgstr ""
 #: lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:276
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:72
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:70
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:299
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:303
 #, elixir-autogen, elixir-format
 msgid "Completed Tasks"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:91
-#: lib/kanban_web/live/metrics_live/lead_time.html.heex:85
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:285
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:323
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:92
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:86
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:287
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:329
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Completed:"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:290
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:312
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:165
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:293
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:316
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Created:"
 msgstr ""
@@ -2438,7 +2438,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
 #: lib/kanban_web/live/metrics_live/components/filters.ex:142
-#: lib/kanban_web/live/metrics_live/workspace.ex:402
+#: lib/kanban_web/live/metrics_live/workspace.ex:412
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr ""
@@ -2455,12 +2455,12 @@ msgstr ""
 msgid "Filters"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:253
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:255
 #, elixir-autogen, elixir-format
 msgid "Goals completed in this time range"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:300
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:304
 #, elixir-autogen, elixir-format
 msgid "Grouped by completion date"
 msgstr ""
@@ -2480,21 +2480,21 @@ msgstr ""
 msgid "Human bottleneck analysis"
 msgstr ""
 
-#: lib/kanban_web/export/metrics_excel.ex:371
+#: lib/kanban_web/export/metrics_excel.ex:373
 #: lib/kanban_web/live/metrics_live/components/filters.ex:84
-#: lib/kanban_web/live/metrics_live/helpers.ex:37
+#: lib/kanban_web/live/metrics_live/helpers.ex:39
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/components/filters.ex:81
-#: lib/kanban_web/live/metrics_live/helpers.ex:36
+#: lib/kanban_web/live/metrics_live/helpers.ex:38
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/components/filters.ex:87
-#: lib/kanban_web/live/metrics_live/helpers.ex:38
+#: lib/kanban_web/live/metrics_live/helpers.ex:40
 #, elixir-autogen, elixir-format
 msgid "Last 90 Days"
 msgstr ""
@@ -2539,12 +2539,12 @@ msgid "Min"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/components.ex:185
-#: lib/kanban_web/live/metrics_live/components/trend_chart.ex:171
+#: lib/kanban_web/live/metrics_live/components/trend_chart.ex:173
 #, elixir-autogen, elixir-format
 msgid "No data available"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:158
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "No tasks claimed in this time range"
 msgstr ""
@@ -2552,12 +2552,12 @@ msgstr ""
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:78
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:76
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:199
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:306
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:310
 #, elixir-autogen, elixir-format
 msgid "No tasks completed in this time range"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:159
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "No tasks started in this time range"
 msgstr ""
@@ -2594,7 +2594,7 @@ msgstr ""
 msgid "Queue"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:134
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Time"
 msgstr ""
@@ -2629,13 +2629,13 @@ msgstr ""
 msgid "Review Wait Time"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:99
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "Reviewed:"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:86
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:172
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Started:"
 msgstr ""
@@ -2686,12 +2686,12 @@ msgstr ""
 msgid "Time from start to completion"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:139
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the backlog before being claimed"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:140
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the queue before work begins"
 msgstr ""
@@ -2705,7 +2705,7 @@ msgstr ""
 #: lib/kanban_web/components/agent_roster_card.ex:246
 #: lib/kanban_web/components/agents_header.ex:444
 #: lib/kanban_web/live/metrics_live/components/filters.ex:79
-#: lib/kanban_web/live/metrics_live/helpers.ex:35
+#: lib/kanban_web/live/metrics_live/helpers.ex:37
 #, elixir-autogen, elixir-format
 msgid "Today"
 msgstr ""
@@ -3168,7 +3168,7 @@ msgstr ""
 msgid "Assignee does not have access to this board"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:148
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
 msgstr ""
@@ -3205,7 +3205,7 @@ msgstr ""
 msgid "Please wait a moment before submitting another issue."
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:149
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
 msgstr ""
@@ -4271,7 +4271,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:88
-#: lib/kanban_web/live/metrics_live/workspace.ex:203
+#: lib/kanban_web/live/metrics_live/workspace.ex:213
 #: lib/kanban_web/live/my_work_live.ex:37
 #: lib/kanban_web/live/notification_live/index.html.heex:3
 #: lib/kanban_web/live/review_live.html.heex:3
@@ -5344,19 +5344,19 @@ msgstr ""
 msgid "idea → done"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:266
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:267
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:38
 #: lib/kanban_web/export/workspace_metrics_excel.ex:92
 #, elixir-autogen, elixir-format
 msgid "Cycle time · daily median (min)"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:80
+#: lib/kanban_web/components/metrics_throughput_chart.ex:83
 #, elixir-autogen, elixir-format
 msgid "Throughput sparkline"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:63
+#: lib/kanban_web/components/metrics_throughput_chart.ex:66
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:48
 #: lib/kanban_web/export/workspace_metrics_excel.ex:160
 #, elixir-autogen, elixir-format
@@ -5387,12 +5387,12 @@ msgstr ""
 
 #: lib/kanban_web/components/agents_header.ex:432
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:581
-#: lib/kanban_web/live/metrics_live/workspace.ex:564
+#: lib/kanban_web/live/metrics_live/workspace.ex:576
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:556
+#: lib/kanban_web/live/metrics_live/workspace.ex:568
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr ""
@@ -6485,8 +6485,9 @@ msgstr ""
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:197
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:302
 #: lib/kanban_web/export/metrics_excel.ex:360
-#: lib/kanban_web/export/metrics_excel.ex:363
+#: lib/kanban_web/export/metrics_excel.ex:365
 #: lib/kanban_web/live/admin/user_live/index.ex:251
+#: lib/kanban_web/live/metrics_live/helpers.ex:83
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr ""
@@ -7129,28 +7130,28 @@ msgid "Cycle time · today"
 msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:583
-#: lib/kanban_web/live/metrics_live/workspace.ex:558
+#: lib/kanban_web/live/metrics_live/workspace.ex:570
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:565
+#: lib/kanban_web/live/metrics_live/workspace.ex:577
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:582
-#: lib/kanban_web/live/metrics_live/workspace.ex:557
+#: lib/kanban_web/live/metrics_live/workspace.ex:569
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:341
+#: lib/kanban_web/live/metrics_live/workspace.ex:351
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:66
+#: lib/kanban_web/components/metrics_throughput_chart.ex:69
 #, elixir-autogen, elixir-format
 msgid "%{count} days"
 msgstr ""
@@ -7163,7 +7164,7 @@ msgid "Agents · last %{count} days"
 msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:569
-#: lib/kanban_web/live/metrics_live/workspace.ex:439
+#: lib/kanban_web/live/metrics_live/workspace.ex:449
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr ""
@@ -7175,7 +7176,7 @@ msgid "No completions in the last %{count} days."
 msgstr ""
 
 #: lib/kanban_web/components/agents_header.ex:441
-#: lib/kanban_web/live/metrics_live/workspace.ex:421
+#: lib/kanban_web/live/metrics_live/workspace.ex:431
 #, elixir-autogen, elixir-format
 msgid "Time range"
 msgstr ""
@@ -7187,7 +7188,7 @@ msgstr ""
 msgid "vs prev %{count}d"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:111
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:112
 #, elixir-autogen, elixir-format
 msgid "last %{count} days"
 msgstr ""
@@ -8040,7 +8041,7 @@ msgstr ""
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:45
 #: lib/kanban_web/export/workspace_metrics_excel.ex:93
-#: lib/kanban_web/live/metrics_live/workspace.ex:263
+#: lib/kanban_web/live/metrics_live/workspace.ex:273
 #, elixir-autogen, elixir-format
 msgid "Lead time · daily median (min)"
 msgstr ""
@@ -8511,7 +8512,7 @@ msgstr ""
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:481
+#: lib/kanban_web/live/metrics_live/workspace.ex:491
 #, elixir-autogen, elixir-format
 msgid "Show Done"
 msgstr ""

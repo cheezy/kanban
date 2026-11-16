@@ -371,6 +371,21 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
       # 2026-05-02 is a Saturday — letter "S"
       assert html =~ ~r/>\s*S\s*</
     end
+
+    test "localises the weekday letter to the current locale" do
+      de = Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> render_chart(data()) end)
+      # 2026-05-04 is a Monday and 2026-05-05 a Tuesday — "Mo." and "Di."
+      assert de =~ ~r/>\s*D\s*</
+
+      zh = Gettext.with_locale(KanbanWeb.Gettext, "zh", fn -> render_chart(data()) end)
+      # "周五" (Friday) drops the shared "周" prefix
+      assert zh =~ ~r/>\s*五\s*</
+      refute zh =~ ~r/>\s*周\s*</
+
+      ja = Gettext.with_locale(KanbanWeb.Gettext, "ja", fn -> render_chart(data()) end)
+      assert ja =~ ~r/>\s*金\s*</
+      refute ja =~ ~r/>\s*F\s*</
+    end
   end
 
   describe "cycle_time_chart/1 — degenerate data" do

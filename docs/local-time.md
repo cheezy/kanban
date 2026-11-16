@@ -36,6 +36,7 @@ ignores the process zone. Both functions follow these rules:
 | `:date`           | `November 10, 2026`            | `10. November 2026`        | `2026年11月10日`       |
 | `:short_date`     | `Nov 10, 2026`                 | `10. Nov. 2026`            | `2026/11/10`         |
 | `:short_datetime` | `Nov 10, 6:56 PM`              | `10. Nov., 18:56`          | `11月10日 18:56`       |
+| `:month_day`      | `Nov 10`                       | `10. Nov.`                 | `11月10日`             |
 | `:time`           | `6:56 PM`                      | `18:56`                    | `18:56`              |
 | `:month_year`     | `November 2026`                | `November 2026`            | `2026年11月`          |
 | `:weekday_date`   | `Tue, Nov 10`                  | `Di., 10. Nov.`            | `11月10日 (火)`        |
