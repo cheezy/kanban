@@ -2480,7 +2480,7 @@ msgstr "Gruppiert nach Abschlussdatum mit Durchlaufzeit-Metriken"
 msgid "Human bottleneck analysis"
 msgstr "Engpassanalyse"
 
-#: lib/kanban_web/export/metrics_excel.ex:397
+#: lib/kanban_web/export/metrics_excel.ex:398
 #: lib/kanban_web/live/metrics_live/components/filters.ex:84
 #: lib/kanban_web/live/metrics_live/helpers.ex:39
 #, elixir-autogen, elixir-format
@@ -6576,8 +6576,8 @@ msgstr "ist bei einem durchgeführten Review erforderlich: das strukturierte Fel
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:263
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:204
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:313
-#: lib/kanban_web/export/metrics_excel.ex:374
-#: lib/kanban_web/export/metrics_excel.ex:389
+#: lib/kanban_web/export/metrics_excel.ex:375
+#: lib/kanban_web/export/metrics_excel.ex:390
 #: lib/kanban_web/live/admin/user_live/index.ex:251
 #: lib/kanban_web/live/metrics_live/helpers.ex:83
 #, elixir-autogen, elixir-format
