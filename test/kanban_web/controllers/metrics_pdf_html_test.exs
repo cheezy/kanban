@@ -146,7 +146,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ t("Last 30 Days")
       assert html =~ t("All Agents")
       assert html =~ t("Weekends Included")
-      assert html =~ "Jan 15, 2024"
+      assert html =~ "January 15, 2024 at 10:00 AM"
     end
 
     test "renders throughput template with agent filter" do
@@ -200,7 +200,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "My Board"
       assert html =~ t("Cycle Time Metrics")
       assert html =~ t("Last 90 Days")
-      assert html =~ "Jan 15, 2024"
+      assert html =~ "January 15, 2024 at 10:00 AM"
     end
 
     test "renders cycle_time template with agent filter" do
@@ -254,7 +254,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "Project Board"
       assert html =~ t("Lead Time Metrics")
       assert html =~ t("Last 30 Days")
-      assert html =~ "Jan 15, 2024"
+      assert html =~ "January 15, 2024 at 10:00 AM"
     end
 
     test "renders lead_time template with custom time range" do
@@ -307,8 +307,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ t("Lead Time Trend")
       assert html =~ "<svg"
       assert html =~ "<polyline"
-      assert html =~ "Jan 01"
-      assert html =~ "Jan 03"
+      assert html =~ "<span>Jan 1</span>"
+      assert html =~ "<span>Jan 3</span>"
       # Uses green theme for lead time
       assert html =~ "stroke=\"#10b981\""
     end
@@ -562,7 +562,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ t("Wait Time Metrics")
       assert html =~ t("Last 7 Days")
       assert html =~ t("Weekends Excluded")
-      assert html =~ "Jan 15, 2024"
+      assert html =~ "January 15, 2024 at 10:00 AM"
     end
 
     # D161: regular boards have no review step, so get_wait_time_stats/2 hands
@@ -658,7 +658,22 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assigns = throughput_assigns(%{generated_at: ~U[2024-03-15 14:30:45Z]})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
-      assert html =~ "Mar 15, 2024"
+      assert html =~ "March 15, 2024 at 2:30 PM"
+    end
+
+    test "format_datetime shifts a timestamp into the timezone assign" do
+      assigns =
+        throughput_assigns(%{generated_at: ~U[2024-03-15 23:30:00Z], timezone: "Asia/Tokyo"})
+
+      html = render_to_string(MetricsPdfHTML.throughput(assigns))
+      assert html =~ "March 16, 2024 at 8:30 AM"
+      assert html =~ "Times shown in Asia/Tokyo"
+      refute html =~ "March 15, 2024 at 11:30 PM"
+    end
+
+    test "the zone header defaults to UTC when no timezone assign is given" do
+      html = %{} |> throughput_assigns() |> MetricsPdfHTML.throughput() |> render_to_string()
+      assert html =~ "Times shown in Etc/UTC"
     end
 
     test "agent_filter_label shows agent name when present" do
@@ -1064,8 +1079,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ t("Cycle Time Trend")
       assert html =~ "<svg"
       assert html =~ "<polyline"
-      assert html =~ "Jan 01"
-      assert html =~ "Jan 03"
+      assert html =~ "<span>Jan 1</span>"
+      assert html =~ "<span>Jan 3</span>"
     end
 
     test "renders line chart with single data point" do

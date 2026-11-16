@@ -133,7 +133,10 @@
       </div>
       <div>
         <span class="meta-label">{gettext("Generated:")}</span>
-        <span class="meta-value">{format_datetime(@generated_at)}</span>
+        <span class="meta-value">{format_datetime(@generated_at, @timezone)}</span>
+      </div>
+      <div>
+        <span class="meta-value">{times_shown_in(@timezone)}</span>
       </div>
     </div>
 
@@ -260,9 +263,9 @@
             <span class="goal-title">{goal.title}</span>
           </div>
           <div class="goal-meta">
-            {gettext("Completed: %{value}", value: format_datetime(goal.completed_at))} • {gettext(
+            {gettext("Completed: %{value}", value: format_datetime(goal.completed_at, @timezone))} • {gettext(
               "Created: %{value}",
-              value: format_datetime(goal.inserted_at)
+              value: format_datetime(goal.inserted_at, @timezone)
             )}
             <%= if goal.completed_by_agent do %>
               • {gettext("Agent: %{value}", value: goal.completed_by_agent)}
@@ -292,11 +295,17 @@
                 <% end %>
               </div>
               <div class="task-meta">
-                <span>{gettext("Created: %{value}", value: format_datetime(task.inserted_at))}</span>
+                <span>{gettext("Created: %{value}",
+                  value: format_datetime(task.inserted_at, @timezone)
+                )}</span>
                 <%= if task.claimed_at do %>
-                  <span>{gettext("Claimed: %{value}", value: format_datetime(task.claimed_at))}</span>
+                  <span>{gettext("Claimed: %{value}",
+                    value: format_datetime(task.claimed_at, @timezone)
+                  )}</span>
                 <% end %>
-                <span>{gettext("Completed: %{value}", value: format_datetime(task.completed_at))}</span>
+                <span>{gettext("Completed: %{value}",
+                  value: format_datetime(task.completed_at, @timezone)
+                )}</span>
               </div>
             </div>
           <% end %>

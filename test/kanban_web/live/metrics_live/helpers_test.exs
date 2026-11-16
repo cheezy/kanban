@@ -68,6 +68,23 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
     end
   end
 
+  describe "times_shown_in/1" do
+    test "names a valid zone" do
+      assert Helpers.times_shown_in("Asia/Tokyo") == "Times shown in Asia/Tokyo"
+    end
+
+    test "prints UTC for an invalid or missing zone, never the raw value" do
+      assert Helpers.times_shown_in("<b>Not/AZone</b>") == "Times shown in Etc/UTC"
+      assert Helpers.times_shown_in(nil) == "Times shown in Etc/UTC"
+    end
+
+    test "follows the current locale" do
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert Helpers.times_shown_in("Asia/Tokyo") == "Zeiten in Asia/Tokyo"
+      end)
+    end
+  end
+
   describe "format_date/1" do
     test "formats Date with proper format" do
       date = ~D[2024-03-15]

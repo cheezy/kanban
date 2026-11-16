@@ -77,4 +77,39 @@ defmodule KanbanWeb.Timezone do
   end
 
   def parse_timezone(_tz), do: :error
+
+  @doc """
+  The zone `tz` names when `parse_timezone/1` accepts it, and `"Etc/UTC"`
+  otherwise.
+
+  Use it wherever a zone is printed or shifted into, so only a validated value
+  ever reaches `DateTime.shift_zone/2` or a rendered document.
+  """
+  @spec resolve_timezone(term()) :: String.t()
+  def resolve_timezone(tz) do
+    case parse_timezone(tz) do
+      {:ok, zone} -> zone
+      :error -> "Etc/UTC"
+    end
+  end
+
+  @doc """
+  The zone a controller request should be rendered in.
+
+  `session_timezone` is the session's `"timezone"`, which
+  `KanbanWeb.Plugs.Timezone` has already refreshed from a valid `stride_tz`
+  cookie, so it follows the plug's cookie-then-session order. When it is
+  missing or invalid, the request's `"timezone"` param is used, and `"Etc/UTC"`
+  when that is missing or invalid too.
+
+  Unlike `KanbanWeb.LocalTime.timezone/0`, which reports `"Etc/UTC"` whether or
+  not a zone was supplied, this lets an explicit param act as a fallback.
+  """
+  @spec request_timezone(term(), map() | nil) :: String.t()
+  def request_timezone(session_timezone, params) do
+    case parse_timezone(session_timezone) do
+      {:ok, zone} -> zone
+      :error -> validate_timezone(params)
+    end
+  end
 end

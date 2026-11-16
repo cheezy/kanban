@@ -40,11 +40,14 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
       context reads as an empty selection and answers with a zero report — it
       must NOT collapse back to `nil`, which would silently widen the export to
       every board the user can see.
-    * `timezone` — `KanbanWeb.Timezone.validate_timezone/1`, falling back to
-      `"Etc/UTC"` only when absent or unknown. The page reads this from the
-      browser via socket connect params; a controller has no socket, so the
-      export link carries it. Without it the export's day boundaries would
-      silently disagree with the on-screen charts.
+    * `timezone` — `KanbanWeb.Timezone.request_timezone/2`: the session zone
+      `KanbanWeb.Plugs.Timezone` stored from the browser's `stride_tz` cookie
+      first, then this param, falling back to `"Etc/UTC"` only when both are
+      absent or unknown. The page reads its zone from the browser via socket
+      connect params; a controller has no socket, so the export link still
+      carries it as the fallback. Without a zone the export's day boundaries
+      would silently disagree with the on-screen charts. Every date in the
+      export is shown in this zone, and the export header names it.
     * `exclude_weekends` — `Helpers.parse_exclude_weekends/1`.
     * `format` — `"excel"` selects the workbook; anything else (including
       absent) yields PDF, mirroring the board export. One action serves both.
@@ -67,7 +70,7 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
     format = export_format(params)
 
     Kanban.Telemetry.span([:kanban, :export], %{kind: :workspace_metrics, format: format}, fn ->
-      opts = build_export_opts(conn.assigns.current_scope, params)
+      opts = build_export_opts(conn.assigns.current_scope, params, get_session(conn, :timezone))
       assigns = build_report_assigns(opts)
       conn = dispatch_format(conn, format, assigns)
       {conn, %{kind: :workspace_metrics, format: format}}
@@ -81,13 +84,13 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   # without driving a real renderer. Mirrors the reference controller's
   # `@doc false`-but-public error handler.
   @doc false
-  def build_export_opts(scope, params) do
+  def build_export_opts(scope, params, session_timezone \\ nil) do
     [
       scope: scope,
       board_ids: parse_board_ids(params),
       window_days: Helpers.parse_window_days(params["window_days"]),
       exclude_weekends: Helpers.parse_exclude_weekends(params["exclude_weekends"]),
-      timezone: KanbanWeb.Timezone.validate_timezone(params)
+      timezone: KanbanWeb.Timezone.request_timezone(session_timezone, params)
     ]
   end
 

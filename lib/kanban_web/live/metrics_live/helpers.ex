@@ -83,6 +83,19 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   def format_date(nil), do: gettext("N/A")
   def format_date(value), do: LocalTime.format(value, :short_date)
 
+  @doc """
+  The translated export header line naming the zone an export's times are
+  shown in.
+
+  `zone` is user input (a cookie, session or query param), so it is validated
+  through `KanbanWeb.Timezone.resolve_timezone/1` first: only a zone the tz
+  database accepts is printed, and anything else reads as `Etc/UTC`.
+  """
+  @spec times_shown_in(term()) :: String.t()
+  def times_shown_in(zone) do
+    gettext("Times shown in %{zone}", zone: KanbanWeb.Timezone.resolve_timezone(zone))
+  end
+
   # Local-calendar-day windows anchored to the viewer's `timezone` (default
   # "Etc/UTC" for back-compat): `:today` anchors to the viewer's local midnight,
   # and `:last_7_days` includes the last 7 calendar days (today + 6 prior), each

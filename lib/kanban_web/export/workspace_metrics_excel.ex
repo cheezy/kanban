@@ -110,7 +110,9 @@ defmodule KanbanWeb.WorkspaceMetricsExcelExport do
       |> WorkspaceMetricsPdfHTML.filter_rows()
       |> Enum.map(fn {label, value} -> [[label | @bold], value] end)
 
-    [title_row(gettext("Metrics"))] ++ filters ++ [[]]
+    zone_row = [WorkspaceMetricsPdfHTML.times_shown_in(assigns.timezone)]
+
+    [title_row(gettext("Metrics"))] ++ filters ++ [zone_row, []]
   end
 
   # Values are the FORMATTED strings `kpi_cards/2` produces, so the export reads
@@ -233,8 +235,10 @@ defmodule KanbanWeb.WorkspaceMetricsExcelExport do
   defp cell_value(_), do: ""
 
   # Elixlsx has no %Date{} cell type — handing it one raises at write time — so
-  # dates are written as ISO 8601 text, which sorts correctly as a string and is
-  # unambiguous in every locale.
-  defp date_cell(%Date{} = date), do: Date.to_iso8601(date)
+  # a date is written as an Erlang date-time at midnight with Elixlsx's date-only
+  # number format: a real, sortable date cell displayed in a fixed ISO
+  # "yyyy-mm-dd" format, the same in every locale. The dates are already
+  # local-day buckets in the requester's zone, so they are not shifted.
+  defp date_cell(%Date{} = date), do: [{Date.to_erl(date), {0, 0, 0}}, yyyymmdd: true]
   defp date_cell(_), do: ""
 end

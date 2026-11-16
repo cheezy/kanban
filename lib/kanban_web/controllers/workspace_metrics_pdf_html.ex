@@ -82,6 +82,7 @@ defmodule KanbanWeb.WorkspaceMetricsPdfHTML do
   use KanbanWeb, :html
 
   alias KanbanWeb.Duration
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.MetricsCumulativeFlow
   alias KanbanWeb.MetricsYAxisScale
 
@@ -570,7 +571,7 @@ defmodule KanbanWeb.WorkspaceMetricsPdfHTML do
        window_range_label(assigns.window_days, assigns.generated_at, assigns.timezone)},
       {gettext("Exclude Weekends"), yes_no(assigns.exclude_weekends)},
       {gettext("Time zone"), assigns.timezone},
-      {gettext("Generated"), format_datetime(assigns.generated_at)}
+      {gettext("Generated"), format_datetime(assigns.generated_at, assigns.timezone)}
     ]
   end
 
@@ -650,12 +651,15 @@ defmodule KanbanWeb.WorkspaceMetricsPdfHTML do
   def format_delta(_delta), do: "—"
 
   @doc false
-  def format_short_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d")
+  def format_short_date(%Date{} = date), do: LocalTime.format(date, :month_day, "Etc/UTC")
   def format_short_date(_date), do: ""
 
   @doc false
-  def format_datetime(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M UTC")
-  def format_datetime(_at), do: ""
+  def format_datetime(%DateTime{} = at, zone), do: LocalTime.format(at, :datetime, zone)
+  def format_datetime(_at, _zone), do: ""
+
+  @doc false
+  def times_shown_in(zone), do: KanbanWeb.MetricsLive.Helpers.times_shown_in(zone)
 
   @doc """
   The document's stylesheet.

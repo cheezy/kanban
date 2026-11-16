@@ -405,6 +405,46 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
 
       refute ahead_disposition == behind_disposition
     end
+
+    test "a valid session timezone wins over the timezone param", %{scope: scope} do
+      opts =
+        WorkspaceMetricsExportController.build_export_opts(
+          scope,
+          %{"timezone" => "Pacific/Midway"},
+          "Europe/Berlin"
+        )
+
+      assert opts[:timezone] == "Europe/Berlin"
+    end
+
+    test "an invalid session timezone falls back to the timezone param", %{scope: scope} do
+      opts =
+        WorkspaceMetricsExportController.build_export_opts(
+          scope,
+          %{"timezone" => "Pacific/Midway"},
+          "Not/AZone"
+        )
+
+      assert opts[:timezone] == "Pacific/Midway"
+    end
+
+    test "the export uses the zone the Timezone plug stored for the request",
+         %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+
+      conn =
+        conn
+        |> put_req_cookie("stride_tz", "Pacific%2FKiritimati")
+        |> get(~p"/metrics/export?format=excel&timezone=Pacific/Midway")
+
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+
+      assert disposition =~
+               "Pacific/Kiritimati" |> Kanban.Timezone.local_today() |> Date.to_string()
+
+      assert zip_entry(conn.resp_body, ~c"xl/sharedStrings.xml") =~
+               "Times shown in Pacific/Kiritimati"
+    end
   end
 
   describe "empty workspace" do

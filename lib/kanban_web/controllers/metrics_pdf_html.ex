@@ -28,7 +28,30 @@ defmodule KanbanWeb.MetricsPdfHTML do
 
   use KanbanWeb, :html
 
+  alias KanbanWeb.LocalTime
+  alias KanbanWeb.MetricsLive.Helpers
+
   embed_templates "metrics_pdf_html/*"
+
+  # Each report is declared bodyless (the body is its embedded template) so the
+  # `timezone` assign — the requester's validated zone, which every timestamp is
+  # shifted into and the header names — defaults to UTC for a caller that
+  # predates it.
+  @doc "Renders the cycle-time report as printable HTML."
+  attr :timezone, :string, default: "Etc/UTC"
+  def cycle_time(assigns)
+
+  @doc "Renders the lead-time report as printable HTML."
+  attr :timezone, :string, default: "Etc/UTC"
+  def lead_time(assigns)
+
+  @doc "Renders the throughput report as printable HTML."
+  attr :timezone, :string, default: "Etc/UTC"
+  def throughput(assigns)
+
+  @doc "Renders the wait-time report as printable HTML."
+  attr :timezone, :string, default: "Etc/UTC"
+  def wait_time(assigns)
 
   def shared_pdf_css do
     # NOTE: ChromicPDF drives Chrome's Page.printToPDF, which does not implement
@@ -85,17 +108,17 @@ defmodule KanbanWeb.MetricsPdfHTML do
     """
   end
 
+  # Every caller passes a local-day `Date` bucket, which LocalTime never shifts,
+  # so the zone argument is immaterial; the locale still applies.
   defp format_date(nil), do: gettext("N/A")
+  defp format_date(date), do: LocalTime.format(date, :short_date, "Etc/UTC")
 
-  defp format_date(date) do
-    Calendar.strftime(date, "%b %d, %Y")
-  end
+  # A timestamp is shifted into the requester's zone and written in the
+  # request's locale.
+  defp format_datetime(nil, _zone), do: gettext("N/A")
+  defp format_datetime(datetime, zone), do: LocalTime.format(datetime, :datetime, zone)
 
-  defp format_datetime(nil), do: gettext("N/A")
-
-  defp format_datetime(datetime) do
-    Calendar.strftime(datetime, "%b %d, %Y %I:%M %p")
-  end
+  defp times_shown_in(zone), do: Helpers.times_shown_in(zone)
 
   defp format_time(seconds) do
     KanbanWeb.MetricsLive.Helpers.format_time(seconds)
@@ -122,9 +145,7 @@ defmodule KanbanWeb.MetricsPdfHTML do
     Float.round(count / peak * 100, 1)
   end
 
-  defp format_short_date(date) do
-    Calendar.strftime(date, "%b %d")
-  end
+  defp format_short_date(date), do: LocalTime.format(date, :month_day, "Etc/UTC")
 
   defp line_chart_points(daily_times, chart_width, chart_height, max_val) when max_val > 0 do
     count = length(daily_times)

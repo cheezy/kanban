@@ -93,7 +93,10 @@
       </div>
       <div>
         <span class="meta-label">{gettext("Generated:")}</span>
-        <span class="meta-value">{format_datetime(@generated_at)}</span>
+        <span class="meta-value">{format_datetime(@generated_at, @timezone)}</span>
+      </div>
+      <div>
+        <span class="meta-value">{times_shown_in(@timezone)}</span>
       </div>
     </div>
 
@@ -192,8 +195,12 @@
                   <span class="task-wait-time">{format_time(task.review_wait_seconds)}</span>
                 </div>
                 <div class="task-meta">
-                  <span>{gettext("Completed: %{value}", value: format_datetime(task.completed_at))}</span>
-                  <span>{gettext("Reviewed: %{value}", value: format_datetime(task.reviewed_at))}</span>
+                  <span>{gettext("Completed: %{value}",
+                    value: format_datetime(task.completed_at, @timezone)
+                  )}</span>
+                  <span>{gettext("Reviewed: %{value}",
+                    value: format_datetime(task.reviewed_at, @timezone)
+                  )}</span>
                   <span>{task.completed_by_agent || gettext("N/A")}</span>
                 </div>
               </div>
@@ -297,8 +304,12 @@
                   </span>
                 </div>
                 <div class="task-meta">
-                  <span>{gettext("Created: %{value}", value: format_datetime(task.inserted_at))}</span>
-                  <span>{gettext("Claimed: %{value}", value: format_datetime(task.claimed_at))}</span>
+                  <span>{gettext("Created: %{value}",
+                    value: format_datetime(task.inserted_at, @timezone)
+                  )}</span>
+                  <span>{gettext("Claimed: %{value}",
+                    value: format_datetime(task.claimed_at, @timezone)
+                  )}</span>
                   <span>{task.completed_by_agent || gettext("N/A")}</span>
                 </div>
               </div>

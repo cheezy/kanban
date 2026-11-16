@@ -8,6 +8,8 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
   import Kanban.TelemetryHelpers
 
   alias Kanban.Tasks
+  alias KanbanWeb.LocalTime
+  alias KanbanWeb.MetricsPdfController
 
   setup do
     user = user_fixture()
@@ -1084,6 +1086,181 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
 
       # Marks the conn as a redirect.
       assert response_conn.status == 302
+    end
+  end
+
+  describe "export/2 - requester's timezone and language (W2734)" do
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      %{board: board, column: column}
+    end
+
+    @pdf_opts [time_range: :last_7_days, exclude_weekends: false]
+
+    # 23:30 UTC two days ago: 08:30 the NEXT day in Asia/Tokyo (UTC+9, no DST),
+    # so a UTC rendering and a local one differ in both the time and the day.
+    defp late_utc_completion(column) do
+      completed_at = Date.utc_today() |> Date.add(-2) |> DateTime.new!(~T[23:30:00], "Etc/UTC")
+      task = task_fixture(column)
+
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          claimed_at: DateTime.add(completed_at, -3600, :second),
+          completed_at: completed_at
+        })
+
+      {task, completed_at}
+    end
+
+    defp local_day_string(zone), do: zone |> Kanban.Timezone.local_today() |> Date.to_string()
+
+    defp xlsx_entry(xlsx, path) do
+      {:ok, handle} = :zip.zip_open(xlsx, [:memory])
+      {:ok, {_path, xml}} = :zip.zip_get(path, handle)
+      :zip.zip_close(handle)
+      to_string(xml)
+    end
+
+    test "renders local localised dates", %{board: board, column: column} do
+      {_task, completed_at} = late_utc_completion(column)
+      zone = "Asia/Tokyo"
+      local_day = Kanban.Timezone.local_date(completed_at, zone)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        html = MetricsPdfController.pdf_html(board, "cycle-time", @pdf_opts ++ [timezone: zone])
+
+        assert html =~ LocalTime.format(completed_at, :datetime, zone)
+        refute html =~ LocalTime.format(completed_at, :datetime, "Etc/UTC")
+        # The day heading is the local day the local timestamp falls on.
+        assert html =~ LocalTime.format(local_day, :short_date, "Etc/UTC")
+        assert html =~ "Zeiten in Asia/Tokyo"
+      end)
+    end
+
+    test "names the file by the local day", %{
+      conn: conn,
+      user: user,
+      column: column,
+      board: board
+    } do
+      late_utc_completion(column)
+
+      # Kiritimati (UTC+14) and Midway (UTC-11) are 25 hours apart, so their
+      # local dates always differ, whenever this runs.
+      ahead =
+        conn
+        |> put_session(:timezone, "Pacific/Kiritimati")
+        |> get(~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      behind =
+        build_conn()
+        |> log_in_user(user)
+        |> put_session(:timezone, "Pacific/Midway")
+        |> get(~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      assert [ahead_disposition] = get_resp_header(ahead, "content-disposition")
+      assert [behind_disposition] = get_resp_header(behind, "content-disposition")
+
+      assert ahead_disposition =~ local_day_string("Pacific/Kiritimati")
+      assert behind_disposition =~ local_day_string("Pacific/Midway")
+      refute ahead_disposition == behind_disposition
+    end
+
+    test "falls back to UTC for an invalid zone", %{conn: conn, board: board, column: column} do
+      late_utc_completion(column)
+
+      conn =
+        get(
+          conn,
+          ~p"/boards/#{board}/metrics/throughput/export?format=excel&timezone=Not%2FAZone"
+        )
+
+      assert conn.status == 200
+      assert xlsx_entry(conn.resp_body, ~c"xl/sharedStrings.xml") =~ "Times shown in Etc/UTC"
+      refute xlsx_entry(conn.resp_body, ~c"xl/sharedStrings.xml") =~ "Not/AZone"
+      assert [disposition] = get_resp_header(conn, "content-disposition")
+      assert disposition =~ Date.to_string(Date.utc_today())
+
+      html =
+        MetricsPdfController.pdf_html(board, "throughput", @pdf_opts ++ [timezone: "Not/AZone"])
+
+      assert html =~ "Times shown in Etc/UTC"
+    end
+
+    test "prints the zone header with no rows", %{conn: conn, board: board} do
+      for metric <- ["throughput", "cycle-time", "lead-time", "wait-time"] do
+        html =
+          MetricsPdfController.pdf_html(board, metric, @pdf_opts ++ [timezone: "America/Toronto"])
+
+        assert html =~ "Times shown in America/Toronto"
+      end
+
+      conn =
+        conn
+        |> put_session(:timezone, "America/Toronto")
+        |> get(~p"/boards/#{board}/metrics/wait-time/export?format=excel")
+
+      assert xlsx_entry(conn.resp_body, ~c"xl/sharedStrings.xml") =~
+               "Times shown in America/Toronto"
+    end
+
+    test "uses the session timezone", %{conn: conn, board: board, column: column} do
+      late_utc_completion(column)
+
+      # The stride_tz cookie reaches the controller through the Timezone plug,
+      # and wins over the timezone param; the locale comes from the session
+      # through the Locale plug. Both are asserted end to end on the response.
+      tokyo_date = fn ->
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          LocalTime.format(DateTime.utc_now(), :date, "Asia/Tokyo")
+        end)
+      end
+
+      before = tokyo_date.()
+
+      conn =
+        conn
+        |> put_session(:locale, "de")
+        |> put_req_cookie("stride_tz", "Asia%2FTokyo")
+        |> get(
+          ~p"/boards/#{board}/metrics/throughput/export?format=excel&timezone=Pacific/Midway"
+        )
+
+      later = tokyo_date.()
+
+      assert conn.status == 200
+      strings = xlsx_entry(conn.resp_body, ~c"xl/sharedStrings.xml")
+      assert strings =~ "Zeiten in Asia/Tokyo"
+      refute strings =~ "Pacific/Midway"
+      # The Generated row is the German local date in Tokyo (re-read after the
+      # request so a Tokyo midnight between the two cannot flake the test).
+      assert strings =~ before or strings =~ later
+      assert before =~ ~r/^\d{1,2}\. \p{L}+ \d{4}$/u
+    end
+
+    test "writes Excel dates as date cells", %{conn: conn, board: board, column: column} do
+      {_task, completed_at} = late_utc_completion(column)
+
+      conn =
+        conn
+        |> put_session(:timezone, "Asia/Tokyo")
+        |> get(~p"/boards/#{board}/metrics/throughput/export?format=excel")
+
+      local =
+        completed_at
+        |> DateTime.shift_zone!("Asia/Tokyo")
+        |> DateTime.to_naive()
+        |> NaiveDateTime.to_erl()
+
+      {:excelts, serial} = Elixlsx.Util.to_excel_datetime(local)
+
+      assert xlsx_entry(conn.resp_body, ~c"xl/worksheets/sheet1.xml") =~ "<v>#{serial}</v>"
+      assert xlsx_entry(conn.resp_body, ~c"xl/styles.xml") =~ "yyyy-mm-dd h:mm:ss"
+
+      strings = xlsx_entry(conn.resp_body, ~c"xl/sharedStrings.xml")
+      refute strings =~ Calendar.strftime(completed_at, "%b %d, %Y")
+      refute strings =~ LocalTime.format(completed_at, :datetime, "Asia/Tokyo")
     end
   end
 end

@@ -57,6 +57,39 @@ defmodule KanbanWeb.TimezoneTest do
     end
   end
 
+  describe "resolve_timezone/1" do
+    test "returns a valid zone unchanged" do
+      assert Timezone.resolve_timezone("Asia/Tokyo") == "Asia/Tokyo"
+    end
+
+    test "falls back to UTC for an unknown, oversized or non-string zone" do
+      assert Timezone.resolve_timezone("Not/ARealZone") == "Etc/UTC"
+      assert Timezone.resolve_timezone("America/" <> String.duplicate("x", 57)) == "Etc/UTC"
+      assert Timezone.resolve_timezone(nil) == "Etc/UTC"
+    end
+  end
+
+  describe "request_timezone/2" do
+    test "prefers a valid session zone over the timezone param" do
+      assert Timezone.request_timezone("Europe/Berlin", %{"timezone" => "Pacific/Midway"}) ==
+               "Europe/Berlin"
+    end
+
+    test "falls back to the timezone param when the session zone is missing or invalid" do
+      assert Timezone.request_timezone(nil, %{"timezone" => "Pacific/Midway"}) ==
+               "Pacific/Midway"
+
+      assert Timezone.request_timezone("Not/AZone", %{"timezone" => "Pacific/Midway"}) ==
+               "Pacific/Midway"
+    end
+
+    test "falls back to UTC when neither source is valid" do
+      assert Timezone.request_timezone(nil, %{"timezone" => "Not/AZone"}) == "Etc/UTC"
+      assert Timezone.request_timezone(nil, %{}) == "Etc/UTC"
+      assert Timezone.request_timezone(nil, nil) == "Etc/UTC"
+    end
+  end
+
   describe "browser_timezone/1" do
     test "returns UTC on the static (disconnected) render" do
       assert Timezone.browser_timezone(%Phoenix.LiveView.Socket{}) == "Etc/UTC"

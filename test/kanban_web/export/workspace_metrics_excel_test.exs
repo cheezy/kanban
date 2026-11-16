@@ -89,6 +89,12 @@ defmodule KanbanWeb.WorkspaceMetricsExcelExportTest do
 
   defp strings(attrs \\ %{}), do: attrs |> generate() |> extract_entry(~c"xl/sharedStrings.xml")
 
+  # The spreadsheet serial Elixlsx writes for a date cell at midnight.
+  defp date_serial(%Date{} = date) do
+    {:excelts, serial} = Elixlsx.Util.to_excel_datetime({Date.to_erl(date), {0, 0, 0}})
+    serial
+  end
+
   defp sheet_xml(attrs \\ %{}),
     do: attrs |> generate() |> extract_entry(~c"xl/worksheets/sheet1.xml")
 
@@ -132,7 +138,15 @@ defmodule KanbanWeb.WorkspaceMetricsExcelExportTest do
       assert xml =~ "America/Toronto"
       assert xml =~ "Exclude Weekends"
       assert xml =~ "Generated"
-      assert xml =~ "2026-07-19"
+      # Generated is shown in the export's own zone and language.
+      assert xml =~ "July 19, 2026 at 8:00 AM"
+      assert xml =~ "Times shown in America/Toronto"
+    end
+
+    test "states the zone its times are shown in, translated" do
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert strings(%{timezone: "Asia/Tokyo"}) =~ "Zeiten in Asia/Tokyo"
+      end)
     end
 
     test "reports the board selection as a count for every scope shape" do
@@ -162,8 +176,11 @@ defmodule KanbanWeb.WorkspaceMetricsExcelExportTest do
   end
 
   describe "generate/1 — series sections" do
-    test "writes ISO dates and numeric minute cells" do
-      assert strings() =~ "2026-07-01"
+    test "writes dates as date cells and numeric minute cells" do
+      # A date is a numeric serial with a date-only number format, not text.
+      assert sheet_xml() =~ "<v>#{date_serial(~D[2026-07-01])}</v>"
+      assert generate() |> extract_entry(~c"xl/styles.xml") =~ "yyyy-mm-dd"
+      refute strings() =~ "2026-07-01"
 
       # Minutes are numeric cells, so they live inline in the sheet and are
       # absent from the shared-string table.
@@ -182,8 +199,11 @@ defmodule KanbanWeb.WorkspaceMetricsExcelExportTest do
 
       xml = strings(%{overview: overview(%{cycle_series: gapped, throughput_series: [4, 7]})})
 
-      assert xml =~ "2026-07-03"
-      assert xml =~ "2026-07-06"
+      sheet = sheet_xml(%{overview: overview(%{cycle_series: gapped, throughput_series: [4, 7]})})
+
+      refute xml =~ "2026-07-03"
+      assert sheet =~ "<v>#{date_serial(~D[2026-07-03])}</v>"
+      assert sheet =~ "<v>#{date_serial(~D[2026-07-06])}</v>"
     end
 
     test "writes an empty date cell when throughput outruns the borrowed dates" do

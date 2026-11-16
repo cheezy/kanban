@@ -6,6 +6,7 @@ defmodule KanbanWeb.MetricsPdfController do
   alias Kanban.Metrics.TaskQueries
   alias KanbanWeb.MetricsExcelExport
   alias KanbanWeb.MetricsLive.Helpers
+  alias KanbanWeb.Timezone
 
   require Logger
 
@@ -65,30 +66,38 @@ defmodule KanbanWeb.MetricsPdfController do
   end
 
   defp generate_and_send_pdf(conn, board, metric, params) do
-    opts = build_metric_options(params)
-    {:ok, agents} = Metrics.get_agents(board.id)
-    data = load_metric_data(metric, board.id, opts)
-
-    assigns = build_assigns(board, metric, opts, agents, data)
-    html_content = render_metric_html(metric, assigns)
+    opts = build_metric_options(conn, params)
+    html_content = pdf_html(board, metric, opts)
 
     case ChromicPDF.print_to_pdf({:html, html_content}, print_to_pdf: %{printBackground: true}) do
       {:ok, pdf_base64} ->
         pdf_binary = Base.decode64!(pdf_base64)
-        send_pdf_response(conn, board, metric, opts[:time_range], pdf_binary)
+        send_pdf_response(conn, board, metric, opts, pdf_binary)
 
       {:error, reason} ->
         handle_pdf_error(conn, board.id, metric, reason)
     end
   end
 
+  # The HTML the PDF is printed from, for `opts` as build_metric_options/2
+  # returns them. Exposed for testing, so a test can assert on the rendered
+  # dates without driving the headless renderer.
+  @doc false
+  def pdf_html(board, metric, opts) do
+    {:ok, agents} = Metrics.get_agents(board.id)
+    data = load_metric_data(metric, board.id, opts)
+
+    assigns = build_assigns(board, metric, opts, agents, data)
+    render_metric_html(metric, assigns)
+  end
+
   defp generate_and_send_excel(conn, board, metric, params) do
-    opts = build_metric_options(params)
+    opts = build_metric_options(conn, params)
     data = load_metric_data(metric, board.id, opts)
 
     case MetricsExcelExport.generate(board, metric, opts, data) do
       {:ok, excel_binary} ->
-        filename = generate_filename(board, metric, opts[:time_range], ".xlsx")
+        filename = generate_filename(board, metric, opts, ".xlsx")
 
         conn
         |> put_resp_content_type(
@@ -102,14 +111,19 @@ defmodule KanbanWeb.MetricsPdfController do
     end
   end
 
-  defp build_metric_options(params) do
+  # The zone is the session's (refreshed from the stride_tz cookie by
+  # KanbanWeb.Plugs.Timezone), then a `timezone` param, then UTC — validated
+  # either way, so only a known zone reaches the queries and formatters.
+  defp build_metric_options(conn, params) do
     time_range = Helpers.parse_time_range(params["time_range"])
     agent_name = Helpers.parse_agent_name(params["agent_name"])
     exclude_weekends = Helpers.parse_exclude_weekends(params["exclude_weekends"])
+    timezone = conn |> get_session(:timezone) |> Timezone.request_timezone(params)
 
     opts = [
       time_range: time_range,
-      exclude_weekends: exclude_weekends
+      exclude_weekends: exclude_weekends,
+      timezone: timezone
     ]
 
     if agent_name do
@@ -128,12 +142,13 @@ defmodule KanbanWeb.MetricsPdfController do
       exclude_weekends: opts[:exclude_weekends],
       agents: agents,
       data: data,
+      timezone: opts[:timezone],
       generated_at: DateTime.utc_now()
     }
   end
 
-  defp send_pdf_response(conn, board, metric, time_range, pdf_binary) do
-    filename = generate_filename(board, metric, time_range)
+  defp send_pdf_response(conn, board, metric, opts, pdf_binary) do
+    filename = generate_filename(board, metric, opts)
 
     conn
     |> put_resp_content_type("application/pdf")
@@ -165,7 +180,7 @@ defmodule KanbanWeb.MetricsPdfController do
     {:ok, throughput} = Metrics.get_throughput(board_id, opts)
     stats = calculate_throughput_stats(throughput)
     tasks = TaskQueries.get_throughput_tasks(board_id, opts)
-    grouped_tasks = group_tasks_by_field(tasks, :completed_at)
+    grouped_tasks = group_tasks_by_field(tasks, :completed_at, opts[:timezone])
     goals = TaskQueries.get_completed_goals(board_id, opts)
 
     %{
@@ -180,8 +195,10 @@ defmodule KanbanWeb.MetricsPdfController do
   defp load_metric_data("cycle-time", board_id, opts) do
     {:ok, stats} = Metrics.get_cycle_time_stats(board_id, opts)
     tasks = TaskQueries.get_cycle_time_tasks(board_id, opts)
-    grouped_tasks = Helpers.group_tasks_by_completion_date(tasks)
-    daily_cycle_times = Helpers.calculate_daily_times(tasks, :cycle_time_seconds)
+    grouped_tasks = Helpers.group_tasks_by_completion_date(tasks, opts[:timezone])
+
+    daily_cycle_times =
+      Helpers.calculate_daily_times(tasks, :cycle_time_seconds, opts[:timezone])
 
     %{
       summary_stats: stats,
@@ -194,8 +211,8 @@ defmodule KanbanWeb.MetricsPdfController do
   defp load_metric_data("lead-time", board_id, opts) do
     {:ok, stats} = Metrics.get_lead_time_stats(board_id, opts)
     tasks = TaskQueries.get_lead_time_tasks(board_id, opts)
-    grouped_tasks = Helpers.group_tasks_by_completion_date(tasks)
-    daily_lead_times = Helpers.calculate_daily_times(tasks, :lead_time_seconds)
+    grouped_tasks = Helpers.group_tasks_by_completion_date(tasks, opts[:timezone])
+    daily_lead_times = Helpers.calculate_daily_times(tasks, :lead_time_seconds, opts[:timezone])
 
     %{
       summary_stats: stats,
@@ -209,8 +226,8 @@ defmodule KanbanWeb.MetricsPdfController do
     {:ok, stats} = Metrics.get_wait_time_stats(board_id, opts)
     review_tasks = TaskQueries.get_review_wait_tasks(board_id, opts)
     backlog_tasks = TaskQueries.get_backlog_wait_tasks(board_id, opts)
-    grouped_review_tasks = group_tasks_by_field(review_tasks, :reviewed_at)
-    grouped_backlog_tasks = group_tasks_by_field(backlog_tasks, :claimed_at)
+    grouped_review_tasks = group_tasks_by_field(review_tasks, :reviewed_at, opts[:timezone])
+    grouped_backlog_tasks = group_tasks_by_field(backlog_tasks, :claimed_at, opts[:timezone])
 
     %{
       review_wait_stats: stats.review_wait,
@@ -234,11 +251,12 @@ defmodule KanbanWeb.MetricsPdfController do
     end
   end
 
-  defp generate_filename(board, metric, time_range, extension \\ ".pdf") do
+  # Named by the requester's local day, as the workspace export already is.
+  defp generate_filename(board, metric, opts, extension \\ ".pdf") do
     board_name = String.replace(board.name, ~r/[^a-zA-Z0-9_-]/, "_")
-    date_str = Date.to_string(Date.utc_today())
+    date_str = opts[:timezone] |> Kanban.Timezone.local_today() |> Date.to_string()
     metric_name = String.replace(metric, "-", "_")
-    time_range_str = Atom.to_string(time_range)
+    time_range_str = Atom.to_string(opts[:time_range])
 
     "#{board_name}_#{metric_name}_#{time_range_str}_#{date_str}#{extension}"
   end
@@ -278,15 +296,19 @@ defmodule KanbanWeb.MetricsPdfController do
   defp calculate_throughput_stats(_),
     do: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
 
-  defp group_tasks_by_field(tasks, field) do
+  # Day headings are the requester's local days, matching the local
+  # timestamps printed under them.
+  defp group_tasks_by_field(tasks, field, timezone) do
     tasks
-    |> Enum.group_by(fn task -> Map.get(task, field) |> to_date() end)
+    |> Enum.group_by(fn task -> task |> Map.get(field) |> to_date(timezone) end)
     |> Enum.sort_by(fn {date, _tasks} -> date end, {:desc, Date})
     |> Enum.map(fn {date, day_tasks} ->
       {date, Enum.sort_by(day_tasks, &Map.get(&1, field), :desc)}
     end)
   end
 
-  defp to_date(%DateTime{} = dt), do: DateTime.to_date(dt)
-  defp to_date(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_date(ndt)
+  defp to_date(%DateTime{} = dt, timezone), do: Kanban.Timezone.local_date(dt, timezone)
+
+  defp to_date(%NaiveDateTime{} = ndt, timezone),
+    do: ndt |> DateTime.from_naive!("Etc/UTC") |> Kanban.Timezone.local_date(timezone)
 end
