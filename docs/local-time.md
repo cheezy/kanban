@@ -5,6 +5,9 @@ Every absolute date or time a page shows goes through one formatter,
 solved once rather than at each call site. Relative ages ("5m ago") stay in
 `KanbanWeb.TimeAgo` and are not covered here.
 
+[Dates and Times](dates-and-times.md) states the rule that every such value
+goes through this formatter, and the guard test and allow-list that enforce it.
+
 ## Where the zone comes from
 
 The browser reports its IANA zone. `KanbanWeb.Plugs.Timezone` validates it for

@@ -9,6 +9,7 @@
 - Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
 - Emit new telemetry events through `Kanban.Telemetry.emit/3` or `span/3`, declare each one in `Kanban.Telemetry.Catalog` with its `metrics` and `persist` fields (its metric is generated from them), and test it with `Kanban.TelemetryHelpers.attach_telemetry/2`. `docs/telemetry.md` has the naming rule, the metadata allow-list and the metric and tag rules. After changing the catalog, refresh the event reference in `docs/telemetry.md`; `test/kanban/telemetry_docs_test.exs` fails until you do
 - When you edit anything under `docs/` or `README.md`, write relative links from the linking file's own directory, never rename a doc file or heading, and nest code fences with a longer outer fence. `docs/doc-link-contract.md` has the rules, and `test/kanban/docs_relative_links_test.exs` enforces them
+- Show every absolute date or time through `KanbanWeb.LocalTime.format/2` or the `<.local_time>` component, never with `Calendar.strftime/3`, `DateTime.to_string/1` or `NaiveDateTime.to_string/1`. `docs/dates-and-times.md` has the rule, the styles, the zone capture and the allow-list, and `test/kanban_web/local_time_usage_test.exs` enforces it
 
 ### Module design and complexity
 
