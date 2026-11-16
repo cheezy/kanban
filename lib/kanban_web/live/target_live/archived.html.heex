@@ -74,7 +74,11 @@
               {gettext("Target date:")} {format_date(target.target_date)}
             </span>
 
-            <span style="font-size: 10.5px; color: var(--ink-3); white-space: nowrap;">
+            <span
+              data-archived-at
+              title={KanbanWeb.LocalTime.format_full(target.archived_at)}
+              style="font-size: 10.5px; color: var(--ink-3); white-space: nowrap;"
+            >
               {gettext("Archived %{age}", age: TimeAgo.format_age(target.archived_at, :coarse))}
             </span>
           </.link>

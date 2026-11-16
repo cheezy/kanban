@@ -274,4 +274,42 @@ defmodule KanbanWeb.AgentsHeaderTest do
       assert html =~ "var(--ink-3)"
     end
   end
+
+  describe "pm_trends/1 — localised bar dates" do
+    defp render_trends(series) do
+      assigns = %{
+        throughput_and_success: %{
+          completed_today: 0,
+          completed_7d: 0,
+          completed_30d: 0,
+          completed_prev_today: 0,
+          completed_prev_7d: 0,
+          completed_prev_30d: 0,
+          success_rate: nil
+        },
+        throughput_trends: %{series: series, avg_cycle_minutes: nil}
+      }
+
+      rendered_to_string(~H"""
+      <AgentsHeader.pm_trends
+        throughput_and_success={@throughput_and_success}
+        throughput_trends={@throughput_trends}
+      />
+      """)
+    end
+
+    test "titles each bar with the localised weekday date, unshifted, and labels the day number" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+      series = [%{date: ~D[2026-11-10], count: 3}]
+
+      en = render_trends(series)
+      assert en =~ ~s(title="Tue, Nov 10: 3 completed")
+      assert en =~ ~s(data-agents-pm-trends-bar="2026-11-10")
+      assert en =~ ~r/>\s*10\s*<\/span>/
+
+      de = Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> render_trends(series) end)
+      assert de =~ "Di., 10. Nov."
+      refute de =~ "Tue, Nov 10"
+    end
+  end
 end

@@ -438,6 +438,23 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       assert has_element?(live, "[data-target-archived-indicator]", "Archived")
     end
 
+    test "titles the archived indicator with the local archived time",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = Scope.for_user(user) |> complete_target(user, column) |> archive!()
+
+      conn =
+        Plug.Test.init_test_session(conn, %{"timezone" => "Pacific/Kiritimati", "locale" => "de"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      # The relative age stays the text; the absolute local time, in the
+      # viewer's zone and language, is the title.
+      assert live |> element("[data-target-archived-indicator]") |> render() =~
+               ~r/title="[^"]+, \d{2}:\d{2} \+14"/
+    end
+
     test "does not render the archived indicator for an active target",
          %{conn: conn, user: user} do
       board = board_fixture(user)

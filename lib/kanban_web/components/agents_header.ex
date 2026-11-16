@@ -582,13 +582,15 @@ defmodule KanbanWeb.AgentsHeader do
   defp format_rate(rate) when is_number(rate), do: gettext("%{pct}%", pct: round(rate * 100))
   defp format_rate(_), do: "—"
 
-  # Compact day-of-month label under each throughput bar.
-  defp format_day(%Date{} = date), do: Calendar.strftime(date, "%-d")
+  # Compact day-of-month label under each throughput bar. A bare number reads
+  # the same in every language, so it needs no locale pattern.
+  defp format_day(%Date{} = date), do: Integer.to_string(date.day)
 
-  # Hover title for a throughput bar — full month/day and the completion count.
+  # Hover title for a throughput bar — the localised weekday and date, and the
+  # completion count. A Date is formatted, never shifted.
   defp trend_bar_title(%{date: %Date{} = date, count: count}) do
     gettext("%{date}: %{count} completed",
-      date: Calendar.strftime(date, "%b %-d"),
+      date: KanbanWeb.LocalTime.format(date, :weekday_date),
       count: count
     )
   end

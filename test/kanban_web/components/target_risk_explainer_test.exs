@@ -205,4 +205,24 @@ defmodule KanbanWeb.TargetRiskExplainerTest do
       [head] -> head
     end
   end
+
+  describe "target_risk_explainer/1 — local dates" do
+    test "names both slip dates in the current language without a zone shift" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "ja", fn ->
+          render_explainer([
+            dated_entry(:at_risk, 1, "Launch",
+              target_date: ~D[2026-07-26],
+              estimate: ~D[2026-08-10]
+            )
+          ])
+        end)
+
+      assert html =~ "2026/08/10"
+      assert html =~ "2026/07/26"
+      refute html =~ "Aug 10, 2026"
+    end
+  end
 end

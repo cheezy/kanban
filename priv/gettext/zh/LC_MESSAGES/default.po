@@ -2699,7 +2699,7 @@ msgstr "任务在队列中等待开始的时间"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "任务完成后等待人工审查的时间"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:461
+#: lib/kanban_web/components/agent_activity_feed.ex:480
 #: lib/kanban_web/components/agent_roster_card.ex:246
 #: lib/kanban_web/components/agents_header.ex:444
 #: lib/kanban_web/live/metrics_live/components/filters.ex:79
@@ -3719,7 +3719,7 @@ msgstr "访问我们持有的关于您的个人数据。"
 msgid "Account information"
 msgstr "账户信息"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:104
+#: lib/kanban_web/components/agent_activity_feed.ex:112
 #: lib/kanban_web/components/agents_header.ex:73
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:38
 #, elixir-autogen, elixir-format
@@ -4915,8 +4915,8 @@ msgstr "子项"
 msgid "Claimed"
 msgstr "已认领"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:420
-#: lib/kanban_web/components/agent_detail_panel.ex:96
+#: lib/kanban_web/components/agent_activity_feed.ex:428
+#: lib/kanban_web/components/agent_detail_panel.ex:97
 #: lib/kanban_web/components/agent_roster_card.ex:249
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4948,7 +4948,7 @@ msgstr "集成点"
 msgid "Review status"
 msgstr "审核状态"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:236
+#: lib/kanban_web/components/agent_detail_panel.ex:237
 #: lib/kanban_web/components/agent_roster_card.ex:248
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:63
 #: lib/kanban_web/export/workspace_metrics_excel.ex:188
@@ -4994,32 +4994,32 @@ msgstr "工作中"
 msgid "Yes"
 msgstr "是"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:474
+#: lib/kanban_web/components/agent_activity_feed.ex:489
 #: lib/kanban_web/components/agents_header.ex:572
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}小时 %{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:478
+#: lib/kanban_web/components/agent_activity_feed.ex:493
 #: lib/kanban_web/components/agents_header.ex:575
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:419
+#: lib/kanban_web/components/agent_activity_feed.ex:427
 #: lib/kanban_web/components/archive_filter_chips.ex:89
 #: lib/kanban_web/live/notification_live/index.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "全部"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:422
+#: lib/kanban_web/components/agent_activity_feed.ex:430
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "完成数"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:96
-#: lib/kanban_web/components/agent_detail_panel.ex:137
+#: lib/kanban_web/components/agent_activity_feed.ex:104
+#: lib/kanban_web/components/agent_detail_panel.ex:138
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
 msgstr "暂无近期活动。"
@@ -5106,8 +5106,8 @@ msgstr "批准"
 msgid "Request changes"
 msgstr "请求更改"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:316
-#: lib/kanban_web/components/agent_activity_feed.ex:318
+#: lib/kanban_web/components/agent_activity_feed.ex:324
+#: lib/kanban_web/components/agent_activity_feed.ex:326
 #: lib/kanban_web/components/review_detail_header.ex:78
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -7012,7 +7012,7 @@ msgstr "与任务不一致：审查列出了 %{supplied} 个验收标准条目�
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "与任务不一致：审查报告已检查 %{checked} 个验收标准，但任务定义了 %{expected} 个；数量必须匹配"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:421
+#: lib/kanban_web/components/agent_activity_feed.ex:429
 #: lib/kanban_web/export/metrics_excel.ex:285
 #, elixir-autogen, elixir-format
 msgid "Reviewed"
@@ -7035,18 +7035,18 @@ msgstr "技术细节"
 msgid "Technical Details (JSON object)"
 msgstr "技术细节（JSON 对象）"
 
-#: lib/kanban_web/live/agents_live/components/roster.ex:132
+#: lib/kanban_web/live/agents_live/components/roster.ex:136
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "按 %{agent} 筛选"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:221
-#: lib/kanban_web/live/agents_live/components/roster.ex:149
+#: lib/kanban_web/live/agents_live/components/roster.ex:153
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_activity_feed.ex:280
 #: lib/kanban_web/components/agent_roster_card.ex:106
 #, elixir-autogen, elixir-format
 msgid "Operator"
@@ -7078,7 +7078,7 @@ msgstr "已完成 · 7天"
 msgid "Completed · 30d"
 msgstr "已完成 · 30天"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:209
+#: lib/kanban_web/components/agent_detail_panel.ex:210
 #: lib/kanban_web/components/agents_header.ex:294
 #, elixir-autogen, elixir-format
 msgid "Success rate"
@@ -7094,7 +7094,7 @@ msgstr "此时间段内还没有已完成的任务。"
 msgid "%{pct}%"
 msgstr "%{pct}%"
 
-#: lib/kanban_web/components/agents_header.ex:590
+#: lib/kanban_web/components/agents_header.ex:592
 #, elixir-autogen, elixir-format
 msgid "%{date}: %{count} completed"
 msgstr "%{date}：完成 %{count} 个"
@@ -7109,27 +7109,27 @@ msgstr "其中"
 msgid "Dormant (%{count})"
 msgstr "休眠 (%{count})"
 
-#: lib/kanban_web/live/agents_live/components/roster.ex:181
+#: lib/kanban_web/live/agents_live/components/roster.ex:185
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:68
+#: lib/kanban_web/components/agent_detail_panel.ex:69
 #, elixir-autogen, elixir-format
 msgid "Current work"
 msgstr "当前工作"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:89
+#: lib/kanban_web/components/agent_detail_panel.ex:90
 #, elixir-autogen, elixir-format
 msgid "No active task"
 msgstr "无活动任务"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:108
+#: lib/kanban_web/components/agent_detail_panel.ex:109
 #, elixir-autogen, elixir-format
 msgid "Failures"
 msgstr "失败"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:119
+#: lib/kanban_web/components/agent_detail_panel.ex:120
 #, elixir-autogen, elixir-format
 msgid "Recent activity"
 msgstr "最近活动"
@@ -7145,22 +7145,17 @@ msgstr "无"
 msgid "vs the prior period"
 msgstr "与上一周期相比"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:463
-#, elixir-autogen, elixir-format
-msgid "%a, %b %-d"
-msgstr "%b%-d日 (%a)"
-
-#: lib/kanban_web/components/agent_activity_feed.ex:462
+#: lib/kanban_web/components/agent_activity_feed.ex:481
 #, elixir-autogen, elixir-format
 msgid "Yesterday"
 msgstr "昨天"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:184
+#: lib/kanban_web/components/agent_detail_panel.ex:185
 #, elixir-autogen, elixir-format
 msgid "Daily completions over the last %{days} days"
 msgstr "过去 %{days} 天的每日完成数"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:178
+#: lib/kanban_web/components/agent_detail_panel.ex:179
 #, elixir-autogen, elixir-format
 msgid "No activity yet."
 msgstr "暂无活动。"
@@ -7440,7 +7435,7 @@ msgstr "取消分配"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "使用此表单管理交付目标及其目标。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:79
+#: lib/kanban_web/live/target_live/show.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "此交付目标中还没有目标。"
@@ -7467,12 +7462,12 @@ msgstr "按子项状态显示的交付目标进度"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done}/%{total} (%{pct}%)"
 
-#: lib/kanban_web/live/target_live/show.html.heex:74
+#: lib/kanban_web/live/target_live/show.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Goals"
 msgstr "目标"
 
-#: lib/kanban_web/live/target_live/show.html.heex:47
+#: lib/kanban_web/live/target_live/show.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Edit target"
 msgstr "编辑交付目标"
@@ -7502,7 +7497,7 @@ msgstr "休眠"
 msgid "Why targets are at risk"
 msgstr "目标存在风险的原因"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:285
+#: lib/kanban_web/components/agent_activity_feed.ex:293
 #: lib/kanban_web/components/agent_roster_card.ex:138
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
@@ -7922,12 +7917,12 @@ msgstr "已创建任务"
 msgid "Total Actions"
 msgstr "操作总数"
 
-#: lib/kanban_web/live/target_live/show.html.heex:65
+#: lib/kanban_web/live/target_live/show.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "归档交付目标"
 
-#: lib/kanban_web/live/target_live/show.html.heex:55
+#: lib/kanban_web/live/target_live/show.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "归档此交付目标？它将不再显示在您的看板上。"
@@ -7974,18 +7969,18 @@ msgstr "目标日期："
 msgid "Target unarchived successfully"
 msgstr "已成功取消归档交付目标"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:97
+#: lib/kanban_web/live/target_live/archived.html.heex:101
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "取消归档"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:87
+#: lib/kanban_web/live/target_live/archived.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "取消归档此交付目标？它将重新显示在您的看板上。"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
-#: lib/kanban_web/live/target_live/show.html.heex:32
+#: lib/kanban_web/live/target_live/archived.html.heex:82
+#: lib/kanban_web/live/target_live/show.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "已归档 %{age}"
@@ -9531,7 +9526,7 @@ msgstr "请立即保存这些恢复码。它们不会再次显示。"
 msgid "Scan this QR code with your authenticator app, or enter the key by hand. Then enter the 6-digit code the app shows."
 msgstr "请用身份验证器应用扫描此二维码,或手动输入密钥。然后输入应用显示的 6 位验证码。"
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:81
+#: lib/kanban_web/components/organization_two_factor_banner.ex:84
 #: lib/kanban_web/components/two_factor_reminder.ex:60
 #: lib/kanban_web/live/user_live/two_factor_component.ex:81
 #, elixir-autogen, elixir-format
@@ -9669,7 +9664,7 @@ msgstr "以后再说"
 msgid "Protect your account with two-factor authentication"
 msgstr "使用双重验证保护您的账户"
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:88
+#: lib/kanban_web/components/organization_two_factor_banner.ex:91
 #: lib/kanban_web/components/two_factor_reminder.ex:81
 #, elixir-autogen, elixir-format
 msgid "Read the setup guide"
@@ -11940,17 +11935,17 @@ msgstr "%{name} 的安全策略。只有其组织管理员可以更改。"
 msgid "Security policy saved."
 msgstr "安全策略已保存。"
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:73
+#: lib/kanban_web/components/organization_two_factor_banner.ex:76
 #, elixir-autogen, elixir-format
 msgid "The grace period has ended. Turn it on now to keep using Stride."
 msgstr "宽限期已结束。请立即开启以继续使用 Stride。"
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:62
+#: lib/kanban_web/components/organization_two_factor_banner.ex:65
 #, elixir-autogen, elixir-format
 msgid "Turn it on before %{deadline}, or you will be asked to before you can continue."
 msgstr "请在 %{deadline} 之前开启，否则您需要先开启才能继续。"
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:54
+#: lib/kanban_web/components/organization_two_factor_banner.ex:57
 #, elixir-autogen, elixir-format
 msgid "Your Organization requires two-factor authentication"
 msgstr "您的组织要求使用双重验证"

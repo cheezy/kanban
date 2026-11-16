@@ -200,6 +200,33 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
                row_span_texts(live, target)
     end
 
+    test "renders the target date and archived time in the viewer's zone and language", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Bare"})
+
+      conn =
+        Plug.Test.init_test_session(conn, %{
+          "timezone" => "Pacific/Kiritimati",
+          "locale" => "de"
+        })
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # The target date is a Date: formatted in de, never shifted a day by the
+      # UTC+14 zone. The archived age keeps its relative text and gains the
+      # absolute local time as its title.
+      assert [_name, date_label, _age] = row_span_texts(live, target)
+      assert date_label =~ "31. Dez. 2026"
+
+      assert live |> element("[data-target-id='#{target.id}'] [data-archived-at]") |> render() =~
+               ~r/title="[^"]+, \d{2}:\d{2} \+14"/
+    end
+
     test "renders the archived target count next to the heading", %{
       conn: conn,
       user: user,

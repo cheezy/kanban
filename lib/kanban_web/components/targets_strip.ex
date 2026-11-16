@@ -280,7 +280,7 @@ defmodule KanbanWeb.TargetsStrip do
   defp status_badge(:at_risk), do: {"doing", gettext("At-risk")}
   defp status_badge(:missed), do: {"blocked", gettext("Missed")}
 
-  defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+  defp format_date(%Date{} = date), do: KanbanWeb.LocalTime.format(date, :short_date)
 
   # A slipping estimate stops being de-emphasized: it is the reason the badge
   # beside it reads At-risk. It takes --ink-2 (a measured text-on-surface pair)

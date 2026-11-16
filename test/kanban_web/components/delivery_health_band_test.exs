@@ -114,4 +114,18 @@ defmodule KanbanWeb.DeliveryHealthBandTest do
       refute html =~ "data-delivery-health-stats"
     end
   end
+
+  describe "delivery_health_band/1 — local dates" do
+    test "formats the soonest date in the current language without a zone shift" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "zh", fn ->
+          render_band([entry(:on_track, ~D[2026-07-15])])
+        end)
+
+      assert html =~ "2026/7/15"
+      refute html =~ "Jul 15, 2026"
+    end
+  end
 end

@@ -62,6 +62,18 @@ defmodule KanbanWeb.LocalTimeComponentTest do
     assert html =~ ">Nov 10, 2026</time>"
   end
 
+  test "renders the compact :short_datetime style" do
+    LocalTime.put_timezone("America/Toronto")
+
+    html =
+      Gettext.with_locale(KanbanWeb.Gettext, "en", fn ->
+        render_local_time(@dt, style: :short_datetime)
+      end)
+
+    assert html =~ ">Nov 10, 6:56 PM</time>"
+    assert html =~ ~s(datetime="2026-11-10T23:56:00Z")
+  end
+
   test "renders nothing for nil" do
     refute render_local_time(nil) =~ "<time"
   end

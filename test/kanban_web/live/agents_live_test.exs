@@ -1323,6 +1323,8 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert expanded =~ "GhostBot"
       # seed_dormant_agent/2 claims the task 15 whole days ago.
       assert expanded =~ "Last seen 15d ago"
+      # The absolute time behind the relative label is the hover title.
+      assert expanded =~ ~r/data-agent-last-seen="" title="[^"]+ at \d{1,2}:\d{2} [AP]M UTC"/
 
       collapsed = view |> element(~s([data-agents-dormant-toggle])) |> render_click()
       refute collapsed =~ "data-agent-dormant-card"
@@ -1340,6 +1342,25 @@ defmodule KanbanWeb.AgentsLiveTest do
       send(view.pid, :refresh_agents_data)
 
       assert render(view) =~ "data-agent-dormant-card"
+    end
+
+    test "the last-seen title is in the viewer's timezone and language",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      seed_dormant_agent(column, "GhostBot")
+
+      conn =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> put_connect_params(%{"timezone" => "America/Toronto"})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      expanded = view |> element(~s([data-agents-dormant-toggle])) |> render_click()
+
+      # de is a 24-hour clock with the zone abbreviation; never the UTC literal.
+      assert expanded =~ ~r/data-agent-last-seen="" title="[^"]+, \d{2}:\d{2} E[SD]T"/
+      refute expanded =~ ~r/data-agent-last-seen="" title="[^"]+ UTC"/
     end
 
     test "renders no dormant group when every agent is live",
@@ -1589,10 +1610,13 @@ defmodule KanbanWeb.AgentsLiveTest do
       conn = put_connect_params(conn, %{"timezone" => "America/New_York"})
       {:ok, _view, html} = live(conn, ~p"/agents")
 
-      # 18:30 UTC is 14:30 in America/New_York (EDT, UTC-4).
-      assert html =~ "14:30"
+      # 18:30 UTC is 2:30 PM in America/New_York (EDT, UTC-4), on the en
+      # 12-hour clock, with the full local time and zone as the title.
+      assert html =~ ">2:30 PM</time>"
+      assert html =~ ~s(title="June 20, 2026 at 2:30 PM EDT")
+      assert html =~ ~s(datetime="2026-06-20T18:30:00Z")
       # The UTC wall-clock time is not shown as the row's visible time.
-      refute html =~ ">18:30<"
+      refute html =~ ">6:30 PM</time>"
     end
 
     test "an unknown connect-param timezone falls back to UTC without crashing",
@@ -1604,7 +1628,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       {:ok, _view, html} = live(conn, ~p"/agents")
 
       assert html =~ "data-agent-feed"
-      assert html =~ "18:30"
+      assert html =~ ">6:30 PM</time>"
     end
 
     test "the header and Delivery-trends Completed-today values agree under a connect-param timezone",

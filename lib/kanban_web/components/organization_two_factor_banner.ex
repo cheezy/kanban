@@ -7,11 +7,14 @@ defmodule KanbanWeb.OrganizationTwoFactorBanner do
   It shows only when `current_scope.two_factor_deadline` is set, which
   `KanbanWeb.UserAuth.OrganizationTwoFactorGate` does during the grace period
   and, on the settings page, after it. Before the deadline it names the
-  deadline; after it, it says two-factor must be turned on now. Unlike
+  deadline, in the viewer's timezone and language with the zone abbreviation;
+  after it, it says two-factor must be turned on now. Unlike
   `KanbanWeb.TwoFactorReminder` it cannot be dismissed: it is a requirement,
   not a suggestion.
   """
   use KanbanWeb, :html
+
+  alias KanbanWeb.LocalTime
 
   attr :current_scope, :map, default: nil
   attr :id, :string, default: "organization-two-factor-banner"
@@ -61,7 +64,7 @@ defmodule KanbanWeb.OrganizationTwoFactorBanner do
           >
             {gettext(
               "Turn it on before %{deadline}, or you will be asked to before you can continue.",
-              deadline: format_deadline(@deadline)
+              deadline: LocalTime.format_full(@deadline)
             )}
           </p>
           <p
@@ -95,9 +98,4 @@ defmodule KanbanWeb.OrganizationTwoFactorBanner do
   end
 
   def card(assigns), do: ~H""
-
-  @doc false
-  # UTC, minute precision, in a form every locale reads the same way.
-  def format_deadline(%DateTime{} = deadline),
-    do: Calendar.strftime(deadline, "%Y-%m-%d %H:%M UTC")
 end

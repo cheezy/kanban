@@ -20,14 +20,15 @@ defmodule KanbanWeb.LocalTime do
   themselves are code constants, never gettext msgids, so a translation cannot
   change a format directive. A locale without its own patterns uses `"en"`.
 
-  | Style           | en example                       |
-  | --------------- | -------------------------------- |
-  | `:datetime`     | `November 10, 2026 at 6:56 PM`   |
-  | `:date`         | `November 10, 2026`              |
-  | `:short_date`   | `Nov 10, 2026`                   |
-  | `:time`         | `6:56 PM`                        |
-  | `:month_year`   | `November 2026`                  |
-  | `:weekday_date` | `Tue, Nov 10`                    |
+  | Style             | en example                       |
+  | ----------------- | -------------------------------- |
+  | `:datetime`       | `November 10, 2026 at 6:56 PM`   |
+  | `:date`           | `November 10, 2026`              |
+  | `:short_date`     | `Nov 10, 2026`                   |
+  | `:short_datetime` | `Nov 10, 6:56 PM`                |
+  | `:time`           | `6:56 PM`                        |
+  | `:month_year`     | `November 2026`                  |
+  | `:weekday_date`   | `Tue, Nov 10`                    |
 
   Relative ages ("5m ago") stay in `KanbanWeb.TimeAgo`.
   """
@@ -38,11 +39,12 @@ defmodule KanbanWeb.LocalTime do
   @default "Etc/UTC"
   @key {__MODULE__, :timezone}
 
-  @styles [:datetime, :date, :short_date, :time, :month_year, :weekday_date]
+  @styles [:datetime, :date, :short_date, :short_datetime, :time, :month_year, :weekday_date]
 
   @ja_zh %{
     datetime: "%Y年%-m月%-d日 %H:%M",
     date: "%Y年%-m月%-d日",
+    short_datetime: "%-m月%-d日 %H:%M",
     month_year: "%Y年%-m月",
     time: "%H:%M",
     weekday_date: "%-m月%-d日 (%a)"
@@ -55,6 +57,7 @@ defmodule KanbanWeb.LocalTime do
       datetime: "%B %-d, %Y at %-I:%M %p",
       date: "%B %-d, %Y",
       short_date: "%b %-d, %Y",
+      short_datetime: "%b %-d, %-I:%M %p",
       time: "%-I:%M %p",
       month_year: "%B %Y",
       weekday_date: "%a, %b %-d"
@@ -63,6 +66,7 @@ defmodule KanbanWeb.LocalTime do
       datetime: "%-d. %B %Y, %H:%M",
       date: "%-d. %B %Y",
       short_date: "%-d. %b %Y",
+      short_datetime: "%-d. %b, %H:%M",
       time: "%H:%M",
       month_year: "%B %Y",
       weekday_date: "%a, %-d. %b"
@@ -71,6 +75,7 @@ defmodule KanbanWeb.LocalTime do
       datetime: "%-d de %B de %Y, %H:%M",
       date: "%-d de %B de %Y",
       short_date: "%-d %b %Y",
+      short_datetime: "%-d %b, %H:%M",
       time: "%H:%M",
       month_year: "%B de %Y",
       weekday_date: "%a %-d %b"
@@ -79,6 +84,7 @@ defmodule KanbanWeb.LocalTime do
       datetime: "%-d %B %Y à %H:%M",
       date: "%-d %B %Y",
       short_date: "%-d %b %Y",
+      short_datetime: "%-d %b à %H:%M",
       time: "%H:%M",
       month_year: "%B %Y",
       weekday_date: "%a %-d %b"
@@ -87,6 +93,7 @@ defmodule KanbanWeb.LocalTime do
       datetime: "%-d de %B de %Y às %H:%M",
       date: "%-d de %B de %Y",
       short_date: "%-d de %b de %Y",
+      short_datetime: "%-d de %b, %H:%M",
       time: "%H:%M",
       month_year: "%B de %Y",
       weekday_date: "%a, %-d %b"
@@ -95,7 +102,8 @@ defmodule KanbanWeb.LocalTime do
     "zh" => Map.put(@ja_zh, :short_date, "%Y/%-m/%-d")
   }
 
-  @type style :: :datetime | :date | :short_date | :time | :month_year | :weekday_date
+  @type style ::
+          :datetime | :date | :short_date | :short_datetime | :time | :month_year | :weekday_date
   @type value :: DateTime.t() | NaiveDateTime.t() | Date.t() | nil
 
   @doc """
@@ -131,14 +139,17 @@ defmodule KanbanWeb.LocalTime do
   Formats `value` in `style` for an explicit `zone`, ignoring the process zone.
 
   A `zone` the tz database does not accept falls back to `"Etc/UTC"`. A `Date`
-  is never shifted, and `:datetime` or `:time` on a `Date` render its `:date`
-  text, since a `Date` carries no time.
+  is never shifted, `:datetime` or `:time` on a `Date` render its `:date` text,
+  and `:short_datetime` its `:short_date` text, since a `Date` carries no time.
   """
   @spec format(value(), style(), term()) :: String.t()
   def format(nil, style, _zone) when style in @styles, do: ""
 
   def format(%Date{} = date, style, _zone) when style in [:datetime, :time],
     do: strftime(date, pattern(:date))
+
+  def format(%Date{} = date, :short_datetime, _zone),
+    do: strftime(date, pattern(:short_date))
 
   def format(%Date{} = date, style, _zone) when style in @styles,
     do: strftime(date, pattern(style))

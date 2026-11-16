@@ -94,5 +94,5 @@ defmodule KanbanWeb.TargetLive.Archived do
     assign(socket, :targets, Targets.list_archived_targets(socket.assigns.current_scope))
   end
 
-  defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+  defp format_date(%Date{} = date), do: KanbanWeb.LocalTime.format(date, :short_date)
 end

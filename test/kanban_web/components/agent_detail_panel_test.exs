@@ -206,4 +206,28 @@ defmodule KanbanWeb.AgentDetailPanelTest do
       refute html =~ "data-agent-detail-charts-empty"
     end
   end
+
+  describe "timestamps" do
+    test "render the compact local date and time in the viewer's zone and language" do
+      KanbanWeb.LocalTime.put_timezone("America/Toronto")
+      at = ~U[2026-11-11 04:56:00Z]
+
+      detail =
+        detail(%{
+          claims: [%{identifier: "W42", title: "Do the thing", at: at}],
+          failures: [],
+          recent_activity: [%Event{kind: :complete, actor: "Claude", identifier: "W42", at: at}]
+        })
+
+      en = render_panel(detail)
+      assert length(Regex.scan(~r/>Nov 10, 11:56 PM<\/time>/, en)) == 2
+      assert en =~ ~s(title="November 10, 2026 at 11:56 PM EST")
+      assert en =~ ~s(datetime="2026-11-11T04:56:00Z")
+      refute en =~ "UTC"
+
+      de = Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> render_panel(detail) end)
+      assert de =~ ">10. Nov., 23:56</time>"
+      assert de =~ ~s(datetime="2026-11-11T04:56:00Z")
+    end
+  end
 end

@@ -23,20 +23,22 @@ ignores the process zone. Both functions follow these rules:
 - A `DateTime` is shifted to the zone.
 - A `NaiveDateTime` is treated as UTC and then shifted.
 - A `Date` is formatted but never shifted. Asking for `:datetime` or `:time` on
-  a `Date` renders its `:date` text, because a `Date` has no time.
+  a `Date` renders its `:date` text, and `:short_datetime` its `:short_date`
+  text, because a `Date` has no time.
 - `nil` renders `""`.
 - A zone the tz database does not accept falls back to `"Etc/UTC"`, using the
   same check as `KanbanWeb.Timezone.parse_timezone/1`.
 - A locale without its own patterns uses the English ones.
 
-| Style           | en                             | de                         | ja                   |
-| --------------- | ------------------------------ | -------------------------- | -------------------- |
-| `:datetime`     | `November 10, 2026 at 6:56 PM` | `10. November 2026, 18:56` | `2026年11月10日 18:56` |
-| `:date`         | `November 10, 2026`            | `10. November 2026`        | `2026年11月10日`       |
-| `:short_date`   | `Nov 10, 2026`                 | `10. Nov. 2026`            | `2026/11/10`         |
-| `:time`         | `6:56 PM`                      | `18:56`                    | `18:56`              |
-| `:month_year`   | `November 2026`                | `November 2026`            | `2026年11月`          |
-| `:weekday_date` | `Tue, Nov 10`                  | `Di., 10. Nov.`            | `11月10日 (火)`        |
+| Style             | en                             | de                         | ja                   |
+| ----------------- | ------------------------------ | -------------------------- | -------------------- |
+| `:datetime`       | `November 10, 2026 at 6:56 PM` | `10. November 2026, 18:56` | `2026年11月10日 18:56` |
+| `:date`           | `November 10, 2026`            | `10. November 2026`        | `2026年11月10日`       |
+| `:short_date`     | `Nov 10, 2026`                 | `10. Nov. 2026`            | `2026/11/10`         |
+| `:short_datetime` | `Nov 10, 6:56 PM`              | `10. Nov., 18:56`          | `11月10日 18:56`       |
+| `:time`           | `6:56 PM`                      | `18:56`                    | `18:56`              |
+| `:month_year`     | `November 2026`                | `November 2026`            | `2026年11月`          |
+| `:weekday_date`   | `Tue, Nov 10`                  | `Di., 10. Nov.`            | `11月10日 (火)`        |
 
 `KanbanWeb.LocalTime.format_full/1` gives the tooltip form, which is the
 `:datetime` text followed by the zone abbreviation, for example

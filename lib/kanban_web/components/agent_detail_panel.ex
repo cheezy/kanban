@@ -10,6 +10,7 @@ defmodule KanbanWeb.AgentDetailPanel do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskTokens
 
   @doc """
@@ -303,11 +304,10 @@ defmodule KanbanWeb.AgentDetailPanel do
             {entry.title}
           </span>
           <time
-            datetime={DateTime.to_iso8601(entry.at)}
+            datetime={LocalTime.utc_iso8601(entry.at)}
+            title={LocalTime.format_full(entry.at)}
             style="color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap;"
-          >
-            {format_at(entry.at)}
-          </time>
+          >{LocalTime.format(entry.at, :short_datetime)}</time>
         </li>
       </ul>
       <p
@@ -346,11 +346,10 @@ defmodule KanbanWeb.AgentDetailPanel do
         {@event.title}
       </span>
       <time
-        datetime={DateTime.to_iso8601(@event.at)}
+        datetime={LocalTime.utc_iso8601(@event.at)}
+        title={LocalTime.format_full(@event.at)}
         style="color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap;"
-      >
-        {format_at(@event.at)}
-      </time>
+      >{LocalTime.format(@event.at, :short_datetime)}</time>
     </li>
     """
   end
@@ -417,9 +416,4 @@ defmodule KanbanWeb.AgentDetailPanel do
   # fully when used standalone (e.g. in component tests/previews).
   defp expanded?(nil, _section), do: true
   defp expanded?(%MapSet{} = sections, section), do: MapSet.member?(sections, section)
-
-  # Compact "month day, HH:MM" UTC label. Claim/failure/activity timestamps can
-  # span days, so the date is shown alongside the time (the feed uses HH:MM
-  # alone because it is a 24-hour window).
-  defp format_at(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %-d, %H:%M")
 end

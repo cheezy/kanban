@@ -10,7 +10,7 @@ defmodule KanbanWeb.AgentActivityFeed do
       the clicked tab's atom (as a string).
     * A vertical list of activity rows, one per `%Kanban.Agents.Event{}`
       in `:events`. Each row uses a five-column grid:
-      `54px time / 18px kind icon / 26px avatar / 1fr text / auto chips`.
+      `62px time / 18px kind icon / 26px avatar / 1fr text / auto chips`.
 
   The component is **purely presentational** — it does not filter the
   events itself. The caller passes in only the events it wants rendered;
@@ -30,6 +30,7 @@ defmodule KanbanWeb.AgentActivityFeed do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
+  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskTokens
 
   @filters [:all, :claims, :reviewed, :completions]
@@ -47,9 +48,11 @@ defmodule KanbanWeb.AgentActivityFeed do
       clicked. The clicked tab's atom is sent as `phx-value-filter`.
       Required.
     * `timezone` — the viewer's IANA timezone (e.g. `"America/New_York"`).
-      Each row's time is shown in this zone and rows are grouped by the
-      local calendar date. Defaults to `"Etc/UTC"`; an unknown zone falls
-      back to UTC display without error.
+      Each row's time is shown in this zone, in the current UI language's
+      clock, and rows are grouped by the local calendar date. Defaults to the
+      process zone from `KanbanWeb.LocalTime.timezone/0`; an unknown zone
+      falls back to UTC display without error. An event with no `at` has no
+      place on the timeline and is not rendered.
     * `tethers` — optional map from an actor identity `{name, owner_key}` to a
       goal-id-indexed map of the `%{target, goal, status}` annotations that actor
       is advancing (each a `Kanban.Targets.DeliveryRollup.agent_annotation/0`).
@@ -62,14 +65,19 @@ defmodule KanbanWeb.AgentActivityFeed do
   attr :events, :list, required: true
   attr :filter, :atom, required: true, values: @filters
   attr :on_filter_change, :string, required: true
-  attr :timezone, :string, default: "Etc/UTC"
+  attr :timezone, :string, default: nil
   attr :tethers, :map, default: %{}
 
   def feed(assigns) do
+    timezone = resolve_timezone(assigns.timezone)
+    events = Enum.reject(assigns.events, &is_nil(&1.at))
+
     assigns =
       assign(assigns,
-        groups: group_by_local_date(assigns.events, assigns.timezone),
-        today: current_local_date(assigns.timezone)
+        events: events,
+        timezone: timezone,
+        groups: group_by_local_date(events, timezone),
+        today: current_local_date(timezone)
       )
 
     ~H"""
@@ -218,7 +226,7 @@ defmodule KanbanWeb.AgentActivityFeed do
     <li
       data-agent-feed-row
       data-agent-feed-kind={@event.kind}
-      class="grid grid-cols-[44px_14px_20px_1fr_auto] sm:grid-cols-[54px_18px_26px_1fr_auto] items-center gap-1.5 sm:gap-2"
+      class="grid grid-cols-[52px_14px_20px_1fr_auto] sm:grid-cols-[62px_18px_26px_1fr_auto] items-center gap-1.5 sm:gap-2"
       style={
         [
           "padding: 6px 4px 6px 8px;",
@@ -236,15 +244,15 @@ defmodule KanbanWeb.AgentActivityFeed do
       }
     >
       <time
-        datetime={DateTime.to_iso8601(@event.at)}
+        datetime={LocalTime.utc_iso8601(@event.at)}
+        title={LocalTime.format_full(@event.at, @timezone)}
         style={[
           "color: var(--ink-3);",
           "font-size: 11px;",
-          "font-variant-numeric: tabular-nums;"
+          "font-variant-numeric: tabular-nums;",
+          "white-space: nowrap;"
         ]}
-      >
-        {format_time(@event.at, @timezone)}
-      </time>
+      >{LocalTime.format(@event.at, :time, @timezone)}</time>
 
       <span
         aria-hidden="true"
@@ -434,6 +442,16 @@ defmodule KanbanWeb.AgentActivityFeed do
     dt |> to_local(timezone) |> DateTime.to_date()
   end
 
+  # The one zone the whole feed uses, so a row's time and its day header can
+  # never disagree: the explicit attr when given, else the process zone. The
+  # zone is browser-supplied, so anything the tz database rejects becomes UTC.
+  defp resolve_timezone(timezone) do
+    case KanbanWeb.Timezone.parse_timezone(timezone || LocalTime.timezone()) do
+      {:ok, valid} -> valid
+      :error -> "Etc/UTC"
+    end
+  end
+
   # Shifts a stored UTC datetime into the viewer's zone. The zone is browser-
   # supplied, so shift_zone/2 can return {:error, :time_zone_not_found}; fall
   # back to the original UTC datetime so a row never crashes on an unknown zone.
@@ -454,18 +472,15 @@ defmodule KanbanWeb.AgentActivityFeed do
   end
 
   # Localized date-group header. The most recent two dates read as
-  # Today/Yesterday; older dates use a gettext-wrapped strftime format so
-  # translators can reorder the day/month tokens per locale.
+  # Today/Yesterday; older dates use the current locale's weekday-date pattern
+  # from KanbanWeb.LocalTime, so the order and the names follow the language.
+  # The date is already local, so it is formatted, never shifted again.
   defp format_date_header(%Date{} = date, %Date{} = today) do
     cond do
       date == today -> gettext("Today")
       date == Date.add(today, -1) -> gettext("Yesterday")
-      true -> Calendar.strftime(date, gettext("%a, %b %-d"))
+      true -> LocalTime.format(date, :weekday_date)
     end
-  end
-
-  defp format_time(%DateTime{} = dt, timezone) do
-    dt |> to_local(timezone) |> Calendar.strftime("%H:%M")
   end
 
   defp format_cycle_time(minutes) when is_integer(minutes) and minutes >= 60 do

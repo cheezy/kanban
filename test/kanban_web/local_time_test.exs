@@ -89,6 +89,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "November 10, 2026 at 6:56 PM",
         date: "November 10, 2026",
         short_date: "Nov 10, 2026",
+        short_datetime: "Nov 10, 6:56 PM",
         time: "6:56 PM",
         month_year: "November 2026",
         weekday_date: "Tue, Nov 10"
@@ -97,6 +98,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "10. November 2026, 18:56",
         date: "10. November 2026",
         short_date: "10. Nov. 2026",
+        short_datetime: "10. Nov., 18:56",
         time: "18:56",
         month_year: "November 2026",
         weekday_date: "Di., 10. Nov."
@@ -105,6 +107,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "10 de noviembre de 2026, 18:56",
         date: "10 de noviembre de 2026",
         short_date: "10 nov 2026",
+        short_datetime: "10 nov, 18:56",
         time: "18:56",
         month_year: "noviembre de 2026",
         weekday_date: "mar 10 nov"
@@ -113,6 +116,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "10 novembre 2026 à 18:56",
         date: "10 novembre 2026",
         short_date: "10 nov. 2026",
+        short_datetime: "10 nov. à 18:56",
         time: "18:56",
         month_year: "novembre 2026",
         weekday_date: "mar. 10 nov."
@@ -121,6 +125,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "10 de novembro de 2026 às 18:56",
         date: "10 de novembro de 2026",
         short_date: "10 de nov. de 2026",
+        short_datetime: "10 de nov., 18:56",
         time: "18:56",
         month_year: "novembro de 2026",
         weekday_date: "ter., 10 nov."
@@ -129,6 +134,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "2026年11月10日 18:56",
         date: "2026年11月10日",
         short_date: "2026/11/10",
+        short_datetime: "11月10日 18:56",
         time: "18:56",
         month_year: "2026年11月",
         weekday_date: "11月10日 (火)"
@@ -137,6 +143,7 @@ defmodule KanbanWeb.LocalTimeTest do
         datetime: "2026年11月10日 18:56",
         date: "2026年11月10日",
         short_date: "2026/11/10",
+        short_datetime: "11月10日 18:56",
         time: "18:56",
         month_year: "2026年11月",
         weekday_date: "11月10日 (周二)"
@@ -275,6 +282,7 @@ defmodule KanbanWeb.LocalTimeTest do
         assert LocalTime.format(~D[2026-11-10], :weekday_date) == "Tue, Nov 10"
         assert LocalTime.format(~D[2026-11-10], :datetime) == "November 10, 2026"
         assert LocalTime.format(~D[2026-11-10], :time) == "November 10, 2026"
+        assert LocalTime.format(~D[2026-11-10], :short_datetime) == "Nov 10, 2026"
         assert LocalTime.format_full(~D[2026-11-10]) == "November 10, 2026"
       end)
     end

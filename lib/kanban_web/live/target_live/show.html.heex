@@ -21,6 +21,7 @@
       <span
         :if={@archived?}
         data-target-archived-indicator
+        title={KanbanWeb.LocalTime.format_full(@target.archived_at)}
         style={[
           "margin-left: 10px; display: inline-flex; align-items: center; gap: 4px;",
           "padding: 2px 8px; border-radius: 999px;",

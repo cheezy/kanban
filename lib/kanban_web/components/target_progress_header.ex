@@ -251,7 +251,7 @@ defmodule KanbanWeb.TargetProgressHeader do
   defp estimate_title(true), do: gettext("Estimated completion — after the target date")
   defp estimate_title(false), do: gettext("Estimated completion")
 
-  defp format_target_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+  defp format_target_date(%Date{} = date), do: KanbanWeb.LocalTime.format(date, :short_date)
   defp format_target_date(_), do: nil
 
   defp present_or_nil(nil), do: nil

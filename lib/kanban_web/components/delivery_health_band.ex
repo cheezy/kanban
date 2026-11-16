@@ -166,7 +166,7 @@ defmodule KanbanWeb.DeliveryHealthBand do
   end
 
   defp soonest_label(nil), do: "—"
-  defp soonest_label(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+  defp soonest_label(%Date{} = date), do: KanbanWeb.LocalTime.format(date, :short_date)
 
   # status atom -> translated label. Mirrors KanbanWeb.TargetsStrip's palette.
   defp status_label(:on_track), do: gettext("On-track")

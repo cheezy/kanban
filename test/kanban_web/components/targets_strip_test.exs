@@ -264,4 +264,20 @@ defmodule KanbanWeb.TargetsStripTest do
       assert html =~ "background: var(--st-blocked);"
     end
   end
+
+  describe "targets_strip/1 — local dates" do
+    test "formats the target and estimate dates in the current language without a zone shift" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          render_targets([entry(%{estimated_completion_date: ~D[2026-12-20]})])
+        end)
+
+      assert html =~ "31. Dez. 2026"
+      assert html =~ "20. Dez. 2026"
+      refute html =~ "Dec 31, 2026"
+      refute html =~ "1. Jan. 2027"
+    end
+  end
 end

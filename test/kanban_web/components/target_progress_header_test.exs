@@ -226,4 +226,18 @@ defmodule KanbanWeb.TargetProgressHeaderTest do
       assert html =~ "background: var(--st-blocked-soft); color: var(--st-blocked);"
     end
   end
+
+  describe "target_progress_header/1 — local dates" do
+    test "formats the target date in the current language without a zone shift" do
+      KanbanWeb.LocalTime.put_timezone("Pacific/Kiritimati")
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "fr", fn ->
+          render_header(summary(), flow())
+        end)
+
+      assert html =~ "31 déc. 2026"
+      refute html =~ "Dec 31, 2026"
+    end
+  end
 end

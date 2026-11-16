@@ -2701,7 +2701,7 @@ msgstr "Tempo que as tarefas passam na fila antes do trabalho começar"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Tempo que as tarefas passam aguardando revisão após a conclusão"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:461
+#: lib/kanban_web/components/agent_activity_feed.ex:480
 #: lib/kanban_web/components/agent_roster_card.ex:246
 #: lib/kanban_web/components/agents_header.ex:444
 #: lib/kanban_web/live/metrics_live/components/filters.ex:79
@@ -3722,7 +3722,7 @@ msgstr "Acessar os dados pessoais que mantemos sobre você."
 msgid "Account information"
 msgstr "Informações da conta"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:104
+#: lib/kanban_web/components/agent_activity_feed.ex:112
 #: lib/kanban_web/components/agents_header.ex:73
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:38
 #, elixir-autogen, elixir-format
@@ -4923,8 +4923,8 @@ msgstr "Filhos"
 msgid "Claimed"
 msgstr "Reservado"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:420
-#: lib/kanban_web/components/agent_detail_panel.ex:96
+#: lib/kanban_web/components/agent_activity_feed.ex:428
+#: lib/kanban_web/components/agent_detail_panel.ex:97
 #: lib/kanban_web/components/agent_roster_card.ex:249
 #, elixir-autogen, elixir-format
 msgid "Claims"
@@ -4956,7 +4956,7 @@ msgstr "Pontos de Integração"
 msgid "Review status"
 msgstr "Status de revisão"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:236
+#: lib/kanban_web/components/agent_detail_panel.ex:237
 #: lib/kanban_web/components/agent_roster_card.ex:248
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:63
 #: lib/kanban_web/export/workspace_metrics_excel.ex:188
@@ -5002,32 +5002,32 @@ msgstr "A trabalhar"
 msgid "Yes"
 msgstr "Sim"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:474
+#: lib/kanban_web/components/agent_activity_feed.ex:489
 #: lib/kanban_web/components/agents_header.ex:572
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}h %{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:478
+#: lib/kanban_web/components/agent_activity_feed.ex:493
 #: lib/kanban_web/components/agents_header.ex:575
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:419
+#: lib/kanban_web/components/agent_activity_feed.ex:427
 #: lib/kanban_web/components/archive_filter_chips.ex:89
 #: lib/kanban_web/live/notification_live/index.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Todos"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:422
+#: lib/kanban_web/components/agent_activity_feed.ex:430
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "Conclusões"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:96
-#: lib/kanban_web/components/agent_detail_panel.ex:137
+#: lib/kanban_web/components/agent_activity_feed.ex:104
+#: lib/kanban_web/components/agent_detail_panel.ex:138
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
 msgstr "Sem atividade recente."
@@ -5116,8 +5116,8 @@ msgstr "Aprovar"
 msgid "Request changes"
 msgstr "Solicitar mudanças"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:316
-#: lib/kanban_web/components/agent_activity_feed.ex:318
+#: lib/kanban_web/components/agent_activity_feed.ex:324
+#: lib/kanban_web/components/agent_activity_feed.ex:326
 #: lib/kanban_web/components/review_detail_header.ex:78
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -7037,7 +7037,7 @@ msgstr "é inconsistente com a tarefa: a revisão lista %{supplied} entradas de 
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "é inconsistente com a tarefa: a revisão relata %{checked} critérios de aceitação verificados, mas a tarefa define %{expected}; as contagens devem corresponder"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:421
+#: lib/kanban_web/components/agent_activity_feed.ex:429
 #: lib/kanban_web/export/metrics_excel.ex:285
 #, elixir-autogen, elixir-format
 msgid "Reviewed"
@@ -7060,18 +7060,18 @@ msgstr "Detalhes técnicos"
 msgid "Technical Details (JSON object)"
 msgstr "Detalhes técnicos (objeto JSON)"
 
-#: lib/kanban_web/live/agents_live/components/roster.ex:132
+#: lib/kanban_web/live/agents_live/components/roster.ex:136
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtrando por %{agent}"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:221
-#: lib/kanban_web/live/agents_live/components/roster.ex:149
+#: lib/kanban_web/live/agents_live/components/roster.ex:153
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Limpar"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:272
+#: lib/kanban_web/components/agent_activity_feed.ex:280
 #: lib/kanban_web/components/agent_roster_card.ex:106
 #, elixir-autogen, elixir-format
 msgid "Operator"
@@ -7103,7 +7103,7 @@ msgstr "Concluídas · 7 d"
 msgid "Completed · 30d"
 msgstr "Concluídas · 30 d"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:209
+#: lib/kanban_web/components/agent_detail_panel.ex:210
 #: lib/kanban_web/components/agents_header.ex:294
 #, elixir-autogen, elixir-format
 msgid "Success rate"
@@ -7119,7 +7119,7 @@ msgstr "Ainda não há tarefas concluídas neste período."
 msgid "%{pct}%"
 msgstr "%{pct} %"
 
-#: lib/kanban_web/components/agents_header.ex:590
+#: lib/kanban_web/components/agents_header.ex:592
 #, elixir-autogen, elixir-format
 msgid "%{date}: %{count} completed"
 msgstr "%{date}: %{count} concluídas"
@@ -7134,27 +7134,27 @@ msgstr "dos quais"
 msgid "Dormant (%{count})"
 msgstr "Inativos (%{count})"
 
-#: lib/kanban_web/live/agents_live/components/roster.ex:181
+#: lib/kanban_web/live/agents_live/components/roster.ex:185
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Visto há %{days} d"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:68
+#: lib/kanban_web/components/agent_detail_panel.ex:69
 #, elixir-autogen, elixir-format
 msgid "Current work"
 msgstr "Trabalho atual"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:89
+#: lib/kanban_web/components/agent_detail_panel.ex:90
 #, elixir-autogen, elixir-format
 msgid "No active task"
 msgstr "Sem tarefa ativa"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:108
+#: lib/kanban_web/components/agent_detail_panel.ex:109
 #, elixir-autogen, elixir-format
 msgid "Failures"
 msgstr "Falhas"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:119
+#: lib/kanban_web/components/agent_detail_panel.ex:120
 #, elixir-autogen, elixir-format
 msgid "Recent activity"
 msgstr "Atividade recente"
@@ -7170,22 +7170,17 @@ msgstr "Nenhum"
 msgid "vs the prior period"
 msgstr "em relação ao período anterior"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:463
-#, elixir-autogen, elixir-format
-msgid "%a, %b %-d"
-msgstr "%a, %-d %b"
-
-#: lib/kanban_web/components/agent_activity_feed.ex:462
+#: lib/kanban_web/components/agent_activity_feed.ex:481
 #, elixir-autogen, elixir-format
 msgid "Yesterday"
 msgstr "Ontem"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:184
+#: lib/kanban_web/components/agent_detail_panel.ex:185
 #, elixir-autogen, elixir-format
 msgid "Daily completions over the last %{days} days"
 msgstr "Conclusões diárias nos últimos %{days} dias"
 
-#: lib/kanban_web/components/agent_detail_panel.ex:178
+#: lib/kanban_web/components/agent_detail_panel.ex:179
 #, elixir-autogen, elixir-format
 msgid "No activity yet."
 msgstr "Ainda sem atividade."
@@ -7465,7 +7460,7 @@ msgstr "Remover"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Use este formulário para gerenciar os alvos de entrega e suas metas."
 
-#: lib/kanban_web/live/target_live/show.html.heex:79
+#: lib/kanban_web/live/target_live/show.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Ainda não há metas neste alvo."
@@ -7492,12 +7487,12 @@ msgstr "Progresso do alvo por status dos filhos"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} de %{total} (%{pct}%)"
 
-#: lib/kanban_web/live/target_live/show.html.heex:74
+#: lib/kanban_web/live/target_live/show.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Goals"
 msgstr "Metas"
 
-#: lib/kanban_web/live/target_live/show.html.heex:47
+#: lib/kanban_web/live/target_live/show.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Edit target"
 msgstr "Editar alvo"
@@ -7527,7 +7522,7 @@ msgstr "Inativo"
 msgid "Why targets are at risk"
 msgstr "Por que os alvos estão em risco"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:285
+#: lib/kanban_web/components/agent_activity_feed.ex:293
 #: lib/kanban_web/components/agent_roster_card.ex:138
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
@@ -7954,12 +7949,12 @@ msgstr "Tarefas criadas"
 msgid "Total Actions"
 msgstr "Total de ações"
 
-#: lib/kanban_web/live/target_live/show.html.heex:65
+#: lib/kanban_web/live/target_live/show.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "Arquivar alvo"
 
-#: lib/kanban_web/live/target_live/show.html.heex:55
+#: lib/kanban_web/live/target_live/show.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "Arquivar este alvo? Ele deixará de aparecer nos seus quadros."
@@ -8006,18 +8001,18 @@ msgstr "Data alvo:"
 msgid "Target unarchived successfully"
 msgstr "Alvo desarquivado com sucesso"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:97
+#: lib/kanban_web/live/target_live/archived.html.heex:101
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "Desarquivar"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:87
+#: lib/kanban_web/live/target_live/archived.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "Desarquivar este alvo? Ele voltará a aparecer nos seus quadros."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
-#: lib/kanban_web/live/target_live/show.html.heex:32
+#: lib/kanban_web/live/target_live/archived.html.heex:82
+#: lib/kanban_web/live/target_live/show.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "Arquivado %{age}"
@@ -9567,7 +9562,7 @@ msgstr "Salve estes códigos de recuperação agora. Eles não serão mostrados 
 msgid "Scan this QR code with your authenticator app, or enter the key by hand. Then enter the 6-digit code the app shows."
 msgstr "Escaneie este código QR com seu app autenticador ou digite a chave manualmente. Depois, digite o código de 6 dígitos que o app mostra."
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:81
+#: lib/kanban_web/components/organization_two_factor_banner.ex:84
 #: lib/kanban_web/components/two_factor_reminder.ex:60
 #: lib/kanban_web/live/user_live/two_factor_component.ex:81
 #, elixir-autogen, elixir-format
@@ -9705,7 +9700,7 @@ msgstr "Agora não"
 msgid "Protect your account with two-factor authentication"
 msgstr "Proteja sua conta com a autenticação em dois fatores"
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:88
+#: lib/kanban_web/components/organization_two_factor_banner.ex:91
 #: lib/kanban_web/components/two_factor_reminder.ex:81
 #, elixir-autogen, elixir-format
 msgid "Read the setup guide"
@@ -11981,17 +11976,17 @@ msgstr "Política de segurança de %{name}. Somente seus administradores podem a
 msgid "Security policy saved."
 msgstr "Política de segurança salva."
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:73
+#: lib/kanban_web/components/organization_two_factor_banner.ex:76
 #, elixir-autogen, elixir-format
 msgid "The grace period has ended. Turn it on now to keep using Stride."
 msgstr "O período de carência terminou. Ative-a agora para continuar usando o Stride."
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:62
+#: lib/kanban_web/components/organization_two_factor_banner.ex:65
 #, elixir-autogen, elixir-format
 msgid "Turn it on before %{deadline}, or you will be asked to before you can continue."
 msgstr "Ative-a antes de %{deadline}; caso contrário, será solicitado que você a ative antes de continuar."
 
-#: lib/kanban_web/components/organization_two_factor_banner.ex:54
+#: lib/kanban_web/components/organization_two_factor_banner.ex:57
 #, elixir-autogen, elixir-format
 msgid "Your Organization requires two-factor authentication"
 msgstr "Sua organização exige a autenticação em dois fatores"

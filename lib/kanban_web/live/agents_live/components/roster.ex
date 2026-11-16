@@ -98,10 +98,14 @@ defmodule KanbanWeb.AgentsLive.Components.Roster do
               on_select="select_agent"
               selected?={{agent.name, agent.owner_key} == @selected_agent}
             />
-            <p style={[
-              "margin: 2px 0 0; padding-left: 2px;",
-              "font-size: 10px; color: var(--ink-3);"
-            ]}>
+            <p
+              data-agent-last-seen
+              title={last_seen_title(agent.last_active_at)}
+              style={[
+                "margin: 2px 0 0; padding-left: 2px;",
+                "font-size: 10px; color: var(--ink-3);"
+              ]}
+            >
               {format_last_seen(agent.last_active_at)}
             </p>
           </div>
@@ -182,4 +186,9 @@ defmodule KanbanWeb.AgentsLive.Components.Roster do
   end
 
   defp format_last_seen(_), do: "—"
+
+  # The absolute local time behind the relative "last seen" label, as a hover
+  # title in the viewer's zone and language. nil omits the attribute.
+  defp last_seen_title(nil), do: nil
+  defp last_seen_title(last_active_at), do: KanbanWeb.LocalTime.format_full(last_active_at)
 end

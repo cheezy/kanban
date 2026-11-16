@@ -288,5 +288,5 @@ defmodule KanbanWeb.TargetRiskExplainer do
 
   # Same format the targets strip and the target header use for both dates, so
   # the three surfaces read identically.
-  defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+  defp format_date(%Date{} = date), do: KanbanWeb.LocalTime.format(date, :short_date)
 end
