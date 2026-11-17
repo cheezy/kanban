@@ -497,7 +497,7 @@ defmodule Kanban.MetricsTest do
       reviewed_at = DateTime.utc_now()
 
       {:ok, _} =
-        Tasks.update_task(task, %{
+        update_review(task, %{
           completed_at: completed_at,
           reviewed_at: reviewed_at
         })
@@ -545,7 +545,7 @@ defmodule Kanban.MetricsTest do
 
       # Task 1: Has review wait time
       {:ok, _} =
-        Tasks.update_task(task1, %{
+        update_review(task1, %{
           completed_at: DateTime.add(DateTime.utc_now(), -6, :hour),
           reviewed_at: DateTime.utc_now()
         })
@@ -579,28 +579,91 @@ defmodule Kanban.MetricsTest do
       assert stats.backlog_wait.count == 0
     end
 
-    test "clamps review wait time to zero when reviewed_at is before completed_at" do
+    test "skips a review reviewed before it was requested" do
       user = user_fixture()
       board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
 
       task = task_fixture(column)
 
-      # Simulate data inconsistency: reviewed_at is before completed_at
-      reviewed_at = DateTime.add(DateTime.utc_now(), -6, :hour)
-      completed_at = DateTime.utc_now()
+      # Inconsistent data: reviewed_at is before review_requested_at
+      now = DateTime.utc_now()
 
       {:ok, _} =
-        Tasks.update_task(task, %{
-          completed_at: completed_at,
-          reviewed_at: reviewed_at
+        update_review(task, %{
+          review_requested_at: now,
+          completed_at: now,
+          reviewed_at: DateTime.add(now, -6, :hour)
+        })
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      assert stats.review_wait.count == 0
+    end
+
+    test "fetch_review_wait_times returns the real wait for an approved task" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      now = DateTime.utc_now()
+
+      # The approve flow stamps reviewed_at, then completed_at moments later,
+      # so the old completed_at-based wait read 0 here.
+      {:ok, _} =
+        update_review(task, %{
+          review_requested_at: DateTime.add(now, -12, :hour),
+          reviewed_at: DateTime.add(now, -60, :second),
+          completed_at: now
         })
 
       {:ok, stats} = Metrics.get_wait_time_stats(board.id)
 
       assert stats.review_wait.count == 1
-      assert stats.review_wait.average_hours >= 0
-      assert stats.review_wait.min_hours >= 0
+      assert stats.review_wait.average_hours >= 11.9 and stats.review_wait.average_hours <= 12.0
+    end
+
+    test "a review approved in the same second waits 0" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      now = DateTime.truncate(DateTime.utc_now(), :second)
+
+      {:ok, _} =
+        update_review(task, %{review_requested_at: now, reviewed_at: now, completed_at: now})
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+
+      assert stats.review_wait.count == 1
+      assert stats.review_wait.average_hours == 0
+    end
+
+    test "exports show the same review wait as the page" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      now = DateTime.utc_now()
+
+      {:ok, _} =
+        update_review(task, %{
+          review_requested_at: DateTime.add(now, -3, :hour),
+          reviewed_at: DateTime.add(now, -1, :hour),
+          completed_at: now
+        })
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+      # The PDF and Excel exports render these rows.
+      [row] = TaskQueries.get_review_wait_tasks(board.id)
+
+      seconds =
+        if is_struct(row.review_wait_seconds, Decimal),
+          do: Decimal.to_float(row.review_wait_seconds),
+          else: row.review_wait_seconds
+
+      assert_in_delta seconds / 3600, stats.review_wait.average_hours, 0.01
+      assert_in_delta seconds, 7200, 1
     end
 
     test "clamps backlog wait time to zero when claimed_at is before inserted_at" do
@@ -735,7 +798,7 @@ defmodule Kanban.MetricsTest do
       task = task_fixture(column)
 
       {:ok, _} =
-        Tasks.update_task(task, %{
+        update_review(task, %{
           completed_at: DateTime.add(DateTime.utc_now(), -40, :day),
           reviewed_at: DateTime.add(DateTime.utc_now(), -1, :day)
         })
@@ -756,7 +819,7 @@ defmodule Kanban.MetricsTest do
       task = task_fixture(column)
 
       {:ok, _} =
-        Tasks.update_task(task, %{
+        update_review(task, %{
           completed_at: DateTime.add(DateTime.utc_now(), -60, :day),
           reviewed_at: DateTime.add(DateTime.utc_now(), -40, :day)
         })
@@ -834,7 +897,7 @@ defmodule Kanban.MetricsTest do
         {:ok, _} =
           column
           |> task_fixture()
-          |> Tasks.update_task(%{
+          |> update_review(%{
             completed_at: DateTime.add(DateTime.utc_now(), -40, :day),
             reviewed_at: DateTime.add(DateTime.utc_now(), -hours, :hour)
           })
@@ -844,7 +907,7 @@ defmodule Kanban.MetricsTest do
       {:ok, _} =
         column
         |> task_fixture()
-        |> Tasks.update_task(%{
+        |> update_review(%{
           completed_at: DateTime.add(DateTime.utc_now(), -60, :day),
           reviewed_at: DateTime.add(DateTime.utc_now(), -45, :day)
         })
@@ -853,7 +916,7 @@ defmodule Kanban.MetricsTest do
       {:ok, _} =
         column
         |> task_fixture(%{type: :goal})
-        |> Tasks.update_task(%{
+        |> update_review(%{
           completed_at: DateTime.add(DateTime.utc_now(), -20, :hour),
           reviewed_at: DateTime.add(DateTime.utc_now(), -2, :hour)
         })
@@ -904,7 +967,7 @@ defmodule Kanban.MetricsTest do
       {:ok, _} =
         column
         |> task_fixture()
-        |> Tasks.update_task(%{
+        |> update_review(%{
           completed_by_agent: "Claude Sonnet 4.5",
           completed_at: DateTime.add(DateTime.utc_now(), -12, :hour),
           reviewed_at: DateTime.utc_now()
@@ -916,7 +979,7 @@ defmodule Kanban.MetricsTest do
       {:ok, _} =
         column
         |> task_fixture()
-        |> Tasks.update_task(%{
+        |> update_review(%{
           created_by_agent: "Claude Sonnet 4.5",
           completed_by_agent: "GPT-4",
           completed_at: DateTime.add(DateTime.utc_now(), -12, :hour),
@@ -947,7 +1010,7 @@ defmodule Kanban.MetricsTest do
       {:ok, _} =
         column
         |> task_fixture()
-        |> Tasks.update_task(%{
+        |> update_review(%{
           completed_at: ~U[2026-01-31 20:00:00Z],
           reviewed_at: ~U[2026-02-02 08:00:00Z]
         })
@@ -993,7 +1056,7 @@ defmodule Kanban.MetricsTest do
       reviewed_at = ~U[2026-02-02 10:00:00Z]
 
       {:ok, _} =
-        Tasks.update_task(task, %{
+        update_review(task, %{
           completed_at: completed_at,
           reviewed_at: reviewed_at
         })
@@ -1284,7 +1347,7 @@ defmodule Kanban.MetricsTest do
       reviewed_at = DateTime.utc_now()
 
       {:ok, _} =
-        Tasks.update_task(task, %{
+        update_review(task, %{
           completed_at: completed_at,
           reviewed_at: reviewed_at
         })
@@ -1874,5 +1937,31 @@ defmodule Kanban.MetricsTest do
       )
 
     Tasks.update_task(task, attrs)
+  end
+
+  defp update_review(task, attrs) do
+    {requested, attrs} = Map.split(attrs, [:review_requested_at])
+
+    with {:ok, task} <- Tasks.update_task(task, attrs) do
+      stamp_review_requested(task, Map.merge(attrs, requested))
+    end
+  end
+
+  # Review wait runs from review_requested_at, which update_task doesn't cast.
+  # It defaults to the earlier of completed_at and reviewed_at, so a test that
+  # only sets those keeps the population it expects; pass it to set it exactly.
+  defp stamp_review_requested(task, attrs) do
+    requested_at =
+      Map.get_lazy(attrs, :review_requested_at, fn ->
+        [attrs[:completed_at], attrs[:reviewed_at]]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.min(DateTime, fn -> nil end)
+      end)
+
+    task
+    |> Ecto.Changeset.change(
+      review_requested_at: requested_at && DateTime.truncate(requested_at, :second)
+    )
+    |> Kanban.Repo.update()
   end
 end

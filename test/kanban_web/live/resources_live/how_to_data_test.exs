@@ -1617,7 +1617,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       metrics = File.read!("lib/kanban/metrics.ex")
       assert metrics =~ "Cycle time is measured from `claimed_at` to `completed_at`"
       assert metrics =~ "Lead time is measured from task creation (`inserted_at`)"
-      assert metrics =~ "Review wait time - Time from `completed_at` to `reviewed_at`"
+      assert metrics =~ "Review wait time - Time from `review_requested_at` to `reviewed_at`"
 
       lead = metrics_content(["lead-time-metrics"])
       assert lead =~ "Lead time = backlog wait + cycle time"

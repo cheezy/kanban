@@ -554,7 +554,16 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
         attrs
       )
 
-    Tasks.update_task(task, attrs)
+    # Review wait runs from review_requested_at, which update_task doesn't cast;
+    # it defaults to the completion time so callers that move completed_at keep
+    # the wait they expect.
+    {requested_at, attrs} = Map.pop(attrs, :review_requested_at, attrs.completed_at)
+
+    with {:ok, task} <- Tasks.update_task(task, attrs) do
+      task
+      |> Ecto.Changeset.change(review_requested_at: DateTime.truncate(requested_at, :second))
+      |> Kanban.Repo.update()
+    end
   end
 
   describe "export/2 - throughput with goals" do

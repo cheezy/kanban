@@ -84,13 +84,23 @@ defmodule Kanban.Metrics.Workspace.Durations do
 
   def lead_minutes(_task, _exclude?), do: nil
 
-  @doc "One task's review wait in whole minutes, or nil when review did not apply."
+  @doc """
+  One task's review wait in whole minutes, from `review_requested_at` to
+  `reviewed_at`, or nil when review did not apply, the request time is missing,
+  or the task was reviewed before it was requested.
+  """
   @spec review_wait_minutes(map(), boolean()) :: non_neg_integer() | nil
   def review_wait_minutes(
-        %{needs_review: true, completed_at: %DateTime{} = c, reviewed_at: %DateTime{} = r},
+        %{
+          needs_review: true,
+          review_requested_at: %DateTime{} = requested,
+          reviewed_at: %DateTime{} = reviewed
+        },
         exclude?
       ) do
-    elapsed_minutes(c, r, exclude?)
+    if DateTime.compare(reviewed, requested) == :lt,
+      do: nil,
+      else: elapsed_minutes(requested, reviewed, exclude?)
   end
 
   def review_wait_minutes(_task, _exclude?), do: nil

@@ -301,34 +301,50 @@ defmodule Kanban.Metrics.TaskQueriesTest do
   describe "get_review_wait_tasks/2 - AI-optimized boards" do
     setup :ai_board_with_column
 
-    test "measures review wait from completed_at to reviewed_at", %{column: column} do
+    test "review_wait_tasks_ai uses review_requested_at", %{column: column} do
       task = task_fixture(column)
 
+      # As in the real approve flow, completed_at is stamped after reviewed_at.
       {:ok, _} =
         complete_task(task, %{
-          completed_at: ~U[2026-06-01 10:00:00Z],
-          reviewed_at: ~U[2026-06-01 12:00:00Z]
+          review_requested_at: ~U[2026-06-01 10:00:00Z],
+          reviewed_at: ~U[2026-06-01 12:00:00Z],
+          completed_at: ~U[2026-06-01 12:00:05Z]
         })
 
       board_id = board_id(column)
       assert [row] = TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time)
       assert row.identifier == task.identifier
-      # 2 hours between completion and review.
+      assert row.review_requested_at == ~U[2026-06-01 10:00:00Z]
+      # 2 hours between the review request and the review.
       assert_in_delta to_float(row.review_wait_seconds), 7200.0, 0.1
     end
 
-    test "clamps a negative wait to zero (GREATEST)", %{column: column} do
+    test "skips a review reviewed before it was requested", %{column: column} do
       task = task_fixture(column)
 
       {:ok, _} =
         complete_task(task, %{
+          review_requested_at: ~U[2026-06-01 12:00:00Z],
           completed_at: ~U[2026-06-01 12:00:00Z],
           reviewed_at: ~U[2026-06-01 10:00:00Z]
         })
 
       board_id = board_id(column)
-      assert [row] = TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time)
-      assert to_float(row.review_wait_seconds) == 0.0
+      assert TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "skips a task with no review_requested_at", %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          completed_at: ~U[2026-06-01 10:00:00Z],
+          reviewed_at: ~U[2026-06-01 12:00:00Z]
+        })
+
+      board_id = board_id(column)
+      assert TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time) == []
     end
 
     test "excludes tasks that were never reviewed", %{column: column} do
@@ -522,7 +538,29 @@ defmodule Kanban.Metrics.TaskQueriesTest do
         attrs
       )
 
-    Tasks.update_task(task, attrs)
+    {requested, attrs} = Map.split(attrs, [:review_requested_at])
+
+    with {:ok, task} <- Tasks.update_task(task, attrs) do
+      stamp_review_requested(task, Map.merge(attrs, requested))
+    end
+  end
+
+  # Review wait runs from review_requested_at, which update_task doesn't cast.
+  # It defaults to the earlier of completed_at and reviewed_at, so a test that
+  # only sets those keeps the population it expects; pass it to set it exactly.
+  defp stamp_review_requested(task, attrs) do
+    requested_at =
+      Map.get_lazy(attrs, :review_requested_at, fn ->
+        [attrs[:completed_at], attrs[:reviewed_at]]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.min(DateTime, fn -> nil end)
+      end)
+
+    task
+    |> Ecto.Changeset.change(
+      review_requested_at: requested_at && DateTime.truncate(requested_at, :second)
+    )
+    |> Kanban.Repo.update()
   end
 
   defp create_move_history(task, from_column, to_column, inserted_at) do

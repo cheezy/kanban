@@ -82,6 +82,33 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       assert html =~ task.title
     end
 
+    test "the wait time page shows the real wait", %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+      now = DateTime.utc_now()
+
+      # As in the approve flow, completed_at lands after reviewed_at; the wait
+      # is the 4 hours from the review request to the review, not 0.
+      {:ok, _} =
+        add_review_wait(task, %{
+          review_requested_at: DateTime.add(now, -5, :hour),
+          reviewed_at: DateTime.add(now, -1, :hour),
+          completed_at: now
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      # The summary (fetch_review_wait_times) and the task row
+      # (get_review_wait_tasks) come from different queries, so check each.
+      summary =
+        render(element(view, ~s([data-wait-section="review"] [data-summary-stats])))
+
+      row = render(element(view, ~s([data-wait-section="review"] [data-metric-task-list])))
+
+      assert summary =~ "4.0h"
+      assert row =~ task.identifier
+      assert row =~ "4.0h"
+    end
+
     test "displays multiple review tasks sorted by reviewed_at", %{
       conn: conn,
       board: board,
@@ -1064,7 +1091,16 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
         attrs
       )
 
-    Tasks.update_task(task, attrs)
+    # Review wait runs from review_requested_at, which update_task doesn't cast;
+    # it defaults to the completion time so callers that move completed_at keep
+    # the wait they expect.
+    {requested_at, attrs} = Map.pop(attrs, :review_requested_at, attrs.completed_at)
+
+    with {:ok, task} <- Tasks.update_task(task, attrs) do
+      task
+      |> Ecto.Changeset.change(review_requested_at: DateTime.truncate(requested_at, :second))
+      |> Kanban.Repo.update()
+    end
   end
 
   defp add_backlog_wait(task, attrs \\ %{}) do

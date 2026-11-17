@@ -79,26 +79,54 @@ defmodule Kanban.Metrics.Workspace.DurationsTest do
   end
 
   describe "review_wait_minutes/2" do
-    test "measures completion to review, honouring the weekend flag" do
+    test "review wait runs from review_requested_at to reviewed_at" do
+      # completed_at is stamped after the review, as the approve flow does; it
+      # must not start the wait.
       task = %{
         needs_review: true,
-        completed_at: @friday_evening,
-        reviewed_at: @monday_morning
+        review_requested_at: @friday_evening,
+        reviewed_at: @monday_morning,
+        completed_at: DateTime.add(@monday_morning, 5, :second)
       }
 
       assert Durations.review_wait_minutes(task, false) == 64 * 60
       assert Durations.review_wait_minutes(task, true) == 16 * 60
     end
 
+    test "a task without review_requested_at has no review wait" do
+      task = %{
+        needs_review: true,
+        completed_at: @friday_evening,
+        review_requested_at: nil,
+        reviewed_at: @monday_morning
+      }
+
+      assert Durations.review_wait_minutes(task, false) == nil
+
+      assert task |> Map.delete(:review_requested_at) |> Durations.review_wait_minutes(false) ==
+               nil
+    end
+
+    test "reviewed_at before review_requested_at is skipped, not negative" do
+      task = %{
+        needs_review: true,
+        review_requested_at: @monday_morning,
+        reviewed_at: @friday_evening
+      }
+
+      assert Durations.review_wait_minutes(task, false) == nil
+      assert Durations.review_wait_minutes(task, true) == nil
+    end
+
     test "returns nil when the task did not need review or was never reviewed" do
-      base = %{needs_review: true, completed_at: @friday_evening, reviewed_at: @monday_morning}
+      base = %{
+        needs_review: true,
+        review_requested_at: @friday_evening,
+        reviewed_at: @monday_morning
+      }
 
       assert Durations.review_wait_minutes(%{base | needs_review: false}, true) == nil
-
-      assert Durations.review_wait_minutes(
-               %{needs_review: true, completed_at: @friday_evening, reviewed_at: nil},
-               true
-             ) == nil
+      assert Durations.review_wait_minutes(%{base | reviewed_at: nil}, true) == nil
     end
   end
 

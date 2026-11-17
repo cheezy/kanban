@@ -341,8 +341,8 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   # into lightweight maps carrying only the fields the calculations read — no full
   # `%Task{}` structs and no `Repo.preload` — and resolves the completing user's
   # name/email through a left join on `:completed_by` rather than a second query.
-  # `reviewed_at` is included because `review_wait_minutes/1` needs it even though
-  # it is not one of the fields the task brief enumerated.
+  # `review_requested_at` and `reviewed_at` are included because
+  # `Durations.review_wait_minutes/2` measures between them.
   defp fetch(board_ids, %DateTime{} = window_start, %DateTime{} = window_end) do
     Task
     |> join(:inner, [t], c in assoc(t, :column))
@@ -361,6 +361,7 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
       inserted_at: t.inserted_at,
       needs_review: t.needs_review,
       review_status: t.review_status,
+      review_requested_at: t.review_requested_at,
       reviewed_at: t.reviewed_at,
       completed_by_agent: t.completed_by_agent,
       completed_by_id: t.completed_by_id,

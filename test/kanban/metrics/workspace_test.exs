@@ -1034,7 +1034,7 @@ defmodule Kanban.Metrics.WorkspaceTest do
       # Reviewed 90 minutes after completion.
       reviewed_at = DateTime.add(completed_at, 90 * 60, :second)
 
-      {:ok, _} =
+      {:ok, task} =
         Tasks.update_task(task, %{
           claimed_at: DateTime.add(completed_at, -3600, :second),
           completed_at: completed_at,
@@ -1042,6 +1042,9 @@ defmodule Kanban.Metrics.WorkspaceTest do
           review_status: :approved,
           reviewed_by_id: user.id
         })
+
+      # Review wait starts at review_requested_at, which update_task doesn't cast.
+      put_fields!(task, %{review_requested_at: completed_at})
 
       kpis = Workspace.workspace_kpis(scope: scope)
       assert kpis.review_wait_minutes == 90
@@ -1599,6 +1602,7 @@ defmodule Kanban.Metrics.WorkspaceTest do
       |> put_fields!(%{
         claimed_at: local_at(friday, @tz, 17),
         completed_at: local_at(friday, @tz, 18),
+        review_requested_at: local_at(friday, @tz, 18),
         reviewed_at: local_at(monday, @tz, 10),
         needs_review: true
       })

@@ -354,7 +354,10 @@ defmodule Kanban.Metrics do
   Returns wait time statistics for a board.
 
   Wait time is separated into:
-  * Review wait time - Time from `completed_at` to `reviewed_at`
+  * Review wait time - Time from `review_requested_at` to `reviewed_at`. On a
+    `needs_review` task `completed_at` is stamped after `reviewed_at`, so it can't
+    start the wait. Tasks with no `review_requested_at`, or reviewed before it,
+    are skipped rather than counted as zero.
   * Backlog wait time - Time from creation to being claimed (if applicable)
 
   The `:time_range` window bounds the **end** of each wait interval — the
@@ -422,18 +425,20 @@ defmodule Kanban.Metrics do
       |> join(:inner, [t], c in assoc(t, :column))
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
+      |> where([t], not is_nil(t.review_requested_at))
       |> where([t], not is_nil(t.reviewed_at))
+      |> where([t], t.reviewed_at >= t.review_requested_at)
       |> where([t], t.reviewed_at >= ^start_date)
       |> where([t], t.type != ^:goal)
       |> maybe_filter_by_completing_agent(agent_name)
       |> select([t], %{
         wait_time_seconds:
           fragment(
-            "GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))",
+            "EXTRACT(EPOCH FROM (? - ?))",
             t.reviewed_at,
-            t.completed_at
+            t.review_requested_at
           ),
-        start_time: t.completed_at,
+        start_time: t.review_requested_at,
         end_time: t.reviewed_at
       })
 

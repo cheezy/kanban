@@ -165,12 +165,14 @@ defmodule Kanban.Metrics.TaskQueries do
   end
 
   @doc """
-  Returns review-wait rows (time a completed task waited in review before being
-  reviewed), newest `reviewed_at` first. Only AI-optimized boards track a
-  review step, so regular boards return `[]`. `:agent_name` filters when present.
+  Returns review-wait rows (time a completed task waited in review, from
+  `review_requested_at` to `reviewed_at`), newest `reviewed_at` first. Only
+  AI-optimized boards track a review step, so regular boards return `[]`.
+  `:agent_name` filters when present.
 
-  `review_wait_seconds` is clamped at zero with `GREATEST(0, ...)` to guard
-  against data-integrity edge cases where `reviewed_at` precedes `completed_at`.
+  Rows with no `review_requested_at`, or whose `reviewed_at` precedes it, are
+  skipped rather than clamped to zero, as `cycle_time_tasks_ai` skips rows
+  completed before they were claimed.
   """
   def get_review_wait_tasks(board_id, opts \\ []) do
     if board_ai_optimized?(board_id) do
@@ -255,7 +257,8 @@ defmodule Kanban.Metrics.TaskQueries do
   end
 
   # Review wait applies only to AI-optimized boards (regular boards have no
-  # review step). `GREATEST(0, ...)` floors the duration at zero.
+  # review step). It starts at `review_requested_at`: on a `needs_review` task
+  # `completed_at` is stamped after `reviewed_at`, so it can't start the wait.
   defp review_wait_tasks_ai(board_id, opts) do
     {start_date, agent_name} = window(opts)
 
@@ -263,7 +266,9 @@ defmodule Kanban.Metrics.TaskQueries do
     |> join(:inner, [t], c in assoc(t, :column))
     |> where([t, c], c.board_id == ^board_id)
     |> where([t], not is_nil(t.completed_at))
+    |> where([t], not is_nil(t.review_requested_at))
     |> where([t], not is_nil(t.reviewed_at))
+    |> where([t], t.reviewed_at >= t.review_requested_at)
     |> where([t], t.reviewed_at >= ^start_date)
     |> where([t], t.type != ^:goal)
     |> order_by([t], desc: t.reviewed_at)
@@ -272,10 +277,11 @@ defmodule Kanban.Metrics.TaskQueries do
       identifier: t.identifier,
       title: t.title,
       completed_at: t.completed_at,
+      review_requested_at: t.review_requested_at,
       reviewed_at: t.reviewed_at,
       completed_by_agent: t.completed_by_agent,
       review_wait_seconds:
-        fragment("GREATEST(0, EXTRACT(EPOCH FROM (? - ?)))", t.reviewed_at, t.completed_at)
+        fragment("EXTRACT(EPOCH FROM (? - ?))", t.reviewed_at, t.review_requested_at)
     })
     |> maybe_filter_by_agent(agent_name)
     |> Repo.all()
