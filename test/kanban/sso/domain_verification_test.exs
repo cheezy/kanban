@@ -44,6 +44,19 @@ defmodule Kanban.SSO.DomainVerificationTest do
     end
   end
 
+  describe "redaction" do
+    test "inspect/1 redacts the verification token", %{domain: domain} do
+      assert is_binary(domain.verification_token) and domain.verification_token != ""
+
+      inspected = inspect(domain)
+
+      assert inspected =~ ~s(domain: "acme.example")
+
+      refute inspected =~ domain.verification_token,
+             "inspect/1 shows the domain verification token"
+    end
+  end
+
   describe "check/2" do
     test "succeeds with a stub resolver returning the token", %{domain: domain} do
       Process.put(:expected_record, DomainVerification.record_value(domain))

@@ -100,6 +100,29 @@ defmodule Kanban.Workspaces.InvitationsTest do
       assert invitation.invited_by_id == admin.id
     end
 
+    test "inspect/1 redacts the token hash", %{admin: admin, workspace: ws} do
+      {invitation, token} = invite!(admin, ws, %{"email" => "new@example.com"})
+      assert {:ok, hash} = Invitation.hash_token(token)
+      assert invitation.token_hash == hash
+
+      for record <- [invitation, Repo.get!(Invitation, invitation.id)] do
+        inspected = inspect(record)
+
+        assert inspected =~ ~s(email: "new@example.com")
+        refute inspected =~ token, "inspect/1 shows the raw invitation token"
+
+        for encoded <- [
+              inspect(hash),
+              Base.encode16(hash, case: :lower),
+              Base.encode16(hash),
+              Base.encode64(hash),
+              Base.url_encode64(hash, padding: false)
+            ] do
+          refute inspected =~ encoded, "inspect/1 shows the invitation token hash"
+        end
+      end
+    end
+
     test "refuses everyone but an org-admin of the workspace's Organization",
          %{organization: org, workspace: ws} do
       member = user_fixture()

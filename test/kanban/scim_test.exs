@@ -128,6 +128,34 @@ defmodule Kanban.SCIMTest do
       refute inspect(event.metadata) =~ plaintext
     end
 
+    test "inspect/1 redacts the token and its hash", ctx do
+      fresh =
+        ctx.organization.id
+        |> ScimToken.create_changeset(ctx.org_admin.id, %{name: "Okta"})
+        |> Repo.insert!()
+
+      assert "stride_scim_" <> _ = plaintext = fresh.token
+      assert fresh.token_hash == ScimToken.hash(plaintext)
+
+      assert {:ok, {created, created_plaintext}} =
+               SCIM.create_token(ctx.org_admin, ctx.organization.id, %{"name" => "Entra"})
+
+      stored = Repo.get!(ScimToken, created.id)
+      assert is_nil(stored.token)
+
+      for {record, name, secret} <- [
+            {fresh, "Okta", plaintext},
+            {created, "Entra", created_plaintext},
+            {stored, "Entra", created_plaintext}
+          ] do
+        inspected = inspect(record)
+
+        assert inspected =~ ~s(name: "#{name}")
+        refute inspected =~ secret, "inspect/1 shows the ScimToken plaintext"
+        refute inspected =~ ScimToken.hash(secret), "inspect/1 shows the ScimToken hash"
+      end
+    end
+
     test "only an enabled org-admin of the Organization can create or revoke", ctx do
       member = user_fixture()
       organization_member_fixture(ctx.organization, member)
