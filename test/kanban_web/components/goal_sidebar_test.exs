@@ -27,10 +27,19 @@ defmodule KanbanWeb.GoalSidebarTest do
         last_activity: ~U[2026-05-15 12:00:00Z],
         sparkline_data: [0, 1, 0, 2, 1, 1, 0, 2, 3, 1, 2, 0],
         sparkline_label: "May 03 — May 15",
-        sparkline_unit: :day
+        sparkline_unit: :day,
+        sparkline_count: 12
       },
       overrides
     )
+  end
+
+  defp render_heading(unit, count) do
+    assigns = %{metrics: metrics(%{sparkline_unit: unit, sparkline_count: count})}
+
+    rendered_to_string(~H"""
+    <GoalSidebar.goal_sidebar metrics={@metrics} />
+    """)
   end
 
   describe "goal_sidebar/1 — markers + scope" do
@@ -84,6 +93,30 @@ defmodule KanbanWeb.GoalSidebarTest do
 
       assert html =~ "Throughput · last 12 hours"
       assert html =~ "08:00 — 20:00"
+    end
+
+    test "renders the heading for the given bucket count" do
+      assert render_heading(:day, 3) =~ "Throughput · last 3 days"
+      assert render_heading(:hour, 5) =~ "Throughput · last 5 hours"
+      refute render_heading(:day, 3) =~ "last 12"
+    end
+
+    test "pluralises the heading in every locale" do
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+
+      for {locale, days, hours} <- [
+            {"de", "Durchsatz · letzte 3 Tage", "Durchsatz · letzte 5 Stunden"},
+            {"es", "Throughput · últimos 3 días", "Throughput · últimas 5 horas"},
+            {"fr", "Débit · 3 derniers jours", "Débit · 5 dernières heures"},
+            {"ja", "スループット · 過去3日", "スループット · 過去5時間"},
+            {"pt", "Throughput · últimos 3 dias", "Throughput · últimas 5 horas"},
+            {"zh", "吞吐量 · 最近 3 天", "吞吐量 · 最近 5 小时"}
+          ] do
+        Gettext.put_locale(KanbanWeb.Gettext, locale)
+
+        assert render_heading(:day, 3) =~ days
+        assert render_heading(:hour, 5) =~ hours
+      end
     end
 
     test "renders the caller-supplied range label verbatim" do

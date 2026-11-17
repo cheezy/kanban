@@ -18,9 +18,9 @@ defmodule KanbanWeb.GoalLive.Show do
   alias Kanban.Tasks
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.GoalChildRow
+  alias KanbanWeb.GoalLive.SidebarVelocity
   alias KanbanWeb.GoalProgressHeader
   alias KanbanWeb.GoalSidebar
-  alias KanbanWeb.LocalTime
   alias KanbanWeb.TaskActivityLog
 
   # Section render order — mirrors the column flow on the board. Children
@@ -352,7 +352,7 @@ defmodule KanbanWeb.GoalLive.Show do
 
     counts
     |> Map.merge(sidebar_time_metrics(goal, children))
-    |> Map.merge(sidebar_velocity(goal, children))
+    |> Map.merge(SidebarVelocity.build(goal, children))
   end
 
   defp sidebar_counts(children, contributor_count) do
@@ -419,89 +419,4 @@ defmodule KanbanWeb.GoalLive.Show do
     |> Enum.reject(&is_nil/1)
     |> Enum.max(NaiveDateTime, fn -> nil end)
   end
-
-  # --- Velocity sparkline -----------------------------------------------
-
-  @bucket_count 12
-
-  # Distribution of completions across the last 12 time units. Unit
-  # auto-adapts: hourly when the earliest activity (goal claim or any
-  # child completion) is within the last 24 hours, daily otherwise.
-  # Returns `:sparkline_data` (a list of integers) and
-  # `:sparkline_label` (the human-readable range for the caption).
-  defp sidebar_velocity(goal, children) do
-    now = DateTime.utc_now()
-    completions = completed_at_list(children)
-    earliest = earliest_signal(goal, children)
-    unit = bucket_unit(earliest, now)
-    buckets = bucketize(completions, unit, now)
-
-    %{
-      sparkline_data: buckets,
-      sparkline_label: bucket_label(unit, now),
-      sparkline_unit: unit
-    }
-  end
-
-  defp completed_at_list(children) do
-    children
-    |> Enum.map(&Map.get(&1, :completed_at))
-    |> Enum.reject(&is_nil/1)
-    |> Enum.map(&to_datetime/1)
-  end
-
-  defp earliest_signal(goal, children) do
-    candidates =
-      [Map.get(goal, :claimed_at), Map.get(goal, :inserted_at) | completed_at_list(children)]
-      |> Enum.map(&to_datetime/1)
-      |> Enum.reject(&is_nil/1)
-
-    Enum.min(candidates, DateTime, fn -> nil end)
-  end
-
-  defp bucket_unit(nil, _now), do: :hour
-
-  defp bucket_unit(%DateTime{} = earliest, now) do
-    if DateTime.diff(now, earliest, :second) <= 86_400, do: :hour, else: :day
-  end
-
-  defp bucketize(completions, :hour, now) do
-    bucket_indexes(completions, now, 3600)
-  end
-
-  defp bucketize(completions, :day, now) do
-    bucket_indexes(completions, now, 86_400)
-  end
-
-  # For each completion, the bucket index is floor((now - completed_at) / size).
-  # Index 0 is the most recent bucket. We then reverse so the oldest sits on
-  # the left of the sparkline (which is how PulseSparkline reads its data).
-  defp bucket_indexes(completions, now, size_seconds) do
-    counts = List.duplicate(0, @bucket_count)
-
-    Enum.reduce(completions, counts, fn dt, acc ->
-      idx = div(DateTime.diff(now, dt, :second), size_seconds)
-      if idx in 0..(@bucket_count - 1), do: List.update_at(acc, idx, &(&1 + 1)), else: acc
-    end)
-    |> Enum.reverse()
-  end
-
-  defp bucket_label(:hour, now) do
-    earliest = DateTime.add(now, -@bucket_count * 3600, :second)
-    range_label(earliest, now, :time)
-  end
-
-  defp bucket_label(:day, now) do
-    earliest = DateTime.add(now, -@bucket_count * 86_400, :second)
-    range_label(earliest, now, :short_date)
-  end
-
-  # Both ends shift to the viewer's zone and follow the UI language: the
-  # zone and locale are per-process, set by the on_mount hooks before mount/3.
-  defp range_label(from, to, style),
-    do: "#{LocalTime.format(from, style)} — #{LocalTime.format(to, style)}"
-
-  defp to_datetime(%DateTime{} = dt), do: dt
-  defp to_datetime(%NaiveDateTime{} = dt), do: DateTime.from_naive!(dt, "Etc/UTC")
-  defp to_datetime(_), do: nil
 end

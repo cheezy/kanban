@@ -365,8 +365,9 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
 
       assert html =~ "today"
-      # Sub-24h earliest signal → throughput unit collapses to hourly.
-      assert html =~ "Throughput · last 12 hours"
+      # Sub-24h earliest signal → throughput unit collapses to hourly, and a
+      # goal inserted just now gets the 2-bucket minimum (D426).
+      assert html =~ "Throughput · last 2 hours"
     end
   end
 
@@ -599,6 +600,125 @@ defmodule KanbanWeb.GoalLive.ShowTest do
     end
   end
 
+  describe "velocity sparkline — bucket count follows the goal's age" do
+    setup [:register_and_log_in_user]
+
+    test "shortens the daily sparkline to the goal's age", %{conn: conn, user: user} do
+      {board, goal} = aged_goal(user, 2 * 86_400 + 60)
+
+      html = velocity_html(conn, board, goal)
+
+      assert html =~ "Throughput · last 3 days"
+      assert length(point_ys(html)) == 3
+    end
+
+    test "caps the daily sparkline at 12 buckets", %{conn: conn, user: user} do
+      {board, goal} = aged_goal(user, 20 * 86_400)
+      html = velocity_html(conn, board, goal)
+
+      assert html =~ "Throughput · last 12 days"
+      assert length(point_ys(html)) == 12
+
+      {board, goal} = aged_goal(user, 86_400 + 3600)
+      html = velocity_html(conn, board, goal)
+
+      assert html =~ "Throughput · last 2 days"
+      assert length(point_ys(html)) == 2
+    end
+
+    test "shortens the hourly sparkline to the goal's age", %{conn: conn, user: user} do
+      {board, goal} = aged_goal(user, 3 * 3600 + 60)
+
+      html = velocity_html(conn, board, goal)
+
+      assert html =~ "Throughput · last 4 hours"
+      assert length(point_ys(html)) == 4
+    end
+
+    test "counts a completion older than the goal's earliest signal",
+         %{conn: conn, user: user} do
+      # The goal row is 2 hours old but a child finished 3 days ago: the
+      # completion is itself the earliest signal, so it widens the span to
+      # 4 daily buckets and lands in the oldest (leftmost) one.
+      {board, goal} = aged_goal(user, 2 * 3600, completed_age: 3 * 86_400 + 60)
+
+      html = velocity_html(conn, board, goal)
+
+      assert html =~ "Throughput · last 4 days"
+      # PulseSparkline puts the maximum at y=1 and zero at y=41 (height 42).
+      assert point_ys(html) == ["1", "41", "41", "41"]
+    end
+
+    test "renders a zero sparkline sized to a new goal", %{conn: conn, user: user} do
+      {board, goal} = aged_goal(user, 0)
+
+      html = velocity_html(conn, board, goal)
+
+      assert html =~ "Throughput · last 2 hours"
+      assert point_ys(html) == ["41", "41"]
+    end
+
+    test "caption range matches the shortened bucket span", %{conn: conn, user: user} do
+      {board, goal} = aged_goal(user, 2 * 86_400 + 60)
+
+      before = DateTime.utc_now()
+      html = velocity_html(conn, board, goal)
+      later = DateTime.utc_now()
+
+      [_, caption_start] = Regex.run(~r/<span>([^<]+) — [^<]+<\/span>/, html)
+
+      expected =
+        for now <- [before, later] do
+          now |> DateTime.add(-3 * 86_400, :second) |> KanbanWeb.LocalTime.format(:short_date)
+        end
+
+      assert caption_start in expected
+    end
+  end
+
+  # A goal (with one open child) whose inserted_at is `age_seconds` ago.
+  # `completed_age:` also completes the child that many seconds ago.
+  defp aged_goal(user, age_seconds, opts \\ []) do
+    board = board_fixture(user)
+    column = column_fixture(board)
+
+    {:ok, %{goal: goal, child_tasks: [child]}} =
+      Tasks.create_goal_with_tasks(
+        column,
+        %{"title" => "Aged goal", "created_by_id" => user.id},
+        [%{"title" => "Child", "type" => "work", "created_by_id" => user.id}]
+      )
+
+    seconds_ago = fn s ->
+      DateTime.utc_now() |> DateTime.add(-s, :second) |> DateTime.truncate(:second)
+    end
+
+    from(t in Kanban.Tasks.Task, where: t.id == ^goal.id)
+    |> Kanban.Repo.update_all(
+      set: [inserted_at: age_seconds |> seconds_ago.() |> DateTime.to_naive(), claimed_at: nil]
+    )
+
+    if completed_age = opts[:completed_age] do
+      from(t in Kanban.Tasks.Task, where: t.id == ^child.id)
+      |> Kanban.Repo.update_all(
+        set: [status: :completed, completed_at: seconds_ago.(completed_age)]
+      )
+    end
+
+    {board, goal}
+  end
+
+  defp velocity_html(conn, board, goal) do
+    {:ok, view, _html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+    view |> element("[data-goal-velocity]") |> render()
+  end
+
+  defp point_ys(html) do
+    ~r/<circle[^>]*\scy="([^"]+)"/
+    |> Regex.scan(html)
+    |> Enum.map(fn [_, y] -> y end)
+  end
+
   describe "local time — timestamps follow the viewer's zone and language" do
     setup [:register_and_log_in_user]
 
@@ -720,7 +840,8 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
 
       # The caption is "HH:MM — HH:MM": the German 24-hour clock, shifted to
-      # Toronto, spanning the last 12 hours.
+      # Toronto. The goal was inserted just now (a child's claim is not an
+      # age signal), so the sparkline is the 2-bucket minimum (D426).
       [_, from_h, from_m, to_h, to_m] =
         Regex.run(~r/(\d{2}):(\d{2}) — (\d{2}):(\d{2})/, html)
 
@@ -731,9 +852,9 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       now_minutes = local_now.hour * 60 + local_now.minute
 
       # The right end is the local "now" (allowing a minute's rollover); the
-      # left end is twelve hours before it.
+      # left end is two hours before it.
       assert Integer.mod(now_minutes - minutes.(to_h, to_m), 1440) in [0, 1]
-      assert Integer.mod(minutes.(to_h, to_m) - minutes.(from_h, from_m), 1440) == 720
+      assert Integer.mod(minutes.(to_h, to_m) - minutes.(from_h, from_m), 1440) == 120
     end
 
     test "keeps an ISO 8601 UTC datetime attribute", %{conn: conn, user: user} do
@@ -794,7 +915,8 @@ defmodule KanbanWeb.GoalLive.ShowTest do
         last_activity: ~U[2026-11-11 04:56:00Z],
         sparkline_data: List.duplicate(0, 12),
         sparkline_label: "",
-        sparkline_unit: :day
+        sparkline_unit: :day,
+        sparkline_count: 12
       },
       overrides
     )

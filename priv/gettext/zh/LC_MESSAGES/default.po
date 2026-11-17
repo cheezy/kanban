@@ -1173,7 +1173,7 @@ msgstr "代理"
 msgid "Approved"
 msgstr "已批准"
 
-#: lib/kanban_web/components/goal_sidebar.ex:70
+#: lib/kanban_web/components/goal_sidebar.ex:74
 #: lib/kanban_web/components/task_card.ex:127
 #: lib/kanban_web/components/task_card.ex:129
 #: lib/kanban_web/live/task_live/form_component.html.heex:134
@@ -3404,7 +3404,7 @@ msgid "Product"
 msgstr "产品"
 
 #: lib/kanban_web/components/goal_progress_header.ex:205
-#: lib/kanban_web/components/goal_sidebar.ex:67
+#: lib/kanban_web/components/goal_sidebar.ex:71
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:89
 #: lib/kanban_web/components/target_progress_header.ex:208
@@ -4745,30 +4745,30 @@ msgstr "已撤销"
 msgid "Working on it"
 msgstr "处理中"
 
-#: lib/kanban_web/components/goal_sidebar.ex:210
+#: lib/kanban_web/components/goal_sidebar.ex:218
 #, elixir-autogen, elixir-format
 msgid "%{n} days"
 msgstr "%{n} 天"
 
-#: lib/kanban_web/components/goal_sidebar.ex:209
+#: lib/kanban_web/components/goal_sidebar.ex:217
 #, elixir-autogen, elixir-format
 msgid "1 day"
 msgstr "1 天"
 
-#: lib/kanban_web/components/goal_sidebar.ex:87
+#: lib/kanban_web/components/goal_sidebar.ex:91
 #, elixir-autogen, elixir-format
 msgid "Avg cycle"
 msgstr "平均周期"
 
 #: lib/kanban_web/components/delivery_health_band.ex:175
-#: lib/kanban_web/components/goal_sidebar.ex:60
+#: lib/kanban_web/components/goal_sidebar.ex:64
 #: lib/kanban_web/components/target_progress_header.ex:217
 #: lib/kanban_web/components/targets_strip.ex:278
 #, elixir-autogen, elixir-format
 msgid "Complete"
 msgstr "已完成"
 
-#: lib/kanban_web/components/goal_sidebar.ex:74
+#: lib/kanban_web/components/goal_sidebar.ex:78
 #, elixir-autogen, elixir-format
 msgid "Contributors"
 msgstr "贡献者"
@@ -4778,12 +4778,12 @@ msgstr "贡献者"
 msgid "Database changes"
 msgstr "数据库更改"
 
-#: lib/kanban_web/components/goal_sidebar.ex:79
+#: lib/kanban_web/components/goal_sidebar.ex:83
 #, elixir-autogen, elixir-format
 msgid "Days in flight"
 msgstr "进行中的天数"
 
-#: lib/kanban_web/components/goal_sidebar.ex:61
+#: lib/kanban_web/components/goal_sidebar.ex:65
 #, elixir-autogen, elixir-format
 msgid "Done / total"
 msgstr "完成 / 总数"
@@ -4793,7 +4793,7 @@ msgstr "完成 / 总数"
 msgid "Error handling"
 msgstr "错误处理"
 
-#: lib/kanban_web/components/goal_sidebar.ex:63
+#: lib/kanban_web/components/goal_sidebar.ex:67
 #, elixir-autogen, elixir-format
 msgid "In flight"
 msgstr "进行中"
@@ -4803,7 +4803,7 @@ msgstr "进行中"
 msgid "Key files"
 msgstr "关键文件"
 
-#: lib/kanban_web/components/goal_sidebar.ex:90
+#: lib/kanban_web/components/goal_sidebar.ex:94
 #, elixir-autogen, elixir-format
 msgid "Last activity"
 msgstr "最后活动"
@@ -4828,7 +4828,7 @@ msgstr "范围之外"
 msgid "Patterns to follow"
 msgstr "需遵循的模式"
 
-#: lib/kanban_web/components/goal_sidebar.ex:59
+#: lib/kanban_web/components/goal_sidebar.ex:63
 #, elixir-autogen, elixir-format
 msgid "Progress"
 msgstr "进度"
@@ -4851,17 +4851,7 @@ msgstr "安全注意事项"
 msgid "Technology requirements"
 msgstr "技术要求"
 
-#: lib/kanban_web/components/goal_sidebar.ex:130
-#, elixir-autogen, elixir-format
-msgid "Throughput · last 12 days"
-msgstr "吞吐量 · 最近 12 天"
-
-#: lib/kanban_web/components/goal_sidebar.ex:129
-#, elixir-autogen, elixir-format
-msgid "Throughput · last 12 hours"
-msgstr "吞吐量 · 最近 12 小时"
-
-#: lib/kanban_web/components/goal_sidebar.ex:77
+#: lib/kanban_web/components/goal_sidebar.ex:81
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
 #: lib/kanban_web/live/board_live/webhook_views.ex:371
 #: lib/kanban_web/live/org_live/audit_log.html.heex:143
@@ -4870,7 +4860,7 @@ msgstr "吞吐量 · 最近 12 小时"
 msgid "Time"
 msgstr "时间"
 
-#: lib/kanban_web/components/goal_sidebar.ex:83
+#: lib/kanban_web/components/goal_sidebar.ex:87
 #, elixir-autogen, elixir-format
 msgid "Time spent"
 msgstr "耗时"
@@ -4885,7 +4875,7 @@ msgstr "验证规则"
 msgid "Verification steps"
 msgstr "验证步骤"
 
-#: lib/kanban_web/components/goal_sidebar.ex:208
+#: lib/kanban_web/components/goal_sidebar.ex:216
 #, elixir-autogen, elixir-format
 msgid "today"
 msgstr "今天"
@@ -15570,3 +15560,15 @@ msgstr "您可以在 %{time} 之后再次轮换签名密钥。"
 #, elixir-autogen, elixir-format
 msgid "Times shown in %{zone}"
 msgstr "时间以 %{zone} 显示"
+
+#: lib/kanban_web/components/goal_sidebar.ex:138
+#, elixir-autogen, elixir-format
+msgid "Throughput · last %{count} day"
+msgid_plural "Throughput · last %{count} days"
+msgstr[0] "吞吐量 · 最近 %{count} 天"
+
+#: lib/kanban_web/components/goal_sidebar.ex:135
+#, elixir-autogen, elixir-format
+msgid "Throughput · last %{count} hour"
+msgid_plural "Throughput · last %{count} hours"
+msgstr[0] "吞吐量 · 最近 %{count} 小时"

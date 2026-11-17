@@ -1173,7 +1173,7 @@ msgstr "Agent"
 msgid "Approved"
 msgstr "Approuvé"
 
-#: lib/kanban_web/components/goal_sidebar.ex:70
+#: lib/kanban_web/components/goal_sidebar.ex:74
 #: lib/kanban_web/components/task_card.ex:127
 #: lib/kanban_web/components/task_card.ex:129
 #: lib/kanban_web/live/task_live/form_component.html.heex:134
@@ -3407,7 +3407,7 @@ msgid "Product"
 msgstr "Produit"
 
 #: lib/kanban_web/components/goal_progress_header.ex:205
-#: lib/kanban_web/components/goal_sidebar.ex:67
+#: lib/kanban_web/components/goal_sidebar.ex:71
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:89
 #: lib/kanban_web/components/target_progress_header.ex:208
@@ -4753,30 +4753,30 @@ msgstr "révoqué"
 msgid "Working on it"
 msgstr "En cours"
 
-#: lib/kanban_web/components/goal_sidebar.ex:210
+#: lib/kanban_web/components/goal_sidebar.ex:218
 #, elixir-autogen, elixir-format
 msgid "%{n} days"
 msgstr "%{n} jours"
 
-#: lib/kanban_web/components/goal_sidebar.ex:209
+#: lib/kanban_web/components/goal_sidebar.ex:217
 #, elixir-autogen, elixir-format
 msgid "1 day"
 msgstr "1 jour"
 
-#: lib/kanban_web/components/goal_sidebar.ex:87
+#: lib/kanban_web/components/goal_sidebar.ex:91
 #, elixir-autogen, elixir-format
 msgid "Avg cycle"
 msgstr "Cycle moy."
 
 #: lib/kanban_web/components/delivery_health_band.ex:175
-#: lib/kanban_web/components/goal_sidebar.ex:60
+#: lib/kanban_web/components/goal_sidebar.ex:64
 #: lib/kanban_web/components/target_progress_header.ex:217
 #: lib/kanban_web/components/targets_strip.ex:278
 #, elixir-autogen, elixir-format
 msgid "Complete"
 msgstr "Terminé"
 
-#: lib/kanban_web/components/goal_sidebar.ex:74
+#: lib/kanban_web/components/goal_sidebar.ex:78
 #, elixir-autogen, elixir-format
 msgid "Contributors"
 msgstr "Contributeurs"
@@ -4786,12 +4786,12 @@ msgstr "Contributeurs"
 msgid "Database changes"
 msgstr "Modifications de la base de données"
 
-#: lib/kanban_web/components/goal_sidebar.ex:79
+#: lib/kanban_web/components/goal_sidebar.ex:83
 #, elixir-autogen, elixir-format
 msgid "Days in flight"
 msgstr "Jours en cours"
 
-#: lib/kanban_web/components/goal_sidebar.ex:61
+#: lib/kanban_web/components/goal_sidebar.ex:65
 #, elixir-autogen, elixir-format
 msgid "Done / total"
 msgstr "Terminé / total"
@@ -4801,7 +4801,7 @@ msgstr "Terminé / total"
 msgid "Error handling"
 msgstr "Gestion des Erreurs"
 
-#: lib/kanban_web/components/goal_sidebar.ex:63
+#: lib/kanban_web/components/goal_sidebar.ex:67
 #, elixir-autogen, elixir-format
 msgid "In flight"
 msgstr "En cours"
@@ -4811,7 +4811,7 @@ msgstr "En cours"
 msgid "Key files"
 msgstr "Fichiers Clés"
 
-#: lib/kanban_web/components/goal_sidebar.ex:90
+#: lib/kanban_web/components/goal_sidebar.ex:94
 #, elixir-autogen, elixir-format
 msgid "Last activity"
 msgstr "Dernière activité"
@@ -4836,7 +4836,7 @@ msgstr "Hors de Portée"
 msgid "Patterns to follow"
 msgstr "Patrons à suivre"
 
-#: lib/kanban_web/components/goal_sidebar.ex:59
+#: lib/kanban_web/components/goal_sidebar.ex:63
 #, elixir-autogen, elixir-format
 msgid "Progress"
 msgstr "Progression"
@@ -4859,17 +4859,7 @@ msgstr "Considérations de Sécurité"
 msgid "Technology requirements"
 msgstr "Exigences Technologiques"
 
-#: lib/kanban_web/components/goal_sidebar.ex:130
-#, elixir-autogen, elixir-format
-msgid "Throughput · last 12 days"
-msgstr "Débit · 12 derniers jours"
-
-#: lib/kanban_web/components/goal_sidebar.ex:129
-#, elixir-autogen, elixir-format
-msgid "Throughput · last 12 hours"
-msgstr "Débit · 12 dernières heures"
-
-#: lib/kanban_web/components/goal_sidebar.ex:77
+#: lib/kanban_web/components/goal_sidebar.ex:81
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
 #: lib/kanban_web/live/board_live/webhook_views.ex:371
 #: lib/kanban_web/live/org_live/audit_log.html.heex:143
@@ -4878,7 +4868,7 @@ msgstr "Débit · 12 dernières heures"
 msgid "Time"
 msgstr "Temps"
 
-#: lib/kanban_web/components/goal_sidebar.ex:83
+#: lib/kanban_web/components/goal_sidebar.ex:87
 #, elixir-autogen, elixir-format
 msgid "Time spent"
 msgstr "Temps passé"
@@ -4893,7 +4883,7 @@ msgstr "Règles de validation"
 msgid "Verification steps"
 msgstr "Étapes de Vérification"
 
-#: lib/kanban_web/components/goal_sidebar.ex:208
+#: lib/kanban_web/components/goal_sidebar.ex:216
 #, elixir-autogen, elixir-format
 msgid "today"
 msgstr "aujourd'hui"
@@ -15603,3 +15593,17 @@ msgstr "Vous pourrez renouveler à nouveau le secret de signature après le %{ti
 #, elixir-autogen, elixir-format
 msgid "Times shown in %{zone}"
 msgstr "Heures affichées en %{zone}"
+
+#: lib/kanban_web/components/goal_sidebar.ex:138
+#, elixir-autogen, elixir-format
+msgid "Throughput · last %{count} day"
+msgid_plural "Throughput · last %{count} days"
+msgstr[0] "Débit · %{count} dernier jour"
+msgstr[1] "Débit · %{count} derniers jours"
+
+#: lib/kanban_web/components/goal_sidebar.ex:135
+#, elixir-autogen, elixir-format
+msgid "Throughput · last %{count} hour"
+msgid_plural "Throughput · last %{count} hours"
+msgstr[0] "Débit · %{count} dernière heure"
+msgstr[1] "Débit · %{count} dernières heures"

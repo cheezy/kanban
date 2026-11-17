@@ -34,6 +34,9 @@ defmodule KanbanWeb.GoalSidebar do
       - `:time_spent_minutes` (integer)
       - `:avg_cycle_minutes` (integer or nil if no completed children)
       - `:last_activity` (`DateTime`, `NaiveDateTime`, or nil)
+      - `:sparkline_data`, `:sparkline_label`, `:sparkline_unit` and
+        `:sparkline_count` — the throughput sparkline, built by
+        `KanbanWeb.GoalLive.SidebarVelocity.build/3`
   """
   attr :metrics, :map, required: true
 
@@ -54,6 +57,7 @@ defmodule KanbanWeb.GoalSidebar do
         data={@metrics.sparkline_data}
         label={@metrics.sparkline_label}
         unit={@metrics.sparkline_unit}
+        count={@metrics.sparkline_count}
       />
 
       <.section title={gettext("Progress")}>
@@ -100,9 +104,10 @@ defmodule KanbanWeb.GoalSidebar do
   attr :data, :list, required: true
   attr :label, :string, required: true
   attr :unit, :atom, required: true
+  attr :count, :integer, required: true
 
   defp velocity(assigns) do
-    assigns = assign(assigns, :heading, heading_for(assigns.unit))
+    assigns = assign(assigns, :heading, heading_for(assigns.unit, assigns.count))
 
     ~H"""
     <div data-goal-velocity style="display: flex; flex-direction: column; gap: 6px;">
@@ -126,8 +131,11 @@ defmodule KanbanWeb.GoalSidebar do
     """
   end
 
-  defp heading_for(:hour), do: gettext("Throughput · last 12 hours")
-  defp heading_for(_), do: gettext("Throughput · last 12 days")
+  defp heading_for(:hour, count),
+    do: ngettext("Throughput · last %{count} hour", "Throughput · last %{count} hours", count)
+
+  defp heading_for(_, count),
+    do: ngettext("Throughput · last %{count} day", "Throughput · last %{count} days", count)
 
   attr :title, :string, required: true
   slot :inner_block, required: true
