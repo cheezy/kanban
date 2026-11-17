@@ -18,7 +18,12 @@ defmodule Kanban.MixProject do
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       test_coverage: test_coverage(),
-      usage_rules: usage_rules()
+      usage_rules: usage_rules(),
+      # Reference comments in the POT/PO files name the file only, not the
+      # line. With line numbers, any edit that shifts lines in a file with
+      # gettext calls made default.pot stale, and only the after_goal hook's
+      # `gettext.extract --check-up-to-date` noticed (G531, G476).
+      gettext: [write_reference_line_numbers: false]
     ]
   end
 

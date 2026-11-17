@@ -11,56 +11,56 @@ msgstr ""
 "Language: es\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/kanban_web/live/board_live/task_actions.ex:240
+#: lib/kanban_web/live/board_live/task_actions.ex
 #, elixir-autogen, elixir-format
 msgid "Moved 1 task to Ready"
 msgid_plural "Moved %{count} tasks to Ready"
 msgstr[0] "Se movió 1 tarea a Listo"
 msgstr[1] "Se movieron %{count} tareas a Listo"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:349
+#: lib/kanban_web/live/board_live/bulk_selection.ex
 #, elixir-autogen, elixir-format
 msgid "%{count} goal was skipped: goals cannot be moved, assigned or archived in bulk."
 msgid_plural "%{count} goals were skipped: goals cannot be moved, assigned or archived in bulk."
 msgstr[0] "Se omitió %{count} objetivo: los objetivos no se pueden mover, asignar ni archivar en bloque."
 msgstr[1] "Se omitieron %{count} objetivos: los objetivos no se pueden mover, asignar ni archivar en bloque."
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:253
+#: lib/kanban_web/live/board_live/bulk_selection.ex
 #, elixir-autogen, elixir-format
 msgid "Added the label to %{count} task"
 msgid_plural "Added the label to %{count} tasks"
 msgstr[0] "Etiqueta añadida a %{count} tarea"
 msgstr[1] "Etiqueta añadida a %{count} tareas"
 
-#: lib/kanban_web/components/bulk_action_bar.ex:248
+#: lib/kanban_web/components/bulk_action_bar.ex
 #, elixir-autogen, elixir-format
 msgid "Archive %{count} selected task? Goals are skipped."
 msgid_plural "Archive %{count} selected tasks? Goals are skipped."
 msgstr[0] "¿Archivar %{count} tarea seleccionada? Los objetivos se omiten."
 msgstr[1] "¿Archivar %{count} tareas seleccionadas? Los objetivos se omiten."
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:277
+#: lib/kanban_web/live/board_live/bulk_selection.ex
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} task"
 msgid_plural "Archived %{count} tasks"
 msgstr[0] "%{count} tarea archivada"
 msgstr[1] "%{count} tareas archivadas"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:245
+#: lib/kanban_web/live/board_live/bulk_selection.ex
 #, elixir-autogen, elixir-format
 msgid "Assigned %{count} task"
 msgid_plural "Assigned %{count} tasks"
 msgstr[0] "%{count} tarea asignada"
 msgstr[1] "%{count} tareas asignadas"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:337
+#: lib/kanban_web/live/board_live/bulk_selection.ex
 #, elixir-autogen, elixir-format
 msgid "Moved %{count} task to %{column}"
 msgid_plural "Moved %{count} tasks to %{column}"
 msgstr[0] "%{count} tarea movida a %{column}"
 msgstr[1] "%{count} tareas movidas a %{column}"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:266
+#: lib/kanban_web/live/board_live/bulk_selection.ex
 #, elixir-autogen, elixir-format
 msgid "Removed the label from %{count} task"
 msgid_plural "Removed the label from %{count} tasks"
