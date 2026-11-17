@@ -150,6 +150,7 @@ defmodule Kanban.MixProject do
         KanbanWeb.ErrorJSON,
         KanbanWeb.Layouts,
         KanbanWeb.NavComponents,
+        KanbanWeb.NotificationUnsubscribeHTML,
         KanbanWeb.PageController,
         KanbanWeb.PageHTML,
         KanbanWeb.Plugs.Locale,
