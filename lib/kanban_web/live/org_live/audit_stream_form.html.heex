@@ -166,6 +166,13 @@
         <.settings_card id="destination-form-connection" title={gettext("Connection")}>
           <div :for={field <- AuditStreamKinds.secret_fields(@kind)} class="mb-2">
             <%= if secret_input?(assigns, field) do %>
+              <%!-- The server never echoes a typed secret, so it renders value="".
+                    Any change to @errors re-renders both inputs, and that empty
+                    value would wipe the one not focused (a typed URL vanished on
+                    typing the credential after a failed save). phx-update="ignore"
+                    keeps the typed value; the messages below are a sibling and
+                    still update, and data-invalid (an ignored element still gets
+                    data-* updates) draws the error border instead of the class. --%>
               <.input
                 type={if field == :url, do: "text", else: "password"}
                 id={"destination_#{field}_#{@kind}"}
@@ -174,6 +181,9 @@
                 value=""
                 autocomplete={if field == :url, do: "off", else: "new-password"}
                 errors={@errors[field] || []}
+                phx-update="ignore"
+                error_class=""
+                data-invalid={@errors[field] != nil}
               />
               <p
                 :if={@secret_states[field] == :unreadable and !@errors[field]}

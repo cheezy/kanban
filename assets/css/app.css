@@ -2237,6 +2237,13 @@
   --input-color: var(--line-input);
 }
 
+/* The audit-stream form's secret inputs are phx-update="ignore", so their
+   class never changes after the first render; data-invalid carries the error
+   state instead. Same specificity as the rule above and later, so it wins. */
+.input[data-invalid] {
+  --input-color: var(--color-error);
+}
+
 /* D446: daisyUI's .checkbox draws its border with --input-color too, but it
    also uses --input-color as the checked fill and the focus outline, so
    re-pointing it would fill every checked box grey. Inside the Stride token

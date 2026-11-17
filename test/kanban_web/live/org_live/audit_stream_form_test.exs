@@ -346,6 +346,38 @@ defmodule KanbanWeb.OrgLive.AuditStreamFormTest do
       assert has_element?(lv, "#destination_settings_header_name")
     end
 
+    # A secret input re-rendered with value="" while not focused lost what was
+    # typed in it: after a failed save, typing the credential wiped the URL.
+    # The browser keeps the typed value only if the server never patches the
+    # input, so both are phx-update="ignore" and carry their error state in
+    # data-invalid, the one attribute an ignored element still receives.
+    test "after a failed save the secret inputs are never patched and show errors through data-invalid",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
+      change(lv, %{"kind" => "https"})
+
+      submit(lv, Map.drop(@https, ["url", "credential"]))
+      assert destinations(org) == []
+
+      for field <- ["url", "credential"] do
+        input = "#destination_#{field}_https"
+        assert has_element?(lv, ~s(#{input}[phx-update="ignore"][data-invalid]))
+        refute has_element?(lv, "#{input}.input-error")
+      end
+
+      assert has_element?(lv, "#destination-form-connection", "can't be blank")
+
+      change(lv, @https)
+
+      for field <- ["url", "credential"] do
+        input = "#destination_#{field}_https"
+        assert has_element?(lv, ~s(#{input}[phx-update="ignore"]))
+        refute has_element?(lv, "#{input}[data-invalid]")
+      end
+
+      refute has_element?(lv, "#destination-form-connection", "can't be blank")
+    end
+
     test "Start from shows only on create and a catch-up says every org-admin will be told",
          %{conn: conn, org: org} do
       {:ok, lv, _html} = live(conn, ~p"/org/audit/streaming/new")
