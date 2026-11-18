@@ -51,7 +51,22 @@ defmodule KanbanWeb.API.TaskCreation do
     # D137: best-effort, post-authorization; a failed stamp never fails create.
     ApiTokens.stamp_last_agent_name(creator.api_token, agent_name)
 
-    case TaskActions.parse_id(task_params["column_id"] || get_default_column_id(board)) do
+    create_in_column(
+      conn,
+      board,
+      task_params["column_id"] || get_default_column_id(board),
+      task_params,
+      creator
+    )
+  end
+
+  # D452: a board with no columns has no default column, so the request gets
+  # the same column_not_found body as an unusable explicit column_id.
+  defp create_in_column(conn, _board, nil, _task_params, _creator),
+    do: TaskErrors.handle_task_error(conn, {:error, :column_not_found})
+
+  defp create_in_column(conn, board, raw_column_id, task_params, creator) do
+    case TaskActions.parse_id(raw_column_id) do
       {:ok, column_id} ->
         resolve_column_and_create(conn, board, column_id, task_params, creator)
 
@@ -212,19 +227,26 @@ defmodule KanbanWeb.API.TaskCreation do
     }
   end
 
+  # Backlog, then Ready, then the board's first column; nil when the board has
+  # no columns at all (D452), which both callers answer with column_not_found.
   @doc false
   def get_default_column_id(board) do
-    columns = Columns.list_columns(board)
-
-    backlog = Enum.find(columns, fn col -> col.name == "Backlog" end)
-    ready = Enum.find(columns, fn col -> col.name == "Ready" end)
-
-    cond do
-      backlog -> backlog.id
-      ready -> ready.id
-      true -> List.first(columns).id
-    end
+    board
+    |> Columns.list_columns()
+    |> default_column()
+    |> column_id()
   end
+
+  defp default_column([]), do: nil
+
+  defp default_column([first | _] = columns) do
+    Enum.find(columns, &(&1.name == "Backlog")) ||
+      Enum.find(columns, &(&1.name == "Ready")) ||
+      first
+  end
+
+  defp column_id(nil), do: nil
+  defp column_id(column), do: column.id
 
   # D137: an explicit created_by_agent field wins; otherwise the shared
   # KanbanWeb.API.AgentAttribution order applies (token agent_model, then the

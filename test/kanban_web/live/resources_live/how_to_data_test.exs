@@ -3847,7 +3847,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert content =~ "`POST /api/tasks/batch`"
 
       assert File.read!("lib/kanban_web/controllers/api/task_creation.ex") =~
-               "backlog -> backlog.id"
+               ~s|Enum.find(columns, &(&1.name == "Backlog")) \|\||
 
       assert File.read!("lib/kanban/tasks/agent_queries.ex") =~ ~s(where: c.name == "Ready")
 

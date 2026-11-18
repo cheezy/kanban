@@ -49,5 +49,22 @@ defmodule KanbanWeb.API.TaskCreationTest do
 
       assert TaskCreation.get_default_column_id(board) == backlog.id
     end
+
+    test "get_default_column_id returns nil for a board with no columns", %{board: board} do
+      assert TaskCreation.get_default_column_id(board) == nil
+    end
+
+    test "get_default_column_id still prefers Backlog, then Ready, then the first column", %{
+      board: board
+    } do
+      first = column_fixture(board, %{name: "Ideas"})
+      assert TaskCreation.get_default_column_id(board) == first.id
+
+      ready = column_fixture(board, %{name: "Ready"})
+      assert TaskCreation.get_default_column_id(board) == ready.id
+
+      backlog = column_fixture(board, %{name: "Backlog"})
+      assert TaskCreation.get_default_column_id(board) == backlog.id
+    end
   end
 end

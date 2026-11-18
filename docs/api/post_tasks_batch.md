@@ -292,9 +292,9 @@ is sent (see [Default Values](#default-values)).
 
 ### Not Found (404)
 
-The board's default column could not be found. Every goal goes to the board's
-default column, which the server picks itself, so this is a defensive check
-rather than a response a request can cause. Nothing is created:
+The board has no column to put the goals in. Every goal goes to the board's
+default column, which the server picks itself, so this happens only on a board
+with no columns at all (D452). Nothing is created:
 
 ```json
 {

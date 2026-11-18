@@ -63,8 +63,9 @@ defmodule KanbanWeb.API.BatchGoalCreation do
 
     column_id = TaskCreation.get_default_column_id(board)
 
-    # Board-scoped lookup; default column should always exist on the board, so
-    # this is defense-in-depth in case get_default_column_id returns nil/stale.
+    # Board-scoped lookup. get_default_column_id returns nil for a board with
+    # no columns (D452), and a stale id finds no column; both are
+    # column_not_found.
     case column_id && Columns.get_column_for_board(column_id, board.id) do
       nil ->
         TaskErrors.handle_task_error(conn, {:error, :column_not_found})

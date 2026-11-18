@@ -100,7 +100,7 @@ in the board UI.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
-| `task.column_id` | integer | No | Column ID where task should be created. Omitted, the task goes to the board's column named Backlog; a board with no Backlog uses its Ready column, and a board with neither uses its first column. Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Column not found` (`Task not found` before 2026-10-21), and so does a whole number outside the signed 64-bit range. |
+| `task.column_id` | integer | No | Column ID where task should be created. Omitted, the task goes to the board's column named Backlog; a board with no Backlog uses its Ready column, and a board with neither uses its first column. Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Column not found` (`Task not found` before 2026-10-21), and so does a whole number outside the signed 64-bit range. Omitted on a board with no columns at all, it also returns 404 `Column not found` and nothing is created. |
 | `task.tasks` | array | No | Array of child task objects (for goals only). Each child's `type` must be `work` or `defect`; a child of type `goal` returns 422, and so does a child with a non-empty `tasks` list of its own (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
 | `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
 
@@ -710,7 +710,8 @@ checked before anything is created:
 ### Not Found (404)
 
 `task.column_id` names a column that does not exist or belongs to another
-board. The two cases are deliberately indistinguishable, and nothing is created:
+board, or it is omitted on a board with no columns at all (D452). The cases are
+deliberately indistinguishable, and nothing is created:
 
 ```json
 {

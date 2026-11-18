@@ -7,6 +7,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
+  alias Kanban.Repo
   alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
   alias KanbanWeb.API.TaskParamFilter
@@ -31,6 +32,12 @@ defmodule KanbanWeb.API.TaskControllerTest do
       |> put_req_header("authorization", "Bearer #{plain_token}")
 
     %{conn: conn, user: user, board: board, column: column, token: plain_token}
+  end
+
+  defp d452_task_count(user) do
+    Kanban.Tasks.Task
+    |> Repo.all()
+    |> Enum.count(&(&1.created_by_id == user.id))
   end
 
   defp valid_before_doing_result do
@@ -1787,6 +1794,59 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       resp = patch(conn, ~p"/api/tasks/#{child_id}", task: %{"type" => "defect"})
       assert json_response(resp, 200)["data"]["type"] == "defect"
+    end
+  end
+
+  describe "D452: create on a board with no columns" do
+    setup %{board: board} do
+      board
+      |> Ecto.assoc(:columns)
+      |> Repo.delete_all()
+
+      assert Columns.list_columns(board) == []
+      :ok
+    end
+
+    test "POST /api/tasks on a board with no columns returns 404 column_not_found and creates nothing",
+         %{conn: conn, user: user} do
+      single = post(conn, ~p"/api/tasks", task: %{"title" => "D452 single", "type" => "work"})
+      assert json_response(single, 404) == %{"error" => "Column not found"}
+
+      goal =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "D452 goal",
+            "type" => "goal",
+            "tasks" => [%{"title" => "D452 child", "type" => "work"}]
+          }
+        )
+
+      assert json_response(goal, 404) == %{"error" => "Column not found"}
+
+      explicit =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "D452 explicit", "type" => "work", "column_id" => 999_999_999}
+        )
+
+      assert json_response(explicit, 404) == %{"error" => "Column not found"}
+      assert d452_task_count(user) == 0
+    end
+
+    test "POST /api/tasks/batch on a board with no columns returns 404 column_not_found and creates nothing",
+         %{conn: conn, user: user} do
+      response =
+        post(conn, ~p"/api/tasks/batch",
+          goals: [
+            %{
+              "title" => "D452 batch goal",
+              "type" => "goal",
+              "tasks" => [%{"title" => "D452 batch child", "type" => "work"}]
+            }
+          ]
+        )
+
+      assert json_response(response, 404) == %{"error" => "Column not found"}
+      assert d452_task_count(user) == 0
     end
   end
 
