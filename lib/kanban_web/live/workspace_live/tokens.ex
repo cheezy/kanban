@@ -36,12 +36,7 @@ defmodule KanbanWeb.WorkspaceLive.Tokens do
   `{:error, message}` with a flash message.
   """
   def create(actor, workspace, params) when is_map(params) do
-    attrs = %{
-      "name" => params["name"],
-      "agent_capabilities" => parse_capabilities(params["agent_capabilities"])
-    }
-
-    case ApiTokens.create_workspace_api_token(actor, workspace, attrs) do
+    case ApiTokens.create_workspace_api_token(actor, workspace, token_attrs(params)) do
       {:ok, {_api_token, plain_text}} -> {:ok, plain_text}
       {:error, :unauthorized} -> {:error, :unauthorized}
       {:error, :archived} -> {:error, gettext("This workspace is archived.")}
@@ -76,12 +71,45 @@ defmodule KanbanWeb.WorkspaceLive.Tokens do
   def parse_capabilities(capabilities) when is_binary(capabilities) do
     capabilities
     |> String.split(",")
+    |> clean_names()
+  end
+
+  def parse_capabilities(_capabilities), do: []
+
+  @doc """
+  Normalises agent capabilities from the form or a crafted event, the same way
+  on the board and workspace token pages (D449). A comma-separated string or a
+  list of strings gives trimmed, unique, non-blank names and a missing value
+  gives none. Anything else gives `:invalid`, which the token changeset refuses
+  with "is invalid", so a malformed value never creates an unrestricted token.
+  """
+  def normalize_capabilities(nil), do: []
+  def normalize_capabilities(value) when is_binary(value), do: parse_capabilities(value)
+
+  def normalize_capabilities(value) when is_list(value) do
+    if Enum.all?(value, &is_binary/1), do: clean_names(value), else: :invalid
+  end
+
+  def normalize_capabilities(_value), do: :invalid
+
+  defp clean_names(names) do
+    names
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
     |> Enum.uniq()
   end
 
-  def parse_capabilities(_capabilities), do: []
+  defp token_attrs(params) do
+    %{
+      "name" => text(params["name"]),
+      "agent_capabilities" => normalize_capabilities(params["agent_capabilities"])
+    }
+  end
+
+  # Only a string name reaches the changeset: a crafted map or list would be
+  # echoed into the failed form and crash its render (D449).
+  defp text(value) when is_binary(value), do: value
+  defp text(_value), do: nil
 
   @doc "`:active`, `:revoked` or `:expired`."
   def status(%ApiToken{revoked_at: revoked_at}) when not is_nil(revoked_at), do: :revoked

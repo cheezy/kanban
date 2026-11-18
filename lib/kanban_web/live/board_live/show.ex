@@ -54,12 +54,16 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_params(%{"id" => id, "column_id" => column_id}, _, socket) do
+    socket = ApiTokens.forget_shown_token(socket)
+
     Params.with_board(socket, id, fn board, user_access ->
       Params.resolve_column_action(socket, board, user_access, column_id)
     end)
   end
 
   def handle_params(%{"id" => id, "task_id" => task_id}, _, socket) do
+    socket = ApiTokens.forget_shown_token(socket)
+
     Params.with_board(socket, id, fn board, user_access ->
       Params.resolve_task_only(socket, board, user_access, task_id)
     end)
@@ -72,18 +76,24 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :integrations do
+    socket = ApiTokens.forget_shown_token(socket)
+
     Params.with_board(socket, id, fn board, user_access ->
       Integrations.resolve_integrations_view(socket, board, user_access)
     end)
   end
 
   def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :new_goal do
+    socket = ApiTokens.forget_shown_token(socket)
+
     Params.with_board(socket, id, fn board, user_access ->
       Params.resolve_new_goal(socket, board, user_access)
     end)
   end
 
   def handle_params(%{"id" => id} = params, _, socket) do
+    socket = ApiTokens.forget_shown_token(socket)
+
     Params.with_board(socket, id, fn board, user_access ->
       Params.resolve_default_board_view(socket, board, user_access, params)
     end)

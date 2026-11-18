@@ -1374,6 +1374,105 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute render(show_live) =~ plain
     end
 
+    test "leaving the API tokens view clears the revealed token", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      for away <- [
+            ~p"/boards/#{board}",
+            ~p"/boards/#{board}/integrations",
+            ~p"/boards/#{board}/settings",
+            ~p"/boards/#{board}/goals/new",
+            ~p"/boards/#{board}/columns/#{column}/edit",
+            ~p"/boards/#{board}/columns/#{column}/tasks/new",
+            ~p"/boards/#{board}/tasks/#{task}/edit"
+          ] do
+        {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+        show_live
+        |> form("#api-tokens-modal form", api_token: %{name: "Leave Me"})
+        |> render_submit()
+
+        [_, plain] =
+          Regex.run(~r/id="new-token-value"[^>]*>\s*([^<\s]+)/, render(show_live))
+
+        render_patch(show_live, away)
+        html = render_patch(show_live, ~p"/boards/#{board}/api_tokens")
+
+        refute has_element?(show_live, "#new-token-value")
+        refute html =~ plain
+        assert :sys.get_state(show_live.pid).socket.assigns.new_token == nil
+      end
+    end
+
+    test "a patch inside the API tokens view keeps the revealed token", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> form("#api-tokens-modal form", api_token: %{name: "Stay Here"})
+      |> render_submit()
+
+      [_, plain] = Regex.run(~r/id="new-token-value"[^>]*>\s*([^<\s]+)/, render(show_live))
+
+      render_patch(show_live, ~p"/boards/#{board}/api_tokens")
+      assert has_element?(show_live, "#new-token-value", plain)
+    end
+
+    test "a map-valued token name does not crash the board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      for name <- [%{"a" => 1}, [%{"a" => 1}], 7, ["x"]] do
+        render_hook(show_live, "create_token", %{"api_token" => %{"name" => name}})
+        assert render(show_live) =~ "can&#39;t be blank"
+      end
+
+      assert Process.alive?(show_live.pid)
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
+    test "malformed agent fields refuse the board token instead of dropping", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+
+      for {field, value} <- [
+            {"agent_capabilities", %{"a" => 1}},
+            {"agent_capabilities", [1]},
+            {"agent_capabilities", 7},
+            {"agent_model", %{"a" => 1}}
+          ] do
+        {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+        render_hook(show_live, "create_token", %{
+          "api_token" => %{"name" => "Caps", field => value}
+        })
+
+        assert render(show_live) =~ "is invalid"
+        refute has_element?(show_live, "#new-token-value")
+      end
+
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
+    test "list agent capabilities are cleaned like a string on the board", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      render_hook(show_live, "create_token", %{
+        "api_token" => %{"name" => "Caps", "agent_capabilities" => [" testing ", "testing", ""]}
+      })
+
+      assert has_element?(show_live, "#new-token-value")
+      assert [%{agent_capabilities: ["testing"]}] = Kanban.ApiTokens.list_api_tokens(board)
+    end
+
     test "a create_token without an api_token map does not crash the board", %{
       conn: conn,
       user: user

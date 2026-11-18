@@ -560,6 +560,43 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
       refute log =~ plain
     end
 
+    test "a map-valued token name does not crash workspace settings", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+      for name <- [%{"a" => 1}, [%{"a" => 1}], 7, ["x"]] do
+        render_hook(view, "create_token", %{"token" => %{"name" => name}})
+        assert render(view) =~ "can&#39;t be blank"
+      end
+
+      assert Process.alive?(view.pid)
+      assert workspace_tokens(ctx.workspace) == []
+    end
+
+    test "malformed agent capabilities refuse the workspace token", ctx do
+      for value <- [%{"a" => 1}, [1], 7] do
+        {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+        render_hook(view, "create_token", %{
+          "token" => %{"name" => "Caps", "agent_capabilities" => value}
+        })
+
+        assert render(view) =~ "is invalid"
+      end
+
+      assert workspace_tokens(ctx.workspace) == []
+    end
+
+    test "list agent capabilities are cleaned like a string on workspace settings", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+      render_hook(view, "create_token", %{
+        "token" => %{"name" => "Caps", "agent_capabilities" => [" testing ", "testing", ""]}
+      })
+
+      assert Process.alive?(view.pid)
+      assert [%{agent_capabilities: ["testing"]}] = workspace_tokens(ctx.workspace)
+    end
+
     test "dismissing the new token hides it", ctx do
       {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
       create_token(view)

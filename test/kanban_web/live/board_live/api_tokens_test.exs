@@ -63,6 +63,19 @@ defmodule KanbanWeb.BoardLive.ApiTokensTest do
     end
   end
 
+  describe "malformed token params (D449)" do
+    test "a map-valued name is dropped before the changeset", %{user: user, board: board} do
+      s = socket(%{current_scope: %{user: user}, board: board})
+      params = %{"api_token" => Map.put(@create_params["api_token"], "name", %{"a" => 1})}
+
+      {:noreply, s} = ApiTokens.do_create_token(s, params)
+
+      assert %{errors: [name: {"can't be blank", _}]} = s.assigns.token_form.source
+      refute Map.has_key?(s.assigns.token_form.params, "name")
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+  end
+
   describe "do_revoke_token/2" do
     test "revokes a token and flashes success", %{user: user, board: board} do
       {:ok, {token, _plain}} = Kanban.ApiTokens.create_api_token(user, board, @attrs)

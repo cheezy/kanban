@@ -24,6 +24,7 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
   alias Kanban.Columns
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.ShownSecret
+  alias KanbanWeb.WorkspaceLive.Tokens
 
   @doc "Resolves the API-tokens view: gates by AI-optimized board + role, else assigns token state."
   def resolve_api_tokens_view(socket, board, user_access) do
@@ -71,13 +72,36 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
   defp respond_to_create({:error, changeset}, socket, _board),
     do: {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
 
-  defp build_token_params(api_token, extra) when is_map(extra) do
+  @doc """
+  Clears a revealed token when the board leaves the API tokens view, so the
+  token is shown once rather than again on the way back (D449).
+  """
+  def forget_shown_token(socket), do: assign(socket, :new_token, nil)
+
+  defp build_token_params(api_token, extra) do
     api_token
-    |> Map.merge(extra)
-    |> parse_agent_capabilities()
+    |> merge_extra(extra)
+    |> Enum.flat_map(&clean_param/1)
+    |> Map.new()
   end
 
-  defp build_token_params(api_token, _extra), do: parse_agent_capabilities(api_token)
+  defp merge_extra(params, extra) when is_map(extra), do: Map.merge(params, extra)
+  defp merge_extra(params, _extra), do: params
+
+  # A crafted map or list as a field value would be echoed into the failed
+  # form and crash its render (D449), and silently dropping it would create a
+  # token other than the one asked for. A non-string name is dropped, so it
+  # fails with "can't be blank" as on workspace settings; capabilities are
+  # normalised the way workspace settings does it; any other map or list
+  # becomes :invalid, which the changeset refuses with "is invalid".
+  defp clean_param({"name", value}) when is_binary(value), do: [{"name", value}]
+  defp clean_param({"name", _value}), do: []
+
+  defp clean_param({"agent_capabilities", value}),
+    do: [{"agent_capabilities", Tokens.normalize_capabilities(value)}]
+
+  defp clean_param({key, value}) when is_map(value) or is_list(value), do: [{key, :invalid}]
+  defp clean_param(param), do: [param]
 
   defp assign_created_token(socket, board, plain_text_token) do
     api_tokens = ApiTokens.list_api_tokens(board)
@@ -152,22 +176,5 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
      |> assign(:new_token, new_token)
      |> assign(:viewing_task_id, nil)
      |> assign(:show_task_modal, false)}
-  end
-
-  defp parse_agent_capabilities(params) do
-    case params do
-      %{"agent_capabilities" => capabilities} when is_binary(capabilities) ->
-        parsed_capabilities =
-          capabilities
-          |> String.split(",")
-          |> Enum.map(&String.trim/1)
-          |> Enum.reject(&(&1 == ""))
-          |> Enum.uniq()
-
-        Map.put(params, "agent_capabilities", parsed_capabilities)
-
-      _ ->
-        params
-    end
   end
 end
