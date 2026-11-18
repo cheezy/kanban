@@ -52,9 +52,11 @@ defmodule Kanban.ApiTokens do
 
   Returns `{:ok, api_token}` if found and active, `{:error, :not_found}` if not
   found, `{:error, :revoked}` if the token has been revoked, `{:error, :expired}`
-  if it has expired, and `{:error, :user_disabled}` if the token is valid but its
+  if it has expired, `{:error, :user_disabled}` if the token is valid but its
   owner is disabled — a disabled account must not keep API access through a token
-  issued before it was disabled.
+  issued before it was disabled — and `{:error, :board_not_ai_optimized}` if it is
+  a board token whose board is not AI optimized (D451). The token is not revoked,
+  so it works again if the board is switched back on.
 
   ## Examples
 
@@ -102,11 +104,24 @@ defmodule Kanban.ApiTokens do
       not is_nil(api_token.user.disabled_at) ->
         reject_with_timing(timing_query, :user_disabled)
 
+      board_not_ai_optimized?(api_token) ->
+        reject_with_timing(timing_query, :board_not_ai_optimized)
+
       true ->
         update_last_used(api_token)
         {:ok, api_token}
     end
   end
+
+  # D451: a board token works only while its board is AI optimized, the rule
+  # workspace tokens already follow (WorkspaceTokens.usable_board?/3). The
+  # board is the row preloaded with the token on this request, never a cached
+  # value. A workspace token has no board of its own and is checked per board
+  # by fetch_workspace_board/2.
+  defp board_not_ai_optimized?(%ApiToken{workspace_id: nil, board: %Board{} = board}),
+    do: board.ai_optimized_board != true
+
+  defp board_not_ai_optimized?(%ApiToken{}), do: false
 
   @doc """
   Creates an api_token for a user and board.

@@ -3012,7 +3012,7 @@ defmodule KanbanWeb.AgentsLiveTest do
 
     test "a task created via the API with only a top-level agent_name shows that agent on /agents",
          %{conn: conn, user: user} do
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       column_fixture(board)
 
       # Token with no agent_model — before D137 this create was unattributable

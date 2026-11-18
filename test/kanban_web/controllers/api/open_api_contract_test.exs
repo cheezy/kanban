@@ -532,7 +532,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       spec: spec
     } do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {_token, plain_token}} =
         ApiTokens.create_api_token(user, board, %{"name" => "OpenAPI contract"})
@@ -574,7 +574,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       spec: spec
     } do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       task = board |> column_fixture() |> task_fixture()
 
       {:ok, {_token, plain_token}} =

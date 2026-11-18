@@ -35,7 +35,7 @@ defmodule KanbanWeb.API.NotAcceptableTest do
 
   defp api_token do
     user = user_fixture()
-    board = board_fixture(user)
+    board = ai_optimized_board_fixture(user)
 
     {:ok, {_token, plain_token}} =
       ApiTokens.create_api_token(user, board, %{"name" => "D351 not acceptable"})

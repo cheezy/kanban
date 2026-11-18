@@ -242,6 +242,17 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
+  # D451: a board token whose board is not AI optimized gets the generic body
+  # too, so the response never reveals the board's mode.
+  defp halt_with_auth_error(conn, {:error, :board_not_ai_optimized}) do
+    emit_auth_failed_telemetry(conn, "board_not_ai_optimized")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Invalid API token"})
+    |> halt()
+  end
+
   defp telemetry_reason(:not_found), do: "token_not_found"
   defp telemetry_reason(:revoked), do: "token_revoked"
   defp telemetry_reason(:expired), do: "token_expired"

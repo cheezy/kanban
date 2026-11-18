@@ -361,11 +361,14 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 - **`missing_token`** is a new `reason` for `[:kanban, :api, :auth_failed]`,
   sent when an API request has no `Authorization` header or one that is not a
   `Bearer` header. The other reasons are `rate_limited`, `token_not_found`,
-  `token_revoked`, `token_expired` and `user_disabled`. Unlike most reasons
+  `token_revoked`, `token_expired`, `user_disabled` and
+  `board_not_ai_optimized` (D451: a board token whose board is not AI
+  optimized). Unlike most reasons
   in the catalog, these are strings, not atoms. The audit copy,
   `[:kanban, :audit, :api_token_auth_failed]`, carries the token lookup's own
-  atoms instead (`:missing_token`, `:not_found`, `:revoked`, `:expired` and
-  `:user_disabled`), and a rate-limited request writes no audit row.
+  atoms instead (`:missing_token`, `:not_found`, `:revoked`, `:expired`,
+  `:user_disabled` and `:board_not_ai_optimized`), and a rate-limited request
+  writes no audit row.
 - **Board selection reasons** (W2220). A workspace token's request that names
   no board emits `board_selector_missing`, one whose `X-Stride-Board` header
   and `board_id` parameter disagree emits `board_selector_conflict`, and one

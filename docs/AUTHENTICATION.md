@@ -349,7 +349,9 @@ use the board. Every request checks their access to the board again:
 The human loses access when they are removed from the board, or, when their
 access came from being an org-admin of the Organization that owns the board,
 when they stop being an org-admin or leave the Organization. A token whose
-human was disabled gets `401` instead.
+human was disabled gets `401` instead, and so does a board token whose board is
+no longer AI Optimized, the rule workspace tokens already follow. That token is
+not revoked: it works again if the board is switched back to AI Optimized.
 
 ### Workspace tokens
 

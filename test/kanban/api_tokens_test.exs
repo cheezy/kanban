@@ -47,7 +47,7 @@ defmodule Kanban.ApiTokensTest do
 
     test "get_api_token_by_token/1 returns {:ok, token} for valid non-revoked token" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {_api_token, plain_text_token}} =
         ApiTokens.create_api_token(user, board, @valid_attrs)
@@ -96,7 +96,7 @@ defmodule Kanban.ApiTokensTest do
 
     test "get_api_token_by_token/1 returns {:error, :user_disabled} when the owner is disabled" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {_api_token, plain_text_token}} =
         ApiTokens.create_api_token(user, board, @valid_attrs)
@@ -110,7 +110,7 @@ defmodule Kanban.ApiTokensTest do
 
     test "get_api_token_by_token/1 accepts the token again once the owner is re-enabled" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
 
       {:ok, {_api_token, plain_text_token}} =
         ApiTokens.create_api_token(user, board, @valid_attrs)
@@ -121,9 +121,44 @@ defmodule Kanban.ApiTokensTest do
       assert {:ok, _found} = ApiTokens.get_api_token_by_token(plain_text_token)
     end
 
+    test "get_api_token_by_token/1 refuses a board token whose board is not AI optimized" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, {api_token, plain_text_token}} =
+        ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      switch_ai_optimized(board, false)
+
+      assert {:error, :board_not_ai_optimized} =
+               ApiTokens.get_api_token_by_token(plain_text_token)
+
+      # Refused, not revoked: last_used_at is untouched and the token works
+      # again once the board is switched back on.
+      assert Kanban.Repo.get!(ApiToken, api_token.id).last_used_at == api_token.last_used_at
+      assert Kanban.Repo.get!(ApiToken, api_token.id).revoked_at == nil
+
+      switch_ai_optimized(board, true)
+      assert {:ok, _found} = ApiTokens.get_api_token_by_token(plain_text_token)
+    end
+
+    test "get_api_token_by_token/1 keeps :expired for an expired token on a non-AI board" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      {:ok, {api_token, plain_text_token}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      api_token
+      |> Ecto.Changeset.change(expires_at: DateTime.utc_now(:second) |> DateTime.add(-60))
+      |> Kanban.Repo.update!()
+
+      switch_ai_optimized(board, false)
+
+      assert {:error, :expired} = ApiTokens.get_api_token_by_token(plain_text_token)
+    end
+
     test "get_api_token_by_token/1 still accepts a legacy token with nil expires_at (D107)" do
       user = user_fixture()
-      board = board_fixture(user)
+      board = ai_optimized_board_fixture(user)
       {:ok, {api_token, plain_text_token}} = ApiTokens.create_api_token(user, board, @valid_attrs)
 
       api_token
@@ -914,5 +949,12 @@ defmodule Kanban.ApiTokensTest do
       |> Repo.update_all(set: [workspace_id: workspace.id])
 
     Repo.reload!(board)
+  end
+
+  defp switch_ai_optimized(board, value) do
+    {1, _} =
+      Kanban.Boards.Board
+      |> Ecto.Query.where([b], b.id == ^board.id)
+      |> Repo.update_all(set: [ai_optimized_board: value])
   end
 end

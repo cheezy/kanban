@@ -14,7 +14,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
 
   setup do
     user = user_fixture()
-    board = board_fixture(user)
+    board = ai_optimized_board_fixture(user)
 
     {:ok, {api_token, plain_text_token}} =
       ApiTokens.create_api_token(user, board, %{
@@ -39,6 +39,47 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       refute conn.halted
       assert conn.assigns.current_user.id == user.id
       assert conn.assigns.api_token.id == api_token.id
+    end
+
+    test "a board token on an AI-optimized board still authenticates", %{
+      conn: conn,
+      board: board,
+      plain_text_token: plain_text_token
+    } do
+      assert Repo.get!(Kanban.Boards.Board, board.id).ai_optimized_board == true
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{plain_text_token}")
+        |> AuthenticateApiToken.call([])
+
+      refute conn.halted
+      assert conn.assigns.current_board.id == board.id
+    end
+
+    test "refuses a board token whose board is not AI optimized", %{
+      conn: conn,
+      board: board,
+      plain_text_token: plain_text_token
+    } do
+      attach_telemetry([:kanban, :api, :auth_failed])
+
+      from(b in Kanban.Boards.Board, where: b.id == ^board.id)
+      |> Repo.update_all(set: [ai_optimized_board: false])
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{plain_text_token}")
+        |> AuthenticateApiToken.call([])
+
+      assert conn.halted
+      # The same body an expired, revoked or unknown token gets, so the
+      # response never reveals the board's mode.
+      assert json_response(conn, 401) == %{"error" => "Invalid API token"}
+      refute Map.has_key?(conn.assigns, :current_board)
+
+      assert_receive {:telemetry_event, [:kanban, :api, :auth_failed], %{count: 1},
+                      %{reason: "board_not_ai_optimized"}}
     end
 
     test "returns 401 for missing Authorization header", %{conn: conn} do

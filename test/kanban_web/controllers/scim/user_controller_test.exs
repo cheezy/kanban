@@ -143,7 +143,7 @@ defmodule KanbanWeb.SCIM.UserControllerTest do
       scim_json(post(ctx.conn, ~p"/scim/v2/Users", %{"userName" => email(ctx.domain)}), 201)
 
     user = created["id"] |> String.to_integer() |> Accounts.get_user!()
-    board = board_fixture(user)
+    board = ai_optimized_board_fixture(user)
 
     {:ok, {_token, api_plain}} =
       ApiTokens.create_api_token(user, board, %{

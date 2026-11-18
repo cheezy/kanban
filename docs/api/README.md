@@ -506,9 +506,9 @@ Every `/api` route except `GET /api/agent/onboarding` and
 }
 ```
 
-When the token is empty or unknown, was revoked or expired, or belongs to a
-disabled user, the body is the same in every case, so it never shows which one
-applies:
+When the token is empty or unknown, was revoked or expired, belongs to a
+disabled user, or is a board token whose board is no longer AI Optimized, the
+body is the same in every case, so it never shows which one applies:
 
 ```json
 {
