@@ -2,10 +2,12 @@
 
 **Roadmap item:** *Retention and legal hold*, under *Planned*: "Set how long archived tasks are kept, and hold them when a legal matter requires it." ([ROADMAP](../../ROADMAP.md))
 
-**Status:** Proposed design, not yet decomposed into tasks. Every decision in [§14](#14-decisions-needed) is settled: D1–D9 on 2026-11-10, and D10–D14, which the exploratory review raised, the same day.
+**Status:** Proposed design, not yet decomposed into tasks. Every decision in [§14](#14-decisions-needed) is settled: D1–D9 on 2026-11-10; D10–D14, which the exploratory review raised, the same day; and D15–D17, with D8 revised, on 2026-11-18.
 
 **Date:** 2026-11-10, revised the same day to record the decisions and again
 to apply the exploratory review (`.exploratory/retention-legal-hold-design/SUMMARY.md`).
+Revised on 2026-11-18 for what has shipped since: signed audit exports (D8)
+and the audit stream's security emails (D15).
 
 This document describes two related controls for an Organization:
 
@@ -80,7 +82,7 @@ setting they have today ([§5.5](#55-boards-outside-an-organization)).
   refused deletion are **audit events**, and every org-admin is emailed about
   each step of a hold's life.
 - An org-admin can **export** everything a hold covers, including the earlier
-  versions it kept ([§8](#8-exporting-held-data)).
+  versions it kept, as a signed archive ([§8](#8-exporting-held-data)).
 
 ### Non-goals (for this roadmap item)
 
@@ -115,7 +117,7 @@ setting they have today ([§5.5](#55-boards-outside-an-organization)).
 | The security policy | `Kanban.Organizations.SecurityPolicy`, edited on `/org/security` (`OrgLive.Security`) through `SecurityPolicies.update_policy/2` | `require_two_factor`, `two_factor_grace_days`, and `audit_retention_days` (90 to 3650, or `nil` for forever). `editable_fields/0` is both what the form casts and what `organization_policy_updated` compares. One form and one **Save** cover every setting |
 | Archiving | `Kanban.Tasks.Archiving` | `archive_task/2` sets `archived_at`, `archive_reason`, `archive_note`, `archived_by_id` and `duplicate_of_id`, and cascades to a goal's children. `unarchive_task/1` **clears all five**, so the reason and note are lost. People archive in three places: a task's **Archive** action on the board, the board's bulk-selection bar, and **Archive old (30d+)** on the Archive page. None is a form. The API can't archive (`task_param_filter.ex` refuses the archive fields), and the task JSON carries no archive fields |
 | Deleting a task | `Kanban.Tasks.Lifecycle.delete_task/1`, which takes no actor | Refuses `:has_dependents`, then deletes. Deleting a goal's last child **also deletes the goal**, in a second statement outside a transaction. Called from the board (**Delete**) and the Archive page (**Delete forever**). There is no API or MCP delete |
-| Deleting a column | `Kanban.Columns.delete_column/2` | `Repo.delete` with no check. `tasks.column_id` is `on_delete: :delete_all`, so **every task in the column is deleted, archived ones included**, without a warning. That is a defect of its own ([§15](#15-goals-tasks-and-order)) |
+| Deleting a column | `Kanban.Columns.delete_column/2` | `Repo.delete` with no check. `tasks.column_id` is `on_delete: :delete_all`, so **every task in the column is deleted, archived ones included**. The board's confirmation says "All tasks in this column will also be deleted" but gives no count and never mentions the archived tasks, which the board doesn't show. That is a defect of its own ([§15](#15-goals-tasks-and-order)) |
 | Deleting a board | `Kanban.Boards.delete_board/2`, owner only | Cascades columns, tasks, comments, history, labels and attachments |
 | Moving a board | `Kanban.Workspaces.BoardMoves` | Moves a **personal** board into an Organization workspace. There is no move back to a personal workspace, and none between Organization workspaces, so a board in an Organization never moves |
 | Labels | `Kanban.Labels`, tables `labels` (per board) and `task_labels` | `delete_label/2` is a plain `Repo.delete`; `task_labels.label_id` is `on_delete: :delete_all`, so deleting a label removes it from every task. `set_task_labels/3` adds and removes a task's labels. Nothing records either |
@@ -692,9 +694,23 @@ The export gains a board filter, its format version is raised, and the
 importer reads both new files and ignores them. Each export records a
 `legal_hold_export_requested` audit event. The audit events that belong to the
 matter are exported separately, from the Organization audit log, as today.
-When signed audit exports ship
-([audit log streaming design, §11](AUDIT-LOG-STREAMING-DESIGN.md#11-signed-audit-exports)),
-the export's manifest is signed the same way ([§14](#14-decisions-needed), D8).
+
+**The export is signed**, the same way as the signed audit export
+(`Kanban.AuditLog.SignedExport`,
+[audit log streaming design, §11](AUDIT-LOG-STREAMING-DESIGN.md#11-signed-audit-exports)),
+so whoever receives it can check that nobody changed it after Stride built it
+([§14](#14-decisions-needed), D8). It gains three entries:
+
+- `manifest.json`: the hold's id, the boards exported, who asked and when,
+  the format version, the signing key's id, and every other file in the
+  archive with its size and SHA-256;
+- `manifest.json.sig`: the Ed25519 signature over the exact bytes of
+  `manifest.json`, made by `Kanban.AuditLog.Signing.sign/1`;
+- `README.txt`: the commands to verify it, as the signed audit export has.
+
+When the instance has no signing key (`signed_export_available?/0` is false),
+the export is built unsigned, without those three files, and the hold's page
+says so. The manifest names no matter and carries no reason.
 
 Exports expire after 7 days, as today: an export is a copy, and the held data
 itself stays in Stride. [workspace-export.md](../workspace-export.md) gains the
@@ -771,7 +787,7 @@ Indexes `[board_id, inserted_at]` and `[task_id]`, and a GIN index on
 | `Kanban.LegalHolds` | The context: place, request and cancel a release, list, counts, and `held_board?/1`. Every public function takes the scope first and checks org-admin; `held_board?/1` is the internal check the other contexts call, so it takes a board id only |
 | `Kanban.LegalHolds.LegalHold`, `Revision` | Schemas and changesets |
 | `Kanban.LegalHolds.Enforcement` | Mapping SQLSTATE `KLH01` to `{:error, :legal_hold}`, following `Kanban.Tasks.DbErrors`, and writing the refusal audit event after the rollback |
-| `Kanban.Organizations.AdminNotifier` | The security emails to every enabled org-admin ([§12.3](#123-emails)) |
+| `Kanban.Notifications.LegalHoldAlerts`, `LegalHoldEmailWorker` | The security emails to every enabled org-admin, queued in the change's transaction, modelled on `AuditStreamAlerts` ([§12.3](#123-emails)) |
 | `Kanban.Organizations.SecurityPolicies` | Gains `set_archived_task_retention/2` and `cancel_archived_task_retention_change/1` |
 | `Kanban.Archives.Retention` | Gains the board scope and the hold filter |
 | `Kanban.Retention.PurgeWorker` | Applies due releases and retention changes, per-Organization archived-task cutoffs with the join grace, and the revision purge |
@@ -839,6 +855,13 @@ On a held board, a task's **Delete**, a comment's **Delete**, an attachment's
 when it holds a task, and the board's **Delete** are disabled with the same
 sentence. Members are not told the matter's name ([§14](#14-decisions-needed),
 D3). There is no **Move** to disable: a board in an Organization has none.
+
+**When storage is full.** Held files can't be deleted, so they can fill the
+Organization's attachment storage. When an upload is refused with
+`:quota_exceeded` and files on held boards take up part of the storage
+(`Kanban.Attachments.Usage.held_bytes/1`), the message adds how much of it is
+held, and that an org-admin can free it by releasing a hold or by asking
+Stride for more storage. It names no matter and no board.
 
 ---
 
@@ -949,11 +972,19 @@ of its fields.
 
 ### 12.3 Emails
 
-Sent to every enabled org-admin by `Kanban.Organizations.AdminNotifier`,
-through `Kanban.Mailer`, each in the recipient's locale with
-`Gettext.with_locale/3`, as `Kanban.Notifications.AnnouncementWorker` does. They can't go
-through `Kanban.Notifications`, which always applies notification
-preferences; these are security emails, and nobody can turn them off:
+Sent to every enabled org-admin, the one who acted included, the way the
+audit stream's security emails are sent (`Kanban.Notifications.AuditStreamAlerts`).
+`Kanban.Notifications.LegalHoldAlerts` queues one
+`Kanban.Notifications.LegalHoldEmailWorker` job per org-admin, on the
+`:notifications` queue, **inside the transaction that makes the change**, so a
+change that rolls back emails nobody. Each email is in the recipient's
+locale, with `Gettext.with_locale/3`. These are security emails: no
+notification preference or plan gates them, and nobody can turn them off.
+
+The job args are ids, periods, dates and counts. They never hold the matter
+name, the reason or the release note: the worker reads the matter name and
+the note from the hold when it sends, which is safe because a hold is never
+deleted. So none of them is stored in `oban_jobs`. The emails are:
 
 - a hold was placed (by whom, the matter name and the scope);
 - a release was requested (by whom, the note, and the date), cancelled, or
@@ -976,7 +1007,8 @@ preferences; these are security emails, and nobody can turn them off:
 - `docs/organization-security-policies.md`: archived task retention, next to
   *Audit retention*, and the audit pause.
 - `docs/organizations.md`: a short section with links.
-- `docs/workspace-export.md`: the board filter and the two new files.
+- `docs/workspace-export.md`: the board filter, the two new files and the
+  signed manifest.
 - `docs/telemetry.md`: the new events, actions and the `entity_type` tag.
 - The comment on `archived_task_retention_days` in `config/config.exs`
   ([§5.5](#55-boards-outside-an-organization)).
@@ -1000,9 +1032,9 @@ preferences; these are security emails, and nobody can turn them off:
 | Revisions | Editing each kind of kept field writes one revision with the earlier values only; position, move, claim and assignment updates write none, except clearing an assignment; unarchive keeps the archive details; account deletion keeps all nine cleared author columns; removing and renaming a label keeps the label; `changed_by_id` is set when the context knows the actor and `NULL` otherwise, including on a pooled connection after a `SET LOCAL`; nothing is written on an unheld board; revisions are deleted 30 days after their last hold is released and not before |
 | Accounts | Deleting an account that wrote on a held board succeeds by each of the three ways in, keeps its content, and writes `legal_hold_custodian_removed` with the name and email; an org-admin who placed or requested the release of a hold can delete their account |
 | Audit pause | An Organization-wide hold with the pause stops `purge_organization_before/3` and `purge_before/1` deleting that Organization's events; releasing it resumes them; a board hold cannot pause; `legal_hold_status/0` reports it |
-| Export | A board hold exports only that board; the new files are JSON arrays with the right rows, only this hold, and no reason; the importer accepts the new version and an old one; the audit event |
+| Export | A board hold exports only that board; the new files are JSON arrays with the right rows, only this hold, and no reason; the importer accepts the new version and an old one; the audit event; the manifest lists every other file with its right size and SHA-256 and verifies against the public key; a changed file or manifest fails verification; with no signing key the export is unsigned and the page says so |
 | Cost | The 10,000-task board delete stays within about three times its time without the triggers |
-| UI | The pages in every supported locale, including plurals; disabled actions and their sentence on held boards; light and dark mode |
+| UI | The pages in every supported locale, including plurals; disabled actions and their sentence on held boards; the storage-full message with and without held files, naming no matter or board; light and dark mode |
 | Telemetry | Catalog entries, call sites, omitted keys and no forbidden keys, by the existing telemetry tests |
 
 The trigger tests run in the normal sandbox: the triggers act inside the
@@ -1022,23 +1054,26 @@ transactions on one connection, which the sandbox gives.
 | D5 | Can someone delete their account while their writing is held? | **Settled on 2026-11-10: Yes.** The account goes, their content stays, and the revisions and the `legal_hold_custodian_removed` event keep who wrote it. Refusing would block a person's own deletion right because of their employer's matter |
 | D6 | Can a hold pause audit log retention? | **Settled on 2026-11-10: Yes, an Organization-wide hold, on by default.** Board and workspace holds can't, because audit events belong to the Organization |
 | D7 | How is the retention period protected against mistakes and abuse? | **Settled on 2026-11-10: A 30-day minimum, and a 7-day wait before a shorter period applies**, with an email to every org-admin |
-| D8 | How is held data exported? | **Settled on 2026-11-10: The existing workspace export, with the revisions and the hold added**, and signed when signed exports ship. A separate legal export format is not needed for v1 |
+| D8 | How is held data exported? | **Settled on 2026-11-10: The existing workspace export, with the revisions and the hold added.** A separate legal export format is not needed for v1. **Revised on 2026-11-18:** signed audit exports have shipped, so the held-data export is signed in v1, the same way ([§8](#8-exporting-held-data)) |
 | D9 | Should holds and the per-Organization period reach boards outside an Organization? | **Settled on 2026-11-10: No.** They keep the site setting and can't be held |
 | D10 | Does releasing a hold take effect at once? | **Settled on 2026-11-10: No. A release waits 7 days and can be cancelled**, with emails at each step, matching the wait for a shorter retention period ([§6.6](#66-releasing-a-hold)) |
 | D11 | Does a board moving into an Organization take its period at once? | **Settled on 2026-11-10: No. For 7 days it uses whichever of the site setting and the Organization's period keeps tasks longer** ([§5.2](#52-what-the-job-deletes)) |
 | D12 | How is the retention setting saved? | **Settled on 2026-11-10: Its own function, card, Save and audit actions**, outside `editable_fields/0`, so the shared policy form can't change it or skip the wait ([§5.3](#53-changing-the-period)) |
 | D13 | What does an Organization that hasn't chosen a period get? | **Settled on 2026-11-10: The site setting, as today.** **Forever** is a separate, explicit choice ([§5.1](#51-the-setting)) |
 | D14 | Does the API show when an archived task will be deleted? | **Settled on 2026-11-10: No.** Agents can't archive, the task JSON has no archive fields, and a missing date would reveal a hold ([§5.4](#54-what-people-see)) |
+| D15 | How are the emails to org-admins sent? | **Settled on 2026-11-18: The way the audit stream's security emails are**, through `Kanban.Notifications.LegalHoldAlerts`, queued in the change's transaction, with no preference or plan gate ([§12.3](#123-emails)). The new `AdminNotifier` the earlier draft proposed is dropped |
+| D16 | What does the column-deletion defect change? | **Settled on 2026-11-18: The confirmation names how many open and how many archived tasks the delete removes.** Deleting a column that holds tasks stays allowed on an unheld board ([§15](#15-goals-tasks-and-order)) |
+| D17 | What happens when held files fill the attachment storage? | **Settled on 2026-11-18: The storage-full message says how much of the storage is held**, naming no matter or board, in H5 ([§10.4](#104-the-board-and-the-task)) |
 
 ---
 
 ## 15. Goals, tasks and order
 
 **First, a defect of its own.** The column-deletion hazard in
-[§2](#2-what-exists-today), which deletes a column's tasks without warning, is
-filed as a defect before this work: deleting a column that holds tasks asks
-for confirmation and names how many tasks, archived ones included, it will
-delete. It affects every board, held or not, and the G-H column guard builds on
+[§2](#2-what-exists-today), which deletes a column's archived tasks without
+saying so, is filed as a defect before this work: the confirmation for
+deleting a column that holds tasks names how many open tasks and how many
+archived tasks it will delete. It affects every board, held or not, and the G-H column guard builds on
 its confirmation.
 
 Then two goals. Each task is about 1 to 3 hours. Every task that adds text
@@ -1055,7 +1090,7 @@ these, so each task lists them in its verification steps.
 | # | Task | Size | Depends on |
 | --- | --- | --- | --- |
 | R1 | Add the retention columns to the security policy and `organization_joined_at` to boards, with the check constraints, the range helper and the setting's own changeset, outside `editable_fields/0` | small | — |
-| R2 | `set_archived_task_retention/2` and `cancel_archived_task_retention_change/1`: at once or after 7 days, the replace rules, the four audit actions, and `Kanban.Organizations.AdminNotifier` with the scheduled, replaced and cancelled emails | medium | R1 |
+| R2 | `set_archived_task_retention/2` and `cancel_archived_task_retention_change/1`: at once or after 7 days, the replace rules, the four audit actions, and `Kanban.Notifications.LegalHoldAlerts` and its worker with the scheduled, replaced and cancelled emails | medium | R1 |
 | R3 | Scope `Archives.Retention.purge_archived_before` to a set of boards, and run the archived-task step per Organization in `PurgeWorker`: apply due changes, the three choices, the join grace, the site setting for other boards; `BoardMoves` sets `organization_joined_at`; the `config/config.exs` comment | medium | R1, R2 |
 | R4 | The **Archived task retention** card on `/org/security`, with its own form and Save, and the confirmation with the estimated count | medium | R2 |
 | R5 | The Archive page's header line and row states with locale dates, the sentence in the three archive actions, and the period in the board move's confirmation | medium | R3 |
@@ -1069,22 +1104,23 @@ these, so each task lists them in its verification steps.
 | H2 | The `LegalHolds` context: place, request and cancel a release, list, counts and `held_board?/1`, with the 100 limit, the hold audit actions and the `placed` and `released` telemetry | medium | H1 |
 | H3 | `board_legal_hold_active/1`, the seven `BEFORE DELETE` triggers, the `BEFORE UPDATE` parent guards, the `BEFORE TRUNCATE` triggers, and `Kanban.Release.legal_hold_status/0` | medium | H1 |
 | H4 | `LegalHolds.Enforcement` mapping `KLH01` and writing the refusal event after the rollback; the refusals in the six context functions; `delete_task/2` with the actor and one transaction; the `deletion_refused` telemetry and the `entity_type` tag | medium | H2, H3 |
-| H5 | Handle `{:error, :legal_hold}` in every LiveView caller, and disable the delete actions on held boards in the board, task, comment, attachment, label, column and Archive screens | medium | H4 |
+| H5 | Handle `{:error, :legal_hold}` in every LiveView caller, and disable the delete actions on held boards in the board, task, comment, attachment, label, column and Archive screens; `Kanban.Attachments.Usage.held_bytes/1` and the storage-full message that says when held files take up storage ([§10.4](#104-the-board-and-the-task)) | medium | H4 |
 | H6 | Add `legal_hold_revisions` with its guard, the revision triggers on the six tables, `kanban.current_user_id` with `NULLIF`, and `set_config` in the contexts that know the actor | medium | H3 |
 | H7 | Retention with holds: keep held tasks out of archived-task retention with `held_count`, the audit pause in `purge_organization_before/3` and `purge_before/1`, releases applied on their date, the revision purge, and the two security-page notices | medium | H2, H6, **R3**, **R4**, **R6** |
 | H8 | `legal_hold_custodian_removed`, with the name and email, in all three account-deletion paths | small | H2 |
-| H9 | The `/org/legal-holds` pages: list, place, a hold's page, request and cancel a release, with the hold emails through `AdminNotifier` | medium | H2, H6, **R2** |
+| H9 | The `/org/legal-holds` pages: list, place, a hold's page, request and cancel a release, with the hold emails through `LegalHoldAlerts` | medium | H2, H6, **R2** |
 | H10 | The board filter, `legal_hold.json` and `legal_hold_revisions.json` in the workspace export and the importer, **Export held data**, and its audit action | medium | H6, H9 |
-| H11 | Docs: `docs/retention-and-legal-hold.md`, the security-policy, organizations and workspace-export docs, `docs/README.md`, the `/privacy` sentence | medium | H7, H9, H10, **R4**, **R5** |
-| H12 | The Resources guide, with screenshots in light and dark mode | medium | H5, H9, **R5** |
-| H13 | Release prose: pricing features, `ROADMAP.md`, `CHANGELOG.md`, `priv/changelog/body.html` | small | H11, H12 |
+| H11 | Sign the held-data export: `manifest.json` with every file's size and SHA-256, `manifest.json.sig` through `Kanban.AuditLog.Signing`, `README.txt`, and the unsigned case when the instance has no signing key ([§8](#8-exporting-held-data)) | medium | H10 |
+| H12 | Docs: `docs/retention-and-legal-hold.md`, the security-policy, organizations and workspace-export docs, `docs/README.md`, the `/privacy` sentence | medium | H7, H9, H11, **R4**, **R5** |
+| H13 | The Resources guide, with screenshots in light and dark mode | medium | H5, H9, **R5** |
+| H14 | Release prose: pricing features, `ROADMAP.md`, `CHANGELOG.md`, `priv/changelog/body.html` | small | H12, H13 |
 
 **Dependencies between goals.** Bold entries are in the other goal. Create G-R
-first, then G-H with H7 → R3, R4 and R6, H9 → R2, H11 → R4 and R5, and
-H12 → R5, using those tasks' identifiers. Within a goal, dependencies use
+first, then G-H with H7 → R3, R4 and R6, H9 → R2, H12 → R4 and R5, and
+H13 → R5, using those tasks' identifiers. Within a goal, dependencies use
 array positions.
 
-**Critical path:** H1 → H3 → H6 → H9 → H10 → H11 → H13.
+**Critical path:** H1 → H3 → H6 → H9 → H10 → H11 → H12 → H14.
 
 ---
 
@@ -1098,5 +1134,5 @@ array positions.
 | An org-admin removes the other org-admins before releasing a hold | Not prevented. Every step is audited a week apart, and streaming the audit log sends it out of Stride ([§11.1](#111-abuse-by-an-org-admin)) |
 | Holds are trusted to mean more than they do | [§7.4](#74-what-enforcement-cannot-do) and the docs say plainly that the app and database operators can still remove data, and that the audit log is the record |
 | Large allowed cascades slow down by about 2.7 times | Board and column deletes are rare; the cost test keeps it measured ([§7.2](#72-in-the-database)) |
-| Held files fill the Organization's 10 GB attachment storage, and nothing can be deleted to free it | The storage-full message says when held files are the cause; the Organization can release a hold or ask Stride for more storage |
+| Held files fill the Organization's 10 GB attachment storage, and nothing can be deleted to free it | The storage-full message says how much of the storage is held ([§10.4](#104-the-board-and-the-task), H5); the Organization can release a hold or ask Stride for more storage |
 | The column cascade deletes tasks on an unheld board | A separate defect before this work ([§15](#15-goals-tasks-and-order)) |

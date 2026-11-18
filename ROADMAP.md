@@ -16,19 +16,21 @@ This roadmap describes what we are considering for Stride next. What has already
 
   An Organization's org-admins can send its audit log, as it happens, to Splunk, Datadog or any HTTPS endpoint, so a security tool or SIEM receives the Organization's audit events within about a minute. Deliveries to an HTTPS endpoint are signed, and the org-admins are emailed when a destination is added, changed, paused, deleted, starts failing or recovers. When the Stride instance has a signing key, the audit log can also be exported as a signed zip that an auditor can check without trusting whoever handed it over.
 
-## 🔜 Planned
+## 🚧 In progress
 
-- **Import from Jira**
+- **Native mobile apps**
 
-  Bring boards and tasks across with their titles, descriptions, comments, labels and status, so a team can move without losing its history.
+  iPhone, iPad and Android apps for the human side of the loop: hear when work is waiting on you, review with the verdicts first, approve with Face ID or a fingerprint, and keep Ready full.
 
 - **Retention and legal hold**
 
   Set how long archived tasks are kept, and hold them when a legal matter requires it.
 
-- **Native mobile apps**
+## 🔜 Planned
 
-  iPhone, iPad and Android apps for the human side of the loop: hear when work is waiting on you, review with the verdicts first, approve with Face ID or a fingerprint, and keep Ready full.
+- **Import from Jira**
+
+  Bring boards and tasks across with their titles, descriptions, comments, labels and status, so a team can move without losing its history.
 
 ## 💡 Import from other tools
 
