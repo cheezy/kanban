@@ -1453,3 +1453,31 @@ All thirteen were decided on 2026-11-15; decision 13 was added after the first t
 | 11 | Which languages does the diff highlighter cover at launch? | **Decided (2026-11-15): Elixir, HEEx, Erlang, JavaScript and CSS,** only where the Makeup lexer is maintained; plain text otherwise. Reason: each lexer is a dependency to keep up, and plain text still reads fine for the rest. |
 | 12 | Start the backend now, or after the five-Organization sales goal? | **Decided (2026-11-15): task 0 now.** The rest of Phase 1a starts when the baseline shows real waits on paying boards. Reason: the metric is a defect worth fixing anyway, and gating the rest protects sales time until the waits are proven. |
 | 13 | Add a status section to Phase 1: targets, then a target's goals, then a goal's tasks, each matching the web, plus a list of every goal? | **Decided (2026-11-15): yes, in Phase 1, inside Agents,** behind a switch with Agents, Targets and Goals ([§6.16](#616-targets-status-at-a-glance)–§6.19). The screens are read-only, refresh by pulling, and have no live channel in 1.0. Access follows the web: the targets list shows every target with a member goal on a board the person can see, but only a target's owner can open its detail, as `/targets/:id` is owner-only. Others see the row without a chevron and reach its goals from the Goals list. Lists span every board the person can see; the app has no current workspace ([§5.1](#51-one-navigation-on-both-platforms)). Reason: high-level status is what a person checks most between decisions, and the web already shows targets on `/agents`. The backend reuses `DeliveryRollup.build/2`, `Kanban.Targets` and the goal page's functions for three read endpoints, plus a few new fields ([§7.10](#710-boards-tasks-agents-and-capture)). The goals list needs one new query, because no web page lists every goal. The cost is four read endpoints and four screens. The goals list was added because a goal with no target would otherwise drop off the phone once agents leave it. This widens the metrics non-goal in [§1](#1-goals-and-non-goals). |
+
+
+## Breakdown of goal G532:
+Here’s a breakdown into seven increments, built from the dependencies between G532’s tasks. The order puts the review loop first: an agent finishes, the phone gets a push saying a review is waiting, and you approve it on the phone. Shortening the Review wait is the reason for the app, so that loop is the smallest thing worth shipping. Browsing boards and goals, live updates, and the contract work come after it.
+
+## Increment	Tasks	When it’s done
+1	Device sign-in	W2744, W2745, W2746, W2747, W2748, W2749	A device signs in with OAuth and PKCE, refreshes and revokes its tokens, and calls GET /api/me. Users can see and revoke their devices on /users/settings and the Organization members page. Every other endpoint depends on W2747.
+
+2	Reviews from the phone	W2750, W2752, W2751, W2753, W2754, W2755	A phone can open a review, page through highlighted file diffs, and approve with a signed approval or request changes. Review audit events are written for web approvals too.
+
+3	Decisions inbox	W2756, W2757, W2758	GET /api/me/decisions and GET /api/me/reviews return what is waiting on you, ranked by how much work each item holds up.
+
+4	Push	W2769, W2770, W2767, W2768, W2771, W2772	Notifications reach APNs and FCM, with quiet hours, a summary push when they end, the web Push column, and the policy to hide titles. The review loop is complete at this point.
+
+5	Rest of the person API	W2759, W2760, W2761, W2762, W2763, W2764, W2773	Boards, promote, task detail, comment, move to Backlog, capture, agents, goals and targets. Also the app-link site files and the decision.acted_on event.
+
+6	Live updates	W2765, W2766	UserSocket with the me:inbox and me:agents channels.
+
+7	Contract, docs, security gate	W2774, W2775, W2776, W2777, W2778, W2779, W2780, W2781	The mobile/ folder setup, the OpenAPI fixtures, mix mobile.api, the docs, and the final security review.
+
+Notes on running it:
+
+Increment 7’s first four tasks can run any time. W2774 to W2777 depend only on each other, so they can run alongside increment 1. One catch: W2777 changes priv/gettext/, and W2745 and W2749 do too, so don’t run W2777 at the same time as those two.
+Inside an increment, the endpoint tasks run one at a time. Almost every endpoint task edits priv/openapi/stride-api.json. Increment 2 also shares review_controller.ex across all four of its endpoint tasks. Parallel runners in one checkout would collide on those files. The independent cores can still overlap: W2750, W2752, W2756 to W2757 and W2770 don’t depend on each other, so they can run alongside whichever increment is in progress.
+Increments 3 to 6 can be reordered a little. Push needs increment 3 first, because W2771 depends on W2758. Increments 5 and 6 can swap, except W2766 needs W2761 from increment 5.
+Each increment can be its own deploy, if the new routes are hidden. W2747 adds a :mobile_app plan feature. If the /api/me routes check it, half-built increments can go to production without users seeing them. Confirm that while doing W2747.
+Don’t leave the security review of sign-in and approvals until the end. W2781 waits for all 36 earlier tasks, but increments 1 and 2 hold the riskiest code: tokens, PKCE and signed approvals. Have their task reviews run the deep security check as each one lands, so a design flaw shows up before 30 tasks are built on it.
+Increment 4 is a natural stopping point. The design says to stop after Phase 1a if review waits are already short. After increment 4 you have the whole loop and can measure the Review wait before building the browsing features.
