@@ -1351,6 +1351,64 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       render(show_live)
     end
 
+    test "reveals the board token once and dismiss clears it", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      show_live
+      |> form("#api-tokens-modal form", api_token: %{name: "Shown Once"})
+      |> render_submit()
+
+      [_, plain] = Regex.run(~r/id="new-token-value"[^>]*>\s*([^<\s]+)/, render(show_live))
+      assert has_element?(show_live, "#new-token-value", plain)
+      assert has_element?(show_live, ~s(button[data-token-value="#{plain}"]))
+      refute inspect(:sys.get_state(show_live.pid)) =~ plain
+
+      render_patch(show_live, ~p"/boards/#{board}/api_tokens")
+      assert has_element?(show_live, "#new-token-value", plain)
+      assert %KanbanWeb.ShownSecret{} = :sys.get_state(show_live.pid).socket.assigns.new_token
+      refute inspect(:sys.get_state(show_live.pid)) =~ plain
+
+      render_hook(show_live, "dismiss_token", %{})
+      refute has_element?(show_live, "#new-token-value")
+      refute render(show_live) =~ plain
+    end
+
+    test "a create_token without an api_token map does not crash the board", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      for params <- [%{}, %{"api_token" => nil}, %{"api_token" => "x"}, %{"api_token" => [1]}] do
+        render_hook(show_live, "create_token", params)
+      end
+
+      assert Process.alive?(show_live.pid)
+      refute has_element?(show_live, "#new-token-value")
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
+    test "a read-only user is still refused on create_token", %{conn: conn} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      readonly_user = user_fixture()
+      Kanban.Boards.add_user_to_board(board, readonly_user, :read_only, owner)
+
+      conn = log_in_user(conn, readonly_user)
+
+      # A fresh view per event, so one event's flash can't satisfy the next.
+      for params <- [%{"api_token" => %{"name" => "Sneaky"}}, %{}] do
+        {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+        assert render_hook(show_live, "create_token", params) =~
+                 "You do not have permission to manage API tokens"
+      end
+
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
     test "revoke_token prevents revoking token from different board", %{conn: conn, user: user} do
       board1 = ai_optimized_board_fixture(user)
       board2 = ai_optimized_board_fixture(user)
@@ -3622,5 +3680,52 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       refute_receive {:telemetry_event, _, _, %{board_id: ^board_id}}, 50
     end
+  end
+end
+
+defmodule KanbanWeb.BoardLive.ApiTokensCrashReportTest do
+  @moduledoc """
+  A crash of the board page with a revealed API token (D442). Not async: it
+  raises the global Logger level to `:debug`, where the crash report prints the
+  LiveView's state.
+  """
+  use KanbanWeb.ConnCase, async: false
+
+  import ExUnit.CaptureLog
+  import Phoenix.LiveViewTest
+  import Kanban.BoardsFixtures
+
+  setup :register_and_log_in_user
+
+  setup do
+    original = Logger.level()
+    original_truncate = Application.get_env(:logger, :truncate, 8096)
+    # The board's state is large; without this the report is cut before the
+    # token assign, which would hide a leak as well as the struct name.
+    Logger.configure(level: :debug, truncate: :infinity)
+    on_exit(fn -> Logger.configure(level: original, truncate: original_truncate) end)
+  end
+
+  test "keeps the board token plaintext out of crash reports", %{conn: conn, user: user} do
+    Process.flag(:trap_exit, true)
+    board = ai_optimized_board_fixture(user)
+    {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+    lv
+    |> form("#api-tokens-modal form", api_token: %{name: "Crash Token"})
+    |> render_submit()
+
+    [_, plaintext] = Regex.run(~r/id="new-token-value"[^>]*>\s*([^<\s]+)/, render(lv))
+    ref = Process.monitor(lv.pid)
+
+    log =
+      capture_log([level: :debug], fn ->
+        # The page defines no handle_cast/2, so this crashes the view.
+        GenServer.cast(lv.pid, :d442_crash)
+        assert_receive {:DOWN, ^ref, :process, _pid, _reason}, 5_000
+      end)
+
+    assert log =~ "KanbanWeb.ShownSecret"
+    refute log =~ plaintext
   end
 end

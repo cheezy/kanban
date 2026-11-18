@@ -22,7 +22,8 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestination do
 
   The socket holds only the map `KanbanWeb.OrgLive.AuditStreamDestinationView`
   builds, with no URL, credential or signing secret (§12.2). A rotated
-  signing secret is held once, in the `:new_secret` assign, until the next
+  signing secret is held once, in the `:new_secret` assign as a
+  `KanbanWeb.ShownSecret` (D442), until the next
   event or **Dismiss**; it is never logged, flashed or put in audit metadata.
   Attempt errors are Stride's own classification, at most 200 characters,
   never a response body, and are rendered escaped (§8.7).
@@ -40,6 +41,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestination do
   alias Kanban.AuditStream.Destination
   alias KanbanWeb.OrgLive.AuditStreamDestinationView
   alias KanbanWeb.OrgLive.AuditStreamingRow
+  alias KanbanWeb.ShownSecret
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -105,7 +107,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestination do
        when is_binary(secret) do
     {:noreply,
      socket
-     |> assign(:new_secret, secret)
+     |> assign(:new_secret, %ShownSecret{value: secret})
      |> assign(:new_secret_valid_until, destination.previous_secret_expires_at)
      |> reload(actor)
      |> put_flash(:info, done)}

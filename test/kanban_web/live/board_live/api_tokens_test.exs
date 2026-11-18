@@ -40,14 +40,26 @@ defmodule KanbanWeb.BoardLive.ApiTokensTest do
   end
 
   describe "do_create_token/2" do
-    test "assigns the plaintext token exactly once on success", %{user: user, board: board} do
+    test "assigns the created token once, wrapped so inspect hides it", %{
+      user: user,
+      board: board
+    } do
       s = socket(%{current_scope: %{user: user}, board: board})
 
       {:noreply, s} = ApiTokens.do_create_token(s, @create_params)
 
-      assert is_binary(s.assigns.new_token)
-      assert s.assigns.new_token != ""
+      assert %KanbanWeb.ShownSecret{value: plain} = s.assigns.new_token
+      assert is_binary(plain) and plain != ""
+      refute inspect(s.assigns) =~ plain
       assert [_one] = s.assigns.api_tokens
+
+      shown = s.assigns.new_token
+      {:noreply, s} = ApiTokens.do_create_token(s, %{"api_token" => nil})
+      assert s.assigns.new_token == shown
+      assert [_one] = Kanban.ApiTokens.list_api_tokens(board)
+
+      fresh = socket(%{current_scope: %{user: user}, board: board, new_token: nil})
+      assert {:noreply, %{assigns: %{new_token: nil}}} = ApiTokens.do_create_token(fresh, %{})
     end
   end
 

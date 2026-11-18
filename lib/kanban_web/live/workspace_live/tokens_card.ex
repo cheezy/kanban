@@ -18,11 +18,14 @@ defmodule KanbanWeb.WorkspaceLive.TokensCard do
 
   attr :form, Phoenix.HTML.Form, required: true
   attr :tokens, :list, required: true
-  attr :new_token, :string, default: nil
+
+  attr :new_token, KanbanWeb.ShownSecret,
+    default: nil,
+    doc: "the token just created, shown once (D442)"
 
   def tokens_card(assigns) do
     ~H"""
-    <.token_reveal :if={@new_token} token={@new_token} />
+    <.token_reveal :if={@new_token} token={@new_token.value} />
 
     <.settings_card
       id="tokens"

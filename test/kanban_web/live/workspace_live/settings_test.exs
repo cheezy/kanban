@@ -521,6 +521,45 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
       assert has_element?(view, "#workspace-token-#{api_token.id}")
     end
 
+    test "reveals the workspace token once and a section change clears it", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+      create_token(view)
+      plain = shown_token(view)
+
+      assert plain =~ "stride_"
+      refute inspect(:sys.get_state(view.pid)) =~ plain
+
+      render_click(view, "select_section", %{"section" => "boards"})
+      render_click(view, "select_section", %{"section" => "tokens"})
+      assert shown_token(view) == nil
+      refute inspect(:sys.get_state(view.pid)) =~ plain
+    end
+
+    test "keeps the workspace token plaintext out of crash reports", ctx do
+      original = Logger.level()
+      original_truncate = Application.get_env(:logger, :truncate, 8096)
+      # Untruncated, so the report cannot be cut before the token assign.
+      Logger.configure(level: :debug, truncate: :infinity)
+      on_exit(fn -> Logger.configure(level: original, truncate: original_truncate) end)
+      Process.flag(:trap_exit, true)
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+      create_token(view)
+      plain = shown_token(view)
+      assert plain =~ "stride_"
+      ref = Process.monitor(view.pid)
+
+      log =
+        ExUnit.CaptureLog.capture_log([level: :debug], fn ->
+          # The page defines no handle_cast/2, so this crashes the view.
+          GenServer.cast(view.pid, :d442_crash)
+          assert_receive {:DOWN, ^ref, :process, _pid, _reason}, 5_000
+        end)
+
+      assert log =~ "KanbanWeb.ShownSecret"
+      refute log =~ plain
+    end
+
     test "dismissing the new token hides it", ctx do
       {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
       create_token(view)

@@ -109,6 +109,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
 
       secret = secret_from(view)
       assert {:ok, ^secret} = Webhooks.signing_secret(endpoint)
+      refute inspect(:sys.get_state(view.pid)) =~ secret
       refute html =~ ~s(data-token-value)
       assert render(view) =~ "Endpoint created"
     end

@@ -6,7 +6,8 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
   (following the `KanbanWeb.BoardLive.Membership` style).
 
   Two behaviors are load-bearing and moved byte-identical: the plaintext token
-  is assigned to `:new_token` exactly once at creation (`assign_created_token/3`)
+  is assigned to `:new_token` exactly once at creation (`assign_created_token/3`),
+  wrapped in `KanbanWeb.ShownSecret` so inspecting the state hides it (D442),
   and never re-derived from persisted state, and the per-token `board_id ==
   board.id` checks in revoke/delete are cross-board IDOR guards. Flash strings
   are asserted in tests and shown to users — do not reword. `assign_api_tokens_state/3`
@@ -22,6 +23,7 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
   alias Kanban.ApiTokens
   alias Kanban.Columns
   alias KanbanWeb.BoardLive.BoardState
+  alias KanbanWeb.ShownSecret
 
   @doc "Resolves the API-tokens view: gates by AI-optimized board + role, else assigns token state."
   def resolve_api_tokens_view(socket, board, user_access) do
@@ -44,29 +46,38 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
   end
 
   @doc "Creates a token; on success assigns the plaintext once, else re-renders the form with errors."
-  def do_create_token(socket, params) do
-    user = socket.assigns.current_scope.user
+  def do_create_token(socket, %{"api_token" => api_token} = params) when is_map(api_token) do
     board = socket.assigns.board
-    token_params = build_token_params(params)
+    token_params = build_token_params(api_token, params["token"])
 
-    case ApiTokens.create_api_token_for_member(user, board, token_params) do
-      {:ok, {_api_token, plain_text_token}} ->
-        assign_created_token(socket, board, plain_text_token)
-
-      {:error, :unauthorized} ->
-        {:noreply,
-         put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
-    end
+    socket.assigns.current_scope.user
+    |> ApiTokens.create_api_token_for_member(board, token_params)
+    |> respond_to_create(socket, board)
   end
 
-  defp build_token_params(params) do
-    params["api_token"]
-    |> Map.merge(params["token"] || %{})
+  # A crafted create_token without an api_token map is ignored rather than
+  # crashing the view (D442): the socket comes back unchanged, so a token being
+  # shown stays shown. The caller has already checked can_modify.
+  def do_create_token(socket, _params), do: {:noreply, socket}
+
+  defp respond_to_create({:ok, {_api_token, plain_text_token}}, socket, board),
+    do: assign_created_token(socket, board, plain_text_token)
+
+  defp respond_to_create({:error, :unauthorized}, socket, _board) do
+    {:noreply,
+     put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
+  end
+
+  defp respond_to_create({:error, changeset}, socket, _board),
+    do: {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
+
+  defp build_token_params(api_token, extra) when is_map(extra) do
+    api_token
+    |> Map.merge(extra)
     |> parse_agent_capabilities()
   end
+
+  defp build_token_params(api_token, _extra), do: parse_agent_capabilities(api_token)
 
   defp assign_created_token(socket, board, plain_text_token) do
     api_tokens = ApiTokens.list_api_tokens(board)
@@ -75,7 +86,7 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
     {:noreply,
      socket
      |> assign(:api_tokens, api_tokens)
-     |> assign(:new_token, plain_text_token)
+     |> assign(:new_token, %ShownSecret{value: plain_text_token})
      |> assign(:token_form, to_form(token_changeset))}
   end
 

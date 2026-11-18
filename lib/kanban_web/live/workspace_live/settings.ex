@@ -58,6 +58,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   alias Kanban.Workspaces.Invitations
   alias Kanban.Workspaces.Policy
   alias Kanban.Workspaces.Workspace
+  alias KanbanWeb.ShownSecret
   alias KanbanWeb.WorkspaceLive.Exports
   alias KanbanWeb.WorkspaceLive.MoveMessages
   alias KanbanWeb.WorkspaceLive.Tokens
@@ -345,7 +346,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
        :info,
        gettext("Workspace token created. Copy it now; it won't be shown again.")
      )
-     |> assign(:new_token, plain_text)
+     |> assign(:new_token, %ShownSecret{value: plain_text})
      |> assign(:token_form, Tokens.form())
      |> load_lists(actor)}
   end

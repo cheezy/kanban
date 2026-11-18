@@ -21,7 +21,8 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   blank URL keeps the stored one. The edit form never shows the stored URL,
   only its host, and the signing secret is kept.
 
-  The signing secret is held in the `:revealed` assign, written only by the
+  The signing secret is held in the `:revealed` assign, wrapped in
+  `KanbanWeb.ShownSecret` so inspecting the state hides it (D442), written only by the
   create and rotate handlers and cleared by dismiss or delete. `update/2`
   never sets it, and closing the modal unmounts the component, so the secret
   cannot be shown again. A Slack or Discord endpoint has no secret to
@@ -47,6 +48,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   alias KanbanWeb.BoardLive.WebhookForm
   alias KanbanWeb.BoardLive.WebhookViews
   alias KanbanWeb.LockedFeature
+  alias KanbanWeb.ShownSecret
 
   @log_size 20
 
@@ -320,7 +322,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   # Slack messages are not signed, so a Slack endpoint's secret is never shown.
   defp reveal(socket, %Endpoint{kind: :generic, id: id}, secret),
-    do: assign(socket, :revealed, %{endpoint_id: id, secret: secret})
+    do: assign(socket, :revealed, %{endpoint_id: id, secret: %ShownSecret{value: secret}})
 
   defp reveal(socket, _endpoint, _secret), do: socket
 
@@ -433,7 +435,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
         />
         <WebhookViews.secret_reveal
           :if={@revealed && !@locked?}
-          secret={@revealed.secret}
+          secret={@revealed.secret.value}
           myself={@myself}
         />
         <p

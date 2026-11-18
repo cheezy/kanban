@@ -571,6 +571,8 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
 
       secret = lv |> element("#destination-secret-value") |> render()
       assert secret =~ "assec_"
+      [plain] = Regex.run(~r/assec_[A-Za-z0-9_-]+/, secret)
+      refute inspect(:sys.get_state(lv.pid)) =~ plain
       assert has_element?(lv, "#destination-secret-overlap", "The old secret stays valid until")
       assert has_element?(lv, "#rotate-again-note")
 
