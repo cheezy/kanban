@@ -229,7 +229,8 @@ defmodule Kanban.Accounts.AccountDeletionMintLockTest do
     board =
       Repo.insert!(%Board{
         name: "Deletion lock #{System.unique_integer([:positive])}",
-        workspace_id: workspace.id
+        workspace_id: workspace.id,
+        ai_optimized_board: true
       })
 
     Repo.insert!(%BoardUser{board_id: board.id, user_id: owner.id, access: :owner})

@@ -1458,6 +1458,33 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert Kanban.ApiTokens.list_api_tokens(board) == []
     end
 
+    test "create_token on a non-AI board creates no token", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      for path <- [~p"/boards/#{board}", ~p"/boards/#{board}/settings"] do
+        {:ok, show_live, _html} = live(conn, path)
+
+        render_hook(show_live, "create_token", %{"api_token" => %{"name" => "Hidden"}})
+
+        assert render(show_live) =~ "API tokens are only available for AI Optimized boards"
+        refute has_element?(show_live, "#new-token-value")
+      end
+
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
+    test "create_token from a non-token route on an AI board still creates", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      render_hook(show_live, "create_token", %{"api_token" => %{"name" => "Elsewhere"}})
+
+      assert [%{name: "Elsewhere"}] = Kanban.ApiTokens.list_api_tokens(board)
+    end
+
     test "list agent capabilities are cleaned like a string on the board", %{
       conn: conn,
       user: user
@@ -3799,10 +3826,18 @@ defmodule KanbanWeb.BoardLive.ApiTokensCrashReportTest do
   setup do
     original = Logger.level()
     original_truncate = Application.get_env(:logger, :truncate, 8096)
-    # The board's state is large; without this the report is cut before the
-    # token assign, which would hide a leak as well as the struct name.
+    original_inspect = Application.get_env(:logger, :translator_inspect_opts, [])
+    # The board's state is large; without these the report is cut, or the
+    # assigns map is elided by the translator's inspect limit, before the token
+    # assign, which would hide a leak as well as the struct name (D450: it
+    # flaked in full runs on the inspect limit).
     Logger.configure(level: :debug, truncate: :infinity)
-    on_exit(fn -> Logger.configure(level: original, truncate: original_truncate) end)
+    Application.put_env(:logger, :translator_inspect_opts, limit: :infinity)
+
+    on_exit(fn ->
+      Logger.configure(level: original, truncate: original_truncate)
+      Application.put_env(:logger, :translator_inspect_opts, original_inspect)
+    end)
   end
 
   test "keeps the board token plaintext out of crash reports", %{conn: conn, user: user} do

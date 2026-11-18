@@ -398,7 +398,7 @@ defmodule Kanban.ApiTokensTest do
 
     test "creates a token for an owner or a modify member" do
       owner = user_fixture()
-      board = board_fixture(owner)
+      board = ai_optimized_board_fixture(owner)
       member = user_fixture()
       grant(board, member, :modify)
 
@@ -412,7 +412,7 @@ defmodule Kanban.ApiTokensTest do
     end
 
     test "refuses a read-only member and a user without access, creating nothing" do
-      board = board_fixture(user_fixture())
+      board = ai_optimized_board_fixture(user_fixture())
       reader = user_fixture()
       grant(board, reader, :read_only)
 
@@ -436,7 +436,7 @@ defmodule Kanban.ApiTokensTest do
         :org_admin
       )
 
-      board = board_fixture(user_fixture())
+      board = ai_optimized_board_fixture(user_fixture())
 
       Kanban.Boards.Board
       |> Ecto.Query.where([b], b.id == ^board.id)
@@ -453,9 +453,51 @@ defmodule Kanban.ApiTokensTest do
                {:error, :unauthorized}
     end
 
-    test "returns the changeset for invalid attributes" do
+    test "create_api_token_for_member still creates on an AI-optimized board" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      assert {:ok, {%ApiToken{board_id: board_id}, _plain}} =
+               ApiTokens.create_api_token_for_member(owner, board, @member_attrs)
+
+      assert board_id == board.id
+    end
+
+    test "create_api_token_for_member refuses a board that is not AI optimized" do
       owner = user_fixture()
       board = board_fixture(owner)
+
+      assert ApiTokens.create_api_token_for_member(owner, board, @member_attrs) ==
+               {:error, :not_ai_optimized}
+
+      assert ApiTokens.list_api_tokens(board) == []
+
+      assert Kanban.AuditLog.list_events(action: :api_token_created, actor_user_id: owner.id) ==
+               []
+    end
+
+    test "reads the AI flag from the board row, not the caller's struct" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+
+      Kanban.Boards.Board
+      |> Ecto.Query.where([b], b.id == ^board.id)
+      |> Kanban.Repo.update_all(set: [ai_optimized_board: false])
+
+      assert ApiTokens.create_api_token_for_member(owner, board, @member_attrs) ==
+               {:error, :not_ai_optimized}
+    end
+
+    test "refuses a user without access before checking the AI flag" do
+      board = board_fixture(user_fixture())
+
+      assert ApiTokens.create_api_token_for_member(user_fixture(), board, @member_attrs) ==
+               {:error, :unauthorized}
+    end
+
+    test "returns the changeset for invalid attributes" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
 
       assert {:error, %Ecto.Changeset{}} =
                ApiTokens.create_api_token_for_member(owner, board, @invalid_attrs)

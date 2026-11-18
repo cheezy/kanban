@@ -166,21 +166,44 @@ defmodule Kanban.ApiTokens do
   between a removal's revocation and its commit would survive it.
 
   Returns `{:error, :unauthorized}` when the user can no longer modify the board,
-  and `{:error, changeset}` for invalid attributes.
+  `{:error, :not_ai_optimized}` when the board is not AI optimized (D450: the
+  token view refuses such a board, so a token made there could never be seen
+  or revoked), and `{:error, changeset}` for invalid attributes. The access
+  check runs first, so a user without access learns nothing about the board.
   """
   def create_api_token_for_member(user, %Board{} = board, attrs \\ %{}) do
     Repo.transaction(fn ->
       lock_board_access(user.id, board.id)
 
-      if Policy.effective_board_access(board.id, user.id) in [:owner, :modify] do
-        case create_api_token(user, board, attrs) do
-          {:ok, created} -> created
-          {:error, changeset} -> Repo.rollback(changeset)
-        end
-      else
-        Repo.rollback(:unauthorized)
+      case mint_for_member(user, board, attrs) do
+        {:ok, created} -> created
+        {:error, reason} -> Repo.rollback(reason)
       end
     end)
+  end
+
+  defp mint_for_member(user, board, attrs) do
+    with :ok <- authorize_member(board.id, user.id),
+         :ok <- require_ai_optimized(board.id) do
+      create_api_token(user, board, attrs)
+    end
+  end
+
+  defp authorize_member(board_id, user_id) do
+    if Policy.effective_board_access(board_id, user_id) in [:owner, :modify],
+      do: :ok,
+      else: {:error, :unauthorized}
+  end
+
+  # Read from the boards row inside the transaction, not from the caller's
+  # struct, which may be a stale socket assign.
+  defp require_ai_optimized(board_id) do
+    from(b in Board, where: b.id == ^board_id, select: b.ai_optimized_board)
+    |> Repo.one()
+    |> case do
+      true -> :ok
+      _ -> {:error, :not_ai_optimized}
+    end
   end
 
   # The Organization row first, then the board_users row: the order every

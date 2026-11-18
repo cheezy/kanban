@@ -69,6 +69,11 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
      put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
   end
 
+  defp respond_to_create({:error, :not_ai_optimized}, socket, _board) do
+    {:noreply,
+     put_flash(socket, :error, gettext("API tokens are only available for AI Optimized boards"))}
+  end
+
   defp respond_to_create({:error, changeset}, socket, _board),
     do: {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
 

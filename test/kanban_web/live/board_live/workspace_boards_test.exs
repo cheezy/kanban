@@ -208,7 +208,7 @@ defmodule KanbanWeb.BoardLive.WorkspaceBoardsTest do
     test "an org-admin with derived access mints a token, and cannot once demoted", ctx do
       org_admin = user_fixture()
       organization_member_fixture(ctx.organization, org_admin, :org_admin)
-      board = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
+      board = user_fixture() |> ai_optimized_board_fixture() |> put_in_workspace(ctx.workspace)
 
       {:ok, lv, _html} = live(log_in_user(build_conn(), org_admin), ~p"/boards/#{board}")
 
