@@ -135,6 +135,48 @@ defmodule Kanban.DevicesTest do
     end
   end
 
+  describe "touch_last_seen/2" do
+    test "sets last_seen_at, truncated to the second", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      assert is_nil(device.last_seen_at)
+
+      touched = Devices.touch_last_seen(device, DateTime.add(at(5), 750_000, :microsecond))
+
+      assert touched.last_seen_at == at(5)
+      assert Repo.get!(Device, device.id).last_seen_at == at(5)
+    end
+
+    test "never moves last_seen_at backwards", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      later = Devices.touch_last_seen(device, at(60))
+
+      assert Devices.touch_last_seen(later, at(30)).last_seen_at == at(60)
+      assert Devices.touch_last_seen(device, at(30)).last_seen_at == at(60)
+      assert Repo.get!(Device, device.id).last_seen_at == at(60)
+
+      assert Devices.touch_last_seen(later, at(60)).last_seen_at == at(60)
+      assert Devices.touch_last_seen(later, at(90)).last_seen_at == at(90)
+      assert Repo.get!(Device, device.id).last_seen_at == at(90)
+    end
+
+    test "touches only the given device", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      other = device_fixture(scope, %{name: "Other"}, @t0)
+
+      Devices.touch_last_seen(device, at(10))
+
+      assert is_nil(Repo.get!(Device, other.id).last_seen_at)
+    end
+
+    test "returns the device unchanged in the database when its row is gone", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      Repo.delete!(device)
+
+      assert Devices.touch_last_seen(device, at(10)).last_seen_at == at(10)
+      refute Repo.get(Device, device.id)
+    end
+  end
+
   describe "fetch_by_access_token/2" do
     test "finds a device by access token hash and refuses an expired token", %{scope: scope} do
       {device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
@@ -1123,6 +1165,35 @@ defmodule Kanban.DevicesRotationRaceTest do
   # cascade deletes the device and its tokens with the user.
   defp delete_committed(user_id) do
     :ok = Sandbox.checkout(Repo, sandbox: false)
+    delete_committed_audit_rows(user_id)
     from(u in User, where: u.id == ^user_id) |> Repo.delete_all()
+  end
+
+  # The sign-in and reuse paths these tests drive commit device_signed_in and
+  # device_refresh_reuse_detected audit rows, naming the user only in their
+  # metadata. Left behind, they show up in every later test that reads
+  # audit_events in the same database. The table is append-only: only its
+  # owner role may delete from it, so the cleanup takes that role for one
+  # transaction (tests connect as a superuser, which may switch to it).
+  defp delete_committed_audit_rows(user_id) do
+    owner_id = Integer.to_string(user_id)
+
+    {:ok, _deleted} =
+      Repo.transact(fn ->
+        %{rows: [[owner]]} =
+          Repo.query!(
+            "SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid = 'audit_events'::regclass"
+          )
+
+        Repo.query!("SET LOCAL ROLE #{Kanban.AuditLog.Hardening.quote_ident(owner)}")
+
+        {count, _rows} =
+          from(e in Kanban.AuditLog.AuditEvent,
+            where: fragment("?->>'user_id'", e.metadata) == ^owner_id
+          )
+          |> Repo.delete_all()
+
+        {:ok, count}
+      end)
   end
 end

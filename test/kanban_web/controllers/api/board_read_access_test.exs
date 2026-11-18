@@ -27,8 +27,9 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
 
   @moduletag capture_log: true
 
-  # The public routes and the 405-only GET /api/mcp read no board.
-  @not_board_reads ["/api/agent/onboarding", "/api/openapi.json", "/api/mcp"]
+  # The public routes, the 405-only GET /api/mcp and the person API's
+  # GET /api/me (a device token, never a board token, W2747) read no board.
+  @not_board_reads ["/api/agent/onboarding", "/api/openapi.json", "/api/mcp", "/api/me"]
 
   setup do
     owner = user_fixture()

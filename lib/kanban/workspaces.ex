@@ -298,6 +298,13 @@ defmodule Kanban.Workspaces do
   defdelegate list_workspaces_for_membership(user, membership), to: Listing
 
   @doc """
+  `list_workspaces_for_membership/2` returning `{membership, workspaces}` as
+  one consistent pair under a concurrent membership change. See
+  `Kanban.Workspaces.Listing`.
+  """
+  defdelegate list_workspaces_with_membership(user, membership), to: Listing
+
+  @doc """
   Returns `user`'s role on `workspace` from their member row — `:owner`,
   `:member` or `:guest` — or `nil` when they have no row. An org-admin's
   standing is not a row and is not reported here.

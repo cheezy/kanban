@@ -7,8 +7,10 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   `POST /oauth/revoke`, W2746), must be documented, nothing may be documented
   that is not routed, every route behind the authenticated `:api` pipeline
   must require `bearerAuth` while `:api_public` and `:oauth` routes declare
-  none, and the schemas must carry exactly the keys `KanbanWeb.API.TaskJSON`
-  renders. The browser-scoped `/oauth/authorize` page is not part of the API.
+  none, every route behind the `:device_api` pipeline (`/api/me/*`, W2747)
+  must require exactly `deviceAuth` and nothing else, and the schemas must
+  carry exactly the keys `KanbanWeb.API.TaskJSON` and
+  `KanbanWeb.API.Me.MeJSON` render. The browser-scoped `/oauth/authorize` page is not part of the API.
 
   When this test fails after you added a route, add the operation to the spec
   — see docs/api/get_openapi_json.md, "Adding a new /api route".
@@ -22,6 +24,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
   alias Kanban.ApiTokens
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.Me.MeJSON
   alias KanbanWeb.API.OpenApiSpec
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
@@ -116,6 +119,13 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert %{"type" => "http", "scheme" => "bearer"} =
                get_in(spec, ["components", "securitySchemes", "bearerAuth"])
     end
+
+    test "declares a deviceAuth http security scheme", %{spec: spec} do
+      assert %{"type" => "http", "scheme" => "bearer", "description" => description} =
+               get_in(spec, ["components", "securitySchemes", "deviceAuth"])
+
+      assert description =~ "/api/me/*"
+    end
   end
 
   describe "router contract" do
@@ -158,6 +168,62 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       assert failures == [], Enum.join(failures, "\n")
     end
+
+    test "every /api/me route requires deviceAuth and every agent route bearerAuth", %{
+      spec: spec
+    } do
+      routes =
+        for {verb, path} <- api_routes(),
+            do: {verb, path, route_pipelines(Atom.to_string(verb), path)}
+
+      me_routes = for {verb, "/api/me" <> _ = path, pipes} <- routes, do: {verb, path, pipes}
+
+      assert me_routes != [], "expected at least one /api/me route"
+
+      for {verb, path, pipes} <- me_routes do
+        assert :device_api in pipes and :api not in pipes,
+               "#{verb} #{path} must be behind :device_api, never :api"
+
+        op = get_in(spec, ["paths", to_spec_path(path), Atom.to_string(verb)])
+        assert op["security"] == [%{"deviceAuth" => []}]
+      end
+
+      for {verb, path, pipes} <- routes, is_list(pipes), :api in pipes do
+        refute String.starts_with?(path, "/api/me"), "#{verb} #{path} is under :api"
+        op = get_in(spec, ["paths", to_spec_path(path), Atom.to_string(verb)])
+        effective = Map.get(op, "security", spec["security"])
+
+        assert %{"bearerAuth" => []} in effective
+        refute Enum.any?(effective, &Map.has_key?(&1, "deviceAuth"))
+      end
+
+      # The check above fails each way a spec could go wrong.
+      device_op = %{"security" => [%{"deviceAuth" => []}]}
+      assert check_security([:api_json, :device_api], device_op, spec["security"], "x") == nil
+
+      for bad <- [
+            %{},
+            %{"security" => [%{"bearerAuth" => []}]},
+            %{"security" => [%{"deviceAuth" => []}, %{"bearerAuth" => []}]}
+          ] do
+        assert check_security([:api_json, :device_api], bad, spec["security"], "x")
+      end
+
+      assert check_security([:api_json, :api], device_op, spec["security"], "x")
+
+      assert check_security(
+               [:api_json, :api],
+               %{"security" => [%{"bearerAuth" => []}, %{"deviceAuth" => []}]},
+               spec["security"],
+               "x"
+             )
+
+      for alternative <- [%{}, %{"basicAuth" => []}] do
+        op = %{"security" => [%{"bearerAuth" => []}, alternative]}
+        assert check_security([:api_json, :api], op, spec["security"], "x")
+        assert check_security([:api_json, :api], %{}, [%{"bearerAuth" => []}, alternative], "x")
+      end
+    end
   end
 
   defp security_failure(spec, verb, router_path) do
@@ -185,23 +251,53 @@ defmodule KanbanWeb.API.OpenApiContractTest do
     do: "#{label} did not resolve to itself via route_info"
 
   defp check_security(pipes, op, default_security, label) do
-    cond do
-      :api in pipes ->
-        effective = Map.get(op, "security", default_security) || []
+    case pipeline_kind(pipes) do
+      :device_api ->
+        device_security_failure(op, label)
 
-        unless %{"bearerAuth" => []} in effective,
-          do: "#{label} is authenticated but does not require bearerAuth"
+      :api ->
+        agent_security_failure(Map.get(op, "security", default_security) || [], label)
 
-      :api_public in pipes ->
-        unless op["security"] == [],
-          do: "#{label} is public but does not declare security: []"
+      :api_public ->
+        unless op["security"] == [], do: "#{label} is public but does not declare security: []"
 
-      :oauth in pipes ->
+      :oauth ->
         unless op["security"] == [],
           do: "#{label} takes no bearer token but does not declare security: []"
 
-      true ->
+      :unknown ->
         "classify pipeline #{inspect(pipes)} for #{label} in the contract test"
+    end
+  end
+
+  # Checked in this order, so a route is classified by the first pipeline it
+  # pipes through that the contract knows.
+  defp pipeline_kind(pipes),
+    do: Enum.find([:device_api, :api, :api_public, :oauth], :unknown, &(&1 in pipes))
+
+  # W2747: exactly deviceAuth. Inheriting the bearerAuth default, or listing
+  # bearerAuth as an alternative, would tell a client an agent token works here.
+  defp device_security_failure(op, label) do
+    unless op["security"] == [%{"deviceAuth" => []}],
+      do: "#{label} is a person-API route but does not require exactly deviceAuth"
+  end
+
+  # Every alternative must be bearerAuth alone: an anonymous `{}`, another
+  # scheme or deviceAuth beside it would tell a client that something other
+  # than an agent token works here.
+  defp agent_security_failure(effective, label) do
+    cond do
+      %{"bearerAuth" => []} not in effective ->
+        "#{label} is authenticated but does not require bearerAuth"
+
+      Enum.any?(effective, &Map.has_key?(&1, "deviceAuth")) ->
+        "#{label} is an agent route but accepts deviceAuth"
+
+      Enum.any?(effective, &(&1 != %{"bearerAuth" => []})) ->
+        "#{label} is authenticated but accepts an alternative to bearerAuth"
+
+      true ->
+        nil
     end
   end
 
@@ -725,6 +821,63 @@ defmodule KanbanWeb.API.OpenApiContractTest do
             do: {field, json_type(value)}
 
       assert wrong == [], "ValidationError.errors items do not allow: #{inspect(wrong)}"
+    end
+  end
+
+  describe "schema parity with MeJSON (W2747)" do
+    setup do
+      user = user_fixture()
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user)
+      membership = Kanban.Organizations.get_membership(user)
+      workspace = Kanban.WorkspacesFixtures.org_workspace_fixture(organization)
+
+      device =
+        user
+        |> user_scope_fixture()
+        |> Kanban.DevicesFixtures.device_fixture()
+
+      %{
+        rendered:
+          MeJSON.show(%{
+            user: user,
+            membership: membership,
+            workspaces: [workspace],
+            app_unlocked: true,
+            min_versions: Kanban.Devices.AppPolicy.min_versions(),
+            limits: Kanban.Devices.AppPolicy.phone_limits(),
+            device: Kanban.Devices.touch_last_seen(device)
+          }).data
+      }
+    end
+
+    test "Me and its parts list exactly the keys MeJSON renders", %{spec: spec, rendered: me} do
+      assert rendered_keys(me) == schema_keys(spec, "Me")
+      assert rendered_keys(me.user) == schema_keys(spec, "MeUser")
+      assert rendered_keys(me.organization) == schema_keys(spec, "MeOrganization")
+      assert rendered_keys(hd(me.workspaces)) == schema_keys(spec, "MeWorkspace")
+      assert rendered_keys(me.limits) == schema_keys(spec, "MeLimits")
+      assert rendered_keys(me.min_app_versions.ios) == schema_keys(spec, "MeMinVersion")
+      assert rendered_keys(me.device) == schema_keys(spec, "MeDevice")
+
+      for name <- ~w(Me MeUser MeOrganization MeWorkspace MeLimits MeMinVersion MeDevice) do
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+    end
+
+    test "the AppUpdateRequired example matches what AppVersion renders", %{spec: spec} do
+      example =
+        get_in(spec, ~w(components responses AppUpdateRequired content application/json example))
+
+      conn =
+        Phoenix.ConnTest.build_conn(:get, "/api/me")
+        |> Plug.Conn.put_req_header("x-stride-app", "ios/0.0.1 (1)")
+        |> KanbanWeb.Plugs.AppVersion.call([])
+
+      assert conn.status == 426
+      assert Jason.decode!(conn.resp_body) == example
     end
   end
 end

@@ -142,4 +142,5 @@ defmodule KanbanWeb.LockedFeature do
   defp label(:telemetry), do: gettext("Telemetry")
   defp label(:mcp), do: gettext("MCP")
   defp label(:attachments), do: gettext("Attachments")
+  defp label(:mobile_app), do: gettext("Mobile app")
 end

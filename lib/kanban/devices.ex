@@ -45,6 +45,7 @@ defmodule Kanban.Devices do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
+  alias Kanban.Devices.Activity
   alias Kanban.Devices.AuthorizationCode
   alias Kanban.Devices.CodeExchange
   alias Kanban.Devices.Device
@@ -126,6 +127,15 @@ defmodule Kanban.Devices do
   end
 
   def fetch_by_access_token(_token, _now), do: {:error, :invalid_token}
+
+  @doc """
+  Records that the device used the person API at `now`. Safe under
+  concurrent requests and never moves `last_seen_at` backwards
+  (`Kanban.Devices.Activity`).
+  """
+  @spec touch_last_seen(Device.t(), DateTime.t()) :: Device.t()
+  def touch_last_seen(%Device{} = device, now \\ DateTime.utc_now()),
+    do: Activity.touch_last_seen(device, now)
 
   @doc """
   Trades a refresh token for a new access and refresh token in the same

@@ -343,12 +343,13 @@ defmodule Kanban.PlansTest do
     :integrations,
     :telemetry,
     :mcp,
-    :attachments
+    :attachments,
+    :mobile_app
   ]
   @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
 
   describe "features/0 and surfaces/0" do
-    test "features/0 returns exactly the nine paid features in a stable order" do
+    test "features/0 returns exactly the ten paid features in a stable order" do
       assert Plans.features() == @features
       assert Plans.features() == Plans.features()
     end
@@ -547,6 +548,30 @@ defmodule Kanban.PlansTest do
         assert_received {:telemetry_event, @refused, %{count: 1}, metadata}
         assert metadata == %{feature: :workspaces, surface: :rest}
       end
+    end
+
+    test "mobile_app is a paid feature and unlocked when enforcement is off", ctx do
+      assert :mobile_app in Plans.features()
+      assert Plans.parse_feature("mobile_app") == :mobile_app
+      assert Plans.parse_feature("Mobile_app") == :error
+
+      free_scope = Scope.for_user(ctx.free)
+
+      Application.put_env(:kanban, :plans_enforced, false)
+      assert Plans.check_user(ctx.free, :mobile_app, surface: :rest) == :ok
+      assert Plans.user_unlocked?(free_scope)
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
+
+      enforce_plans()
+      assert Plans.check_user(ctx.member, :mobile_app, surface: :rest) == :ok
+
+      assert Plans.check_user(ctx.free, :mobile_app, surface: :rest) ==
+               {:error, {:plan_required, :mobile_app}}
+
+      assert_received {:telemetry_event, @refused, %{count: 1},
+                       %{feature: :mobile_app, surface: :rest}}
+
+      refute Plans.user_unlocked?(free_scope)
     end
   end
 

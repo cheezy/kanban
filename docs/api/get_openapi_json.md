@@ -128,7 +128,10 @@ the file is restored.
   pipeline. The two public operations, `getAgentOnboarding` and
   `getOpenApiSpec`, override it with `security: []`, and so do the device
   sign-in operations, `oauthToken` and `oauthRevoke`, which take no bearer
-  token at all ([POST /oauth/token](post_oauth_token.md)).
+  token at all ([POST /oauth/token](post_oauth_token.md)). The person-API
+  operations under `/api/me`, which the mobile apps call, override it with
+  exactly `security: [{"deviceAuth": []}]`: a device access token, never an
+  agent API token ([GET /api/me](get_me.md)).
 - **All of `GET /api/tasks`'s query parameters:** `limit`, `cursor`, `status`,
   `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`,
   `label` and `response_view`. See [GET /api/tasks](get_tasks.md#pagination-and-filters).
@@ -158,9 +161,11 @@ makes sure it cannot quietly fall behind the router. The test checks that:
    serve.
 2. **Authentication matches the pipeline.** It resolves each route with
    `Phoenix.Router.route_info/4`. Routes piped through `:api` must require
-   `bearerAuth`, and routes piped through `:api_public` or `:oauth` must declare
-   `security: []`. A route in any other pipeline fails until the test is taught
-   how to classify it.
+   `bearerAuth` and must not accept `deviceAuth`, routes piped through
+   `:device_api` (`/api/me/*`) must declare exactly
+   `security: [{"deviceAuth": []}]`, and routes piped through `:api_public` or
+   `:oauth` must declare `security: []`. A route in any other pipeline fails
+   until the test is taught how to classify it.
 3. **The document is internally sound.** Every `$ref` resolves, every
    `operationId` is unique, every operation has a 2xx response, and every
    `{name}` in a path has a required path parameter. Every operation also
@@ -174,7 +179,8 @@ makes sure it cannot quietly fall behind the router. The test checks that:
    an `/oauth/token` 400.
 4. **The schemas match what the API returns.** The property keys of `Task`,
    `TaskSummary` and `TaskAck` must equal the keys that
-   `KanbanWeb.API.TaskJSON` renders, and `GoalSummary` the keys of
+   `KanbanWeb.API.TaskJSON` renders, `Me` and its parts the keys
+   `KanbanWeb.API.Me.MeJSON` renders, and `GoalSummary` the keys of
    `KanbanWeb.API.TaskController.render_goal_with_children/1`. `PageMeta` must
    equal the `meta` of a real paginated `GET /api/tasks` response. Every
    `status`, `type`, `priority` and `complexity` enum, on the schemas and on the
@@ -202,7 +208,9 @@ When you add a route under `/api` in `lib/kanban_web/router.ex`:
    `"parameters": [{ "$ref": "#/components/parameters/TaskId" }]` on the path
    item. It is already there if the path item exists.
 3. Set its security. An authenticated route inherits `bearerAuth` and needs no
-   `security` key. A route in the `:api_public` scope must set `"security": []`.
+   `security` key. A route in the `:api_public` scope must set `"security": []`,
+   and a person-API route under `/api/me` must set
+   `"security": [{"deviceAuth": []}]`.
 4. Reuse the existing component schemas. If you add fields to
    `KanbanWeb.API.TaskJSON`, add them to the matching schema as well, or the
    parity tests will fail.

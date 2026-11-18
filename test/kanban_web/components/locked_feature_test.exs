@@ -20,7 +20,8 @@ defmodule KanbanWeb.LockedFeatureTest do
     integrations: "Integrations",
     telemetry: "Telemetry",
     mcp: "MCP",
-    attachments: "Attachments"
+    attachments: "Attachments",
+    mobile_app: "Mobile app"
   }
 
   defp render_locked(feature, variant) do

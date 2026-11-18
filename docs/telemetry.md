@@ -311,7 +311,7 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 | `[:kanban, :rate_limit, :denied]` | event | `surface` | `Kanban.RateLimit.check/2` and `peek/2` |
 | `[:kanban, :mcp, :request]` | span | `method`, `outcome` | `KanbanWeb.MCP.Server` |
 | `[:kanban, :github, :issue_created]` | event | `outcome`, `reason` | `Kanban.GitHub.create_issue/3` |
-| `[:kanban, :api, :auth_failed]` | event | `reason`, `path`, `method` | `KanbanWeb.Plugs.AuthenticateApiToken` |
+| `[:kanban, :api, :auth_failed]` | event | `reason`, `path`, `method` | `KanbanWeb.Plugs.AuthenticateApiToken`, and `KanbanWeb.Plugs.AuthenticateDeviceToken` on `/api/me/*` |
 
 - **Exports.** `kind` is `:archive_csv` (board archive CSV), `:metrics_pdf`
   (board metrics report), `:workspace_metrics` (workspace metrics report),
@@ -363,12 +363,15 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   `Bearer` header. The other reasons are `rate_limited`, `token_not_found`,
   `token_revoked`, `token_expired`, `user_disabled` and
   `board_not_ai_optimized` (D451: a board token whose board is not AI
-  optimized). Unlike most reasons
+  optimized). The person API's device plug (`/api/me/*`, W2747) sends
+  `missing_token`, `rate_limited` and `device_token_invalid`, one reason for
+  an unknown, expired or refresh token, a revoked device, a disabled user and
+  an agent API token. Unlike most reasons
   in the catalog, these are strings, not atoms. The audit copy,
   `[:kanban, :audit, :api_token_auth_failed]`, carries the token lookup's own
   atoms instead (`:missing_token`, `:not_found`, `:revoked`, `:expired`,
-  `:user_disabled` and `:board_not_ai_optimized`), and a rate-limited request
-  writes no audit row.
+  `:user_disabled`, `:board_not_ai_optimized` and, from the device plug,
+  `:device_token_invalid`), and a rate-limited request writes no audit row.
 - **Board selection reasons** (W2220). A workspace token's request that names
   no board emits `board_selector_missing`, one whose `X-Stride-Board` header
   and `board_id` parameter disagree emits `board_selector_conflict`, and one
@@ -795,7 +798,8 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
   allowed check emits nothing.
 - **What it carries.** `feature` is one of `Kanban.Plans.features/0`
   (`:notifications`, `:audit`, `:sso`, `:workspaces`, `:bulk_actions`,
-  `:integrations`, `:telemetry`, `:mcp` or `:attachments`) and `surface` is
+  `:integrations`, `:telemetry`, `:mcp`, `:attachments` or `:mobile_app`) and
+  `surface` is
   the entry point that refused it: `:live_view`, `:controller`, `:rest`,
   `:mcp`, `:oban` or `:context`. Both are tags. The board, the user and the
   request are never sent.
@@ -955,6 +959,27 @@ destination list, emits none of them.
   measurement (see [Which metrics are stored](#which-metrics-are-stored)).
   The other three are charted live only.
 
+### Mobile app events
+
+W2747 added the event for an outdated mobile app. It is declared in
+`Kanban.Telemetry.Catalog.DeviceEvents`
+(`lib/kanban/telemetry/catalog/device_events.ex`) and measures `count: 1`.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :api, :outdated_app_refused]` | `platform` | `KanbanWeb.Plugs.AppVersion`, when it answers `426 app_update_required` |
+
+- **When it fires.** Only when a request's `X-Stride-App` header parses and
+  its version is below its platform's minimum
+  (`config :kanban, :mobile_min_versions`, see
+  [GET /api/me](api/get_me.md#the-version-header)). A missing or unparseable
+  header emits nothing.
+- **What it carries.** `platform` is the string `"ios"` or `"android"`,
+  chosen from the parsed header, never the raw header, the version, a user
+  or a device. It is not a tag.
+- **It is not persisted.** The check runs before authentication, so anyone
+  can trigger it; the event is charted but never stored in `metrics_events`.
+
 ## Emitting an event
 
 ```elixir
@@ -1034,8 +1059,9 @@ raise.
    entry in `Kanban.Telemetry.Catalog.OrganizationEvents`, a new paid
    plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`, a new
    attachment event is an entry in `Kanban.Telemetry.Catalog.AttachmentEvents`,
-   and a new audit log streaming event is an entry in
-   `Kanban.Telemetry.Catalog.AuditStreamEvents`.
+   a new audit log streaming event is an entry in
+   `Kanban.Telemetry.Catalog.AuditStreamEvents`, and a new mobile app event is
+   an entry in `Kanban.Telemetry.Catalog.DeviceEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -1342,6 +1368,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :api, :task_tree_fetched]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent fetched a task tree. |
 | `[:kanban, :api, :after_goal_status_fetched]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent fetched a goal's after_goal status. |
 | `[:kanban, :api, :mcp_tool_called]` | event, legacy | `count` | `tool`, `is_error`, `board_id`, `user_id`, `path`, `method` | An agent called an MCP tool. |
+| `[:kanban, :api, :outdated_app_refused]` | event | `count` | `platform` | A mobile app request was refused with 426 app_update_required because its X-Stride-App version is below the configured minimum for its platform. platform is ios or android, never the raw header. |
 
 ### Domain `attachment`
 

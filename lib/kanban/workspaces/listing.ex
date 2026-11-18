@@ -58,6 +58,40 @@ defmodule Kanban.Workspaces.Listing do
     end
   end
 
+  @doc """
+  Returns `{membership, workspaces}` for `user` as one consistent pair,
+  starting from the `membership` the caller already loaded (or `nil`).
+
+  The membership and the workspace list are two reads, so a removal or role
+  change committing between them could pair the old membership with the new
+  list. This re-reads the membership after listing and, when it changed,
+  lists again from the new one, up to three times; a pair whose membership read
+  is the same on both sides of the listing is returned. After the last
+  attempt the latest membership is returned with no workspaces.
+  """
+  @spec list_workspaces_with_membership(User.t(), OrganizationMember.t() | nil) ::
+          {OrganizationMember.t() | nil, [Workspace.t()]}
+  def list_workspaces_with_membership(%User{} = user, membership),
+    do: stable_listing(user, membership, 3)
+
+  defp stable_listing(user, _membership, 0), do: {Organizations.get_membership(user), []}
+
+  defp stable_listing(user, membership, attempts) do
+    workspaces = list_workspaces_for_membership(user, membership)
+    current = Organizations.get_membership(user)
+
+    if same_membership?(membership, current),
+      do: {membership, workspaces},
+      else: stable_listing(user, current, attempts - 1)
+  end
+
+  defp same_membership?(nil, nil), do: true
+
+  defp same_membership?(%OrganizationMember{} = a, %OrganizationMember{} = b),
+    do: a.id == b.id and a.organization_id == b.organization_id and a.role == b.role
+
+  defp same_membership?(_a, _b), do: false
+
   # The joined user row is the enabled check: a disabled account matches none.
   defp org_workspaces_query(organization_id, %User{id: user_id}) do
     from(w in Workspace,

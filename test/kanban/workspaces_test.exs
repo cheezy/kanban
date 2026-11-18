@@ -776,6 +776,33 @@ defmodule Kanban.WorkspacesTest do
       assert member |> Workspaces.list_workspaces_for_user() |> Enum.map(& &1.id) == [ctx.beta.id]
     end
 
+    test "list_workspaces_with_membership/2 returns the loaded membership when it still holds",
+         ctx do
+      membership = Kanban.Organizations.get_membership(ctx.admin)
+
+      assert {^membership, workspaces} =
+               Workspaces.list_workspaces_with_membership(ctx.admin, membership)
+
+      assert Enum.map(workspaces, & &1.id) == [ctx.alpha.id, ctx.beta.id]
+    end
+
+    test "list_workspaces_with_membership/2 re-lists from a membership removed or changed since it was loaded",
+         ctx do
+      member = org_member(ctx.organization)
+      workspace_member_fixture(ctx.beta, member, :member)
+      stale = Kanban.Organizations.get_membership(member)
+
+      stale |> Ecto.Changeset.change(role: :org_admin) |> Kanban.Repo.update!()
+      promoted = Kanban.Organizations.get_membership(member)
+
+      assert {^promoted, workspaces} = Workspaces.list_workspaces_with_membership(member, stale)
+      assert Enum.map(workspaces, & &1.id) == [ctx.alpha.id, ctx.beta.id]
+
+      Kanban.Repo.delete!(promoted)
+
+      assert Workspaces.list_workspaces_with_membership(member, promoted) == {nil, []}
+    end
+
     test "sorts names without regard to case", ctx do
       lower = org_workspace_fixture(ctx.organization, name: "alpha two")
       upper = org_workspace_fixture(ctx.organization, name: "Bravo")

@@ -22,6 +22,12 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   - Assign :current_user, :current_board, and :api_token to conn.assigns
   - Return 401 Unauthorized if token is invalid or missing
 
+  A mobile app's device access token is refused like any unknown token: it
+  lives in a different table, which this plug never reads, so a phone never
+  reaches an agent route. The person API (`/api/me/*`) has its own pipeline
+  and plug, `KanbanWeb.Plugs.AuthenticateDeviceToken`, which refuses agent
+  tokens the same way.
+
   ## Board tokens and workspace tokens
 
   A board token is scoped to a user and one board, and `:current_board` is
@@ -257,13 +263,15 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   defp telemetry_reason(:revoked), do: "token_revoked"
   defp telemetry_reason(:expired), do: "token_expired"
 
+  # The auth scheme is case-insensitive (RFC 7235 §2.1), so `bearer` and
+  # `BEARER` are read as `Bearer`.
   defp extract_token(conn) do
-    case get_req_header(conn, "authorization") do
-      ["Bearer " <> token] ->
-        {:ok, String.trim(token)}
-
-      _ ->
-        {:error, :missing_token}
+    with [header] <- get_req_header(conn, "authorization"),
+         [scheme, token] <- String.split(header, " ", parts: 2),
+         "bearer" <- String.downcase(scheme) do
+      {:ok, String.trim(token)}
+    else
+      _ -> {:error, :missing_token}
     end
   end
 

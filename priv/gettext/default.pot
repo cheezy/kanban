@@ -15342,3 +15342,8 @@ msgstr ""
 msgctxt "audit action"
 msgid "Device signed in"
 msgstr ""
+
+#: lib/kanban_web/components/locked_feature.ex
+#, elixir-autogen, elixir-format
+msgid "Mobile app"
+msgstr ""

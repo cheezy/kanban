@@ -15346,3 +15346,8 @@ msgstr "设备刷新令牌被重复使用"
 msgctxt "audit action"
 msgid "Device signed in"
 msgstr "设备已登录"
+
+#: lib/kanban_web/components/locked_feature.ex
+#, elixir-autogen, elixir-format
+msgid "Mobile app"
+msgstr "移动应用"

@@ -95,7 +95,8 @@ defmodule Kanban.Plans do
     :integrations,
     :telemetry,
     :mcp,
-    :attachments
+    :attachments,
+    :mobile_app
   ]
 
   @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
@@ -116,6 +117,7 @@ defmodule Kanban.Plans do
           | :telemetry
           | :mcp
           | :attachments
+          | :mobile_app
 
   @type surface :: :live_view | :controller | :rest | :mcp | :oban | :context
 
@@ -252,6 +254,7 @@ defmodule Kanban.Plans do
   def parse_feature("telemetry"), do: :telemetry
   def parse_feature("mcp"), do: :mcp
   def parse_feature("attachments"), do: :attachments
+  def parse_feature("mobile_app"), do: :mobile_app
   def parse_feature(_name), do: :error
 
   @doc """

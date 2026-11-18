@@ -15343,3 +15343,8 @@ msgstr "デバイスのリフレッシュトークンの再利用"
 msgctxt "audit action"
 msgid "Device signed in"
 msgstr "デバイスのサインイン"
+
+#: lib/kanban_web/components/locked_feature.ex
+#, elixir-autogen, elixir-format
+msgid "Mobile app"
+msgstr "モバイルアプリ"

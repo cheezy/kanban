@@ -228,6 +228,26 @@ defmodule KanbanWeb.Router do
     post "/revoke", OAuthTokenController, :revoke
   end
 
+  # The person API the mobile apps call (W2747,
+  # docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1-§7.3, §9.2). It
+  # authenticates a device access token, never an agent API token, so never
+  # add AuthenticateApiToken here and never mount /api/me routes under :api.
+  # AppVersion runs before the token plug so an outdated app is sent to its
+  # update screen even when its token has expired.
+  pipeline :device_api do
+    plug :accepts, ["json"]
+    plug KanbanWeb.Plugs.RemoteClientIp
+    plug KanbanWeb.Plugs.ApiTelemetry
+    plug KanbanWeb.Plugs.AppVersion
+    plug KanbanWeb.Plugs.AuthenticateDeviceToken
+  end
+
+  scope "/api/me", KanbanWeb.API.Me, as: :api_me do
+    pipe_through [:api_json, :device_api]
+
+    get "/", MeController, :show
+  end
+
   # API routes with token authentication
   scope "/api", KanbanWeb.API, as: :api do
     pipe_through [:api_json, :api]

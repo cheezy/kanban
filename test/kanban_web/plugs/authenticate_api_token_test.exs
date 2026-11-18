@@ -102,6 +102,22 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       assert metadata |> Map.keys() |> Enum.sort() == [:method, :path, :reason]
     end
 
+    test "reads the Bearer scheme case-insensitively", %{
+      conn: conn,
+      user: user,
+      plain_text_token: plain_text_token
+    } do
+      for scheme <- ["bearer", "BEARER"] do
+        conn =
+          conn
+          |> put_req_header("authorization", "#{scheme} #{plain_text_token}")
+          |> AuthenticateApiToken.call([])
+
+        refute conn.halted, "#{scheme} was refused"
+        assert conn.assigns.current_user.id == user.id
+      end
+    end
+
     test "a non-Bearer Authorization header also reports missing_token", %{conn: conn} do
       attach_telemetry([:kanban, :api, :auth_failed])
 

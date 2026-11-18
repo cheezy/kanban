@@ -3,7 +3,7 @@
   "info": {
     "title": "Stride API",
     "version": "1.0.0",
-    "description": "Task-management API for AI agents. Human-readable reference: docs/api/README.md. Every authenticated operation requires a Bearer token, which is either board-scoped or workspace-scoped; see the bearerAuth security scheme for how a workspace token names its board."
+    "description": "Task-management API for AI agents. Human-readable reference: docs/api/README.md. Every authenticated operation requires a Bearer token, which is either board-scoped or workspace-scoped; see the bearerAuth security scheme for how a workspace token names its board. The /api/me operations, which the Stride mobile apps call, take a device access token instead (the deviceAuth security scheme) and refuse an API token."
   },
   "servers": [
     {
@@ -38,6 +38,10 @@
     {
       "name": "OAuth",
       "description": "Device sign-in token endpoints for the Stride mobile apps (RFC 6749, RFC 7636, RFC 7009). They take no bearer token: the authorization code and PKCE verifier, or the refresh token, in the body are the proof."
+    },
+    {
+      "name": "Mobile",
+      "description": "The person API the Stride mobile apps call, authenticated with a device access token (deviceAuth), never an agent API token."
     }
   ],
   "paths": {
@@ -1914,6 +1918,53 @@
           }
         }
       }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "Get the signed-in person, their Organization, workspaces and device",
+        "description": "Called by the mobile app at launch and after every sign-in. Returns the person's display name and initials, their Organization and its workspaces, whether their plan includes the app, the minimum app versions, the phone guard limits and the device the token belongs to, and records the device as seen now. Takes a device access token only. Human-readable reference: docs/api/get_me.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The person, their Organization, workspaces and device.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1922,6 +1973,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Stride API token, sent as `Authorization: Bearer <token>`. A board token is scoped to one board, and every operation acts on that board. A workspace token (created by an org-admin of an Organization workspace) acts as that org-admin on any board of its workspace they can modify, so every operation except GET /api/boards must name the board with the `X-Stride-Board` header or the `board_id` parameter. A missing selector, or a header and parameter that name different boards, returns 400; a board the token may not use returns 404 with `{\"error\": \"Board not found\"}`, the same body as a board that does not exist. Board tokens ignore both selectors."
+      },
+      "deviceAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Device access token for the Stride mobile apps, sent as `Authorization: Bearer <token>`. It is issued by POST /oauth/token, lasts one hour and is renewed with the refresh token. It is accepted only on /api/me/* operations, and every operation that requires bearerAuth refuses it with 401 (the public operations, which declare `security: []`, check no token at all); an agent API token is refused on /api/me/* the same way. An unknown, expired or refresh token, a revoked device and a disabled account all answer 401 with `{\"error\": \"Invalid access token\"}`."
       }
     },
     "parameters": {
@@ -2089,6 +2145,17 @@
           "minimum": 1,
           "maximum": 200
         }
+      },
+      "StrideApp": {
+        "name": "X-Stride-App",
+        "in": "header",
+        "required": false,
+        "description": "The app's platform, version and build, as `ios/1.0.0 (42)` or `android/1.0.0 (42)`. Below the platform's minimum version the request is refused with 426 before the token is checked. The build number is ignored. A missing header, one that does not match this shape exactly, an unknown platform and a repeated header are not refused: the minimum moves old store builds forward, it does not authenticate the client.",
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "example": "ios/1.0.0 (42)"
       }
     },
     "responses": {
@@ -2245,6 +2312,20 @@
             "example": {
               "error": "rate_limited",
               "error_description": "Too many requests. Try again later."
+            }
+          }
+        }
+      },
+      "AppUpdateRequired": {
+        "description": "The app is below the minimum version for its platform. The app shows its update screen with a link to `store_url`.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AppUpdateRequired"
+            },
+            "example": {
+              "error": "app_update_required",
+              "store_url": "https://apps.apple.com/app/stride"
             }
           }
         }
@@ -4158,6 +4239,254 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {}
+      },
+      "AppUpdateRequired": {
+        "type": "object",
+        "required": [
+          "error",
+          "store_url"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "app_update_required"
+          },
+          "store_url": {
+            "type": "string",
+            "description": "The store page of the app for the request's platform."
+          }
+        }
+      },
+      "MeUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "initials"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "The person's name, or their email when they have set none."
+          },
+          "initials": {
+            "type": "string",
+            "description": "One or two avatar initials, or `?`."
+          }
+        }
+      },
+      "MeOrganization": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "The person's Organization and their role in it, or null when they belong to none.",
+        "required": [
+          "id",
+          "name",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "org_admin",
+              "member"
+            ]
+          }
+        }
+      },
+      "MeWorkspace": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
+      "MeMinVersion": {
+        "type": "object",
+        "required": [
+          "min_version",
+          "store_url"
+        ],
+        "properties": {
+          "min_version": {
+            "type": "string",
+            "description": "The lowest MAJOR.MINOR.PATCH this platform's app may run."
+          },
+          "store_url": {
+            "type": "string"
+          }
+        }
+      },
+      "MeLimits": {
+        "type": "object",
+        "required": [
+          "phone_max_files",
+          "phone_max_lines"
+        ],
+        "properties": {
+          "phone_max_files": {
+            "type": "integer",
+            "description": "The most changed files a change may have to be approved on a phone."
+          },
+          "phone_max_lines": {
+            "type": "integer",
+            "description": "The most changed lines a change may have to be approved on a phone."
+          }
+        }
+      },
+      "MeDevice": {
+        "type": "object",
+        "description": "The device the request's token belongs to. Its push token and approval key are never returned.",
+        "required": [
+          "id",
+          "name",
+          "platform",
+          "device_class",
+          "model",
+          "os_version",
+          "app_version",
+          "last_seen_at",
+          "signed_in_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "device_class": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "tablet"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "os_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "app_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the device last used the person API: this request."
+          },
+          "signed_in_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "description": "What the app needs at launch and after every sign-in. Fields are only ever added, never removed or renamed, while a supported app version reads them.",
+        "required": [
+          "user",
+          "organization",
+          "workspaces",
+          "app_unlocked",
+          "min_app_versions",
+          "limits",
+          "device"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/MeUser"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/MeOrganization"
+          },
+          "workspaces": {
+            "type": "array",
+            "description": "The Organization workspaces the person can see, for the board picker's grouping. Empty without an Organization.",
+            "items": {
+              "$ref": "#/components/schemas/MeWorkspace"
+            }
+          },
+          "app_unlocked": {
+            "type": "boolean",
+            "description": "Whether the person's plan includes the mobile app (Kanban.Plans feature `mobile_app`). Always true while paid plans are not enforced."
+          },
+          "min_app_versions": {
+            "type": "object",
+            "required": [
+              "ios",
+              "android"
+            ],
+            "properties": {
+              "ios": {
+                "$ref": "#/components/schemas/MeMinVersion"
+              },
+              "android": {
+                "$ref": "#/components/schemas/MeMinVersion"
+              }
+            }
+          },
+          "limits": {
+            "$ref": "#/components/schemas/MeLimits"
+          },
+          "device": {
+            "$ref": "#/components/schemas/MeDevice"
+          }
+        }
+      },
+      "MeResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Me"
+          }
+        }
       }
     },
     "headers": {

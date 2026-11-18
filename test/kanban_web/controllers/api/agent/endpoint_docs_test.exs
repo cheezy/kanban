@@ -17,11 +17,20 @@ defmodule KanbanWeb.API.Agent.EndpointDocsTest do
   # Every route under /api as {"VERB", "/api/path"}, read from the router so a
   # new route is checked without anyone listing it here (the same reading as
   # api_docs_coverage_test.exs).
+  # EndpointDocs is the agent onboarding catalogue. The /api/me person API
+  # (W2747) takes a device token, never an agent's, so agents are not told
+  # about it, just as they are not told about /oauth.
   defp api_routes do
-    for %{path: "/api" <> _ = path, verb: verb} <- KanbanWeb.Router.__routes__(), uniq: true do
+    for %{path: "/api" <> _ = path, verb: verb} <- KanbanWeb.Router.__routes__(),
+        not person_api?(path),
+        uniq: true do
       {verb |> Atom.to_string() |> String.upcase(), path}
     end
   end
+
+  defp person_api?("/api/me"), do: true
+  defp person_api?("/api/me/" <> _), do: true
+  defp person_api?(_path), do: false
 
   defp documented_routes do
     for {_group, entries} <- EndpointDocs.endpoints(), entry <- entries do

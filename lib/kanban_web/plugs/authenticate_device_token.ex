@@ -1,0 +1,135 @@
+defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
+  @moduledoc """
+  Authenticates person-API requests (`/api/me/*`) with a device access token
+  (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1, §9.2).
+
+  The plug reads `Authorization: Bearer <token>` and looks the token up by its
+  hash through `Kanban.Devices.fetch_by_access_token/2`, which refuses an
+  unknown, expired or non-access token, a revoked device and a disabled user
+  with one error. On success it assigns:
+
+    * `:current_scope` — the same `Kanban.Accounts.Scope` the web builds:
+      `Scope.for_user/1` with the user's Organization membership, so every
+      `/api/me/*` route calls the same scope-first context functions as the
+      LiveViews;
+    * `:current_device` — the device the token belongs to, with
+      `last_seen_at` moved to now (`Kanban.Devices.touch_last_seen/2`).
+
+  It never assigns `:current_user` or `:api_token`, which agent code keys on.
+
+  ## Tokens that never cross
+
+  An agent API token is refused here, and a device token is refused on every
+  agent route by `KanbanWeb.Plugs.AuthenticateApiToken`. Both hold by
+  construction: the two kinds of token live in different tables, and each plug
+  looks up only its own, so a token of the other kind is simply unknown. A
+  phone never becomes an agent, and an agent never acts as a person.
+
+  ## Failures
+
+  Every invalid token answers the same `401 {"error": "Invalid access
+  token"}`, whatever the cause, so the response never says whether a string
+  was ever a real token; the app answers it by refreshing. A missing or
+  non-Bearer header answers `401 {"error": "Missing or invalid Authorization
+  header"}`. Failed authentications count toward the same per-IP limit as
+  agent tokens, which answers `429` with `retry-after`, and emit
+  `[:kanban, :api, :auth_failed]` with reason `missing_token`,
+  `device_token_invalid` or `rate_limited`. The header and the token are never
+  logged.
+  """
+
+  import Plug.Conn
+  import Phoenix.Controller, only: [json: 2]
+
+  alias Kanban.Accounts.Scope
+  alias Kanban.Devices
+  alias Kanban.Organizations
+  alias Kanban.RateLimit
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    # Throttle a token-guessing flood by source IP before touching the DB.
+    # Only failed authentications are counted.
+    case RateLimit.peek(:api_token, ip: conn.remote_ip) do
+      {:error, {:rate_limited, retry_after_ms}} -> halt_rate_limited(conn, retry_after_ms)
+      :ok -> authenticate(conn)
+    end
+  end
+
+  defp authenticate(conn) do
+    with {:ok, token} <- extract_token(conn),
+         {:ok, device} <- Devices.fetch_by_access_token(token) do
+      conn
+      |> assign(:current_scope, scope_for(device.user))
+      |> assign(:current_device, Devices.touch_last_seen(device))
+    else
+      {:error, :missing_token} -> halt_missing_token(conn)
+      {:error, :invalid_token} -> halt_invalid_token(conn)
+    end
+  end
+
+  # The scope KanbanWeb.UserAuth builds for the web, membership included.
+  defp scope_for(user) do
+    user
+    |> Scope.for_user()
+    |> Scope.put_organization_membership(Organizations.get_membership(user))
+  end
+
+  # The auth scheme is case-insensitive (RFC 7235 §2.1), so `bearer` and
+  # `BEARER` are read as `Bearer`.
+  defp extract_token(conn) do
+    with [header] <- get_req_header(conn, "authorization"),
+         [scheme, token] <- String.split(header, " ", parts: 2),
+         "bearer" <- String.downcase(scheme) do
+      {:ok, String.trim(token)}
+    else
+      _ -> {:error, :missing_token}
+    end
+  end
+
+  # A request-format signal, not token-state disclosure, so it keeps its own
+  # body as in AuthenticateApiToken.
+  defp halt_missing_token(conn) do
+    record_failure(conn, :missing_token)
+    emit_auth_failed_telemetry(conn, "missing_token")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Missing or invalid Authorization header"})
+    |> halt()
+  end
+
+  defp halt_invalid_token(conn) do
+    record_failure(conn, :device_token_invalid)
+    emit_auth_failed_telemetry(conn, "device_token_invalid")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Invalid access token"})
+    |> halt()
+  end
+
+  defp record_failure(conn, reason) do
+    RateLimit.record_failure(:api_token, ip: conn.remote_ip)
+    Kanban.AuditLog.event(:api_token_auth_failed, ip: conn.remote_ip, reason: reason)
+  end
+
+  defp halt_rate_limited(conn, retry_after_ms) do
+    emit_auth_failed_telemetry(conn, "rate_limited")
+
+    conn
+    |> put_resp_header("retry-after", Integer.to_string(div(retry_after_ms, 1000) + 1))
+    |> put_status(:too_many_requests)
+    |> json(%{error: "Too many requests"})
+    |> halt()
+  end
+
+  defp emit_auth_failed_telemetry(conn, reason) do
+    Kanban.Telemetry.emit(
+      [:kanban, :api, :auth_failed],
+      %{count: 1},
+      %{reason: reason, path: conn.request_path, method: conn.method}
+    )
+  end
+end

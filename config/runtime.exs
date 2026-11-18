@@ -89,6 +89,29 @@ if plans_enforced_value not in [nil, "", "true", "false"] do
   )
 end
 
+# The minimum mobile app version per platform, and the store link the app's
+# update screen opens (Kanban.Devices.AppPolicy,
+# docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.2). An app below its
+# platform's minimum gets 426 app_update_required on every /api/me request.
+# Each value is set only when its variable is; anything left unset, and a
+# version that is not MAJOR.MINOR.PATCH, keeps the default in AppPolicy.
+mobile_min_versions =
+  for {platform, prefix} <- [ios: "STRIDE_IOS", android: "STRIDE_ANDROID"],
+      override =
+        [min_version: "#{prefix}_MIN_VERSION", store_url: "#{prefix}_STORE_URL"]
+        |> Enum.flat_map(fn {key, variable} ->
+          case System.get_env(variable) do
+            value when value in [nil, ""] -> []
+            value -> [{key, value}]
+          end
+        end)
+        |> Map.new(),
+      map_size(override) > 0,
+      into: %{},
+      do: {platform, override}
+
+config :kanban, :mobile_min_versions, mobile_min_versions
+
 # Where workspace export archives are written (W2222). Set only when
 # EXPORT_DIR is, so config/test.exs keeps its own directory. Without it,
 # Kanban.Workspaces.Export.export_dir/0 uses the system temp directory.
