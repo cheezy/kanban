@@ -1,0 +1,388 @@
+defmodule Kanban.Devices do
+  @moduledoc """
+  Devices a person has signed in to Stride on, and their tokens
+  (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1, §8).
+
+  This is the token core the OAuth endpoints and the device plug build on; it
+  has no routes of its own.
+
+    * **Access tokens** last one hour.
+    * **Refresh tokens** rotate: each use returns a new pair and uses up the
+      old refresh token. A refresh token expires 30 days after it was issued,
+      and never later than 90 days after the device signed in (its
+      `inserted_at`), so a device that keeps refreshing still signs in again
+      every 90 days.
+    * **Reusing a used refresh token** is the sign of a stolen token, so it
+      revokes the device and expires every token it holds, the whole token
+      family included, and the revocation commits even though the call fails.
+    * **Authorization codes** live 60 seconds and are consumed once.
+
+  Tokens and codes are random, shown once and stored only as SHA-256 hashes
+  (`Kanban.Devices.DeviceToken`). A plain value is looked up by hashing it and
+  matching the hash in a unique index, as agent API tokens are, so no stored
+  secret is ever compared in application code.
+
+  A token is valid while the current second is before its `expires_at`: at
+  exactly `expires_at` it is refused. Every function that reads the clock
+  takes a trailing `now`, defaulting to the current time and truncated to the
+  second, so tests can step through each boundary.
+  """
+
+  import Ecto.Query, warn: false
+
+  alias Kanban.Accounts.Scope
+  alias Kanban.Accounts.User
+  alias Kanban.Devices.AuthorizationCode
+  alias Kanban.Devices.Device
+  alias Kanban.Devices.DeviceToken
+  alias Kanban.Repo
+
+  @access_ttl_seconds 3600
+  @refresh_idle_days 30
+  @refresh_absolute_days 90
+
+  @typedoc "A newly issued token pair: the plain values are shown only here."
+  @type issued :: %{
+          device: Device.t(),
+          access_token: String.t(),
+          access_token_expires_at: DateTime.t(),
+          refresh_token: String.t(),
+          refresh_token_expires_at: DateTime.t()
+        }
+
+  @doc """
+  Creates a device for the scope's user, signed in at `now`.
+  """
+  @spec create_device(Scope.t(), map(), DateTime.t()) ::
+          {:ok, Device.t()} | {:error, Ecto.Changeset.t()}
+  def create_device(%Scope{user: %User{id: user_id}}, attrs, now \\ DateTime.utc_now()) do
+    signed_in_at = truncate(now)
+
+    %Device{user_id: user_id}
+    |> Device.create_changeset(attrs, signed_in_at)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Issues a new access and refresh token for `device`, starting a new token
+  family. Refused for a revoked device, and with `{:error, :expired}` once the
+  device is 90 days past sign-in, when a refresh token would be born expired:
+  the person must sign in again as a new device.
+  """
+  @spec issue_tokens(Device.t(), DateTime.t()) :: {:ok, issued()} | {:error, :revoked | :expired}
+  def issue_tokens(%Device{} = device, now \\ DateTime.utc_now()) do
+    issued_at = truncate(now)
+
+    Repo.transact(fn ->
+      device.id
+      |> share_lock_device()
+      |> issue_for_locked(issued_at)
+    end)
+  end
+
+  @doc """
+  Finds the device an access token belongs to, with its user preloaded.
+
+  Refused, with the same error whatever the cause, when the token is unknown,
+  is not an access token, has expired, or belongs to a revoked device or a
+  disabled user.
+  """
+  @spec fetch_by_access_token(term(), DateTime.t()) ::
+          {:ok, Device.t()} | {:error, :invalid_token}
+  def fetch_by_access_token(token, now \\ DateTime.utc_now())
+
+  def fetch_by_access_token(token, now) when is_binary(token) do
+    hash = DeviceToken.hash_token(token)
+    at = truncate(now)
+
+    query =
+      from t in DeviceToken,
+        join: d in assoc(t, :device),
+        join: u in assoc(d, :user),
+        where: t.token_hash == ^hash and t.kind == :access and t.expires_at > ^at,
+        where: is_nil(d.revoked_at) and is_nil(u.disabled_at),
+        select: {d, u}
+
+    case Repo.one(query) do
+      {device, user} -> {:ok, %{device | user: user}}
+      nil -> {:error, :invalid_token}
+    end
+  end
+
+  def fetch_by_access_token(_token, _now), do: {:error, :invalid_token}
+
+  @doc """
+  Trades a refresh token for a new access and refresh token in the same
+  family, using up the old refresh token.
+
+  The device and then the old token are locked for the whole rotation, so of
+  two rotations of one token exactly one wins, a rotation never races a
+  revocation of its device, and the old token is marked used and the new
+  pair inserted in one transaction: a failure leaves the old token usable
+  and never two live refresh tokens.
+
+  Presenting a refresh token that was already used revokes its device and
+  expires all of its tokens, and returns `{:error, :reuse_detected}`. The
+  loser of two concurrent rotations is such a reuse. Every other refusal, an
+  unknown or expired token, a revoked device or a disabled user, is
+  `{:error, :invalid_token}`.
+  """
+  @spec rotate_refresh_token(term(), DateTime.t()) ::
+          {:ok, issued()} | {:error, :invalid_token | :reuse_detected}
+  def rotate_refresh_token(token, now \\ DateTime.utc_now())
+
+  def rotate_refresh_token(token, now) when is_binary(token) do
+    hash = DeviceToken.hash_token(token)
+    at = truncate(now)
+
+    hash
+    |> rotate_in_transaction(at)
+    |> unwrap_rotation()
+  end
+
+  def rotate_refresh_token(_token, _now), do: {:error, :invalid_token}
+
+  @doc """
+  Revokes one of the scope user's devices at `now` and expires its tokens,
+  recording the scope user in `revoked_by_id`.
+
+  A device that is already revoked is returned unchanged. A device of
+  another user is `{:error, :not_found}`.
+  """
+  @spec revoke_device(Scope.t(), Device.t(), DateTime.t()) ::
+          {:ok, Device.t()} | {:error, :not_found}
+  def revoke_device(scope, device, now \\ DateTime.utc_now())
+
+  def revoke_device(%Scope{user: %User{id: user_id}}, %Device{user_id: user_id} = device, now) do
+    revoked_at = truncate(now)
+
+    Repo.transact(fn ->
+      device.id
+      |> update_lock_device()
+      |> revoke_locked(user_id, revoked_at)
+    end)
+  end
+
+  def revoke_device(%Scope{}, %Device{}, _now), do: {:error, :not_found}
+
+  @doc """
+  Lists the scope user's devices that are not revoked, newest first.
+  """
+  @spec list_devices(Scope.t()) :: [Device.t()]
+  def list_devices(%Scope{user: %User{id: user_id}}) do
+    from(d in Device,
+      where: d.user_id == ^user_id and is_nil(d.revoked_at),
+      order_by: [desc: d.inserted_at, desc: d.id]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Issues a one-time authorization code for the scope's user at `now`. The
+  plain code is in the returned struct's `code` field and nowhere else.
+  """
+  @spec create_authorization_code(Scope.t(), map(), DateTime.t()) ::
+          {:ok, AuthorizationCode.t()} | {:error, Ecto.Changeset.t()}
+  def create_authorization_code(
+        %Scope{user: %User{id: user_id}},
+        attrs,
+        now \\ DateTime.utc_now()
+      ) do
+    issued_at = truncate(now)
+
+    %AuthorizationCode{user_id: user_id}
+    |> AuthorizationCode.create_changeset(attrs, issued_at)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Consumes an authorization code issued to `client_id`, returning it with its
+  user preloaded so the caller can check the PKCE verifier and redirect URI.
+
+  One statement marks the code used, so a code is consumed at most once even
+  under concurrent calls. Refused when the code is unknown, already used,
+  expired, issued to another client, or belongs to a disabled user.
+  """
+  @spec consume_authorization_code(term(), term(), DateTime.t()) ::
+          {:ok, AuthorizationCode.t()} | {:error, :invalid_grant}
+  def consume_authorization_code(code, client_id, now \\ DateTime.utc_now())
+
+  def consume_authorization_code(code, client_id, now)
+      when is_binary(code) and is_binary(client_id) do
+    hash = DeviceToken.hash_token(code)
+    at = truncate(now)
+    enabled_users = from(u in User, where: is_nil(u.disabled_at), select: u.id)
+
+    query =
+      from c in AuthorizationCode,
+        where: c.code_hash == ^hash and c.client_id == ^client_id,
+        where: is_nil(c.used_at) and c.expires_at > ^at,
+        where: c.user_id in subquery(enabled_users),
+        select: c
+
+    query
+    |> Repo.update_all(set: [used_at: at])
+    |> consumed_code()
+  end
+
+  def consume_authorization_code(_code, _client_id, _now), do: {:error, :invalid_grant}
+
+  defp consumed_code({1, [code]}), do: {:ok, Repo.preload(code, :user)}
+  defp consumed_code({0, []}), do: {:error, :invalid_grant}
+
+  defp share_lock_device(device_id) do
+    from(d in Device, where: d.id == ^device_id, lock: "FOR SHARE")
+    |> Repo.one()
+  end
+
+  defp update_lock_device(device_id) do
+    from(d in Device, where: d.id == ^device_id, lock: "FOR UPDATE")
+    |> Repo.one()
+  end
+
+  defp issue_for_locked(%Device{revoked_at: nil} = device, now) do
+    if device |> refresh_expiry(now) |> DateTime.compare(now) == :gt do
+      family_id = Ecto.UUID.generate()
+      insert_pair(device, family_id, now)
+    else
+      {:error, :expired}
+    end
+  end
+
+  defp issue_for_locked(_revoked_or_missing, _now), do: {:error, :revoked}
+
+  defp revoke_locked(nil, _revoked_by_id, _now), do: {:error, :not_found}
+  defp revoke_locked(%Device{revoked_at: %DateTime{}} = device, _by, _now), do: {:ok, device}
+  defp revoke_locked(%Device{} = device, by, now), do: revoke_and_expire(device, by, now)
+
+  # Revokes the device and expires every token it still has live, which
+  # covers each of its token families.
+  defp revoke_and_expire(device, revoked_by_id, now) do
+    changeset = Device.revoke_changeset(device, revoked_by_id, now)
+
+    with {:ok, revoked} <- Repo.update(changeset) do
+      from(t in DeviceToken, where: t.device_id == ^revoked.id and t.expires_at > ^now)
+      |> Repo.update_all(set: [expires_at: now])
+
+      {:ok, revoked}
+    end
+  end
+
+  # Locks the device row first and the token row second: the same order as
+  # revoke_device/3, which locks the device and then updates its tokens, so
+  # the two can never deadlock. Holding the device lock also serializes the
+  # rotation against a revocation and against every other rotation or
+  # issue on the device, so a revocation's expiry sweep sees every token a
+  # rotation committed, and the device the checks read is the locked row.
+  defp rotate_in_transaction(hash, now) do
+    Repo.transact(fn ->
+      hash
+      |> refresh_token_device_id()
+      |> lock_device_with_user()
+      |> lock_refresh_token(hash)
+      |> rotate_locked(now)
+    end)
+  end
+
+  defp refresh_token_device_id(hash) do
+    from(t in DeviceToken,
+      where: t.token_hash == ^hash and t.kind == :refresh,
+      select: t.device_id
+    )
+    |> Repo.one()
+  end
+
+  defp lock_device_with_user(nil), do: nil
+
+  defp lock_device_with_user(device_id) do
+    device_id
+    |> update_lock_device()
+    |> Repo.preload(:user)
+  end
+
+  defp lock_refresh_token(nil, _hash), do: nil
+
+  defp lock_refresh_token(%Device{id: device_id} = device, hash) do
+    query =
+      from t in DeviceToken,
+        where: t.token_hash == ^hash and t.kind == :refresh and t.device_id == ^device_id,
+        lock: "FOR UPDATE"
+
+    # A token row is only ever deleted with its device, which is now locked,
+    # so the row found above is still there.
+    token = Repo.one!(query)
+    %{token | device: device}
+  end
+
+  defp rotate_locked(nil, _now), do: {:error, :invalid_token}
+  defp rotate_locked(%{device: %{revoked_at: %DateTime{}}}, _now), do: {:error, :invalid_token}
+
+  defp rotate_locked(%{device: %{user: %{disabled_at: %DateTime{}}}}, _now),
+    do: {:error, :invalid_token}
+
+  # Reuse is checked before expiry, so a stolen token presented after it
+  # expired still revokes the device. The revocation is returned as {:ok, _}
+  # so that Repo.transact commits it.
+  defp rotate_locked(%DeviceToken{used_at: %DateTime{}, device: device}, now) do
+    with {:ok, _revoked} <- revoke_and_expire(device, nil, now), do: {:ok, :reuse_detected}
+  end
+
+  defp rotate_locked(%DeviceToken{} = token, now) do
+    if DateTime.compare(token.expires_at, now) == :gt,
+      do: replace(token, now),
+      else: {:error, :invalid_token}
+  end
+
+  # The row is locked and unused, so exactly one row is marked; if the insert
+  # that follows fails, the transaction rolls the mark back with it.
+  defp replace(%DeviceToken{id: id, device: device, family_id: family_id}, now) do
+    query = from(t in DeviceToken, where: t.id == ^id and is_nil(t.used_at))
+    {1, _} = Repo.update_all(query, set: [used_at: now])
+    insert_pair(device, family_id, now)
+  end
+
+  defp unwrap_rotation({:ok, :reuse_detected}), do: {:error, :reuse_detected}
+  defp unwrap_rotation(result), do: result
+
+  defp insert_pair(device, family_id, now) do
+    access_expires_at = access_expiry(now)
+    refresh_expires_at = refresh_expiry(device, now)
+    access = token_attrs(:access, family_id, access_expires_at, now)
+    refresh = token_attrs(:refresh, family_id, refresh_expires_at, now)
+
+    with {:ok, access_token} <- insert_token(device, access),
+         {:ok, refresh_token} <- insert_token(device, refresh) do
+      {:ok, issued(device, access_token, refresh_token)}
+    end
+  end
+
+  defp token_attrs(kind, family_id, expires_at, now),
+    do: %{kind: kind, family_id: family_id, expires_at: expires_at, inserted_at: now}
+
+  defp insert_token(device, attrs) do
+    device
+    |> DeviceToken.new_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  defp issued(device, access, refresh) do
+    %{
+      device: device,
+      access_token: access.token,
+      access_token_expires_at: access.expires_at,
+      refresh_token: refresh.token,
+      refresh_token_expires_at: refresh.expires_at
+    }
+  end
+
+  defp access_expiry(now), do: DateTime.add(now, @access_ttl_seconds, :second)
+
+  # 30 days from now, but never past 90 days after the device signed in.
+  defp refresh_expiry(%Device{inserted_at: signed_in_at}, now) do
+    idle = DateTime.add(now, @refresh_idle_days, :day)
+    absolute = DateTime.add(signed_in_at, @refresh_absolute_days, :day)
+    Enum.min([idle, absolute], DateTime)
+  end
+
+  defp truncate(now), do: DateTime.truncate(now, :second)
+end
