@@ -18,8 +18,17 @@ defmodule Kanban.DevicesFixtures do
       locale: "en-US",
       time_zone: "Europe/London",
       push_token: nil,
-      approval_public_key: "fixture-public-key"
+      approval_public_key: valid_approval_public_key()
     })
+  end
+
+  @doc """
+  A fresh P-256 public key in the wire format the token exchange takes: the
+  uncompressed point, unpadded base64url.
+  """
+  def valid_approval_public_key do
+    {public_key, _private_key} = :crypto.generate_key(:ecdh, :secp256r1)
+    Base.url_encode64(public_key, padding: false)
   end
 
   def device_fixture(scope, attrs \\ %{}, now \\ DateTime.utc_now()) do
@@ -35,10 +44,13 @@ defmodule Kanban.DevicesFixtures do
     {device, issued}
   end
 
-  @doc "A PKCE S256 challenge for a fixed, non-secret fixture verifier."
+  @doc "A fixed, non-secret PKCE verifier of the length RFC 7636 requires."
+  def valid_code_verifier, do: "fixture-pkce-verifier-for-device-tests-0123456789"
+
+  @doc "The PKCE S256 challenge for `valid_code_verifier/0`."
   def valid_code_challenge do
     :sha256
-    |> :crypto.hash("fixture-pkce-verifier-for-device-tests")
+    |> :crypto.hash(valid_code_verifier())
     |> Base.url_encode64(padding: false)
   end
 

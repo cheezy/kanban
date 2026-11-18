@@ -34,6 +34,10 @@
     {
       "name": "MCP",
       "description": "Model Context Protocol server over Streamable HTTP. See docs/MCP.md."
+    },
+    {
+      "name": "OAuth",
+      "description": "Device sign-in token endpoints for the Stride mobile apps (RFC 6749, RFC 7636, RFC 7009). They take no bearer token: the authorization code and PKCE verifier, or the refresh token, in the body are the proof."
     }
   ],
   "paths": {
@@ -1806,6 +1810,110 @@
           }
         }
       }
+    },
+    "/oauth/token": {
+      "post": {
+        "operationId": "oauthToken",
+        "summary": "Exchange an authorization code, or rotate a refresh token",
+        "description": "The token endpoint of device sign-in. `grant_type=authorization_code` redeems the one-time code from `GET /oauth/authorize` with its PKCE verifier, creates the device from the details the app sends and returns its first tokens. `grant_type=refresh_token` rotates: the refresh token sent is used up and a new pair is returned. Presenting a refresh token that was already used revokes the device. Refresh is refused for a disabled user, a revoked device, or a user past their Organization's two-factor grace period. Access tokens last one hour. Rate limited per IP, and refresh also per device. Only the body is read: a parameter in the query string is ignored, so a code, verifier or token put in the URL counts as missing. Every response is `cache-control: no-store`.",
+        "tags": [
+          "OAuth"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthTokenRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new access and refresh token.",
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/OAuthError"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/OAuthTooManyRequests"
+          }
+        }
+      }
+    },
+    "/oauth/revoke": {
+      "post": {
+        "operationId": "oauthRevoke",
+        "summary": "Sign a device out by its refresh token",
+        "description": "Token revocation (RFC 7009). Revokes the device the refresh token belongs to and expires all of its tokens. The token travels only in the body: a query-string parameter is ignored, and an Authorization header is never read. Answers 200 with an empty object whether or not the token named a live device (RFC 7009 §2.2). Rate limited per IP and per device.",
+        "tags": [
+          "OAuth"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthRevokeRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthRevokeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request was well formed. The body is an empty object.",
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthRevokeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/OAuthError"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/OAuthTooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2093,6 +2201,50 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "OAuthError": {
+        "description": "An RFC 6749 §5.2 error. `invalid_request` for a missing, repeated-as-a-list or malformed parameter, invalid device details (the description names the fields), or a body that cannot be parsed; `invalid_client` for a client id that is not `stride-ios` or `stride-android`; `invalid_grant` for an authorization code that is unknown, used, expired, issued to another client or redirect URI, or whose PKCE verifier does not match, and for a refresh token that is unknown, expired, reused or refused; `unsupported_grant_type` for any other grant. The description is fixed text and never echoes a value sent.",
+        "headers": {
+          "cache-control": {
+            "$ref": "#/components/headers/NoStore"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OAuthError"
+            },
+            "example": {
+              "error": "invalid_request",
+              "error_description": "The request is malformed and could not be processed."
+            }
+          }
+        }
+      },
+      "OAuthTooManyRequests": {
+        "description": "Rate limited. Retry after the number of seconds in `retry-after`.",
+        "headers": {
+          "retry-after": {
+            "description": "Seconds to wait before retrying.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          "cache-control": {
+            "$ref": "#/components/headers/NoStore"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OAuthError"
+            },
+            "example": {
+              "error": "rate_limited",
+              "error_description": "Too many requests. Try again later."
             }
           }
         }
@@ -3841,6 +3993,182 @@
           }
         },
         "additionalProperties": false
+      },
+      "OAuthError": {
+        "type": "object",
+        "description": "An RFC 6749 §5.2 error body.",
+        "required": [
+          "error",
+          "error_description"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "invalid_client",
+              "invalid_grant",
+              "unsupported_grant_type",
+              "rate_limited"
+            ]
+          },
+          "error_description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OAuthTokenRequest": {
+        "type": "object",
+        "description": "Form-encoded or JSON. `grant_type` and `client_id` are always required. The `authorization_code` grant also requires `code`, `code_verifier`, `redirect_uri`, `platform`, `device_class` and `approval_public_key`; the `refresh_token` grant requires `refresh_token`. The device's name comes from the authorization code.",
+        "required": [
+          "grant_type",
+          "client_id"
+        ],
+        "properties": {
+          "grant_type": {
+            "type": "string",
+            "enum": [
+              "authorization_code",
+              "refresh_token"
+            ]
+          },
+          "client_id": {
+            "type": "string",
+            "enum": [
+              "stride-ios",
+              "stride-android"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "The one-time authorization code from the redirect. Lives 60 seconds."
+          },
+          "code_verifier": {
+            "type": "string",
+            "minLength": 43,
+            "maxLength": 128,
+            "description": "The PKCE verifier (RFC 7636 §4.1) whose S256 hash was sent as code_challenge."
+          },
+          "redirect_uri": {
+            "type": "string",
+            "enum": [
+              "com.stridelikeaboss.app:/oauth/callback"
+            ]
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "device_class": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "tablet"
+            ]
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "os_version": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "app_version": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "time_zone": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "approval_public_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{87}$",
+            "description": "The device's P-256 approval public key: the 65-byte uncompressed point (0x04, X, Y) as unpadded base64url. Any other curve or encoding is refused."
+          }
+        }
+      },
+      "OAuthTokenResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "refresh_token"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Seconds until the access token expires: 3600."
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Use once. It expires 30 days after issue, and never later than 90 days after the device signed in."
+          }
+        },
+        "additionalProperties": false
+      },
+      "OAuthRevokeRequest": {
+        "type": "object",
+        "description": "Form-encoded or JSON.",
+        "required": [
+          "token",
+          "client_id"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The device's refresh token."
+          },
+          "token_type_hint": {
+            "type": "string",
+            "description": "Accepted and ignored."
+          },
+          "client_id": {
+            "type": "string",
+            "enum": [
+              "stride-ios",
+              "stride-android"
+            ]
+          }
+        }
+      },
+      "OAuthRevokeResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      }
+    },
+    "headers": {
+      "NoStore": {
+        "description": "Always `no-store`: token responses must never be cached (RFC 6749 §5.1).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "no-store"
+          ]
+        }
       }
     }
   }

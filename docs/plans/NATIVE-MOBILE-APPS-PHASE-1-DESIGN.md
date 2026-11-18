@@ -663,8 +663,11 @@ OAuth 2.0 for native apps (RFC 8252) with PKCE (RFC 7636). Stride is both the au
   - creates the device;
   - returns an **access token** (opaque, 1 hour);
   - returns a **refresh token** (opaque, rotating, expiring after 30 days without use and 90 days after sign-in).
+  - takes the approval public key as the uncompressed P-256 point, base64url with no padding (87 characters), and refuses any other curve or encoding.
 - **The `refresh_token` grant** rotates the refresh token. **Reusing an old refresh token revokes the device** and records `:device_refresh_reuse_detected` in the audit log, because that's the sign of a stolen token.
-- **Refresh is refused** when the user is disabled, the device is revoked, or the user no longer meets the Organization's two-factor requirement. The app then returns to Sign in.
+- **Refresh is refused** when the user is disabled, the device is revoked, or the user no longer meets the Organization's two-factor requirement: their grace period is over, the same line the web sign-in draws. The app then returns to Sign in.
+
+The request and error reference for both endpoints is [POST /oauth/token](../api/post_oauth_token.md).
 
 **Revoke:** `POST /oauth/revoke` revokes the device's tokens. It takes the refresh token in the body, as RFC 7009 describes, with no bearer header ([§7.11](#711-the-openapi-contract)). Sign out of this device calls it.
 

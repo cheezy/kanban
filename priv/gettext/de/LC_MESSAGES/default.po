@@ -15419,3 +15419,15 @@ msgstr "Angemeldet als %{email}."
 #, elixir-autogen, elixir-format
 msgid "This sign-in request isn't valid"
 msgstr "Diese Anmeldeanfrage ist ungültig"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device refresh token reused"
+msgstr "Aktualisierungstoken eines Geräts wiederverwendet"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device signed in"
+msgstr "Gerät angemeldet"

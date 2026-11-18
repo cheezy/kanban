@@ -18,6 +18,14 @@ defmodule KanbanWeb.ErrorJSON do
     "415.json" => {"Unsupported Media Type", "Send the request body as application/json."}
   }
 
+  @oauth_endpoints ["token", "revoke"]
+  @oauth_errors %{
+    "400.json" => "The request is malformed and could not be processed.",
+    "413.json" => "The request body is too large.",
+    "415.json" =>
+      "Send the request body as application/x-www-form-urlencoded or application/json."
+  }
+
   # 406 Not Acceptable on an /api route (D351). Raised by
   # `plug :accepts, ["json"]` in the :api and :api_public pipelines when a
   # client asks for a format the API does not serve (e.g. Accept: text/html).
@@ -46,6 +54,21 @@ defmodule KanbanWeb.ErrorJSON do
       when is_map_key(@api_errors, template) do
     {error, message} = Map.fetch!(@api_errors, template)
     %{error: error, message: message}
+  end
+
+  # The device sign-in token endpoints (W2746). An app reads every refusal
+  # there as an RFC 6749 §5.2 error, so a 400, 413 or 415 raised by
+  # Plug.Parsers is an `invalid_request` with a fixed description, and a 406
+  # is the API's own Not Acceptable body. Only POST /oauth/token and
+  # /oauth/revoke: the authorize page is HTML.
+  def render("406.json", %{conn: %Plug.Conn{path_info: ["oauth", endpoint]}})
+      when endpoint in @oauth_endpoints do
+    %{error: "Not Acceptable", message: "This API only serves application/json."}
+  end
+
+  def render(template, %{conn: %Plug.Conn{path_info: ["oauth", endpoint]}})
+      when endpoint in @oauth_endpoints and is_map_key(@oauth_errors, template) do
+    %{error: "invalid_request", error_description: Map.fetch!(@oauth_errors, template)}
   end
 
   # By default, Phoenix returns the status message from

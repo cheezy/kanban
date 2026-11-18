@@ -209,6 +209,25 @@ defmodule KanbanWeb.Router do
     get "/openapi.json", OpenApiController, :show
   end
 
+  # The device sign-in token endpoints (W2746,
+  # docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1, §9.2). They
+  # authenticate nothing: the code and PKCE verifier, or the refresh token,
+  # in the body are the proof. Never add AuthenticateApiToken or the device
+  # plug here. RemoteClientIp comes first so the per-IP rate limits see the
+  # real client. GET on either path matches no route and answers 404.
+  pipeline :oauth do
+    plug :accepts, ["json"]
+    plug KanbanWeb.Plugs.RemoteClientIp
+    plug KanbanWeb.Plugs.ApiTelemetry
+  end
+
+  scope "/oauth", KanbanWeb do
+    pipe_through [:api_json, :oauth]
+
+    post "/token", OAuthTokenController, :token
+    post "/revoke", OAuthTokenController, :revoke
+  end
+
   # API routes with token authentication
   scope "/api", KanbanWeb.API, as: :api do
     pipe_through [:api_json, :api]

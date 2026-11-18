@@ -270,6 +270,10 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [GET /api/openapi.json](get_openapi_json.md) — Machine-readable OpenAPI 3.1 description of every `/api` route (no auth required). Use it for client generation, API viewers and MCP tool schemas; a router contract test keeps it in sync with the code
 
+### Device Sign-in (mobile apps)
+
+- [POST /oauth/token and POST /oauth/revoke](post_oauth_token.md) — The token endpoints the Stride mobile apps sign in with: redeem a PKCE authorization code for a device's tokens, rotate a refresh token, and sign a device out. They take no bearer token, and agent API tokens are not accepted there
+
 ### MCP Server
 
 - [POST /api/mcp](../MCP.md) — Model Context Protocol server (Streamable HTTP, JSON-RPC 2.0, JSON responses only). MCP clients such as Claude Code call the task API through seven schema-validated tools: next task, claim, complete, get task, list tasks, add comment and get attachment. Claims and completions go through the same validation as the REST endpoints. `GET` and `DELETE /api/mcp` return `405`. Setup and the tool reference are in [MCP.md](../MCP.md)

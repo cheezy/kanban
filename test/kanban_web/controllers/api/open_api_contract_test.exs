@@ -2,10 +2,13 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   @moduledoc """
   Keeps `priv/openapi/stride-api.json` honest (W2225).
 
-  The router is the source of truth: every `/api` route and verb must be
-  documented, nothing may be documented that is not routed, every route
-  behind the authenticated `:api` pipeline must require `bearerAuth`, and the
-  schemas must carry exactly the keys `KanbanWeb.API.TaskJSON` renders.
+  The router is the source of truth: every `/api` route and verb, and every
+  route behind the `:oauth` pipeline (`POST /oauth/token` and
+  `POST /oauth/revoke`, W2746), must be documented, nothing may be documented
+  that is not routed, every route behind the authenticated `:api` pipeline
+  must require `bearerAuth` while `:api_public` and `:oauth` routes declare
+  none, and the schemas must carry exactly the keys `KanbanWeb.API.TaskJSON`
+  renders. The browser-scoped `/oauth/authorize` page is not part of the API.
 
   When this test fails after you added a route, add the operation to the spec
   — see docs/api/get_openapi_json.md, "Adding a new /api route".
@@ -34,10 +37,26 @@ defmodule KanbanWeb.API.OpenApiContractTest do
     %{raw: raw, spec: Jason.decode!(raw)}
   end
 
+  # Every /api route, plus the routes behind the :oauth pipeline (W2746).
   defp api_routes do
-    for %{path: "/api" <> _ = path, verb: verb} <- KanbanWeb.Router.__routes__() do
+    for %{path: path, verb: verb} <- KanbanWeb.Router.__routes__(), spec_route?(verb, path) do
       {verb, path}
     end
+  end
+
+  defp spec_route?(_verb, "/api" <> _path), do: true
+
+  defp spec_route?(verb, "/oauth/" <> _ = path),
+    do: route_pipelines(Atom.to_string(verb), path) |> List.wrap() |> Enum.member?(:oauth)
+
+  defp spec_route?(_verb, _path), do: false
+
+  defp oauth_path?(path), do: String.starts_with?(path, "/oauth/")
+
+  defp expected_400(path) do
+    if oauth_path?(path),
+      do: %{"$ref" => "#/components/responses/OAuthError"},
+      else: %{"$ref" => "#/components/responses/BadRequest"}
   end
 
   defp to_spec_path(router_path), do: String.replace(router_path, ~r/:(\w+)/, "{\\1}")
@@ -177,6 +196,10 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         unless op["security"] == [],
           do: "#{label} is public but does not declare security: []"
 
+      :oauth in pipes ->
+        unless op["security"] == [],
+          do: "#{label} takes no bearer token but does not declare security: []"
+
       true ->
         "classify pipeline #{inspect(pipes)} for #{label} in the contract test"
     end
@@ -262,18 +285,48 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
     # D353: a malformed query string or body is rejected by Plug.Parsers before
     # routing, so every operation can return 400 and must say so through the
-    # shared component.
+    # shared component: BadRequest for /api, the RFC 6749 OAuthError for the
+    # /oauth token endpoints (W2746).
     test "every operation documents a 400 response", %{spec: spec} do
-      expected = %{"$ref" => "#/components/responses/BadRequest"}
-
       missing =
         for {method, path, op} <- spec_operations(spec),
-            get_in(op, ["responses", "400"]) != expected do
+            get_in(op, ["responses", "400"]) != expected_400(path) do
           "#{String.upcase(method)} #{path}"
         end
 
       assert missing == [],
-             "Operations without a 400 $ref to BadRequest:\n" <> Enum.join(missing, "\n")
+             "Operations without a 400 $ref to BadRequest (OAuthError on /oauth):\n" <>
+               Enum.join(missing, "\n")
+    end
+
+    test "the OAuthError example matches what ErrorJSON renders for an /oauth 400", %{
+      spec: spec
+    } do
+      example = get_in(spec, ~w(components responses OAuthError content application/json example))
+
+      conn = Phoenix.ConnTest.build_conn(:post, "/oauth/token")
+
+      rendered =
+        "400.json"
+        |> KanbanWeb.ErrorJSON.render(%{conn: conn})
+        |> Jason.encode!()
+        |> Jason.decode!()
+
+      assert example == rendered
+    end
+
+    test "the /oauth operations are documented, public and rate limited", %{spec: spec} do
+      for path <- ["/oauth/token", "/oauth/revoke"] do
+        op = get_in(spec, ["paths", path, "post"])
+
+        assert op["security"] == []
+
+        assert op["responses"]["429"] == %{
+                 "$ref" => "#/components/responses/OAuthTooManyRequests"
+               }
+      end
+
+      refute get_in(spec, ["paths", "/oauth/authorize"])
     end
 
     test "the BadRequest example matches what ErrorJSON renders for an /api 400", %{spec: spec} do

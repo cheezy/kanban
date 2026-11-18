@@ -3,8 +3,10 @@ defmodule Kanban.Devices do
   Devices a person has signed in to Stride on, and their tokens
   (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1, §8).
 
-  This is the token core the OAuth endpoints and the device plug build on; it
-  has no routes of its own.
+  This is the token core the OAuth endpoints (`POST /oauth/token`,
+  `POST /oauth/revoke`) and the device plug build on; it has no routes of its
+  own. Redeeming an authorization code lives in
+  `Kanban.Devices.CodeExchange`, behind `exchange_authorization_code/4`.
 
     * **Access tokens** last one hour.
     * **Refresh tokens** rotate: each use returns a new pair and uses up the
@@ -16,6 +18,16 @@ defmodule Kanban.Devices do
       revokes the device and expires every token it holds, the whole token
       family included, and the revocation commits even though the call fails.
     * **Authorization codes** live 60 seconds and are consumed once.
+    * **Refresh is refused** for a disabled user, a revoked device, and a
+      user whose Organization requires two-factor once their grace period
+      is over (`{:overdue, _}`), the same line the web gate draws. A member
+      still in grace can refresh. A device has no sign-in session, so the
+      web gate's single sign-on exemption never applies to it.
+
+  The two security events are audited here, after their transaction
+  commits, whoever the caller: `:device_signed_in` when a code exchange
+  creates a device and `:device_refresh_reuse_detected` when reuse revokes
+  one. Neither carries a token, a code or the approval key.
 
   Tokens and codes are random, shown once and stored only as SHA-256 hashes
   (`Kanban.Devices.DeviceToken`). A plain value is looked up by hashing it and
@@ -32,9 +44,13 @@ defmodule Kanban.Devices do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
+  alias Kanban.AuditLog
   alias Kanban.Devices.AuthorizationCode
+  alias Kanban.Devices.CodeExchange
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Organizations
+  alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Repo
 
   @access_ttl_seconds 3600
@@ -122,25 +138,85 @@ defmodule Kanban.Devices do
   and never two live refresh tokens.
 
   Presenting a refresh token that was already used revokes its device and
-  expires all of its tokens, and returns `{:error, :reuse_detected}`. The
-  loser of two concurrent rotations is such a reuse. Every other refusal, an
-  unknown or expired token, a revoked device or a disabled user, is
-  `{:error, :invalid_token}`.
-  """
-  @spec rotate_refresh_token(term(), DateTime.t()) ::
-          {:ok, issued()} | {:error, :invalid_token | :reuse_detected}
-  def rotate_refresh_token(token, now \\ DateTime.utc_now())
+  expires all of its tokens, writes `:device_refresh_reuse_detected`, and
+  returns `{:error, :reuse_detected}`. The loser of two concurrent rotations
+  is such a reuse. Every other refusal, an unknown or expired token, a
+  revoked device, a disabled user or a user overdue on their Organization's
+  two-factor requirement, is `{:error, :invalid_token}` and leaves the token
+  unused.
 
-  def rotate_refresh_token(token, now) when is_binary(token) do
+  `opts` takes `:ip`, the caller's address, recorded on the audit row, and
+  `:client_id`, the client asking. When it is given, an unused token of a
+  device signed in through another client is refused as `:invalid_token`
+  and left unused: a refresh token works only for the app it was issued to.
+  A used one is still reuse, whichever client presents it.
+  """
+  @spec rotate_refresh_token(term(), DateTime.t(), keyword()) ::
+          {:ok, issued()} | {:error, :invalid_token | :reuse_detected}
+  def rotate_refresh_token(token, now \\ DateTime.utc_now(), opts \\ [])
+
+  def rotate_refresh_token(token, now, opts) when is_binary(token) do
     hash = DeviceToken.hash_token(token)
     at = truncate(now)
 
     hash
-    |> rotate_in_transaction(at)
-    |> unwrap_rotation()
+    |> rotate_in_transaction(at, Keyword.get(opts, :client_id))
+    |> unwrap_rotation(opts)
   end
 
-  def rotate_refresh_token(_token, _now), do: {:error, :invalid_token}
+  def rotate_refresh_token(_token, _now, _opts), do: {:error, :invalid_token}
+
+  @doc """
+  Redeems an authorization code for a new device and its first token pair:
+  the `authorization_code` grant of `POST /oauth/token`. See
+  `Kanban.Devices.CodeExchange.exchange/4`.
+  """
+  @spec exchange_authorization_code(map(), map(), DateTime.t(), keyword()) ::
+          {:ok, issued()} | {:error, :invalid_grant | Ecto.Changeset.t()}
+  def exchange_authorization_code(grant, details, now \\ DateTime.utc_now(), opts \\ []),
+    do: CodeExchange.exchange(grant, details, now, opts)
+
+  @doc """
+  Revokes the device a refresh token belongs to, as the device's own user,
+  and expires its tokens: `POST /oauth/revoke` (RFC 7009), the app signing
+  itself out.
+
+  The token must be a refresh token that has not expired, used or not: an
+  old token still names its device, as it does to rotation. Refused with
+  `{:error, :invalid_token}` when the token is unknown, is not a refresh
+  token, has expired, or its device is already revoked. The device and then
+  the token are locked, the order rotation uses, so the two never deadlock.
+  """
+  @spec revoke_by_refresh_token(term(), DateTime.t()) ::
+          {:ok, Device.t()} | {:error, :invalid_token}
+  def revoke_by_refresh_token(token, now \\ DateTime.utc_now())
+
+  def revoke_by_refresh_token(token, now) when is_binary(token) do
+    hash = DeviceToken.hash_token(token)
+    at = truncate(now)
+
+    Repo.transact(fn ->
+      hash
+      |> refresh_token_device_id()
+      |> lock_device_with_user()
+      |> lock_refresh_token(hash)
+      |> revoke_for_token(at)
+    end)
+  end
+
+  def revoke_by_refresh_token(_token, _now), do: {:error, :invalid_token}
+
+  @doc """
+  The id of the device a refresh token belongs to, or `nil`. It reads no
+  token's state, so it says nothing about whether the token is usable: it
+  is only the key `POST /oauth/token` and `POST /oauth/revoke` rate-limit a
+  device by.
+  """
+  @spec device_id_for_refresh_token(term()) :: pos_integer() | nil
+  def device_id_for_refresh_token(token) when is_binary(token),
+    do: token |> DeviceToken.hash_token() |> refresh_token_device_id()
+
+  def device_id_for_refresh_token(_token), do: nil
 
   @doc """
   Revokes one of the scope user's devices at `now` and expires its tokens,
@@ -274,15 +350,24 @@ defmodule Kanban.Devices do
   # rotation against a revocation and against every other rotation or
   # issue on the device, so a revocation's expiry sweep sees every token a
   # rotation committed, and the device the checks read is the locked row.
-  defp rotate_in_transaction(hash, now) do
+  defp rotate_in_transaction(hash, now, client_id) do
     Repo.transact(fn ->
       hash
       |> refresh_token_device_id()
       |> lock_device_with_user()
       |> lock_refresh_token(hash)
+      |> refuse_other_client(client_id)
       |> rotate_locked(now)
     end)
   end
+
+  # An unused token presented by another client is treated as unknown, so it
+  # stays usable by its own app; a used one goes on to reuse detection.
+  defp refuse_other_client(%DeviceToken{used_at: nil, device: %{client_id: issued_to}}, client_id)
+       when is_binary(client_id) and client_id != issued_to,
+       do: nil
+
+  defp refuse_other_client(token, _client_id), do: token
 
   defp refresh_token_device_id(hash) do
     from(t in DeviceToken,
@@ -317,19 +402,36 @@ defmodule Kanban.Devices do
   defp rotate_locked(nil, _now), do: {:error, :invalid_token}
   defp rotate_locked(%{device: %{revoked_at: %DateTime{}}}, _now), do: {:error, :invalid_token}
 
+  # Reuse is checked before expiry and before the user's state, so a stolen
+  # token presented after it expired, or while its user is disabled, still
+  # revokes the device and is audited. The revocation is returned as
+  # {:ok, _} so that Repo.transact commits it.
+  defp rotate_locked(%DeviceToken{used_at: %DateTime{}, device: device}, now) do
+    with {:ok, revoked} <- revoke_and_expire(device, nil, now),
+         do: {:ok, {:reuse_detected, %{revoked | user: device.user}}}
+  end
+
   defp rotate_locked(%{device: %{user: %{disabled_at: %DateTime{}}}}, _now),
     do: {:error, :invalid_token}
 
-  # Reuse is checked before expiry, so a stolen token presented after it
-  # expired still revokes the device. The revocation is returned as {:ok, _}
-  # so that Repo.transact commits it.
-  defp rotate_locked(%DeviceToken{used_at: %DateTime{}, device: device}, now) do
-    with {:ok, _revoked} <- revoke_and_expire(device, nil, now), do: {:ok, :reuse_detected}
+  defp rotate_locked(%DeviceToken{} = token, now) do
+    cond do
+      DateTime.compare(token.expires_at, now) != :gt -> {:error, :invalid_token}
+      two_factor_overdue?(token.device.user, now) -> {:error, :invalid_token}
+      true -> replace(token, now)
+    end
   end
 
-  defp rotate_locked(%DeviceToken{} = token, now) do
+  defp two_factor_overdue?(user, now) do
+    match?({:overdue, _deadline}, SecurityPolicies.two_factor_status_for_user(user, now))
+  end
+
+  defp revoke_for_token(nil, _now), do: {:error, :invalid_token}
+  defp revoke_for_token(%{device: %{revoked_at: %DateTime{}}}, _now), do: {:error, :invalid_token}
+
+  defp revoke_for_token(%DeviceToken{device: device} = token, now) do
     if DateTime.compare(token.expires_at, now) == :gt,
-      do: replace(token, now),
+      do: revoke_and_expire(device, device.user_id, now),
       else: {:error, :invalid_token}
   end
 
@@ -341,8 +443,28 @@ defmodule Kanban.Devices do
     insert_pair(device, family_id, now)
   end
 
-  defp unwrap_rotation({:ok, :reuse_detected}), do: {:error, :reuse_detected}
-  defp unwrap_rotation(result), do: result
+  defp unwrap_rotation({:ok, {:reuse_detected, device}}, opts) do
+    AuditLog.event(:device_refresh_reuse_detected,
+      user_id: device.user_id,
+      organization_id: organization_id(device.user),
+      device_id: device.id,
+      ip: Keyword.get(opts, :ip)
+    )
+
+    {:error, :reuse_detected}
+  end
+
+  defp unwrap_rotation(result, _opts), do: result
+
+  @doc false
+  # The Organization a device's audit rows are listed under, or nil.
+  @spec organization_id(User.t()) :: pos_integer() | nil
+  def organization_id(%User{} = user) do
+    case Organizations.get_membership(user) do
+      %{organization_id: organization_id} -> organization_id
+      nil -> nil
+    end
+  end
 
   defp insert_pair(device, family_id, now) do
     access_expires_at = access_expiry(now)

@@ -74,6 +74,26 @@ defmodule KanbanWeb.Plugs.ParsersTest do
     end
   end
 
+  test "a device token endpoint parse failure gets the json pin (W2746)" do
+    for path <- ["/oauth/token", "/oauth/revoke"] do
+      conn =
+        :post
+        |> conn(path, "{not json")
+        |> Plug.Conn.put_req_header("content-type", "application/json")
+
+      error = assert_raise Plug.Conn.WrapperError, fn -> Parsers.call(conn, @opts) end
+
+      assert %Plug.Parsers.ParseError{} = error.reason
+      assert Phoenix.Controller.get_format(error.conn) == "json"
+    end
+  end
+
+  test "the authorize page gets no pin (W2746)" do
+    conn = conn(:get, "/oauth/authorize?a=%FF")
+
+    assert_raise Plug.Conn.InvalidQueryError, fn -> Parsers.call(conn, @opts) end
+  end
+
   test "another /.well-known path gets no pin (W2697)" do
     conn = conn(:get, "/.well-known/security.txt?a=%FF")
 

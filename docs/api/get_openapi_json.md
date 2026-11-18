@@ -1,9 +1,10 @@
 # GET /api/openapi.json
 
 Get the machine-readable [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.0)
-description of the whole Stride API. It covers every `/api` route: paths, verbs,
-query and path parameters, request bodies, response schemas, and which
-operations need a Bearer token. Client generators, MCP tooling and API viewers
+description of the whole Stride API. It covers every `/api` route, and the two
+device sign-in token endpoints, `POST /oauth/token` and `POST /oauth/revoke`:
+paths, verbs, query and path parameters, request bodies, response schemas, and
+which operations need a Bearer token. Client generators, MCP tooling and API viewers
 can read it directly. The markdown pages in this directory are still the
 narrative reference.
 
@@ -125,7 +126,9 @@ the file is restored.
 - **Security.** `bearerAuth` (an HTTP Bearer scheme) is the document-wide
   default, so it applies to every operation behind the authenticated `:api`
   pipeline. The two public operations, `getAgentOnboarding` and
-  `getOpenApiSpec`, override it with `security: []`.
+  `getOpenApiSpec`, override it with `security: []`, and so do the device
+  sign-in operations, `oauthToken` and `oauthRevoke`, which take no bearer
+  token at all ([POST /oauth/token](post_oauth_token.md)).
 - **All of `GET /api/tasks`'s query parameters:** `limit`, `cursor`, `status`,
   `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`,
   `label` and `response_view`. See [GET /api/tasks](get_tasks.md#pagination-and-filters).
@@ -145,7 +148,9 @@ The spec is written by hand. `test/kanban_web/controllers/api/open_api_contract_
 makes sure it cannot quietly fall behind the router. The test checks that:
 
 1. **The router and the spec match in both directions.** It lists
-   `KanbanWeb.Router.__routes__/0` and keeps every route under `/api`. It
+   `KanbanWeb.Router.__routes__/0` and keeps every route under `/api`, plus
+   every `/oauth` route piped through `:oauth` (the browser-scoped
+   `/oauth/authorize` page is not part of the API). It
    rewrites `:id` as `{id}` and fails on any route and verb missing from the
    spec, for example:
    `GET /api/tasks/{id}/foo (router: /api/tasks/:id/foo) is missing from priv/openapi/stride-api.json`.
@@ -153,7 +158,7 @@ makes sure it cannot quietly fall behind the router. The test checks that:
    serve.
 2. **Authentication matches the pipeline.** It resolves each route with
    `Phoenix.Router.route_info/4`. Routes piped through `:api` must require
-   `bearerAuth`, and routes piped through `:api_public` must declare
+   `bearerAuth`, and routes piped through `:api_public` or `:oauth` must declare
    `security: []`. A route in any other pipeline fails until the test is taught
    how to classify it.
 3. **The document is internally sound.** Every `$ref` resolves, every
@@ -163,7 +168,10 @@ makes sure it cannot quietly fall behind the router. The test checks that:
    that component's example must equal what `KanbanWeb.ErrorJSON` renders for a
    406. Likewise every operation documents a `400` as a `$ref` to
    `#/components/responses/BadRequest`, whose example must equal what
-   `KanbanWeb.ErrorJSON` renders for an `/api` 400.
+   `KanbanWeb.ErrorJSON` renders for an `/api` 400. The `/oauth` operations
+   document theirs as `#/components/responses/OAuthError` instead, the RFC 6749
+   error shape, whose example must equal what `KanbanWeb.ErrorJSON` renders for
+   an `/oauth/token` 400.
 4. **The schemas match what the API returns.** The property keys of `Task`,
    `TaskSummary` and `TaskAck` must equal the keys that
    `KanbanWeb.API.TaskJSON` renders, and `GoalSummary` the keys of

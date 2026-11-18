@@ -215,7 +215,12 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:audit_stream_gap_dismissed, [:user_id, :organization_id, :destination_id, :gap_id],
      "An org-admin dismissed a streaming destination's recorded gap."},
     {:audit_stream_cursors_reseeded, [:user_id, :organization_id, :destinations],
-     "An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set."}
+     "An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set."},
+    {:device_signed_in,
+     [:user_id, :organization_id, :device_id, :platform, :device_class, :app_version],
+     "A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported."},
+    {:device_refresh_reuse_detected, [:user_id, :organization_id, :device_id],
+     "A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

@@ -15330,3 +15330,15 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "This sign-in request isn't valid"
 msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device refresh token reused"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device signed in"
+msgstr ""

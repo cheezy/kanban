@@ -15331,3 +15331,15 @@ msgstr "%{email} としてサインインしています。"
 #, elixir-autogen, elixir-format
 msgid "This sign-in request isn't valid"
 msgstr "このサインイン要求は無効です"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device refresh token reused"
+msgstr "デバイスのリフレッシュトークンの再利用"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device signed in"
+msgstr "デバイスのサインイン"

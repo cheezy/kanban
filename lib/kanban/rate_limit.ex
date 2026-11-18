@@ -2,8 +2,8 @@ defmodule Kanban.RateLimit do
   @moduledoc """
   Rate-limiting policy for abuse-prone authentication surfaces, the org-admin
   audit log export, audit stream test events, email invitations, the
-  locked-feature click metric, the audit rows of refused API board gates, and
-  API attachment downloads.
+  locked-feature click metric, the audit rows of refused API board gates,
+  API attachment downloads, and the device sign-in token endpoints.
 
   Wraps the low-level `Kanban.RateLimiter` (Hammer/ETS) with per-surface
   thresholds and a two-key strategy: every check is evaluated against both a
@@ -34,6 +34,9 @@ defmodule Kanban.RateLimit do
     * `:attachment_download` — 1 min / 60 / — (identity-only, per download)
     * `:sso`       — 1 min  / — / 60        (IP-only, per request)
     * `:scim`      — 1 min  / 10 / 100      (failure-counted)
+    * `:oauth_token` — 1 min / — / 60       (IP-only, per request)
+    * `:oauth_revoke` — 1 min / — / 30      (IP-only, per request)
+    * `:oauth_device` — 1 min / 10 / —      (identity-only, per request)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -116,12 +119,24 @@ defmodule Kanban.RateLimit do
   leaked token cannot pull a board's files in bulk. A task holds at most 20
   files, so the limit leaves room to fetch several whole tasks a minute.
 
+  `:oauth_token` and `:oauth_revoke` count requests to `POST /oauth/token`
+  and `POST /oauth/revoke` (`KanbanWeb.OAuthTokenController`) per IP, with
+  `check/2` before anything is parsed or looked up, so one source cannot
+  guess authorization codes or refresh tokens. Neither request has a
+  trusted identity yet. `:oauth_device` then counts refresh and revoke
+  requests per device (`identity: "device:<id>"`, the id of the device the
+  presented refresh token belongs to, no IP), so a device's token cannot be
+  hammered from many addresses. A token that names no device is not counted
+  there; the IP ceiling still is. The `authorization_code` grant has no
+  device yet, so only the IP ceiling applies to it.
+
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
       `:audit_stream_test`, `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`,
-      `:attachment_download`).
+      `:attachment_download`, `:oauth_token`, `:oauth_revoke`,
+      `:oauth_device`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
       `:scim`)
@@ -151,7 +166,10 @@ defmodule Kanban.RateLimit do
     api_denied_audit: %{scale_ms: 300_000, id_limit: 1},
     attachment_download: %{scale_ms: 60_000, id_limit: 60},
     sso: %{scale_ms: 60_000, ip_limit: 60},
-    scim: %{scale_ms: 60_000, id_limit: 10, ip_limit: 100}
+    scim: %{scale_ms: 60_000, id_limit: 10, ip_limit: 100},
+    oauth_token: %{scale_ms: 60_000, ip_limit: 60},
+    oauth_revoke: %{scale_ms: 60_000, ip_limit: 30},
+    oauth_device: %{scale_ms: 60_000, id_limit: 10}
   }
 
   @type surface ::
@@ -171,6 +189,9 @@ defmodule Kanban.RateLimit do
           | :attachment_download
           | :sso
           | :scim
+          | :oauth_token
+          | :oauth_revoke
+          | :oauth_device
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 

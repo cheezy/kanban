@@ -185,5 +185,10 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("audit_stream_cursors_reseeded"),
     do: pgettext("audit action", "Streaming cursors re-seeded")
 
+  def action_label("device_signed_in"), do: pgettext("audit action", "Device signed in")
+
+  def action_label("device_refresh_reuse_detected"),
+    do: pgettext("audit action", "Device refresh token reused")
+
   def action_label(action) when is_binary(action), do: action
 end

@@ -1419,6 +1419,8 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :audit_stream_gap]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `events`, `reason`, `from`, `to` | Audit events a streaming destination will never receive were recorded as a gap. events is how many; from and to bound the lost range; reason is the fixed cause. |
 | `[:kanban, :audit, :audit_stream_gap_dismissed]` | event, legacy | `count` | `user_id`, `organization_id`, `destination_id`, `gap_id` | An org-admin dismissed a streaming destination's recorded gap. |
 | `[:kanban, :audit, :audit_stream_cursors_reseeded]` | event, legacy | `count` | `user_id`, `organization_id`, `destinations` | An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set. |
+| `[:kanban, :audit, :device_signed_in]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `platform`, `device_class`, `app_version` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported. |
+| `[:kanban, :audit, :device_refresh_reuse_detected]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id` | A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens. |
 
 ### Domain `audit_stream`
 

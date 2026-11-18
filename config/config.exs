@@ -109,11 +109,16 @@ config :error_tracker,
 # task write rejects (W2382) out of the logged request params as well.
 # "client_secret" keeps an SSO connection's OIDC client secret out of the
 # logged LiveView event params and ErrorTracker's event params (D436).
+# "code" covers the device sign-in authorization code, code_verifier and
+# code_challenge on /oauth/token, and "approval_public_key" the key a device
+# registers there (W2746); "token" already covers refresh_token.
 config :phoenix, :filter_parameters, [
   "password",
   "token",
   "security_considerations",
-  "client_secret"
+  "client_secret",
+  "code",
+  "approval_public_key"
 ]
 
 # ErrorTracker stores raw query strings, params and headers, which

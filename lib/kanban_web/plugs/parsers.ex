@@ -27,7 +27,11 @@ defmodule KanbanWeb.Plugs.Parsers do
 
   The audit signing keys address, `/.well-known/stride-audit-signing-keys`,
   gets the json pin too (W2697): curl and verifier libraries fetch it, and
-  its own refusals are JSON.
+  its own refusals are JSON. So do `/oauth/token` and `/oauth/revoke`
+  (W2746), which the mobile apps call; those two paths are also marked
+  `cache-control: no-store` and `pragma: no-cache` before parsing, so every
+  response there carries both, the errors raised before the controller
+  included.
 
   One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
   raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
@@ -73,7 +77,30 @@ defmodule KanbanWeb.Plugs.Parsers do
       |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
   end
 
+  # The device sign-in token endpoints (W2746) are called by the apps, which
+  # read every refusal as JSON, so a malformed body there renders through
+  # KanbanWeb.ErrorJSON's OAuth error shape; the pin works as for /api above.
+  # Every response there must be `cache-control: no-store` (RFC 6749 §5.1),
+  # so the headers are set before parsing: an error raised here, or in the
+  # router before the controller's own no_store plug runs, keeps them.
+  def call(%Plug.Conn{path_info: ["oauth", endpoint]} = conn, opts)
+      when endpoint in ["token", "revoke"] do
+    conn |> oauth_no_store() |> Plug.Parsers.call(opts)
+  catch
+    kind, reason ->
+      conn
+      |> oauth_no_store()
+      |> Phoenix.Controller.put_format("json")
+      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
+  end
+
   def call(conn, opts), do: Plug.Parsers.call(conn, opts)
+
+  defp oauth_no_store(conn) do
+    conn
+    |> Plug.Conn.put_resp_header("cache-control", "no-store")
+    |> Plug.Conn.put_resp_header("pragma", "no-cache")
+  end
 
   # W2231: a malformed JSON body on POST /api/mcp must be answered with a
   # JSON-RPC -32700 Parse error, and only AFTER authentication (an

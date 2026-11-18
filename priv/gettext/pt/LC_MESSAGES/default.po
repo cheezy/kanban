@@ -15392,3 +15392,15 @@ msgstr "Conectado como %{email}."
 #, elixir-autogen, elixir-format
 msgid "This sign-in request isn't valid"
 msgstr "Esta solicitação de login não é válida"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device refresh token reused"
+msgstr "Token de atualização de dispositivo reutilizado"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device signed in"
+msgstr "Dispositivo conectado"

@@ -16,6 +16,10 @@ defmodule KanbanWeb.ErrorTrackerFilter do
       password reset or a confirmation) appears in the request path, the
       LiveView URI, the `token` param and any Referer pointing at one of those
       pages, so the token segment and the `token` param are redacted.
+    * The device sign-in token endpoints, `POST /oauth/token` and
+      `POST /oauth/revoke`, take authorization codes, PKCE verifiers and
+      refresh tokens as params, so a failing request's params there are
+      filtered through `:filter_parameters` and its query string redacted.
   """
 
   @behaviour ErrorTracker.Filter
@@ -27,6 +31,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   @unsubscribe_path "/notifications/unsubscribe"
   @token_locations ["request.path", "live_view.uri"]
   @token_params ["request.params", "live_view.params"]
+  @oauth_paths ["/oauth/token", "/oauth/revoke"]
 
   @impl ErrorTracker.Filter
   def sanitize(context) when is_map(context) do
@@ -35,6 +40,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
     |> redact_token_path_request()
     |> redact_referer_header()
     |> redact_event_params()
+    |> redact_oauth_request()
   end
 
   def sanitize(context), do: context
@@ -46,6 +52,14 @@ defmodule KanbanWeb.ErrorTrackerFilter do
     do: Map.put(context, "live_view.event_params", ParamFilter.filter(params))
 
   defp redact_event_params(context), do: context
+
+  defp redact_oauth_request(%{"request.path" => path} = context) when path in @oauth_paths do
+    context
+    |> Map.replace_lazy("request.params", &ParamFilter.filter/1)
+    |> Map.replace("request.query", @redacted)
+  end
+
+  defp redact_oauth_request(context), do: context
 
   defp redact_unsubscribe_request(%{"request.path" => @unsubscribe_path <> _} = context) do
     context

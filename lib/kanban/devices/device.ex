@@ -16,6 +16,7 @@ defmodule Kanban.Devices.Device do
 
   alias Kanban.Accounts.User
   alias Kanban.ChangesetText
+  alias Kanban.Devices.ApprovalKey
 
   @client_ids ~w(stride-ios stride-android)
 
@@ -36,6 +37,21 @@ defmodule Kanban.Devices.Device do
 
   @required_fields [:client_id, :platform, :device_class, :name]
 
+  # What the app sends about itself at the token exchange; the client id
+  # and the name come from the authorization code instead.
+  @detail_fields [
+    :platform,
+    :device_class,
+    :model,
+    :os_version,
+    :app_version,
+    :locale,
+    :time_zone,
+    :approval_public_key
+  ]
+
+  @required_detail_fields [:platform, :device_class, :approval_public_key]
+
   @text_fields [
     :client_id,
     :name,
@@ -50,6 +66,10 @@ defmodule Kanban.Devices.Device do
 
   # varchar(255) columns. Postgres counts code points, so the checks do too.
   @varchar_max 255
+  # A BCP 47 language tag, or the platform form with underscores ("en_GB"):
+  # a language subtag, then alphanumeric subtags.
+  @locale_format ~r/\A[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{1,8})*\z/
+
   @varchar_fields [:name, :model, :os_version, :app_version, :locale, :time_zone]
 
   @type t :: %__MODULE__{}
@@ -96,12 +116,34 @@ defmodule Kanban.Devices.Device do
     |> ChangesetText.validate_visible([:name])
     |> validate_inclusion(:client_id, @client_ids)
     |> validate_varchar_lengths()
+    |> validate_time_zone()
+    |> validate_format(:locale, @locale_format)
+    |> validate_approval_public_key()
     |> unique_constraint(:push_token)
     |> check_constraint(:platform, name: :user_devices_platform)
     |> check_constraint(:device_class, name: :user_devices_device_class)
     |> check_constraint(:push_environment, name: :user_devices_push_environment)
     |> put_change(:inserted_at, now)
     |> put_change(:updated_at, now)
+  end
+
+  @doc """
+  Checks the device details the app sends to `POST /oauth/token`, before the
+  authorization code is redeemed, so a request with bad details leaves the
+  code usable. Requires the platform, the device class and a P-256 approval
+  public key (`Kanban.Devices.ApprovalKey`), and applies the same text and
+  length rules as `create_changeset/3`.
+  """
+  @spec details_changeset(map()) :: Ecto.Changeset.t()
+  def details_changeset(attrs) do
+    %__MODULE__{}
+    |> cast(attrs, @detail_fields)
+    |> ChangesetText.validate_storable(@detail_fields -- [:platform, :device_class])
+    |> validate_required(@required_detail_fields)
+    |> validate_varchar_lengths()
+    |> validate_time_zone()
+    |> validate_format(:locale, @locale_format)
+    |> validate_approval_public_key()
   end
 
   @doc """
@@ -122,6 +164,32 @@ defmodule Kanban.Devices.Device do
   @doc "Returns true once the device has been revoked."
   @spec revoked?(t()) :: boolean()
   def revoked?(%__MODULE__{revoked_at: revoked_at}), do: not is_nil(revoked_at)
+
+  # A key that is present must be a P-256 point in the wire format; it is
+  # stored in its canonical spelling.
+  defp validate_approval_public_key(changeset) do
+    case fetch_change(changeset, :approval_public_key) do
+      {:ok, key} when is_binary(key) -> put_canonical_key(changeset, ApprovalKey.canonical(key))
+      _no_change -> changeset
+    end
+  end
+
+  defp put_canonical_key(changeset, {:ok, key}),
+    do: put_change(changeset, :approval_public_key, key)
+
+  defp put_canonical_key(changeset, :error),
+    do: add_error(changeset, :approval_public_key, "is not a P-256 public key")
+
+  # A zone is stored only when the tz database knows it exactly as sent:
+  # a padded, case-variant or invented zone would be read back as UTC.
+  defp validate_time_zone(changeset) do
+    validate_change(changeset, :time_zone, fn :time_zone, zone ->
+      case DateTime.now(zone) do
+        {:ok, _now} -> []
+        {:error, _reason} -> [time_zone: "is not a known time zone"]
+      end
+    end)
+  end
 
   defp validate_varchar_lengths(changeset) do
     Enum.reduce(

@@ -201,6 +201,24 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe "OAuth token endpoint surfaces" do
+    test ":oauth_token and :oauth_revoke are IP-only and :oauth_device is identity-only" do
+      assert RateLimit.__limits__(:oauth_token) == %{scale_ms: 60_000, ip_limit: 60}
+      assert RateLimit.__limits__(:oauth_revoke) == %{scale_ms: 60_000, ip_limit: 30}
+      assert RateLimit.__limits__(:oauth_device) == %{scale_ms: 60_000, id_limit: 10}
+    end
+
+    test ":oauth_device counts one device across addresses; another device is unaffected" do
+      device = "device:#{System.unique_integer([:positive])}"
+      other = "device:#{System.unique_integer([:positive])}"
+
+      for _ <- 1..10, do: assert(:ok = RateLimit.check(:oauth_device, identity: device))
+
+      assert {:error, {:rate_limited, _}} = RateLimit.check(:oauth_device, identity: device)
+      assert :ok = RateLimit.check(:oauth_device, identity: other)
+    end
+  end
+
   describe ":attachment_download surface (identity-only)" do
     test ":attachment_download surface limits per token identity" do
       token = "token:#{System.unique_integer([:positive])}"

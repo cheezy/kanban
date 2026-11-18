@@ -145,6 +145,39 @@ defmodule KanbanWeb.ErrorTrackerFilterTest do
            }
   end
 
+  # W2746: the device sign-in token endpoints take codes, verifiers and
+  # refresh tokens as params.
+  test "filters the params and redacts the query of a failing /oauth/token or /oauth/revoke" do
+    for path <- ["/oauth/token", "/oauth/revoke"] do
+      sanitized =
+        ErrorTrackerFilter.sanitize(%{
+          "request.path" => path,
+          "request.query" => "refresh_token=W2746-probe-value",
+          "request.params" => %{
+            "grant_type" => "authorization_code",
+            "client_id" => "stride-ios",
+            "code" => "W2746-probe-code",
+            "code_verifier" => "W2746-probe-verifier",
+            "refresh_token" => "W2746-probe-refresh",
+            "token" => "W2746-probe-revoke",
+            "approval_public_key" => "W2746-probe-key"
+          }
+        })
+
+      assert sanitized["request.query"] == "[REDACTED]"
+
+      assert sanitized["request.params"] == %{
+               "grant_type" => "authorization_code",
+               "client_id" => "stride-ios",
+               "code" => "[FILTERED]",
+               "code_verifier" => "[FILTERED]",
+               "refresh_token" => "[FILTERED]",
+               "token" => "[FILTERED]",
+               "approval_public_key" => "[FILTERED]"
+             }
+    end
+  end
+
   test "leaves unrelated contexts unchanged" do
     context = %{
       "request.path" => "/boards",

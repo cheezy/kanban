@@ -3,12 +3,17 @@ defmodule Kanban.DevicesTest do
 
   import Kanban.AccountsFixtures
   import Kanban.DevicesFixtures
+  import Kanban.OrganizationsFixtures
 
   alias Kanban.Accounts.User
+  alias Kanban.AuditLog
   alias Kanban.Devices
   alias Kanban.Devices.AuthorizationCode
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Organizations.OrganizationMember
+  alias Kanban.Organizations.SecurityPolicies
+  alias Kanban.Organizations.SecurityPolicy
 
   @t0 ~U[2026-11-18 12:00:00Z]
 
@@ -286,6 +291,42 @@ defmodule Kanban.DevicesTest do
 
       assert Devices.rotate_refresh_token(other.refresh_token, at(1)) == {:error, :invalid_token}
     end
+
+    test "an unused token presented by another client is refused and stays usable", %{
+      scope: scope
+    } do
+      {device, issued} = device_with_tokens_fixture(scope, %{client_id: "stride-ios"}, @t0)
+
+      assert Devices.rotate_refresh_token(issued.refresh_token, at(1),
+               client_id: "stride-android"
+             ) ==
+               {:error, :invalid_token}
+
+      assert is_nil(token_row(issued.refresh_token).used_at)
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+
+      assert {:ok, _rotated} =
+               Devices.rotate_refresh_token(issued.refresh_token, at(2), client_id: "stride-ios")
+    end
+
+    test "a used token replayed while its user is disabled still revokes the device", %{
+      scope: scope
+    } do
+      {device, first} = device_with_tokens_fixture(scope, %{}, @t0)
+      {:ok, _second} = Devices.rotate_refresh_token(first.refresh_token, at(60))
+      disable(scope.user)
+
+      assert Devices.rotate_refresh_token(first.refresh_token, at(120)) ==
+               {:error, :reuse_detected}
+
+      assert Repo.get!(Device, device.id).revoked_at == at(120)
+
+      assert [_event] =
+               AuditLog.list_events(
+                 action: "device_refresh_reuse_detected",
+                 actor_user_id: scope.user.id
+               )
+    end
   end
 
   describe "revoke_device/3 and list_devices/1" do
@@ -470,6 +511,291 @@ defmodule Kanban.DevicesTest do
       assert is_nil(survivor.revoked_by_id)
     end
   end
+
+  describe "refresh refusals" do
+    @overdue_since_days 30
+
+    defp overdue_member_scope do
+      org = organization_fixture()
+      admin = user_fixture()
+      organization_member_fixture(org, admin, :org_admin)
+      scope = user_scope_fixture()
+      organization_member_fixture(org, scope.user)
+      {:ok, _} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+      {org, scope}
+    end
+
+    defp backdate_requirement(org, since) do
+      from(p in SecurityPolicy, where: p.organization_id == ^org.id)
+      |> Repo.update_all(set: [two_factor_enforced_at: since])
+
+      from(m in OrganizationMember, where: m.organization_id == ^org.id)
+      |> Repo.update_all(set: [inserted_at: since])
+    end
+
+    test "refresh is refused for a disabled user, a revoked device or a missing required two-factor",
+         %{scope: scope} do
+      {_device, disabled} = device_with_tokens_fixture(scope, %{}, @t0)
+      disable(scope.user)
+
+      assert Devices.rotate_refresh_token(disabled.refresh_token, at(1)) ==
+               {:error, :invalid_token}
+
+      assert is_nil(token_row(disabled.refresh_token).used_at)
+
+      revoked_scope = user_scope_fixture()
+      {device, revoked} = device_with_tokens_fixture(revoked_scope, %{}, @t0)
+      {:ok, _} = Devices.revoke_device(revoked_scope, device, @t0)
+
+      assert Devices.rotate_refresh_token(revoked.refresh_token, at(1)) ==
+               {:error, :invalid_token}
+
+      {org, member_scope} = overdue_member_scope()
+      backdate_requirement(org, days(-@overdue_since_days))
+      {member_device, overdue} = device_with_tokens_fixture(member_scope, %{}, @t0)
+
+      assert Devices.rotate_refresh_token(overdue.refresh_token, at(1)) ==
+               {:error, :invalid_token}
+
+      # Refused without being used up, and without revoking the device: the
+      # member can refresh again once two-factor is on.
+      assert is_nil(token_row(overdue.refresh_token).used_at)
+      assert is_nil(Repo.get!(Device, member_device.id).revoked_at)
+    end
+
+    test "a member still in the two-factor grace period can refresh" do
+      {org, scope} = overdue_member_scope()
+      backdate_requirement(org, @t0)
+      {_device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
+
+      assert {:ok, _rotated} = Devices.rotate_refresh_token(issued.refresh_token, at(60))
+    end
+
+    test "reuse writes device_refresh_reuse_detected with the device and no token", %{
+      scope: scope
+    } do
+      {device, first} = device_with_tokens_fixture(scope, %{}, @t0)
+      {:ok, _second} = Devices.rotate_refresh_token(first.refresh_token, at(60))
+
+      assert Devices.rotate_refresh_token(first.refresh_token, at(120), ip: {10, 0, 0, 7}) ==
+               {:error, :reuse_detected}
+
+      assert [event] =
+               AuditLog.list_events(
+                 action: "device_refresh_reuse_detected",
+                 actor_user_id: scope.user.id
+               )
+
+      assert event.actor_user_id == scope.user.id
+      assert event.metadata["device_id"] == device.id
+      assert event.ip == "10.0.0.7"
+      refute event.metadata |> Map.keys() |> Enum.any?(&String.contains?(&1, "token"))
+    end
+  end
+
+  describe "exchange_authorization_code/4" do
+    defp details(overrides \\ %{}) do
+      Map.merge(
+        %{
+          "platform" => "ios",
+          "device_class" => "tablet",
+          "model" => "iPad14,1",
+          "os_version" => "18.1",
+          "app_version" => "1.2.0 (7)",
+          "locale" => "fr-FR",
+          "time_zone" => "Europe/Paris",
+          "approval_public_key" => valid_approval_public_key()
+        },
+        overrides
+      )
+    end
+
+    # Redeems `code` at `seconds` past @t0. `opts` may override the grant
+    # (`:grant`), replace the details (`:details`) and pass `:ip`.
+    defp redeem(code, seconds, opts \\ []) do
+      grant =
+        Map.merge(
+          %{
+            code: code.code,
+            client_id: code.client_id,
+            redirect_uri: code.redirect_uri,
+            code_verifier: valid_code_verifier()
+          },
+          Keyword.get(opts, :grant, %{})
+        )
+
+      device_details = Keyword.get_lazy(opts, :details, &details/0)
+      now = at(seconds)
+
+      Devices.exchange_authorization_code(grant, device_details, now, Keyword.take(opts, [:ip]))
+    end
+
+    defp metadata_keys(event), do: Map.keys(event.metadata)
+
+    test "creates the device from the code and the details, and issues tokens", %{scope: scope} do
+      code = authorization_code_fixture(scope, %{device_name: "Kitchen iPad"}, @t0)
+      key = valid_approval_public_key()
+      with_key = details(%{"approval_public_key" => key})
+
+      assert {:ok, issued} = redeem(code, 5, details: with_key)
+
+      device = Repo.get!(Device, issued.device.id)
+      assert device.user_id == scope.user.id
+      assert device.name == "Kitchen iPad"
+      assert device.client_id == "stride-ios"
+      assert device.platform == :ios
+      assert device.device_class == :tablet
+      assert device.approval_public_key == key
+      assert device.inserted_at == at(5)
+      assert issued.access_token_expires_at == at(5 + 3600)
+
+      assert {:ok, %Device{id: id}} = Devices.fetch_by_access_token(issued.access_token, at(6))
+      assert id == device.id
+      assert {:ok, _rotated} = Devices.rotate_refresh_token(issued.refresh_token, at(7))
+    end
+
+    test "refuses a PKCE mismatch, a wrong redirect URI, a reused or expired code", %{
+      scope: scope
+    } do
+      mismatch = authorization_code_fixture(scope, %{}, @t0)
+      wrong = String.duplicate("a", 43)
+
+      assert redeem(mismatch, 1, grant: %{code_verifier: wrong}) == {:error, :invalid_grant}
+
+      # The failed attempt used the code up, so the right verifier is too late.
+      assert redeem(mismatch, 2) == {:error, :invalid_grant}
+
+      redirect = authorization_code_fixture(scope, %{}, @t0)
+      other_uri = %{redirect_uri: "com.stridelikeaboss.app:/other"}
+      assert redeem(redirect, 1, grant: other_uri) == {:error, :invalid_grant}
+
+      reused = authorization_code_fixture(scope, %{}, @t0)
+      assert {:ok, _issued} = redeem(reused, 1)
+      assert redeem(reused, 2) == {:error, :invalid_grant}
+
+      expired = authorization_code_fixture(scope, %{}, @t0)
+      assert redeem(expired, 60) == {:error, :invalid_grant}
+
+      assert Repo.aggregate(Device, :count) == 1
+    end
+
+    test "invalid details are refused before the code is used", %{scope: scope} do
+      code = authorization_code_fixture(scope, %{}, @t0)
+      long_model = String.duplicate("m", 256)
+      valid = details()
+
+      for bad <- [
+            Map.delete(valid, "platform"),
+            Map.delete(valid, "approval_public_key"),
+            details(%{"device_class" => "watch"}),
+            details(%{"approval_public_key" => "fixture-public-key"}),
+            details(%{"model" => long_model})
+          ] do
+        assert {:error, %Ecto.Changeset{valid?: false}} = redeem(code, 1, details: bad)
+      end
+
+      assert {:ok, _issued} = redeem(code, 2)
+    end
+
+    test "an unknown, padded or invented time zone and a malformed locale are refused", %{
+      scope: scope
+    } do
+      code = authorization_code_fixture(scope, %{}, @t0)
+
+      for {field, value} <- [
+            {"time_zone", "Mars/Olympus_Mons"},
+            {"time_zone", " Europe/London "},
+            {"time_zone", "europe/london"},
+            {"time_zone", "UTC+99"},
+            {"locale", "zz-NOT_A-LOCALE!!"},
+            {"locale", "en-GB "},
+            {"locale", "e"}
+          ] do
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 redeem(code, 1, details: details(%{field => value}))
+
+        assert Keyword.has_key?(changeset.errors, String.to_existing_atom(field))
+      end
+
+      assert {:ok, %{device: device}} =
+               redeem(code, 2, details: details(%{"locale" => "en_GB", "time_zone" => "Etc/UTC"}))
+
+      assert {device.locale, device.time_zone} == {"en_GB", "Etc/UTC"}
+    end
+
+    test "writes device_signed_in with the platform, device class and app version", %{
+      scope: scope
+    } do
+      org = organization_fixture()
+      organization_member_fixture(org, scope.user)
+      code = authorization_code_fixture(scope, %{}, @t0)
+
+      {:ok, issued} = redeem(code, 1, ip: {10, 0, 0, 9})
+
+      assert [event] =
+               AuditLog.list_events(action: "device_signed_in", actor_user_id: scope.user.id)
+
+      assert event.actor_user_id == scope.user.id
+      assert event.organization_id == org.id
+      assert event.ip == "10.0.0.9"
+
+      assert %{
+               "device_id" => device_id,
+               "platform" => "ios",
+               "device_class" => "tablet",
+               "app_version" => "1.2.0 (7)"
+             } = event.metadata
+
+      assert device_id == issued.device.id
+      refute event |> metadata_keys() |> Enum.any?(&(&1 =~ ~r/token|key|code/))
+    end
+  end
+
+  describe "revoke_by_refresh_token/2 and device_id_for_refresh_token/1" do
+    test "revokes the device by its refresh token, as its own user", %{scope: scope} do
+      {device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
+
+      assert Devices.device_id_for_refresh_token(issued.refresh_token) == device.id
+      assert {:ok, revoked} = Devices.revoke_by_refresh_token(issued.refresh_token, at(10))
+      assert revoked.revoked_at == at(10)
+      assert revoked.revoked_by_id == scope.user.id
+
+      assert Devices.fetch_by_access_token(issued.access_token, at(11)) ==
+               {:error, :invalid_token}
+
+      assert Devices.rotate_refresh_token(issued.refresh_token, at(11)) ==
+               {:error, :invalid_token}
+
+      assert Devices.revoke_by_refresh_token(issued.refresh_token, at(12)) ==
+               {:error, :invalid_token}
+    end
+
+    test "an already used refresh token still names and revokes its device", %{scope: scope} do
+      {device, first} = device_with_tokens_fixture(scope, %{}, @t0)
+      {:ok, _second} = Devices.rotate_refresh_token(first.refresh_token, at(60))
+
+      assert {:ok, %Device{id: id}} = Devices.revoke_by_refresh_token(first.refresh_token, at(61))
+      assert id == device.id
+    end
+
+    test "refuses unknown, access, malformed and expired tokens", %{scope: scope} do
+      {device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
+
+      assert Devices.revoke_by_refresh_token("sdrt_unknown", at(1)) == {:error, :invalid_token}
+
+      assert Devices.revoke_by_refresh_token(issued.access_token, at(1)) ==
+               {:error, :invalid_token}
+
+      assert Devices.revoke_by_refresh_token(nil, at(1)) == {:error, :invalid_token}
+
+      assert Devices.revoke_by_refresh_token(issued.refresh_token, days(31)) ==
+               {:error, :invalid_token}
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+      assert Devices.device_id_for_refresh_token(issued.access_token) == nil
+      assert Devices.device_id_for_refresh_token(%{}) == nil
+    end
+  end
 end
 
 defmodule Kanban.DevicesRotationAtomicityTest do
@@ -602,6 +928,77 @@ defmodule Kanban.DevicesRotationRaceTest do
       |> Repo.all()
 
     assert live == []
+  end
+
+  test "a code exchanged twice in parallel issues one device and one token pair", ctx do
+    user = Repo.get!(User, ctx.device.user_id)
+    scope = Scope.for_user(user)
+    code = DevicesFixtures.authorization_code_fixture(scope)
+
+    grant = %{
+      code: code.code,
+      client_id: code.client_id,
+      redirect_uri: code.redirect_uri,
+      code_verifier: DevicesFixtures.valid_code_verifier()
+    }
+
+    details = %{
+      platform: :android,
+      device_class: :phone,
+      approval_public_key: DevicesFixtures.valid_approval_public_key()
+    }
+
+    holder = hold_row_lock("oauth_authorization_codes", code.id)
+    await_lock_waiters(0)
+
+    first = start_exchange(grant, details)
+    second = start_exchange(grant, details)
+    await_lock_waiters(2)
+
+    send(holder.pid, :proceed)
+    assert {:ok, :released} = Task.await(holder)
+
+    results = Enum.map([first, second], &Task.await/1)
+
+    assert Enum.count(results, &match?({:ok, %{refresh_token: _}}, &1)) == 1
+    assert Enum.count(results, &(&1 == {:error, :invalid_grant})) == 1
+
+    # The fixture device from setup plus the one the winner created.
+    user_devices = from(d in Device, where: d.user_id == ^user.id)
+    assert Repo.aggregate(user_devices, :count) == 2
+  end
+
+  defp start_exchange(grant, details) do
+    Task.async(fn ->
+      :ok = Sandbox.checkout(Repo, sandbox: false)
+
+      Repo.checkout(fn ->
+        Repo.query!("SET lock_timeout = '5s'")
+        result = Devices.exchange_authorization_code(grant, details)
+        Repo.query!("RESET lock_timeout")
+        result
+      end)
+    end)
+  end
+
+  # A second session that locks one row of `table` FOR UPDATE and holds it
+  # until told to proceed, so every contender is queued on the lock first.
+  defp hold_row_lock(table, id) do
+    test_pid = self()
+    conn = second_session()
+
+    holder =
+      Task.async(fn ->
+        Postgrex.transaction(conn, fn c ->
+          Postgrex.query!(c, "SET LOCAL lock_timeout = '5s'", [])
+          Postgrex.query!(c, "SELECT id FROM #{table} WHERE id = $1 FOR UPDATE", [id])
+          send(test_pid, :holding)
+          receive do: (:proceed -> :released)
+        end)
+      end)
+
+    assert_receive :holding, 5_000
+    holder
   end
 
   # A second session that locks the device row FOR UPDATE, as revoke_device/3
