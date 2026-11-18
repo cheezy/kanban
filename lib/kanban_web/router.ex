@@ -508,6 +508,12 @@ defmodule KanbanWeb.Router do
     # The workspace switcher. Signed-in users only; the controller checks paid
     # access and reach before it changes the session.
     post "/workspace/switch", WorkspaceSessionController, :switch
+    # Device sign-in (W2745, design §7.1): the system browser shows a
+    # confirmation naming the device, and Allow (a CSRF-protected POST, never
+    # a GET) issues the app's one-time code. Deliberately in this browser
+    # scope, not :api, so log-in, SSO and the two-factor gate apply.
+    get "/oauth/authorize", OAuthController, :authorize
+    post "/oauth/authorize", OAuthController, :confirm
   end
 
   # Org-admin audit export. The pipeline gates on the org-admin role, and the

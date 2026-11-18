@@ -1,0 +1,65 @@
+<.auth_frame flash={@flash}>
+  <div
+    id="oauth-authorize"
+    data-state={if @request, do: "confirm", else: "invalid"}
+    style="display: flex; flex-direction: column; align-items: center; text-align: center;"
+  >
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: linear-gradient(135deg, var(--stride-orange-soft) 0%, var(--stride-violet-soft) 100%); display: inline-flex; align-items: center; justify-content: center; color: var(--stride-orange-ink); box-shadow: inset 0 0 0 1px var(--line);">
+      <.icon
+        name={
+          if @request, do: device_icon(@request.device_class), else: "hero-exclamation-triangle"
+        }
+        class="w-8 h-8"
+      />
+    </div>
+
+    <%= if @request do %>
+      <h1
+        id="oauth-authorize-title"
+        style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink); max-width: 100%; overflow-wrap: anywhere;"
+      >
+        {gettext("Sign in to Stride on %{device_name}?", device_name: @request.device_name)}
+      </h1>
+      <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; overflow-wrap: anywhere; text-wrap: pretty;">
+        {gettext("Signed in as %{email}.", email: @current_scope.user.email)}
+        {gettext("Allow only if you just started signing in from the Stride app on this device.")}
+      </p>
+      <.form
+        for={%{}}
+        id="oauth-authorize-form"
+        action={~p"/oauth/authorize"}
+        method="post"
+        style="margin-top: 24px; width: 100%; display: flex; flex-direction: column; gap: 10px;"
+      >
+        <input type="hidden" name="client_id" value={@request.client_id} />
+        <input type="hidden" name="redirect_uri" value={@request.redirect_uri} />
+        <input type="hidden" name="code_challenge" value={@request.code_challenge} />
+        <input type="hidden" name="code_challenge_method" value="S256" />
+        <input type="hidden" name="state" value={@request.state} />
+        <input type="hidden" name="device_name" value={@request.device_name} />
+        <input type="hidden" name="device_class" value={@request.device_class} />
+        <.primary_full_button type="submit" name="decision" value="allow">
+          {gettext("Allow")}
+        </.primary_full_button>
+        <button
+          type="submit"
+          name="decision"
+          value="cancel"
+          style="width: 100%; min-height: 40px; border-radius: 6px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-input); font-size: 13.5px; font-weight: 500; cursor: pointer;"
+        >
+          {gettext("Cancel")}
+        </button>
+      </.form>
+    <% else %>
+      <h1
+        id="oauth-authorize-title"
+        style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);"
+      >
+        {gettext("This sign-in request isn't valid")}
+      </h1>
+      <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
+        {gettext("Open the Stride app and start signing in again.")}
+      </p>
+    <% end %>
+  </div>
+</.auth_frame>

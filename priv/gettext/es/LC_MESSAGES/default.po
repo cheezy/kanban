@@ -202,6 +202,7 @@ msgstr "Tablero creado exitosamente"
 msgid "Board updated successfully"
 msgstr "Tablero actualizado exitosamente"
 
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
 #: lib/kanban_web/live/admin/organization_live/form.ex
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex
 #: lib/kanban_web/live/board_live/form.html.heex
@@ -15378,3 +15379,38 @@ msgid "Throughput · last %{count} hour"
 msgid_plural "Throughput · last %{count} hours"
 msgstr[0] "Throughput · última %{count} hora"
 msgstr[1] "Throughput · últimas %{count} horas"
+
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#, elixir-autogen, elixir-format
+msgid "Allow"
+msgstr "Permitir"
+
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#, elixir-autogen, elixir-format
+msgid "Allow only if you just started signing in from the Stride app on this device."
+msgstr "Permítelo solo si acabas de iniciar sesión desde la app de Stride en este dispositivo."
+
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#, elixir-autogen, elixir-format
+msgid "Open the Stride app and start signing in again."
+msgstr "Abre la app de Stride y vuelve a iniciar sesión."
+
+#: lib/kanban_web/controllers/oauth_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Sign in to Stride"
+msgstr "Iniciar sesión en Stride"
+
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#, elixir-autogen, elixir-format
+msgid "Sign in to Stride on %{device_name}?"
+msgstr "¿Iniciar sesión en Stride en %{device_name}?"
+
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#, elixir-autogen, elixir-format
+msgid "Signed in as %{email}."
+msgstr "Sesión iniciada como %{email}."
+
+#: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#, elixir-autogen, elixir-format
+msgid "This sign-in request isn't valid"
+msgstr "Esta solicitud de inicio de sesión no es válida"

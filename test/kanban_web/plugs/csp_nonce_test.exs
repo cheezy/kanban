@@ -151,6 +151,40 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
     end
   end
 
+  describe "policy/2" do
+    test "with no options is the policy call/2 sends" do
+      conn = conn(:get, "/") |> CspNonce.call([])
+
+      assert get_resp_header(conn, "content-security-policy") ==
+               [CspNonce.policy(conn.assigns.csp_nonce)]
+
+      assert CspNonce.policy("n") == CspNonce.policy("n", [])
+    end
+
+    test "form_action: appends sources after 'self' and changes no other directive" do
+      default = directives(CspNonce.policy("n"))
+      widened = directives(CspNonce.policy("n", form_action: ["com.stridelikeaboss.app:"]))
+
+      assert widened["form-action"] == ["'self'", "com.stridelikeaboss.app:"]
+      assert default["form-action"] == ["'self'"]
+      assert Map.delete(widened, "form-action") == Map.delete(default, "form-action")
+    end
+  end
+
+  describe "put_policy/2" do
+    test "rewrites the header with the nonce already assigned" do
+      conn = conn(:get, "/") |> CspNonce.call([])
+      nonce = conn.assigns.csp_nonce
+
+      conn = CspNonce.put_policy(conn, form_action: ["com.stridelikeaboss.app:"])
+
+      assert conn.assigns.csp_nonce == nonce
+
+      assert get_resp_header(conn, "content-security-policy") ==
+               [CspNonce.policy(nonce, form_action: ["com.stridelikeaboss.app:"])]
+    end
+  end
+
   defp directives(policy) do
     policy
     |> String.split(";", trim: true)

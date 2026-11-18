@@ -41,6 +41,17 @@ defmodule Kanban.Devices.AuthorizationCode do
   end
 
   @doc """
+  Whether `challenge` has the shape of a PKCE S256 challenge: 43 characters of
+  unpadded URL-safe base64. The authorize page checks it before showing the
+  confirmation, so Allow cannot fail on a challenge the page accepted.
+  """
+  @spec valid_code_challenge?(term()) :: boolean()
+  def valid_code_challenge?(challenge) when is_binary(challenge),
+    do: Regex.match?(@code_challenge_format, challenge)
+
+  def valid_code_challenge?(_challenge), do: false
+
+  @doc """
   A changeset for a new code for `user_id`, issued at `now` and expiring
   #{@lifetime_seconds} seconds later, with a fresh plain value in `code` and
   its hash in `code_hash`.

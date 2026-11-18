@@ -35,7 +35,17 @@ defmodule KanbanWeb.Plugs.CspNonce do
 
     conn
     |> assign(:csp_nonce, nonce)
-    |> put_resp_header("content-security-policy", build_policy(nonce))
+    |> put_resp_header("content-security-policy", policy(nonce))
+  end
+
+  @doc """
+  Replaces the response's policy with `policy/2` for the nonce this plug
+  already assigned, so templates keep using the same `@csp_nonce`. A
+  controller calls it to widen one directive for its own pages only.
+  """
+  @spec put_policy(Plug.Conn.t(), keyword()) :: Plug.Conn.t()
+  def put_policy(%Plug.Conn{assigns: %{csp_nonce: nonce}} = conn, opts) when is_list(opts) do
+    put_resp_header(conn, "content-security-policy", policy(nonce, opts))
   end
 
   # Returns a freshly-generated URL-safe Base64 nonce. Exposed for testing;
@@ -84,7 +94,22 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # page, log-in and settings included, could be framed by another origin
   # (clickjacking). frame-ancestors does not fall back to default-src. In dev
   # the Tidewave plug removes it again so its own UI can frame the app.
-  defp build_policy(nonce) do
+  #
+  # W2745: `form_action:` appends sources to form-action, after 'self'. Browsers
+  # apply form-action to the redirects that follow a form POST, so the device
+  # sign-in page (KanbanWeb.OAuthController) adds the apps' private-use scheme
+  # there: its Allow and Cancel POSTs redirect to com.stridelikeaboss.app:.
+  # The sources come from code, never from a request, and every other page
+  # keeps form-action 'self' alone.
+  @doc """
+  The policy for `nonce`. `opts[:form_action]` is a list of extra
+  `form-action` sources, appended after `'self'`; with no options the policy
+  is the one every page gets.
+  """
+  @spec policy(String.t(), keyword()) :: String.t()
+  def policy(nonce, opts \\ []) do
+    form_action = Enum.join(["'self'" | Keyword.get(opts, :form_action, [])], " ")
+
     """
     default-src 'self'; \
     script-src 'self' 'nonce-#{nonce}'; \
@@ -92,7 +117,7 @@ defmodule KanbanWeb.Plugs.CspNonce do
     style-src 'self' 'unsafe-inline'; \
     font-src 'self'; \
     base-uri 'self'; \
-    form-action 'self'; \
+    form-action #{form_action}; \
     object-src 'none'; \
     frame-ancestors 'self'\
     """
