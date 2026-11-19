@@ -1,7 +1,8 @@
 defmodule Kanban.Devices.Activity do
   @moduledoc """
   Records when a device last used the person API, behind
-  `Kanban.Devices.touch_last_seen/2`.
+  `Kanban.Devices.touch_last_seen/2`, and says whether a device may still use
+  it (`signed_in?/1`).
 
   The write is a single `UPDATE` that only moves `last_seen_at` forward, so
   two requests from the same device at once both succeed, neither takes an
@@ -10,8 +11,26 @@ defmodule Kanban.Devices.Activity do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Accounts.User
   alias Kanban.Devices.Device
   alias Kanban.Repo
+
+  @doc """
+  Whether `device` may still use the person API now: it exists, is not
+  revoked, and its user is not disabled. The same conditions
+  `Kanban.Devices.fetch_by_access_token/2` puts on the device, read again, so
+  `KanbanWeb.Plugs.AuthenticateDeviceToken` can refuse a read whose device was
+  revoked while the request was in flight.
+  """
+  @spec signed_in?(Device.t()) :: boolean()
+  def signed_in?(%Device{id: id}) do
+    from(d in Device,
+      join: u in User,
+      on: u.id == d.user_id,
+      where: d.id == ^id and is_nil(d.revoked_at) and is_nil(u.disabled_at)
+    )
+    |> Repo.exists?()
+  end
 
   @doc """
   Sets the device's `last_seen_at` to `now`, truncated to the second, unless

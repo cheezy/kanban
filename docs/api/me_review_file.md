@@ -94,7 +94,8 @@ changed diff or a renamed file is never answered from an older highlight.
 ## Errors
 
 - `401 {"error": "Invalid access token"}` for a missing, expired or revoked
-  device token.
+  device token, and for a device revoked while the request was in flight,
+  which never receives the data.
 - `403` with the [`plan_required` body](me_reviews.md#plans).
 - `404 {"error": "Not Found"}` as described in
   [Who can see a file](#who-can-see-a-file).

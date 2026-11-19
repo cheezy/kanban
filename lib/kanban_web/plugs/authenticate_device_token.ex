@@ -17,6 +17,20 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
 
   It never assigns `:current_user` or `:api_token`, which agent code keys on.
 
+  ## A device revoked while its request is in flight
+
+  The token is checked once, before the action runs, so a device can be
+  revoked, or its user disabled, while the action builds its response. For a
+  `GET` or `HEAD` the plug checks the device again just before a successful
+  response is sent, and a device that is no longer signed in gets the same
+  `401 {"error": "Invalid access token"}` as its token would, never the data.
+  Writes are not re-checked here, so a write that committed keeps its answer.
+  Each write that changes anything re-checks the device under its own row
+  lock first (`Kanban.Devices.CurrentDevice`, `Kanban.Devices.Revocation`,
+  `Kanban.Reviews.DecisionChecks`), so a revoked device changes nothing. An
+  approval challenge issued to a device revoked meanwhile can never be used,
+  because the approval re-checks the device.
+
   ## Tokens that never cross
 
   An agent API token is refused here, and a device token is refused on every
@@ -63,10 +77,42 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
       conn
       |> assign(:current_scope, scope_for(device.user))
       |> assign(:current_device, Devices.touch_last_seen(device))
+      |> recheck_before_read_is_sent(device)
     else
       {:error, :missing_token} -> halt_missing_token(conn)
       {:error, :invalid_token} -> halt_invalid_token(conn)
     end
+  end
+
+  # A read builds its response from data the device was allowed to see when
+  # the token was checked. Checking the device again just before the response
+  # goes out refuses a read whose device was revoked, or whose user was
+  # disabled, while it was being built, so a revoked device never receives
+  # data read after its revocation. Only successful GET and HEAD responses
+  # are rechecked: a write re-checks the device under its own lock, and
+  # turning a write that committed into a 401 would tell the app it did not
+  # happen.
+  defp recheck_before_read_is_sent(%Plug.Conn{method: method} = conn, device)
+       when method in ["GET", "HEAD"] do
+    register_before_send(conn, fn conn ->
+      if conn.status in 200..299 and not Devices.Activity.signed_in?(device) do
+        refuse_revoked_in_flight(conn)
+      else
+        conn
+      end
+    end)
+  end
+
+  defp recheck_before_read_is_sent(conn, _device), do: conn
+
+  # The body a revoked device's token gets, so the app handles both the same
+  # way. Headers the action set for the refused body are dropped with it.
+  defp refuse_revoked_in_flight(conn) do
+    conn
+    |> delete_resp_header("etag")
+    |> put_resp_header("cache-control", "max-age=0, private, must-revalidate")
+    |> put_resp_content_type("application/json")
+    |> resp(:unauthorized, Jason.encode!(%{error: "Invalid access token"}))
   end
 
   # The scope KanbanWeb.UserAuth builds for the web, membership included.

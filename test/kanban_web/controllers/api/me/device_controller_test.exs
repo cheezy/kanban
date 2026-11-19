@@ -255,6 +255,23 @@ defmodule KanbanWeb.API.Me.DeviceControllerTest do
       assert is_nil(Repo.get!(Device, theirs.id).push_token)
     end
 
+    test "answers 422 for a push token another person's device holds and moves nothing", ctx do
+      theirs =
+        device_fixture(user_scope_fixture(), %{
+          name: "Someone else's",
+          push_token: "fixture-push-token-theirs"
+        })
+
+      body =
+        ctx.access_token
+        |> update(%{"push_token" => "fixture-push-token-theirs"})
+        |> json_response(422)
+
+      assert body == %{"errors" => %{"push_token" => ["has already been taken"]}}
+      assert Repo.get!(Device, theirs.id).push_token == "fixture-push-token-theirs"
+      assert is_nil(Repo.get!(Device, ctx.device.id).push_token)
+    end
+
     test "rejects an unknown push_environment or an invalid time zone", ctx do
       assert %{"errors" => %{"push_environment" => [_]}} =
                ctx.access_token

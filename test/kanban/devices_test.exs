@@ -137,6 +137,35 @@ defmodule Kanban.DevicesTest do
     end
   end
 
+  describe "Activity.signed_in?/1" do
+    test "is true for a live device of an active user", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+
+      assert Devices.Activity.signed_in?(device)
+    end
+
+    test "is false once the device is revoked", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      {:ok, _revoked} = Devices.revoke_device(scope, device, at(5))
+
+      refute Devices.Activity.signed_in?(device)
+    end
+
+    test "is false once the device's user is disabled", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      scope.user |> User.disabled_changeset(at(5)) |> Repo.update!()
+
+      refute Devices.Activity.signed_in?(device)
+    end
+
+    test "is false for a device that no longer exists", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      Repo.delete!(device)
+
+      refute Devices.Activity.signed_in?(device)
+    end
+  end
+
   describe "touch_last_seen/2" do
     test "sets last_seen_at, truncated to the second", %{scope: scope} do
       device = device_fixture(scope, %{}, @t0)
@@ -720,8 +749,8 @@ defmodule Kanban.DevicesTest do
       assert updated.time_zone == device.time_zone
     end
 
-    test "a push token another device holds moves to this one", %{scope: scope} do
-      holder = device_fixture(user_scope_fixture(), %{push_token: "fixture-push-token-u3"}, @t0)
+    test "a push token another of the person's devices holds moves to this one", %{scope: scope} do
+      holder = device_fixture(scope, %{push_token: "fixture-push-token-u3"}, @t0)
       device = device_fixture(scope, %{}, @t0)
 
       assert {:ok, updated} =
@@ -729,6 +758,20 @@ defmodule Kanban.DevicesTest do
 
       assert updated.push_token == "fixture-push-token-u3"
       assert is_nil(Repo.get!(Device, holder.id).push_token)
+    end
+
+    test "a push token another person's device holds is refused and stays put", %{scope: scope} do
+      holder = device_fixture(user_scope_fixture(), %{push_token: "fixture-push-token-u6"}, @t0)
+      device = device_fixture(scope, %{locale: "en"}, @t0)
+      attrs = %{"push_token" => "fixture-push-token-u6", "locale" => "de"}
+
+      assert {:error, changeset} = Devices.update_current(scope, device, attrs, at(30))
+      assert "has already been taken" in errors_on(changeset).push_token
+
+      assert Repo.get!(Device, holder.id).push_token == "fixture-push-token-u6"
+      stored = Repo.get!(Device, device.id)
+      assert is_nil(stored.push_token)
+      assert stored.locale == "en"
     end
 
     test "an invalid field is a changeset and moves no token", %{scope: scope} do

@@ -2017,7 +2017,7 @@
       "put": {
         "operationId": "updateCurrentDevice",
         "summary": "Update the device making the request",
-        "description": "Updates the push token, push environment, locale, time zone and app version of the device whose token made the request. A key that is not sent is left as it is, and an empty string clears it, so an empty push_token unregisters the device from pushes. A push token another device still holds, such as the device the same phone was signed in as before, moves to this one. A device revoked while the request was in flight answers 401. Takes a device access token only, and is never plan-gated. Human-readable reference: docs/api/me_devices.md.",
+        "description": "Updates the push token, push environment, locale, time zone and app version of the device whose token made the request. A key that is not sent is left as it is, and an empty string clears it, so an empty push_token unregisters the device from pushes. A push token another of the person's devices still holds, such as the device the same phone was signed in as before, moves to this one; one another person's device holds is refused with 422 and moves nothing. A device revoked while the request was in flight answers 401. Takes a device access token only, and is never plan-gated. Human-readable reference: docs/api/me_devices.md.",
         "tags": [
           "Mobile"
         ],

@@ -285,11 +285,13 @@ defmodule Kanban.Devices do
   Updates the device the app runs on, one of the scope user's, with `attrs`
   at `now`: its push token and push environment, locale, time zone and app
   version (`Kanban.Devices.Device.update_changeset/3`). A push token another
-  device holds moves to this one.
+  of the person's devices holds moves to this one; one another person's
+  device holds is refused.
 
   A device revoked while the request was in flight is `{:error, :revoked}`;
-  another user's device is `{:error, :not_found}`; invalid attributes are
-  `{:error, changeset}`. See `Kanban.Devices.CurrentDevice`.
+  another user's device is `{:error, :not_found}`; invalid attributes, and a
+  push token another person's device holds, are `{:error, changeset}`. See
+  `Kanban.Devices.CurrentDevice`.
   """
   @spec update_current(Scope.t(), Device.t(), map(), DateTime.t()) ::
           {:ok, Device.t()} | {:error, :not_found | :revoked | Ecto.Changeset.t()}

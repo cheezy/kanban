@@ -86,20 +86,25 @@ is:
 `200 OK` returns the device in the shape `GET /api/me/devices` uses.
 
 A push token belongs to one app install, so it is unique among devices. If
-another device still holds the token, for example the device the same phone was
-signed in as before, the token **moves**: it is cleared from the other device
-and set on this one. Anyone who registers a token takes the pushes for that
-install away from whichever device held it before, until the app registers it
-again. Two devices registering the same token at the same moment are handled one
-after the other: both answer `200`, and the device that registered last holds
-the token.
+another of the person's own devices still holds the token, for example the
+device the same phone was signed in as before, the token **moves**: it is
+cleared from the other device and set on this one. Two of the person's devices
+registering the same token at the same moment are handled one after the other:
+both answer `200`, and the device that registered last holds the token.
+
+A token another person's device holds never moves. Signing a device out or
+revoking it clears its push token, so a signed-in device of someone else that
+still holds it means the request is not from that install. The request answers
+`422 {"errors": {"push_token": ["has already been taken"]}}` and changes
+nothing, so nobody can take another person's pushes or send their own to that
+person's phone.
 
 Errors:
 
 - `422` when a field is invalid: an unknown `push_environment`, a time zone the
   tz database does not know exactly as sent, a malformed locale, a value that
-  is too long, or one carrying a character that cannot be stored, such as a NUL
-  byte. The body is `{"errors": {"<field>": ["<message>"]}}`. It never
+  is too long, one carrying a character that cannot be stored, such as a NUL
+  byte, or a push token another person's device holds. The body is `{"errors": {"<field>": ["<message>"]}}`. It never
   echoes the value sent.
 - `401 {"error": "Invalid access token"}` when the device was revoked while the
   request was in flight. That is the same response a revoked device's token

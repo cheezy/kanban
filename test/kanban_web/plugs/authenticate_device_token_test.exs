@@ -164,4 +164,70 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
       refute conn.resp_body =~ bogus
     end
   end
+
+  # The plug has authenticated the request; the device changes before the
+  # action's response is sent.
+  defp authenticated(method, token) do
+    conn = build_conn(method, "/api/me") |> call_with("Bearer " <> token)
+    refute conn.halted
+    conn
+  end
+
+  defp send_ok(conn) do
+    conn
+    |> put_resp_header("etag", ~s("review-v1"))
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, ~s({"secret":"read after revocation"}))
+  end
+
+  describe "call/2 with a device revoked while the request is in flight" do
+    test "a GET answers 401 instead of the data", %{scope: scope, device: device} = ctx do
+      conn = authenticated(:get, ctx.access_token)
+      {:ok, _revoked} = Devices.revoke_device(scope, device)
+
+      conn = send_ok(conn)
+
+      assert json_response(conn, 401) == %{"error" => "Invalid access token"}
+      refute conn.resp_body =~ "secret"
+      assert get_resp_header(conn, "etag") == []
+    end
+
+    test "a GET answers 401 when the user is disabled meanwhile", %{scope: scope} = ctx do
+      conn = authenticated(:get, ctx.access_token)
+      scope.user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert json_response(send_ok(conn), 401) == %{"error" => "Invalid access token"}
+    end
+
+    test "a HEAD is re-checked like a GET", %{scope: scope, device: device} = ctx do
+      conn = authenticated(:head, ctx.access_token)
+      {:ok, _revoked} = Devices.revoke_device(scope, device)
+
+      assert send_ok(conn).status == 401
+    end
+
+    test "a GET for a device still signed in is sent unchanged", ctx do
+      conn = ctx.access_token |> then(&authenticated(:get, &1)) |> send_ok()
+
+      assert json_response(conn, 200) == %{"secret" => "read after revocation"}
+      assert get_resp_header(conn, "etag") == [~s("review-v1")]
+    end
+
+    test "an error response is not re-checked", %{scope: scope, device: device} = ctx do
+      conn = authenticated(:get, ctx.access_token)
+      {:ok, _revoked} = Devices.revoke_device(scope, device)
+
+      assert conn |> send_resp(404, ~s({"error":"Not Found"})) |> Map.fetch!(:status) == 404
+    end
+
+    test "a write keeps the answer it committed", %{scope: scope} do
+      for method <- [:post, :put, :delete] do
+        {device, issued} = device_with_tokens_fixture(scope)
+        conn = authenticated(method, issued.access_token)
+        {:ok, _revoked} = Devices.revoke_device(scope, device)
+
+        assert send_ok(conn).status == 200, "#{method} was rewritten"
+      end
+    end
+  end
 end

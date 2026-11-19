@@ -6,9 +6,18 @@ defmodule Kanban.Devices.CurrentDevice do
   `Kanban.Devices.update_current/4`.
 
   A push token belongs to one app install, so it is unique among devices.
-  When the app registers a token another device still holds, such as the
-  device the same phone was signed in as before, the token moves: the other
-  device's token is cleared and this one gets it, in one transaction.
+  When the app registers a token another of the same person's devices still
+  holds, such as the device the same phone was signed in as before, the token
+  moves: the other device's token is cleared and this one gets it, in one
+  transaction.
+
+  A token another person's device holds never moves. Signing out or revoking
+  a device clears its push token, so a live device of someone else holding it
+  means the request is not from that install, and moving it would take that
+  person's pushes away and send this person's to their phone. The request is
+  refused as the unique index would refuse it: `push_token` "has already been
+  taken", which `PUT /api/me/devices/current` answers with `422`, and nothing
+  changes.
 
   The device and every device holding the new token are locked together,
   in id order, so two devices trading a token never deadlock, and a device
@@ -96,13 +105,28 @@ defmodule Kanban.Devices.CurrentDevice do
   end
 
   defp apply_update(device, others, attrs, now) do
-    changeset = Device.update_changeset(device, attrs, now)
+    changeset =
+      device
+      |> Device.update_changeset(attrs, now)
+      |> refuse_foreign_push_token(device, others)
 
     if changeset.valid? do
       release_push_token(changeset, others, now)
       Repo.update(changeset)
     else
       {:error, changeset}
+    end
+  end
+
+  # The locked rows other than the device all hold the requested token. One
+  # belonging to another person refuses it, with the unique index's message.
+  defp refuse_foreign_push_token(changeset, %Device{user_id: user_id}, others) do
+    if Enum.any?(others, &(&1.user_id != user_id)) do
+      Ecto.Changeset.add_error(changeset, :push_token, "has already been taken",
+        constraint: :unique
+      )
+    else
+      changeset
     end
   end
 
