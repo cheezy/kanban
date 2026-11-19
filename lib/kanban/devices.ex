@@ -8,8 +8,11 @@ defmodule Kanban.Devices do
   `/api/me/devices` build on. Redeeming an authorization code lives in
   `Kanban.Devices.CodeExchange`, behind `exchange_authorization_code/4`;
   revoking a device in `Kanban.Devices.Revocation`, behind `revoke_device/4`;
-  and the app updating its own device in `Kanban.Devices.CurrentDevice`,
-  behind `update_current/4`.
+  the app updating its own device in `Kanban.Devices.CurrentDevice`,
+  behind `update_current/4`; and an org-admin listing and revoking a
+  member's devices in `Kanban.Devices.MemberDevices`, behind
+  `list_devices_for_member/2`, `revoke_member_device/3` and
+  `revoke_all_for_member/3`.
 
     * **Access tokens** last one hour.
     * **Refresh tokens** rotate: each use returns a new pair and uses up the
@@ -57,6 +60,7 @@ defmodule Kanban.Devices do
   alias Kanban.Devices.CurrentDevice
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Devices.MemberDevices
   alias Kanban.Devices.Revocation
   alias Kanban.Devices.TokenPairs
   alias Kanban.Organizations
@@ -249,7 +253,8 @@ defmodule Kanban.Devices do
   signs itself out, `:ip`, recorded on the audit row, and `:by_device`, the
   device the request came from: when that device has been revoked, as it
   can be while its request is in flight, nothing is revoked and the result
-  is `{:error, :revoked}`.
+  is `{:error, :revoked}`. With `report_unchanged: true`, a device found
+  already revoked is `{:error, :already_revoked}`.
 
   A device that is already revoked is returned unchanged, and nothing is
   written or broadcast again. A device of another user is
@@ -257,7 +262,7 @@ defmodule Kanban.Devices do
   mistaken for it.
   """
   @spec revoke_device(Scope.t(), Device.t(), DateTime.t(), keyword()) ::
-          {:ok, Device.t()} | {:error, :not_found | :revoked}
+          {:ok, Device.t()} | {:error, :not_found | :revoked | :already_revoked}
   def revoke_device(scope, device, now \\ DateTime.utc_now(), opts \\ [])
 
   def revoke_device(%Scope{} = scope, %Device{} = device, %DateTime{} = now, opts)
@@ -314,6 +319,65 @@ defmodule Kanban.Devices do
     )
     |> Repo.all()
   end
+
+  @doc """
+  Subscribes the calling process to the scope user's device revocations,
+  `{:device_revoked, device_id}`, whoever revokes them. See
+  `Kanban.Devices.Revocation.user_topic/1`.
+  """
+  @spec subscribe_devices(Scope.t()) :: :ok | {:error, term()}
+  def subscribe_devices(%Scope{user: %User{id: user_id}}), do: Revocation.subscribe_user(user_id)
+
+  @doc """
+  As `list_devices_for_member/2`, and on success also subscribes the calling
+  process to that member's device revocations, so an org-admin's open list
+  can be read again when one is revoked elsewhere. Undone by
+  `unwatch_member_devices/1`.
+  """
+  @spec watch_member_devices(Scope.t(), term()) ::
+          {:ok, [Device.t()]} | {:error, MemberDevices.error()}
+  defdelegate watch_member_devices(scope, member_user_id), to: MemberDevices, as: :watch
+
+  @doc "Unsubscribes the calling process from a member's device revocations."
+  @spec unwatch_member_devices(pos_integer()) :: :ok
+  defdelegate unwatch_member_devices(member_user_id), to: Revocation, as: :unsubscribe_user
+
+  @doc """
+  Lists the devices, not revoked, of the member with `member_user_id` of the
+  scope user's Organization, newest first, for an org-admin.
+
+  `{:error, :unauthorized}` unless the scope user is an enabled org-admin,
+  `{:error, :not_found}` for a user outside their Organization or an id that
+  names no one, and `{:error, :org_admin}` for another org-admin. See
+  `Kanban.Devices.MemberDevices`.
+  """
+  @spec list_devices_for_member(Scope.t(), term()) ::
+          {:ok, [Device.t()]} | {:error, MemberDevices.error()}
+  defdelegate list_devices_for_member(scope, member_user_id), to: MemberDevices, as: :list
+
+  @doc """
+  Revokes, for an org-admin at `now`, the device with `device_id` of a member
+  of their Organization, with the reason `:org_admin`. Refused as
+  `list_devices_for_member/2` refuses; a device outside the Organization is
+  `{:error, :not_found}`, and one that was already revoked is
+  `{:error, :already_revoked}` and left unchanged. See
+  `Kanban.Devices.MemberDevices`.
+  """
+  @spec revoke_member_device(Scope.t(), term(), DateTime.t()) ::
+          {:ok, Device.t()} | {:error, MemberDevices.error()}
+  def revoke_member_device(%Scope{} = scope, device_id, now \\ DateTime.utc_now()),
+    do: MemberDevices.revoke_one(scope, device_id, truncate(now))
+
+  @doc """
+  Revokes, for an org-admin at `now`, every device of the member with
+  `member_user_id` of their Organization, with the reason `:org_admin`, and
+  returns the devices it revoked. Refused as `list_devices_for_member/2`
+  refuses. See `Kanban.Devices.MemberDevices`.
+  """
+  @spec revoke_all_for_member(Scope.t(), term(), DateTime.t()) ::
+          {:ok, [Device.t()]} | {:error, MemberDevices.error()}
+  def revoke_all_for_member(%Scope{} = scope, member_user_id, now \\ DateTime.utc_now()),
+    do: MemberDevices.revoke_all(scope, member_user_id, truncate(now))
 
   @doc """
   Issues a one-time authorization code for the scope's user at `now`. The

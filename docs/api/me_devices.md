@@ -133,15 +133,22 @@ However a device is revoked, once the revocation commits Stride:
 - writes a `device_revoked` audit event with a `reason`:
   - `sign_out`: the app signed itself out, through
     `DELETE /api/me/devices/current` or `POST /oauth/revoke`;
-  - `user`: the person revoked it through `DELETE /api/me/devices/:id`;
-  - `org_admin`: an Organization admin revoked it;
+  - `user`: the person revoked it through `DELETE /api/me/devices/:id`, or
+    from the Devices section of `/users/settings`;
+  - `org_admin`: an Organization admin revoked it, or all of a member's
+    devices, from the Members section of the org console (`/org`);
   - `reuse_detected`: an old refresh token was presented again (see
     [POST /oauth/token](post_oauth_token.md)).
 - emits `[:kanban, :device, :revoked]` with the platform and the reason
   ([telemetry](../telemetry.md#mobile-app-events)).
 - broadcasts a `disconnect` on the PubSub topic `device:<id>`, so a socket the
   device opened is closed.
+- broadcasts `{:device_revoked, device_id}` on the owner's PubSub topic
+  `user_devices:<user id>`, so an open Devices section of `/users/settings`,
+  and an org-admin's open list of that member's devices in `/org`, drop the
+  device at once instead of on the next action.
 
-A device that was already revoked records nothing again. Neither the audit event
+A device that was already revoked records nothing again, and revoking it again
+from either page says it was already signed out. Neither the audit event
 nor the telemetry carries a token, and the telemetry never carries the device's
 name.

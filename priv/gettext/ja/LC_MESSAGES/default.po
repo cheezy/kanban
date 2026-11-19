@@ -1698,6 +1698,7 @@ msgstr "Phoenixチャネル"
 msgid "PubSub Broadcasts"
 msgstr "PubSubブロードキャスト"
 
+#: lib/kanban_web/components/device_list.ex
 #: lib/kanban_web/live/board_live/show.html.heex
 #: lib/kanban_web/live/org_live/scim.html.heex
 #: lib/kanban_web/live/workspace_live/invitations_card.ex
@@ -10752,6 +10753,7 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr "このワークスペースに参加するユーザーと、含まれるボードを管理します。"
 
 #: lib/kanban_web/live/org_live/console.ex
+#: lib/kanban_web/live/org_live/console_member_devices.ex
 #: lib/kanban_web/live/workspace_live/settings.ex
 #, elixir-autogen, elixir-format
 msgid "Member not found."
@@ -13999,6 +14001,7 @@ msgstr "最終配信"
 msgid "Needs attention"
 msgstr "要対応"
 
+#: lib/kanban_web/components/device_list.ex
 #: lib/kanban_web/live/org_live/audit_streaming_row.ex
 #, elixir-autogen, elixir-format
 msgid "Never"
@@ -15354,3 +15357,104 @@ msgstr "モバイルアプリ"
 msgctxt "audit action"
 msgid "Device revoked"
 msgstr "デバイスの取り消し"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} device revoked."
+msgid_plural "%{count} devices revoked."
+msgstr[0] "%{count} 台のデバイスを取り消しました。"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#, elixir-autogen, elixir-format
+msgid "An org-admin's devices can't be managed here."
+msgstr "組織管理者のデバイスはここでは管理できません。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Android"
+msgstr "Android"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "App %{version}"
+msgstr "アプリ %{version}"
+
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Device not found."
+msgstr "デバイスが見つかりません。"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Device revoked."
+msgstr "デバイスを取り消しました。"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#: lib/kanban_web/live/user_live/settings.ex
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Devices"
+msgstr "デバイス"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen"
+msgstr "最終利用"
+
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "No phones or tablets are signed in to your account."
+msgstr "あなたのアカウントにサインインしているスマートフォンやタブレットはありません。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Phone"
+msgstr "スマートフォン"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "Revoke all"
+msgstr "すべて取り消し"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "Revoke all of this member's devices? Each one is signed out of Stride and must sign in again."
+msgstr "このメンバーのすべてのデバイスを取り消しますか？各デバイスは Stride からサインアウトされ、再度サインインが必要になります。"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Revoke this device? It is signed out of Stride and must sign in again."
+msgstr "このデバイスを取り消しますか？Stride からサインアウトされ、再度サインインが必要になります。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Tablet"
+msgstr "タブレット"
+
+#: lib/kanban_web/live/user_live/settings.ex
+#, elixir-autogen, elixir-format
+msgid "The phones and tablets signed in to your account. Revoke one you no longer use or have lost: it is signed out at once."
+msgstr "あなたのアカウントにサインインしているスマートフォンとタブレットです。使わなくなったデバイスや紛失したデバイスを取り消すと、すぐにサインアウトされます。"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "This member has no phones or tablets signed in."
+msgstr "このメンバーにはサインイン中のスマートフォンやタブレットがありません。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "iOS"
+msgstr "iOS"
+
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "phones · tablets"
+msgstr "スマートフォン · タブレット"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "That device was already signed out."
+msgstr "そのデバイスはすでにサインアウトされています。"

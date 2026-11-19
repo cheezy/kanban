@@ -1698,6 +1698,7 @@ msgstr ""
 msgid "PubSub Broadcasts"
 msgstr ""
 
+#: lib/kanban_web/components/device_list.ex
 #: lib/kanban_web/live/board_live/show.html.heex
 #: lib/kanban_web/live/org_live/scim.html.heex
 #: lib/kanban_web/live/workspace_live/invitations_card.ex
@@ -10734,6 +10735,7 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr ""
 
 #: lib/kanban_web/live/org_live/console.ex
+#: lib/kanban_web/live/org_live/console_member_devices.ex
 #: lib/kanban_web/live/workspace_live/settings.ex
 #, elixir-autogen, elixir-format
 msgid "Member not found."
@@ -13989,6 +13991,7 @@ msgstr ""
 msgid "Needs attention"
 msgstr ""
 
+#: lib/kanban_web/components/device_list.ex
 #: lib/kanban_web/live/org_live/audit_streaming_row.ex
 #, elixir-autogen, elixir-format
 msgid "Never"
@@ -15352,4 +15355,106 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Device revoked"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} device revoked."
+msgid_plural "%{count} devices revoked."
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#, elixir-autogen, elixir-format
+msgid "An org-admin's devices can't be managed here."
+msgstr ""
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Android"
+msgstr ""
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "App %{version}"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Device not found."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Device revoked."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#: lib/kanban_web/live/user_live/settings.ex
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Devices"
+msgstr ""
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "No phones or tablets are signed in to your account."
+msgstr ""
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Phone"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "Revoke all"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "Revoke all of this member's devices? Each one is signed out of Stride and must sign in again."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Revoke this device? It is signed out of Stride and must sign in again."
+msgstr ""
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Tablet"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings.ex
+#, elixir-autogen, elixir-format
+msgid "The phones and tablets signed in to your account. Revoke one you no longer use or have lost: it is signed out at once."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "This member has no phones or tablets signed in."
+msgstr ""
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "iOS"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "phones · tablets"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "That device was already signed out."
 msgstr ""

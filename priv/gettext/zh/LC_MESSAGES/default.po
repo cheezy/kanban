@@ -1698,6 +1698,7 @@ msgstr "Phoenix 通道"
 msgid "PubSub Broadcasts"
 msgstr "PubSub 广播"
 
+#: lib/kanban_web/components/device_list.ex
 #: lib/kanban_web/live/board_live/show.html.heex
 #: lib/kanban_web/live/org_live/scim.html.heex
 #: lib/kanban_web/live/workspace_live/invitations_card.ex
@@ -10755,6 +10756,7 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr "管理此工作区的成员及其包含的看板。"
 
 #: lib/kanban_web/live/org_live/console.ex
+#: lib/kanban_web/live/org_live/console_member_devices.ex
 #: lib/kanban_web/live/workspace_live/settings.ex
 #, elixir-autogen, elixir-format
 msgid "Member not found."
@@ -14002,6 +14004,7 @@ msgstr "上次送达"
 msgid "Needs attention"
 msgstr "需要处理"
 
+#: lib/kanban_web/components/device_list.ex
 #: lib/kanban_web/live/org_live/audit_streaming_row.ex
 #, elixir-autogen, elixir-format
 msgid "Never"
@@ -15357,3 +15360,104 @@ msgstr "移动应用"
 msgctxt "audit action"
 msgid "Device revoked"
 msgstr "设备已撤销"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} device revoked."
+msgid_plural "%{count} devices revoked."
+msgstr[0] "已撤销 %{count} 台设备。"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#, elixir-autogen, elixir-format
+msgid "An org-admin's devices can't be managed here."
+msgstr "无法在此管理组织管理员的设备。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Android"
+msgstr "Android"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "App %{version}"
+msgstr "应用 %{version}"
+
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Device not found."
+msgstr "未找到设备。"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Device revoked."
+msgstr "设备已撤销。"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#: lib/kanban_web/live/user_live/settings.ex
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Devices"
+msgstr "设备"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Last seen"
+msgstr "上次使用"
+
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "No phones or tablets are signed in to your account."
+msgstr "没有手机或平板电脑登录您的账户。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Phone"
+msgstr "手机"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "Revoke all"
+msgstr "全部撤销"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "Revoke all of this member's devices? Each one is signed out of Stride and must sign in again."
+msgstr "撤销该成员的所有设备？每台设备都会退出 Stride，必须重新登录。"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "Revoke this device? It is signed out of Stride and must sign in again."
+msgstr "撤销此设备？它将退出 Stride，必须重新登录。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "Tablet"
+msgstr "平板电脑"
+
+#: lib/kanban_web/live/user_live/settings.ex
+#, elixir-autogen, elixir-format
+msgid "The phones and tablets signed in to your account. Revoke one you no longer use or have lost: it is signed out at once."
+msgstr "登录您账户的手机和平板电脑。撤销您不再使用或已丢失的设备：它会立即退出登录。"
+
+#: lib/kanban_web/live/org_live/console.html.heex
+#, elixir-autogen, elixir-format
+msgid "This member has no phones or tablets signed in."
+msgstr "该成员没有已登录的手机或平板电脑。"
+
+#: lib/kanban_web/components/device_list.ex
+#, elixir-autogen, elixir-format
+msgid "iOS"
+msgstr "iOS"
+
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "phones · tablets"
+msgstr "手机 · 平板电脑"
+
+#: lib/kanban_web/live/org_live/console_member_devices.ex
+#: lib/kanban_web/live/user_live/devices_component.ex
+#, elixir-autogen, elixir-format
+msgid "That device was already signed out."
+msgstr "该设备已经退出登录。"

@@ -6,11 +6,12 @@ defmodule KanbanWeb.UserLive.Settings do
   import KanbanWeb.UserLive.SettingsComponents
 
   alias Kanban.Accounts
+  alias Kanban.Devices
   alias Kanban.Plans
   alias Kanban.SSO
   alias KanbanWeb.UserAuth
 
-  @sections ["profile", "password", "two_factor", "sso", "danger_zone"]
+  @sections ["profile", "password", "two_factor", "sso", "devices", "danger_zone"]
 
   @impl true
   def render(assigns) do
@@ -204,6 +205,26 @@ defmodule KanbanWeb.UserLive.Settings do
         </.settings_card>
 
         <.settings_card
+          :if={@section == :devices}
+          id="devices"
+          tab={:devices}
+          title={gettext("Devices")}
+          hint={
+            gettext(
+              "The phones and tablets signed in to your account. Revoke one you no longer use or have lost: it is signed out at once."
+            )
+          }
+          compact
+        >
+          <.live_component
+            module={KanbanWeb.UserLive.DevicesComponent}
+            id="devices-section"
+            current_scope={@current_scope}
+            rev={@devices_rev}
+          />
+        </.settings_card>
+
+        <.settings_card
           :if={@section == :danger_zone}
           id="danger_zone"
           tab={:danger_zone}
@@ -281,14 +302,16 @@ defmodule KanbanWeb.UserLive.Settings do
       |> assign(:password_form, to_form(password_changeset))
       |> assign(:trigger_submit, false)
       |> assign(:section, :profile)
+      |> assign(:devices_rev, 0)
       |> assign(:sso_locked?, not Plans.user_unlocked?(socket.assigns.current_scope))
       |> assign(:sso_linked?, SSO.user_has_identity?(user))
+      |> subscribe_devices()
 
     {:ok, socket}
   end
 
   # The other settings pages link here with ?section=password (or two_factor,
-  # sso, danger_zone) to open that tab.
+  # sso, devices, danger_zone) to open that tab.
   @impl true
   def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
@@ -355,6 +378,18 @@ defmodule KanbanWeb.UserLive.Settings do
   def handle_info({:account_deleted, session_tokens}, socket) do
     UserAuth.disconnect_sessions(session_tokens)
     {:noreply, socket}
+  end
+
+  # A new :devices_rev updates the Devices component in this same render,
+  # which reads the person's devices again.
+  def handle_info({:device_revoked, _device_id}, socket),
+    do: {:noreply, update(socket, :devices_rev, &(&1 + 1))}
+
+  # A device revoked on another page, by the person, an org-admin or the
+  # device itself, leaves the Devices section at once (handle_info/2).
+  defp subscribe_devices(socket) do
+    if connected?(socket), do: Devices.subscribe_devices(socket.assigns.current_scope)
+    socket
   end
 
   defp email_changed?(user_params, user) do

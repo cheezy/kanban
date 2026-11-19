@@ -986,8 +986,9 @@ sign-in and revocation events. They are declared in
   device class as strings. `revoked` carries the platform and the fixed
   `reason` atom: `:sign_out` (the app signed itself out, through
   `DELETE /api/me/devices/current` or `POST /oauth/revoke`), `:user` (the
-  person revoked it through `DELETE /api/me/devices/:id`), `:org_admin` (an
-  Organization admin revoked it) or `:reuse_detected` (an old refresh token
+  person revoked it through `DELETE /api/me/devices/:id` or on
+  `/users/settings`), `:org_admin` (an Organization admin revoked it from the
+  org console's Members section) or `:reuse_detected` (an old refresh token
   was presented again). `reason` is its only tag. Neither carries the
   device's name, a token, a user or an id: the `:device_signed_in` and
   `:device_revoked` audit rows record who and which device, so neither event

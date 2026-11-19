@@ -1875,11 +1875,19 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         )
         |> List.flatten()
 
-      assert tabs == ["Profile", "Password", "Two-factor", "Single sign-on", "Delete account"]
-      assert account =~ "Settings has five tabs"
+      assert tabs == [
+               "Profile",
+               "Password",
+               "Two-factor",
+               "Single sign-on",
+               "Devices",
+               "Delete account"
+             ]
+
+      assert account =~ "Settings has six tabs"
 
       assert Enum.map(tabs, &"- **#{&1}**") ==
-               Regex.scan(~r/^- \*\*[^*]+\*\*/m, account) |> List.flatten() |> Enum.take(5)
+               Regex.scan(~r/^- \*\*[^*]+\*\*/m, account) |> List.flatten() |> Enum.take(6)
 
       assert account =~ "[Notification preferences](/users/notifications)"
 
@@ -2319,8 +2327,10 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert router =~ ~s(live "/organizations/new", OrganizationLive.Form, :new)
       assert heex =~ "Read-only. Ask a site admin to change them."
 
-      assert console =~ "Org-admins have no **Remove** button"
+      assert console =~ "Org-admins have no **Remove** button and no **Devices** button"
       assert heex =~ ~r/:if=\{member\.role == :member\}/
+      assert heex =~ ~s(id={"member-devices-toggle-\#{member.user.id}"})
+      assert console =~ "**Revoke** signs one out at once and **Revoke all** signs out every one"
 
       assert console =~ "Stride refuses to remove, disable or delete its last one"
 

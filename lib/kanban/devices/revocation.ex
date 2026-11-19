@@ -13,7 +13,11 @@ defmodule Kanban.Devices.Revocation do
     * it emits `[:kanban, :device, :revoked]` with the device's platform and
       the reason, never the device's name, a token or an id;
     * it broadcasts `%Phoenix.Socket.Broadcast{event: "disconnect"}` on
-      `topic/1`, `"device:<id>"`, so a socket the device opened can be closed.
+      `topic/1`, `"device:<id>"`, so a socket the device opened can be closed;
+    * it broadcasts `{:device_revoked, device_id}` on `user_topic/1`,
+      `"user_devices:<user id>"`, the device owner's topic, so a page listing
+      their devices (`/users/settings`, the org console's Members section)
+      reads its list again at once. The message carries the id alone.
 
   A device that was already revoked is returned unchanged and announced
   again never: a repeated sign-out writes one audit row, not two.
@@ -56,6 +60,23 @@ defmodule Kanban.Devices.Revocation do
   def topic(device_id) when is_integer(device_id), do: "device:#{device_id}"
 
   @doc """
+  The PubSub topic a user's device revocations are broadcast on, as
+  `{:device_revoked, device_id}`: `"user_devices:<user id>"`.
+  """
+  @spec user_topic(pos_integer()) :: String.t()
+  def user_topic(user_id) when is_integer(user_id), do: "user_devices:#{user_id}"
+
+  @doc "Subscribes the calling process to `user_topic/1` for `user_id`."
+  @spec subscribe_user(pos_integer()) :: :ok | {:error, term()}
+  def subscribe_user(user_id) when is_integer(user_id),
+    do: Phoenix.PubSub.subscribe(Kanban.PubSub, user_topic(user_id))
+
+  @doc "Unsubscribes the calling process from `user_topic/1` for `user_id`."
+  @spec unsubscribe_user(pos_integer()) :: :ok
+  def unsubscribe_user(user_id) when is_integer(user_id),
+    do: Phoenix.PubSub.unsubscribe(Kanban.PubSub, user_topic(user_id))
+
+  @doc """
   Revokes one of the scope user's own devices at `now`, recording the scope
   user in `revoked_by_id`. See `Kanban.Devices.revoke_device/4`.
 
@@ -63,9 +84,13 @@ defmodule Kanban.Devices.Revocation do
   locked with the target, in id order, and a revoked one is refused with
   `{:error, :revoked}`: a device revoked while its request was in flight
   cannot revoke anything, itself included.
+
+  With `report_unchanged: true`, a device found already revoked under its
+  lock is `{:error, :already_revoked}` instead of being returned unchanged,
+  for a page that tells the person so.
   """
   @spec revoke_own(Scope.t(), Device.t(), DateTime.t(), keyword()) ::
-          {:ok, Device.t()} | {:error, :not_found | :revoked}
+          {:ok, Device.t()} | {:error, :not_found | :revoked | :already_revoked}
   def revoke_own(
         %Scope{user: %User{id: user_id} = owner},
         %Device{user_id: user_id} = device,
@@ -80,10 +105,14 @@ defmodule Kanban.Devices.Revocation do
       |> lock_devices(by_id)
       |> revoke_checked(device.id, by_id, user_id, now)
     end)
+    |> report_unchanged(Keyword.get(opts, :report_unchanged, false))
     |> announce(owner: owner, user_id: user_id, reason: reason, ip: Keyword.get(opts, :ip))
   end
 
   def revoke_own(%Scope{}, %Device{}, _now, _opts), do: {:error, :not_found}
+
+  defp report_unchanged({:ok, {:unchanged, %Device{}}}, true), do: {:error, :already_revoked}
+  defp report_unchanged(result, _report?), do: result
 
   @doc """
   Revokes a locked device row, by `revoked_by_id`, inside the caller's
@@ -156,6 +185,7 @@ defmodule Kanban.Devices.Revocation do
     )
 
     broadcast_disconnect(device.id)
+    Phoenix.PubSub.broadcast(Kanban.PubSub, user_topic(owner.id), {:device_revoked, device.id})
 
     {:ok, device}
   end

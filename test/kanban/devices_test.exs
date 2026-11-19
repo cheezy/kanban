@@ -493,16 +493,50 @@ defmodule Kanban.DevicesTest do
       assert [%{metadata: %{"reason" => "user"}}] = revoked_rows(scope.user.id)
     end
 
+    test "a revocation is broadcast to the owner's devices topic", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      :ok = Devices.subscribe_devices(scope)
+      other_scope = user_scope_fixture()
+      {:ok, _} = Devices.revoke_device(other_scope, device_fixture(other_scope, %{}, @t0))
+      refute_receive {:device_revoked, _}
+
+      {:ok, _} = Devices.revoke_device(scope, device, at(10))
+
+      id = device.id
+      assert_receive {:device_revoked, ^id}
+      assert Revocation.user_topic(scope.user.id) == "user_devices:#{scope.user.id}"
+    end
+
+    test "report_unchanged says a device revoked meanwhile was already revoked", %{
+      scope: scope
+    } do
+      stale = device_fixture(scope, %{}, @t0)
+      {:ok, _} = Devices.revoke_device(scope, stale, at(10))
+
+      assert {:error, :already_revoked} =
+               Devices.revoke_device(scope, stale, at(20), report_unchanged: true)
+
+      assert {:ok, %Device{revoked_at: revoked_at}} = Devices.revoke_device(scope, stale, at(30))
+      assert revoked_at == at(10)
+      assert [_one] = revoked_rows(scope.user.id)
+
+      live = device_fixture(scope, %{}, @t0)
+      assert {:ok, revoked} = Devices.revoke_device(scope, live, at(40), report_unchanged: true)
+      assert revoked.revoked_at == at(40)
+    end
+
     test "revoking an already revoked device announces nothing again", %{scope: scope} do
       device = device_fixture(scope, %{}, @t0)
       {:ok, _} = Devices.revoke_device(scope, device, at(10))
       assert_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
       Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+      :ok = Devices.subscribe_devices(scope)
 
       assert {:ok, again} = Devices.revoke_device(scope, device, at(20), reason: :sign_out)
       assert again.revoked_at == at(10)
 
       refute_receive %Phoenix.Socket.Broadcast{}
+      refute_receive {:device_revoked, _}
       refute_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
       assert [_one] = revoked_rows(scope.user.id)
     end
@@ -1152,6 +1186,221 @@ defmodule Kanban.DevicesTest do
       assert is_nil(Repo.get!(Device, device.id).revoked_at)
       assert Devices.device_id_for_refresh_token(issued.access_token) == nil
       assert Devices.device_id_for_refresh_token(%{}) == nil
+    end
+  end
+
+  describe "org-admin member devices (W2749)" do
+    setup do
+      organization = organization_fixture()
+      admin = user_fixture()
+      organization_member_fixture(organization, admin, :org_admin)
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+
+      %{
+        organization: organization,
+        admin: admin,
+        admin_scope: user_scope_fixture(admin),
+        member: member,
+        member_scope: user_scope_fixture(member)
+      }
+    end
+
+    defp org_admin_revoked_events(admin_id),
+      do: AuditLog.list_events(action: "device_revoked", actor_user_id: admin_id)
+
+    test "an org-admin can list and revoke a member's devices; a member cannot", ctx do
+      first = device_fixture(ctx.member_scope, %{name: "Phone"}, @t0)
+      {second, issued} = device_with_tokens_fixture(ctx.member_scope, %{name: "Tablet"}, at(1))
+      third = device_fixture(ctx.member_scope, %{name: "Spare"}, at(2))
+
+      assert {:ok, listed} = Devices.list_devices_for_member(ctx.admin_scope, ctx.member.id)
+      assert Enum.map(listed, & &1.id) == [third.id, second.id, first.id]
+
+      assert {:error, :unauthorized} =
+               Devices.list_devices_for_member(ctx.member_scope, ctx.member.id)
+
+      assert {:error, :unauthorized} =
+               Devices.revoke_member_device(ctx.member_scope, first.id, at(5))
+
+      assert {:error, :unauthorized} =
+               Devices.revoke_all_for_member(ctx.member_scope, ctx.member.id, at(5))
+
+      assert is_nil(Repo.get!(Device, first.id).revoked_at)
+
+      assert {:ok, revoked} = Devices.revoke_member_device(ctx.admin_scope, first.id, at(10))
+      assert revoked.revoked_at == at(10)
+      assert revoked.revoked_by_id == ctx.admin.id
+
+      assert [event] = org_admin_revoked_events(ctx.admin.id)
+      assert event.metadata["reason"] == "org_admin"
+      assert event.metadata["device_id"] == first.id
+      assert event.metadata["device_user_id"] == ctx.member.id
+      assert event.organization_id == ctx.organization.id
+
+      assert {:ok, all} = Devices.revoke_all_for_member(ctx.admin_scope, ctx.member.id, at(20))
+      assert all |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([second.id, third.id])
+
+      assert Devices.fetch_by_access_token(issued.access_token, at(21)) ==
+               {:error, :invalid_token}
+
+      assert length(org_admin_revoked_events(ctx.admin.id)) == 3
+
+      assert {:ok, []} = Devices.list_devices_for_member(ctx.admin_scope, ctx.member.id)
+      assert {:ok, []} = Devices.revoke_all_for_member(ctx.admin_scope, ctx.member.id, at(30))
+      assert length(org_admin_revoked_events(ctx.admin.id)) == 3
+    end
+
+    test "revoking an already-revoked device changes nothing and audits nothing", ctx do
+      device = device_fixture(ctx.member_scope, %{}, @t0)
+      {:ok, _revoked} = Devices.revoke_member_device(ctx.admin_scope, device.id, at(1))
+      :ok = Devices.subscribe_devices(ctx.member_scope)
+
+      assert {:error, :already_revoked} =
+               Devices.revoke_member_device(ctx.admin_scope, device.id, at(2))
+
+      assert Repo.get!(Device, device.id).revoked_at == at(1)
+      assert length(org_admin_revoked_events(ctx.admin.id)) == 1
+      refute_receive {:device_revoked, _}
+    end
+
+    test "watching a member's devices subscribes only an org-admin to that member", ctx do
+      device = device_fixture(ctx.member_scope, %{}, @t0)
+      other_scope = user_scope_fixture()
+      other = device_fixture(other_scope, %{}, @t0)
+
+      assert {:error, :unauthorized} =
+               Devices.watch_member_devices(ctx.member_scope, ctx.member.id)
+
+      {:ok, _} = Devices.revoke_device(ctx.member_scope, device_fixture(ctx.member_scope))
+      refute_receive {:device_revoked, _}
+
+      assert {:ok, [%Device{id: id}]} =
+               Devices.watch_member_devices(ctx.admin_scope, to_string(ctx.member.id))
+
+      assert id == device.id
+
+      {:ok, _} = Devices.revoke_member_device(ctx.admin_scope, device.id, at(1))
+      assert_receive {:device_revoked, ^id}
+
+      {:ok, _} = Devices.revoke_device(other_scope, other)
+      refute_receive {:device_revoked, _}
+
+      :ok = Devices.unwatch_member_devices(ctx.member.id)
+      {:ok, _} = Devices.revoke_device(ctx.member_scope, device_fixture(ctx.member_scope))
+      refute_receive {:device_revoked, _}
+    end
+
+    test "a device or user outside the Organization is not found", ctx do
+      outsider = user_fixture()
+      organization_member_fixture(organization_fixture(), outsider, :member)
+      outsider_scope = user_scope_fixture(outsider)
+      outside_device = device_fixture(outsider_scope, %{}, @t0)
+      loner_device = device_fixture(ctx.scope, %{}, @t0)
+
+      assert {:error, :not_found} = Devices.list_devices_for_member(ctx.admin_scope, outsider.id)
+
+      assert {:error, :not_found} =
+               Devices.revoke_member_device(ctx.admin_scope, outside_device.id, at(1))
+
+      assert {:error, :not_found} =
+               Devices.revoke_member_device(ctx.admin_scope, loner_device.id, at(1))
+
+      assert {:error, :not_found} =
+               Devices.revoke_all_for_member(ctx.admin_scope, outsider.id, at(1))
+
+      assert is_nil(Repo.get!(Device, outside_device.id).revoked_at)
+      assert is_nil(Repo.get!(Device, loner_device.id).revoked_at)
+      assert org_admin_revoked_events(ctx.admin.id) == []
+    end
+
+    test "an org-admin's devices are refused", ctx do
+      other_admin = user_fixture()
+      organization_member_fixture(ctx.organization, other_admin, :org_admin)
+      device = device_fixture(user_scope_fixture(other_admin), %{}, @t0)
+
+      assert {:error, :org_admin} =
+               Devices.list_devices_for_member(ctx.admin_scope, other_admin.id)
+
+      assert {:error, :org_admin} =
+               Devices.revoke_member_device(ctx.admin_scope, device.id, at(1))
+
+      assert {:error, :org_admin} =
+               Devices.revoke_all_for_member(ctx.admin_scope, other_admin.id, at(1))
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+    end
+
+    test "ids that cannot name a row are not found", ctx do
+      for id <- ["abc", "1.5", "", -1, 0, 9_223_372_036_854_775_808, nil, %{}] do
+        assert {:error, :not_found} = Devices.list_devices_for_member(ctx.admin_scope, id)
+        assert {:error, :not_found} = Devices.revoke_member_device(ctx.admin_scope, id, at(1))
+        assert {:error, :not_found} = Devices.revoke_all_for_member(ctx.admin_scope, id, at(1))
+      end
+    end
+
+    test "a string id is accepted", ctx do
+      device = device_fixture(ctx.member_scope, %{}, @t0)
+
+      assert {:ok, [_]} =
+               Devices.list_devices_for_member(ctx.admin_scope, Integer.to_string(ctx.member.id))
+
+      assert {:ok, _} =
+               Devices.revoke_member_device(ctx.admin_scope, Integer.to_string(device.id), at(1))
+    end
+
+    test "a demoted or disabled org-admin is refused", ctx do
+      device = device_fixture(ctx.member_scope, %{}, @t0)
+
+      OrganizationMember
+      |> Repo.get_by!(user_id: ctx.admin.id)
+      |> Ecto.Changeset.change(role: :member)
+      |> Repo.update!()
+
+      assert {:error, :unauthorized} =
+               Devices.revoke_member_device(ctx.admin_scope, device.id, at(1))
+
+      other_admin = user_fixture()
+      organization_member_fixture(ctx.organization, other_admin, :org_admin)
+      disable(other_admin)
+
+      disabled_scope = user_scope_fixture(other_admin)
+
+      assert {:error, :unauthorized} =
+               Devices.list_devices_for_member(disabled_scope, ctx.member.id)
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+    end
+
+    test "a member who left the Organization is not found", ctx do
+      device = device_fixture(ctx.member_scope, %{}, @t0)
+
+      OrganizationMember
+      |> Repo.get_by!(user_id: ctx.member.id)
+      |> Repo.delete!()
+
+      assert {:error, :not_found} =
+               Devices.revoke_member_device(ctx.admin_scope, device.id, at(1))
+
+      assert {:error, :not_found} =
+               Devices.list_devices_for_member(ctx.admin_scope, ctx.member.id)
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+    end
+
+    test "an org-admin revoke emits telemetry and broadcasts the disconnect", ctx do
+      device =
+        device_fixture(ctx.member_scope, %{platform: :android, client_id: "stride-android"}, @t0)
+
+      attach_telemetry([:kanban, :device, :revoked])
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+      {:ok, _revoked} = Devices.revoke_member_device(ctx.admin_scope, device.id, at(1))
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], %{count: 1},
+                      %{platform: "android", reason: :org_admin}}
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
     end
   end
 end

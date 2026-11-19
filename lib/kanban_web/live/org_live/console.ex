@@ -15,8 +15,14 @@ defmodule KanbanWeb.OrgLive.Console do
       opens. Each ordinary member has a Remove action
       (`Kanban.Organizations.MemberRemoval`), which also removes them from
       every workspace of the Organization and its boards and revokes their API
-      tokens there. Org-admins have none: appointing and removing org-admins
-      stays with site admins.
+      tokens there. Each ordinary member also has a Devices action that opens
+      their signed-in phones and tablets, each with Revoke, and a Revoke all
+      (`Kanban.Devices.list_devices_for_member/2`,
+      `Kanban.Devices.revoke_member_device/3`,
+      `Kanban.Devices.revoke_all_for_member/3`, reason `:org_admin`).
+      Org-admins have neither: appointing and removing org-admins stays with
+      site admins, and an org-admin manages their own devices on
+      `/users/settings`.
     * Workspaces - the Organization's unarchived workspaces, which the
       org-admin creates, renames and archives through
       `Kanban.Organizations.OrgWorkspaces`. Archived workspaces are hidden.
@@ -30,6 +36,7 @@ defmodule KanbanWeb.OrgLive.Console do
   use KanbanWeb, :live_view
 
   import KanbanWeb.Components.AccountStatus
+  import KanbanWeb.Components.DeviceList, only: [device_list: 1]
 
   import KanbanWeb.OrgLive.OrgAdminCheck, only: [with_org_admin: 2, refuse: 1]
   import KanbanWeb.UserLive.SettingsComponents, only: [section_tab: 1, settings_card: 1]
@@ -42,6 +49,7 @@ defmodule KanbanWeb.OrgLive.Console do
   alias Kanban.Organizations.OrgWorkspaces
   alias Kanban.Workspaces.Current
   alias Kanban.Workspaces.Workspace
+  alias KanbanWeb.OrgLive.ConsoleMemberDevices
 
   # The router's live_session :require_authenticated_user lets in every
   # signed-in user. Re-declaring the org-admin gate here keeps the console
@@ -83,6 +91,7 @@ defmodule KanbanWeb.OrgLive.Console do
     |> assign(:create_rev, 0)
     |> assign(:create_form, create_form(0))
     |> reset_rename()
+    |> ConsoleMemberDevices.close()
     |> assign(:section, :details)
   end
 
@@ -94,6 +103,7 @@ defmodule KanbanWeb.OrgLive.Console do
     {:noreply,
      socket
      |> assign(:members, Organizations.list_members(socket.assigns.organization))
+     |> ConsoleMemberDevices.close()
      |> assign(:section, :members)}
   end
 
@@ -166,11 +176,40 @@ defmodule KanbanWeb.OrgLive.Console do
 
   def handle_event("remove_member", _params, socket), do: {:noreply, socket}
 
+  # Like remove_member, the ids from these events are only hints: the Devices
+  # context re-checks the org-admin and reaches only devices of an ordinary
+  # member of this Organization.
+  def handle_event("show_member_devices", %{"user_id" => user_id}, socket)
+      when is_binary(user_id) or is_integer(user_id) do
+    with_org_admin(socket, fn _actor -> ConsoleMemberDevices.toggle(socket, user_id) end)
+  end
+
+  def handle_event("revoke_member_device", %{"device_id" => device_id}, socket)
+      when is_binary(device_id) or is_integer(device_id) do
+    with_org_admin(socket, fn _actor -> ConsoleMemberDevices.revoke_one(socket, device_id) end)
+  end
+
+  def handle_event("revoke_member_devices", %{"user_id" => user_id}, socket)
+      when is_binary(user_id) or is_integer(user_id) do
+    with_org_admin(socket, fn _actor -> ConsoleMemberDevices.revoke_all(socket, user_id) end)
+  end
+
+  # A crafted device event with no id, or an id that is not a string or an
+  # integer, changes nothing.
+  def handle_event(event, _params, socket)
+      when event in ["show_member_devices", "revoke_member_device", "revoke_member_devices"],
+      do: {:noreply, socket}
+
   # A crafted workspace event with no id, or an id that is not a string or an
   # integer, changes nothing.
   def handle_event(event, _params, socket)
       when event in ["start_rename", "rename_workspace", "archive_workspace"],
       do: {:noreply, socket}
+
+  # A device of the member whose devices are open was revoked on another page.
+  @impl true
+  def handle_info({:device_revoked, _device_id}, socket),
+    do: ConsoleMemberDevices.refresh(socket)
 
   defp respond_to_member_removal({:ok, _membership}, socket) do
     {:noreply,
@@ -195,8 +234,11 @@ defmodule KanbanWeb.OrgLive.Console do
      |> refresh_members()}
   end
 
-  defp refresh_members(socket),
-    do: assign(socket, :members, Organizations.list_members(socket.assigns.organization))
+  defp refresh_members(socket) do
+    socket
+    |> assign(:members, Organizations.list_members(socket.assigns.organization))
+    |> ConsoleMemberDevices.close_if_gone()
+  end
 
   defp respond_to_create({:ok, _workspace}, actor, socket) do
     {:noreply,

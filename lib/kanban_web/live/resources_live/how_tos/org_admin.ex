@@ -54,7 +54,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Members",
             content:
-              "**Members** lists everyone in the Organization, org-admins first, with each person's role: **Org-admin** or **Member**. **Disabled** marks an account that can't sign in, and **Unconfirmed** one that hasn't confirmed its email address yet.\n\n**Remove** takes a member out of the Organization. They leave every one of its workspaces, lose their board memberships and API tokens there, and their open tasks are unassigned. If your Organization uses single sign-on, a removed person can sign in again through it until your identity provider stops them.",
+              "**Members** lists everyone in the Organization, org-admins first, with each person's role: **Org-admin** or **Member**. **Disabled** marks an account that can't sign in, and **Unconfirmed** one that hasn't confirmed its email address yet.\n\n**Remove** takes a member out of the Organization. They leave every one of its workspaces, lose their board memberships and API tokens there, and their open tasks are unassigned. If your Organization uses single sign-on, a removed person can sign in again through it until your identity provider stops them.\n\n**Devices** shows the phones and tablets a member is signed in to Stride on. **Revoke** signs one out at once and **Revoke all** signs out every one; each is recorded in the audit log. Removing a member does not sign out their devices.",
             image: "/images/resources/guides/administering-your-organization-step-4.png",
             image_width: 981,
             image_height: 228
@@ -62,7 +62,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Org-Admins",
             content:
-              "Org-admins have no **Remove** button. Stride staff appoint and remove org-admins.\n\nAn Organization that has other members always keeps at least one enabled org-admin, so someone can always manage it. Stride refuses to remove, disable or delete its last one until another org-admin is appointed.",
+              "Org-admins have no **Remove** button and no **Devices** button: an org-admin manages their own devices on their settings page. Stride staff appoint and remove org-admins.\n\nAn Organization that has other members always keeps at least one enabled org-admin, so someone can always manage it. Stride refuses to remove, disable or delete its last one until another org-admin is appointed.",
             image: nil
           },
           %{
