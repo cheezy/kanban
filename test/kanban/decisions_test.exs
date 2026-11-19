@@ -1,6 +1,6 @@
 defmodule Kanban.DecisionsTest do
   @moduledoc """
-  Tests for `Kanban.Decisions.build/1` and its five sources.
+  Tests for `Kanban.Decisions.build/1`, `build_with_summary/1` and the five sources.
   """
   # Plan enforcement flips global application env, so this module is not async.
   use Kanban.DataCase, async: false
@@ -107,6 +107,21 @@ defmodule Kanban.DecisionsTest do
   end
 
   defp of_kind(items, kind), do: Enum.filter(items, &(&1.kind == kind))
+
+  # Sets dependencies directly: task_fixture/2 swaps given dependencies for
+  # new placeholder tasks.
+  defp dependent!(column, identifiers) do
+    column
+    |> task_fixture()
+    |> Ecto.Changeset.change(dependencies: identifiers)
+    |> Repo.update!()
+  end
+
+  defp waiting_since!(task, seconds_ago) do
+    task
+    |> Ecto.Changeset.change(review_requested_at: DateTime.add(now(), -seconds_ago))
+    |> Repo.update!()
+  end
 
   defp archive!(task) do
     task |> Ecto.Changeset.change(%{archived_at: now()}) |> Repo.update!()
@@ -365,6 +380,20 @@ defmodule Kanban.DecisionsTest do
       assert ctx.scope |> Decisions.build() |> of_kind(:hook_failed) == []
     end
 
+    test "a failed goal holds up itself and then its dependents", ctx do
+      goal = failed_goal!(ctx.cols["Doing"])
+
+      assert [item] = ctx.scope |> Decisions.build() |> of_kind(:hook_failed)
+      assert item.holds_up == 1
+      assert item.held_identifiers == [goal.identifier]
+
+      dependent = dependent!(ctx.cols["Backlog"], [goal.identifier])
+
+      assert [item] = ctx.scope |> Decisions.build() |> of_kind(:hook_failed)
+      assert item.holds_up == 2
+      assert item.held_identifiers == [goal.identifier, dependent.identifier]
+    end
+
     test "an attempt with a missing or non-integer exit_code is a failure", ctx do
       failed_goal!(ctx.cols["Doing"], "137")
       failed_goal!(ctx.cols["Doing"], nil)
@@ -443,6 +472,102 @@ defmodule Kanban.DecisionsTest do
     end
   end
 
+  describe "holds up, order and summary" do
+    test "orders by holds_up then oldest, with ready_empty last", ctx do
+      two = ctx.cols["Review"] |> pending_task!() |> waiting_since!(1800)
+      one = ctx.cols["Review"] |> pending_task!() |> waiting_since!(7200)
+      old = ctx.cols["Review"] |> pending_task!() |> waiting_since!(10_800)
+      new = ctx.cols["Review"] |> pending_task!() |> waiting_since!(3600)
+
+      direct = dependent!(ctx.cols["Backlog"], [two.identifier])
+      chained = dependent!(ctx.cols["Backlog"], [direct.identifier])
+      held_by_one = dependent!(ctx.cols["Backlog"], [one.identifier])
+
+      # "Claude" waits on the reviews, so a different agent is the idle one.
+      agent_task!(ctx.cols["Done"], DateTime.add(now(), -3600), "Codex")
+
+      items = Decisions.build(ctx.scope)
+
+      assert Enum.map(items, & &1.id) == [
+               "review:task:#{two.id}",
+               "review:task:#{one.id}",
+               "review:task:#{old.id}",
+               "review:task:#{new.id}",
+               "ready_empty:board:#{ctx.board.id}"
+             ]
+
+      assert Enum.map(items, & &1.holds_up) == [2, 1, 0, 0, nil]
+
+      assert Enum.map(items, & &1.held_identifiers) == [
+               [direct.identifier, chained.identifier],
+               [held_by_one.identifier],
+               [],
+               [],
+               []
+             ]
+
+      assert List.last(items).details.idle_agents == 1
+    end
+
+    test "lists at most 5 held identifiers but counts every held task", ctx do
+      review = pending_task!(ctx.cols["Review"])
+      held = for _i <- 1..7, do: dependent!(ctx.cols["Backlog"], [review.identifier])
+
+      assert [item] = ctx.scope |> Decisions.build() |> of_kind(:review)
+      assert item.holds_up == 7
+      assert item.held_identifiers == held |> Enum.take(5) |> Enum.map(& &1.identifier)
+    end
+
+    test "caps the list at 100 and builds the summary", ctx do
+      [first, second | _rest] =
+        for i <- 1..101 do
+          ctx.cols["Review"] |> pending_task!() |> waiting_since!(1000 + i)
+        end
+
+      # Both hold up the same task, and the first holds up one more.
+      dependent!(ctx.cols["Backlog"], [first.identifier, second.identifier])
+      dependent!(ctx.cols["Backlog"], [first.identifier])
+
+      {:ok, _} =
+        ctx.cols["Doing"]
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Codex", status: :in_progress})
+
+      %{items: items, summary: summary} = Decisions.build_with_summary(ctx.scope)
+
+      assert length(items) == 100
+      assert Decisions.build(ctx.scope) == items
+      assert Enum.take(items, 2) |> Enum.map(& &1.task_id) == [first.id, second.id]
+      assert Enum.take(items, 2) |> Enum.map(& &1.holds_up) == [2, 1]
+      assert summary == %{waiting: 101, held_up: 2, agents_working: 1}
+    end
+
+    test "held_up counts every distinct held task past the per-item cap of 50", ctx do
+      wide = pending_task!(ctx.cols["Review"])
+      narrow = pending_task!(ctx.cols["Review"])
+      goal = failed_goal!(ctx.cols["Doing"])
+
+      dependents = for _i <- 1..55, do: dependent!(ctx.cols["Backlog"], [wide.identifier])
+
+      # The narrow review and the goal share the first ten, which the wide
+      # review's own cap of 50 keeps; the last five lie past that cap.
+      for task <- Enum.take(dependents, 10) do
+        task
+        |> Ecto.Changeset.change(
+          dependencies: [wide.identifier, narrow.identifier, goal.identifier]
+        )
+        |> Repo.update!()
+      end
+
+      %{items: items, summary: summary} = Decisions.build_with_summary(ctx.scope)
+
+      assert items |> of_kind(:review) |> Enum.map(& &1.holds_up) |> Enum.sort() == [10, 50]
+      assert [%{holds_up: 11}] = of_kind(items, :hook_failed)
+      # 55 dependents plus the failed goal itself.
+      assert summary.held_up == 56
+    end
+  end
+
   describe "scope" do
     test "a person with no boards gets an empty list", ctx do
       pending_task!(ctx.cols["Review"])
@@ -506,13 +631,43 @@ defmodule Kanban.DecisionsTest do
 
       assert first == second
 
-      assert first == [
-               "review:task:#{review.id}",
-               "released:task:#{released.id}",
-               "claim_expired:task:#{expired.id}",
-               "hook_failed:goal:#{goal.id}",
-               "ready_empty:board:#{other_board.id}"
-             ]
+      # The failed goal holds itself up, so it ranks first; ready_empty is last.
+      assert hd(first) == "hook_failed:goal:#{goal.id}"
+      assert List.last(first) == "ready_empty:board:#{other_board.id}"
+
+      assert Enum.sort(first) ==
+               Enum.sort([
+                 "review:task:#{review.id}",
+                 "released:task:#{released.id}",
+                 "claim_expired:task:#{expired.id}",
+                 "hook_failed:goal:#{goal.id}",
+                 "ready_empty:board:#{other_board.id}"
+               ])
+    end
+
+    test "build_with_summary/1 gives no items and zero counts without a person or boards",
+         ctx do
+      pending_task!(ctx.cols["Review"])
+      empty = %{items: [], summary: %{waiting: 0, held_up: 0, agents_working: 0}}
+
+      assert Decisions.build_with_summary(nil) == empty
+      assert Decisions.build_with_summary(%Scope{user: nil}) == empty
+      assert user_fixture() |> Scope.for_user() |> Decisions.build_with_summary() == empty
+    end
+
+    test "a hidden board's dependents never count toward holds_up", ctx do
+      review = pending_task!(ctx.cols["Review"])
+
+      hidden = columns(ai_optimized_board_fixture(user_fixture()))["Backlog"]
+      # The hidden board's own task with the review's identifier, and its dependent.
+      twin = task_fixture(hidden)
+      stranger = dependent!(hidden, [review.identifier])
+      assert twin.identifier == review.identifier
+      refute stranger.identifier == review.identifier
+
+      assert [item] = ctx.scope |> Decisions.build() |> of_kind(:review)
+      assert item.holds_up == 0
+      assert item.held_identifiers == []
     end
   end
 end

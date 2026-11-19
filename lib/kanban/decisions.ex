@@ -47,20 +47,56 @@ defmodule Kanban.Decisions do
       empty Ready column
     * `:actions` - the actions the server lets this person take, as atoms
     * `:web_url` - the absolute URL of the item on the web
+    * `:holds_up` - how many tasks the item holds up (`nil` for `:ready_empty`,
+      which carries its idle agents in `:details` instead)
+    * `:held_identifiers` - the identifiers of up to 5 of those tasks, the
+      nearest first (`[]` for `:ready_empty`)
 
-  Items come back grouped by kind in the order above and, within a kind,
-  oldest first. Ranking and the summary counts are not built here.
+  ## Holds up
+
+  An item holds up the unfinished, unarchived tasks on its board that depend
+  on its task or goal, directly or through a chain, followed to a depth of 5
+  and counted to at most 50 (`Kanban.Decisions.HoldsUp`). A goal whose
+  `after_goal` failed is itself held up, so a `:hook_failed` item counts its
+  goal first, then the goal's dependents. Two items can hold up the same
+  task, and each counts it.
+
+  ## Order
+
+  Items come back by `:holds_up`, highest first, then by `:since`, oldest
+  first, then by `:id`. Every `:ready_empty` item comes after every other
+  item, because it invites a choice rather than unblocking a task. At most
+  100 items come back; the cap is applied after ordering.
+
+  ## Summary
+
+  `build_with_summary/1` returns the items with a summary:
+
+    * `:waiting` - every item waiting on the person, `:ready_empty` included,
+      counted before the 100-item cap
+    * `:held_up` - the distinct tasks held up across every item, also counted
+      before the cap and without the per-item cap of 50, so a task two items
+      hold up counts once and an item holding up more than 50 counts them all
+      (still to a depth of 5)
+    * `:agents_working` - agents holding a task in Doing on a board the person
+      can access (`Kanban.Agents.fleet_health/1`), dormant agents left out.
+      Like the `:ready_empty` idle check, this reads every board the person
+      can access, including boards outside the plan.
 
   ## Cost
 
   A fixed number of queries whatever the number of tasks: the boards, the
   plan, the pending reviews, the notifications, the failed goals and the
   column counts, plus, only when some board's Ready column is empty, one
-  roster query for the person and one per such board.
+  roster query for the person and one per such board. Holds-up adds one
+  recursive query per board with at least one task or goal item, and
+  `build_with_summary/1` adds one roster query when anything is waiting.
   """
 
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
+  alias Kanban.Agents
+  alias Kanban.Decisions.HoldsUp
   alias Kanban.Decisions.Sources
   alias Kanban.Plans
   alias Kanban.Workspaces.Policy
@@ -75,8 +111,18 @@ defmodule Kanban.Decisions do
           summary: map(),
           details: map(),
           actions: [atom()],
-          web_url: String.t()
+          web_url: String.t(),
+          holds_up: non_neg_integer() | nil,
+          held_identifiers: [String.t()]
         }
+  @type summary :: %{
+          waiting: non_neg_integer(),
+          held_up: non_neg_integer(),
+          agents_working: non_neg_integer()
+        }
+
+  @max_items 100
+  @shown_held 5
 
   @sources [
     &Sources.review/1,
@@ -87,20 +133,40 @@ defmodule Kanban.Decisions do
   ]
 
   @doc """
-  Returns every decision item waiting on the scoped person.
+  Returns the decision items waiting on the scoped person, ordered and
+  capped at 100 (see "Order" above).
 
   A scope without a user gets `[]`, as does a person with no accessible,
   unlocked board.
   """
   @spec build(Scope.t() | nil) :: [item()]
-  def build(%Scope{user: %User{} = user} = scope) do
+  def build(scope), do: scope |> ranked() |> elem(0) |> capped()
+
+  @doc """
+  Returns the same items as `build/1` with the summary counts
+  (see "Summary" above).
+
+  A scope without a user, or a person with nothing waiting, gets no items and
+  a summary of zeros, without reading the agent roster.
+  """
+  @spec build_with_summary(Scope.t() | nil) :: %{items: [item()], summary: summary()}
+  def build_with_summary(scope) do
+    {ranked, held_up} = ranked(scope)
+    %{items: capped(ranked), summary: summary(scope, ranked, held_up)}
+  end
+
+  # Every item, ordered but not capped, and the number of distinct tasks they
+  # hold up, so the summary can count past both caps.
+  defp ranked(%Scope{user: %User{} = user} = scope) do
     case unlocked_boards(user) do
-      [] -> []
-      boards -> scope |> Sources.context(user, boards) |> collect()
+      [] -> {[], 0}
+      boards -> scope |> Sources.context(user, boards) |> collect() |> rank()
     end
   end
 
-  def build(_scope), do: []
+  defp ranked(_scope), do: {[], 0}
+
+  defp capped(ranked), do: Enum.take(ranked, @max_items)
 
   defp unlocked_boards(user) do
     boards = Policy.list_accessible_boards(user)
@@ -109,13 +175,75 @@ defmodule Kanban.Decisions do
   end
 
   defp collect(ctx) do
-    Enum.flat_map(@sources, fn source ->
-      ctx
-      |> source.()
-      |> Enum.sort_by(&{since_key(&1.since), &1.id})
-    end)
+    items = Enum.flat_map(@sources, & &1.(ctx))
+    {items, ctx}
   end
+
+  defp rank({items, ctx}) do
+    %{roots: held, boards: board_held} = items |> roots_by_board(ctx) |> HoldsUp.held()
+
+    ranked =
+      items
+      |> Enum.map(&with_holds_up(&1, all_held(&1, held)))
+      |> Enum.sort_by(&sort_key/1)
+
+    {ranked, held_up_count(items, board_held)}
+  end
+
+  # Every distinct task held up on the person's boards, uncapped, plus each
+  # failed goal, which holds itself up.
+  defp held_up_count(items, board_held) do
+    goals =
+      for %{kind: :hook_failed} = item <- items, do: {item.board_id, item.summary.identifier}
+
+    board_held
+    |> Enum.flat_map(fn {board_id, identifiers} -> Enum.map(identifiers, &{board_id, &1}) end)
+    |> Enum.concat(goals)
+    |> MapSet.new()
+    |> MapSet.size()
+  end
+
+  # Board ids come from the person's own boards, never only from the items,
+  # so a count can never reach a board hidden from them.
+  defp roots_by_board(items, ctx) do
+    items
+    |> Enum.reject(&(&1.kind == :ready_empty or is_nil(&1.summary.identifier)))
+    |> Enum.group_by(& &1.board_id, & &1.summary.identifier)
+    |> Map.take(Map.keys(ctx.boards))
+  end
+
+  defp all_held(%{kind: :ready_empty}, _held), do: nil
+
+  defp all_held(%{kind: :hook_failed} = item, held),
+    do: Enum.take([item.summary.identifier | dependents(item, held)], HoldsUp.cap())
+
+  defp all_held(item, held), do: dependents(item, held)
+
+  defp dependents(item, held), do: Map.get(held, {item.board_id, item.summary.identifier}, [])
+
+  defp with_holds_up(item, nil), do: Map.merge(item, %{holds_up: nil, held_identifiers: []})
+
+  defp with_holds_up(item, all) do
+    Map.merge(item, %{holds_up: length(all), held_identifiers: Enum.take(all, @shown_held)})
+  end
+
+  defp sort_key(item) do
+    {ready_empty_rank(item.kind), -(item.holds_up || 0), since_key(item.since), item.id}
+  end
+
+  defp ready_empty_rank(:ready_empty), do: 1
+  defp ready_empty_rank(_kind), do: 0
 
   defp since_key(%DateTime{} = since), do: DateTime.to_unix(since, :microsecond)
   defp since_key(_since), do: 0
+
+  defp summary(_scope, [], _held_up), do: %{waiting: 0, held_up: 0, agents_working: 0}
+
+  defp summary(scope, ranked, held_up) do
+    %{
+      waiting: length(ranked),
+      held_up: held_up,
+      agents_working: Agents.fleet_health(scope: scope).working
+    }
+  end
 end
