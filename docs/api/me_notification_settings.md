@@ -76,6 +76,10 @@ are enforced, a person whose plan does not include the Stride app gets the
   that changes zone, does not move it. It is `null` until a device or a
   change gives one. A device's own `time_zone`
   ([device routes](me_devices.md)) is a different setting.
+- **What quiet hours do.** Pushes due inside them are held, and one summary
+  push follows when they end if decisions are still waiting. Changing quiet
+  hours or the zone while they hold, so that they no longer do, sends that
+  summary at once. See [quiet hours](../push-notifications.md#quiet-hours).
 
 ## PUT /api/me/notification_settings
 

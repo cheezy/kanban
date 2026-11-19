@@ -15749,3 +15749,10 @@ msgstr "Le mencionaron en %{identifier}"
 #, elixir-autogen, elixir-format
 msgid "The after-goal hook failed on %{identifier}"
 msgstr "Falló el hook after-goal de %{identifier}"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} thing waited overnight"
+msgid_plural "%{count} things waited overnight"
+msgstr[0] "%{count} cosa esperó durante la noche"
+msgstr[1] "%{count} cosas esperaron durante la noche"

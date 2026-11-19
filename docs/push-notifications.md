@@ -7,9 +7,9 @@ Apple and Google in development and tests. The design behind it is in
 [Native Mobile Apps, Phase 1](plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md),
 sections 7.8 and 15.2.
 
-This page covers the senders and the push worker that decides which
-notifications push. Quiet hours are not in the worker yet, and each person's
-settings are described in
+This page covers the senders, the push worker that decides which
+notifications push, and quiet hours with the summary push that follows them.
+Each person's settings are described in
 [GET and PUT /api/me/notification_settings](api/me_notification_settings.md).
 
 ## The senders
@@ -79,7 +79,8 @@ A recipient with in-app and email off but push on gets a hidden row
 
 1. checks the plan, for the recipient and for the board when there is one;
 2. checks the push switch; one turned off since the enqueue holds the push
-   with reason `:mode`;
+   with reason `:mode`. Then it checks quiet hours: a push due inside them is
+   held with reason `:quiet_hours` (see [Quiet hours](#quiet-hours) below);
 3. for `review_requested`, `task_unclaimed`, `claim_expired` and
    `after_goal_failed`, checks that the decision is still open in
    `Kanban.Decisions`; one that is not holds the push with reason
@@ -116,6 +117,63 @@ id lets the device replace the duplicate. The worker emits
 `[:kanban, :push, :sent]`, `[:kanban, :push, :failed]` and
 `[:kanban, :push, :held]`; see [Telemetry](telemetry.md#push-events). It never
 logs a token, a title or a body.
+
+## Quiet hours
+
+A person can turn on quiet hours, 22:00 to 07:00 unless they choose other
+times (design section 7.9 and decision 5). They are read in the time zone in
+the person's push settings, `user_push_settings.time_zone`, and never in a
+device's zone, so someone travelling with the phone keeps the quiet hours of
+the zone they set until they change it (`Kanban.Push.QuietHours`).
+
+- **What counts as inside.** A quiet period starts the first time the clock in
+  that zone reads the start time and ends the first time after it that the
+  clock reads the end time. A start later than the end crosses midnight. The
+  end is excluded: 07:00 is outside 22:00 to 07:00, and 06:59 is inside.
+- **Daylight saving.** A start or end the clock skips in spring resolves to
+  the end of the gap. One the clock reads twice in autumn resolves to its
+  first reading, so a period ends once and the repeated hour is outside it.
+- **Held, not dropped.** A push due inside quiet hours is held
+  (`reason: :quiet_hours`) and never sent later on its own, so the end of the
+  night is not a burst of pushes. The notification stays in Now. A push
+  switch turned off wins: that push is held with reason `:mode`.
+
+### The summary push
+
+`Kanban.Push.SummaryWorker` runs every 15 minutes from the Oban crontab, on
+the `:push` queue. For each person with quiet hours on, it takes the latest
+quiet period that has ended, when it ended less than two hours ago and no
+summary has been taken since (`last_summary_at`). If decisions are still
+waiting it sends one push with their count, such as "3 things waited
+overnight", in each device's locale. The push opens Now, its badge is the
+count, and it carries no task title, identifier or name, so it reads the same
+when the Organization hides titles.
+
+- **Exactly once.** The worker takes a period with a conditional update of
+  `last_summary_at` before it sends, and only one run can win it, so two runs
+  at once send one summary. A period with nothing to send is still taken.
+- **The same checks as the push worker.** After taking a period it reads
+  again that the person is enabled and confirmed, has paid access, has at
+  least one decision event's push switch on and has a device with a push
+  token, and it reads each device again just before its send.
+- **Failures.** A dead token is cleared. When no device got the summary
+  because one was rate limited or the service was unavailable, the period is
+  given back and the next run sends it. A run that stops between taking and
+  sending loses that summary rather than sending it twice.
+- **Settings changes.** A change to quiet hours made outside them sets
+  `last_summary_at` to now, so turning them on after a period has ended sends
+  no summary for it. A change that ends quiet hours while they hold, such as
+  turning them off at night or moving to a zone where they are over, enqueues
+  the summary for that period at once, and so does a change made while a
+  summary is still owed, so a change never cancels one. A change that leaves
+  them holding changes nothing.
+- **Short gaps.** When the next quiet period starts less than 30 minutes
+  after one ends, the 15-minute run may fall in neither gap, so the summary
+  goes at the first run after the period ended, inside the next one.
+
+The worker emits `[:kanban, :push, :summarized]` with its `outcome` once per
+period it takes, and `sent` and `failed` per device with
+`event_type: :quiet_hours_summary`; see [Telemetry](telemetry.md#push-events).
 
 ## Environment variables
 

@@ -15662,3 +15662,9 @@ msgstr "%{identifier} でメンションされました"
 #, elixir-autogen, elixir-format
 msgid "The after-goal hook failed on %{identifier}"
 msgstr "%{identifier} の after-goal フックが失敗しました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} thing waited overnight"
+msgid_plural "%{count} things waited overnight"
+msgstr[0] "%{count} 件が夜の間に待っていました"

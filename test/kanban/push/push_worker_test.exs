@@ -433,6 +433,87 @@ defmodule Kanban.Push.PushWorkerTest do
     end
   end
 
+  describe "quiet hours" do
+    test "a push due inside quiet hours is held, not sent", ctx do
+      ios_device!(ctx)
+      n = notify_review!(ctx, pending_review!(ctx))
+      quiet_around_now!(ctx.owner, "Europe/London")
+
+      assert :ok = perform(n)
+
+      assert_received {:telemetry_event, @held, %{count: 1},
+                       %{event_type: :review_requested, reason: :quiet_hours}}
+
+      # Held, never dropped: the notification is still there for Now.
+      assert Repo.get(Kanban.Notifications.Notification, n.id)
+    end
+
+    test "uses the settings time zone, not the device zone", ctx do
+      ios_device!(ctx, %{time_zone: "Asia/Tokyo"})
+      n = notify_review!(ctx, pending_review!(ctx))
+      # Quiet now in Tokyo, the device's zone, but the settings say London.
+      quiet_around_now!(ctx.owner, "Asia/Tokyo", "Europe/London")
+
+      expect(APNsMock, :send, fn _device, _payload -> :ok end)
+      assert :ok = perform(n)
+      assert_received {:telemetry_event, @sent, %{count: 1}, %{event_type: :review_requested}}
+
+      # Quiet now in London, the settings' zone: held.
+      n = notify_review!(ctx, pending_review!(ctx))
+      quiet_around_now!(ctx.owner, "Europe/London")
+
+      assert :ok = perform(n)
+      assert_received {:telemetry_event, @held, _, %{reason: :quiet_hours}}
+    end
+
+    test "disabled quiet hours never hold", ctx do
+      ios_device!(ctx)
+      n = notify_review!(ctx, pending_review!(ctx))
+      quiet_around_now!(ctx.owner, "Europe/London")
+      set_quiet!(ctx.owner, quiet_hours_enabled: false)
+
+      expect(APNsMock, :send, fn _device, _payload -> :ok end)
+      assert :ok = perform(n)
+      assert_received {:telemetry_event, @sent, %{count: 1}, %{event_type: :review_requested}}
+    end
+
+    test "a switch turned off wins over quiet hours", ctx do
+      ios_device!(ctx)
+      n = notify_review!(ctx, pending_review!(ctx))
+      switch(ctx, :review_requested, false)
+      quiet_around_now!(ctx.owner, "Europe/London")
+
+      assert :ok = perform(n)
+      assert_received {:telemetry_event, @held, _, %{reason: :mode}}
+    end
+  end
+
+  # Quiet hours from an hour ago to an hour from now on the clock in
+  # `window_zone`, read in `settings_zone`.
+  defp quiet_around_now!(user, window_zone, settings_zone \\ nil) do
+    local = DateTime.now!(window_zone)
+
+    clock = fn seconds ->
+      local |> DateTime.add(seconds) |> DateTime.to_time() |> Time.truncate(:second)
+    end
+
+    set_quiet!(user,
+      quiet_hours_enabled: true,
+      quiet_start: clock.(-3600),
+      quiet_end: clock.(3600),
+      time_zone: settings_zone || window_zone
+    )
+  end
+
+  defp set_quiet!(user, set) do
+    {1, _} =
+      Kanban.Notifications.PushSettings
+      |> where([s], s.user_id == ^user.id)
+      |> Repo.update_all(set: set)
+
+    :ok
+  end
+
   describe "failure_reason/1" do
     test "keeps known reasons and bounds the rest" do
       assert PushWorker.failure_reason(:not_configured) == :not_configured

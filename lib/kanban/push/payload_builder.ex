@@ -44,6 +44,7 @@ defmodule Kanban.Push.PayloadBuilder do
 
   @default_locale "en"
   @title_max 160
+  @summary_collapse_id "quiet_hours_summary"
 
   @decision_prefixes %{
     review_requested: "review:task",
@@ -102,6 +103,28 @@ defmodule Kanban.Push.PayloadBuilder do
       body: body,
       badge: context.badge,
       data: data(notification)
+    }
+  end
+
+  @doc """
+  Builds the one summary push sent when a person's quiet hours end with
+  `waiting` decisions still waiting (§7.9), in `locale`, such as "3 things
+  waited overnight". It carries the count only, as the title and the badge,
+  and opens Now; never a task title, an identifier or a name, so it reads the
+  same whether or not the Organization hides titles.
+  """
+  @spec summary(pos_integer(), String.t()) :: Payload.t()
+  def summary(waiting, locale) when is_integer(waiting) and waiting > 0 do
+    title =
+      Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+        ngettext("%{count} thing waited overnight", "%{count} things waited overnight", waiting)
+      end)
+
+    %Payload{
+      collapse_id: @summary_collapse_id,
+      title: title,
+      badge: waiting,
+      data: %{kind: @summary_collapse_id, route: "now"}
     }
   end
 

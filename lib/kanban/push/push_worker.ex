@@ -27,8 +27,12 @@ defmodule Kanban.Push.PushWorker do
     1. **the plan**, as `Kanban.Notifications.EmailWorker` checks it: the
        recipient always, and the board when there is one;
     2. **the push switch** for the event type. A switch turned off since the
-       enqueue holds the push (`reason: :mode`). Quiet hours come next, in a
-       later task;
+       enqueue holds the push (`reason: :mode`). Then **quiet hours**
+       (`Kanban.Push.QuietHours`), read in the settings' time zone, never a
+       device's: a push due inside them is held (`reason: :quiet_hours`).
+       A held push is never sent later on its own; the notification stays
+       in Now, and `Kanban.Push.SummaryWorker` sends one summary when the
+       quiet period ends;
     3. **the decision**, for the four decision events only: one that is no
        longer open (a review approved in the meantime, a released card that
        cleared) holds the push (`reason: :resolved`);
@@ -94,6 +98,7 @@ defmodule Kanban.Push.PushWorker do
   alias Kanban.Plans
   alias Kanban.Push
   alias Kanban.Push.PayloadBuilder
+  alias Kanban.Push.QuietHours
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -247,15 +252,19 @@ defmodule Kanban.Push.PushWorker do
   defp plan_verdict(true), do: :ok
   defp plan_verdict(false), do: {:skip, :plan_locked}
 
-  # Step 2: the switch the person set, read again. Quiet hours (the next
-  # task) are checked here too, holding the push with reason :quiet_hours.
+  # Step 2: the switch the person set, read again, then quiet hours in the
+  # settings' time zone. A switch turned off wins over quiet hours.
   defp check_settings(%Notification{event_type: type} = n) do
     cond do
       type not in PushSettings.push_events() -> {:skip, :not_pushable}
-      push_on?(n) -> :ok
-      true -> {:held, n, :mode}
+      not push_on?(n) -> {:held, n, :mode}
+      quiet?(n) -> {:held, n, :quiet_hours}
+      true -> :ok
     end
   end
+
+  defp quiet?(%Notification{user_id: user_id}),
+    do: PushSettings |> Repo.get(user_id) |> QuietHours.inside?(DateTime.utc_now())
 
   defp push_on?(%Notification{user_id: user_id, event_type: type}) do
     preference =

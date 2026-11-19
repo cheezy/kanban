@@ -1100,8 +1100,9 @@ when it sends a notification's push
   `:unavailable` (the push service was down or erroring), `:not_configured`,
   `:no_push_token`, `:no_push_environment`, `:unsupported_platform`, or
   `:rejected` for any other answer. `held`'s `reason` is `:mode` (the push
-  switch was turned off after the enqueue) or `:resolved` (the decision was
-  no longer open). They never carry a push token, a title, a body, a target
+  switch was turned off after the enqueue), `:quiet_hours` (the recipient's
+  quiet hours held it, W2772) or `:resolved` (the decision was no longer
+  open). They never carry a push token, a title, a body, a target
   name, a user or a device. `reason` is the only tag; `platform` and
   `event_type` are not tags.
 - **When they fire.** Only when the worker gets as far as a send or a hold.
@@ -1109,6 +1110,25 @@ when it sends a notification's push
   on the board, without paid access or with no device left sends nothing and
   emits nothing; it logs the notification id and the reason.
 - **They are not persisted.** They are counted live.
+
+W2772 added the quiet-hours summary. `Kanban.Push.SummaryWorker` sends one
+push when a person's quiet hours end with decisions still waiting, and emits
+`sent` and `failed` for it with `event_type: :quiet_hours_summary`, plus one
+event of its own ([push notifications](push-notifications.md)).
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :push, :summarized]` | `count` | `outcome` | `Kanban.Push.SummaryWorker`, once for each ended quiet period whose summary it took |
+
+- **What it carries.** `outcome` only: `:sent` (one device or more accepted
+  it), `:failed` (none did), `:nothing_waiting`, `:no_device`,
+  `:switched_off` (every decision event's push switch is off),
+  `:plan_locked` or `:user_inactive`. It never carries a user, a device, a
+  count of decisions or the text. `outcome` is its tag.
+- **When it fires.** Once per period taken, so two runs at once emit it
+  once. A period still inside quiet hours, one that ended more than two hours
+  before the run, or one already taken emits nothing.
+- **It is not persisted,** like the delivery events.
 
 ## Emitting an event
 
@@ -1732,9 +1752,10 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :push, :settings_changed]` | event | `count` | `mode`, `fields`, `via` | A person changed their push settings. mode is :decisions or :every after the change; fields names the settings and push switches that changed, never their values; via is :ios, :android or :web. |
-| `[:kanban, :push, :sent]` | event | `count` | `platform`, `event_type` | A push service accepted one notification push for one device. platform is :ios or :android; event_type is the notification's event type. |
-| `[:kanban, :push, :failed]` | event | `count` | `platform`, `event_type`, `reason` | A notification push to one device was not accepted. reason is a bounded atom such as :unregistered (the token was cleared), :rate_limited, :unavailable, :not_configured or :rejected. |
-| `[:kanban, :push, :held]` | event | `count` | `event_type`, `reason` | A notification push was held at send time and not sent. reason is :mode (the push switch was turned off) or :resolved (the decision was no longer open). |
+| `[:kanban, :push, :sent]` | event | `count` | `platform`, `event_type` | A push service accepted one notification push for one device. platform is :ios or :android; event_type is the notification's event type, or :quiet_hours_summary for the summary sent when quiet hours end. |
+| `[:kanban, :push, :failed]` | event | `count` | `platform`, `event_type`, `reason` | A notification push, or the summary sent when quiet hours end (event_type :quiet_hours_summary), to one device was not accepted. reason is a bounded atom such as :unregistered (the token was cleared), :rate_limited, :unavailable, :not_configured or :rejected. |
+| `[:kanban, :push, :held]` | event | `count` | `event_type`, `reason` | A notification push was held at send time and not sent. reason is :mode (the push switch was turned off), :quiet_hours (the recipient's quiet hours held it) or :resolved (the decision was no longer open). |
+| `[:kanban, :push, :summarized]` | event | `count` | `outcome` | The summary push for one ended quiet period was taken. outcome is :sent, :failed, :nothing_waiting, :no_device, :switched_off, :plan_locked or :user_inactive. |
 
 ### Domain `rate_limit`
 

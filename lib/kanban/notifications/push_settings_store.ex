@@ -24,6 +24,31 @@ defmodule Kanban.Notifications.PushSettingsStore do
     * `ensure_for_device/1` creates the row when a person's first device
       registers, with that device's time zone. A later device never moves a
       zone that is already set; it only fills one that is still empty.
+
+  ## Quiet-hours summaries
+
+  `last_summary_at` records when `Kanban.Push.SummaryWorker` last took a
+  quiet period's summary. `summary_candidates/1` lists the rows the worker
+  looks at, and the worker takes a period with `claim_summary/3` or
+  `claim_ended_summary/3`, conditional updates that only one run can win, so
+  overlapping runs send one summary. `release_summary/3` gives a period back
+  when no device got its summary because of a passing failure.
+
+  A change to quiet hours (on or off, the times or the zone) also decides
+  what the next summary covers:
+
+    * made outside quiet hours while a summary is still owed (a period that
+      is due, or a one-person summary not yet sent), it enqueues the summary
+      at once, so the change never cancels it;
+    * made outside quiet hours otherwise, it sets `last_summary_at` to now,
+      so a period that ended before quiet hours were on, or one the new
+      settings would have had, gets no summary;
+    * made inside quiet hours that it ends, such as turning them off or
+      moving to a zone where they are over, it enqueues the summary for the
+      period it ended (`Kanban.Push.SummaryWorker.enqueue_ended/2`), in the
+      same transaction;
+    * made inside quiet hours that still hold, it changes nothing: the
+      summary follows when the new period ends.
   """
   import Ecto.Query, warn: false
 
@@ -34,9 +59,12 @@ defmodule Kanban.Notifications.PushSettingsStore do
   alias Kanban.Notifications.Preference
   alias Kanban.Notifications.PushSettings
   alias Kanban.Plans
+  alias Kanban.Push.QuietHours
+  alias Kanban.Push.SummaryWorker
   alias Kanban.Repo
 
   @settings_fields [:mode, :quiet_hours_enabled, :quiet_start, :quiet_end, :time_zone]
+  @quiet_fields [:quiet_hours_enabled, :quiet_start, :quiet_end, :time_zone]
 
   @doc """
   Returns the scoped user's push settings view. Writes nothing.
@@ -108,6 +136,77 @@ defmodule Kanban.Notifications.PushSettingsStore do
 
   def ensure_for_device({:error, _reason} = error), do: error
 
+  @doc """
+  The settings rows the summary worker looks at, at `now`: quiet hours on,
+  a time zone set, no summary taken at or after `now`, and an enabled,
+  confirmed user.
+  """
+  @spec summary_candidates(DateTime.t()) :: [PushSettings.t()]
+  def summary_candidates(%DateTime{} = now) do
+    from(s in PushSettings,
+      join: u in User,
+      on: u.id == s.user_id,
+      where: s.quiet_hours_enabled and not is_nil(s.time_zone),
+      where: is_nil(u.disabled_at) and not is_nil(u.confirmed_at),
+      where: is_nil(s.last_summary_at) or s.last_summary_at < ^now,
+      order_by: s.user_id
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Takes the summary of the quiet period that ended at `period_end` for the
+  person `settings` belong to, by setting `last_summary_at` to `now`.
+
+  It succeeds only when the stored quiet hours are still the ones in
+  `settings` and no summary was taken at or after `period_end`, so of two
+  runs at once only one gets `:claimed`; the other gets `:taken`.
+  """
+  @spec claim_summary(PushSettings.t(), DateTime.t(), DateTime.t()) :: :claimed | :taken
+  def claim_summary(%PushSettings{} = settings, %DateTime{} = period_end, %DateTime{} = now) do
+    PushSettings
+    |> where([s], s.user_id == ^settings.user_id and s.quiet_hours_enabled)
+    |> where([s], s.time_zone == ^settings.time_zone)
+    |> where([s], s.quiet_start == ^settings.quiet_start and s.quiet_end == ^settings.quiet_end)
+    |> summary_not_taken(period_end)
+    |> claim(now)
+  end
+
+  @doc """
+  Takes the summary of a quiet period a settings change ended at `ended_at`,
+  as `claim_summary/3` does, whatever the quiet hours are now.
+  """
+  @spec claim_ended_summary(pos_integer(), DateTime.t(), DateTime.t()) :: :claimed | :taken
+  def claim_ended_summary(user_id, %DateTime{} = ended_at, %DateTime{} = now) do
+    PushSettings
+    |> where([s], s.user_id == ^user_id)
+    |> summary_not_taken(ended_at)
+    |> claim(now)
+  end
+
+  @doc """
+  Gives back a summary taken at `now`, restoring `previous`, so the next run
+  can send it. A summary taken again since is left alone.
+  """
+  @spec release_summary(pos_integer(), DateTime.t() | nil, DateTime.t()) :: :ok
+  def release_summary(user_id, previous, %DateTime{} = now) do
+    PushSettings
+    |> where([s], s.user_id == ^user_id and s.last_summary_at == ^now)
+    |> Repo.update_all(set: [last_summary_at: previous])
+
+    :ok
+  end
+
+  defp summary_not_taken(query, period_end),
+    do: where(query, [s], is_nil(s.last_summary_at) or s.last_summary_at < ^period_end)
+
+  defp claim(query, now) do
+    case Repo.update_all(query, set: [last_summary_at: DateTime.truncate(now, :second)]) do
+      {1, _} -> :claimed
+      {0, _} -> :taken
+    end
+  end
+
   defp transact_change(device, user_id, attrs) do
     Repo.transact(fn ->
       with :ok <- lock_active_device(device), do: apply_change(user_id, attrs)
@@ -136,7 +235,7 @@ defmodule Kanban.Notifications.PushSettingsStore do
     changeset = PushSettings.request_changeset(current, attrs)
 
     if changeset.valid? do
-      {:ok, write_changes(user_id, current, changeset.changes)}
+      {:ok, write_changes(settings, current, changeset.changes)}
     else
       {:error, changeset}
     end
@@ -144,25 +243,56 @@ defmodule Kanban.Notifications.PushSettingsStore do
 
   # Writes only what differs from `current`; returns the new view and the
   # sorted names of the changed fields.
-  defp write_changes(user_id, current, changes) do
+  defp write_changes(%PushSettings{user_id: user_id} = settings, current, changes) do
+    now = now()
     settings_changes = changed_settings(current, changes)
     switch_changes = changed_switches(current, changes)
 
-    :ok = write_settings(user_id, settings_changes)
+    new_view = merge_view(current, settings_changes, switch_changes)
+    quiet = quiet_change(settings, current, new_view, settings_changes, now)
+
+    :ok = write_settings(user_id, settings_changes, quiet, now)
     :ok = write_switches(user_id, switch_changes)
+    :ok = summarize_ended(user_id, quiet, now)
 
-    changed =
-      (Map.keys(settings_changes) ++ Map.keys(switch_changes))
-      |> Enum.map(&Atom.to_string/1)
-      |> Enum.sort()
+    {new_view, changed_names(settings_changes, switch_changes)}
+  end
 
-    new_view = %{
+  defp merge_view(current, settings_changes, switch_changes) do
+    %{
       Map.merge(current, settings_changes)
       | switches: Map.merge(current.switches, switch_changes)
     }
-
-    {new_view, changed}
   end
+
+  defp changed_names(settings_changes, switch_changes) do
+    (Map.keys(settings_changes) ++ Map.keys(switch_changes))
+    |> Enum.map(&Atom.to_string/1)
+    |> Enum.sort()
+  end
+
+  # What a quiet-hours change means for the next summary (see the moduledoc).
+  defp quiet_change(settings, current, new_view, settings_changes, now) do
+    cond do
+      not Enum.any?(@quiet_fields, &Map.has_key?(settings_changes, &1)) -> :none
+      QuietHours.inside?(current, now) and QuietHours.inside?(new_view, now) -> :none
+      QuietHours.inside?(current, now) -> :ended
+      summary_owed?(settings, now) -> :ended
+      true -> :stamp
+    end
+  end
+
+  # A summary the old settings still owe: a period that ended and is due, or
+  # a one-person summary enqueued by an earlier change and not yet sent.
+  defp summary_owed?(settings, now),
+    do: SummaryWorker.due(settings, now) != :not_due or SummaryWorker.pending?(settings.user_id)
+
+  defp summarize_ended(user_id, :ended, now) do
+    {:ok, _job} = SummaryWorker.enqueue_ended(user_id, now)
+    :ok
+  end
+
+  defp summarize_ended(_user_id, _quiet, _now), do: :ok
 
   # Creates the row with its defaults if it is missing, then locks it, so
   # concurrent changes for one person run one after the other.
@@ -204,10 +334,10 @@ defmodule Kanban.Notifications.PushSettingsStore do
     |> Map.reject(fn {type, value} -> Map.fetch!(current.switches, type) == value end)
   end
 
-  defp write_settings(_user_id, changes) when map_size(changes) == 0, do: :ok
+  defp write_settings(_user_id, changes, _quiet, _now) when map_size(changes) == 0, do: :ok
 
-  defp write_settings(user_id, changes) do
-    set = Keyword.new(changes) ++ [updated_at: now()]
+  defp write_settings(user_id, changes, quiet, now) do
+    set = Keyword.new(changes) ++ [updated_at: now] ++ summary_stamp(quiet, now)
 
     {1, _} =
       PushSettings
@@ -216,6 +346,9 @@ defmodule Kanban.Notifications.PushSettingsStore do
 
     :ok
   end
+
+  defp summary_stamp(:stamp, now), do: [last_summary_at: now]
+  defp summary_stamp(_quiet, _now), do: []
 
   defp write_switches(_user_id, changes) when map_size(changes) == 0, do: :ok
 
