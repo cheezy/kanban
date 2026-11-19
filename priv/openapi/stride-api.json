@@ -2181,6 +2181,148 @@
         }
       }
     },
+    "/api/me/notification_settings": {
+      "get": {
+        "operationId": "getMyNotificationSettings",
+        "summary": "The person's push notification settings",
+        "description": "The person's push settings: the mode, the eight push switches, quiet hours and the one time zone quiet hours follow. A person who has changed nothing gets the defaults: mode decisions, the four decision events on and the four updates off, quiet hours off from 22:00 to 07:00. time_zone is the first device's zone, or null until a device or a change gives one. Reading writes nothing. Plan-gated with the mobile_app feature. Takes a device access token only. Human-readable reference: docs/api/me_notification_settings.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The person's push settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateMyNotificationSettings",
+        "summary": "Change the person's push notification settings",
+        "description": "Changes any of the mode, the push switches, quiet hours and the time zone; a key that is not sent is left as it is, switches is partial, and other keys are ignored. Choosing a mode different from the stored one sets the eight switches to its preset (decisions: the four decision events on and the four updates off; every: all eight on), and switches sent in the same request then win. Re-sending the stored mode changes no switch. The push worker reads only the switches. Two changes at once are applied one after the other, and neither loses a field. A change emits the settings_changed telemetry event with the names of the changed fields, never their values. Plan-gated with the mobile_app feature. Takes a device access token only. Human-readable reference: docs/api/me_notification_settings.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettingsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The person's push settings after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "422": {
+            "description": "A field is invalid: an unknown mode, a time that is not HH:MM, quiet hours that start when they end, a time zone the tz database does not know exactly as sent (or a stored zone sent as null or empty), a switch that is not a boolean, or true for an event that never pushes (task_assigned, board_access_changed, weekly_digest, comment_added). The body names the fields, or the event types, and their messages, never the values sent. Nothing is changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/me/decisions": {
       "get": {
         "operationId": "listMyDecisions",
@@ -5746,6 +5888,150 @@
               "null"
             ],
             "maxLength": 255
+          }
+        }
+      },
+      "NotificationSettingsResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NotificationSettings"
+          }
+        }
+      },
+      "NotificationSettings": {
+        "type": "object",
+        "description": "A person's push settings. The keys are a contract with every supported app version: fields are only ever added.",
+        "required": [
+          "mode",
+          "switches",
+          "quiet_hours_enabled",
+          "quiet_start",
+          "quiet_end",
+          "time_zone"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "decisions",
+              "every"
+            ],
+            "description": "The last preset chosen. It only sets the switches; nothing reads it to decide a push."
+          },
+          "switches": {
+            "$ref": "#/components/schemas/PushSwitches"
+          },
+          "quiet_hours_enabled": {
+            "type": "boolean"
+          },
+          "quiet_start": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "description": "When quiet hours start, HH:MM in time_zone."
+          },
+          "quiet_end": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "description": "When quiet hours end, HH:MM in time_zone. May be earlier than quiet_start, for quiet hours that span midnight."
+          },
+          "time_zone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255,
+            "description": "The IANA time zone quiet hours follow: the first device's zone, or the one chosen in settings. A later device, or a phone changing zone, does not move it. null until a device or a change gives one."
+          }
+        }
+      },
+      "PushSwitches": {
+        "type": "object",
+        "description": "The push switch of each event type that can push: decisions first, then updates. The other event types never push and are not listed.",
+        "required": [
+          "review_requested",
+          "task_unclaimed",
+          "claim_expired",
+          "after_goal_failed",
+          "task_reviewed",
+          "goal_completed",
+          "target_status_changed",
+          "mentioned"
+        ],
+        "properties": {
+          "review_requested": {
+            "type": "boolean",
+            "description": "Decision: a review was requested of the person."
+          },
+          "task_unclaimed": {
+            "type": "boolean",
+            "description": "Decision: an agent released a task."
+          },
+          "claim_expired": {
+            "type": "boolean",
+            "description": "Decision: an agent's claim expired."
+          },
+          "after_goal_failed": {
+            "type": "boolean",
+            "description": "Decision: a goal's after_goal hook failed."
+          },
+          "task_reviewed": {
+            "type": "boolean",
+            "description": "Update: a review was recorded."
+          },
+          "goal_completed": {
+            "type": "boolean",
+            "description": "Update: a goal completed."
+          },
+          "target_status_changed": {
+            "type": "boolean",
+            "description": "Update: a target's status changed."
+          },
+          "mentioned": {
+            "type": "boolean",
+            "description": "Update: the person was mentioned."
+          }
+        }
+      },
+      "NotificationSettingsUpdate": {
+        "type": "object",
+        "description": "A change to the person's push settings. Every key is optional; other keys are ignored. A mode different from the stored one applies its preset to the switches first; switches sent with it then win.",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "decisions",
+              "every"
+            ]
+          },
+          "switches": {
+            "type": "object",
+            "description": "Event type to push switch; only the event types listed are changed, and an unknown event type is ignored. A switch must be true or false; null is refused. true is refused for an event type that never pushes (task_assigned, board_access_changed, weekly_digest, comment_added); false for one is accepted and changes nothing.",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "quiet_hours_enabled": {
+            "type": "boolean",
+            "description": "true is refused while there is no time zone, stored or sent in the same request."
+          },
+          "quiet_start": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+            "description": "HH:MM, or HH:MM:SS with the seconds dropped, two digits each; an offset, a sign or any other form is refused. Must differ from quiet_end."
+          },
+          "quiet_end": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
+            "description": "HH:MM, or HH:MM:SS with the seconds dropped, two digits each; an offset, a sign or any other form is refused. Must differ from quiet_start."
+          },
+          "time_zone": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "An IANA time zone name, such as Europe/London, exactly as the tz database spells it. null, empty and blank are refused, so a stored zone cannot be cleared."
           }
         }
       },

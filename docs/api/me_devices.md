@@ -85,6 +85,10 @@ is:
 
 `200 OK` returns the device in the shape `GET /api/me/devices` uses.
 
+A `time_zone` sent here also becomes the person's
+[push settings](me_notification_settings.md) zone when that zone is still
+`null`; a zone already set there is never moved.
+
 A push token belongs to one app install, so it is unique among devices. If
 another of the person's own devices still holds the token, for example the
 device the same phone was signed in as before, the token **moves**: it is

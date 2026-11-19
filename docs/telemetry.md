@@ -1057,6 +1057,32 @@ W2758 added the event the app's Now screen and review queue emit
 - **It is not persisted.** A signed-in device can cause it at will, so it is
   charted live only.
 
+### Push events
+
+W2767 added the event the push settings emit
+([the notification settings routes](api/me_notification_settings.md)). It is
+declared in `Kanban.Telemetry.Catalog.PushEvents`
+(`lib/kanban/telemetry/catalog/push_events.ex`) and emitted by
+`Kanban.Notifications.PushSettingsStore` once a change commits.
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :push, :settings_changed]` | `count` | `mode`, `fields`, `via` | `Kanban.Notifications.update_push_settings/3`, when a change stores something |
+
+- **What it carries.** `mode` is `:decisions` or `:every`, the mode after the
+  change. `fields` is the sorted names of what changed: `"mode"`,
+  `"quiet_hours_enabled"`, `"quiet_start"`, `"quiet_end"`, `"time_zone"`, and
+  the event type of each push switch, including the switches a mode's preset
+  changed. `via` is `:ios` or `:android` for the app, from the device's
+  platform. `:web` is reserved for the web preferences page, which does not
+  change push settings yet (W2768). It never carries a value
+  such as the time zone or a quiet-hours time, a user or a device. `via` is
+  its only tag; `mode` is not one.
+- **When it fires.** Only when a change stores something: a request that
+  sends what is already stored, or is refused, emits nothing.
+- **It is not persisted.** A signed-in device can cause it at will, so it is
+  charted live only.
+
 ## Emitting an event
 
 ```elixir
@@ -1138,8 +1164,10 @@ raise.
    attachment event is an entry in `Kanban.Telemetry.Catalog.AttachmentEvents`,
    a new audit log streaming event is an entry in
    `Kanban.Telemetry.Catalog.AuditStreamEvents`, a new mobile app event is
-   an entry in `Kanban.Telemetry.Catalog.DeviceEvents`, and a new app
-   approval event is an entry in `Kanban.Telemetry.Catalog.ReviewEvents`.
+   an entry in `Kanban.Telemetry.Catalog.DeviceEvents`, a new app
+   approval event is an entry in `Kanban.Telemetry.Catalog.ReviewEvents`, a
+   new decisions event is an entry in `Kanban.Telemetry.Catalog.DecisionEvents`,
+   and a new push event is an entry in `Kanban.Telemetry.Catalog.PushEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -1671,6 +1699,12 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :pubsub, :broadcast]` | event, legacy | `count` | `event`, `task_id`, `board_id` | A task, comment or attachment change was broadcast over PubSub. |
+
+### Domain `push`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :push, :settings_changed]` | event | `count` | `mode`, `fields`, `via` | A person changed their push settings. mode is :decisions or :every after the change; fields names the settings and push switches that changed, never their values; via is :ios, :android or :web. |
 
 ### Domain `rate_limit`
 

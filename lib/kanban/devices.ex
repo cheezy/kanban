@@ -63,6 +63,7 @@ defmodule Kanban.Devices do
   alias Kanban.Devices.MemberDevices
   alias Kanban.Devices.Revocation
   alias Kanban.Devices.TokenPairs
+  alias Kanban.Notifications
   alias Kanban.Organizations
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Repo
@@ -77,7 +78,9 @@ defmodule Kanban.Devices do
         }
 
   @doc """
-  Creates a device for the scope's user, signed in at `now`.
+  Creates a device for the scope's user, signed in at `now`. The person's
+  first device also creates their push settings with its time zone
+  (`Kanban.Notifications.ensure_push_settings_for_device/1`).
   """
   @spec create_device(Scope.t(), map(), DateTime.t()) ::
           {:ok, Device.t()} | {:error, Ecto.Changeset.t()}
@@ -87,6 +90,7 @@ defmodule Kanban.Devices do
     %Device{user_id: user_id}
     |> Device.create_changeset(attrs, signed_in_at)
     |> Repo.insert()
+    |> Notifications.ensure_push_settings_for_device()
   end
 
   @doc """

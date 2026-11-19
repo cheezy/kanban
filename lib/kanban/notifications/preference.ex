@@ -8,6 +8,11 @@ defmodule Kanban.Notifications.Preference do
 
   This module owns the canonical event type list (`event_types/0`), which
   `Kanban.Notifications.Notification` shares so the two enums never drift.
+
+  `push` is the per-event push switch. `changeset/2` never casts it: only
+  `Kanban.Notifications.PushSettingsStore` writes it, so a web change to
+  in-app or email cannot reach it, and an event that never pushes
+  (`Kanban.Notifications.PushSettings.never_push_events/0`) cannot turn it on.
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -35,6 +40,7 @@ defmodule Kanban.Notifications.Preference do
     field :event_type, Ecto.Enum, values: @event_types
     field :in_app, :boolean, default: true
     field :email, :boolean, default: false
+    field :push, :boolean, default: false
 
     timestamps(type: :utc_datetime_usec)
   end

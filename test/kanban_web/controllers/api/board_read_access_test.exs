@@ -29,9 +29,10 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
 
   # The public routes, the 405-only GET /api/mcp and the person API's
   # GET /api/me, GET /api/me/devices, GET /api/me/decisions,
-  # GET /api/me/reviews, GET /api/me/reviews/:task_id and
-  # GET /api/me/reviews/:task_id/files/:index (a device token, never a board
-  # token, W2747, W2748, W2751, W2753 and W2758) read no board.
+  # GET /api/me/reviews, GET /api/me/reviews/:task_id,
+  # GET /api/me/reviews/:task_id/files/:index and
+  # GET /api/me/notification_settings (a device token, never a board token,
+  # W2747, W2748, W2751, W2753, W2758 and W2767) read no board.
   @not_board_reads [
     "/api/agent/onboarding",
     "/api/openapi.json",
@@ -41,7 +42,8 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
     "/api/me/decisions",
     "/api/me/reviews",
     "/api/me/reviews/:task_id",
-    "/api/me/reviews/:task_id/files/:index"
+    "/api/me/reviews/:task_id/files/:index",
+    "/api/me/notification_settings"
   ]
 
   setup do

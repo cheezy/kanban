@@ -86,11 +86,12 @@ defmodule Kanban.Telemetry.Catalog do
   `Kanban.Telemetry.Catalog.Families`. Board, membership and column, task
   activity, account and user administration, notification, delivery target,
   broadcast message, goal, dependency or after_goal, Organization, paid
-  plan, attachment, audit log streaming, mobile app and decisions events go
-  in `BoardEvents`, `TaskEvents`, `UserEvents`, `NotificationEvents`,
-  `TargetEvents`, `MessageEvents`, `GoalEvents`, `OrganizationEvents`,
-  `PlanEvents`, `AttachmentEvents`, `AuditStreamEvents`, `DeviceEvents`,
-  `ReviewEvents` (app approvals) and `DecisionEvents` under
+  plan, attachment, audit log streaming, mobile app, decisions and push
+  events go in `BoardEvents`, `TaskEvents`, `UserEvents`,
+  `NotificationEvents`, `TargetEvents`, `MessageEvents`, `GoalEvents`,
+  `OrganizationEvents`, `PlanEvents`, `AttachmentEvents`,
+  `AuditStreamEvents`, `DeviceEvents`, `ReviewEvents` (app approvals),
+  `DecisionEvents` and `PushEvents` under
   `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a key the
   entry does not declare raises there, and it fails if an entry's metrics,
   persist flag or tags are invalid.
@@ -107,6 +108,7 @@ defmodule Kanban.Telemetry.Catalog do
   alias Kanban.Telemetry.Catalog.NotificationEvents
   alias Kanban.Telemetry.Catalog.OrganizationEvents
   alias Kanban.Telemetry.Catalog.PlanEvents
+  alias Kanban.Telemetry.Catalog.PushEvents
   alias Kanban.Telemetry.Catalog.ReviewEvents
   alias Kanban.Telemetry.Catalog.TargetEvents
   alias Kanban.Telemetry.Catalog.TaskEvents
@@ -489,7 +491,8 @@ defmodule Kanban.Telemetry.Catalog do
             AuditStreamEvents.events() ++
             DeviceEvents.events() ++
             ReviewEvents.events() ++
-            DecisionEvents.events()
+            DecisionEvents.events() ++
+            PushEvents.events()
 
   @by_name Map.new(@events, fn entry -> {entry.name, entry} end)
 

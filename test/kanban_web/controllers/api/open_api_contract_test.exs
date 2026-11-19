@@ -32,6 +32,8 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias KanbanWeb.API.Me.DeviceJSON
   alias KanbanWeb.API.Me.FallbackController
   alias KanbanWeb.API.Me.MeJSON
+  alias KanbanWeb.API.Me.NotificationSettingsController
+  alias KanbanWeb.API.Me.NotificationSettingsJSON
   alias KanbanWeb.API.Me.ReviewJSON
   alias KanbanWeb.API.OpenApiSpec
   alias KanbanWeb.API.TaskErrors
@@ -1354,6 +1356,74 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         assert Jason.decode!(conn.resp_body) == example["example"]
         assert example["schema"] == %{"$ref" => "#/components/schemas/PlanRequired"}
       end
+    end
+  end
+
+  describe "schema parity with NotificationSettingsJSON (W2767)" do
+    setup do
+      settings = %{
+        mode: :decisions,
+        switches: Map.new(Kanban.Notifications.PushSettings.push_events(), &{&1, false}),
+        quiet_hours_enabled: true,
+        quiet_start: ~T[22:00:00],
+        quiet_end: ~T[07:00:00],
+        time_zone: "Europe/London"
+      }
+
+      %{rendered: NotificationSettingsJSON.show(%{settings: settings})}
+    end
+
+    test "NotificationSettings and PushSwitches list exactly the rendered keys, and require them all",
+         %{spec: spec, rendered: rendered} do
+      for {value, name} <- [
+            {rendered, "NotificationSettingsResponse"},
+            {rendered.data, "NotificationSettings"},
+            {rendered.data.switches, "PushSwitches"}
+          ] do
+        assert rendered_keys(value) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert schema_keys(spec, "PushSwitches") ==
+               MapSet.new(Kanban.Notifications.PushSettings.push_events(), &Atom.to_string/1)
+    end
+
+    test "NotificationSettingsUpdate documents exactly the fields the controller takes", %{
+      spec: spec
+    } do
+      assert schema_keys(spec, "NotificationSettingsUpdate") ==
+               MapSet.new(NotificationSettingsController.update_params())
+    end
+
+    test "the mode enums match the schema", %{spec: spec} do
+      modes = Enum.map(Kanban.Notifications.PushSettings.modes(), &Atom.to_string/1)
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["NotificationSettings"]["properties"]["mode"]["enum"] == modes
+      assert schemas["NotificationSettingsUpdate"]["properties"]["mode"]["enum"] == modes
+    end
+
+    test "both 403 examples match what the person-API fallback renders, and PUT documents 422",
+         %{spec: spec} do
+      conn =
+        FallbackController.call(
+          Phoenix.ConnTest.build_conn(),
+          {:error, {:plan_required, :mobile_app}}
+        )
+
+      operations = get_in(spec, ["paths", "/api/me/notification_settings"])
+
+      for verb <- ["get", "put"] do
+        example = get_in(operations, [verb, "responses", "403", "content", "application/json"])
+        assert Jason.decode!(conn.resp_body) == example["example"]
+      end
+
+      assert get_in(operations, ~w(put responses 422 content application/json schema)) == %{
+               "$ref" => "#/components/schemas/ValidationError"
+             }
     end
   end
 end

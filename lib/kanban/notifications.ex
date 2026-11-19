@@ -56,6 +56,19 @@ defmodule Kanban.Notifications do
   | `goal_completed`        | no               |
   | `comment_added`         | no               |
 
+  Push is on by default for the four decision events (`review_requested`,
+  `task_unclaimed`, `claim_expired` and `after_goal_failed`) and off for
+  everything else; `task_assigned`, `board_access_changed`, `weekly_digest`
+  and `comment_added` never push.
+
+  ## Push settings
+
+  `get_push_settings/1`, `update_push_settings/3` and
+  `ensure_push_settings_for_device/1` read and write the person's push mode,
+  the eight push switches, quiet hours and time zone; see
+  `Kanban.Notifications.PushSettings` and
+  `Kanban.Notifications.PushSettingsStore`.
+
   ## PubSub messages
 
   Subscribers to `topic/1` receive:
@@ -83,6 +96,8 @@ defmodule Kanban.Notifications do
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Notifications.Preference
+  alias Kanban.Notifications.PushSettings
+  alias Kanban.Notifications.PushSettingsStore
   alias Kanban.Notifications.Recipients
   alias Kanban.Notifications.Visibility
   alias Kanban.Plans
@@ -123,7 +138,12 @@ defmodule Kanban.Notifications do
   def default_preference(event_type) do
     case normalize_event_type(event_type) do
       {:ok, type} ->
-        %Preference{event_type: type, in_app: true, email: type not in @email_off_by_default}
+        %Preference{
+          event_type: type,
+          in_app: true,
+          email: type not in @email_off_by_default,
+          push: PushSettings.default_push?(type)
+        }
 
       :error ->
         raise ArgumentError, "unknown notification event type: #{inspect(event_type)}"
@@ -318,7 +338,8 @@ defmodule Kanban.Notifications do
           user_id: user_id,
           event_type: type,
           in_app: current.in_app,
-          email: current.email
+          email: current.email,
+          push: current.push
         }
         |> Preference.changeset(attrs)
         |> Repo.insert(
@@ -396,6 +417,23 @@ defmodule Kanban.Notifications do
           [Notification.t()]
   defdelegate list_task_notifications(scope, event_types, board_ids, opts \\ []),
     to: Visibility
+
+  @doc "The scoped user's push settings; see `PushSettingsStore.get/1`."
+  @spec get_push_settings(Scope.t()) :: PushSettings.view()
+  defdelegate get_push_settings(scope), to: PushSettingsStore, as: :get
+
+  @doc "Changes the scoped user's push settings; see `PushSettingsStore.update/3`."
+  @spec update_push_settings(Scope.t(), map(), keyword()) ::
+          {:ok, PushSettings.view()} | {:error, Ecto.Changeset.t() | {:plan_required, atom()}}
+  defdelegate update_push_settings(scope, attrs, opts), to: PushSettingsStore, as: :update
+
+  @doc """
+  Creates a device user's push settings row on their first device; see
+  `PushSettingsStore.ensure_for_device/1`.
+  """
+  defdelegate ensure_push_settings_for_device(insert_result),
+    to: PushSettingsStore,
+    as: :ensure_for_device
 
   @doc "Ids of the users who should receive the weekly digest; see `DigestRecipients`."
   defdelegate list_digest_recipients(), to: DigestRecipients

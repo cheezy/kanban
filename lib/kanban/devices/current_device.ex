@@ -27,6 +27,10 @@ defmodule Kanban.Devices.CurrentDevice do
   a token that no device holds yet cannot both pass the row locks and leave
   the second to fail on the unique index: the second waits, then sees the
   first's row and moves the token from it.
+
+  A time zone the update sets also fills the person's push settings zone
+  when it is still empty (W2767), in the same transaction, so quiet hours
+  follow it; a zone already set there is never moved.
   """
 
   import Ecto.Query, warn: false
@@ -34,6 +38,7 @@ defmodule Kanban.Devices.CurrentDevice do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Devices.Device
+  alias Kanban.Notifications
   alias Kanban.Repo
 
   @doc """
@@ -50,6 +55,7 @@ defmodule Kanban.Devices.CurrentDevice do
       id
       |> lock_rows(token)
       |> update_locked(id, attrs, now)
+      |> Notifications.ensure_push_settings_for_device()
     end)
   end
 
