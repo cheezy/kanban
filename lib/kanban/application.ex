@@ -24,6 +24,9 @@ defmodule Kanban.Application do
       # Caps how many signed audit exports hold a snapshot, and a pool
       # connection, at once (D424).
       Kanban.AuditLog.SignedExport.Slots,
+      # ETS cache of highlighted review diffs (Kanban.Reviews.DiffHighlighter);
+      # entries live one hour and are swept every 10 minutes.
+      {Kanban.Reviews.DiffCache, name: Kanban.Reviews.DiffCache},
       KanbanWeb.AgentsPresence,
       # Oban runs the after_goal grace-window worker (W493). The queue
       # depth is set deliberately low — these are one-shot timer jobs,

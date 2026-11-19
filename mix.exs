@@ -54,6 +54,13 @@ defmodule Kanban.MixProject do
     [
       {:bcrypt_elixir, "~> 3.0"},
       {:mdex, "~> 0.8"},
+      # Server-side diff highlighting (Kanban.Reviews.DiffHighlighter). Only
+      # maintained lexers: JavaScript and CSS stay plain (design decision 11).
+      {:makeup, "~> 1.2"},
+      {:makeup_elixir, "~> 1.0"},
+      {:makeup_erlang, "~> 1.1"},
+      {:makeup_eex, "~> 2.0"},
+      {:makeup_html, "~> 1.0"},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
