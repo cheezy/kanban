@@ -121,6 +121,7 @@ Operators of an instance whose Organizations stream their audit log should
 read the operator section of Audit Log Streaming, under Organization admins.
 
 - [Attachments](attachments.md) — Where attachment files are stored, the storage and limit environment variables, and the local-disk caveats for self-hosting.
+- [Push Notifications](push-notifications.md) — How Stride sends iOS and Android pushes, the APNs and FCM environment variables, and how dev and tests stay off Apple and Google.
 - [Fly Attachment Storage Runbook](attachments-fly-setup.md) — The commands that set up, verify and roll back Tigris attachment storage for the kanban-prod and kanban-review Fly apps.
 - [Audit Log Database Roles](audit-log-database-roles.md) — Which database roles the audit log needs and the one-time step that hardens production.
 - [Audit Log Ownership Hardening](audit-log-hardening.md) — Why the audit log's table owner matters and how ownership keeps it append-only.

@@ -28,6 +28,10 @@ defmodule Kanban.Application do
       # entries live one hour and are swept every 10 minutes.
       {Kanban.Reviews.DiffCache, name: Kanban.Reviews.DiffCache},
       KanbanWeb.AgentsPresence,
+      # Pigeon dispatchers for native push (Kanban.Push). It starts a child
+      # only for a platform whose credentials config/runtime.exs set, so dev
+      # and test start none and never connect to Apple or Google.
+      Kanban.Push.Supervisor,
       # Oban runs the after_goal grace-window worker (W493). The queue
       # depth is set deliberately low — these are one-shot timer jobs,
       # one per goal completion, not a high-throughput pipeline.
@@ -50,6 +54,10 @@ defmodule Kanban.Application do
     # Kanban.Repo.init/2 turns Ecto's query log off; this logs queries in its
     # place with the plaintext of encrypted fields redacted (D431).
     :ok = Kanban.Repo.QueryLogger.attach()
+
+    # Pigeon and Goth print the push private keys in crash reports; this
+    # filter redacts them. It adds nothing when no push credentials are set.
+    :ok = Kanban.Push.LogRedaction.install()
 
     :kanban
     |> Application.get_env(Kanban.Attachments.BlobCleanupWorker, [])

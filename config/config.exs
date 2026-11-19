@@ -212,6 +212,13 @@ config :kanban, Kanban.Workspaces.Export.CleanupWorker, stale_after_hours: 6, ke
 # `batch_size` due tombstones in attachment_blob_deletions, oldest first.
 config :kanban, Kanban.Attachments.BlobCleanupWorker, batch_size: 200
 
+# Native push senders, one per platform (Kanban.Push, W2770). Their
+# credentials are set only by config/runtime.exs in production, so in dev
+# both adapters answer {:error, :not_configured} and nothing reaches Apple
+# or Google. config/test.exs swaps in Mox doubles. See
+# docs/push-notifications.md.
+config :kanban, Kanban.Push, adapters: [ios: Kanban.Push.APNs, android: Kanban.Push.FCM]
+
 # How far back the claim-expiry sweeper looks for expired claims, so the
 # first run after a deploy does not notify about historical claims.
 config :kanban, Kanban.Notifications.ClaimExpiryWorker, lookback_seconds: 2 * 60 * 60

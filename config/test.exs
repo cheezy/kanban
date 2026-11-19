@@ -155,6 +155,11 @@ config :kanban, Kanban.Attachments.Storage.S3,
   path_style: false,
   req_options: [plug: {Req.Test, Kanban.Attachments.Storage.S3}, retry_delay: 0]
 
+# Native push (W2770): both platforms go to Mox doubles defined in
+# test/test_helper.exs, and no APNs or FCM credentials are ever configured, so
+# Kanban.Push.Supervisor starts no dispatcher and no test sends a real push.
+config :kanban, Kanban.Push, adapters: [ios: Kanban.Push.APNsMock, android: Kanban.Push.FCMMock]
+
 # Webhook deliveries (W2227): route every request to a Req.Test stub and
 # resolve webhook hosts from a fixed table, so no test touches the network
 # or DNS. Both are static, so tests stay async.

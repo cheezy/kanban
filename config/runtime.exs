@@ -772,3 +772,91 @@ if config_env() == :prod do
       ]
     ]
 end
+
+# Native push credentials (W2770, design §15.2), documented in
+# docs/push-notifications.md. Read only in production: dev and test never set
+# them, whatever the shell exports, so Kanban.Push.Supervisor starts no
+# dispatcher there and nothing reaches Apple or Google. Each platform is off
+# until its variables are set, and then needs all of them: a partial set
+# stops the boot, as does a value that does not parse. Errors name the
+# variable and never print its value. Nothing here is hard-coded: the team
+# id, key id, bundle id and Firebase project come only from the environment.
+#
+#   APNS_KEY                  the contents of the APNs .p8 auth key file (a
+#                             one-line value may carry \n for line breaks)
+#   APNS_KEY_ID               its 10-character key id
+#   APNS_TEAM_ID              the 10-character Apple team id
+#   APNS_TOPIC                the iOS app's bundle id
+#   FCM_PROJECT_ID            the Firebase project id
+#   FCM_SERVICE_ACCOUNT_JSON  the service account's JSON key file
+if config_env() == :prod do
+  # The values of one platform's variables, nil when none is set.
+  push_credentials = fn platform, names ->
+    values = for {key, name} <- names, do: {key, attachments_value.(name)}
+
+    case for({key, nil} <- values, do: Keyword.fetch!(names, key)) do
+      [] ->
+        values
+
+      missing when length(missing) == length(names) ->
+        nil
+
+      missing ->
+        raise "Native push to #{platform} needs every one of #{Enum.map_join(names, ", ", &elem(&1, 1))} " <>
+                "once any is set; #{Enum.join(missing, ", ")} is not set. See docs/push-notifications.md."
+    end
+  end
+
+  apns_credentials =
+    push_credentials.("iOS",
+      key: "APNS_KEY",
+      key_identifier: "APNS_KEY_ID",
+      team_id: "APNS_TEAM_ID",
+      topic: "APNS_TOPIC"
+    )
+
+  if apns_credentials do
+    key = String.replace(apns_credentials[:key], ["\\r\\n", "\\n"], "\n")
+
+    match?([{:PrivateKeyInfo, _der, :not_encrypted}], :public_key.pem_decode(key)) ||
+      raise "APNS_KEY must be the contents of an APNs .p8 auth key file. " <>
+              "Its value is not shown here."
+
+    for {key, name} <- [key_identifier: "APNS_KEY_ID", team_id: "APNS_TEAM_ID"],
+        not (apns_credentials[key] =~ ~r/\A[A-Z0-9]{10}\z/) do
+      raise "#{name} must be 10 capital letters and digits. Its value is not shown here."
+    end
+
+    config :kanban, Kanban.Push.APNs, Keyword.put(apns_credentials, :key, key)
+  end
+
+  fcm_credentials =
+    push_credentials.("Android",
+      project_id: "FCM_PROJECT_ID",
+      service_account: "FCM_SERVICE_ACCOUNT_JSON"
+    )
+
+  if fcm_credentials do
+    fcm_credentials[:project_id] =~ ~r/\A[a-z][a-z0-9-]{4,28}[a-z0-9]\z/ ||
+      raise "FCM_PROJECT_ID must be a Firebase project id: 6 to 30 lowercase letters, " <>
+              "digits and hyphens. Its value is not shown here."
+
+    service_account =
+      case JSON.decode(fcm_credentials[:service_account]) do
+        {:ok, %{"type" => "service_account", "private_key" => pk, "client_email" => email} = sa}
+        when is_binary(pk) and is_binary(email) ->
+          sa
+
+        _not_a_service_account ->
+          raise "FCM_SERVICE_ACCOUNT_JSON must be the JSON key file of a Google service " <>
+                  "account. Its value is not shown here."
+      end
+
+    config :kanban, Kanban.Push.FCM,
+      project_id: fcm_credentials[:project_id],
+      service_account: service_account
+  end
+end
+
+# End of the native push credentials block (test/kanban/push/runtime_config_test.exs
+# reads the block up to this line).

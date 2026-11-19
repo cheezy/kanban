@@ -106,7 +106,12 @@ defmodule Kanban.MixProject do
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:tidewave, "~> 0.2", only: :dev},
       {:error_tracker, "~> 0.7"},
-      {:oban, "~> 2.18"}
+      {:oban, "~> 2.18"},
+      # Native push senders (Kanban.Push.APNs / Kanban.Push.FCM). Only the
+      # prod release starts its dispatchers; dev and test never contact
+      # Apple or Google.
+      {:pigeon, "~> 2.1"},
+      {:mox, "~> 1.3", only: :test}
     ]
   end
 

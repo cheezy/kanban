@@ -23,6 +23,11 @@ ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)
   |> Keyword.take([:chrome_executable, :no_sandbox, :chrome_args, :discard_stderr])
   |> ChromicPDF.warm_up()
 
+# Mox doubles for the native push adapters (Kanban.Push.Adapter), one per
+# platform so a test can expect each without changing config.
+Mox.defmock(Kanban.Push.APNsMock, for: Kanban.Push.Adapter)
+Mox.defmock(Kanban.Push.FCMMock, for: Kanban.Push.Adapter)
+
 # capture_log: true routes each test's log output through ExUnit's capture
 # handler — it is buffered per test and only printed when that test fails.
 # This keeps passing runs quiet (e.g. the intentional Logger.warning from
