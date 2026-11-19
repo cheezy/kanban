@@ -29,12 +29,9 @@ defmodule Kanban.Devices.AppPolicy do
   API still serves, not to authenticate the client.
   """
 
-  @platforms [:ios, :android]
+  alias Kanban.Reviews.MobileGuard
 
-  # The app guard limits the phone shows before it lets a person approve a
-  # change (design §7.3). Server policy, so the app can never raise them.
-  @phone_max_files 10
-  @phone_max_lines 500
+  @platforms [:ios, :android]
 
   @defaults %{
     ios: %{min_version: "1.0.0", store_url: "https://apps.apple.com/app/stride"},
@@ -73,10 +70,16 @@ defmodule Kanban.Devices.AppPolicy do
 
   @doc """
   The phone guard limits: the largest change, in files and lines, the app
-  lets a person approve on a phone.
+  lets a person approve on a phone (design §7.3). Server policy, so the app
+  can never raise them. They are `Kanban.Reviews.MobileGuard`'s constants, so
+  the limit the app shows is the limit the server enforces.
   """
   @spec phone_limits() :: %{phone_max_files: pos_integer(), phone_max_lines: pos_integer()}
-  def phone_limits, do: %{phone_max_files: @phone_max_files, phone_max_lines: @phone_max_lines}
+  def phone_limits,
+    do: %{
+      phone_max_files: MobileGuard.max_files(),
+      phone_max_lines: MobileGuard.max_changed_lines()
+    }
 
   @doc """
   Parses an `X-Stride-App` header value into its platform and version.

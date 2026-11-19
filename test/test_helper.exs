@@ -44,9 +44,12 @@ ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)
 # transaction holds back. They are excluded unless a run asks for
 # them by tag or by file:line, and their setup_all refuses any database but
 # kanban_test_race; their moduledoc gives the command that runs them.
+# The tests tagged :review_race (Kanban.Reviews.ConcurrentReviewRaceTest)
+# commit audit events the same way, so they are excluded on the same terms
+# and refuse any database but kanban_test_race.
 ExUnit.start(
   capture_log: true,
-  exclude: [:audit_stream_race | Kanban.OpenSSL3.exclusions()]
+  exclude: [:audit_stream_race, :review_race | Kanban.OpenSSL3.exclusions()]
 )
 
 # Attachment blobs. A stored file's row rolls back with the test's sandbox,

@@ -87,7 +87,7 @@ defmodule KanbanWeb.ReviewLive do
 
       %{} = task ->
         socket.assigns.current_scope
-        |> Reviews.approve_review(task)
+        |> Reviews.approve_review(task, via: :web)
         |> case do
           {:ok, _approved} ->
             {:noreply,
@@ -135,7 +135,7 @@ defmodule KanbanWeb.ReviewLive do
 
   defp apply_request_changes(socket, task, notes) do
     socket.assigns.current_scope
-    |> Reviews.request_changes_review(task, review_notes: notes)
+    |> Reviews.request_changes_review(task, review_notes: notes, via: :web)
     |> case do
       {:ok, _updated} -> {:noreply, request_changes_success(socket, task)}
       {:error, :review_notes_required} -> {:noreply, notes_required_flash(socket)}

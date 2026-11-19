@@ -689,4 +689,31 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
       refute view |> element("#audit-log-filters select") |> render() =~ "organization_"
     end
   end
+
+  describe "review audit rows" do
+    setup :org_admin_setup
+
+    test "are listed with their labels and offered in the action filter", %{
+      conn: conn,
+      org_a: org_a
+    } do
+      base = ~U[2026-10-05 09:00:00.000000Z]
+      approved = insert_event!("review_approved", org_a, base, metadata: %{"via" => "web"})
+
+      changes =
+        insert_event!("review_changes_requested", org_a, DateTime.add(base, 60),
+          metadata: %{"via" => "ios"}
+        )
+
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert view |> element("#events-#{approved.id}") |> render() =~ "Review approved"
+      assert view |> element("#events-#{changes.id}") |> render() =~ "Review changes requested"
+
+      options = view |> element("#audit-log-filters select") |> render()
+      assert options =~ ~s(value="review_approved")
+      assert options =~ ~s(value="review_changes_requested")
+      assert options =~ "Review approved"
+    end
+  end
 end

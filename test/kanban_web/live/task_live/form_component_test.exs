@@ -2943,6 +2943,84 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "review audit events from the Review Status field" do
+    defp save_review_status(user, board, task, review_status) do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}",
+            current_scope: %{user: user}
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+      params = %{"title" => task.title, "review_status" => review_status}
+
+      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => params}, socket)
+      Kanban.Repo.get!(Tasks.Task, task.id)
+    end
+
+    defp form_review_rows(action),
+      do: Kanban.AuditLog.list_events([action: action], order: :asc)
+
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Review"})
+      %{user: user, board: board, task: task_fixture(column, %{title: "Secret form title"})}
+    end
+
+    test "approving writes review_approved with via web",
+         %{user: user, board: board, task: task} do
+      assert %{review_status: :approved} = save_review_status(user, board, task, "approved")
+
+      assert [event] = form_review_rows(:review_approved)
+      assert event.actor_user_id == user.id
+
+      assert %{
+               "user_id" => user_id,
+               "task_id" => task_id,
+               "board_id" => board_id,
+               "via" => "web",
+               "approval_key" => false
+             } = event.metadata
+
+      assert {user_id, task_id, board_id} == {user.id, task.id, board.id}
+      refute inspect(event) =~ "Secret form title"
+      assert form_review_rows(:review_changes_requested) == []
+    end
+
+    test "requesting changes writes review_changes_requested without approval_key",
+         %{user: user, board: board, task: task} do
+      save_review_status(user, board, task, "changes_requested")
+
+      assert [%{metadata: metadata}] = form_review_rows(:review_changes_requested)
+      assert metadata["via"] == "web"
+      refute Map.has_key?(metadata, "approval_key")
+      assert form_review_rows(:review_approved) == []
+    end
+
+    test "saving the same verdict again writes no second row",
+         %{user: user, board: board, task: task} do
+      approved = save_review_status(user, board, task, "approved")
+      save_review_status(user, board, approved, "approved")
+
+      assert [_one] = form_review_rows(:review_approved)
+    end
+
+    test "pending and rejected write no review row", %{user: user, board: board, task: task} do
+      pending = save_review_status(user, board, task, "pending")
+      assert %{review_status: :rejected} = save_review_status(user, board, pending, "rejected")
+
+      assert form_review_rows(:review_approved) == []
+      assert form_review_rows(:review_changes_requested) == []
+    end
+  end
+
   describe "AI context fields integration" do
     test "creates task with all AI context fields" do
       user = user_fixture()

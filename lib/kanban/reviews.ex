@@ -43,7 +43,18 @@ defmodule Kanban.Reviews do
   the goal events in the order the approval caused them, then
   `[:kanban, :task, :review_approved]`. A request for changes moves nothing,
   so it emits only `[:kanban, :task, :review_changes_requested]`, after its
-  commit.
+  commit. Both review events carry `via` and `device_class`, and each review
+  emits exactly one of them.
+
+  Every committed review, web or app, also writes one audit event —
+  `:review_approved` or `:review_changes_requested` — as the last write inside
+  the same transaction, so a refused or rolled-back review leaves no row
+  (`Kanban.Reviews.Audit`). Its `[:kanban, :audit, *]` telemetry copy fires
+  then, before the commit and before the review telemetry above. Callers say
+  where the review was made through `opts`: `:via` (`:web`, `:ios` or
+  `:android`), `:device` (the `Kanban.Devices.Device`, for an app review) and,
+  on an approval, `:approval_key` (`true` when the device's approval
+  signature was verified). The web passes `via: :web`.
   """
 
   import Ecto.Query, warn: false
@@ -52,6 +63,7 @@ defmodule Kanban.Reviews do
   alias Kanban.Notifications.Events
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
+  alias Kanban.Reviews.Audit
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
@@ -221,7 +233,13 @@ defmodule Kanban.Reviews do
   workflow-step failure rolls back the review-field update. The completion
   telemetry is held back until that transaction commits, so a rolled-back or
   refused approval emits no `[:kanban, :task, :completed]`, no goal events and
-  no `[:kanban, :task, :review_approved]`.
+  no `[:kanban, :task, :review_approved]`. A committed approval writes one
+  `:review_approved` audit event inside the same transaction.
+
+  `opts` says where the approval was made: `:via` (`:web`, `:ios` or
+  `:android`), `:device` (the reviewer's `Kanban.Devices.Device`, for the app)
+  and `:approval_key` (`true` when the caller verified the device's approval
+  signature). See `Kanban.Reviews.Audit.context/2`.
 
   Returns `{:ok, task}` on success or `{:error, reason}` where `reason` is
   one of: `:not_found` (task is missing or on an inaccessible board),
@@ -231,10 +249,13 @@ defmodule Kanban.Reviews do
   """
   @spec approve_review(Scope.t() | nil, Task.t(), keyword()) ::
           {:ok, Task.t()} | {:error, atom() | Ecto.Changeset.t()}
-  def approve_review(scope, %Task{} = task, _opts \\ []) do
-    # `_opts` is accepted for arity symmetry with `request_changes_review/3`;
-    # no keys are currently honored.
-    perform_review(scope, task, %{review_status: :approved}, move_after_review?: true)
+  def approve_review(scope, %Task{} = task, opts \\ []) do
+    perform_review(
+      scope,
+      task,
+      %{review_status: :approved},
+      Keyword.put(opts, :move_after_review?, true)
+    )
   end
 
   @doc """
@@ -244,7 +265,10 @@ defmodule Kanban.Reviews do
   pass the reviewer's feedback back to the agent. Sets `review_status` to
   `:changes_requested`, persists `:review_notes`, stamps `reviewed_at`,
   and sets `reviewed_by_id`. The task stays in the Review column so the
-  agent can pick up the notes and move it back to Doing itself.
+  agent can pick up the notes and move it back to Doing itself. A committed
+  request writes one `:review_changes_requested` audit event inside the same
+  transaction; `opts` also takes `:via` and `:device`, as `approve_review/3`
+  does. The notes are never recorded in the audit event.
 
   Returns `{:ok, task}` on success or `{:error, reason}` — additional
   reason atoms over `approve_review/3`: `:review_notes_required`.
@@ -265,7 +289,7 @@ defmodule Kanban.Reviews do
           scope,
           task,
           %{review_status: :changes_requested, review_notes: notes},
-          move_after_review?: false
+          Keyword.put(opts, :move_after_review?, false)
         )
     end
   end
@@ -296,10 +320,16 @@ defmodule Kanban.Reviews do
         {:error, :not_authorized}
 
       user ->
+        context = Audit.context(opts, user)
+
         scope
-        |> run_review_transaction(task, user, base_attrs, opts)
+        |> run_review_transaction(task, user, base_attrs, opts, context)
         |> notify_reviewed(user, Keyword.get(opts, :move_after_review?, true))
-        |> TaskTelemetry.reviewed(base_attrs.review_status, user)
+        |> TaskTelemetry.reviewed(
+          base_attrs.review_status,
+          user,
+          Audit.telemetry_metadata(context)
+        )
     end
   end
 
@@ -329,25 +359,39 @@ defmodule Kanban.Reviews do
   defp moved_event(%Task{review_status: :approved}), do: :task_completed
   defp moved_event(%Task{}), do: :task_returned_to_doing
 
-  defp run_review_transaction(scope, task, user, base_attrs, opts) do
+  defp run_review_transaction(scope, task, user, base_attrs, opts, context) do
     # Telemetry the approval causes (task.completed, task.unblocked,
     # goal.completed, goal.grace_window_scheduled) is held back until this
     # transaction commits.
     AfterCommit.after_commit(fn ->
-      Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts) end)
+      Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts, context) end)
     end)
   end
 
-  defp commit_review!(scope, task, user, base_attrs, opts) do
-    move? = Keyword.get(opts, :move_after_review?, true)
-
-    with {:ok, fetched} <- get_pending_review(scope, task.id),
+  # The task row is locked first, so two reviews of one task run one after the
+  # other: the second reads the task once the first has committed, finds it no
+  # longer pending and is refused with `:not_found`. The audit row is the last
+  # write, so any refusal rolls back before it and a committed review always
+  # has exactly one row. `fetched` is the fresh record with its column, which
+  # the row's board id and change size read.
+  defp commit_review!(scope, task, user, base_attrs, opts, context) do
+    with :ok <- lock_task_row(task.id),
+         {:ok, fetched} <- get_pending_review(scope, task.id),
          :ok <- authorize_review_write(fetched, user),
-         {:ok, prepared} <- persist_review_fields(task, user, base_attrs),
-         {:ok, final} <- maybe_mark_reviewed(prepared, user, move?) do
+         {:ok, final} <- write_review(task, user, base_attrs, opts),
+         :ok <- Audit.record(base_attrs.review_status, fetched, user, context) do
       final
     else
       {:error, reason} -> Repo.rollback(reason)
+    end
+  end
+
+  defp lock_task_row(task_id) do
+    query = from(t in Task, where: t.id == ^task_id, lock: "FOR UPDATE", select: t.id)
+
+    case Repo.one(query) do
+      nil -> {:error, :not_found}
+      _id -> :ok
     end
   end
 
@@ -366,10 +410,19 @@ defmodule Kanban.Reviews do
     end
   end
 
-  defp maybe_mark_reviewed(task, user, true),
-    do: normalize_workflow(AgentWorkflow.mark_reviewed(task, user, webhook: false))
+  defp write_review(task, user, base_attrs, opts) do
+    with {:ok, prepared} <- persist_review_fields(task, user, base_attrs) do
+      maybe_mark_reviewed(prepared, user, opts)
+    end
+  end
 
-  defp maybe_mark_reviewed(task, _user, false), do: {:ok, task}
+  defp maybe_mark_reviewed(task, user, opts) do
+    if Keyword.get(opts, :move_after_review?, true) do
+      normalize_workflow(AgentWorkflow.mark_reviewed(task, user, webhook: false))
+    else
+      {:ok, task}
+    end
+  end
 
   defp persist_review_fields(task, user, base_attrs) do
     attrs =

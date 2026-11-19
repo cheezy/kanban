@@ -15547,3 +15547,15 @@ msgstr "Telefone · Tablets"
 #, elixir-autogen, elixir-format
 msgid "That device was already signed out."
 msgstr "Dieses Gerät war bereits abgemeldet."
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Review approved"
+msgstr "Überprüfung genehmigt"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Review changes requested"
+msgstr "Überprüfung: Änderungen angefordert"

@@ -222,31 +222,46 @@ defmodule Kanban.Tasks.TaskTelemetry do
   @doc """
   Emits `[:kanban, :task, :review_approved]` or
   `[:kanban, :task, :review_changes_requested]` when `result` is a committed
-  review by `reviewer`. The review notes are never sent. Returns `result`.
+  review by `reviewer`, once per review. `context` says where it was made:
+  `via` (`:web`, `:ios` or `:android`, default `:web`) and `device_class`
+  (`:phone` or `:tablet`, `nil` on the web). The review notes are never sent.
+  Returns `result`.
   """
-  @spec reviewed(result, :approved | :changes_requested, %{id: integer()}) :: result
+  @spec reviewed(result, :approved | :changes_requested, %{id: integer()}, map()) :: result
         when result: term()
-  def reviewed({:ok, %Task{} = task} = result, :approved, reviewer) do
-    Kanban.Telemetry.emit([:kanban, :task, :review_approved], %{count: 1}, %{
-      task_id: task.id,
-      board_id: board_id(task),
-      reviewer_user_id: reviewer.id
-    })
+  def reviewed(result, decision, reviewer, context \\ %{})
+
+  def reviewed({:ok, %Task{} = task} = result, :approved, reviewer, context) do
+    Kanban.Telemetry.emit(
+      [:kanban, :task, :review_approved],
+      %{count: 1},
+      review_metadata(task, reviewer, context)
+    )
 
     result
   end
 
-  def reviewed({:ok, %Task{} = task} = result, :changes_requested, reviewer) do
-    Kanban.Telemetry.emit([:kanban, :task, :review_changes_requested], %{count: 1}, %{
-      task_id: task.id,
-      board_id: board_id(task),
-      reviewer_user_id: reviewer.id
-    })
+  def reviewed({:ok, %Task{} = task} = result, :changes_requested, reviewer, context) do
+    Kanban.Telemetry.emit(
+      [:kanban, :task, :review_changes_requested],
+      %{count: 1},
+      review_metadata(task, reviewer, context)
+    )
 
     result
   end
 
-  def reviewed(result, _decision, _reviewer), do: result
+  def reviewed(result, _decision, _reviewer, _context), do: result
+
+  defp review_metadata(task, reviewer, context) do
+    %{
+      task_id: task.id,
+      board_id: board_id(task),
+      reviewer_user_id: reviewer.id,
+      via: Map.get(context, :via, :web),
+      device_class: Map.get(context, :device_class)
+    }
+  end
 
   @doc """
   Emits `[:kanban, :task, :comment_created]` when `result` is a saved

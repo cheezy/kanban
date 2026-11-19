@@ -192,5 +192,10 @@ defmodule KanbanWeb.AuditLogActions do
 
   def action_label("device_revoked"), do: pgettext("audit action", "Device revoked")
 
+  def action_label("review_approved"), do: pgettext("audit action", "Review approved")
+
+  def action_label("review_changes_requested"),
+    do: pgettext("audit action", "Review changes requested")
+
   def action_label(action) when is_binary(action), do: action
 end

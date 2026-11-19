@@ -15458,3 +15458,15 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "That device was already signed out."
 msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Review approved"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Review changes requested"
+msgstr ""

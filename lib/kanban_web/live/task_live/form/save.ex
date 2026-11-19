@@ -27,6 +27,7 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   import Phoenix.LiveView, only: [push_patch: 2, put_flash: 3]
 
   alias Kanban.Columns
+  alias Kanban.Reviews.Audit
   alias Kanban.Tasks
   alias KanbanWeb.TaskLive.Form.AttachmentStaging
   alias KanbanWeb.TaskLive.Form.LabelSelection
@@ -167,6 +168,7 @@ defmodule KanbanWeb.TaskLive.Form.Save do
 
     case save_task_update(socket, task_params) do
       {:ok, task} ->
+        audit_review_change(socket, task)
         finish_task_update(socket, task, cascade_count)
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -191,6 +193,15 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   # notification when someone assigns a task to themselves.
   defp save_task_update(socket, task_params) do
     Tasks.update_task(socket.assigns.task, task_params, actor: current_user(socket))
+  end
+
+  # The Review Status field sets a verdict without Kanban.Reviews, so the
+  # save writes the same review audit event the /review queue does.
+  defp audit_review_change(socket, saved) do
+    case current_user(socket) do
+      nil -> :ok
+      user -> Audit.record_change(socket.assigns.task, saved, user)
+    end
   end
 
   defp current_user(socket) do

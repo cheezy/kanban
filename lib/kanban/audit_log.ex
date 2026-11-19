@@ -62,7 +62,8 @@ defmodule Kanban.AuditLog do
   This module writes, lists and purges events. Building blocks live beside it:
   `Kanban.AuditLog.Query` (query builders and keyset cursors),
   `Kanban.AuditLog.Filters` (request-param parsing),
-  `Kanban.AuditLog.OrganizationScope` (org-admin redaction) and
+  `Kanban.AuditLog.OrganizationScope` (org-admin redaction),
+  `Kanban.AuditLog.Redaction` (which metadata pairs are dropped) and
   `Kanban.AuditLog.Export` (keyset-batched CSV/JSON exports, with the total
   row cap). `export_stream/3` and `export_truncated?/3` are delegated to
   `Kanban.AuditLog.Export`, so callers use this module's API only.
@@ -81,6 +82,7 @@ defmodule Kanban.AuditLog do
   alias Kanban.AuditLog.Export
   alias Kanban.AuditLog.OrganizationScope
   alias Kanban.AuditLog.Query
+  alias Kanban.AuditLog.Redaction
   alias Kanban.AuditLog.SignedExport
   alias Kanban.Repo
 
@@ -91,17 +93,6 @@ defmodule Kanban.AuditLog do
   # Kept in the audit row and log line but never sent to telemetry. `filters`
   # (exports) can contain an email; a streaming destination's name and host.
   @telemetry_omitted_keys [:email, :ip, :filters, :destination_name, :url_host]
-
-  # A key is dropped when its name CONTAINS any of these substrings, so
-  # credential-shaped keys the original exact-match list never anticipated
-  # (:reset_token, :api_key, :refresh_token, :session_token, :otp_secret, …)
-  # are redacted too, honoring the moduledoc's never-log guarantee (D159).
-  @sensitive_substrings ~w(password token secret authorization key otp)
-
-  # Keys ending in `_id` are database identifiers (user_id, board_id,
-  # token_id — a row id, not the token value), so they are exempt from the
-  # substring rule even when the substring would otherwise match.
-  @id_suffix "_id"
 
   # Longest string stored for any one metadata value; longer values are cut.
   @max_value_length 2_000
@@ -277,15 +268,8 @@ defmodule Kanban.AuditLog do
 
   defp sanitize(metadata) do
     metadata
-    |> Enum.reject(fn {key, _value} -> sensitive_key?(key) end)
+    |> Enum.reject(fn {key, value} -> Redaction.drop?(key, value) end)
     |> Enum.map(&format_pair/1)
-  end
-
-  defp sensitive_key?(key) do
-    name = to_string(key)
-
-    not String.ends_with?(name, @id_suffix) and
-      Enum.any?(@sensitive_substrings, &String.contains?(name, &1))
   end
 
   # Format IP address tuples (conn.remote_ip / peer address) to a string.
@@ -448,7 +432,7 @@ defmodule Kanban.AuditLog do
   defp json_safe_map(pairs) do
     for {key, value} <- pairs,
         name = key_name(key),
-        not sensitive_key?(name),
+        not Redaction.drop?(name, value),
         into: %{},
         do: {name, json_safe(value)}
   end

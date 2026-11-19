@@ -106,8 +106,9 @@ defmodule Kanban.Telemetry.Catalog.TaskEvents do
       kind: :event,
       domain: :task,
       measurements: [:count],
-      metadata: [:task_id, :board_id, :reviewer_user_id],
-      description: "A reviewer approved a task in the review queue.",
+      metadata: [:task_id, :board_id, :reviewer_user_id, :via, :device_class],
+      description:
+        "A reviewer approved a task, on the web or in the app. via is web, ios or android; device_class is phone or tablet, nil on the web. Emitted once per approval.",
       legacy: false,
       metrics: [counter: :count],
       persist: false
@@ -117,9 +118,9 @@ defmodule Kanban.Telemetry.Catalog.TaskEvents do
       kind: :event,
       domain: :task,
       measurements: [:count],
-      metadata: [:task_id, :board_id, :reviewer_user_id],
+      metadata: [:task_id, :board_id, :reviewer_user_id, :via, :device_class],
       description:
-        "A reviewer requested changes to a task in the review queue. The review notes are never sent.",
+        "A reviewer requested changes to a task, on the web or in the app. via is web, ios or android; device_class is phone or tablet, nil on the web. The review notes are never sent.",
       legacy: false,
       metrics: [counter: :count],
       persist: false

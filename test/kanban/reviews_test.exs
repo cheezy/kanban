@@ -10,10 +10,12 @@ defmodule Kanban.ReviewsTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.DevicesFixtures
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
+  alias Kanban.AuditLog
   alias Kanban.Boards
   alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications.EmailWorker
@@ -681,7 +683,14 @@ defmodule Kanban.ReviewsTest do
 
       assert_receive {:telemetry_event, [:kanban, :task, :review_approved], %{count: 1}, metadata}
 
-      assert metadata == %{task_id: task.id, board_id: board.id, reviewer_user_id: user.id}
+      assert metadata == %{
+               task_id: task.id,
+               board_id: board.id,
+               reviewer_user_id: user.id,
+               via: :web,
+               device_class: nil
+             }
+
       assert_receive {:telemetry_event, [:kanban, :task, :completed], _, _}
       refute_receive {:telemetry_event, [:kanban, :task, :completed], _, _}
       refute_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], _, _}
@@ -787,7 +796,14 @@ defmodule Kanban.ReviewsTest do
       assert_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], %{count: 1},
                       metadata}
 
-      assert metadata == %{task_id: task.id, board_id: board.id, reviewer_user_id: user.id}
+      assert metadata == %{
+               task_id: task.id,
+               board_id: board.id,
+               reviewer_user_id: user.id,
+               via: :web,
+               device_class: nil
+             }
+
       refute inspect(metadata) =~ "flaky widget"
     end
 
@@ -994,6 +1010,213 @@ defmodule Kanban.ReviewsTest do
                Reviews.request_changes_review(outsider_scope, task, [])
 
       refute_receive {:telemetry_event, _, _, _}
+    end
+  end
+
+  describe "review audit events" do
+    setup %{board: board} do
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      :ok
+    end
+
+    defp with_diffs!(task) do
+      task
+      |> Ecto.Changeset.change(%{
+        changed_files: [
+          %{"path" => "lib/a.ex", "diff" => "--- a/lib/a.ex\n+++ b/lib/a.ex\n+one\n-two\n+three"},
+          %{"path" => "lib/b.ex", "diff" => nil}
+        ]
+      })
+      |> Repo.update!()
+    end
+
+    defp review_rows(action), do: AuditLog.list_events([action: action], order: :asc)
+
+    test "a web approval writes review_approved with via web",
+         %{column: column, user: user, board: board} do
+      task = column |> pending_task!(%{title: "Secret plan title"}) |> with_diffs!()
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task, via: :web)
+
+      assert [event] = review_rows(:review_approved)
+      assert event.actor_user_id == user.id
+
+      assert event.metadata == %{
+               "user_id" => user.id,
+               "task_id" => task.id,
+               "identifier" => task.identifier,
+               "board_id" => board.id,
+               "via" => "web",
+               "approval_key" => false,
+               "files" => 2,
+               "changed_lines" => 3
+             }
+
+      refute inspect(event) =~ "Secret plan title"
+      assert review_rows(:review_changes_requested) == []
+    end
+
+    test "an approval without opts defaults to via web", %{column: column, user: user} do
+      task = pending_task!(column)
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert [%{metadata: %{"via" => "web", "approval_key" => false}}] =
+               review_rows(:review_approved)
+    end
+
+    test "a request for changes writes review_changes_requested without approval_key",
+         %{column: column, user: user, board: board} do
+      task = pending_task!(column)
+
+      assert {:ok, _} =
+               user
+               |> Scope.for_user()
+               |> Reviews.request_changes_review(task,
+                 review_notes: "Please fix the flaky widget",
+                 via: :web,
+                 approval_key: true
+               )
+
+      assert [event] = review_rows(:review_changes_requested)
+
+      assert event.metadata == %{
+               "user_id" => user.id,
+               "task_id" => task.id,
+               "identifier" => task.identifier,
+               "board_id" => board.id,
+               "via" => "web",
+               "files" => 0,
+               "changed_lines" => 0
+             }
+
+      refute inspect(event) =~ "flaky widget"
+      assert review_rows(:review_approved) == []
+    end
+
+    test "an app approval records the device and a verified approval key",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      scope = Scope.for_user(user)
+
+      device =
+        device_fixture(scope, %{platform: :ios, device_class: :phone, app_version: "1.0.0 (42)"})
+
+      assert {:ok, _} = Reviews.approve_review(scope, task, device: device, approval_key: true)
+
+      assert [%{metadata: metadata}] = review_rows(:review_approved)
+
+      assert Map.take(metadata, ~w(via device_id device_class app_version approval_key)) == %{
+               "via" => "ios",
+               "device_id" => device.id,
+               "device_class" => "phone",
+               "app_version" => "1.0.0 (42)",
+               "approval_key" => true
+             }
+    end
+
+    test "an approval_key that is not exactly true records false", %{column: column, user: user} do
+      task = pending_task!(column)
+
+      assert {:ok, _} =
+               user |> Scope.for_user() |> Reviews.approve_review(task, approval_key: "yes")
+
+      assert [%{metadata: %{"approval_key" => false}}] = review_rows(:review_approved)
+    end
+
+    test "a refused approval writes no audit row", %{column: column, board: board, user: user} do
+      task = pending_task!(column)
+      outsider_scope = Scope.for_user(user_fixture())
+
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, user)
+
+      assert {:error, :not_authorized} = Reviews.approve_review(nil, task)
+      assert {:error, :not_found} = Reviews.approve_review(outsider_scope, task)
+
+      assert {:error, :not_authorized} =
+               reader |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert {:error, :not_authorized} =
+               reader
+               |> Scope.for_user()
+               |> Reviews.request_changes_review(task, review_notes: "Fix it")
+
+      assert {:error, :review_notes_required} =
+               user |> Scope.for_user() |> Reviews.request_changes_review(task, [])
+
+      assert review_rows(:review_approved) == []
+      assert review_rows(:review_changes_requested) == []
+      assert Repo.reload!(task).review_status == nil
+    end
+
+    test "a second approval of the same task writes no second row", %{column: column, user: user} do
+      task = pending_task!(column)
+      scope = Scope.for_user(user)
+
+      assert {:ok, _} = Reviews.approve_review(scope, task)
+      assert {:error, :not_found} = Reviews.approve_review(scope, task)
+      assert [_one] = review_rows(:review_approved)
+    end
+
+    test "a device of another user, or a via that contradicts it, is refused before any write",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      scope = Scope.for_user(user)
+      other_device = user_fixture() |> Scope.for_user() |> device_fixture()
+      own_device = device_fixture(scope, %{platform: :ios})
+
+      assert_raise ArgumentError, fn ->
+        Reviews.approve_review(scope, task, device: other_device)
+      end
+
+      assert_raise ArgumentError, fn ->
+        Reviews.approve_review(scope, task, device: own_device, via: :android)
+      end
+
+      assert_raise ArgumentError, fn -> Reviews.approve_review(scope, task, via: :desktop) end
+
+      assert review_rows(:review_approved) == []
+      assert Repo.reload!(task).review_status == nil
+    end
+
+    test "the review telemetry carries via and device_class", %{column: column, user: user} do
+      scope = Scope.for_user(user)
+      device = device_fixture(scope, %{platform: :android, device_class: :tablet})
+      web_task = pending_task!(column)
+      app_task = pending_task!(column)
+      changes_task = pending_task!(column)
+
+      attach_telemetry([
+        [:kanban, :task, :review_approved],
+        [:kanban, :task, :review_changes_requested]
+      ])
+
+      assert {:ok, _} = Reviews.approve_review(scope, web_task, via: :web)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :review_approved], _,
+                      %{task_id: web_id, via: :web, device_class: nil}}
+
+      assert web_id == web_task.id
+
+      assert {:ok, _} = Reviews.approve_review(scope, app_task, device: device)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :review_approved], _,
+                      %{task_id: app_id, via: :android, device_class: :tablet}}
+
+      assert app_id == app_task.id
+      refute_receive {:telemetry_event, [:kanban, :task, :review_approved], _, _}
+
+      assert {:ok, _} =
+               Reviews.request_changes_review(scope, changes_task,
+                 review_notes: "Fix it",
+                 device: device
+               )
+
+      assert_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], _,
+                      %{via: :android, device_class: :tablet}}
+
+      refute_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], _, _}
     end
   end
 end

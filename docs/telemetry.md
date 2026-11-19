@@ -226,6 +226,13 @@ the destination on a dashboard. These five keys are listed in
 `@telemetry_omitted_keys` in `Kanban.AuditLog` and in `@audit_omitted_keys`
 in `test/kanban/telemetry_test.exs`, and are not declared in the catalog.
 
+Before anything is emitted, logged or stored, `Kanban.AuditLog.Redaction`
+drops every credential-shaped key: a name containing `password`, `token`,
+`secret`, `authorization`, `key` or `otp`, unless it ends in `_id`. One pair
+is exempt: `approval_key` holding a boolean, which the `:review_approved`
+event uses to record whether the device's approval signature was verified.
+Under any other value it is dropped like the rest.
+
 The audit emit passes `strict: false`, because `event/2` must never crash its
 caller: an action or key missing from the catalog is logged and dropped there,
 not raised. The call-site test below covers the audit actions instead.
@@ -417,8 +424,8 @@ rolled-back change emits nothing. Every event measures `count: 1`;
 | `[:kanban, :task, :claimed]` | `task_id`, `board_id`, `user_id` | `Kanban.Tasks.AgentWorkflow.Claiming.claim_next_task/5` |
 | `[:kanban, :task, :unclaimed]` | `task_id`, `board_id`, `user_id`, `has_reason` | `Kanban.Tasks.AgentWorkflow.Claiming.unclaim_task/3` |
 | `[:kanban, :task, :claim_expired]` | `task_id`, `board_id`, `user_id` | `Kanban.Notifications.ClaimExpiryWorker` |
-| `[:kanban, :task, :review_approved]` | `task_id`, `board_id`, `reviewer_user_id` | `Kanban.Reviews.approve_review/3` |
-| `[:kanban, :task, :review_changes_requested]` | `task_id`, `board_id`, `reviewer_user_id` | `Kanban.Reviews.request_changes_review/3` |
+| `[:kanban, :task, :review_approved]` | `task_id`, `board_id`, `reviewer_user_id`, `via`, `device_class` | `Kanban.Reviews.approve_review/3` |
+| `[:kanban, :task, :review_changes_requested]` | `task_id`, `board_id`, `reviewer_user_id`, `via`, `device_class` | `Kanban.Reviews.request_changes_review/3` |
 | `[:kanban, :task, :comment_created]` | `task_id`, `board_id`, `comment_id`, `user_id`, `by_agent` | `Kanban.Tasks.create_comment/4` |
 
 - **`fields` holds names only.** `updated` lists the changed field names as
@@ -444,6 +451,14 @@ rolled-back change emits nothing. Every event measures `count: 1`;
 - **Review events never carry the notes.** `reviewer_user_id` is the reviewer.
   An approval still emits `[:kanban, :task, :completed]` once, through
   `mark_reviewed`; no second completion event is added.
+- **Review events say where the review was made.** `via` is `web`, `ios` or
+  `android` and `device_class` is `phone` or `tablet`, `nil` on the web. They
+  extend the one event each review already emits; there is no second event
+  per approval. The same review also writes a `:review_approved` or
+  `:review_changes_requested` audit event (`Kanban.Reviews.Audit`). A
+  verdict set in the task edit form's Review Status field writes the same
+  audit event, with `via: web`, once the save has committed; it emits no
+  review telemetry event.
 - **An approval's events report only a committed approval.** The approval
   completes the task inside `Kanban.Reviews`' transaction, so
   `task.completed` is held back with the goal events by
@@ -1463,6 +1478,8 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :device_signed_in]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `platform`, `device_class`, `app_version` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported. |
 | `[:kanban, :audit, :device_refresh_reuse_detected]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id` | A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens. |
 | `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was. |
+| `[:kanban, :audit, :review_approved]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `approval_key`, `files`, `changed_lines` | A reviewer approved a task, on the web or in the app. via is web, ios or android; device_id, device_class and app_version are set only for the app; approval_key is true when the device's approval signature was verified; files and changed_lines are the change size. Review notes and titles are never recorded. |
+| `[:kanban, :audit, :review_changes_requested]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `files`, `changed_lines` | A reviewer requested changes to a task, on the web or in the app. The same fields as review_approved, without approval_key. The review notes are never recorded. |
 
 ### Domain `audit_stream`
 
@@ -1650,8 +1667,8 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :task, :claimed]` | event | `count` | `task_id`, `board_id`, `user_id` | A task was claimed, through the API or the MCP server. user_id is the claiming user. |
 | `[:kanban, :task, :unclaimed]` | event | `count` | `task_id`, `board_id`, `user_id`, `has_reason` | A claimed task was released back to Ready. has_reason says whether a reason was given; the reason itself is never sent. |
 | `[:kanban, :task, :claim_expired]` | event | `count` | `task_id`, `board_id`, `user_id` | A claim expired before the task was completed. Emitted once per claim; user_id is the assignee whose claim expired. |
-| `[:kanban, :task, :review_approved]` | event | `count` | `task_id`, `board_id`, `reviewer_user_id` | A reviewer approved a task in the review queue. |
-| `[:kanban, :task, :review_changes_requested]` | event | `count` | `task_id`, `board_id`, `reviewer_user_id` | A reviewer requested changes to a task in the review queue. The review notes are never sent. |
+| `[:kanban, :task, :review_approved]` | event | `count` | `task_id`, `board_id`, `reviewer_user_id`, `via`, `device_class` | A reviewer approved a task, on the web or in the app. via is web, ios or android; device_class is phone or tablet, nil on the web. Emitted once per approval. |
+| `[:kanban, :task, :review_changes_requested]` | event | `count` | `task_id`, `board_id`, `reviewer_user_id`, `via`, `device_class` | A reviewer requested changes to a task, on the web or in the app. via is web, ios or android; device_class is phone or tablet, nil on the web. The review notes are never sent. |
 | `[:kanban, :task, :comment_created]` | event | `count` | `task_id`, `board_id`, `comment_id`, `user_id`, `by_agent` | A comment was added to a task. user_id is the author and by_agent says whether an agent wrote it; the comment text is never sent. |
 | `[:kanban, :task, :unblocked]` | event | `count` | `task_id`, `board_id` | A blocked task became unblocked because the last of its dependencies was completed. |
 

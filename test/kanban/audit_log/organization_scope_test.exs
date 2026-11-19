@@ -2,12 +2,19 @@ defmodule Kanban.AuditLog.OrganizationScopeTest do
   use Kanban.DataCase, async: true
 
   import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
   import Kanban.OrganizationsFixtures
+  import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
 
+  alias Kanban.Accounts.Scope
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditLog.OrganizationScope
   alias Kanban.Organizations.OrganizationMember
+  alias Kanban.Reviews
+  alias Kanban.Tasks
 
   setup do
     organization = organization_fixture()
@@ -398,6 +405,72 @@ defmodule Kanban.AuditLog.OrganizationScopeTest do
       end
 
       assert probe_row["metadata"] == %{"name" => "D440-probe"}
+    end
+  end
+
+  describe "review audit events" do
+    defp pending_review_task!(column) do
+      {:ok, task} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          needs_review: true,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          completed_by_agent: "Claude"
+        })
+
+      task
+    end
+
+    test "review audit rows appear in the board's Organization audit log", %{
+      organization: organization,
+      member: member
+    } do
+      board = member |> board_fixture() |> move_board_to_organization(organization)
+      join_board_organization(board, member)
+      review = column_fixture(board, %{name: "Review", position: 1})
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      approved = pending_review_task!(review)
+      changes = pending_review_task!(review)
+      scope = Scope.for_user(member)
+
+      assert {:ok, _} = Reviews.approve_review(scope, approved, via: :web)
+
+      assert {:ok, _} =
+               Reviews.request_changes_review(scope, changes, review_notes: "Fix it", via: :web)
+
+      assert [%AuditEvent{} = event] =
+               AuditLog.list_events(organization_id: organization.id, action: :review_approved)
+
+      assert event.organization_id == organization.id
+      assert event.actor_in_organization == true
+      assert event.metadata["task_id"] == approved.id
+
+      assert [%AuditEvent{metadata: %{"task_id" => changes_id}}] =
+               AuditLog.list_events(
+                 organization_id: organization.id,
+                 action: :review_changes_requested
+               )
+
+      assert changes_id == changes.id
+
+      actions = AuditLog.list_actions(organization_id: organization.id)
+      assert "review_approved" in actions
+      assert "review_changes_requested" in actions
+    end
+
+    test "a review on a personal board has no Organization", %{member: member} do
+      board = board_fixture(member)
+      review = column_fixture(board, %{name: "Review", position: 1})
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      task = pending_review_task!(review)
+
+      assert {:ok, _} = member |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert [%AuditEvent{organization_id: nil, metadata: metadata}] =
+               AuditLog.list_events(action: :review_approved, actor_user_id: member.id)
+
+      refute Map.has_key?(metadata, "organization_id")
     end
   end
 end

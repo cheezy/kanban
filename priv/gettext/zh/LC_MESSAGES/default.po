@@ -15461,3 +15461,15 @@ msgstr "手机 · 平板电脑"
 #, elixir-autogen, elixir-format
 msgid "That device was already signed out."
 msgstr "该设备已经退出登录。"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Review approved"
+msgstr "审查已批准"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Review changes requested"
+msgstr "审查：已请求修改"

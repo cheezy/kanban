@@ -222,7 +222,38 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:device_refresh_reuse_detected, [:user_id, :organization_id, :device_id],
      "A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens."},
     {:device_revoked, [:user_id, :organization_id, :device_id, :device_user_id, :reason],
-     "A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was."}
+     "A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was."},
+    {:review_approved,
+     [
+       :user_id,
+       :organization_id,
+       :task_id,
+       :identifier,
+       :board_id,
+       :via,
+       :device_id,
+       :device_class,
+       :app_version,
+       :approval_key,
+       :files,
+       :changed_lines
+     ],
+     "A reviewer approved a task, on the web or in the app. via is web, ios or android; device_id, device_class and app_version are set only for the app; approval_key is true when the device's approval signature was verified; files and changed_lines are the change size. Review notes and titles are never recorded."},
+    {:review_changes_requested,
+     [
+       :user_id,
+       :organization_id,
+       :task_id,
+       :identifier,
+       :board_id,
+       :via,
+       :device_id,
+       :device_class,
+       :app_version,
+       :files,
+       :changed_lines
+     ],
+     "A reviewer requested changes to a task, on the web or in the app. The same fields as review_approved, without approval_key. The review notes are never recorded."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

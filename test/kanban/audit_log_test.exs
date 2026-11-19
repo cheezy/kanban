@@ -152,6 +152,22 @@ defmodule Kanban.AuditLogTest do
     assert metadata.token_id == 3
   end
 
+  test "keeps a boolean approval_key and drops any other approval_key value" do
+    attach(:review_approved)
+
+    AuditLog.event(:review_approved, task_id: 1, approval_key: true)
+    assert_receive {:audit, _m, %{approval_key: true}}
+
+    AuditLog.event(:review_approved, task_id: 2, approval_key: "raw-approval-key")
+    assert_receive {:audit, _m, metadata}
+    refute Map.has_key?(metadata, :approval_key)
+
+    assert [kept, dropped] = AuditLog.list_events([], order: :asc)
+    assert kept.metadata == %{"task_id" => 1, "approval_key" => true}
+    assert dropped.metadata == %{"task_id" => 2}
+    refute inspect(dropped) =~ "raw-approval-key"
+  end
+
   test "writes a structured security_audit log line without interpolating values" do
     # colors off: in a terminal the formatter wraps the line in ANSI codes, so
     # "\e[0m" would sit between "security_audit" and the newline.
