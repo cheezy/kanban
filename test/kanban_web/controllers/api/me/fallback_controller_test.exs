@@ -13,6 +13,16 @@ defmodule KanbanWeb.API.Me.FallbackControllerTest do
     assert json_response(conn, 404) == %{"error" => "Not Found"}
   end
 
+  test "a plan refusal answers 403 with the PlanRequired shape", %{conn: conn} do
+    conn = FallbackController.call(conn, {:error, {:plan_required, :mobile_app}})
+
+    assert json_response(conn, 403) == %{
+             "error" => "plan_required",
+             "feature" => "mobile_app",
+             "message" => "The Stride app is available to boards in an Organization."
+           }
+  end
+
   test "a changeset answers 422 with the messages and no values", %{conn: conn} do
     changeset =
       {%{}, %{time_zone: :string}}

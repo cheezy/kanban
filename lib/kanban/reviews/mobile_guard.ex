@@ -37,6 +37,15 @@ defmodule Kanban.Reviews.MobileGuard do
           truncated: boolean()
         }
 
+  @type diff_stats :: %{
+          additions: non_neg_integer(),
+          deletions: non_neg_integer(),
+          truncated: boolean()
+        }
+
+  @typedoc "A device's class; `nil` is the web."
+  @type device_class :: :phone | :tablet | nil
+
   @doc "The most files a phone may approve: #{@max_files}."
   @spec max_files() :: pos_integer()
   def max_files, do: @max_files
@@ -78,6 +87,34 @@ defmodule Kanban.Reviews.MobileGuard do
   def large_change?(%{files: files, changed_lines: lines, truncated: truncated}) do
     files > @max_files or lines > @max_changed_lines or truncated == true
   end
+
+  @doc """
+  The size of one stored diff: the lines it adds, the lines it deletes, and
+  whether it was cut at the per-diff cap. Counts exactly as `size/1` does, so
+  the additions plus deletions of every diff a task stores sum to its
+  `changed_lines`.
+  """
+  @spec diff_stats(String.t()) :: diff_stats()
+  def diff_stats(diff) when is_binary(diff) do
+    {additions, deletions} = count_lines(diff)
+    %{additions: additions, deletions: deletions, truncated: truncated?(diff)}
+  end
+
+  @doc """
+  Whether a device of `device_class` may approve `task` (or a size from
+  `size/1`): `:ok`, or `{:error, :too_large_for_phone}` for a large change on
+  a phone. A tablet, and the web (`nil`), may approve any change. Request
+  changes is never limited.
+
+  This is the one rule: the review detail's `approvable_here` reads it, and
+  the app's approve route must refuse with the same reason.
+  """
+  @spec check(Task.t() | size(), device_class()) :: :ok | {:error, :too_large_for_phone}
+  def check(task_or_size, :phone) do
+    if large_change?(task_or_size), do: {:error, :too_large_for_phone}, else: :ok
+  end
+
+  def check(_task_or_size, _device_class), do: :ok
 
   defp stored_entries(%Task{changed_files: entries}) when is_list(entries), do: entries
   defp stored_entries(%Task{}), do: []
@@ -126,8 +163,14 @@ defmodule Kanban.Reviews.MobileGuard do
 
   @hunk_header ~r/\A@@ -\d+(?:,(\d+))? \+\d+(?:,(\d+))? @@/
 
-  defp changed_lines(diff),
-    do: diff |> String.split(["\r\n", "\n"]) |> count_changes(@outside_hunk, 0)
+  defp changed_lines(diff) do
+    {additions, deletions} = count_lines(diff)
+    additions + deletions
+  end
+
+  # The count is {added, deleted}.
+  defp count_lines(diff),
+    do: diff |> String.split(["\r\n", "\n"]) |> count_changes(@outside_hunk, {0, 0})
 
   defp count_changes([], _hunk, count), do: count
 
@@ -137,11 +180,11 @@ defmodule Kanban.Reviews.MobileGuard do
   defp count_changes(["--- " <> _, "+++ " <> _ | rest], @outside_hunk, count),
     do: count_changes(rest, @outside_hunk, count)
 
-  defp count_changes(["+" <> _ | rest], {old, new}, count),
-    do: count_changes(rest, {old, max(new - 1, 0)}, count + 1)
+  defp count_changes(["+" <> _ | rest], {old, new}, {adds, dels}),
+    do: count_changes(rest, {old, max(new - 1, 0)}, {adds + 1, dels})
 
-  defp count_changes(["-" <> _ | rest], {old, new}, count),
-    do: count_changes(rest, {max(old - 1, 0), new}, count + 1)
+  defp count_changes(["-" <> _ | rest], {old, new}, {adds, dels}),
+    do: count_changes(rest, {max(old - 1, 0), new}, {adds, dels + 1})
 
   defp count_changes([" " <> _ | rest], hunk, count),
     do: count_changes(rest, context(hunk), count)

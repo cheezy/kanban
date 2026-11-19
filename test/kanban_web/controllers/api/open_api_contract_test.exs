@@ -23,9 +23,12 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   import Kanban.TasksFixtures
 
   alias Kanban.ApiTokens
+  alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.DeviceJSON
+  alias KanbanWeb.API.Me.FallbackController
   alias KanbanWeb.API.Me.MeJSON
+  alias KanbanWeb.API.Me.ReviewJSON
   alias KanbanWeb.API.OpenApiSpec
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
@@ -936,6 +939,107 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert get_in(update, ~w(422 content application/json schema)) == %{
                "$ref" => "#/components/schemas/ValidationError"
              }
+    end
+  end
+
+  describe "schema parity with ReviewJSON (W2751)" do
+    setup do
+      user = user_fixture()
+      column = user |> board_fixture() |> column_fixture(%{name: "Review"})
+      goal = task_fixture(column, %{title: "The goal"})
+
+      task =
+        column
+        |> task_fixture()
+        |> Kanban.Repo.preload([:parent, column: :board])
+        |> Map.merge(%{
+          parent: goal,
+          acceptance_criteria: "One",
+          security_considerations: ["Scope"],
+          changed_files: [%{"path" => "lib/a.ex", "diff" => "+a", "diff_url" => nil}],
+          reviewer_result: %{
+            "patterns" => %{"status" => "passed"},
+            "issues" => [%{"category" => "pattern", "severity" => "minor", "file" => "lib/a.ex"}],
+            "acceptance_criteria" => [%{"criterion" => "One", "status" => "met"}],
+            "behaviour_test_matrix" => %{
+              "rows" => [%{"category" => "Happy path", "behaviour" => "Works"}]
+            }
+          }
+        })
+
+      dependent = %Task{id: 2, identifier: "W2", title: "Waits", status: :open}
+
+      %{data: ReviewJSON.show(%{review: MobileReview.build(task, [dependent], :phone)}).data}
+    end
+
+    test "ReviewDetail and its parts list exactly the keys ReviewJSON renders, and require them all",
+         %{spec: spec, data: data} do
+      pairs = [
+        {data, "ReviewDetail"},
+        {data.task, "ReviewTask"},
+        {data.task.board, "ReviewBoard"},
+        {data.task.goal, "ReviewGoal"},
+        {hd(data.verdicts), "ReviewVerdict"},
+        {hd(data.acceptance_criteria), "ReviewAcceptanceCriterion"},
+        {hd(data.security_considerations), "ReviewSecurityConsideration"},
+        {data.security_findings, "ReviewSeverityCounts"},
+        {data.project_checks, "ReviewProjectChecks"},
+        {data.exploratory, "ReviewExploratory"},
+        {hd(data.behaviour_matrix), "ReviewBehaviourRow"},
+        {hd(data.files), "ReviewFile"},
+        {data.size, "ReviewSize"},
+        {hd(data.holds_up), "ReviewHeldTask"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert spec["components"]["schemas"]["PlanRequired"]["required"] |> MapSet.new() ==
+               schema_keys(spec, "PlanRequired")
+    end
+
+    test "the verdict sections and flag reasons are the documented enums", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["ReviewVerdict"]["properties"]["section"]["enum"] ==
+               ~w(acceptance_criteria testing_strategy patterns pitfalls security_considerations)
+
+      assert schemas["ReviewFile"]["properties"]["flag_reason"]["enum"] == [
+               "issue",
+               "security",
+               nil
+             ]
+
+      assert schemas["ReviewDetail"]["properties"]["approvable_here_reason"]["enum"] ==
+               ["too_large_for_phone", nil]
+    end
+
+    test "the 403 example matches what the person-API fallback renders", %{spec: spec} do
+      example =
+        get_in(spec, [
+          "paths",
+          "/api/me/reviews/{task_id}",
+          "get",
+          "responses",
+          "403",
+          "content",
+          "application/json",
+          "example"
+        ])
+
+      conn =
+        FallbackController.call(
+          Phoenix.ConnTest.build_conn(),
+          {:error, {:plan_required, :mobile_app}}
+        )
+
+      assert conn.status == 403
+      assert Jason.decode!(conn.resp_body) == example
     end
   end
 end

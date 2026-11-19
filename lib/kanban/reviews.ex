@@ -64,6 +64,8 @@ defmodule Kanban.Reviews do
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Reviews.Audit
+  alias Kanban.Reviews.MobileGuard
+  alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
@@ -138,6 +140,39 @@ defmodule Kanban.Reviews do
       nil -> {:error, :not_found}
       %Task{} = task -> {:ok, task}
     end
+  end
+
+  @doc """
+  Returns a pending-review task the scoped user can decide: one
+  `get_pending_review/2` finds (pending, on a board they can see) on a board
+  they can also write to, the same board-write check an approval or a request
+  for changes runs (`AgentWorkflow.authorized_reviewer?/2`). A read-only
+  member gets `{:error, :not_found}`, as for a task they cannot see, one
+  that has left Review, or one that was archived while still in Review, so the
+  answer reveals nothing.
+
+  The task has `:completed_by`, `:parent`, `:column` and the column's
+  `:board` preloaded. This is the read path of the app's review screen
+  (`GET /api/me/reviews/:task_id`, W2751).
+  """
+  @spec get_reviewable_task(Scope.t(), integer()) :: {:ok, Task.t()} | {:error, :not_found}
+  def get_reviewable_task(%Scope{} = scope, id) do
+    with {:ok, %Task{archived_at: nil} = task} <- get_pending_review(scope, id),
+         :ok <- authorize_review_write(task, scope_user(scope)) do
+      {:ok, Repo.preload(task, :parent)}
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  The app's review screen for `task`, a task from `get_reviewable_task/2`,
+  as `Kanban.Reviews.MobileReview.build/3` returns it for a device of
+  `device_class`. Loads the tasks that depend on it for `holds_up`.
+  """
+  @spec mobile_review(Task.t(), MobileGuard.device_class()) :: MobileReview.t()
+  def mobile_review(%Task{} = task, device_class) do
+    MobileReview.build(task, Kanban.Tasks.get_dependent_tasks(task), device_class)
   end
 
   @doc """

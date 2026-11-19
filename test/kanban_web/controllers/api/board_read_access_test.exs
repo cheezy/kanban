@@ -28,14 +28,15 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
   @moduletag capture_log: true
 
   # The public routes, the 405-only GET /api/mcp and the person API's
-  # GET /api/me and GET /api/me/devices (a device token, never a board
-  # token, W2747 and W2748) read no board.
+  # GET /api/me, GET /api/me/devices and GET /api/me/reviews/:task_id (a
+  # device token, never a board token, W2747, W2748 and W2751) read no board.
   @not_board_reads [
     "/api/agent/onboarding",
     "/api/openapi.json",
     "/api/mcp",
     "/api/me",
-    "/api/me/devices"
+    "/api/me/devices",
+    "/api/me/reviews/:task_id"
   ]
 
   setup do

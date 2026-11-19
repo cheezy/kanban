@@ -164,4 +164,33 @@ defmodule Kanban.Reviews.MobileGuardTest do
       assert size_of([entry("a.ex", "+x\n#{marker}\n\n")]).truncated
     end
   end
+
+  describe "diff_stats/1" do
+    test "splits added and deleted lines and agrees with size/1" do
+      diff = "--- a/a.ex\n+++ b/a.ex\n@@ -1,3 +1,3 @@\n ctx\n-- old\n++ new\n-gone\n"
+
+      assert MobileGuard.diff_stats(diff) == %{additions: 1, deletions: 2, truncated: false}
+      assert size_of([entry("a.ex", diff)]).changed_lines == 3
+    end
+
+    test "marks a diff cut at the cap" do
+      capped = added(2) <> "\n" <> Backfill.truncation_marker()
+
+      assert MobileGuard.diff_stats(capped) == %{additions: 2, deletions: 0, truncated: true}
+    end
+  end
+
+  describe "check/2" do
+    test "refuses a large change only on a phone" do
+      large = task(files(11), nil)
+      small = task(files(1), nil)
+
+      assert MobileGuard.check(large, :phone) == {:error, :too_large_for_phone}
+      assert MobileGuard.check(large, :tablet) == :ok
+      assert MobileGuard.check(large, nil) == :ok
+      assert MobileGuard.check(small, :phone) == :ok
+      large_size = MobileGuard.size(large)
+      assert MobileGuard.check(large_size, :phone) == {:error, :too_large_for_phone}
+    end
+  end
 end

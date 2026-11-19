@@ -8,12 +8,13 @@ defmodule KanbanWeb.ReviewReportHelpers do
   source of truth.
 
   This module owns the structured-field reads, the incomplete-section rules
-  and the per-section value/passed accessors. Five siblings carry the rest:
+  and the per-section value/passed accessors. Six siblings carry the rest:
   `MarkdownReport` does the legacy markdown parsing this module delegates to,
   `Tokens` renders the pills and check rows and calls back into the public API
   here, `Explorer` holds the explorer-result predicates, `ChangedFiles` holds
-  the changed-files diff reads, and `Panels` holds the review-or-done gate and
-  every panel-visibility predicate (W2003/W2004/W1965/W2005).
+  the changed-files diff reads, `Panels` holds the review-or-done gate and
+  every panel-visibility predicate (W2003/W2004/W1965/W2005), and
+  `SecurityBreakdown` holds the per-consideration security breakdown (W2751).
 
   Every function is pure. Pass a map that may contain a `:review_report`
   string key (the LiveView struct) or a binary `"review_report"` key (raw
@@ -23,6 +24,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   use Gettext, backend: KanbanWeb.Gettext
 
   alias KanbanWeb.ReviewReportHelpers.MarkdownReport
+  alias KanbanWeb.ReviewReportHelpers.SecurityBreakdown
 
   @incomplete_sections [:testing_strategy, :patterns, :pitfalls, :security_considerations]
 
@@ -83,6 +85,35 @@ defmodule KanbanWeb.ReviewReportHelpers do
   end
 
   defp note_from_section(_), do: nil
+
+  @doc """
+  The raw verdict of one of the four review sections: `"passed"`, `"failed"`,
+  `"not_assessed"`, or `nil` when no source has one. It resolves exactly as
+  the `*_value/1` and `*_passed/1` cells do — the structured status, then the
+  issues-derived status, then the legacy markdown — but returns the status
+  rather than a localized label, so the person API (W2751) and `/review`
+  never show the same task with different verdicts. An unrecognised status
+  string is `nil`, the em-dash the cells render for it.
+  """
+  @spec section_status(map(), atom()) :: String.t() | nil
+  def section_status(task, section) when section in @incomplete_sections do
+    case effective_section_status(task, section) do
+      status when status in ["passed", "failed", "not_assessed"] -> status
+      nil -> task |> legacy_passed(section) |> passed_status()
+      _unknown -> nil
+    end
+  end
+
+  def section_status(_task, _section), do: nil
+
+  defp legacy_passed(task, :testing_strategy), do: testing_strategy_passed(task)
+  defp legacy_passed(task, :patterns), do: patterns_passed(task)
+  defp legacy_passed(task, :pitfalls), do: pitfalls_passed(task)
+  defp legacy_passed(task, :security_considerations), do: security_considerations_passed(task)
+
+  defp passed_status(true), do: "passed"
+  defp passed_status(false), do: "failed"
+  defp passed_status(nil), do: nil
 
   # The panel-visibility surface — review_or_done?/1 (the one definition of
   # that gate), review_panel_visible?/1, has_reviewer_result?/1,
@@ -493,83 +524,8 @@ defmodule KanbanWeb.ReviewReportHelpers do
     do: section_note(task, :security_considerations)
 
   @doc """
-  Extracts the per-consideration mitigation breakdown from
-  `reviewer_result["security_considerations"]["considerations"]` (W1866/W1867).
-
-  Returns a list of `%{consideration: string, status: string | nil, detail:
-  string | nil}` maps — one per well-formed entry — or `[]` when the breakdown is
-  absent, `nil`, not a list, or the `reviewer_result` carries none. Entries
-  without a non-blank `consideration` string are dropped so the read side never
-  renders an empty row: the write-side validator already rejects those, but
-  legacy or partial data must not crash the queue. `detail` is the reviewer's
-  optional `evidence` (preferred) or `note` string, whichever is present.
+  The per-consideration mitigation breakdown, as
+  `KanbanWeb.ReviewReportHelpers.SecurityBreakdown.breakdown/1` returns it.
   """
-  @spec security_considerations_breakdown(map()) :: [
-          %{consideration: String.t(), status: String.t() | nil, detail: String.t() | nil}
-        ]
-  def security_considerations_breakdown(task) do
-    task
-    |> raw_considerations()
-    |> Enum.filter(&is_map/1)
-    |> Enum.map(&normalize_consideration/1)
-    |> Enum.reject(&is_nil/1)
-  end
-
-  # The raw considerations list from the reviewer_result, or [] when absent, nil,
-  # or not a list. Kept separate so the public function stays a flat pipeline.
-  defp raw_considerations(task) do
-    with %{} = result <- reviewer_result(task),
-         %{"considerations" => considerations} when is_list(considerations) <-
-           Map.get(result, "security_considerations") do
-      considerations
-    else
-      _ -> []
-    end
-  end
-
-  defp normalize_consideration(entry) do
-    case Map.get(entry, "consideration") do
-      text when is_binary(text) ->
-        case String.trim(text) do
-          "" ->
-            nil
-
-          trimmed ->
-            %{
-              consideration: trimmed,
-              status: consideration_status(entry),
-              detail: consideration_detail(entry)
-            }
-        end
-
-      _ ->
-        nil
-    end
-  end
-
-  defp consideration_status(entry) do
-    case Map.get(entry, "status") do
-      status when is_binary(status) -> status
-      _ -> nil
-    end
-  end
-
-  # The reviewer may attach an optional rationale under either "evidence" or
-  # "note" (neither is server-validated); prefer evidence, fall back to note.
-  defp consideration_detail(entry) do
-    trimmed_value(entry, "evidence") || trimmed_value(entry, "note")
-  end
-
-  defp trimmed_value(entry, key) do
-    case Map.get(entry, key) do
-      value when is_binary(value) ->
-        case String.trim(value) do
-          "" -> nil
-          trimmed -> trimmed
-        end
-
-      _ ->
-        nil
-    end
-  end
+  defdelegate security_considerations_breakdown(task), to: SecurityBreakdown, as: :breakdown
 end

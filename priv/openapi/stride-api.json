@@ -2180,6 +2180,91 @@
           }
         }
       }
+    },
+    "/api/me/reviews/{task_id}": {
+      "get": {
+        "operationId": "getMyReview",
+        "summary": "One pending review for the app's review screen",
+        "description": "Everything the app's review screen shows for one task waiting in Review: the agent's summary, the reviewer's verdict for each section, the acceptance criteria, the security considerations and findings, the project checks, the exploratory count, the behaviour matrix the reviewer echoed, the changed files (flagged first), the change's size, and whether this device may approve it. The verdicts are resolved exactly as /review resolves them. The task must be pending review on a board the person can write to; a task that is missing, not pending, on a board they cannot see, on a board they can only read, or an id that is not a positive integer in the signed 64-bit range all answer the same 404. Plan-gated with the mobile_app feature: the person's plan is checked first, then the task's board, once the person is known to be able to review it. The diffs themselves and the completion notes are not returned. Takes a device access token only. Human-readable reference: docs/api/me_reviews.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the task's board, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No pending review the person can decide has this id: it is missing, not waiting in Review, on a board the person cannot see or can only read, or the id is not a positive integer in the signed 64-bit range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4878,6 +4963,560 @@
               "null"
             ],
             "maxLength": 255
+          }
+        }
+      },
+      "PlanRequired": {
+        "type": "object",
+        "description": "A route the person's plan or the board's does not unlock. `error` is always plan_required, so the app can show its locked panel without matching message text.",
+        "required": [
+          "error",
+          "feature",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "plan_required"
+            ]
+          },
+          "feature": {
+            "type": "string",
+            "description": "The plan feature the route needs, for example mobile_app."
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewDetailResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReviewDetail"
+          }
+        }
+      },
+      "ReviewDetail": {
+        "type": "object",
+        "description": "One pending review, as the app's review screen shows it. Fields are only ever added, never removed or renamed, while a supported app version reads them. Every key is always present.",
+        "required": [
+          "task",
+          "summary",
+          "verdicts",
+          "acceptance_criteria",
+          "security_considerations",
+          "security_findings",
+          "project_checks",
+          "exploratory",
+          "behaviour_matrix",
+          "files",
+          "size",
+          "approvable_here",
+          "approvable_here_reason",
+          "review_requested_at",
+          "waiting_since",
+          "holds_up"
+        ],
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/ReviewTask"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the agent says it did: the task's completion_summary."
+          },
+          "verdicts": {
+            "type": "array",
+            "description": "The reviewer's verdict for each section, in a fixed order: acceptance_criteria, testing_strategy, patterns, pitfalls, security_considerations. Empty when the task has no review verdicts at all.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewVerdict"
+            }
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "description": "The reviewer's per-criterion results, or the task's own criteria with no status when the reviewer gave none.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewAcceptanceCriterion"
+            }
+          },
+          "security_considerations": {
+            "type": "array",
+            "description": "The reviewer's per-consideration results, or the task's own considerations with no status when the reviewer gave none.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewSecurityConsideration"
+            }
+          },
+          "security_findings": {
+            "$ref": "#/components/schemas/ReviewSeverityCounts"
+          },
+          "project_checks": {
+            "$ref": "#/components/schemas/ReviewProjectChecks"
+          },
+          "exploratory": {
+            "$ref": "#/components/schemas/ReviewExploratory"
+          },
+          "behaviour_matrix": {
+            "type": "array",
+            "description": "The behaviour matrix rows the reviewer echoed, as /review shows them. Empty when the reviewer echoed none.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewBehaviourRow"
+            }
+          },
+          "files": {
+            "type": "array",
+            "description": "The changed files: flagged files first, otherwise in diff order.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewFile"
+            }
+          },
+          "size": {
+            "$ref": "#/components/schemas/ReviewSize"
+          },
+          "approvable_here": {
+            "type": "boolean",
+            "description": "Whether this device may approve the review. A phone may not approve a large change; a tablet may approve any. The approve route applies the same rule."
+          },
+          "approvable_here_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "too_large_for_phone",
+              null
+            ],
+            "description": "Why approvable_here is false, or null when it is true. The same code the approve route answers with."
+          },
+          "review_requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the task last entered Review. Null for a task that predates the stamp. An approval is bound to this value."
+          },
+          "waiting_since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the review started waiting: review_requested_at, else when the task was last updated. The age /review shows."
+          },
+          "holds_up": {
+            "type": "array",
+            "description": "The unfinished tasks that depend on this one, by id.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewHeldTask"
+            }
+          }
+        }
+      },
+      "ReviewTask": {
+        "type": "object",
+        "description": "The review header.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "priority",
+          "completed_by_agent",
+          "time_spent_minutes",
+          "board",
+          "goal"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "completed_by_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time_spent_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "board": {
+            "$ref": "#/components/schemas/ReviewBoard"
+          },
+          "goal": {
+            "$ref": "#/components/schemas/ReviewGoal"
+          }
+        }
+      },
+      "ReviewBoard": {
+        "type": "object",
+        "description": "The task's board.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewGoal": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "The task's goal, or null when it has none.",
+        "required": [
+          "id",
+          "identifier",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewVerdict": {
+        "type": "object",
+        "description": "One review section's verdict.",
+        "required": [
+          "section",
+          "status",
+          "note"
+        ],
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "acceptance_criteria",
+              "testing_strategy",
+              "patterns",
+              "pitfalls",
+              "security_considerations"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "passed",
+              "failed",
+              "not_assessed",
+              null
+            ],
+            "description": "Null when no verdict is recorded, or the recorded one is not recognised."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reviewer's note for the section."
+          }
+        }
+      },
+      "ReviewAcceptanceCriterion": {
+        "type": "object",
+        "description": "One acceptance criterion.",
+        "required": [
+          "criterion",
+          "status",
+          "evidence"
+        ],
+        "properties": {
+          "criterion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The criterion's text. Null when the reviewer's entry carried no usable text; its status is still shown."
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reviewer's status, usually met or not_met, passed through as stored. Null when the reviewer gave none."
+          },
+          "evidence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReviewSecurityConsideration": {
+        "type": "object",
+        "description": "One security consideration.",
+        "required": [
+          "consideration",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "consideration": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reviewer's status, usually mitigated, partial, unmitigated or not_applicable, passed through as stored."
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reviewer's evidence or note."
+          }
+        }
+      },
+      "ReviewSeverityCounts": {
+        "type": "object",
+        "description": "The security issues the reviewer reported, counted by severity.",
+        "required": [
+          "critical",
+          "important",
+          "minor"
+        ],
+        "properties": {
+          "critical": {
+            "type": "integer"
+          },
+          "important": {
+            "type": "integer"
+          },
+          "minor": {
+            "type": "integer"
+          }
+        }
+      },
+      "ReviewProjectChecks": {
+        "type": "object",
+        "description": "The reviewer's project checks, counted by status.",
+        "required": [
+          "met",
+          "not_met",
+          "not_applicable"
+        ],
+        "properties": {
+          "met": {
+            "type": "integer"
+          },
+          "not_met": {
+            "type": "integer"
+          },
+          "not_applicable": {
+            "type": "integer"
+          }
+        }
+      },
+      "ReviewExploratory": {
+        "type": "object",
+        "description": "The exploratory-testing findings count. count is null when no structured exploratory result is stored, which today is always; the app then sends the person to the notes on the web.",
+        "required": [
+          "count",
+          "note"
+        ],
+        "properties": {
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "see_notes_on_web",
+              null
+            ]
+          }
+        }
+      },
+      "ReviewBehaviourRow": {
+        "type": "object",
+        "description": "One behaviour matrix row the reviewer echoed.",
+        "required": [
+          "category",
+          "behaviour",
+          "test_name",
+          "type",
+          "status"
+        ],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "behaviour": {
+            "type": "string"
+          },
+          "test_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReviewFile": {
+        "type": "object",
+        "description": "One changed file.",
+        "required": [
+          "index",
+          "path",
+          "additions",
+          "deletions",
+          "truncated",
+          "flagged",
+          "flag_reason"
+        ],
+        "properties": {
+          "index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The file's position in the stored changed files, for the file's diff route. Null for a file named only in actual_files_changed."
+          },
+          "path": {
+            "type": "string"
+          },
+          "additions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Lines added, from the stored diff. Null when no diff is stored."
+          },
+          "deletions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Lines deleted, from the stored diff. Null when no diff is stored."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the stored diff was cut at the per-diff cap."
+          },
+          "flagged": {
+            "type": "boolean",
+            "description": "Whether a reviewer issue or the security section names this file."
+          },
+          "flag_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "issue",
+              "security",
+              null
+            ],
+            "description": "security when a security issue or the security section names the file, issue when another issue does, null when not flagged."
+          }
+        }
+      },
+      "ReviewSize": {
+        "type": "object",
+        "description": "The change's size, as the large-change guard counts it.",
+        "required": [
+          "files",
+          "changed_lines",
+          "truncated",
+          "large_change"
+        ],
+        "properties": {
+          "files": {
+            "type": "integer"
+          },
+          "changed_lines": {
+            "type": "integer",
+            "description": "Added plus deleted lines across the stored diffs."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether any stored diff was cut at the cap."
+          },
+          "large_change": {
+            "type": "boolean",
+            "description": "More than the phone limits in GET /api/me, or a diff cut at the cap."
+          }
+        }
+      },
+      "ReviewHeldTask": {
+        "type": "object",
+        "description": "A task this review holds up.",
+        "required": [
+          "id",
+          "identifier",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
           }
         }
       }

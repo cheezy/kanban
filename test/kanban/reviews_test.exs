@@ -321,6 +321,82 @@ defmodule Kanban.ReviewsTest do
     end
   end
 
+  describe "get_reviewable_task/2" do
+    test "returns the task with its goal and board for a person who can write to the board",
+         %{column: column, user: user} do
+      goal = task_fixture(column, %{title: "Organization console"})
+
+      task =
+        column
+        |> pending_task!()
+        |> Ecto.Changeset.change(parent_id: goal.id)
+        |> Repo.update!()
+
+      scope = Scope.for_user(user)
+
+      assert {:ok, fetched} = Reviews.get_reviewable_task(scope, task.id)
+      assert fetched.id == task.id
+      assert fetched.parent.id == goal.id
+      assert %Kanban.Boards.Board{} = fetched.column.board
+    end
+
+    test "returns {:error, :not_found} for a read-only member of the board", %{user: user} do
+      owner = user_fixture()
+      shared = board_fixture(owner)
+      shared_review = column_fixture(shared, %{name: "Review", position: 1})
+      {:ok, _} = Boards.add_user_to_board(shared, user, :read_only, owner)
+      task = pending_task!(shared_review)
+      scope = Scope.for_user(user)
+
+      assert {:ok, _} = Reviews.get_pending_review(scope, task.id)
+      assert {:error, :not_found} = Reviews.get_reviewable_task(scope, task.id)
+    end
+
+    test "returns {:error, :not_found} for an unseen board and for a task outside Review",
+         %{board: board, column: column, user: user} do
+      unseen = pending_task!(column)
+      doing = column_fixture(board, %{name: "Doing", position: 2})
+      outside = pending_task!(doing)
+      stranger = Scope.for_user(user_fixture())
+      scope = Scope.for_user(user)
+
+      assert {:error, :not_found} = Reviews.get_reviewable_task(stranger, unseen.id)
+      assert {:error, :not_found} = Reviews.get_reviewable_task(scope, outside.id)
+    end
+
+    test "returns {:error, :not_found} for a task archived while still in Review",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      scope = Scope.for_user(user)
+
+      assert {:ok, _} = Reviews.get_reviewable_task(scope, task.id)
+      {:ok, _archived} = Tasks.archive_task(task)
+
+      assert {:error, :not_found} = Reviews.get_reviewable_task(scope, task.id)
+    end
+  end
+
+  describe "mobile_review/2" do
+    test "lists an unfinished dependent in holds_up and leaves out a completed one",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      waiting = blocked_dependent!(column, task)
+
+      column
+      |> task_fixture(%{title: "Already done"})
+      |> Ecto.Changeset.change(%{dependencies: [task.identifier], status: :completed})
+      |> Repo.update!()
+
+      scope = Scope.for_user(user)
+      {:ok, task} = Reviews.get_reviewable_task(scope, task.id)
+      review = Reviews.mobile_review(task, :tablet)
+
+      assert Enum.map(review.holds_up, & &1.id) == [waiting.id]
+      assert review.task.id == task.id
+      assert review.approvable_here
+    end
+  end
+
   describe "queue_stats/1" do
     test "returns zeros and nil oldest_age when the queue is empty" do
       assert Reviews.queue_stats() == %{

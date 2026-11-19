@@ -779,4 +779,78 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.security_considerations_breakdown(%{reviewer_result: nil}) == []
     end
   end
+
+  describe "section_status/2 (W2751)" do
+    test "returns the structured status of each section" do
+      task = %{
+        reviewer_result: %{
+          "testing_strategy" => %{"status" => "passed"},
+          "patterns" => %{"status" => "failed"},
+          "pitfalls" => %{"status" => "not_assessed"},
+          "security_considerations" => %{"status" => "passed"}
+        }
+      }
+
+      assert ReviewReportHelpers.section_status(task, :testing_strategy) == "passed"
+      assert ReviewReportHelpers.section_status(task, :patterns) == "failed"
+      assert ReviewReportHelpers.section_status(task, :pitfalls) == "not_assessed"
+      assert ReviewReportHelpers.section_status(task, :security_considerations) == "passed"
+    end
+
+    test "derives a status from the issues list as the verdict cells do" do
+      task = %{
+        pitfalls: ["Don't"],
+        reviewer_result: %{"issues" => [%{"category" => "pattern", "severity" => "minor"}]}
+      }
+
+      assert ReviewReportHelpers.section_status(task, :patterns) == "failed"
+      assert ReviewReportHelpers.section_status(task, :pitfalls) == "passed"
+      assert ReviewReportHelpers.section_status(task, :testing_strategy) == "not_assessed"
+    end
+
+    test "falls back to the legacy markdown report" do
+      task = %{
+        reviewer_result: nil,
+        review_report: "### Patterns followed\n\nUsed standard pattern."
+      }
+
+      assert ReviewReportHelpers.section_status(task, :patterns) == "passed"
+      assert ReviewReportHelpers.section_status(task, :security_considerations) == nil
+    end
+
+    test "agrees with the *_passed/1 tone for every section" do
+      task = %{
+        security_considerations: ["Scope it"],
+        reviewer_result: %{
+          "issues" => [%{"category" => "security"}],
+          "testing_strategy" => %{"status" => "passed"}
+        }
+      }
+
+      for {section, passed} <- [
+            testing_strategy: &ReviewReportHelpers.testing_strategy_passed/1,
+            patterns: &ReviewReportHelpers.patterns_passed/1,
+            pitfalls: &ReviewReportHelpers.pitfalls_passed/1,
+            security_considerations: &ReviewReportHelpers.security_considerations_passed/1
+          ] do
+        expected =
+          case passed.(task) do
+            true -> "passed"
+            false -> "failed"
+            nil -> nil
+          end
+
+        status = ReviewReportHelpers.section_status(task, section)
+        assert status == expected or (status == "not_assessed" and expected == nil)
+      end
+    end
+
+    test "an unrecognised status, a missing result or an unknown section is nil" do
+      odd = %{reviewer_result: %{"patterns" => %{"status" => "sort of"}}}
+
+      assert ReviewReportHelpers.section_status(odd, :patterns) == nil
+      assert ReviewReportHelpers.section_status(%{reviewer_result: nil}, :pitfalls) == nil
+      assert ReviewReportHelpers.section_status(odd, :acceptance) == nil
+    end
+  end
 end

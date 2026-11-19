@@ -253,6 +253,10 @@ defmodule KanbanWeb.Router do
     put "/devices/current", DeviceController, :update_current
     delete "/devices/current", DeviceController, :delete_current
     delete "/devices/:id", DeviceController, :delete
+
+    # Plan-gated (design §10): check_user, then check_board for the task's
+    # board.
+    get "/reviews/:task_id", ReviewController, :show
   end
 
   # API routes with token authentication
