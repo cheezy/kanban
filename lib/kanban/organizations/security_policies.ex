@@ -2,7 +2,8 @@ defmodule Kanban.Organizations.SecurityPolicies do
   @moduledoc """
   Reads and changes Organization security policies
   (`Kanban.Organizations.SecurityPolicy`) and answers what the two-factor
-  requirement means for one user.
+  requirement, and whether task titles are hidden in push notifications,
+  mean for one user.
 
   Only an enabled org-admin changes a policy, and only their own
   Organization's: `update_policy/2` takes the Organization from the actor's
@@ -286,6 +287,22 @@ defmodule Kanban.Organizations.SecurityPolicies do
       join: m in OrganizationMember,
       on: m.organization_id == p.organization_id,
       where: m.user_id == ^user_id and p.require_two_factor
+    )
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Returns true when the user's Organization's policy hides task titles in
+  push notifications. False for a user in no Organization, and for an
+  Organization with no policy row or with the policy off. A user belongs to
+  at most one Organization, so there is never a second policy to consult.
+  """
+  @spec hide_titles?(User.t()) :: boolean()
+  def hide_titles?(%User{id: user_id}) do
+    from(p in SecurityPolicy,
+      join: m in OrganizationMember,
+      on: m.organization_id == p.organization_id,
+      where: m.user_id == ^user_id and p.hide_titles_in_notifications
     )
     |> Repo.exists?()
   end

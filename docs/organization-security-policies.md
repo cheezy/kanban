@@ -1,10 +1,12 @@
 # Organization Security Policies
 
-An Organization's org-admins set two security policies for everyone in it:
+An Organization's org-admins set three security policies for everyone in it:
 
 - **Require two-factor authentication**, with a grace period, for every member.
 - **Audit retention**: how long the Organization's audit events are kept
   before a daily job removes them.
+- **Notification privacy**: whether push notifications to its members leave
+  out task, goal and target titles, so none shows on a lock screen.
 
 This page describes what each setting does, how the requirement is enforced,
 what the daily retention job removes, and what an operator has to do after
@@ -24,14 +26,16 @@ an Organization to access this page." and the refusal is recorded as a
 `permission_denied` audit event. The role is checked again on every change and
 save, so an org-admin demoted while the page is open cannot save.
 
-The page has two cards, **Two-factor authentication** and **Audit log
-retention**, saved together with **Save security policy**:
+The page has three cards, **Two-factor authentication**, **Audit log
+retention** and **Notification privacy**, saved together with **Save security
+policy**:
 
 | Setting | Allowed values | Default |
 |---|---|---|
 | Require two-factor authentication for every member | On or off | Off |
 | Grace period in days | 1 to 30 days | 7 days |
 | Retention in days | 90 to 3,650 days, or empty (the field shows "Keep forever") to keep events forever | Empty |
+| Hide task titles in push notifications | On or off | Off |
 
 An Organization without a saved policy behaves as if it had the defaults.
 The policy is stored in `organization_security_policies`, one row per
@@ -42,6 +46,17 @@ Organization from the actor's own membership, never from the request.
 Each save that changes something records an `organization_policy_updated`
 audit event with the Organization, the org-admin, and the old and new values
 of the fields that changed.
+
+The notification privacy setting is stored as `hide_titles_in_notifications`.
+Organizations that existed before it was added keep titles in their
+notifications until an org-admin turns it on.
+`Kanban.Organizations.SecurityPolicies.hide_titles?/1` answers whether one
+recipient's titles are hidden. It answers false for someone in no
+Organization, and a person belongs to at most one Organization, so there is
+only ever one policy to read. When it is on, a notification names the event
+and the identifier only, for example "W2701 is ready for review", as the
+[mobile apps design](plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md#94-what-a-notification-and-the-widget-may-show)
+describes.
 
 ## Requiring two-factor
 

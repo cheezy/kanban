@@ -256,7 +256,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Opening the Security Policy",
             content:
-              "In the Organization console, click **Security**. Only org-admins can open or change this page. Both of its settings are saved together with **Save security policy**.",
+              "In the Organization console, click **Security**. Only org-admins can open or change this page. All of its settings are saved together with **Save security policy**.",
             image: nil
           },
           %{
@@ -286,6 +286,12 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
             image: "/images/resources/guides/organization-security-policy-step-5.png",
             image_width: 742,
             image_height: 257
+          },
+          %{
+            title: "Hiding Titles in Push Notifications",
+            content:
+              "Under **Notification privacy**, tick **Hide task titles in push notifications** and click **Save security policy**. Push notifications to your members then show the task identifier and what happened, but no task, goal or target title, so none appears on a locked phone. It is off unless you turn it on.",
+            image: nil
           }
         ]
       },

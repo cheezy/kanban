@@ -142,6 +142,58 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
       assert event.organization_id == org.id
     end
 
+    test "an org admin toggles the policy and an audit row is written",
+         %{conn: conn, org: org, org_admin: org_admin} do
+      {:ok, lv, html} = live(conn, ~p"/org/security")
+
+      assert html =~ "Notification privacy"
+
+      assert has_element?(
+               lv,
+               ~s(#notification-privacy-policy input[type="checkbox"][name="security_policy[hide_titles_in_notifications]"])
+             )
+
+      refute has_element?(
+               lv,
+               ~s(input[name="security_policy[hide_titles_in_notifications]"][checked])
+             )
+
+      assert submit(lv, %{"hide_titles_in_notifications" => "true"}) =~ "Security policy saved."
+
+      assert SecurityPolicies.policy_for_organization(org.id).hide_titles_in_notifications
+      assert SecurityPolicies.hide_titles?(org_admin)
+
+      assert has_element?(
+               lv,
+               ~s(input[name="security_policy[hide_titles_in_notifications]"][checked])
+             )
+
+      assert [event] =
+               AuditLog.list_events(
+                 action: :organization_policy_updated,
+                 actor_user_id: org_admin.id
+               )
+
+      assert event.organization_id == org.id
+      assert event.metadata["old_values"] == %{"hide_titles_in_notifications" => false}
+      assert event.metadata["new_values"] == %{"hide_titles_in_notifications" => true}
+    end
+
+    test "a member can't change it", %{conn: conn, org: org} do
+      member = user_fixture()
+      organization_member_fixture(org, member)
+
+      assert {:error, {:redirect, %{to: "/boards"}}} =
+               live(log_in_user(conn, member), ~p"/org/security")
+
+      assert {:error, :unauthorized} =
+               SecurityPolicies.update_policy(member, %{"hide_titles_in_notifications" => "true"})
+
+      assert SecurityPolicies.policy_for_organization(org.id).id == nil
+      refute SecurityPolicies.hide_titles?(member)
+      assert AuditLog.list_events(action: :organization_policy_updated) == []
+    end
+
     test "out-of-range values show errors and save nothing", %{conn: conn, org: org} do
       {:ok, lv, _html} = live(conn, ~p"/org/security")
 
@@ -177,7 +229,12 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
       {:ok, lv, _html} = live(conn, ~p"/org/security")
 
       for event <- ["validate", "save"],
-          field <- ["require_two_factor", "two_factor_grace_days", "audit_retention_days"],
+          field <- [
+            "require_two_factor",
+            "two_factor_grace_days",
+            "audit_retention_days",
+            "hide_titles_in_notifications"
+          ],
           value <- [%{"a" => "1"}, [%{"a" => "1"}], 42] do
         html = render_hook(lv, event, %{"security_policy" => %{field => value}})
 
@@ -185,7 +242,23 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
         assert html =~ "security-policy-form"
       end
 
-      refute SecurityPolicies.policy_for_organization(org.id).require_two_factor
+      policy = SecurityPolicies.policy_for_organization(org.id)
+      refute policy.require_two_factor
+      refute policy.hide_titles_in_notifications
+    end
+
+    test "a crafted hide_titles_in_notifications value is dropped, not saved or shown",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+
+      html =
+        render_hook(lv, "save", %{
+          "security_policy" => %{"hide_titles_in_notifications" => "maybe"}
+        })
+
+      assert html =~ "Security policy saved."
+      refute html =~ "is invalid"
+      refute SecurityPolicies.policy_for_organization(org.id).hide_titles_in_notifications
     end
 
     test "a missing or non-map security_policy param is ignored", %{conn: conn, org: org} do

@@ -15561,3 +15561,18 @@ msgstr "开始"
 #, elixir-autogen, elixir-format
 msgid "Turn on quiet hours"
 msgstr "开启免打扰时段"
+
+#: lib/kanban_web/live/org_live/security.html.heex
+#, elixir-autogen, elixir-format
+msgid "Hide task titles in push notifications"
+msgstr "在推送通知中隐藏任务标题"
+
+#: lib/kanban_web/live/org_live/security.html.heex
+#, elixir-autogen, elixir-format
+msgid "Notification privacy"
+msgstr "通知隐私"
+
+#: lib/kanban_web/live/org_live/security.html.heex
+#, elixir-autogen, elixir-format
+msgid "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
+msgstr "发送给成员的推送通知会显示任务标识符和所发生的事情，但不显示任务、目标或里程碑的标题，因此锁定的手机上不会出现任何标题。"

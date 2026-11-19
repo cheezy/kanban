@@ -68,6 +68,7 @@ defmodule Kanban.Organizations do
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
+  alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Repo
 
   @doc """
@@ -264,6 +265,14 @@ defmodule Kanban.Organizations do
   """
   @spec member?(User.t(), Organization.t() | integer()) :: boolean()
   defdelegate member?(user, organization), to: Memberships
+
+  @doc """
+  Returns true when the user's Organization hides task titles in push
+  notifications (`Kanban.Organizations.SecurityPolicies.hide_titles?/1`).
+  False for a user in no Organization.
+  """
+  @spec hide_titles?(User.t()) :: boolean()
+  defdelegate hide_titles?(user), to: SecurityPolicies
 
   @doc """
   Returns `organization`'s memberships with each member's user preloaded,

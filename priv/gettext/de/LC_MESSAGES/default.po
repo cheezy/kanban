@@ -15647,3 +15647,18 @@ msgstr "Beginn"
 #, elixir-autogen, elixir-format
 msgid "Turn on quiet hours"
 msgstr "Ruhezeiten einschalten"
+
+#: lib/kanban_web/live/org_live/security.html.heex
+#, elixir-autogen, elixir-format
+msgid "Hide task titles in push notifications"
+msgstr "Aufgabentitel in Push-Benachrichtigungen ausblenden"
+
+#: lib/kanban_web/live/org_live/security.html.heex
+#, elixir-autogen, elixir-format
+msgid "Notification privacy"
+msgstr "Datenschutz bei Benachrichtigungen"
+
+#: lib/kanban_web/live/org_live/security.html.heex
+#, elixir-autogen, elixir-format
+msgid "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
+msgstr "Push-Benachrichtigungen an Ihre Mitglieder zeigen die Aufgabenkennung und was passiert ist, aber keine Titel von Aufgaben, Zielen oder Zielterminen, sodass auf einem gesperrten Telefon kein Titel erscheint."

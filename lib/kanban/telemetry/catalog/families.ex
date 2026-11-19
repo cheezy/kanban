@@ -110,7 +110,7 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:org_workspace_archived, [:user_id, :organization_id, :workspace_id],
      "An org-admin archived one of their Organization's workspaces. user_id is the org-admin."},
     {:organization_policy_updated, [:user_id, :organization_id, :old_values, :new_values],
-     "An org-admin changed their Organization's security policy. user_id is the org-admin; old_values and new_values hold only the fields that changed (require_two_factor, two_factor_grace_days, audit_retention_days)."},
+     "An org-admin changed their Organization's security policy. user_id is the org-admin; old_values and new_values hold only the fields that changed (require_two_factor, two_factor_grace_days, audit_retention_days, hide_titles_in_notifications)."},
     {:retention_purge,
      [
        :organization_counts,

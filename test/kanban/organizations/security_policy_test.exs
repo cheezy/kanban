@@ -83,6 +83,24 @@ defmodule Kanban.Organizations.SecurityPolicyTest do
       end
     end
 
+    test "casts hide_titles_in_notifications, and a blank one is the default off" do
+      cs = changeset(%{"hide_titles_in_notifications" => "true"})
+      assert cs.valid?
+      assert get_change(cs, :hide_titles_in_notifications) == true
+
+      cs =
+        changeset(%{"hide_titles_in_notifications" => ""}, %SecurityPolicy{
+          hide_titles_in_notifications: true
+        })
+
+      assert cs.valid?
+      assert get_field(cs, :hide_titles_in_notifications) == false
+
+      refute changeset(%{"hide_titles_in_notifications" => "maybe"}).valid?
+
+      assert :hide_titles_in_notifications in SecurityPolicy.editable_fields()
+    end
+
     test "turning require on stamps now, off clears it, on again restamps" do
       on = changeset(%{"require_two_factor" => "true"})
       assert get_change(on, :two_factor_enforced_at) == @now
@@ -137,6 +155,7 @@ defmodule Kanban.Organizations.SecurityPolicyTest do
       refute policy.require_two_factor
       assert policy.two_factor_grace_days == 7
       assert policy.audit_retention_days == nil
+      refute policy.hide_titles_in_notifications
     end
   end
 
@@ -169,6 +188,25 @@ defmodule Kanban.Organizations.SecurityPolicyTest do
                "require_two_factor" => true,
                "audit_retention_days" => 365
              }
+    end
+
+    test "turning hide_titles_in_notifications on and off is audited" do
+      {org, admin} = org_with_admin()
+
+      assert {:ok, policy} =
+               SecurityPolicies.update_policy(admin, %{"hide_titles_in_notifications" => "true"})
+
+      assert policy.hide_titles_in_notifications
+
+      {:ok, _} =
+        SecurityPolicies.update_policy(admin, %{"hide_titles_in_notifications" => "false"})
+
+      assert [on, off] = Enum.sort_by(policy_events(), & &1.id)
+      assert on.organization_id == org.id
+      assert on.metadata["old_values"] == %{"hide_titles_in_notifications" => false}
+      assert on.metadata["new_values"] == %{"hide_titles_in_notifications" => true}
+      assert off.metadata["old_values"] == %{"hide_titles_in_notifications" => true}
+      assert off.metadata["new_values"] == %{"hide_titles_in_notifications" => false}
     end
 
     test "a save that changes nothing records no audit event" do
@@ -389,6 +427,42 @@ defmodule Kanban.Organizations.SecurityPolicyTest do
 
       assert SecurityPolicies.two_factor_status_for_user(admin, policy.two_factor_enforced_at) ==
                {:grace, DateTime.add(policy.two_factor_enforced_at, 7 * @day, :second)}
+    end
+  end
+
+  describe "hide_titles?/1" do
+    test "hide_titles? is true for a member of an org with the policy on" do
+      {org, admin} = org_with_admin()
+      member = user_fixture()
+      organization_member_fixture(org, member)
+      {_other_org, other_admin} = org_with_admin()
+
+      refute SecurityPolicies.hide_titles?(member)
+
+      {:ok, _} =
+        SecurityPolicies.update_policy(admin, %{"hide_titles_in_notifications" => "true"})
+
+      assert SecurityPolicies.hide_titles?(member)
+      assert SecurityPolicies.hide_titles?(admin)
+      assert Kanban.Organizations.hide_titles?(member)
+      refute SecurityPolicies.hide_titles?(other_admin)
+
+      {:ok, _} =
+        SecurityPolicies.update_policy(admin, %{"hide_titles_in_notifications" => "false"})
+
+      refute SecurityPolicies.hide_titles?(member)
+    end
+
+    test "a user in no organization is false" do
+      refute SecurityPolicies.hide_titles?(user_fixture())
+    end
+
+    test "a member whose Organization has no policy row, or another setting only, is false" do
+      {_org, admin} = org_with_admin()
+      refute SecurityPolicies.hide_titles?(admin)
+
+      {:ok, _} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+      refute SecurityPolicies.hide_titles?(admin)
     end
   end
 

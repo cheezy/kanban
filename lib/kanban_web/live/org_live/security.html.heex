@@ -92,6 +92,22 @@
         />
       </.settings_card>
 
+      <.settings_card
+        id="notification-privacy-policy"
+        title={gettext("Notification privacy")}
+        hint={
+          gettext(
+            "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
+          )
+        }
+      >
+        <.input
+          field={@form[:hide_titles_in_notifications]}
+          type="checkbox"
+          label={gettext("Hide task titles in push notifications")}
+        />
+      </.settings_card>
+
       <div>
         <.button
           id="save-security-policy"

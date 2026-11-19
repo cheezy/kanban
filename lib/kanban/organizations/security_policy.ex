@@ -13,9 +13,13 @@ defmodule Kanban.Organizations.SecurityPolicy do
   * `audit_retention_days` — days (90 to 3650) to keep the Organization's
     audit events, or `nil` to keep them forever. The 90-day floor is also
     enforced by the database purge function.
+  * `hide_titles_in_notifications` — push notifications to the
+    Organization's members leave out task titles, so none shows on a lock
+    screen (W2769). Off by default, so existing Organizations keep titles
+    until an org-admin turns it on.
 
   An Organization with no row has the defaults: no two-factor requirement and
-  audit events kept forever (`Kanban.Organizations.SecurityPolicies`).
+  audit events kept forever, titles shown in notifications (`Kanban.Organizations.SecurityPolicies`).
 
   `organization_id` and `updated_by_id` are set by the context from the
   acting org-admin's own membership, never cast from params.
@@ -39,6 +43,7 @@ defmodule Kanban.Organizations.SecurityPolicy do
     field :two_factor_grace_days, :integer, default: 7
     field :two_factor_enforced_at, :utc_datetime
     field :audit_retention_days, :integer
+    field :hide_titles_in_notifications, :boolean, default: false
 
     belongs_to :organization, Organization
     belongs_to :updated_by, User
@@ -48,7 +53,13 @@ defmodule Kanban.Organizations.SecurityPolicy do
 
   @doc "The fields an org-admin may change, which are also the fields audited."
   @spec editable_fields() :: [atom()]
-  def editable_fields, do: [:require_two_factor, :two_factor_grace_days, :audit_retention_days]
+  def editable_fields,
+    do: [
+      :require_two_factor,
+      :two_factor_grace_days,
+      :audit_retention_days,
+      :hide_titles_in_notifications
+    ]
 
   @doc "The allowed range of grace days."
   @spec grace_days_range() :: Range.t()
@@ -71,7 +82,11 @@ defmodule Kanban.Organizations.SecurityPolicy do
   def changeset(%__MODULE__{} = policy, attrs, %DateTime{} = now) do
     policy
     |> cast(attrs, editable_fields(), empty_values: [""])
-    |> validate_required([:require_two_factor, :two_factor_grace_days])
+    |> validate_required([
+      :require_two_factor,
+      :two_factor_grace_days,
+      :hide_titles_in_notifications
+    ])
     |> validate_number(:two_factor_grace_days,
       greater_than_or_equal_to: @min_grace_days,
       less_than_or_equal_to: @max_grace_days

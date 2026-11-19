@@ -14,9 +14,9 @@ defmodule KanbanWeb.OrgLive.Security do
   `/boards`.
 
   The form's params pass through `KanbanWeb.OrgLive.FormParams.scalar/2`
-  first (D441): a value that is not a string becomes blank, and
-  `require_two_factor` is kept only as the `"true"` or `"false"` its checkbox
-  sends, so a crafted payload cannot crash the re-rendered inputs. A
+  first (D441): a value that is not a string becomes blank, and the
+  `require_two_factor` and `hide_titles_in_notifications` checkboxes are kept
+  only as the `"true"` or `"false"` they send, so a crafted payload cannot crash the re-rendered inputs. A
   `validate` or `save` event whose `"security_policy"` param is missing or not
   a map runs the same org-admin check and changes nothing.
   """
@@ -75,7 +75,8 @@ defmodule KanbanWeb.OrgLive.Security do
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
-  defp scalar_params(params), do: FormParams.scalar(params, ["require_two_factor"])
+  defp scalar_params(params),
+    do: FormParams.scalar(params, ["require_two_factor", "hide_titles_in_notifications"])
 
   defp policy_saved({:ok, policy}, socket) do
     {:noreply,
