@@ -29,6 +29,11 @@ defmodule KanbanWeb.API.Me.FallbackController do
       `Kanban.Reviews.approve_review/3` itself is `422 {"error":
       "approval_failed", "reason"}` (`ApprovalFailed`). `:not_authorized` is
       the 404 above, so a refusal never reveals the task.
+    * the app's request for changes (W2755): `:review_notes_required`, notes
+      that are missing or blank, is `422 {"errors": {"notes": ["can't be
+      blank"]}}` (`ValidationError`), with the message only, never the notes
+      sent; `:review_notes_invalid`, notes with a NUL byte, is `422
+      {"errors": {"notes": ["contains characters that are not allowed"]}}`.
     * `{:rate_limited, retry_after_ms}`, the app approval's per-device limit,
       is `429 {"error": "rate_limited", "message": message}` (`Error`) with a
       `retry-after` header in seconds.
@@ -115,6 +120,18 @@ defmodule KanbanWeb.API.Me.FallbackController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(%{error: "approval_failed", reason: Atom.to_string(reason)})
+  end
+
+  def call(conn, {:error, :review_notes_required}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: %{notes: ["can't be blank"]}})
+  end
+
+  def call(conn, {:error, :review_notes_invalid}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: %{notes: ["contains characters that are not allowed"]}})
   end
 
   def call(conn, {:error, {:rate_limited, retry_after_ms}}) when is_integer(retry_after_ms) do

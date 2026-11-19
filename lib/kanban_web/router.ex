@@ -259,6 +259,7 @@ defmodule KanbanWeb.Router do
     get "/reviews/:task_id", ReviewController, :show
     post "/reviews/:task_id/approval_challenge", ReviewController, :approval_challenge
     post "/reviews/:task_id/approve", ReviewController, :approve
+    post "/reviews/:task_id/request_changes", ReviewController, :request_changes
   end
 
   # API routes with token authentication

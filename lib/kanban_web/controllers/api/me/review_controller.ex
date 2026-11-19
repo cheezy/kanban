@@ -26,9 +26,22 @@ defmodule KanbanWeb.API.Me.ReviewController do
       nonce and the device's signature and, once the five checks pass in the
       documented order, approves through `Kanban.Reviews.approve_review/3`.
 
-  Both count against the device's `:review_approval` rate limit
+  The app asks for changes in one request (W2755, design §7.5), run by
+  `Kanban.Reviews.RequestChanges`:
+
+    * `POST /api/me/reviews/:task_id/request_changes` takes
+      `review_requested_at` and `notes` (required) and, once checks 1 to 3
+      of the approval pass, requests changes through
+      `Kanban.Reviews.request_changes_review/3`. There is no signature and
+      no large-change guard: a phone may ask for changes on any change.
+
+  All three count against the device's `:review_approval` rate limit
   (`Kanban.RateLimit`) before anything is looked up, and answer `429` with
   `retry-after` once it is reached.
+
+  `approve` and `request_changes` take an optional `Idempotency-Key` header
+  (`KanbanWeb.API.Me.Idempotent`): a retry with the same key within 24 hours
+  is answered with the first successful result instead of a 409.
 
   Every refusal is rendered by `KanbanWeb.API.Me.FallbackController`.
   """
@@ -38,6 +51,10 @@ defmodule KanbanWeb.API.Me.ReviewController do
   alias Kanban.RateLimit
   alias Kanban.Reviews
   alias Kanban.Reviews.Approval
+  alias Kanban.Reviews.DecisionChecks
+  alias Kanban.Reviews.RequestChanges
+  alias KanbanWeb.API.Me.Idempotent
+  alias KanbanWeb.API.Me.ReviewJSON
   alias KanbanWeb.IdParams
 
   action_fallback KanbanWeb.API.Me.FallbackController
@@ -63,13 +80,47 @@ defmodule KanbanWeb.API.Me.ReviewController do
   end
 
   def approve(conn, %{"task_id" => task_id}) do
-    %{current_scope: scope, current_device: device} = conn.assigns
+    render = &ReviewJSON.approved(%{task: &1})
+
+    decide(conn, task_id, :approve, render, fn scope, device, id, idempotency ->
+      Approval.approve(scope, device, id, conn.body_params, DateTime.utc_now(),
+        idempotency: idempotency
+      )
+    end)
+  end
+
+  def request_changes(conn, %{"task_id" => task_id}) do
+    render = &ReviewJSON.changes_requested(%{task: &1})
+
+    decide(conn, task_id, :request_changes, render, fn scope, device, id, idempotency ->
+      RequestChanges.request_changes(scope, device, id, conn.body_params,
+        idempotency: idempotency
+      )
+    end)
+  end
+
+  # Both decisions: the shared rate limit, the task id and the Idempotency-Key,
+  # then `decision` (or the stored result, once `DecisionChecks.replayable/2`
+  # allows it) through `Idempotent.run/5`.
+  defp decide(conn, task_id, action, render, decision) do
+    %{current_device: device} = conn.assigns
 
     with :ok <- approval_rate_limit(device),
          {:ok, id} <- parse_id(task_id),
-         {:ok, task} <- Approval.approve(scope, device, id, conn.body_params) do
-      render(conn, :approved, task: task)
-    end
+         {:ok, key} <- Idempotent.key(conn, device, action, id, render),
+         do: run_decision(conn, key, render, id, decision)
+  end
+
+  defp run_decision(conn, key, render, id, decision) do
+    %{current_scope: scope, current_device: device} = conn.assigns
+
+    Idempotent.run(
+      conn,
+      key,
+      render,
+      &decision.(scope, device, id, &1),
+      fn -> DecisionChecks.replayable(scope, id) end
+    )
   end
 
   # The person's plan first, then their right to review the task, and only

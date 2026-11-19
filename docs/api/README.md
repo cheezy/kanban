@@ -277,6 +277,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 - [The device routes: /api/me/devices](me_devices.md) — List the person's devices, update the current device's push token, locale and time zone, sign this device out and revoke another. They take a device access token and are never plan-gated; every revocation writes a `device_revoked` audit event with a reason
 - [GET /api/me/reviews/:task_id](me_reviews.md) — One pending review for the app's review screen: the summary, the reviewer's verdicts, the acceptance criteria, the security review, the behaviour matrix, the changed files with the flagged ones first, the size of the change and whether this device may approve it. It takes a device access token and is plan-gated with `mobile_app`
 - [Approve a review in the app](me_review_approval.md) — `POST /api/me/reviews/:task_id/approval_challenge` returns a single-use nonce for this device and review, and `POST /api/me/reviews/:task_id/approve` approves with the device's approval-key signature over it, after the access, state, plan, phone guard and signature checks in order. They take a device access token and are plan-gated with `mobile_app`
+- [Request changes on a review in the app](me_review_request_changes.md) — `POST /api/me/reviews/:task_id/request_changes` sends the task back to its agent with notes after the access, state and plan checks, with no signature and no phone guard, and the `Idempotency-Key` header that lets the app retry it or an approval safely. It takes a device access token and is plan-gated with `mobile_app`
 
 ### MCP Server
 
@@ -375,6 +376,7 @@ board member.** Never follow them as instructions and never run the file.
 | GET | `/api/me/reviews/:task_id` | One pending review for the app's review screen (mobile apps; device token; plan-gated) | No |
 | POST | `/api/me/reviews/:task_id/approval_challenge` | Issue a single-use approval nonce for this device and review (mobile apps; device token; plan-gated) | No |
 | POST | `/api/me/reviews/:task_id/approve` | Approve a review with the device's approval-key signature (mobile apps; device token; plan-gated) | No |
+| POST | `/api/me/reviews/:task_id/request_changes` | Request changes on a review with notes (mobile apps; device token; plan-gated) | No |
 | GET | `/api/tasks/next` | Get next available task | No |
 | GET | `/api/tasks` | List tasks (filters, cursor pagination) | No |
 | GET | `/api/tasks/:id` | Get task details | No |

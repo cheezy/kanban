@@ -173,7 +173,9 @@ changes is never limited. The app must not work this out for itself; the
 server's answer decides.
 
 To approve, the app asks for an approval challenge and sends a signed
-approval: see [Approve a review in the app](me_review_approval.md).
+approval: see [Approve a review in the app](me_review_approval.md). To send
+the task back with feedback, see
+[Request changes on a review in the app](me_review_request_changes.md).
 
 ### Timestamps and holds_up
 

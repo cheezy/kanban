@@ -1,8 +1,9 @@
 defmodule KanbanWeb.API.Me.ReviewJSON do
   @moduledoc """
   JSON rendering for `GET /api/me/reviews/:task_id` (W2751), from what
-  `Kanban.Reviews.MobileReview.build/3` returns, and for the approval
-  challenge and approve routes (W2754).
+  `Kanban.Reviews.MobileReview.build/3` returns, for the approval
+  challenge and approve routes (W2754), and for the request changes route
+  (W2755).
 
   The keys are a contract with every supported app version: add fields, never
   remove or rename one (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.2).
@@ -160,14 +161,20 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   end
 
   @doc "An approved review (W2754), under `data`."
-  def approved(%{task: %Task{} = task}) do
+  def approved(%{task: %Task{} = task}), do: %{data: decision(task)}
+
+  @doc """
+  A review the app requested changes on (W2755), under `data`. The notes
+  are never rendered: the app already holds what it sent.
+  """
+  def changes_requested(%{task: %Task{} = task}), do: %{data: decision(task)}
+
+  defp decision(%Task{} = task) do
     %{
-      data: %{
-        task_id: task.id,
-        identifier: task.identifier,
-        review_status: atom_string(task.review_status),
-        reviewed_at: task.reviewed_at
-      }
+      task_id: task.id,
+      identifier: task.identifier,
+      review_status: atom_string(task.review_status),
+      reviewed_at: task.reviewed_at
     }
   end
 

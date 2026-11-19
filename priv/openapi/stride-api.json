@@ -2435,7 +2435,7 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests",
-            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge and approve requests together from this device in a minute. `retry-after` gives the seconds to wait."
+            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge, approve and request changes requests together from this device in a minute. `retry-after` gives the seconds to wait."
           }
         }
       }
@@ -2444,7 +2444,7 @@
       "post": {
         "operationId": "approveMyReview",
         "summary": "Approve a review with the device's approval-key signature",
-        "description": "Approves a task waiting in Review from the app. The body carries review_requested_at, the nonce from createMyReviewApprovalChallenge and the signature. The checks run in this order and the first that fails answers: (1) the person can review the task: it exists, is not archived and is on a board they can write to (404); (2) the review is still pending and review_requested_at matches (409 already_decided or resubmitted, with the current state); (3) the mobile_app plan feature, for the person and then the board (403 plan_required); (4) the large-change guard for the device's class (422 too_large_for_phone on a phone); (5) the signature: a nonce and a signature are sent (reason missing), the nonce was issued to this device for this task, this review_requested_at and this submission, so work resubmitted since the challenge is refused even inside the same second (invalid), is unused (reused) and unexpired (expired), and the signature verifies against the device's approval public key (invalid); a refusal is 422 signature_rejected and writes an approval_signature_rejected audit event with the reason, never the nonce or the signature. Then the approval is made exactly as on the web: the task moves to Done, and the review_approved audit event records via, the device, its class and approval_key true. The commit locks the task and runs the access, state and submission checks again, so a task archived or write access removed since the checks is 404 and work resubmitted is 409 or invalid; a device revoked while its request was in flight is 401 Invalid access token. The nonce is consumed in the same transaction, so it is used at most once and two devices approving at once get one 200 and one 409. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature, padded base64 or base64 with stray bits in its last character is refused as invalid; the same canonical encoding is required of the key. A body without review_requested_at, or with one that is neither an ISO 8601 extended-format timestamp (send the challenge's value back unchanged), null nor the empty string, is 400 Bad Request with the message \"review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none.\" Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
+        "description": "Approves a task waiting in Review from the app. The body carries review_requested_at, the nonce from createMyReviewApprovalChallenge and the signature. The checks run in this order and the first that fails answers: (1) the person can review the task: it exists, is not archived and is on a board they can write to (404); (2) the review is still pending and review_requested_at matches (409 already_decided or resubmitted, with the current state); (3) the mobile_app plan feature, for the person and then the board (403 plan_required); (4) the large-change guard for the device's class (422 too_large_for_phone on a phone); (5) the signature: a nonce and a signature are sent (reason missing), the nonce was issued to this device for this task, this review_requested_at and this submission, so work resubmitted since the challenge is refused even inside the same second (invalid), is unused (reused) and unexpired (expired), and the signature verifies against the device's approval public key (invalid); a refusal is 422 signature_rejected and writes an approval_signature_rejected audit event with the reason, never the nonce or the signature. Then the approval is made exactly as on the web: the task moves to Done, and the review_approved audit event records via, the device, its class and approval_key true. The commit locks the task and runs the access, state and submission checks again, so a task archived or write access removed since the checks is 404 and work resubmitted is 409 or invalid; a device revoked while its request was in flight is 401 Invalid access token. The nonce is consumed in the same transaction, so it is used at most once and two devices approving at once get one 200 and one 409. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature, padded base64 or base64 with stray bits in its last character is refused as invalid; the same canonical encoding is required of the key. A body without review_requested_at, or with one that is neither an ISO 8601 extended-format timestamp (send the challenge's value back unchanged), null nor the empty string, is 400 Bad Request with the message \"review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none.\" The request may carry an Idempotency-Key header: a retry with the same key within 24 hours is answered with the first successful result, so a retried approval returns its first 200 rather than 409 already_decided; an empty, malformed or repeated key is 400 Bad Request. Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
         "tags": [
           "Mobile"
         ],
@@ -2466,6 +2466,9 @@
           },
           {
             "$ref": "#/components/parameters/StrideApp"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -2485,7 +2488,7 @@
         },
         "responses": {
           "200": {
-            "description": "The review was approved: the task moved to Done.",
+            "description": "The review was approved: the task moved to Done. A retry with the same Idempotency-Key replays this response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2639,7 +2642,177 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests",
-            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge and approve requests together from this device in a minute. `retry-after` gives the seconds to wait."
+            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge, approve and request changes requests together from this device in a minute. `retry-after` gives the seconds to wait."
+          }
+        }
+      }
+    },
+    "/api/me/reviews/{task_id}/request_changes": {
+      "post": {
+        "operationId": "requestMyReviewChanges",
+        "summary": "Request changes on a review from the app",
+        "description": "Requests changes on a task waiting in Review from the app. The body carries review_requested_at and notes, both required. It runs the approval's checks 1 to 3 in this order and the first that fails answers: (1) the person can review the task: it exists, is not archived and is on a board they can write to (404); (2) the review is still pending and review_requested_at matches (409 already_decided or resubmitted, with the current state); (3) the mobile_app plan feature, for the person and then the board (403 plan_required). Missing or blank notes are then 422 with errors.notes, so a 422 never reveals a task the person cannot review. There is no signature and no large-change guard: asking for changes leaves the task in Review, so a phone may ask for changes on a change of any size. The request is recorded exactly as on the web: the task stays in Review with review_status changes_requested and the notes, and the review_changes_requested audit event records via, the device and its class, never the notes. The commit locks the task and runs the access and state checks again, so a task archived or write access removed since the checks is 404 and a review decided or resubmitted since is 409; a device revoked while its request was in flight is 401 Invalid access token. The request may carry an Idempotency-Key header: a retry with the same key within 24 hours is answered with the first successful result instead of 409, and two parallel requests with one key request changes once; an empty, malformed or repeated key is 400 Bad Request. A body without review_requested_at, or with one that is neither an ISO 8601 extended-format timestamp, null nor the empty string, is 400 Bad Request. Takes a device access token only. Human-readable reference: docs/api/me_review_request_changes.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestReviewChangesRequest"
+              },
+              "example": {
+                "review_requested_at": "2026-11-18T09:30:00Z",
+                "notes": "Handle the empty member list before showing the table."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changes were requested: the task stays in Review with review_status changes_requested. A retry with the same Idempotency-Key replays this response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangesRequestedReviewResponse"
+                },
+                "example": {
+                  "data": {
+                    "task_id": 4812,
+                    "identifier": "W2701",
+                    "review_status": "changes_requested",
+                    "reviewed_at": "2026-11-18T09:41:12Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the task's board, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. Checked after the access and state checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No task the person can review has this id: it is missing, archived, on a board the person cannot see or can only read, or the id is not a positive integer in the signed 64-bit range. Checked first, so no other answer reveals the task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "409": {
+            "description": "The review was decided, or the task was sent for review again, since the app loaded it. `review` is its current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewConflict"
+                },
+                "examples": {
+                  "already_decided": {
+                    "summary": "Decided since it was loaded",
+                    "value": {
+                      "error": "already_decided",
+                      "message": "This review has already been decided.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": "approved",
+                        "review_requested_at": "2026-11-18T09:30:00Z",
+                        "reviewed_at": "2026-11-18T09:39:02Z",
+                        "reviewed_by": "Sam Rivera"
+                      }
+                    }
+                  },
+                  "resubmitted": {
+                    "summary": "Sent for review again since it was loaded",
+                    "value": {
+                      "error": "resubmitted",
+                      "message": "This task was sent for review again since it was loaded. Review it again.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": null,
+                        "review_requested_at": "2026-11-18T10:00:00Z",
+                        "reviewed_at": null,
+                        "reviewed_by": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The notes are missing, blank (nothing visible: only whitespace, invisible characters such as a zero-width space, or combining marks) or not a string, or hold a NUL byte (errors.notes: \"contains characters that are not allowed\"). Checked after the access, state and plan checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                "example": {
+                  "errors": {
+                    "notes": [
+                      "can't be blank"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests",
+            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge, approve and request changes requests together from this device in a minute. `retry-after` gives the seconds to wait."
           }
         }
       }
@@ -2834,6 +3007,19 @@
           "maxLength": 64
         },
         "example": "ios/1.0.0 (42)"
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "description": "A key the app picks for one decision, such as a UUID, and sends again unchanged when it retries that request. A retry with the same key from the same device, for the same decision on the same task, within 24 hours is answered with the first request's status and body instead of being run again, so a response lost on the way back never turns into a 409; two parallel requests with one key run the decision once. Only a successful result is stored: a refused request stores nothing and its retry runs again. A key sent for another task or the other decision acts anew. The key is bound to the request it was sent with (review_requested_at for an approval; review_requested_at and notes for a request for changes): the same key sent with others is a new request, which on a decided review answers 409 already_decided. Before a stored result is replayed, the person's access to the task and the mobile_app plan are checked again, so a lost access answers 404 and a lost plan 403. The window is at least 24 hours, rounded up to the next whole second. Only a SHA-256 hash of the key is stored, scoped to the device, and the key is never logged. Without the header the request runs as it always did. An empty, malformed or repeated header is 400 Bad Request with the message \"Idempotency-Key must be sent at most once, as 1 to 255 visible ASCII characters, such as a UUID.\"",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[\\x21-\\x7E]{1,255}$"
+        },
+        "example": "4f8e2a6c-1b3d-4e5f-8a7b-9c0d1e2f3a4b"
       }
     },
     "responses": {
@@ -6215,6 +6401,65 @@
               "review_not_performed",
               "invalid_review_status"
             ]
+          }
+        }
+      },
+      "RequestReviewChangesRequest": {
+        "type": "object",
+        "required": [
+          "review_requested_at",
+          "notes"
+        ],
+        "properties": {
+          "review_requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The review_requested_at the review screen and the challenge returned, sent back unchanged (an ISO 8601 extended-format UTC timestamp), or null or the empty string for a task without one."
+          },
+          "notes": {
+            "type": "string",
+            "description": "The reviewer's feedback for the agent. Required, and not blank. It is stored on the task and never echoed back or written to the audit event."
+          }
+        }
+      },
+      "ChangesRequestedReviewResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ChangesRequestedReview"
+          }
+        }
+      },
+      "ChangesRequestedReview": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "identifier",
+          "review_status",
+          "reviewed_at"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "changes_requested"
+            ]
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

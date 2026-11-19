@@ -131,9 +131,11 @@ defmodule Kanban.RateLimit do
   there; the IP ceiling still is. The `authorization_code` grant has no
   device yet, so only the IP ceiling applies to it.
 
-  `:review_approval` counts the app approval's requests,
-  `POST /api/me/reviews/:task_id/approval_challenge` and
-  `POST /api/me/reviews/:task_id/approve` together, per device (`identity:
+  `:review_approval` counts the app's review decision requests,
+  `POST /api/me/reviews/:task_id/approval_challenge`,
+  `POST /api/me/reviews/:task_id/approve` and
+  `POST /api/me/reviews/:task_id/request_changes` together, a replayed
+  `Idempotency-Key` retry included, per device (`identity:
   "device:<id>"`, the authenticated device, no IP), with `check/2` before
   any lookup. Each challenge writes a row and each refused signature writes
   an audit row, so a signed-in device cannot write either without bound. An

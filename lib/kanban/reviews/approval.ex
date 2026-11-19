@@ -18,9 +18,11 @@ defmodule Kanban.Reviews.Approval do
 
   ## The checks, in order
 
-  `approve/5` runs these checks in this order and stops at the first that
+  `approve/6` runs these checks in this order and stops at the first that
   fails; `issue_challenge/5` runs the first four, so a phone learns that a
-  change is too large before it asks for a biometric:
+  change is too large before it asks for a biometric. Checks 1 to 3 are
+  `Kanban.Reviews.DecisionChecks.decidable/4`, which the request for changes
+  (`Kanban.Reviews.RequestChanges`) runs too:
 
     1. **Access.** The task exists, is not archived, is on a board the person
        can see and they can write to it (the review write check). Anything
@@ -42,7 +44,10 @@ defmodule Kanban.Reviews.Approval do
        approval public key (`:invalid`). A refusal is
        `{:signature_rejected, reason}`, writes `:approval_signature_rejected`
        and emits `[:kanban, :review, :approval_signature_rejected]`, with the
-       reason only: never the nonce or the signature.
+       reason only: never the nonce or the signature. A nonce found used
+       because the approval it signed committed after check 2 ran is a retry
+       racing that commit, not a rejection: it answers the state check 2
+       finds now (`{:conflict, :already_decided, task}`) and records nothing.
 
   ## Committing
 
@@ -58,6 +63,16 @@ defmodule Kanban.Reviews.Approval do
   is consumed at most once, and a refused approval rolls the nonce back
   unused. Two devices approving at once queue on the row lock: the second
   finds the review decided and answers 409 `already_decided`.
+
+  ## Retries
+
+  A request sent with an `Idempotency-Key` header carries it as
+  `opts[:idempotency]` (`Kanban.Devices.IdempotencyKey`). The commit claims
+  it before it locks anything (`Kanban.Devices.Nonces.claim/2`) and stores
+  the approved result with it in the same transaction
+  (`Kanban.Devices.Nonces.record/2`), so a retry with the same key, even one
+  sent in parallel, replays the first 200 rather than approving twice or
+  answering 409. A refused approval stores nothing.
 
   `approve_review/3` opens its own transaction, which nests inside this one,
   and its telemetry waits for this one's commit (`Kanban.Telemetry.AfterCommit`).
@@ -76,20 +91,19 @@ defmodule Kanban.Reviews.Approval do
   alias Kanban.Accounts.Scope
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
-  alias Kanban.Plans
-  alias Kanban.Queries.BoardScope
+  alias Kanban.Devices.Nonce
+  alias Kanban.Devices.Nonces
   alias Kanban.Repo
   alias Kanban.Reviews
   alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Reviews.ApprovalSignature
   alias Kanban.Reviews.Audit
+  alias Kanban.Reviews.DecisionChecks
   alias Kanban.Reviews.MobileGuard
-  alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Task
   alias Kanban.Telemetry.AfterCommit
 
   @purge_batch_size 1000
-  @requested_at_message "review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none."
 
   @type conflict :: :already_decided | :resubmitted
   @type rejection :: :missing | :invalid | :expired | :reused
@@ -101,6 +115,7 @@ defmodule Kanban.Reviews.Approval do
           | {:too_large_for_phone, MobileGuard.size()}
           | {:signature_rejected, rejection()}
           | :revoked
+          | {:replay, Nonce.t()}
           | atom()
           | Ecto.Changeset.t()
 
@@ -142,15 +157,23 @@ defmodule Kanban.Reviews.Approval do
   moduledoc). `params` holds `"review_requested_at"` (required, `nil` for a
   task without one), `"nonce"` and `"signature"`.
 
+  `opts` takes `:idempotency`, the `Kanban.Devices.IdempotencyKey` the
+  request carried, or `nil`: the commit claims it first and stores the
+  approved result with it, and a key already stored is
+  `{:error, {:replay, nonce}}` (see "Retries" in the moduledoc).
+
   Returns `{:ok, task}`, the approved task, or `{:error, reason}`.
   """
-  @spec approve(Scope.t(), Device.t(), integer(), map(), DateTime.t()) ::
+  @spec approve(Scope.t(), Device.t(), integer(), map(), DateTime.t(), keyword()) ::
           {:ok, Task.t()} | {:error, reason()}
-  def approve(scope, device, task_id, params, now \\ DateTime.utc_now())
+  def approve(scope, device, task_id, params, now \\ DateTime.utc_now(), opts \\ [])
 
-  def approve(%Scope{} = scope, %Device{} = device, task_id, params, now) when is_map(params) do
+  def approve(%Scope{} = scope, %Device{} = device, task_id, params, now, opts)
+      when is_map(params) and is_list(opts) do
+    idempotency = Keyword.get(opts, :idempotency)
+
     with {:ok, pending, requested} <- decidable_pending(scope, device, task_id, params, :required) do
-      approve_pending(scope, device, pending, requested, params, now)
+      approve_pending(scope, device, pending, requested, params, {now, idempotency})
     end
   end
 
@@ -176,86 +199,12 @@ defmodule Kanban.Reviews.Approval do
     end
   end
 
-  # Checks 1 to 4, shared by the challenge and the approval.
+  # Checks 1 to 4, shared by the challenge and the approval: 1 to 3 are
+  # Kanban.Reviews.DecisionChecks.decidable/4.
   defp decidable_pending(scope, device, task_id, params, mode) do
-    with {:ok, task} <- fetch_decidable(scope, task_id),
-         {:ok, requested} <- requested_at(params, mode),
-         {:ok, pending} <- check_state(scope, task, requested),
-         :ok <- check_plan(scope, pending),
+    with {:ok, pending, requested} <- DecisionChecks.decidable(scope, task_id, params, mode),
          :ok <- check_guard(pending, device) do
       {:ok, pending, requested}
-    end
-  end
-
-  # --- 1. Access ---------------------------------------------------------------
-
-  defp fetch_decidable(%Scope{user: %{id: _} = user} = scope, task_id)
-       when is_integer(task_id) do
-    Task
-    |> where([t], t.id == ^task_id and is_nil(t.archived_at))
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> preload([t], [:completed_by, :reviewed_by, column: :board])
-    |> Repo.one()
-    |> authorize(user)
-  end
-
-  defp fetch_decidable(_scope, _task_id), do: {:error, :not_found}
-
-  defp authorize(%Task{column: %{board_id: board_id}} = task, user) do
-    if AgentWorkflow.authorized_reviewer?(board_id, user),
-      do: {:ok, task},
-      else: {:error, :not_found}
-  end
-
-  defp authorize(_task, _user), do: {:error, :not_found}
-
-  # --- 2. State ------------------------------------------------------------------
-
-  # `:any` means the caller sent none, so the challenge binds the task's own.
-  defp requested_at(params, mode) do
-    case Map.fetch(params, "review_requested_at") do
-      :error when mode == :optional -> {:ok, :any}
-      :error -> {:error, {:bad_request, @requested_at_message}}
-      {:ok, empty} when empty in [nil, ""] -> {:ok, nil}
-      {:ok, value} when is_binary(value) -> parse_requested_at(value)
-      {:ok, _other} -> {:error, {:bad_request, @requested_at_message}}
-    end
-  end
-
-  defp parse_requested_at(value) do
-    case DateTime.from_iso8601(value) do
-      {:ok, at, _offset} -> {:ok, DateTime.truncate(at, :second)}
-      {:error, _reason} -> {:error, {:bad_request, @requested_at_message}}
-    end
-  end
-
-  defp check_state(scope, %Task{} = task, requested) do
-    case Reviews.get_pending_review(scope, task.id) do
-      {:ok, pending} -> match_requested(Repo.preload(pending, :reviewed_by), requested)
-      {:error, :not_found} -> {:error, {:conflict, :already_decided, task}}
-    end
-  end
-
-  defp match_requested(pending, :any), do: {:ok, pending}
-
-  defp match_requested(%Task{review_requested_at: stored} = pending, requested) do
-    if same_stamp?(stored, requested),
-      do: {:ok, pending},
-      else: {:error, {:conflict, :resubmitted, pending}}
-  end
-
-  defp same_stamp?(nil, nil), do: true
-
-  defp same_stamp?(%DateTime{} = stored, %DateTime{} = requested),
-    do: stored |> DateTime.truncate(:second) |> DateTime.compare(requested) == :eq
-
-  defp same_stamp?(_stored, _requested), do: false
-
-  # --- 3. Plan -------------------------------------------------------------------
-
-  defp check_plan(scope, %Task{column: %{board: board}}) do
-    with :ok <- Plans.check_user(scope, :mobile_app, surface: :controller) do
-      Plans.check_board(board, :mobile_app, surface: :controller)
     end
   end
 
@@ -281,16 +230,30 @@ defmodule Kanban.Reviews.Approval do
 
   # --- 5. Signature --------------------------------------------------------------
 
-  defp approve_pending(scope, device, pending, requested, params, now) do
+  defp approve_pending(scope, device, pending, requested, params, {now, _idempotency} = at) do
     with {:ok, challenge} <- signed_challenge(scope, device, pending, params, now),
-         do: committed(scope, device, pending, challenge, requested, now)
+         do: committed(scope, device, pending, challenge, requested, at)
   end
 
   defp signed_challenge(scope, device, pending, params, now) do
     pending
     |> check_signature(device, params, now)
+    |> decided_meanwhile(scope, pending, params)
     |> record_rejection(pending, scope, device)
   end
+
+  # A nonce bound to this device, task and stamp is found used only once the
+  # approval it signed has committed: a retry racing that commit. Answer with
+  # the state the commit left (409, or the replay of its key) rather than
+  # recording a rejected signature for a request that did not fail.
+  defp decided_meanwhile({:error, {:signature_rejected, :reused}} = refused, scope, task, params) do
+    case DecisionChecks.decidable(scope, task.id, params, :required) do
+      {:error, {:conflict, _reason, _task}} = conflict -> conflict
+      _still_pending_or_other -> refused
+    end
+  end
+
+  defp decided_meanwhile(result, _scope, _task, _params), do: result
 
   defp check_signature(%Task{} = task, %Device{} = device, params, now) do
     with {:error, reason} <- signature_checks(task, device, params, now),
@@ -334,7 +297,10 @@ defmodule Kanban.Reviews.Approval do
   # was resubmitted is `:invalid`, and says nothing about its own state.
   defp bound(%ApprovalChallenge{} = challenge, %Device{id: device_id}, %Task{} = task) do
     if challenge.device_id == device_id and challenge.task_id == task.id and
-         same_stamp?(challenge.review_requested_at, truncate(task.review_requested_at)),
+         DecisionChecks.same_stamp?(
+           challenge.review_requested_at,
+           truncate(task.review_requested_at)
+         ),
        do: :ok,
        else: {:error, :invalid}
   end
@@ -367,36 +333,38 @@ defmodule Kanban.Reviews.Approval do
   end
 
   # A nonce found consumed or expired under the lock is a rejection too.
-  defp committed(scope, device, pending, challenge, requested, now) do
+  defp committed(scope, device, pending, challenge, requested, at) do
     scope
-    |> commit(device, pending, challenge, requested, now)
+    |> commit(device, pending, challenge, requested, at)
     |> record_rejection(pending, scope, device)
   end
 
-  defp commit(scope, device, task, challenge, requested, now) do
+  defp commit(scope, device, task, challenge, requested, at) do
     AfterCommit.after_commit(fn ->
-      Repo.transaction(fn -> commit_locked(scope, device, task, challenge, requested, now) end)
+      Repo.transaction(fn -> commit_locked(scope, device, task, challenge, requested, at) end)
     end)
   end
 
-  defp commit_locked(scope, device, task, challenge, requested, now) do
-    with {:ok, fresh} <- recheck_locked(scope, device, task, requested),
-         :ok <- same_locked_submission(challenge, fresh),
-         :ok <- consume(challenge, now),
-         {:ok, approved} <- approve_fresh(scope, fresh, device) do
+  # The idempotency key is claimed before the row locks, so a parallel retry
+  # with the same key waits here and then replays this commit's result.
+  defp commit_locked(scope, device, task, challenge, requested, {_now, idempotency} = at) do
+    with {:ok, fresh} <- admit_locked(scope, device, task, challenge, requested, at),
+         {:ok, approved} <- approve_fresh(scope, fresh, device),
+         :ok <- Nonces.record(idempotency, approved) do
       approved
     else
       {:error, reason} -> Repo.rollback(reason)
     end
   end
 
-  # Under the task row lock: still visible and decidable, the device still
-  # active, and the review still pending with the stamp the app signed.
-  defp recheck_locked(scope, device, task, requested) do
-    with :ok <- lock_task_row(task.id),
-         {:ok, _current} <- fetch_decidable(scope, task.id),
-         :ok <- lock_active_device(device),
-         do: locked_state(scope, task, requested)
+  # Under the locks, in this order: the idempotency key, the access, device
+  # and state re-check, the submission, and the nonce.
+  defp admit_locked(scope, device, task, challenge, requested, {now, idempotency}) do
+    with :ok <- Nonces.claim(idempotency, now),
+         {:ok, fresh} <- DecisionChecks.recheck_locked(scope, device, task, requested),
+         :ok <- same_locked_submission(challenge, fresh),
+         :ok <- consume(challenge, now),
+         do: {:ok, fresh}
   end
 
   defp approve_fresh(scope, fresh, %Device{} = device),
@@ -407,39 +375,9 @@ defmodule Kanban.Reviews.Approval do
         approval_key: true
       )
 
-  defp lock_task_row(task_id) do
-    query = from(t in Task, where: t.id == ^task_id, lock: "FOR UPDATE", select: t.id)
-    if Repo.one(query), do: :ok, else: {:error, :not_found}
-  end
-
-  # FOR SHARE: a revoke waits for this commit, and one made before it is seen.
-  defp lock_active_device(%Device{id: device_id}) do
-    query =
-      from(d in Device,
-        where: d.id == ^device_id and is_nil(d.revoked_at),
-        lock: "FOR SHARE",
-        select: d.id
-      )
-
-    if Repo.one(query), do: :ok, else: {:error, :revoked}
-  end
-
   defp same_locked_submission(challenge, fresh) do
     with {:error, reason} <- submitted(challenge, fresh),
          do: {:error, {:signature_rejected, reason}}
-  end
-
-  # Under the row lock, a review decided or resubmitted since the checks ran
-  # is a conflict with the task as it is now.
-  defp locked_state(scope, %Task{} = task, requested) do
-    case check_state(scope, task, requested) do
-      {:error, {:conflict, :already_decided, _stale}} ->
-        current = Task |> Repo.get!(task.id) |> Repo.preload([:reviewed_by, column: :board])
-        {:error, {:conflict, :already_decided, current}}
-
-      result ->
-        result
-    end
   end
 
   # One statement marks the nonce used, so it is consumed at most once even

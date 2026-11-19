@@ -1060,6 +1060,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
     @challenge_path "/api/me/reviews/{task_id}/approval_challenge"
     @approve_path "/api/me/reviews/{task_id}/approve"
+    @request_changes_path "/api/me/reviews/{task_id}/request_changes"
 
     test "the rendered bodies list exactly the documented keys, and require them all",
          %{spec: spec} do
@@ -1081,9 +1082,13 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       %{data: challenge_data} = ReviewJSON.challenge(%{challenge: challenge, task: task})
       %{data: approved_data} = ReviewJSON.approved(%{task: task})
 
+      %{data: changes_data} =
+        ReviewJSON.changes_requested(%{task: %{task | review_status: :changes_requested}})
+
       for {rendered, name} <- [
             {challenge_data, "ApprovalChallenge"},
             {approved_data, "ApprovedReview"},
+            {changes_data, "ChangesRequestedReview"},
             {ReviewJSON.review_state(task), "ReviewState"}
           ] do
         assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
@@ -1121,7 +1126,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       size = %{files: 14, changed_lines: 652, truncated: false}
 
-      for path <- [@challenge_path, @approve_path] do
+      for path <- [@challenge_path, @approve_path, @request_changes_path] do
         assert fallback_body({:plan_required, :mobile_app}) == {403, example(spec, path, "403")}
 
         assert fallback_body({:conflict, :already_decided, decided}) ==
@@ -1143,6 +1148,9 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert fallback_body(:invalid_column) ==
                {422, example(spec, @approve_path, "422", "approval_failed")}
 
+      assert fallback_body(:review_notes_required) ==
+               {422, example(spec, @request_changes_path, "422")}
+
       assert {400, %{"error" => "Bad Request", "message" => message}} =
                fallback_body(
                  {:bad_request,
@@ -1150,6 +1158,33 @@ defmodule KanbanWeb.API.OpenApiContractTest do
                )
 
       assert get_in(spec, ["paths", @approve_path, "post", "description"]) =~ message
+    end
+
+    test "approve and request_changes document the Idempotency-Key header (W2755)",
+         %{spec: spec} do
+      header = spec["components"]["parameters"]["IdempotencyKey"]
+
+      assert header["name"] == "Idempotency-Key"
+      assert header["in"] == "header"
+      assert header["required"] == false
+      assert header["description"] =~ KanbanWeb.API.Me.Idempotent.bad_key_message()
+      assert header["description"] =~ "24 hours"
+      assert Kanban.Devices.Nonces.valid_key?(header["example"])
+
+      for path <- [@approve_path, @request_changes_path] do
+        assert %{"$ref" => "#/components/parameters/IdempotencyKey"} in get_in(spec, [
+                 "paths",
+                 path,
+                 "post",
+                 "parameters"
+               ])
+      end
+
+      request = spec["components"]["schemas"]["RequestReviewChangesRequest"]
+      assert request["required"] == ["review_requested_at", "notes"]
+
+      assert example(spec, @request_changes_path, "200")["data"]["review_status"] ==
+               "changes_requested"
     end
 
     test "the approve description documents the canonical signing string", %{spec: spec} do

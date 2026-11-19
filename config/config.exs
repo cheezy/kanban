@@ -157,8 +157,10 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # (Kanban.Attachments.BlobCleanupWorker, W2509), the audit stream sweep every
 # minute (Kanban.AuditStream.Scheduler, W2711), the audit stream attempt
 # prune hourly at minute 29 (Kanban.AuditStream.AttemptPruneWorker, W2711)
-# and the expired approval challenge purge daily at 03:53 UTC
-# (Kanban.Reviews.ApprovalChallengePurgeWorker, W2754).
+# the expired approval challenge purge daily at 03:53 UTC
+# (Kanban.Reviews.ApprovalChallengePurgeWorker, W2754) and the expired
+# device nonce sweep hourly at minute 37 (Kanban.Devices.NonceSweepWorker,
+# W2755).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
@@ -193,7 +195,8 @@ config :kanban, Oban,
        {"*/15 * * * *", Kanban.Attachments.BlobCleanupWorker},
        {"* * * * *", Kanban.AuditStream.Scheduler},
        {"29 * * * *", Kanban.AuditStream.AttemptPruneWorker},
-       {"53 3 * * *", Kanban.Reviews.ApprovalChallengePurgeWorker}
+       {"53 3 * * *", Kanban.Reviews.ApprovalChallengePurgeWorker},
+       {"37 * * * *", Kanban.Devices.NonceSweepWorker}
      ]}
   ]
 

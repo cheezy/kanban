@@ -25,6 +25,9 @@ defmodule KanbanWeb.ErrorTrackerFilter do
       `POST /api/me/reviews/:task_id/approve`. A failing request's params
       there are filtered through `:filter_parameters`, which lists `nonce`
       and `signature`.
+    * An app review decision may send an `Idempotency-Key` header (W2755),
+      which is only ever stored as a hash, so that header is redacted from a
+      failing request's headers on any route.
   """
 
   @behaviour ErrorTracker.Filter
@@ -44,7 +47,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
     context
     |> redact_unsubscribe_request()
     |> redact_token_path_request()
-    |> redact_referer_header()
+    |> redact_secret_headers()
     |> redact_event_params()
     |> redact_oauth_request()
     |> redact_person_api_params()
@@ -97,17 +100,18 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   defp redact_token_param(%{"token" => _} = params), do: Map.put(params, "token", @redacted)
   defp redact_token_param(params), do: params
 
-  defp redact_referer_header(%{"request.headers" => %{} = headers} = context) do
-    Map.put(context, "request.headers", Map.new(headers, &redact_referer/1))
+  defp redact_secret_headers(%{"request.headers" => %{} = headers} = context) do
+    Map.put(context, "request.headers", Map.new(headers, &redact_header/1))
   end
 
-  defp redact_referer_header(context), do: context
+  defp redact_secret_headers(context), do: context
 
-  defp redact_referer({"referer", value}) when is_binary(value) do
+  defp redact_header({"referer", value}) when is_binary(value) do
     if String.contains?(value, @unsubscribe_path),
       do: {"referer", @redacted},
       else: {"referer", TokenPaths.redact(value, @redacted)}
   end
 
-  defp redact_referer(header), do: header
+  defp redact_header({"idempotency-key", _value}), do: {"idempotency-key", @redacted}
+  defp redact_header(header), do: header
 end

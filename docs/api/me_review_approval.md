@@ -121,6 +121,20 @@ differs, the answer is `409 resubmitted`.
 }
 ```
 
+## Retrying safely
+
+The approve route takes an optional `Idempotency-Key` header. A retry with the
+same key from the same device for the same task within 24 hours is answered
+with the first approval's `200` and body instead of `409 already_decided`, and
+two requests with one key sent at the same time approve once. Only a
+successful approval is stored, so a refused one's retry runs again. A retry
+that arrives while the first approval is committing finds its nonce used by
+that approval: it is answered with the replay when it carries the key, or
+`409 already_decided` when it does not, never `422 reused`, and writes no
+`approval_signature_rejected` event. The rules
+are shared with the request for changes and are in
+[Request changes on a review in the app](me_review_request_changes.md#retrying-safely-idempotency-key).
+
 ## The signing string
 
 The app signs these five lines joined by a line feed (`\n`, 0x0A), in UTF-8,
@@ -162,7 +176,7 @@ approve
 ## Errors
 
 - `400 {"error": "Bad Request", "message": "..."}` for an approval without a
-  valid `review_requested_at`.
+  valid `review_requested_at`, or with an unacceptable `Idempotency-Key`.
 - `401 {"error": "Invalid access token"}` for a missing, expired or revoked
   device token, including a device revoked while its approval was in flight.
 - `403` with the `plan_required` body of
@@ -219,9 +233,10 @@ approve
   cannot be made, for example when the board has no Done column. `reason` is
   `invalid_column`, `review_not_performed` or `invalid_review_status`.
 - `429 {"error": "rate_limited", "message": "..."}`, with a `retry-after`
-  header in seconds, when this device has sent more than 20 challenge and
-  approve requests, together, in a minute. Each approval takes two, so a
-  device can approve ten reviews a minute. The limit is per device: another
+  header in seconds, when this device has sent more than 20 challenge,
+  approve and [request changes](me_review_request_changes.md) requests,
+  together, in a minute. Each approval takes two, so a device can approve ten
+  reviews a minute. The limit is per device: another
   device of the same person is not affected.
 
 ## Telemetry and retention
@@ -229,4 +244,5 @@ approve
 A phone refused by the guard emits `[:kanban, :review, :phone_approval_refused]`,
 and a refused signature emits `[:kanban, :review, :approval_signature_rejected]`
 ([telemetry](../telemetry.md#app-approval-events)). Expired challenges, used or
-not, are deleted daily at 03:53 UTC.
+not, are deleted daily at 03:53 UTC. Stored `Idempotency-Key` results expire
+after 24 hours and are deleted hourly.

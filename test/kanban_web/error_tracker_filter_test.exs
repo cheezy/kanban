@@ -201,6 +201,22 @@ defmodule KanbanWeb.ErrorTrackerFilterTest do
     assert sanitized["request.query"] == ""
   end
 
+  test "redacts an Idempotency-Key header on any route" do
+    sanitized =
+      ErrorTrackerFilter.sanitize(%{
+        "request.path" => "/api/me/reviews/42/request_changes",
+        "request.headers" => %{
+          "idempotency-key" => "W2755-probe-key",
+          "content-type" => "application/json"
+        }
+      })
+
+    assert sanitized["request.headers"] == %{
+             "idempotency-key" => "[REDACTED]",
+             "content-type" => "application/json"
+           }
+  end
+
   test "leaves unrelated contexts unchanged" do
     context = %{
       "request.path" => "/boards",
