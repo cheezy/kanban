@@ -1,9 +1,11 @@
 defmodule Kanban.NotificationsTest do
   use Kanban.DataCase, async: true
+  use Oban.Testing, repo: Kanban.Repo
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.DevicesFixtures
   import Kanban.NotificationsFixtures
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
@@ -13,6 +15,7 @@ defmodule Kanban.NotificationsTest do
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.Preference
+  alias Kanban.Push.PushWorker
   alias Kanban.Telemetry.Catalog
 
   @all_types [
@@ -479,6 +482,129 @@ defmodule Kanban.NotificationsTest do
 
       assert n.user_id == recipient.id
       assert n.event_type == :board_access_changed
+    end
+  end
+
+  describe "notify/3 push" do
+    defp push_device!(user),
+      do: device_fixture(scope(user), %{push_token: "tok-#{System.unique_integer([:positive])}"})
+
+    defp push_switch!(user, event, on) do
+      {:ok, _view} =
+        user
+        |> scope()
+        |> Notifications.update_push_settings(
+          %{"switches" => %{Atom.to_string(event) => on}},
+          via: :web,
+          feature: :notifications
+        )
+    end
+
+    defp push_jobs, do: all_enqueued(worker: PushWorker)
+
+    defp job_notification_ids,
+      do: push_jobs() |> Enum.map(& &1.args["notification_id"]) |> Enum.sort()
+
+    test "notify enqueues one push job per eligible recipient" do
+      %{owner: owner, member: member, board: board} = board_with_member()
+      no_device = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, no_device, :modify, owner)
+      Repo.delete_all(Notification)
+      push_device!(owner)
+      push_device!(member)
+      push_device!(member)
+
+      assert {:ok, inserted} =
+               Notifications.notify(:review_requested, [owner, member, no_device], %{
+                 title: "W1: Review",
+                 board_id: board.id
+               })
+
+      by_user = Map.new(inserted, &{&1.user_id, &1.id})
+      assert job_notification_ids() == Enum.sort([by_user[owner.id], by_user[member.id]])
+      assert Enum.all?(push_jobs(), &(&1.queue == "push"))
+
+      # A push-only recipient (in-app and email off) still gets a row and a job.
+      push_only = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, push_only, :modify, owner)
+      push_device!(push_only)
+
+      {:ok, _} =
+        push_only
+        |> scope()
+        |> Notifications.update_preference(:claim_expired, %{
+          in_app: false,
+          email: false
+        })
+
+      assert {:ok, [hidden]} =
+               Notifications.notify(:claim_expired, [push_only], %{
+                 title: "W2: Claim",
+                 board_id: board.id
+               })
+
+      refute hidden.in_app
+      assert_enqueued(worker: PushWorker, args: %{notification_id: hidden.id})
+
+      # An event with no board, pushed once its switch is on.
+      push_switch!(owner, :target_status_changed, true)
+
+      assert {:ok, [target]} =
+               Notifications.notify(:target_status_changed, [owner], %{
+                 title: "Q4 launch",
+                 url_path: "/targets/9",
+                 board_id: nil
+               })
+
+      assert target.board_id == nil
+      assert_enqueued(worker: PushWorker, queue: :push, args: %{notification_id: target.id})
+    end
+
+    test "no device, push off or no paid access enqueues nothing" do
+      %{owner: no_device, member: switched_off, board: board} = board_with_member()
+      push_device!(switched_off)
+      push_switch!(switched_off, :review_requested, false)
+
+      assert {:ok, [_, _]} =
+               Notifications.notify(:review_requested, [no_device, switched_off], %{
+                 title: "W1: Review",
+                 board_id: board.id
+               })
+
+      # A never-push event, and an update event left at its default (off).
+      push_device!(no_device)
+
+      {:ok, _} =
+        Notifications.notify(:task_assigned, [no_device], %{title: "W2", board_id: board.id})
+
+      {:ok, _} =
+        Notifications.notify(:goal_completed, [no_device], %{title: "G1", board_id: board.id})
+
+      refute_enqueued(worker: PushWorker)
+
+      # A recipient who wants only push but cannot get one gets no row at all.
+      {:ok, _} =
+        switched_off
+        |> scope()
+        |> Notifications.update_preference(:claim_expired, %{
+          in_app: false,
+          email: false
+        })
+
+      switched_off.id
+      |> Kanban.Devices.PushTokens.list_for_user()
+      |> hd()
+      |> Kanban.Devices.PushTokens.clear()
+
+      assert {:ok, []} =
+               Notifications.notify(:claim_expired, [switched_off], %{
+                 title: "W3: Claim",
+                 board_id: board.id
+               })
+
+      refute_enqueued(worker: PushWorker)
+      # No paid access is covered in notifications/plan_enforcement_test.exs,
+      # which can switch the global enforcement flag on (this module is async).
     end
   end
 

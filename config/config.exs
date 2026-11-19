@@ -146,7 +146,10 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # streaming from delaying notifications, webhooks or exports.
 # `:audit_stream_schedule` runs the minute streaming sweep one at a time on
 # each node (W2711, W2736), on a queue of its own so it never waits behind
-# the `:audit_stream` sends it queues.
+# the `:audit_stream` sends it queues. `:push` sends one notification's push
+# to each of its recipient's devices per job (Kanban.Push.PushWorker,
+# W2771); its depth of 10 bounds concurrent APNs and FCM sends, and being its
+# own queue keeps pushes from waiting behind notification emails.
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
 # delivery-target status sweeper hourly at minute 17 (W2291), the
@@ -172,7 +175,8 @@ config :kanban, Oban,
     workspace_exports: 1,
     attachments: 1,
     audit_stream: 5,
-    audit_stream_schedule: 1
+    audit_stream_schedule: 1,
+    push: 10
   ],
   # Lifeline moves a job left in `executing` for an hour, such as one whose
   # node was killed mid-run, back to `available`, or to `discarded` once its

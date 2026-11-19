@@ -8472,6 +8472,7 @@ msgstr "新しいコメント"
 msgid "Review requested"
 msgstr "レビューが依頼されました"
 
+#: lib/kanban/push/payload_builder.ex
 #: lib/kanban_web/emails/notification_email.ex
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
@@ -15573,3 +15574,91 @@ msgstr "通知のプライバシー"
 #, elixir-autogen, elixir-format
 msgid "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
 msgstr "メンバーへのプッシュ通知にはタスクの識別子と発生した内容が表示されますが、タスク、ゴール、ターゲットのタイトルは表示されないため、ロックされた電話にタイトルが表示されることはありません。"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} check failed"
+msgid_plural "%{count} checks failed"
+msgstr[0] "%{count} 件のチェックが失敗"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} check passed"
+msgid_plural "%{count} checks passed"
+msgstr[0] "%{count} 件のチェックに合格"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} is complete"
+msgstr "%{identifier} が完了しました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} is ready for review"
+msgstr "%{identifier} のレビュー準備ができました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was approved"
+msgstr "%{identifier} が承認されました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was released"
+msgstr "%{identifier} の担当が解除されました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was reviewed"
+msgstr "%{identifier} がレビューされました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{name} is at risk"
+msgstr "%{name} が危険な状態です"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{name} missed its date"
+msgstr "%{name} が期日を過ぎました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "A target is at risk"
+msgstr "ターゲットが危険な状態です"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "A target missed its date"
+msgstr "ターゲットが期日を過ぎました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Changes requested on %{identifier}"
+msgstr "%{identifier} に変更が依頼されました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Holds up %{count} task"
+msgid_plural "Holds up %{count} tasks"
+msgstr[0] "%{count} 件のタスクを止めています"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Target date %{date}"
+msgstr "目標日 %{date}"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "The claim on %{identifier} expired"
+msgstr "%{identifier} の担当期限が切れました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "You were mentioned on %{identifier}"
+msgstr "%{identifier} でメンションされました"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "The after-goal hook failed on %{identifier}"
+msgstr "%{identifier} の after-goal フックが失敗しました"

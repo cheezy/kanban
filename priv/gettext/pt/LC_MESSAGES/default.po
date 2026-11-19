@@ -8508,6 +8508,7 @@ msgstr "Novo comentário"
 msgid "Review requested"
 msgstr "Revisão solicitada"
 
+#: lib/kanban/push/payload_builder.ex
 #: lib/kanban_web/emails/notification_email.ex
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
@@ -15635,3 +15636,94 @@ msgstr "Privacidade das notificações"
 #, elixir-autogen, elixir-format
 msgid "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
 msgstr "As notificações push para os seus membros mostram o identificador da tarefa e o que aconteceu, mas não os títulos de tarefas, objetivos ou metas, para que nenhum título apareça num telefone bloqueado."
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} check failed"
+msgid_plural "%{count} checks failed"
+msgstr[0] "%{count} verificação falhou"
+msgstr[1] "%{count} verificações falharam"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} check passed"
+msgid_plural "%{count} checks passed"
+msgstr[0] "%{count} verificação aprovada"
+msgstr[1] "%{count} verificações aprovadas"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} is complete"
+msgstr "%{identifier} foi concluída"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} is ready for review"
+msgstr "%{identifier} está pronto para revisão"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was approved"
+msgstr "%{identifier} foi aprovada"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was released"
+msgstr "%{identifier} foi liberada"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was reviewed"
+msgstr "%{identifier} foi revisada"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{name} is at risk"
+msgstr "%{name} está em risco"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{name} missed its date"
+msgstr "%{name} perdeu o prazo"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "A target is at risk"
+msgstr "Uma meta está em risco"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "A target missed its date"
+msgstr "Uma meta perdeu o prazo"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Changes requested on %{identifier}"
+msgstr "Alterações solicitadas em %{identifier}"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Holds up %{count} task"
+msgid_plural "Holds up %{count} tasks"
+msgstr[0] "Bloqueia %{count} tarefa"
+msgstr[1] "Bloqueia %{count} tarefas"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Target date %{date}"
+msgstr "Data da meta %{date}"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "The claim on %{identifier} expired"
+msgstr "A reivindicação de %{identifier} expirou"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "You were mentioned on %{identifier}"
+msgstr "Você foi mencionado em %{identifier}"
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "The after-goal hook failed on %{identifier}"
+msgstr "O hook after-goal de %{identifier} falhou"

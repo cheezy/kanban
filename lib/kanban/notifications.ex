@@ -9,7 +9,11 @@ defmodule Kanban.Notifications do
   at most one row per `(user, dedupe_key)` and broadcasts each new in-app row
   on that user's own topic. In the same transaction it enqueues a
   `Kanban.Notifications.EmailWorker` job for each new row whose recipient
-  wants email for the event type (saved preference, else the default below).
+  wants email for the event type (saved preference, else the default below),
+  and a `Kanban.Push.PushWorker` job for each new row whose recipient has push
+  on for it, an active device with a push token and paid access. A recipient
+  with push on but in-app and email off gets a hidden row only when a push
+  can reach them.
 
   ## Visibility
 
@@ -101,6 +105,7 @@ defmodule Kanban.Notifications do
   alias Kanban.Notifications.Recipients
   alias Kanban.Notifications.Visibility
   alias Kanban.Plans
+  alias Kanban.Push.PushWorker
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -462,15 +467,24 @@ defmodule Kanban.Notifications do
   defp insert_for_recipients(type, recipients, attrs) do
     board_id = attrs |> fetch_attr(:board_id) |> cast_optional_id()
 
-    Repo.transaction(fn ->
-      deliveries = Recipients.resolve(type, recipients, board_id, default_preference(type))
-
-      deliveries
-      |> Enum.map(&insert_notification!(&1, type, attrs))
-      |> Enum.reject(&is_nil(&1.id))
-      |> enqueue_emails!(deliveries)
-    end)
+    Repo.transaction(fn -> deliver_in_transaction(type, recipients, board_id, attrs) end)
   end
+
+  defp deliver_in_transaction(type, recipients, board_id, attrs) do
+    deliveries = Recipients.resolve(type, recipients, board_id, default_preference(type))
+    push_user_ids = PushWorker.recipient_ids(type, deliveries)
+
+    deliveries
+    |> Enum.filter(&row_needed?(&1, push_user_ids))
+    |> Enum.map(&insert_notification!(&1, type, attrs))
+    |> Enum.reject(&is_nil(&1.id))
+    |> enqueue_emails!(deliveries)
+    |> enqueue_pushes!(push_user_ids)
+  end
+
+  # A push-only delivery gets a (hidden) row only when a push can reach it.
+  defp row_needed?(%{in_app: in_app, email: email, user_id: user_id}, push_user_ids),
+    do: in_app or email or MapSet.member?(push_user_ids, user_id)
 
   # Only recipients who want email and have paid access get a job.
   defp enqueue_emails!(inserted, deliveries) do
@@ -481,6 +495,15 @@ defmodule Kanban.Notifications do
     |> Enum.filter(&MapSet.member?(email_user_ids, &1.user_id))
     |> EmailWorker.enqueue()
     |> case do
+      :ok -> inserted
+      {:error, changeset} -> Repo.rollback(changeset)
+    end
+  end
+
+  # Only recipients PushWorker.recipient_ids/2 picked get a job; it only
+  # enqueues, the worker sends.
+  defp enqueue_pushes!(inserted, push_user_ids) do
+    case PushWorker.enqueue(inserted, push_user_ids) do
       :ok -> inserted
       {:error, changeset} -> Repo.rollback(changeset)
     end

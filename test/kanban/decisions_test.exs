@@ -20,6 +20,7 @@ defmodule Kanban.DecisionsTest do
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Decisions
+  alias Kanban.Decisions.Sources
   alias Kanban.Notifications
   alias Kanban.Notifications.Events
   alias Kanban.Notifications.Notification
@@ -756,6 +757,68 @@ defmodule Kanban.DecisionsTest do
       assert_raise ArgumentError, ~r/unknown decisions source/, fn ->
         Decisions.build(ctx.scope, source: :web)
       end
+    end
+  end
+
+  describe "Sources.notification_open?/2" do
+    defp loaded(notification), do: Repo.preload(notification, task: :column)
+
+    defp hidden!(notification),
+      do: notification |> Ecto.Changeset.change(in_app: false) |> Repo.update!()
+
+    test "judges a hidden released row like a visible one", ctx do
+      task = task_fixture(ctx.cols["Ready"])
+
+      hidden =
+        notification_fixture(ctx.owner, %{
+          event_type: :task_unclaimed,
+          board_id: ctx.board.id,
+          task_id: task.id
+        })
+        |> hidden!()
+
+      assert hidden |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+
+      task |> Ecto.Changeset.change(column_id: ctx.cols["Doing"].id) |> Repo.update!()
+      refute hidden |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+    end
+
+    test "is open while the claim it was about is still expired", ctx do
+      task =
+        ctx.cols["Doing"]
+        |> task_fixture()
+        |> claimed!(
+          ctx.owner,
+          ctx.cols["Doing"],
+          DateTime.add(now(), -7200),
+          DateTime.add(now(), -3600)
+        )
+
+      n =
+        notification_fixture(ctx.owner, %{
+          event_type: :claim_expired,
+          board_id: ctx.board.id,
+          task_id: task.id
+        })
+        |> hidden!()
+
+      assert n |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+
+      claimed!(task, ctx.owner, ctx.cols["Doing"], now(), DateTime.add(now(), 3600))
+      refute n |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+    end
+
+    test "is false for any other event type", ctx do
+      task = task_fixture(ctx.cols["Ready"])
+
+      n =
+        notification_fixture(ctx.owner, %{
+          event_type: :review_requested,
+          board_id: ctx.board.id,
+          task_id: task.id
+        })
+
+      refute n |> loaded() |> Sources.notification_open?(DateTime.utc_now())
     end
   end
 end

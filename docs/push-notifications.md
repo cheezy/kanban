@@ -7,8 +7,9 @@ Apple and Google in development and tests. The design behind it is in
 [Native Mobile Apps, Phase 1](plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md),
 sections 7.8 and 15.2.
 
-This page covers the senders only. Choosing which events push, quiet hours and
-retries are the push worker's job, and each person's settings are described in
+This page covers the senders and the push worker that decides which
+notifications push. Quiet hours are not in the worker yet, and each person's
+settings are described in
 [GET and PUT /api/me/notification_settings](api/me_notification_settings.md).
 
 ## The senders
@@ -53,6 +54,68 @@ whole number, and `0` clears the count on the app icon.
 
 Only the `:unregistered` result clears a token. A malformed token
 (`:bad_device_token`) is reported as an error and the token is kept.
+
+## The push worker
+
+`Kanban.Push.PushWorker` is the third delivery channel beside in-app and
+email (design sections 7.8, 9.4 and 10).
+
+**Enqueueing.** `Kanban.Notifications.notify/3` enqueues one job per new
+notification, in the same transaction that inserts the rows and enqueues the
+emails, so a rolled-back notification never pushes and `notify/3` never
+sends. A recipient gets a job only when all three hold:
+
+- push is on for the event type: their saved switch, else the default (on
+  for the four decision events, off for the four updates; the other four
+  event types never push);
+- they have at least one device that is not revoked and has a push token;
+- they have paid access (`Kanban.Plans.unlocked_user_ids/1`).
+
+A recipient with in-app and email off but push on gets a hidden row
+(`in_app: false`) only when a push can reach them.
+
+**Sending.** Jobs run on the `:push` Oban queue, unique per notification, with
+5 attempts. Each job reads everything again and, in order:
+
+1. checks the plan, for the recipient and for the board when there is one;
+2. checks the push switch; one turned off since the enqueue holds the push
+   with reason `:mode`;
+3. for `review_requested`, `task_unclaimed`, `claim_expired` and
+   `after_goal_failed`, checks that the decision is still open in
+   `Kanban.Decisions`; one that is not holds the push with reason
+   `:resolved`. A released or expired-claim decision is checked on its own
+   row, so it is judged the same with in-app on or off; a review or failed
+   hook ranked below the first 100 decisions is sent without its counts;
+4. builds the payload in each device's locale (`Kanban.Push.PayloadBuilder`);
+5. sends it to each device that is still active with a push token, reading
+   each device again just before its send, so one revoked while the job runs
+   gets nothing.
+
+A missing notification, a disabled or unconfirmed recipient, one no longer on
+the board, a lost plan or no device left sends nothing: the job logs the
+notification id and the reason and ends, with no telemetry. The device list
+is read right after the plan, so a job with no device left never emits
+`held`.
+
+**What a push shows.** Only the event kind, the identifier, the task or goal
+title, a target's name and date, and the checks passed and failed and tasks
+held up for a decision. A line break in a title or name becomes a space, so
+free text never adds a line to the body. Never review notes, an unclaim reason, hook output,
+code, comment text or the name of the person who acted. When the recipient's
+Organization turns on **Hide task titles in push notifications**, the title
+is left out and the push reads, for example, "W2701 is ready for review"; a
+target's name is replaced too ("A target is at risk"). The iOS badge is the person's
+decisions count, and the data says where a tap opens (`route`) plus the ids
+it needs.
+
+**Results.** A dead token (`:unregistered`) is cleared and the job carries on
+with the other devices. When a device was rate limited or the service was
+unavailable, the job fails so Oban retries it. Delivery is at least once: a
+retry sends again to the devices that already got the push, and the collapse
+id lets the device replace the duplicate. The worker emits
+`[:kanban, :push, :sent]`, `[:kanban, :push, :failed]` and
+`[:kanban, :push, :held]`; see [Telemetry](telemetry.md#push-events). It never
+logs a token, a title or a body.
 
 ## Environment variables
 

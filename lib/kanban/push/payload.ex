@@ -17,6 +17,7 @@ defmodule Kanban.Push.Payload do
   The §9.4 content rules (kind, identifier, title, counts and agent names
   only; never free text, review notes, hook output, code or comments) are the
   caller's to keep: this struct carries whatever it is given.
+  `Kanban.Push.PayloadBuilder` builds it for a notification's push.
   """
 
   @enforce_keys [:collapse_id]

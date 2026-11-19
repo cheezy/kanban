@@ -12,7 +12,16 @@ defmodule Kanban.Telemetry.Catalog.PushEvents do
   `:ios`, `:android` or `:web`. It never carries a value such as a time zone
   or a quiet-hours time, a user or a device. `via` is its only tag.
 
-  It is not persisted: a signed-in device can cause it at will.
+  `sent`, `failed` and `held` are emitted by `Kanban.Push.PushWorker`
+  (W2771): `sent` once per device a push service accepted, `failed` once per
+  device it did not, and `held` once per job held at send time. They carry
+  the `platform` (`:ios` or `:android`, not on `held`), the notification's
+  `event_type` and, on `failed` and `held`, a bounded `reason`, which is
+  their only tag. They never carry a push token, a title, a body, a target
+  name, a user or a device.
+
+  None is persisted: a signed-in device can cause `settings_changed` at
+  will, and the delivery events are counted live.
   `Kanban.Telemetry.Catalog` appends these entries to its own list; nothing
   else should call this module.
   """
@@ -30,6 +39,44 @@ defmodule Kanban.Telemetry.Catalog.PushEvents do
       metrics: [counter: :count],
       persist: false,
       tags: [:via]
+    },
+    %{
+      name: [:kanban, :push, :sent],
+      kind: :event,
+      domain: :push,
+      measurements: [:count],
+      metadata: [:platform, :event_type],
+      description:
+        "A push service accepted one notification push for one device. platform is :ios or :android; event_type is the notification's event type.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
+    },
+    %{
+      name: [:kanban, :push, :failed],
+      kind: :event,
+      domain: :push,
+      measurements: [:count],
+      metadata: [:platform, :event_type, :reason],
+      description:
+        "A notification push to one device was not accepted. reason is a bounded atom such as :unregistered (the token was cleared), :rate_limited, :unavailable, :not_configured or :rejected.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false,
+      tags: [:reason]
+    },
+    %{
+      name: [:kanban, :push, :held],
+      kind: :event,
+      domain: :push,
+      measurements: [:count],
+      metadata: [:event_type, :reason],
+      description:
+        "A notification push was held at send time and not sent. reason is :mode (the push switch was turned off) or :resolved (the decision was no longer open).",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false,
+      tags: [:reason]
     }
   ]
 

@@ -1049,7 +1049,8 @@ W2758 added the event the app's Now screen and review queue emit
   before the 100-item cap, so it is summed rather than counted; `duration` is
   the whole build in native time units, the summary's roster read included.
   `source` is `:api` for `GET /api/me/decisions` and `GET /api/me/reviews`,
-  and `:channel` for the inbox channel, and is the only tag. It never carries
+  `:channel` for the inbox channel, and `:push` for `Kanban.Push.PushWorker`'s
+  open-decision check and badge, and is the only tag. It never carries
   a user, a board, a task or an item.
 - **The domain is plural.** The event is named after the `Kanban.Decisions`
   context, as the design names it, rather than the singular noun the naming
@@ -1082,6 +1083,32 @@ declared in `Kanban.Telemetry.Catalog.PushEvents`
   sends what is already stored, or is refused, emits nothing.
 - **It is not persisted.** A signed-in device can cause it at will, so it is
   charted live only.
+
+W2771 added the three delivery events, emitted by `Kanban.Push.PushWorker`
+when it sends a notification's push
+([push notifications](push-notifications.md)).
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :push, :sent]` | `count` | `platform`, `event_type` | `Kanban.Push.PushWorker`, once per device a push service accepted |
+| `[:kanban, :push, :failed]` | `count` | `platform`, `event_type`, `reason` | `Kanban.Push.PushWorker`, once per device a push service did not accept |
+| `[:kanban, :push, :held]` | `count` | `event_type`, `reason` | `Kanban.Push.PushWorker`, once per job held at send time |
+
+- **What they carry.** `platform` is `:ios` or `:android`, and `event_type`
+  is the notification's event type. `failed`'s `reason` is a bounded atom:
+  `:unregistered` (the token was dead and has been cleared), `:rate_limited`,
+  `:unavailable` (the push service was down or erroring), `:not_configured`,
+  `:no_push_token`, `:no_push_environment`, `:unsupported_platform`, or
+  `:rejected` for any other answer. `held`'s `reason` is `:mode` (the push
+  switch was turned off after the enqueue) or `:resolved` (the decision was
+  no longer open). They never carry a push token, a title, a body, a target
+  name, a user or a device. `reason` is the only tag; `platform` and
+  `event_type` are not tags.
+- **When they fire.** Only when the worker gets as far as a send or a hold.
+  A job that finds the notification gone, the recipient disabled, no longer
+  on the board, without paid access or with no device left sends nothing and
+  emits nothing; it logs the notification id and the reason.
+- **They are not persisted.** They are counted live.
 
 ## Emitting an event
 
@@ -1594,7 +1621,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :decisions, :built]` | event | `count`, `duration` | `source` | Kanban.Decisions built a person's decisions. count is the items waiting before the 100-item cap; duration is in native time units; source is :api or :channel. |
+| `[:kanban, :decisions, :built]` | event | `count`, `duration` | `source` | Kanban.Decisions built a person's decisions. count is the items waiting before the 100-item cap; duration is in native time units; source is :api, :channel or :push. |
 
 ### Domain `device`
 
@@ -1705,6 +1732,9 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :push, :settings_changed]` | event | `count` | `mode`, `fields`, `via` | A person changed their push settings. mode is :decisions or :every after the change; fields names the settings and push switches that changed, never their values; via is :ios, :android or :web. |
+| `[:kanban, :push, :sent]` | event | `count` | `platform`, `event_type` | A push service accepted one notification push for one device. platform is :ios or :android; event_type is the notification's event type. |
+| `[:kanban, :push, :failed]` | event | `count` | `platform`, `event_type`, `reason` | A notification push to one device was not accepted. reason is a bounded atom such as :unregistered (the token was cleared), :rate_limited, :unavailable, :not_configured or :rejected. |
+| `[:kanban, :push, :held]` | event | `count` | `event_type`, `reason` | A notification push was held at send time and not sent. reason is :mode (the push switch was turned off) or :resolved (the decision was no longer open). |
 
 ### Domain `rate_limit`
 

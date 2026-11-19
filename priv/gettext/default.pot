@@ -8446,6 +8446,7 @@ msgstr ""
 msgid "Review requested"
 msgstr ""
 
+#: lib/kanban/push/payload_builder.ex
 #: lib/kanban_web/emails/notification_email.ex
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
@@ -15572,4 +15573,95 @@ msgstr ""
 #: lib/kanban_web/live/org_live/security.html.heex
 #, elixir-autogen, elixir-format
 msgid "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} check failed"
+msgid_plural "%{count} checks failed"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} check passed"
+msgid_plural "%{count} checks passed"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} is complete"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} is ready for review"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was approved"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was released"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{identifier} was reviewed"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{name} is at risk"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "%{name} missed its date"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "A target is at risk"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "A target missed its date"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Changes requested on %{identifier}"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Holds up %{count} task"
+msgid_plural "Holds up %{count} tasks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "Target date %{date}"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "The claim on %{identifier} expired"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "You were mentioned on %{identifier}"
+msgstr ""
+
+#: lib/kanban/push/payload_builder.ex
+#, elixir-autogen, elixir-format
+msgid "The after-goal hook failed on %{identifier}"
 msgstr ""

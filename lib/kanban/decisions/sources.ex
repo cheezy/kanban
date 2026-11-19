@@ -121,6 +121,24 @@ defmodule Kanban.Decisions.Sources do
     |> Enum.map(&released_item(&1, ctx))
   end
 
+  @doc """
+  Whether one `task_unclaimed` or `claim_expired` notification is still an
+  open decision, by the rules `released/1` and `claim_expired/1` apply,
+  whatever its `in_app` flag. Expects `task: :column` preloaded; any other
+  event type is `false`.
+
+  `Kanban.Push.PushWorker` asks this for a decision missing from the
+  person's list, which reads only in-app rows and stops at 100 items.
+  """
+  @spec notification_open?(Notification.t(), DateTime.t()) :: boolean()
+  def notification_open?(%Notification{event_type: :task_unclaimed} = notification, _now),
+    do: released?(notification)
+
+  def notification_open?(%Notification{event_type: :claim_expired} = notification, now),
+    do: still_expired?(notification, now)
+
+  def notification_open?(%Notification{}, _now), do: false
+
   defp released?(%Notification{read_at: nil, task: %Task{status: :open, column: column}}),
     do: Columns.named?(column, "Ready")
 

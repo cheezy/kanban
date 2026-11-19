@@ -88,7 +88,8 @@ defmodule Kanban.Decisions do
   Every build emits `[:kanban, :decisions, :built]`
   (`Kanban.Telemetry.Catalog.DecisionEvents`) with `count`, the items waiting
   before the 100-item cap, and `duration`, in native time units, and the
-  `:source` option as its only metadata: `:api` (the default) or `:channel`.
+  `:source` option as its only metadata: `:api` (the default), `:channel` or
+  `:push` (`Kanban.Push.PushWorker`).
   Any other source raises `ArgumentError`, because it is a metric tag.
 
   ## Cost
@@ -129,11 +130,11 @@ defmodule Kanban.Decisions do
           agents_working: non_neg_integer()
         }
 
-  @type option :: {:source, :api | :channel}
+  @type option :: {:source, :api | :channel | :push}
 
   @max_items 100
   @shown_held 5
-  @telemetry_sources [:api, :channel]
+  @telemetry_sources [:api, :channel, :push]
 
   @sources [
     &Sources.review/1,

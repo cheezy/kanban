@@ -7,7 +7,8 @@ defmodule Kanban.Telemetry.Catalog.DecisionEvents do
   `built` measures `count`, the items waiting before the 100-item cap, and
   `duration`, in native time units. Its only metadata is `source`, the fixed
   atom naming who asked: `:api` for `GET /api/me/decisions` and
-  `GET /api/me/reviews`, `:channel` for the inbox channel. It never carries
+  `GET /api/me/reviews`, `:channel` for the inbox channel, `:push` for the push worker's
+  open-decision check and badge (`Kanban.Push.PushWorker`). It never carries
   a user, a board, a task or an item.
 
   The domain is `:decisions`, plural, as the design names the event, rather
@@ -27,7 +28,7 @@ defmodule Kanban.Telemetry.Catalog.DecisionEvents do
       measurements: [:count, :duration],
       metadata: [:source],
       description:
-        "Kanban.Decisions built a person's decisions. count is the items waiting before the 100-item cap; duration is in native time units; source is :api or :channel.",
+        "Kanban.Decisions built a person's decisions. count is the items waiting before the 100-item cap; duration is in native time units; source is :api, :channel or :push.",
       legacy: false,
       metrics: [sum: :count, summary: :duration],
       persist: false,

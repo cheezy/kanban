@@ -12,6 +12,7 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.DevicesFixtures
   import Kanban.NotificationsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
@@ -34,6 +35,7 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
   alias Kanban.Notifications.Events
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.TargetStatusWorker
+  alias Kanban.Push.PushWorker
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
@@ -147,6 +149,23 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       assert Map.keys(by_user) |> Enum.sort() == Enum.sort([owner.id, free_member.id])
       assert_enqueued(worker: EmailWorker, args: %{notification_id: by_user[owner.id].id})
       refute_enqueued(worker: EmailWorker, args: %{notification_id: by_user[free_member.id].id})
+    end
+
+    test "no paid access enqueues no push" do
+      %{owner: owner, member: free_member, board: board} = board_with_member()
+      make_paid(board, [owner])
+
+      for user <- [owner, free_member] do
+        device_fixture(Kanban.Accounts.Scope.for_user(user), %{
+          push_token: "tok-#{System.unique_integer([:positive])}"
+        })
+      end
+
+      assert {:ok, rows} = review_requested(board, [owner, free_member])
+      by_user = Map.new(rows, &{&1.user_id, &1})
+
+      assert_enqueued(worker: PushWorker, args: %{notification_id: by_user[owner.id].id})
+      refute_enqueued(worker: PushWorker, args: %{notification_id: by_user[free_member.id].id})
     end
 
     test "an invalid event type is still refused before the plan is checked" do
