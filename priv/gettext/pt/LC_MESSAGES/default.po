@@ -15532,3 +15532,9 @@ msgstr "Revisão aprovada"
 msgctxt "audit action"
 msgid "Review changes requested"
 msgstr "Revisão: alterações solicitadas"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "App approval signature rejected"
+msgstr "Aprovação no app: assinatura rejeitada"

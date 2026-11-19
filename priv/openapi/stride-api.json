@@ -2265,6 +2265,384 @@
           }
         }
       }
+    },
+    "/api/me/reviews/{task_id}/approval_challenge": {
+      "post": {
+        "operationId": "createMyReviewApprovalChallenge",
+        "summary": "Issue a single-use approval nonce for this device and review",
+        "description": "The first step of an app approval. Returns a nonce valid for 2 minutes and usable once, bound to this device, the task and the task's review_requested_at. Only its SHA-256 hash is stored. It runs the approval's checks 1 to 4 in order: (1) the person can review the task (404 otherwise), (2) the review is still pending and, when the body sends review_requested_at, it matches (409 resubmitted otherwise), (3) the mobile_app plan feature for the person and then the board (403), (4) the large-change guard for the device's class (422 too_large_for_phone on a phone), so a phone learns a change is too large before it asks for a biometric. The app then signs the signing string and calls approveMyReview. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature is refused as invalid. Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalChallengeRequest"
+              },
+              "example": {
+                "review_requested_at": "2026-11-18T09:30:00Z"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A new nonce, shown once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalChallengeResponse"
+                },
+                "example": {
+                  "data": {
+                    "nonce": "sdan_EXAMPLE0nonce0value0only0for0documentation0",
+                    "expires_at": "2026-11-18T09:42:00Z",
+                    "task_id": 4812,
+                    "review_requested_at": "2026-11-18T09:30:00Z",
+                    "decision": "approve",
+                    "signing_version": "stride-approval-v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the task's board, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. Checked after the access and state checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No task the person can review has this id: it is missing, archived, on a board the person cannot see or can only read, or the id is not a positive integer in the signed 64-bit range. Checked first, so no other answer reveals the task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "409": {
+            "description": "The review was decided, or the task was sent for review again, since the app loaded it. `review` is its current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewConflict"
+                },
+                "examples": {
+                  "already_decided": {
+                    "summary": "Decided since it was loaded",
+                    "value": {
+                      "error": "already_decided",
+                      "message": "This review has already been decided.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": "approved",
+                        "review_requested_at": "2026-11-18T09:30:00Z",
+                        "reviewed_at": "2026-11-18T09:39:02Z",
+                        "reviewed_by": "Sam Rivera"
+                      }
+                    }
+                  },
+                  "resubmitted": {
+                    "summary": "Sent for review again since it was loaded",
+                    "value": {
+                      "error": "resubmitted",
+                      "message": "This task was sent for review again since it was loaded. Review it again.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": null,
+                        "review_requested_at": "2026-11-18T10:00:00Z",
+                        "reviewed_at": null,
+                        "reviewed_by": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The change is too large to approve on a phone. A tablet, and the web, may approve it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TooLargeForPhone"
+                },
+                "example": {
+                  "error": "too_large_for_phone",
+                  "message": "This change is too large to approve on a phone. Approve it on a tablet or on the web.",
+                  "size": {
+                    "files": 14,
+                    "changed_lines": 652,
+                    "truncated": false
+                  },
+                  "limits": {
+                    "max_files": 10,
+                    "max_changed_lines": 500
+                  }
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests",
+            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge and approve requests together from this device in a minute. `retry-after` gives the seconds to wait."
+          }
+        }
+      }
+    },
+    "/api/me/reviews/{task_id}/approve": {
+      "post": {
+        "operationId": "approveMyReview",
+        "summary": "Approve a review with the device's approval-key signature",
+        "description": "Approves a task waiting in Review from the app. The body carries review_requested_at, the nonce from createMyReviewApprovalChallenge and the signature. The checks run in this order and the first that fails answers: (1) the person can review the task: it exists, is not archived and is on a board they can write to (404); (2) the review is still pending and review_requested_at matches (409 already_decided or resubmitted, with the current state); (3) the mobile_app plan feature, for the person and then the board (403 plan_required); (4) the large-change guard for the device's class (422 too_large_for_phone on a phone); (5) the signature: a nonce and a signature are sent (reason missing), the nonce was issued to this device for this task, this review_requested_at and this submission, so work resubmitted since the challenge is refused even inside the same second (invalid), is unused (reused) and unexpired (expired), and the signature verifies against the device's approval public key (invalid); a refusal is 422 signature_rejected and writes an approval_signature_rejected audit event with the reason, never the nonce or the signature. Then the approval is made exactly as on the web: the task moves to Done, and the review_approved audit event records via, the device, its class and approval_key true. The commit locks the task and runs the access, state and submission checks again, so a task archived or write access removed since the checks is 404 and work resubmitted is 409 or invalid; a device revoked while its request was in flight is 401 Invalid access token. The nonce is consumed in the same transaction, so it is used at most once and two devices approving at once get one 200 and one 409. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature, padded base64 or base64 with stray bits in its last character is refused as invalid; the same canonical encoding is required of the key. A body without review_requested_at, or with one that is neither an ISO 8601 extended-format timestamp (send the challenge's value back unchanged), null nor the empty string, is 400 Bad Request with the message \"review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none.\" Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveReviewRequest"
+              },
+              "example": {
+                "review_requested_at": "2026-11-18T09:30:00Z",
+                "nonce": "sdan_EXAMPLE0nonce0value0only0for0documentation0",
+                "signature": "MEUCIQEXAMPLE0signature0only0for0documentation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The review was approved: the task moved to Done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovedReviewResponse"
+                },
+                "example": {
+                  "data": {
+                    "task_id": 4812,
+                    "identifier": "W2701",
+                    "review_status": "approved",
+                    "reviewed_at": "2026-11-18T09:41:12Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the task's board, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. Checked after the access and state checks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No task the person can review has this id: it is missing, archived, on a board the person cannot see or can only read, or the id is not a positive integer in the signed 64-bit range. Checked first, so no other answer reveals the task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "409": {
+            "description": "The review was decided, or the task was sent for review again, since the app loaded it. `review` is its current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewConflict"
+                },
+                "examples": {
+                  "already_decided": {
+                    "summary": "Decided since it was loaded",
+                    "value": {
+                      "error": "already_decided",
+                      "message": "This review has already been decided.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": "approved",
+                        "review_requested_at": "2026-11-18T09:30:00Z",
+                        "reviewed_at": "2026-11-18T09:39:02Z",
+                        "reviewed_by": "Sam Rivera"
+                      }
+                    }
+                  },
+                  "resubmitted": {
+                    "summary": "Sent for review again since it was loaded",
+                    "value": {
+                      "error": "resubmitted",
+                      "message": "This task was sent for review again since it was loaded. Review it again.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": null,
+                        "review_requested_at": "2026-11-18T10:00:00Z",
+                        "reviewed_at": null,
+                        "reviewed_by": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The phone guard refused the change (too_large_for_phone), the signature check refused the approval (signature_rejected, with a reason), or the approval itself could not be made (approval_failed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TooLargeForPhone"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SignatureRejected"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ApprovalFailed"
+                    }
+                  ]
+                },
+                "examples": {
+                  "too_large_for_phone": {
+                    "summary": "Too large to approve on a phone",
+                    "value": {
+                      "error": "too_large_for_phone",
+                      "message": "This change is too large to approve on a phone. Approve it on a tablet or on the web.",
+                      "size": {
+                        "files": 14,
+                        "changed_lines": 652,
+                        "truncated": false
+                      },
+                      "limits": {
+                        "max_files": 10,
+                        "max_changed_lines": 500
+                      }
+                    }
+                  },
+                  "signature_rejected": {
+                    "summary": "The signature check refused it",
+                    "value": {
+                      "error": "signature_rejected",
+                      "reason": "expired",
+                      "message": "The approval nonce has expired. Request a new one."
+                    }
+                  },
+                  "approval_failed": {
+                    "summary": "The approval could not be made",
+                    "value": {
+                      "error": "approval_failed",
+                      "reason": "invalid_column"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests",
+            "description": "Rate limited: repeated authentication failures from this address, or more than 20 challenge and approve requests together from this device in a minute. `retry-after` gives the seconds to wait."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5517,6 +5895,326 @@
           },
           "title": {
             "type": "string"
+          }
+        }
+      },
+      "ApprovalChallengeRequest": {
+        "type": "object",
+        "description": "Optional. When review_requested_at is sent and the task's differs, the answer is 409 resubmitted.",
+        "properties": {
+          "review_requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The review_requested_at the review screen returned (an ISO 8601 extended-format UTC timestamp), or null or the empty string for a task without one."
+          }
+        }
+      },
+      "ApprovalChallengeResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ApprovalChallenge"
+          }
+        }
+      },
+      "ApprovalChallenge": {
+        "type": "object",
+        "description": "A single-use approval nonce, valid for 2 minutes, bound to this device, the task and review_requested_at.",
+        "required": [
+          "nonce",
+          "expires_at",
+          "task_id",
+          "review_requested_at",
+          "decision",
+          "signing_version"
+        ],
+        "properties": {
+          "nonce": {
+            "type": "string",
+            "description": "The nonce, shown once: sdan_ and 43 characters of unpadded URL-safe base64. Only its hash is stored."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "task_id": {
+            "type": "integer"
+          },
+          "review_requested_at": {
+            "type": "string",
+            "description": "The value to sign: an ISO 8601 UTC timestamp, or the empty string when the task has none."
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve"
+            ]
+          },
+          "signing_version": {
+            "type": "string",
+            "enum": [
+              "stride-approval-v1"
+            ],
+            "description": "The first line of the signing string."
+          }
+        }
+      },
+      "ApproveReviewRequest": {
+        "type": "object",
+        "required": [
+          "review_requested_at",
+          "nonce",
+          "signature"
+        ],
+        "properties": {
+          "review_requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The review_requested_at the review screen and the challenge returned, sent back unchanged (an ISO 8601 extended-format UTC timestamp), or null or the empty string for a task without one."
+          },
+          "nonce": {
+            "type": "string",
+            "description": "The challenge's nonce."
+          },
+          "signature": {
+            "type": "string",
+            "description": "The DER ECDSA P-256 SHA-256 signature of the signing string, in unpadded URL-safe base64."
+          }
+        }
+      },
+      "ApprovedReviewResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ApprovedReview"
+          }
+        }
+      },
+      "ApprovedReview": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "identifier",
+          "review_status",
+          "reviewed_at"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "approved"
+            ]
+          },
+          "reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReviewConflict": {
+        "type": "object",
+        "description": "A review decided or resubmitted since the app loaded it. Only someone who may review the task receives one.",
+        "required": [
+          "error",
+          "message",
+          "review"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "already_decided",
+              "resubmitted"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "review": {
+            "$ref": "#/components/schemas/ReviewState"
+          }
+        }
+      },
+      "ReviewState": {
+        "type": "object",
+        "description": "A review's current state.",
+        "required": [
+          "task_id",
+          "identifier",
+          "review_status",
+          "review_requested_at",
+          "reviewed_at",
+          "reviewed_by"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "approved",
+              "changes_requested",
+              "rejected",
+              null
+            ]
+          },
+          "review_requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "reviewed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "reviewed_by": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name of whoever decided it, or null."
+          }
+        }
+      },
+      "TooLargeForPhone": {
+        "type": "object",
+        "description": "A phone may not approve a large change; a tablet and the web may.",
+        "required": [
+          "error",
+          "message",
+          "size",
+          "limits"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "too_large_for_phone"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "size": {
+            "type": "object",
+            "required": [
+              "files",
+              "changed_lines",
+              "truncated"
+            ],
+            "properties": {
+              "files": {
+                "type": "integer"
+              },
+              "changed_lines": {
+                "type": "integer"
+              },
+              "truncated": {
+                "type": "boolean"
+              }
+            }
+          },
+          "limits": {
+            "type": "object",
+            "required": [
+              "max_files",
+              "max_changed_lines"
+            ],
+            "properties": {
+              "max_files": {
+                "type": "integer"
+              },
+              "max_changed_lines": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "SignatureRejected": {
+        "type": "object",
+        "description": "The signature check refused the approval. Request a new challenge.",
+        "required": [
+          "error",
+          "reason",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "signature_rejected"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "missing",
+              "invalid",
+              "expired",
+              "reused"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApprovalFailed": {
+        "type": "object",
+        "description": "Every check passed but the approval could not be made.",
+        "required": [
+          "error",
+          "reason"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "approval_failed"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "invalid_column",
+              "review_not_performed",
+              "invalid_review_status"
+            ]
           }
         }
       }

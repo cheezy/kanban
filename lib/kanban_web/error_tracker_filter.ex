@@ -20,6 +20,11 @@ defmodule KanbanWeb.ErrorTrackerFilter do
       `POST /oauth/revoke`, take authorization codes, PKCE verifiers and
       refresh tokens as params, so a failing request's params there are
       filtered through `:filter_parameters` and its query string redacted.
+    * The person API under `/api/me/` takes secrets as params too: an app
+      approval sends its single-use nonce and its signature to
+      `POST /api/me/reviews/:task_id/approve`. A failing request's params
+      there are filtered through `:filter_parameters`, which lists `nonce`
+      and `signature`.
   """
 
   @behaviour ErrorTracker.Filter
@@ -32,6 +37,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   @token_locations ["request.path", "live_view.uri"]
   @token_params ["request.params", "live_view.params"]
   @oauth_paths ["/oauth/token", "/oauth/revoke"]
+  @person_api_prefix "/api/me/"
 
   @impl ErrorTracker.Filter
   def sanitize(context) when is_map(context) do
@@ -41,6 +47,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
     |> redact_referer_header()
     |> redact_event_params()
     |> redact_oauth_request()
+    |> redact_person_api_params()
   end
 
   def sanitize(context), do: context
@@ -60,6 +67,11 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   end
 
   defp redact_oauth_request(context), do: context
+
+  defp redact_person_api_params(%{"request.path" => @person_api_prefix <> _} = context),
+    do: Map.replace_lazy(context, "request.params", &ParamFilter.filter/1)
+
+  defp redact_person_api_params(context), do: context
 
   defp redact_unsubscribe_request(%{"request.path" => @unsubscribe_path <> _} = context) do
     context

@@ -197,5 +197,8 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("review_changes_requested"),
     do: pgettext("audit action", "Review changes requested")
 
+  def action_label("approval_signature_rejected"),
+    do: pgettext("audit action", "App approval signature rejected")
+
   def action_label(action) when is_binary(action), do: action
 end

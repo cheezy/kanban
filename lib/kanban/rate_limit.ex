@@ -37,6 +37,7 @@ defmodule Kanban.RateLimit do
     * `:oauth_token` — 1 min / — / 60       (IP-only, per request)
     * `:oauth_revoke` — 1 min / — / 30      (IP-only, per request)
     * `:oauth_device` — 1 min / 10 / —      (identity-only, per request)
+    * `:review_approval` — 1 min / 20 / —   (identity-only, per request)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -130,13 +131,21 @@ defmodule Kanban.RateLimit do
   there; the IP ceiling still is. The `authorization_code` grant has no
   device yet, so only the IP ceiling applies to it.
 
+  `:review_approval` counts the app approval's requests,
+  `POST /api/me/reviews/:task_id/approval_challenge` and
+  `POST /api/me/reviews/:task_id/approve` together, per device (`identity:
+  "device:<id>"`, the authenticated device, no IP), with `check/2` before
+  any lookup. Each challenge writes a row and each refused signature writes
+  an audit row, so a signed-in device cannot write either without bound. An
+  approval takes two requests, so the limit allows ten a minute.
+
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
       `:audit_stream_test`, `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`,
       `:attachment_download`, `:oauth_token`, `:oauth_revoke`,
-      `:oauth_device`).
+      `:oauth_device`, `:review_approval`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
       `:scim`)
@@ -169,7 +178,8 @@ defmodule Kanban.RateLimit do
     scim: %{scale_ms: 60_000, id_limit: 10, ip_limit: 100},
     oauth_token: %{scale_ms: 60_000, ip_limit: 60},
     oauth_revoke: %{scale_ms: 60_000, ip_limit: 30},
-    oauth_device: %{scale_ms: 60_000, id_limit: 10}
+    oauth_device: %{scale_ms: 60_000, id_limit: 10},
+    review_approval: %{scale_ms: 60_000, id_limit: 20}
   }
 
   @type surface ::
@@ -192,6 +202,7 @@ defmodule Kanban.RateLimit do
           | :oauth_token
           | :oauth_revoke
           | :oauth_device
+          | :review_approval
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 

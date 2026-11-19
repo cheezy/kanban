@@ -253,7 +253,10 @@ defmodule Kanban.Telemetry.Catalog.Families do
        :files,
        :changed_lines
      ],
-     "A reviewer requested changes to a task, on the web or in the app. The same fields as review_approved, without approval_key. The review notes are never recorded."}
+     "A reviewer requested changes to a task, on the web or in the app. The same fields as review_approved, without approval_key. The review notes are never recorded."},
+    {:approval_signature_rejected,
+     [:user_id, :organization_id, :task_id, :board_id, :device_id, :device_class, :reason],
+     "An approval made in the app was refused at its signature check. reason is missing (no nonce or signature), invalid (the nonce was not issued to this device for this review, or the signature does not verify), expired or reused. The nonce and the signature are never recorded."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

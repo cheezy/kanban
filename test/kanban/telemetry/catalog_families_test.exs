@@ -17,6 +17,7 @@ defmodule Kanban.Telemetry.CatalogFamiliesTest do
   alias Kanban.Telemetry.Catalog.NotificationEvents
   alias Kanban.Telemetry.Catalog.OrganizationEvents
   alias Kanban.Telemetry.Catalog.PlanEvents
+  alias Kanban.Telemetry.Catalog.ReviewEvents
   alias Kanban.Telemetry.Catalog.TargetEvents
   alias Kanban.Telemetry.Catalog.TaskEvents
   alias Kanban.Telemetry.Catalog.UserEvents
@@ -36,7 +37,8 @@ defmodule Kanban.Telemetry.CatalogFamiliesTest do
     PlanEvents,
     AttachmentEvents,
     AuditStreamEvents,
-    DeviceEvents
+    DeviceEvents,
+    ReviewEvents
   ]
 
   @family_dir Path.expand("../../../lib/kanban/telemetry/catalog", __DIR__)

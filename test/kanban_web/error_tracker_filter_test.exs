@@ -178,6 +178,29 @@ defmodule KanbanWeb.ErrorTrackerFilterTest do
     end
   end
 
+  test "filters a failing /api/me request's params, so an approval's nonce and signature are not stored" do
+    sanitized =
+      ErrorTrackerFilter.sanitize(%{
+        "request.path" => "/api/me/reviews/42/approve",
+        "request.query" => "",
+        "request.params" => %{
+          "task_id" => "42",
+          "review_requested_at" => "2026-11-18T09:30:00Z",
+          "nonce" => "sdan_W2754-probe-nonce",
+          "signature" => "W2754-probe-signature"
+        }
+      })
+
+    assert sanitized["request.params"] == %{
+             "task_id" => "42",
+             "review_requested_at" => "2026-11-18T09:30:00Z",
+             "nonce" => "[FILTERED]",
+             "signature" => "[FILTERED]"
+           }
+
+    assert sanitized["request.query"] == ""
+  end
+
   test "leaves unrelated contexts unchanged" do
     context = %{
       "request.path" => "/boards",

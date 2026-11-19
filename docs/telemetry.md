@@ -1009,6 +1009,30 @@ sign-in and revocation events. They are declared in
   `:device_revoked` audit rows record who and which device, so neither event
   is persisted. A device that is already revoked emits nothing.
 
+### App approval events
+
+W2754 added the two events of the app's signed approval
+([approve a review in the app](api/me_review_approval.md)). They are
+declared in `Kanban.Telemetry.Catalog.ReviewEvents`
+(`lib/kanban/telemetry/catalog/review_events.ex`), both emitted by
+`Kanban.Reviews.Approval`, and measure `count: 1`.
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :review, :phone_approval_refused]` | `count`, `files`, `changed_lines` | `task_id`, `board_id` | the approval challenge or the approval, when the large-change guard refuses a phone |
+| `[:kanban, :review, :approval_signature_rejected]` | `count` | `task_id`, `board_id`, `device_class`, `reason` | the approval, when its signature check refuses it |
+
+- **What they carry.** `files` and `changed_lines` are the change size as
+  `Kanban.Reviews.MobileGuard` counts it. `reason` is `:missing`,
+  `:invalid`, `:expired` or `:reused`, and is the only tag. Neither event
+  carries the nonce, the signature or a key; the
+  `:approval_signature_rejected` audit row records the same refusal with the
+  user and the device.
+- **Neither is persisted.** A signed-in device can cause either one at will,
+  so both are charted live only.
+- **The approval itself** is the existing `[:kanban, :task, :review_approved]`,
+  emitted by `Kanban.Reviews.approve_review/3` once the approval commits.
+
 ## Emitting an event
 
 ```elixir
@@ -1089,8 +1113,9 @@ raise.
    plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`, a new
    attachment event is an entry in `Kanban.Telemetry.Catalog.AttachmentEvents`,
    a new audit log streaming event is an entry in
-   `Kanban.Telemetry.Catalog.AuditStreamEvents`, and a new mobile app event is
-   an entry in `Kanban.Telemetry.Catalog.DeviceEvents`.
+   `Kanban.Telemetry.Catalog.AuditStreamEvents`, a new mobile app event is
+   an entry in `Kanban.Telemetry.Catalog.DeviceEvents`, and a new app
+   approval event is an entry in `Kanban.Telemetry.Catalog.ReviewEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -1480,6 +1505,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was. |
 | `[:kanban, :audit, :review_approved]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `approval_key`, `files`, `changed_lines` | A reviewer approved a task, on the web or in the app. via is web, ios or android; device_id, device_class and app_version are set only for the app; approval_key is true when the device's approval signature was verified; files and changed_lines are the change size. Review notes and titles are never recorded. |
 | `[:kanban, :audit, :review_changes_requested]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `files`, `changed_lines` | A reviewer requested changes to a task, on the web or in the app. The same fields as review_approved, without approval_key. The review notes are never recorded. |
+| `[:kanban, :audit, :approval_signature_rejected]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `board_id`, `device_id`, `device_class`, `reason` | An approval made in the app was refused at its signature check. reason is missing (no nonce or signature), invalid (the nonce was not issued to this device for this review, or the signature does not verify), expired or reused. The nonce and the signature are never recorded. |
 
 ### Domain `audit_stream`
 
@@ -1628,6 +1654,8 @@ the sections above explain which code emits each family and when.
 |---|---|---|---|---|
 | `[:kanban, :review, :structured_used]` | event, legacy | `count` | `task_id`, `identifier` | A task's review report, built from the structured review block, was shown. |
 | `[:kanban, :review, :fallback_used]` | event, legacy | `count` | `task_id`, `identifier` | A task's review report, parsed from the legacy review summary, was shown. |
+| `[:kanban, :review, :phone_approval_refused]` | event | `count`, `files`, `changed_lines` | `task_id`, `board_id` | The large-change guard refused an approval made on a phone: the change has more than 10 files, more than 500 changed lines, or a truncated diff. files and changed_lines are its size. |
+| `[:kanban, :review, :approval_signature_rejected]` | event | `count` | `task_id`, `board_id`, `device_class`, `reason` | An app approval was refused at its signature check. reason is :missing, :invalid, :expired or :reused; device_class is phone or tablet. Never the nonce or the signature. |
 
 ### Domain `review_diff_panel`
 

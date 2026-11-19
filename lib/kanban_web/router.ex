@@ -257,6 +257,8 @@ defmodule KanbanWeb.Router do
     # Plan-gated (design §10): check_user, then check_board for the task's
     # board.
     get "/reviews/:task_id", ReviewController, :show
+    post "/reviews/:task_id/approval_challenge", ReviewController, :approval_challenge
+    post "/reviews/:task_id/approve", ReviewController, :approve
   end
 
   # API routes with token authentication

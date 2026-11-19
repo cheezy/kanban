@@ -15470,3 +15470,9 @@ msgstr "レビュー承認"
 msgctxt "audit action"
 msgid "Review changes requested"
 msgstr "レビュー: 変更要求"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "App approval signature rejected"
+msgstr "アプリ承認: 署名が拒否されました"

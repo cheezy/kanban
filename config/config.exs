@@ -111,14 +111,18 @@ config :error_tracker,
 # logged LiveView event params and ErrorTracker's event params (D436).
 # "code" covers the device sign-in authorization code, code_verifier and
 # code_challenge on /oauth/token, and "approval_public_key" the key a device
-# registers there (W2746); "token" already covers refresh_token.
+# registers there (W2746); "token" already covers refresh_token. "nonce" and
+# "signature" cover the approval nonce and its signature an app approval
+# sends to /api/me/reviews/:task_id/approve (W2754).
 config :phoenix, :filter_parameters, [
   "password",
   "token",
   "security_considerations",
   "client_secret",
   "code",
-  "approval_public_key"
+  "approval_public_key",
+  "nonce",
+  "signature"
 ]
 
 # ErrorTracker stores raw query strings, params and headers, which
@@ -151,8 +155,10 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # retention purge daily at 03:47 UTC (W2244), the verified-domain re-check
 # daily at 04:11 UTC, the attachment blob cleanup every 15 minutes
 # (Kanban.Attachments.BlobCleanupWorker, W2509), the audit stream sweep every
-# minute (Kanban.AuditStream.Scheduler, W2711) and the audit stream attempt
-# prune hourly at minute 29 (Kanban.AuditStream.AttemptPruneWorker, W2711).
+# minute (Kanban.AuditStream.Scheduler, W2711), the audit stream attempt
+# prune hourly at minute 29 (Kanban.AuditStream.AttemptPruneWorker, W2711)
+# and the expired approval challenge purge daily at 03:53 UTC
+# (Kanban.Reviews.ApprovalChallengePurgeWorker, W2754).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
@@ -186,7 +192,8 @@ config :kanban, Oban,
        {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker},
        {"*/15 * * * *", Kanban.Attachments.BlobCleanupWorker},
        {"* * * * *", Kanban.AuditStream.Scheduler},
-       {"29 * * * *", Kanban.AuditStream.AttemptPruneWorker}
+       {"29 * * * *", Kanban.AuditStream.AttemptPruneWorker},
+       {"53 3 * * *", Kanban.Reviews.ApprovalChallengePurgeWorker}
      ]}
   ]
 

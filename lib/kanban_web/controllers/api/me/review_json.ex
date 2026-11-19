@@ -1,7 +1,8 @@
 defmodule KanbanWeb.API.Me.ReviewJSON do
   @moduledoc """
   JSON rendering for `GET /api/me/reviews/:task_id` (W2751), from what
-  `Kanban.Reviews.MobileReview.build/3` returns.
+  `Kanban.Reviews.MobileReview.build/3` returns, and for the approval
+  challenge and approve routes (W2754).
 
   The keys are a contract with every supported app version: add fields, never
   remove or rename one (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.2).
@@ -14,6 +15,9 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   and the notes are free text the app sends people to the web for.
   """
 
+  alias Kanban.Accounts.User
+  alias Kanban.Reviews.Approval
+  alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Tasks.Task
 
   @doc "The review screen's data, under `data`."
@@ -137,6 +141,54 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   def held_task(%Task{} = task) do
     %{id: task.id, identifier: task.identifier, title: task.title}
   end
+
+  @doc """
+  An approval challenge (W2754), under `data`: the plain nonce, shown once,
+  when it expires, and the fields the app signs with it.
+  """
+  def challenge(%{challenge: %ApprovalChallenge{} = challenge, task: %Task{} = task}) do
+    %{
+      data: %{
+        nonce: challenge.nonce,
+        expires_at: challenge.expires_at,
+        task_id: task.id,
+        review_requested_at: Approval.stamp(challenge.review_requested_at),
+        decision: "approve",
+        signing_version: Approval.signing_version()
+      }
+    }
+  end
+
+  @doc "An approved review (W2754), under `data`."
+  def approved(%{task: %Task{} = task}) do
+    %{
+      data: %{
+        task_id: task.id,
+        identifier: task.identifier,
+        review_status: atom_string(task.review_status),
+        reviewed_at: task.reviewed_at
+      }
+    }
+  end
+
+  @doc """
+  The current state of a review that was decided or resubmitted since the
+  app loaded it, for a 409 (W2754). Only someone who may review the task
+  gets one. `reviewed_by` is the reviewer's name, or `null`.
+  """
+  def review_state(%Task{} = task) do
+    %{
+      task_id: task.id,
+      identifier: task.identifier,
+      review_status: atom_string(task.review_status),
+      review_requested_at: task.review_requested_at,
+      reviewed_at: task.reviewed_at,
+      reviewed_by: reviewer_name(task.reviewed_by)
+    }
+  end
+
+  defp reviewer_name(%User{name: name}), do: name
+  defp reviewer_name(_none), do: nil
 
   defp atom_string(nil), do: nil
   defp atom_string(value) when is_atom(value), do: Atom.to_string(value)

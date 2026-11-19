@@ -31,6 +31,26 @@ defmodule Kanban.DevicesFixtures do
     Base.url_encode64(public_key, padding: false)
   end
 
+  @doc """
+  A fresh P-256 approval key pair: `public_key` in the wire format a device
+  registers (the uncompressed point, unpadded base64url) and `private_key`,
+  the raw scalar, which `sign_approval/2` signs with as the app's key would.
+  """
+  def approval_keypair_fixture do
+    {public_key, private_key} = :crypto.generate_key(:ecdh, :secp256r1)
+    %{public_key: Base.url_encode64(public_key, padding: false), private_key: private_key}
+  end
+
+  @doc """
+  Signs `message` with `private_key` as the app does: ECDSA P-256 with
+  SHA-256, a DER signature in unpadded base64url.
+  """
+  def sign_approval(private_key, message) do
+    :ecdsa
+    |> :crypto.sign(:sha256, message, [private_key, :secp256r1])
+    |> Base.url_encode64(padding: false)
+  end
+
   def device_fixture(scope, attrs \\ %{}, now \\ DateTime.utc_now()) do
     device_attrs = valid_device_attributes(attrs)
     {:ok, device} = Devices.create_device(scope, device_attrs, now)

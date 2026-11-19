@@ -15473,3 +15473,9 @@ msgstr "审查已批准"
 msgctxt "audit action"
 msgid "Review changes requested"
 msgstr "审查：已请求修改"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "App approval signature rejected"
+msgstr "应用审批：签名被拒绝"

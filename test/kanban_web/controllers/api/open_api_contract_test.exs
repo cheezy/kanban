@@ -22,7 +22,9 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Accounts.User
   alias Kanban.ApiTokens
+  alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.DeviceJSON
@@ -1040,6 +1042,125 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       assert conn.status == 403
       assert Jason.decode!(conn.resp_body) == example
+    end
+  end
+
+  describe "schema parity with the approval endpoints (W2754)" do
+    defp example(spec, path, status, name \\ nil) do
+      content =
+        get_in(spec, ["paths", path, "post", "responses", status, "content", "application/json"])
+
+      if name, do: content["examples"][name]["value"], else: content["example"]
+    end
+
+    defp fallback_body(error) do
+      conn = FallbackController.call(Phoenix.ConnTest.build_conn(), {:error, error})
+      {conn.status, Jason.decode!(conn.resp_body)}
+    end
+
+    @challenge_path "/api/me/reviews/{task_id}/approval_challenge"
+    @approve_path "/api/me/reviews/{task_id}/approve"
+
+    test "the rendered bodies list exactly the documented keys, and require them all",
+         %{spec: spec} do
+      task = %Task{
+        id: 4812,
+        identifier: "W2701",
+        review_status: :approved,
+        review_requested_at: ~U[2026-11-18 09:30:00Z],
+        reviewed_at: ~U[2026-11-18 09:39:02Z],
+        reviewed_by: %User{name: "Sam Rivera"}
+      }
+
+      challenge = %ApprovalChallenge{
+        nonce: "sdan_EXAMPLE0nonce0value0only0for0documentation0",
+        expires_at: ~U[2026-11-18 09:42:00Z],
+        review_requested_at: ~U[2026-11-18 09:30:00Z]
+      }
+
+      %{data: challenge_data} = ReviewJSON.challenge(%{challenge: challenge, task: task})
+      %{data: approved_data} = ReviewJSON.approved(%{task: task})
+
+      for {rendered, name} <- [
+            {challenge_data, "ApprovalChallenge"},
+            {approved_data, "ApprovedReview"},
+            {ReviewJSON.review_state(task), "ReviewState"}
+          ] do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert challenge_data |> Jason.encode!() |> Jason.decode!() ==
+               example(spec, @challenge_path, "201")["data"]
+
+      # The documented nonce has the shape the server issues and accepts.
+      assert ApprovalChallenge.valid_nonce?(challenge.nonce)
+    end
+
+    test "the 403, 409 and 422 examples match what the person-API fallback renders",
+         %{spec: spec} do
+      decided = %Task{
+        id: 4812,
+        identifier: "W2701",
+        review_status: :approved,
+        review_requested_at: ~U[2026-11-18 09:30:00Z],
+        reviewed_at: ~U[2026-11-18 09:39:02Z],
+        reviewed_by: %User{name: "Sam Rivera"}
+      }
+
+      resubmitted = %Task{
+        id: 4812,
+        identifier: "W2701",
+        review_status: nil,
+        review_requested_at: ~U[2026-11-18 10:00:00Z],
+        reviewed_by: nil
+      }
+
+      size = %{files: 14, changed_lines: 652, truncated: false}
+
+      for path <- [@challenge_path, @approve_path] do
+        assert fallback_body({:plan_required, :mobile_app}) == {403, example(spec, path, "403")}
+
+        assert fallback_body({:conflict, :already_decided, decided}) ==
+                 {409, example(spec, path, "409", "already_decided")}
+
+        assert fallback_body({:conflict, :resubmitted, resubmitted}) ==
+                 {409, example(spec, path, "409", "resubmitted")}
+      end
+
+      assert fallback_body({:too_large_for_phone, size}) ==
+               {422, example(spec, @challenge_path, "422")}
+
+      assert fallback_body({:too_large_for_phone, size}) ==
+               {422, example(spec, @approve_path, "422", "too_large_for_phone")}
+
+      assert fallback_body({:signature_rejected, :expired}) ==
+               {422, example(spec, @approve_path, "422", "signature_rejected")}
+
+      assert fallback_body(:invalid_column) ==
+               {422, example(spec, @approve_path, "422", "approval_failed")}
+
+      assert {400, %{"error" => "Bad Request", "message" => message}} =
+               fallback_body(
+                 {:bad_request,
+                  "review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none."}
+               )
+
+      assert get_in(spec, ["paths", @approve_path, "post", "description"]) =~ message
+    end
+
+    test "the approve description documents the canonical signing string", %{spec: spec} do
+      description = get_in(spec, ["paths", @approve_path, "post", "description"])
+
+      for fragment <- ["stride-approval-v1", "line feed", "DER", "P-256", "SHA-256", "`approve`"] do
+        assert description =~ fragment
+      end
+
+      assert spec["components"]["schemas"]["SignatureRejected"]["properties"]["reason"]["enum"] ==
+               ~w(missing invalid expired reused)
     end
   end
 end

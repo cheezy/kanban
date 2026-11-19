@@ -89,7 +89,8 @@ defmodule Kanban.Telemetry.Catalog do
   plan, attachment, audit log streaming and mobile app events go in
   `BoardEvents`, `TaskEvents`, `UserEvents`, `NotificationEvents`,
   `TargetEvents`, `MessageEvents`, `GoalEvents`, `OrganizationEvents`,
-  `PlanEvents`, `AttachmentEvents`, `AuditStreamEvents` and `DeviceEvents` under
+  `PlanEvents`, `AttachmentEvents`, `AuditStreamEvents`, `DeviceEvents` and
+  `ReviewEvents` (app approvals) under
   `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a key the
   entry does not declare raises there, and it fails if an entry's metrics,
   persist flag or tags are invalid.
@@ -105,6 +106,7 @@ defmodule Kanban.Telemetry.Catalog do
   alias Kanban.Telemetry.Catalog.NotificationEvents
   alias Kanban.Telemetry.Catalog.OrganizationEvents
   alias Kanban.Telemetry.Catalog.PlanEvents
+  alias Kanban.Telemetry.Catalog.ReviewEvents
   alias Kanban.Telemetry.Catalog.TargetEvents
   alias Kanban.Telemetry.Catalog.TaskEvents
   alias Kanban.Telemetry.Catalog.UserEvents
@@ -484,7 +486,8 @@ defmodule Kanban.Telemetry.Catalog do
             PlanEvents.events() ++
             AttachmentEvents.events() ++
             AuditStreamEvents.events() ++
-            DeviceEvents.events()
+            DeviceEvents.events() ++
+            ReviewEvents.events()
 
   @by_name Map.new(@events, fn entry -> {entry.name, entry} end)
 

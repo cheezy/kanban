@@ -19,6 +19,10 @@ defmodule Kanban.Reviews.Audit do
   event shows on that Organization's `/org/audit`. A board in a personal
   workspace has none.
 
+  An app approval refused at its signature check writes
+  `:approval_signature_rejected` through `record_signature_rejected/4`,
+  called by `Kanban.Reviews.Approval`.
+
   `Kanban.Reviews` calls `record/4` inside the review transaction, so a
   rolled-back or refused review leaves no row. The task edit form sets a
   verdict without `Kanban.Reviews`, so it calls `record_change/3` once its
@@ -120,6 +124,35 @@ defmodule Kanban.Reviews.Audit do
   end
 
   def record_change(%Task{}, %Task{}, _reviewer), do: :ok
+
+  @doc """
+  Writes the `:approval_signature_rejected` event for an app approval of
+  `task` (with its `:column` preloaded) by `reviewer` on `device` that was
+  refused at its signature check. `reason` is `:missing`, `:invalid`,
+  `:expired` or `:reused`. The nonce and the signature are never recorded.
+  Returns `:ok`.
+  """
+  @spec record_signature_rejected(Task.t(), %{id: integer()}, Device.t(), atom()) :: :ok
+  def record_signature_rejected(
+        %Task{column: %{board_id: board_id}} = task,
+        reviewer,
+        %Device{} = device,
+        reason
+      ) do
+    AuditLog.event(
+      :approval_signature_rejected,
+      [
+        user_id: reviewer.id,
+        organization_id: organization_id(board_id),
+        task_id: task.id,
+        board_id: board_id,
+        device_id: device.id,
+        device_class: device.device_class,
+        reason: reason
+      ]
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    )
+  end
 
   defp metadata(%Task{column: %{board_id: board_id}} = task, reviewer, context) do
     size = MobileGuard.size(task)

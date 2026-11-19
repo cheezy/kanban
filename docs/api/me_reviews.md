@@ -172,6 +172,9 @@ same code the approve route answers with, and `null` otherwise. Requesting
 changes is never limited. The app must not work this out for itself; the
 server's answer decides.
 
+To approve, the app asks for an approval challenge and sends a signed
+approval: see [Approve a review in the app](me_review_approval.md).
+
 ### Timestamps and holds_up
 
 `review_requested_at` is when the task last entered Review, and is `null` for a
