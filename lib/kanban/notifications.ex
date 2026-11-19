@@ -77,7 +77,6 @@ defmodule Kanban.Notifications do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
-  alias Kanban.Boards.BoardUser
   alias Kanban.Notifications.AuditStreamAlerts
   alias Kanban.Notifications.DigestRecipients
   alias Kanban.Notifications.EmailWorker
@@ -85,6 +84,7 @@ defmodule Kanban.Notifications do
   alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Notifications.Preference
   alias Kanban.Notifications.Recipients
+  alias Kanban.Notifications.Visibility
   alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -387,6 +387,16 @@ defmodule Kanban.Notifications do
     |> Repo.all()
   end
 
+  @doc """
+  Lists the scoped user's visible notifications of `event_types` on tasks on
+  `board_ids`, newest first, with each task and its column preloaded; see
+  `Kanban.Notifications.Visibility.list_task_notifications/4`.
+  """
+  @spec list_task_notifications(Scope.t(), [event_type()], [integer()], keyword()) ::
+          [Notification.t()]
+  defdelegate list_task_notifications(scope, event_types, board_ids, opts \\ []),
+    to: Visibility
+
   @doc "Ids of the users who should receive the weekly digest; see `DigestRecipients`."
   defdelegate list_digest_recipients(), to: DigestRecipients
 
@@ -491,29 +501,7 @@ defmodule Kanban.Notifications do
 
   # -- query helpers ---------------------------------------------------------
 
-  defp visible_query(%Scope{user: %User{id: user_id}}) do
-    member_board_ids =
-      from(bu in BoardUser, where: bu.user_id == ^user_id, select: bu.board_id)
-
-    from(n in Notification,
-      where: n.user_id == ^user_id and n.in_app == true,
-      where: is_nil(n.board_id) or n.board_id in subquery(member_board_ids)
-    )
-    |> paid_boards_only()
-  end
-
-  # While plans are enforced only paid boards' rows and board-less rows show.
-  # Hidden rows are kept, so they reappear if the board becomes paid.
-  defp paid_boards_only(query) do
-    if Plans.enforced?(),
-      do:
-        where(
-          query,
-          [n],
-          is_nil(n.board_id) or n.board_id in subquery(Plans.paid_board_ids_query())
-        ),
-      else: query
-  end
+  defp visible_query(scope), do: Visibility.query(scope)
 
   defp get_visible(scope, id) do
     scope
