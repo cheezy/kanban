@@ -3,8 +3,9 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   JSON rendering for `GET /api/me/reviews/:task_id` (W2751), from what
   `Kanban.Reviews.MobileReview.build/3` returns, for one file's diff
   (`GET /api/me/reviews/:task_id/files/:index`, W2753), for the approval
-  challenge and approve routes (W2754), and for the request changes route
-  (W2755).
+  challenge and approve routes (W2754), for the request changes route
+  (W2755), and for the review queue, `GET /api/me/reviews` (W2758), whose
+  items are rendered by `KanbanWeb.API.Me.DecisionJSON.item/1`.
 
   The keys are a contract with every supported app version: add fields, never
   remove or rename one (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.2).
@@ -22,6 +23,13 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   alias Kanban.Reviews.Approval
   alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.Me.DecisionJSON
+
+  @doc """
+  The review queue (W2758), under `data`: the `review` decision items, in
+  decision order, each rendered like an item of `GET /api/me/decisions`.
+  """
+  def index(%{items: items}), do: %{data: Enum.map(items, &DecisionJSON.item/1)}
 
   @doc "The review screen's data, under `data`."
   def show(%{review: review}) do

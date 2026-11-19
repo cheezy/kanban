@@ -4,7 +4,7 @@ defmodule Kanban.Decisions do
   screen, its badge, the widget and the inbox channel
   (`docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md` §7.4).
 
-  `build/1` gathers five kinds of item, one source each in
+  `build/2` gathers five kinds of item, one source each in
   `Kanban.Decisions.Sources`:
 
   | Kind | Source | Clears when |
@@ -83,6 +83,14 @@ defmodule Kanban.Decisions do
       Like the `:ready_empty` idle check, this reads every board the person
       can access, including boards outside the plan.
 
+  ## Telemetry
+
+  Every build emits `[:kanban, :decisions, :built]`
+  (`Kanban.Telemetry.Catalog.DecisionEvents`) with `count`, the items waiting
+  before the 100-item cap, and `duration`, in native time units, and the
+  `:source` option as its only metadata: `:api` (the default) or `:channel`.
+  Any other source raises `ArgumentError`, because it is a metric tag.
+
   ## Cost
 
   A fixed number of queries whatever the number of tasks: the boards, the
@@ -121,8 +129,11 @@ defmodule Kanban.Decisions do
           agents_working: non_neg_integer()
         }
 
+  @type option :: {:source, :api | :channel}
+
   @max_items 100
   @shown_held 5
+  @telemetry_sources [:api, :channel]
 
   @sources [
     &Sources.review/1,
@@ -139,8 +150,8 @@ defmodule Kanban.Decisions do
   A scope without a user gets `[]`, as does a person with no accessible,
   unlocked board.
   """
-  @spec build(Scope.t() | nil) :: [item()]
-  def build(scope), do: scope |> ranked() |> elem(0) |> capped()
+  @spec build(Scope.t() | nil, [option()]) :: [item()]
+  def build(scope, opts \\ []), do: timed(scope, opts, fn ranked, _held_up -> capped(ranked) end)
 
   @doc """
   Returns the same items as `build/1` with the summary counts
@@ -149,10 +160,58 @@ defmodule Kanban.Decisions do
   A scope without a user, or a person with nothing waiting, gets no items and
   a summary of zeros, without reading the agent roster.
   """
-  @spec build_with_summary(Scope.t() | nil) :: %{items: [item()], summary: summary()}
-  def build_with_summary(scope) do
+  @spec build_with_summary(Scope.t() | nil, [option()]) :: %{
+          items: [item()],
+          summary: summary()
+        }
+  def build_with_summary(scope, opts \\ []) do
+    timed(scope, opts, fn ranked, held_up ->
+      %{items: capped(ranked), summary: summary(scope, ranked, held_up)}
+    end)
+  end
+
+  @doc """
+  Returns only the `:review` items, in the same order as `build/1`: the
+  app's review queue.
+
+  The review items are taken before the 100-item cap, so a review never
+  drops off the queue because other kinds filled the cap; the queue itself
+  is capped at 100.
+  """
+  @spec review_queue(Scope.t() | nil, [option()]) :: [item()]
+  def review_queue(scope, opts \\ []) do
+    timed(scope, opts, fn ranked, _held_up ->
+      ranked |> Enum.filter(&(&1.kind == :review)) |> capped()
+    end)
+  end
+
+  # Builds the ranked items once, hands them to `fun` and emits
+  # [:kanban, :decisions, :built] with the number of items waiting (before
+  # the cap) and how long the whole build took, the summary included.
+  defp timed(scope, opts, fun) do
+    source = source!(opts)
+    started = System.monotonic_time()
     {ranked, held_up} = ranked(scope)
-    %{items: capped(ranked), summary: summary(scope, ranked, held_up)}
+    result = fun.(ranked, held_up)
+
+    Kanban.Telemetry.emit(
+      [:kanban, :decisions, :built],
+      %{count: length(ranked), duration: System.monotonic_time() - started},
+      %{source: source}
+    )
+
+    result
+  end
+
+  defp source!(opts) do
+    case Keyword.get(opts, :source, :api) do
+      source when source in @telemetry_sources ->
+        source
+
+      other ->
+        raise ArgumentError,
+              "unknown decisions source #{inspect(other)}, expected one of #{inspect(@telemetry_sources)}"
+    end
   end
 
   # Every item, ordered but not capped, and the number of distinct tasks they
@@ -237,13 +296,15 @@ defmodule Kanban.Decisions do
   defp since_key(%DateTime{} = since), do: DateTime.to_unix(since, :microsecond)
   defp since_key(_since), do: 0
 
-  defp summary(_scope, [], _held_up), do: %{waiting: 0, held_up: 0, agents_working: 0}
-
-  defp summary(scope, ranked, held_up) do
+  # agents_working does not depend on anything waiting: an empty inbox still
+  # counts the agents at work, so only a scope with no person skips the read.
+  defp summary(%Scope{user: %User{}} = scope, ranked, held_up) do
     %{
       waiting: length(ranked),
       held_up: held_up,
       agents_working: Agents.fleet_health(scope: scope).working
     }
   end
+
+  defp summary(_scope, _ranked, _held_up), do: %{waiting: 0, held_up: 0, agents_working: 0}
 end

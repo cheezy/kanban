@@ -84,8 +84,8 @@ defmodule Kanban.TelemetryTest do
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
   @particles ~w(out in up off down)
   # Irregular past tenses that do not end in "ed" (notification.read, digest.sent,
-  # goal.reassignment_undone).
-  @irregular_past ~w(read sent undone)
+  # goal.reassignment_undone, decisions.built).
+  @irregular_past ~w(read sent undone built)
 
   def raising_handler(_event, _measurements, _metadata, _config), do: raise("handler boom")
 

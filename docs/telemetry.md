@@ -1033,6 +1033,30 @@ declared in `Kanban.Telemetry.Catalog.ReviewEvents`
 - **The approval itself** is the existing `[:kanban, :task, :review_approved]`,
   emitted by `Kanban.Reviews.approve_review/3` once the approval commits.
 
+### Decisions events
+
+W2758 added the event the app's Now screen and review queue emit
+([the decisions routes](api/me_decisions.md)). It is declared in
+`Kanban.Telemetry.Catalog.DecisionEvents`
+(`lib/kanban/telemetry/catalog/decision_events.ex`) and emitted by
+`Kanban.Decisions` on every build.
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :decisions, :built]` | `count`, `duration` | `source` | `Kanban.Decisions.build/2`, `build_with_summary/2` and `review_queue/2` |
+
+- **What it carries.** `count` is the number of items waiting on the person
+  before the 100-item cap, so it is summed rather than counted; `duration` is
+  the whole build in native time units, the summary's roster read included.
+  `source` is `:api` for `GET /api/me/decisions` and `GET /api/me/reviews`,
+  and `:channel` for the inbox channel, and is the only tag. It never carries
+  a user, a board, a task or an item.
+- **The domain is plural.** The event is named after the `Kanban.Decisions`
+  context, as the design names it, rather than the singular noun the naming
+  rule prefers.
+- **It is not persisted.** A signed-in device can cause it at will, so it is
+  charted live only.
+
 ## Emitting an event
 
 ```elixir
@@ -1537,6 +1561,12 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :column, :updated]` | event | `count` | `board_id`, `column_id`, `actor_user_id`, `fields` | A board owner changed a column. fields lists the changed field names, never their values. |
 | `[:kanban, :column, :deleted]` | event | `count` | `board_id`, `column_id`, `actor_user_id` | A column was deleted, along with its tasks. |
 | `[:kanban, :column, :reordered]` | event | `count`, `column_count` | `board_id`, `actor_user_id` | A board's columns were reordered. column_count is the number of column ids given. |
+
+### Domain `decisions`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :decisions, :built]` | event | `count`, `duration` | `source` | Kanban.Decisions built a person's decisions. count is the items waiting before the 100-item cap; duration is in native time units; source is :api or :channel. |
 
 ### Domain `device`
 

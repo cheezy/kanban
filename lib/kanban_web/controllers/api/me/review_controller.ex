@@ -4,6 +4,11 @@ defmodule KanbanWeb.API.Me.ReviewController do
   docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §6.4, §7.5):
   `GET /api/me/reviews/:task_id`.
 
+  `GET /api/me/reviews` (W2758, design §7.5) is the review queue: only the
+  `review` items of `GET /api/me/decisions`, in the same order, from
+  `Kanban.Decisions.review_queue/2`. It checks the person's plan only: a
+  board outside the plan never contributes a review item.
+
   It runs behind the `:device_api` pipeline, so `:current_scope` and
   `:current_device` come from `KanbanWeb.Plugs.AuthenticateDeviceToken`.
   The route is plan-gated with `:mobile_app` (design §10): the person's plan
@@ -53,6 +58,7 @@ defmodule KanbanWeb.API.Me.ReviewController do
   """
   use KanbanWeb, :controller
 
+  alias Kanban.Decisions
   alias Kanban.Plans
   alias Kanban.RateLimit
   alias Kanban.Reviews
@@ -64,6 +70,14 @@ defmodule KanbanWeb.API.Me.ReviewController do
   alias KanbanWeb.IdParams
 
   action_fallback KanbanWeb.API.Me.FallbackController
+
+  def index(conn, _params) do
+    %{current_scope: scope} = conn.assigns
+
+    with :ok <- Plans.check_user(scope, :mobile_app, surface: :controller) do
+      render(conn, :index, items: Decisions.review_queue(scope, source: :api))
+    end
+  end
 
   def show(conn, %{"task_id" => task_id}) do
     %{current_scope: scope, current_device: device} = conn.assigns

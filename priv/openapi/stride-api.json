@@ -2181,6 +2181,130 @@
         }
       }
     },
+    "/api/me/decisions": {
+      "get": {
+        "operationId": "listMyDecisions",
+        "summary": "The decisions waiting on the person, for the app's Now screen",
+        "description": "The decisions waiting on the person across every board they can access that the plan unlocks: pending reviews, released tasks, expired claims, failed after_goal hooks and empty Ready columns with an idle agent. Items come back by how many tasks they hold up, highest first, then oldest first, with every ready_empty item last, and at most 100 of them. The summary counts every item waiting, before the cap, the distinct tasks they hold up and the agents working. An app ignores a kind or an action it does not know; fields are only ever added. Plan-gated with the mobile_app feature: the person's plan is checked, and boards outside the plan never appear. Takes a device access token only. Human-readable reference: docs/api/me_decisions.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The decisions and the summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/reviews": {
+      "get": {
+        "operationId": "listMyReviews",
+        "summary": "The person's review queue",
+        "description": "Only the review items of GET /api/me/decisions, in the same order, taken before that list's cap and capped at 100 themselves. Each item has the same shape as a decision item. Plan-gated with the mobile_app feature: the person's plan is checked, and boards outside the plan never appear. Takes a device access token only. Human-readable reference: docs/api/me_decisions.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The review items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueueResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/me/reviews/{task_id}": {
       "get": {
         "operationId": "getMyReview",
@@ -6779,6 +6903,395 @@
           "reviewed_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "DecisionListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DecisionList"
+          }
+        }
+      },
+      "DecisionList": {
+        "type": "object",
+        "description": "The decisions waiting on the person and the Now screen's counts.",
+        "required": [
+          "items",
+          "summary"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/DecisionItem"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DecisionSummary"
+          }
+        }
+      },
+      "DecisionSummary": {
+        "type": "object",
+        "description": "The Now screen's counts, all taken before the 100-item cap.",
+        "required": [
+          "waiting",
+          "held_up",
+          "agents_working"
+        ],
+        "properties": {
+          "waiting": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Every item waiting on the person, ready_empty included."
+          },
+          "held_up": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The distinct tasks held up across every item."
+          },
+          "agents_working": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Agents holding a task in Doing on a board the person can access."
+          }
+        }
+      },
+      "DecisionItem": {
+        "type": "object",
+        "description": "One decision waiting on the person. details has the kind's own fields.",
+        "required": [
+          "id",
+          "kind",
+          "since",
+          "task_id",
+          "board_id",
+          "summary",
+          "details",
+          "actions",
+          "web_url",
+          "holds_up",
+          "held_identifiers"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A stable id: <kind>:task:<id>, hook_failed:goal:<id> or ready_empty:board:<id>."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "review",
+              "released",
+              "claim_expired",
+              "hook_failed",
+              "ready_empty"
+            ],
+            "description": "An app ignores a kind it does not know."
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the item started waiting."
+          },
+          "task_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The task or goal; null for ready_empty."
+          },
+          "board_id": {
+            "type": "integer"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DecisionTaskSummary"
+          },
+          "details": {
+            "type": "object",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionReviewDetails"
+              },
+              {
+                "$ref": "#/components/schemas/DecisionReleasedDetails"
+              },
+              {
+                "$ref": "#/components/schemas/DecisionClaimExpiredDetails"
+              },
+              {
+                "$ref": "#/components/schemas/DecisionHookFailedDetails"
+              },
+              {
+                "$ref": "#/components/schemas/DecisionReadyEmptyDetails"
+              }
+            ],
+            "description": "The kind's own fields."
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "open_review",
+                "approve",
+                "request_changes",
+                "open_on_web",
+                "reply",
+                "move_to_backlog",
+                "view_attempt",
+                "open_backlog"
+              ]
+            },
+            "description": "The actions the server lets this person take. An app ignores an action it does not know."
+          },
+          "web_url": {
+            "type": "string",
+            "description": "The absolute URL of the item on the web."
+          },
+          "holds_up": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "How many tasks the item holds up; null for ready_empty."
+          },
+          "held_identifiers": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 5 of the tasks it holds up, the nearest first."
+          }
+        }
+      },
+      "DecisionTaskSummary": {
+        "type": "object",
+        "description": "The item's task and board. All but board are null for ready_empty.",
+        "required": [
+          "identifier",
+          "title",
+          "priority",
+          "agent",
+          "board"
+        ],
+        "properties": {
+          "identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priority": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical",
+              null
+            ]
+          },
+          "agent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The agent that completed the task, else the one that created it."
+          },
+          "board": {
+            "$ref": "#/components/schemas/DecisionBoard"
+          }
+        }
+      },
+      "DecisionBoard": {
+        "type": "object",
+        "description": "The item's board.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "DecisionVerdict": {
+        "type": "object",
+        "description": "One review section's verdict pill.",
+        "required": [
+          "section",
+          "status"
+        ],
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "acceptance_criteria",
+              "testing_strategy",
+              "patterns",
+              "security_considerations"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "passed",
+              "failed",
+              "not_assessed",
+              null
+            ]
+          }
+        }
+      },
+      "DecisionReviewDetails": {
+        "type": "object",
+        "description": "A pending review.",
+        "required": [
+          "verdicts",
+          "first_failed_note"
+        ],
+        "properties": {
+          "verdicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DecisionVerdict"
+            }
+          },
+          "first_failed_note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The note of the first failed section."
+          }
+        }
+      },
+      "DecisionReleasedDetails": {
+        "type": "object",
+        "description": "A task an agent released back to Ready.",
+        "required": [
+          "reason",
+          "notification_id"
+        ],
+        "properties": {
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The release notification's text."
+          },
+          "notification_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "DecisionClaimExpiredDetails": {
+        "type": "object",
+        "description": "A claim that expired while the task was in Doing.",
+        "required": [
+          "claimed_at",
+          "expired_at"
+        ],
+        "properties": {
+          "claimed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the task was claimed."
+          },
+          "expired_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the claim expired."
+          }
+        }
+      },
+      "DecisionHookFailedDetails": {
+        "type": "object",
+        "description": "A goal whose after_goal hook failed. Never its output.",
+        "required": [
+          "exit_code",
+          "duration_ms"
+        ],
+        "properties": {
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "DecisionReadyEmptyDetails": {
+        "type": "object",
+        "description": "A board with no Ready task, Backlog work and an idle agent.",
+        "required": [
+          "idle_agents",
+          "backlog_count"
+        ],
+        "properties": {
+          "idle_agents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "backlog_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ReviewQueueResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/DecisionItem"
+            }
           }
         }
       }

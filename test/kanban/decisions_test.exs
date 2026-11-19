@@ -1,6 +1,8 @@
 defmodule Kanban.DecisionsTest do
   @moduledoc """
-  Tests for `Kanban.Decisions.build/1`, `build_with_summary/1` and the five sources.
+  Tests for `Kanban.Decisions.build/2`, `build_with_summary/2`,
+  `review_queue/2`, the five sources and the `[:kanban, :decisions, :built]`
+  event.
   """
   # Plan enforcement flips global application env, so this module is not async.
   use Kanban.DataCase, async: false
@@ -12,6 +14,7 @@ defmodule Kanban.DecisionsTest do
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -655,6 +658,18 @@ defmodule Kanban.DecisionsTest do
       assert user_fixture() |> Scope.for_user() |> Decisions.build_with_summary() == empty
     end
 
+    test "agents_working counts the agents in Doing when nothing is waiting", ctx do
+      {:ok, _} =
+        ctx.cols["Doing"]
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Codex", status: :in_progress})
+
+      assert Decisions.build_with_summary(ctx.scope) == %{
+               items: [],
+               summary: %{waiting: 0, held_up: 0, agents_working: 1}
+             }
+    end
+
     test "a hidden board's dependents never count toward holds_up", ctx do
       review = pending_task!(ctx.cols["Review"])
 
@@ -668,6 +683,79 @@ defmodule Kanban.DecisionsTest do
       assert [item] = ctx.scope |> Decisions.build() |> of_kind(:review)
       assert item.holds_up == 0
       assert item.held_identifiers == []
+    end
+  end
+
+  describe "review_queue" do
+    test "returns only review items, in build order", ctx do
+      low = ctx.cols["Review"] |> pending_task!() |> waiting_since!(1800)
+      high = ctx.cols["Review"] |> pending_task!() |> waiting_since!(600)
+      dependent!(ctx.cols["Backlog"], [high.identifier])
+      released!(ctx.cols, ctx.owner, "why")
+      failed_goal!(ctx.cols["Doing"])
+
+      reviews = ctx.scope |> Decisions.build() |> of_kind(:review)
+
+      assert Enum.map(reviews, & &1.task_id) == [high.id, low.id]
+      assert Decisions.review_queue(ctx.scope) == reviews
+    end
+
+    test "keeps a review the 100-item decisions cap leaves out", ctx do
+      for _i <- 1..100, do: released!(ctx.cols, ctx.owner, "why")
+      # Waiting from a minute ahead, so it ranks after every release.
+      review = ctx.cols["Review"] |> pending_task!() |> waiting_since!(-60)
+
+      assert ctx.scope |> Decisions.build() |> of_kind(:review) == []
+      assert [%{task_id: task_id}] = Decisions.review_queue(ctx.scope)
+      assert task_id == review.id
+    end
+
+    test "is empty without a person", _ctx do
+      assert Decisions.review_queue(nil) == []
+    end
+  end
+
+  describe "telemetry" do
+    test "emits decisions built with duration, count and source", ctx do
+      attach_telemetry([:kanban, :decisions, :built])
+      pending_task!(ctx.cols["Review"])
+      released!(ctx.cols, ctx.owner, "why")
+
+      Decisions.build_with_summary(ctx.scope)
+
+      assert_receive {:telemetry_event, [:kanban, :decisions, :built],
+                      %{count: 2, duration: duration}, metadata}
+
+      assert is_integer(duration) and duration >= 0
+      assert metadata == %{source: :api}
+
+      Decisions.build(ctx.scope, source: :channel)
+      assert_receive {:telemetry_event, _, %{count: 2}, %{source: :channel}}
+
+      Decisions.review_queue(ctx.scope, source: :api)
+      assert_receive {:telemetry_event, _, %{count: 2}, %{source: :api}}
+    end
+
+    test "emits a count of 0 for an empty scope", _ctx do
+      attach_telemetry([:kanban, :decisions, :built])
+
+      Decisions.build(nil)
+      assert_receive {:telemetry_event, _, %{count: 0}, %{source: :api}}
+    end
+
+    test "counts the items waiting before the 100-item cap", ctx do
+      for i <- 1..101, do: ctx.cols["Review"] |> pending_task!() |> waiting_since!(1000 + i)
+
+      attach_telemetry([:kanban, :decisions, :built])
+
+      assert length(Decisions.build(ctx.scope)) == 100
+      assert_receive {:telemetry_event, _, %{count: 101}, %{source: :api}}
+    end
+
+    test "an unknown source raises", ctx do
+      assert_raise ArgumentError, ~r/unknown decisions source/, fn ->
+        Decisions.build(ctx.scope, source: :web)
+      end
     end
   end
 end

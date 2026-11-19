@@ -28,6 +28,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias Kanban.Reviews.DiffHighlighter
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.Me.DecisionJSON
   alias KanbanWeb.API.Me.DeviceJSON
   alias KanbanWeb.API.Me.FallbackController
   alias KanbanWeb.API.Me.MeJSON
@@ -1247,6 +1248,112 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       assert spec["components"]["schemas"]["SignatureRejected"]["properties"]["reason"]["enum"] ==
                ~w(missing invalid expired reused)
+    end
+  end
+
+  describe "schema parity with DecisionJSON (W2758)" do
+    setup do
+      now = ~U[2026-11-19 12:00:00Z]
+      board = %{id: 1, name: "Board"}
+      task_summary = %{identifier: "W1", title: "T", priority: :high, agent: "A", board: board}
+
+      base = %{
+        since: now,
+        task_id: 9,
+        board_id: 1,
+        summary: task_summary,
+        actions: [:open_on_web],
+        web_url: "https://example.test/boards/1/tasks/9",
+        holds_up: 0,
+        held_identifiers: []
+      }
+
+      details = %{
+        review: %{
+          verdicts: [%{section: :patterns, status: "passed"}],
+          first_failed_note: nil
+        },
+        released: %{reason: "Blocked", notification_id: 3},
+        claim_expired: %{claimed_at: now, expired_at: now},
+        hook_failed: %{exit_code: 1, duration_ms: 20},
+        ready_empty: %{idle_agents: 1, backlog_count: 2}
+      }
+
+      items =
+        for {kind, kind_details} <- details do
+          Map.merge(base, %{id: "#{kind}:task:9", kind: kind, details: kind_details})
+        end
+
+      decisions = %{items: items, summary: %{waiting: 5, held_up: 0, agents_working: 1}}
+
+      %{
+        data: DecisionJSON.index(%{decisions: decisions}).data,
+        queue: ReviewJSON.index(%{items: items}).data
+      }
+    end
+
+    test "DecisionList and its parts list exactly the keys DecisionJSON renders, and require them all",
+         %{spec: spec, data: data, queue: queue} do
+      by_kind = Map.new(data.items, &{&1.kind, &1})
+      item = by_kind["review"]
+
+      pairs = [
+        {data, "DecisionList"},
+        {data.summary, "DecisionSummary"},
+        {item, "DecisionItem"},
+        {item.summary, "DecisionTaskSummary"},
+        {item.summary.board, "DecisionBoard"},
+        {hd(item.details.verdicts), "DecisionVerdict"},
+        {item.details, "DecisionReviewDetails"},
+        {by_kind["released"].details, "DecisionReleasedDetails"},
+        {by_kind["claim_expired"].details, "DecisionClaimExpiredDetails"},
+        {by_kind["hook_failed"].details, "DecisionHookFailedDetails"},
+        {by_kind["ready_empty"].details, "DecisionReadyEmptyDetails"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert queue == data.items
+      assert schema_keys(spec, "DecisionListResponse") == MapSet.new(["data"])
+      assert schema_keys(spec, "ReviewQueueResponse") == MapSet.new(["data"])
+    end
+
+    test "the kinds, actions, sections and priorities are the documented enums", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["DecisionItem"]["properties"]["kind"]["enum"] ==
+               ~w(review released claim_expired hook_failed ready_empty)
+
+      assert schemas["DecisionItem"]["properties"]["actions"]["items"]["enum"] ==
+               ~w(open_review approve request_changes open_on_web reply move_to_backlog view_attempt open_backlog)
+
+      assert schemas["DecisionVerdict"]["properties"]["section"]["enum"] ==
+               ~w(acceptance_criteria testing_strategy patterns security_considerations)
+
+      assert schemas["DecisionTaskSummary"]["properties"]["priority"]["enum"] ==
+               ecto_enum(:priority) ++ [nil]
+    end
+
+    test "both 403 examples match what the person-API fallback renders", %{spec: spec} do
+      conn =
+        FallbackController.call(
+          Phoenix.ConnTest.build_conn(),
+          {:error, {:plan_required, :mobile_app}}
+        )
+
+      for path <- ["/api/me/decisions", "/api/me/reviews"] do
+        example =
+          get_in(spec, ["paths", path, "get", "responses", "403", "content", "application/json"])
+
+        assert Jason.decode!(conn.resp_body) == example["example"]
+        assert example["schema"] == %{"$ref" => "#/components/schemas/PlanRequired"}
+      end
     end
   end
 end

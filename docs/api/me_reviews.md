@@ -6,6 +6,10 @@ agent's summary, the reviewer's verdicts, the acceptance criteria, the security
 review, the behaviour matrix, the changed files with the flagged ones first, the
 size of the change, and whether this device may approve it.
 
+The app lists the reviews waiting on the person with
+[GET /api/me/reviews](me_decisions.md#get-apimereviews), the review queue, and
+opens one here.
+
 This is not an agent endpoint. Agents keep using the routes in the
 [API reference](README.md) with their API token.
 

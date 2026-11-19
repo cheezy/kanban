@@ -254,6 +254,11 @@ defmodule KanbanWeb.Router do
     delete "/devices/current", DeviceController, :delete_current
     delete "/devices/:id", DeviceController, :delete
 
+    # Plan-gated (design §10): check_user only; a board the plan does not
+    # unlock never contributes an item in Kanban.Decisions (design §7.4, §7.5).
+    get "/decisions", DecisionController, :index
+    get "/reviews", ReviewController, :index
+
     # Plan-gated (design §10): check_user, then check_board for the task's
     # board.
     get "/reviews/:task_id", ReviewController, :show
