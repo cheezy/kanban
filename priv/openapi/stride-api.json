@@ -1965,6 +1965,221 @@
           }
         }
       }
+    },
+    "/api/me/devices": {
+      "get": {
+        "operationId": "listMyDevices",
+        "summary": "List the signed-in person's devices",
+        "description": "Lists the person's devices that are signed in, newest first. `current` marks the device whose token made the request. Push tokens, approval keys and token hashes are never returned. Takes a device access token only, and is never plan-gated. Human-readable reference: docs/api/me_devices.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The person's signed-in devices.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDeviceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/devices/current": {
+      "put": {
+        "operationId": "updateCurrentDevice",
+        "summary": "Update the device making the request",
+        "description": "Updates the push token, push environment, locale, time zone and app version of the device whose token made the request. A key that is not sent is left as it is, and an empty string clears it, so an empty push_token unregisters the device from pushes. A push token another device still holds, such as the device the same phone was signed in as before, moves to this one. A device revoked while the request was in flight answers 401. Takes a device access token only, and is never plan-gated. Human-readable reference: docs/api/me_devices.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDeviceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated device.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDeviceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "422": {
+            "description": "A field is invalid: an unknown push_environment, a time zone the tz database does not know, a malformed locale or an over-long value. The body names the fields and their messages, never the values sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "signOutCurrentDevice",
+        "summary": "Sign out the device making the request",
+        "description": "Revokes the device whose token made the request and expires all of its tokens, so every later call with them answers 401. Recorded as a device_revoked audit event with reason sign_out. A repeat sign-out answers 401, because the device's own access token stopped working when it was revoked. Takes a device access token only, and is never plan-gated. Human-readable reference: docs/api/me_devices.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The device is signed out."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/devices/{id}": {
+      "delete": {
+        "operationId": "revokeMyDevice",
+        "summary": "Revoke one of the signed-in person's devices",
+        "description": "Revokes one of the person's devices, this one or another, and expires all of its tokens. Recorded as a device_revoked audit event with reason user. A device that is already revoked answers 204 and records nothing. Another person's device, and an id that names no device, answer the same 404. Takes a device access token only, and is never plan-gated. Human-readable reference: docs/api/me_devices.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The device's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The device is revoked."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "No device of the person's has this id: it is missing, belongs to someone else, or is not a positive integer in the signed 64-bit range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4485,6 +4700,184 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/Me"
+          }
+        }
+      },
+      "UserDevice": {
+        "type": "object",
+        "description": "One of the person's devices. Its push token, approval key and token hashes are never returned.",
+        "required": [
+          "id",
+          "name",
+          "platform",
+          "device_class",
+          "model",
+          "os_version",
+          "app_version",
+          "last_seen_at",
+          "signed_in_at",
+          "current",
+          "locale",
+          "time_zone",
+          "push_environment",
+          "push_registered"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "device_class": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "tablet"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "os_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "app_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the device last used the person API: this request."
+          },
+          "signed_in_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "Whether this is the device whose token made the request."
+          },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "time_zone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "An IANA time zone name."
+          },
+          "push_environment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sandbox",
+              "production",
+              null
+            ]
+          },
+          "push_registered": {
+            "type": "boolean",
+            "description": "Whether the device has a push token. The token itself is never returned."
+          }
+        }
+      },
+      "UserDeviceList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDevice"
+            }
+          }
+        }
+      },
+      "UserDeviceResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserDevice"
+          }
+        }
+      },
+      "UserDeviceUpdate": {
+        "type": "object",
+        "description": "The fields the app may change about the device it runs on. Every key is optional; other keys are ignored.",
+        "properties": {
+          "push_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096,
+            "description": "The APNs or FCM token. An empty string or null clears it."
+          },
+          "push_environment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sandbox",
+              "production",
+              "",
+              null
+            ]
+          },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255,
+            "description": "A BCP 47 language tag, or the platform form with underscores, such as en_GB."
+          },
+          "time_zone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255,
+            "description": "An IANA time zone name, such as Europe/London."
+          },
+          "app_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
           }
         }
       }

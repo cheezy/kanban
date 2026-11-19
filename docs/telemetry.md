@@ -961,13 +961,16 @@ destination list, emits none of them.
 
 ### Mobile app events
 
-W2747 added the event for an outdated mobile app. It is declared in
+W2747 added the event for an outdated mobile app, and W2748 the device
+sign-in and revocation events. They are declared in
 `Kanban.Telemetry.Catalog.DeviceEvents`
-(`lib/kanban/telemetry/catalog/device_events.ex`) and measures `count: 1`.
+(`lib/kanban/telemetry/catalog/device_events.ex`) and measure `count: 1`.
 
 | Event | Metadata | Emitted by |
 |---|---|---|
 | `[:kanban, :api, :outdated_app_refused]` | `platform` | `KanbanWeb.Plugs.AppVersion`, when it answers `426 app_update_required` |
+| `[:kanban, :device, :signed_in]` | `platform`, `device_class` | `Kanban.Devices.CodeExchange`, once a code exchange has created a device and its tokens |
+| `[:kanban, :device, :revoked]` | `platform`, `reason` | `Kanban.Devices.Revocation`, once a revocation commits |
 
 - **When it fires.** Only when a request's `X-Stride-App` header parses and
   its version is below its platform's minimum
@@ -979,6 +982,16 @@ W2747 added the event for an outdated mobile app. It is declared in
   or a device. It is not a tag.
 - **It is not persisted.** The check runs before authentication, so anyone
   can trigger it; the event is charted but never stored in `metrics_events`.
+- **Sign-in and revocation.** `signed_in` carries the platform and the
+  device class as strings. `revoked` carries the platform and the fixed
+  `reason` atom: `:sign_out` (the app signed itself out, through
+  `DELETE /api/me/devices/current` or `POST /oauth/revoke`), `:user` (the
+  person revoked it through `DELETE /api/me/devices/:id`), `:org_admin` (an
+  Organization admin revoked it) or `:reuse_detected` (an old refresh token
+  was presented again). `reason` is its only tag. Neither carries the
+  device's name, a token, a user or an id: the `:device_signed_in` and
+  `:device_revoked` audit rows record who and which device, so neither event
+  is persisted. A device that is already revoked emits nothing.
 
 ## Emitting an event
 
@@ -1448,6 +1461,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :audit_stream_cursors_reseeded]` | event, legacy | `count` | `user_id`, `organization_id`, `destinations` | An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set. |
 | `[:kanban, :audit, :device_signed_in]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `platform`, `device_class`, `app_version` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported. |
 | `[:kanban, :audit, :device_refresh_reuse_detected]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id` | A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens. |
+| `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was. |
 
 ### Domain `audit_stream`
 
@@ -1479,6 +1493,13 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :column, :updated]` | event | `count` | `board_id`, `column_id`, `actor_user_id`, `fields` | A board owner changed a column. fields lists the changed field names, never their values. |
 | `[:kanban, :column, :deleted]` | event | `count` | `board_id`, `column_id`, `actor_user_id` | A column was deleted, along with its tasks. |
 | `[:kanban, :column, :reordered]` | event | `count`, `column_count` | `board_id`, `actor_user_id` | A board's columns were reordered. column_count is the number of column ids given. |
+
+### Domain `device`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :device, :signed_in]` | event | `count` | `platform`, `device_class` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform is ios or android, device_class phone or tablet; never the device's name. |
+| `[:kanban, :device, :revoked]` | event | `count` | `platform`, `reason` | A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin or :reuse_detected. Never the device's name or an id. |
 
 ### Domain `digest`
 

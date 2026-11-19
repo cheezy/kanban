@@ -190,5 +190,7 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("device_refresh_reuse_detected"),
     do: pgettext("audit action", "Device refresh token reused")
 
+  def action_label("device_revoked"), do: pgettext("audit action", "Device revoked")
+
   def action_label(action) when is_binary(action), do: action
 end

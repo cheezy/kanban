@@ -71,7 +71,7 @@ defmodule KanbanWeb.OAuthTokenController do
          {:ok, token} <- required(params, "token"),
          :ok <- client(params),
          :ok <- device_rate_limit(token) do
-      _revoked_or_unknown = Devices.revoke_by_refresh_token(token, now())
+      _revoked_or_unknown = Devices.revoke_by_refresh_token(token, now(), ip: conn.remote_ip)
       json(conn, %{})
     else
       {:error, reason} -> refuse(conn, reason)

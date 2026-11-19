@@ -15351,3 +15351,9 @@ msgstr "设备已登录"
 #, elixir-autogen, elixir-format
 msgid "Mobile app"
 msgstr "移动应用"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device revoked"
+msgstr "设备已撤销"

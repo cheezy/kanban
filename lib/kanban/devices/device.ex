@@ -4,7 +4,9 @@ defmodule Kanban.Devices.Device do
   (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1, §8).
 
   The app supplies every field in `create_changeset/3` at sign-in; `user_id`
-  comes from the caller's scope and is never cast. `revoked_at` is set when
+  comes from the caller's scope and is never cast. Afterwards it can change
+  only its push token, push environment, locale, time zone and app version
+  (`update_changeset/3`). `revoked_at` is set when
   the person, or reuse of an old refresh token, revokes the device, and
   `revoked_by_id` names the person who revoked it: `nil` when Stride revoked
   it, and cleared when the revoker's account is deleted. Revoking also clears
@@ -71,6 +73,12 @@ defmodule Kanban.Devices.Device do
   @locale_format ~r/\A[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{1,8})*\z/
 
   @varchar_fields [:name, :model, :os_version, :app_version, :locale, :time_zone]
+
+  # What the app may change about itself after sign-in.
+  @update_fields [:push_token, :push_environment, :locale, :time_zone, :app_version]
+
+  # push_token is a text column; APNs and FCM tokens are far shorter.
+  @push_token_max 4096
 
   @type t :: %__MODULE__{}
 
@@ -144,6 +152,29 @@ defmodule Kanban.Devices.Device do
     |> validate_time_zone()
     |> validate_format(:locale, @locale_format)
     |> validate_approval_public_key()
+  end
+
+  @doc """
+  A changeset for what the app updates about the device it runs on
+  (`PUT /api/me/devices/current`), at `now`: its push token and push
+  environment, locale, time zone and app version. A key that is not sent is
+  left as it is; an empty string clears the field, so `"push_token": ""`
+  unregisters the device from pushes. The same text, length, locale and time
+  zone rules as `create_changeset/3` apply, and a push token is unique among
+  devices.
+  """
+  @spec update_changeset(t(), map(), DateTime.t()) :: Ecto.Changeset.t()
+  def update_changeset(device, attrs, now) do
+    device
+    |> cast(attrs, @update_fields)
+    |> ChangesetText.validate_storable(@update_fields -- [:push_environment])
+    |> validate_varchar_lengths()
+    |> validate_length(:push_token, max: @push_token_max, count: :codepoints)
+    |> validate_time_zone()
+    |> validate_format(:locale, @locale_format)
+    |> unique_constraint(:push_token)
+    |> check_constraint(:push_environment, name: :user_devices_push_environment)
+    |> put_change(:updated_at, now)
   end
 
   @doc """

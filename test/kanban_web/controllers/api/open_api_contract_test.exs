@@ -24,6 +24,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
   alias Kanban.ApiTokens
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.Me.DeviceJSON
   alias KanbanWeb.API.Me.MeJSON
   alias KanbanWeb.API.OpenApiSpec
   alias KanbanWeb.API.TaskErrors
@@ -878,6 +879,63 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       assert conn.status == 426
       assert Jason.decode!(conn.resp_body) == example
+    end
+  end
+
+  describe "schema parity with DeviceJSON (W2748)" do
+    setup do
+      device =
+        user_fixture()
+        |> user_scope_fixture()
+        |> Kanban.DevicesFixtures.device_fixture(%{push_token: "fixture-push-token-spec"})
+
+      %{device: device}
+    end
+
+    test "UserDevice lists exactly the keys DeviceJSON renders, and requires them all", %{
+      spec: spec,
+      device: device
+    } do
+      %{data: [listed]} = DeviceJSON.index(%{devices: [device], current_id: device.id})
+      %{data: shown} = DeviceJSON.show(%{device: device, current_id: device.id})
+
+      assert rendered_keys(listed) == schema_keys(spec, "UserDevice")
+      assert rendered_keys(shown) == schema_keys(spec, "UserDevice")
+
+      assert spec["components"]["schemas"]["UserDevice"]["required"] |> MapSet.new() ==
+               schema_keys(spec, "UserDevice")
+
+      # Everything MeDevice has, the device list has too.
+      user_device_keys = schema_keys(spec, "UserDevice")
+
+      assert spec |> schema_keys("MeDevice") |> MapSet.subset?(user_device_keys)
+      refute Enum.any?(user_device_keys, &(&1 =~ ~r/hash|approval|push_token/))
+    end
+
+    test "UserDeviceUpdate documents exactly the fields the controller takes", %{spec: spec} do
+      assert schema_keys(spec, "UserDeviceUpdate") ==
+               MapSet.new(~w(push_token push_environment locale time_zone app_version))
+    end
+
+    test "the push_environment enums match the Ecto schema", %{spec: spec} do
+      values =
+        Kanban.Devices.Device |> Ecto.Enum.values(:push_environment) |> Enum.map(&to_string/1)
+
+      documented =
+        get_in(spec, ~w(components schemas UserDevice properties push_environment enum))
+
+      assert Enum.reject(documented, &is_nil/1) == values
+    end
+
+    test "the device routes document their 404 and 422 bodies", %{spec: spec} do
+      revoke = get_in(spec, ["paths", "/api/me/devices/{id}", "delete", "responses"])
+      update = get_in(spec, ["paths", "/api/me/devices/current", "put", "responses"])
+
+      assert get_in(revoke, ~w(404 content application/json example)) == %{"error" => "Not Found"}
+
+      assert get_in(update, ~w(422 content application/json schema)) == %{
+               "$ref" => "#/components/schemas/ValidationError"
+             }
     end
   end
 end

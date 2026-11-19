@@ -246,6 +246,13 @@ defmodule KanbanWeb.Router do
     pipe_through [:api_json, :device_api]
 
     get "/", MeController, :show
+
+    # Not plan-gated (design §10): a free user must still be able to sign
+    # out. The literal /current routes come before /:id.
+    get "/devices", DeviceController, :index
+    put "/devices/current", DeviceController, :update_current
+    delete "/devices/current", DeviceController, :delete_current
+    delete "/devices/:id", DeviceController, :delete
   end
 
   # API routes with token authentication

@@ -9,6 +9,14 @@ defmodule Kanban.Telemetry.Catalog.DeviceEvents do
   only the platform, from the fixed set `"ios"` and `"android"`, never the raw
   header, a user, a device or anything else from the request. The refusal
   happens before authentication, so the event is not persisted.
+
+  `signed_in` is emitted by `Kanban.Devices.CodeExchange` once a code
+  exchange has created a device and its first tokens, with the platform and
+  the device class. `revoked` is emitted by `Kanban.Devices.Revocation` once a
+  revocation commits, with the platform and the fixed reason. Neither carries
+  the device's name, a token, a user or an id: the `:device_signed_in` and
+  `:device_revoked` audit rows hold who and which device. Neither is
+  persisted, because the audit log already stores each one.
   `Kanban.Telemetry.Catalog` appends these entries to its own list; nothing
   else should call this module.
   """
@@ -25,6 +33,31 @@ defmodule Kanban.Telemetry.Catalog.DeviceEvents do
       legacy: false,
       metrics: [counter: :count],
       persist: false
+    },
+    %{
+      name: [:kanban, :device, :signed_in],
+      kind: :event,
+      domain: :device,
+      measurements: [:count],
+      metadata: [:platform, :device_class],
+      description:
+        "A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform is ios or android, device_class phone or tablet; never the device's name.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
+    },
+    %{
+      name: [:kanban, :device, :revoked],
+      kind: :event,
+      domain: :device,
+      measurements: [:count],
+      metadata: [:platform, :reason],
+      description:
+        "A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin or :reuse_detected. Never the device's name or an id.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false,
+      tags: [:reason]
     }
   ]
 

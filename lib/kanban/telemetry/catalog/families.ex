@@ -220,7 +220,9 @@ defmodule Kanban.Telemetry.Catalog.Families do
      [:user_id, :organization_id, :device_id, :platform, :device_class, :app_version],
      "A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported."},
     {:device_refresh_reuse_detected, [:user_id, :organization_id, :device_id],
-     "A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens."}
+     "A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens."},
+    {:device_revoked, [:user_id, :organization_id, :device_id, :device_user_id, :reason],
+     "A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

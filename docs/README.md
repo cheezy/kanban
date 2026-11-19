@@ -74,6 +74,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [PUT /api/tasks/:id/changed_files](api/put_tasks_id_changed_files.md) — Upload the per-file diff snapshot for a task.
 - [POST /oauth/token and POST /oauth/revoke](api/post_oauth_token.md) — Device sign-in for the mobile apps: redeem an authorization code, rotate a refresh token, sign a device out.
 - [GET /api/me](api/get_me.md) — The person API's first route for the mobile apps: the person, their Organization and workspaces, the plan status, the minimum app versions and the device.
+- [The device routes: /api/me/devices](api/me_devices.md) — List, sign out and revoke a person's devices, and update the current device's push token, locale and time zone.
 
 ### Multi-agent instruction files
 

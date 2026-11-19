@@ -15409,3 +15409,9 @@ msgstr "Dispositivo conectado"
 #, elixir-autogen, elixir-format
 msgid "Mobile app"
 msgstr "Aplicativo móvel"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Device revoked"
+msgstr "Dispositivo revogado"

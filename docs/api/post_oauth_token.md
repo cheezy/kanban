@@ -80,7 +80,9 @@ Each refresh token works once. A rotation returns a new pair and uses up the one
 sent. Presenting a refresh token that was already used is the sign of a stolen
 token, so Stride revokes the device, expires all of its tokens and records
 `device_refresh_reuse_detected` in the audit log, even when the account is
-disabled at the time. The person must then sign in again.
+disabled at the time, with a `device_revoked` event whose reason is
+`reuse_detected` ([device routes](me_devices.md#what-a-revocation-records)).
+The person must then sign in again.
 
 A refresh is also refused, with `invalid_grant`, when:
 
@@ -102,6 +104,9 @@ A refresh is also refused, with `invalid_grant`, when:
 | `token_type_hint` | No | Accepted and ignored |
 
 The device is revoked as its own user, and every token it holds is expired.
+It is recorded as a `device_revoked` audit event with reason `sign_out`, the
+same as `DELETE /api/me/devices/current`
+([device routes](me_devices.md#what-a-revocation-records)).
 
 ## Response
 

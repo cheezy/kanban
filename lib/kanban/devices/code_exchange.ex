@@ -22,7 +22,9 @@ defmodule Kanban.Devices.CodeExchange do
   Steps 2 and 3 fail with the same `{:error, :invalid_grant}`. The code is
   already used up when step 3 fails, so a wrong verifier cannot be retried
   against the same code. The device and its token pair are then created in
-  one transaction, and `:device_signed_in` is written once it commits.
+  one transaction, and once it commits `:device_signed_in` is written and
+  `[:kanban, :device, :signed_in]` emitted, with the platform and device
+  class only.
   """
 
   alias Kanban.Accounts.Scope
@@ -79,7 +81,8 @@ defmodule Kanban.Devices.CodeExchange do
        else: {:error, :invalid_grant}
   end
 
-  # The audit row is written only once the device and its tokens commit.
+  # The audit row and the event are written only once the device and its
+  # tokens commit.
   defp sign_in(code, attrs, now, opts) do
     device_attrs = Map.merge(attrs, %{client_id: code.client_id, name: code.device_name})
     scope = Scope.for_user(code.user)
@@ -103,8 +106,17 @@ defmodule Kanban.Devices.CodeExchange do
       ip: Keyword.get(opts, :ip)
     )
 
+    Kanban.Telemetry.emit(
+      [:kanban, :device, :signed_in],
+      %{count: 1},
+      %{platform: label(device.platform), device_class: label(device.device_class)}
+    )
+
     signed_in
   end
 
   defp audit_signed_in(error, _user, _opts), do: error
+
+  defp label(value) when is_atom(value) and not is_nil(value), do: Atom.to_string(value)
+  defp label(_value), do: nil
 end

@@ -4,6 +4,7 @@ defmodule Kanban.DevicesTest do
   import Kanban.AccountsFixtures
   import Kanban.DevicesFixtures
   import Kanban.OrganizationsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
@@ -11,6 +12,7 @@ defmodule Kanban.DevicesTest do
   alias Kanban.Devices.AuthorizationCode
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Devices.Revocation
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
@@ -442,6 +444,302 @@ defmodule Kanban.DevicesTest do
     end
   end
 
+  describe "W2748: announcing a revocation" do
+    setup do
+      attach_telemetry([:kanban, :device, :revoked])
+      :ok
+    end
+
+    defp revoked_rows(user_id),
+      do: AuditLog.list_events(action: "device_revoked", actor_user_id: user_id)
+
+    test "revoke_device broadcasts on device:<id> and records the reason", %{scope: scope} do
+      org = organization_fixture()
+      organization_member_fixture(org, scope.user)
+      device = device_fixture(scope, %{}, @t0)
+      topic = Revocation.topic(device.id)
+      assert topic == "device:#{device.id}"
+      Phoenix.PubSub.subscribe(Kanban.PubSub, topic)
+
+      assert {:ok, _} =
+               Devices.revoke_device(scope, device, at(10), reason: :sign_out, ip: {10, 0, 0, 3})
+
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "disconnect", payload: %{}}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], %{count: 1},
+                      %{platform: "ios", reason: :sign_out} = metadata}
+
+      assert map_size(metadata) == 2
+
+      assert [event] = revoked_rows(scope.user.id)
+      assert event.organization_id == org.id
+      assert event.ip == "10.0.0.3"
+
+      assert %{
+               "reason" => "sign_out",
+               "device_id" => device_id,
+               "device_user_id" => owner_id,
+               "user_id" => revoker_id
+             } = event.metadata
+
+      assert {device_id, owner_id, revoker_id} == {device.id, scope.user.id, scope.user.id}
+      refute event.metadata |> Map.keys() |> Enum.any?(&(&1 =~ ~r/token|key|name/))
+    end
+
+    test "the reason defaults to user", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+
+      assert {:ok, _} = Devices.revoke_device(scope, device, at(10))
+      assert [%{metadata: %{"reason" => "user"}}] = revoked_rows(scope.user.id)
+    end
+
+    test "revoking an already revoked device announces nothing again", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      {:ok, _} = Devices.revoke_device(scope, device, at(10))
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+      assert {:ok, again} = Devices.revoke_device(scope, device, at(20), reason: :sign_out)
+      assert again.revoked_at == at(10)
+
+      refute_receive %Phoenix.Socket.Broadcast{}
+      refute_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
+      assert [_one] = revoked_rows(scope.user.id)
+    end
+
+    test "another user's device is not found and announces nothing", %{scope: scope} do
+      device = device_fixture(user_scope_fixture(), %{}, @t0)
+
+      assert Devices.revoke_device(scope, device, at(10)) == {:error, :not_found}
+      refute_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
+      assert revoked_rows(scope.user.id) == []
+      assert revoked_rows(device.user_id) == []
+    end
+
+    # Options where `now` belongs, handed in through the test context so the
+    # compiler cannot see the call is bad and refuse to build it.
+    @tag misplaced_opts: [reason: :sign_out]
+    test "refuses a reason a person cannot give, and options in place of now", %{
+      scope: scope,
+      misplaced_opts: misplaced_opts
+    } do
+      device = device_fixture(scope, %{}, @t0)
+
+      for reason <- [:org_admin, :reuse_detected, :bogus, "user"] do
+        assert_raise ArgumentError, fn ->
+          Devices.revoke_device(scope, device, at(10), reason: reason)
+        end
+      end
+
+      error =
+        assert_raise FunctionClauseError, fn ->
+          Devices.revoke_device(scope, device, misplaced_opts)
+        end
+
+      assert {error.module, error.function} == {Kanban.Devices, :revoke_device}
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+      assert revoked_rows(scope.user.id) == []
+    end
+
+    test "POST /oauth/revoke's revoke_by_refresh_token records reason sign_out", %{scope: scope} do
+      {device, issued} = device_with_tokens_fixture(scope, %{platform: :android}, @t0)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+      assert {:ok, _} =
+               Devices.revoke_by_refresh_token(issued.refresh_token, at(10), ip: {10, 0, 0, 4})
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{platform: "android", reason: :sign_out}}
+
+      assert [event] = revoked_rows(scope.user.id)
+      assert event.metadata["reason"] == "sign_out"
+      assert event.ip == "10.0.0.4"
+
+      assert Devices.revoke_by_refresh_token(issued.refresh_token, at(20)) ==
+               {:error, :invalid_token}
+
+      assert [_one] = revoked_rows(scope.user.id)
+    end
+
+    test "refresh-token reuse records reason reuse_detected and broadcasts", %{scope: scope} do
+      {device, first} = device_with_tokens_fixture(scope, %{}, @t0)
+      {:ok, _second} = Devices.rotate_refresh_token(first.refresh_token, at(60))
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+      assert Devices.rotate_refresh_token(first.refresh_token, at(120), ip: {10, 0, 0, 5}) ==
+               {:error, :reuse_detected}
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{reason: :reuse_detected}}
+
+      assert [event] = revoked_rows(scope.user.id)
+      assert event.metadata["reason"] == "reuse_detected"
+      assert event.metadata["device_id"] == device.id
+      assert event.ip == "10.0.0.5"
+
+      # The reuse event is still written beside it.
+      assert [_reuse] =
+               AuditLog.list_events(
+                 action: "device_refresh_reuse_detected",
+                 actor_user_id: scope.user.id
+               )
+    end
+  end
+
+  describe "W2748: a revoked requesting device" do
+    test "revokes nothing, not another device and not itself", %{scope: scope} do
+      phone = device_fixture(scope, %{}, @t0)
+      tablet = device_fixture(scope, %{}, @t0)
+      {:ok, _} = Devices.revoke_device(scope, phone, at(10))
+
+      assert Devices.revoke_device(scope, tablet, at(20), by_device: phone) ==
+               {:error, :revoked}
+
+      assert Devices.revoke_device(scope, phone, at(20), by_device: phone, reason: :sign_out) ==
+               {:error, :revoked}
+
+      assert is_nil(Repo.get!(Device, tablet.id).revoked_at)
+      assert Repo.get!(Device, phone.id).revoked_at == at(10)
+    end
+
+    test "an active requesting device revokes another as before", %{scope: scope} do
+      phone = device_fixture(scope, %{}, @t0)
+      tablet = device_fixture(scope, %{}, @t0)
+
+      assert {:ok, %Device{revoked_at: revoked_at}} =
+               Devices.revoke_device(scope, tablet, at(10), by_device: phone)
+
+      assert revoked_at == at(10)
+    end
+
+    test "list_devices_for/2 refuses a revoked device and lists for an active one", %{
+      scope: scope
+    } do
+      phone = device_fixture(scope, %{}, @t0)
+      tablet = device_fixture(scope, %{}, @t0)
+
+      assert {:ok, devices} = Devices.list_devices_for(scope, phone)
+      assert devices |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([phone.id, tablet.id])
+
+      {:ok, _} = Devices.revoke_device(scope, phone, at(10))
+      assert Devices.list_devices_for(scope, phone) == {:error, :revoked}
+    end
+
+    test "a push token with a NUL byte is a changeset error, not a crash", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+
+      assert {:error, changeset} =
+               Devices.update_current(scope, device, %{"push_token" => "tok\u0000en"})
+
+      assert %{push_token: [_ | _]} = errors_on(changeset)
+    end
+  end
+
+  describe "W2748: fetch_device/2" do
+    test "gets one of the scope user's devices, revoked or not", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      {:ok, _} = Devices.revoke_device(scope, device, at(10))
+      theirs = device_fixture(user_scope_fixture(), %{}, @t0)
+
+      assert {:ok, %Device{id: id}} = Devices.fetch_device(scope, device.id)
+      assert id == device.id
+      assert Devices.fetch_device(scope, theirs.id) == {:error, :not_found}
+      assert Devices.fetch_device(scope, theirs.id + 1_000_000) == {:error, :not_found}
+    end
+  end
+
+  describe "W2748: update_current/4" do
+    test "updates the fields the app may change and nothing else", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+
+      attrs = %{
+        "push_token" => "fixture-push-token-u1",
+        "push_environment" => "production",
+        "locale" => "de_DE",
+        "time_zone" => "Asia/Tokyo",
+        "app_version" => "2.0.0 (1)",
+        "name" => "Renamed",
+        "revoked_at" => "2026-11-18T12:00:00Z"
+      }
+
+      assert {:ok, updated} = Devices.update_current(scope, device, attrs, at(30))
+
+      assert {updated.push_token, updated.push_environment, updated.locale} ==
+               {"fixture-push-token-u1", :production, "de_DE"}
+
+      assert {updated.time_zone, updated.app_version} == {"Asia/Tokyo", "2.0.0 (1)"}
+      assert updated.updated_at == at(30)
+      assert updated.name == device.name
+      assert is_nil(updated.revoked_at)
+    end
+
+    test "an empty push token clears it and an absent key is left alone", %{scope: scope} do
+      device = device_fixture(scope, %{push_token: "fixture-push-token-u2"}, @t0)
+
+      assert {:ok, updated} = Devices.update_current(scope, device, %{"push_token" => ""}, at(30))
+      assert is_nil(updated.push_token)
+      assert updated.time_zone == device.time_zone
+    end
+
+    test "a push token another device holds moves to this one", %{scope: scope} do
+      holder = device_fixture(user_scope_fixture(), %{push_token: "fixture-push-token-u3"}, @t0)
+      device = device_fixture(scope, %{}, @t0)
+
+      assert {:ok, updated} =
+               Devices.update_current(scope, device, %{"push_token" => "fixture-push-token-u3"})
+
+      assert updated.push_token == "fixture-push-token-u3"
+      assert is_nil(Repo.get!(Device, holder.id).push_token)
+    end
+
+    test "an invalid field is a changeset and moves no token", %{scope: scope} do
+      holder = device_fixture(scope, %{push_token: "fixture-push-token-u5"}, @t0)
+      device = device_fixture(scope, %{}, @t0)
+
+      attrs = %{"push_token" => "fixture-push-token-u5", "time_zone" => "Not/AZone"}
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Devices.update_current(scope, device, attrs)
+
+      assert %{time_zone: [_]} = errors_on(changeset)
+      assert Repo.get!(Device, holder.id).push_token == "fixture-push-token-u5"
+
+      assert {:error, changeset} =
+               Devices.update_current(scope, device, %{"push_environment" => "staging"})
+
+      assert %{push_environment: [_]} = errors_on(changeset)
+
+      long = String.duplicate("a", 4097)
+      assert {:error, changeset} = Devices.update_current(scope, device, %{"push_token" => long})
+      assert %{push_token: [_]} = errors_on(changeset)
+    end
+
+    test "a device revoked while the request was in flight is refused", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+      # The caller still holds the struct the plug loaded before the revoke.
+      {:ok, _} = Devices.revoke_device(scope, device, at(10))
+
+      assert Devices.update_current(scope, device, %{"time_zone" => "Asia/Tokyo"}, at(20)) ==
+               {:error, :revoked}
+
+      assert Repo.get!(Device, device.id).time_zone == device.time_zone
+    end
+
+    test "another user's device, or a deleted one, is not found", %{scope: scope} do
+      theirs = device_fixture(user_scope_fixture(), %{}, @t0)
+      assert Devices.update_current(scope, theirs, %{"locale" => "fr"}) == {:error, :not_found}
+
+      mine = device_fixture(scope, %{}, @t0)
+      Repo.delete!(mine)
+      assert Devices.update_current(scope, mine, %{"locale" => "fr"}) == {:error, :not_found}
+    end
+  end
+
   describe "authorization codes" do
     test "an authorization code is single-use and expires after 60 seconds", %{scope: scope} do
       {:ok, code} =
@@ -791,6 +1089,24 @@ defmodule Kanban.DevicesTest do
       assert device_id == issued.device.id
       refute event |> metadata_keys() |> Enum.any?(&(&1 =~ ~r/token|key|code/))
     end
+
+    test "emits device signed_in once, after the exchange commits (W2748)", %{scope: scope} do
+      attach_telemetry([:kanban, :device, :signed_in])
+
+      device_fixture(scope, %{}, @t0)
+      refute_receive {:telemetry_event, [:kanban, :device, :signed_in], _, _}
+
+      code = authorization_code_fixture(scope, %{}, @t0)
+      assert {:error, :invalid_grant} = redeem(code, 1, grant: %{code_verifier: "wrong-verifier"})
+      refute_receive {:telemetry_event, [:kanban, :device, :signed_in], _, _}
+
+      code = authorization_code_fixture(scope, %{}, @t0)
+      assert {:ok, _issued} = redeem(code, 1)
+
+      assert_receive {:telemetry_event, [:kanban, :device, :signed_in], %{count: 1}, metadata}
+      assert metadata == %{platform: "ios", device_class: "tablet"}
+      refute_receive {:telemetry_event, [:kanban, :device, :signed_in], _, _}
+    end
   end
 
   describe "revoke_by_refresh_token/2 and device_id_for_refresh_token/1" do
@@ -886,7 +1202,9 @@ defmodule Kanban.DevicesRotationRaceTest do
   Shows that two concurrent rotations of one refresh token, in real separate
   Postgres sessions, leave exactly one winner, and that the loser is treated
   as reuse: the device is revoked and no refresh token of the family is left
-  live.
+  live. It also races `PUT /api/me/devices/current` (W2748): two devices
+  registering one new push token at once, and a revocation landing while an
+  update waits on the device's lock.
 
   The test sandbox never commits, so these sessions could not see sandboxed
   rows. This module checks out unsandboxed connections and commits its
@@ -1008,6 +1326,84 @@ defmodule Kanban.DevicesRotationRaceTest do
     # The fixture device from setup plus the one the winner created.
     user_devices = from(d in Device, where: d.user_id == ^user.id)
     assert Repo.aggregate(user_devices, :count) == 2
+  end
+
+  test "two devices registering one new push token at once both succeed and it moves",
+       ctx do
+    user = Repo.get!(User, ctx.device.user_id)
+    scope = Scope.for_user(user)
+    first_device = ctx.device
+    second_device = DevicesFixtures.device_fixture(scope)
+    token = "race-push-token-#{System.unique_integer([:positive])}"
+
+    # Both rows are held, so each update is queued behind its own row lock.
+    holder = hold_device_rows([first_device.id, second_device.id])
+    await_lock_waiters(0)
+
+    first = start_update(scope, first_device, %{"push_token" => token})
+    await_lock_waiters(1)
+    second = start_update(scope, second_device, %{"push_token" => token})
+    await_lock_waiters(2)
+
+    send(holder.pid, :proceed)
+    assert {:ok, :released} = Task.await(holder)
+
+    assert {:ok, %Device{push_token: ^token}} = Task.await(first)
+    assert {:ok, %Device{push_token: ^token}} = Task.await(second)
+
+    assert Repo.get!(Device, first_device.id).push_token == nil
+    assert Repo.get!(Device, second_device.id).push_token == token
+  end
+
+  test "an update waiting on its device is refused once a revocation commits", ctx do
+    user = Repo.get!(User, ctx.device.user_id)
+    scope = Scope.for_user(user)
+    device = ctx.device
+
+    holder = hold_device_lock(device.id)
+    await_lock_waiters(0)
+
+    update = start_update(scope, device, %{"time_zone" => "Asia/Tokyo"})
+    await_lock_waiters(1)
+
+    send(holder.pid, :proceed)
+    assert {:ok, :revoked} = Task.await(holder)
+
+    assert Task.await(update) == {:error, :revoked}
+    assert Repo.get!(Device, device.id).time_zone == device.time_zone
+  end
+
+  defp start_update(scope, device, attrs) do
+    Task.async(fn ->
+      :ok = Sandbox.checkout(Repo, sandbox: false)
+
+      Repo.checkout(fn ->
+        Repo.query!("SET lock_timeout = '5s'")
+        result = Devices.update_current(scope, device, attrs)
+        Repo.query!("RESET lock_timeout")
+        result
+      end)
+    end)
+  end
+
+  # A second session that locks several device rows FOR UPDATE and holds
+  # them until told to proceed.
+  defp hold_device_rows(ids) do
+    test_pid = self()
+    conn = second_session()
+
+    holder =
+      Task.async(fn ->
+        Postgrex.transaction(conn, fn c ->
+          Postgrex.query!(c, "SET LOCAL lock_timeout = '5s'", [])
+          Postgrex.query!(c, "SELECT id FROM user_devices WHERE id = ANY($1) FOR UPDATE", [ids])
+          send(test_pid, :holding)
+          receive do: (:proceed -> :released)
+        end)
+      end)
+
+    assert_receive :holding, 5_000
+    holder
   end
 
   defp start_exchange(grant, details) do

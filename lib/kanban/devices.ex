@@ -4,9 +4,12 @@ defmodule Kanban.Devices do
   (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.1, §8).
 
   This is the token core the OAuth endpoints (`POST /oauth/token`,
-  `POST /oauth/revoke`) and the device plug build on; it has no routes of its
-  own. Redeeming an authorization code lives in
-  `Kanban.Devices.CodeExchange`, behind `exchange_authorization_code/4`.
+  `POST /oauth/revoke`), the device plug and the device routes under
+  `/api/me/devices` build on. Redeeming an authorization code lives in
+  `Kanban.Devices.CodeExchange`, behind `exchange_authorization_code/4`;
+  revoking a device in `Kanban.Devices.Revocation`, behind `revoke_device/4`;
+  and the app updating its own device in `Kanban.Devices.CurrentDevice`,
+  behind `update_current/4`.
 
     * **Access tokens** last one hour.
     * **Refresh tokens** rotate: each use returns a new pair and uses up the
@@ -24,10 +27,13 @@ defmodule Kanban.Devices do
       still in grace can refresh. A device has no sign-in session, so the
       web gate's single sign-on exemption never applies to it.
 
-  The two security events are audited here, after their transaction
-  commits, whoever the caller: `:device_signed_in` when a code exchange
-  creates a device and `:device_refresh_reuse_detected` when reuse revokes
-  one. Neither carries a token, a code or the approval key.
+  The security events are audited after their transaction commits, whoever
+  the caller: `:device_signed_in` when a code exchange creates a device,
+  `:device_refresh_reuse_detected` when reuse revokes one, and
+  `:device_revoked`, with a reason, whenever a device is revoked. None
+  carries a token, a code or the approval key. A revocation also emits
+  `[:kanban, :device, :revoked]` and broadcasts on `"device:<id>"`
+  (`Kanban.Devices.Revocation`).
 
   Tokens and codes are random, shown once and stored only as SHA-256 hashes
   (`Kanban.Devices.DeviceToken`). A plain value is looked up by hashing it and
@@ -48,15 +54,14 @@ defmodule Kanban.Devices do
   alias Kanban.Devices.Activity
   alias Kanban.Devices.AuthorizationCode
   alias Kanban.Devices.CodeExchange
+  alias Kanban.Devices.CurrentDevice
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Devices.Revocation
+  alias Kanban.Devices.TokenPairs
   alias Kanban.Organizations
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Repo
-
-  @access_ttl_seconds 3600
-  @refresh_idle_days 30
-  @refresh_absolute_days 90
 
   @typedoc "A newly issued token pair: the plain values are shown only here."
   @type issued :: %{
@@ -196,12 +201,16 @@ defmodule Kanban.Devices do
   `{:error, :invalid_token}` when the token is unknown, is not a refresh
   token, has expired, or its device is already revoked. The device and then
   the token are locked, the order rotation uses, so the two never deadlock.
-  """
-  @spec revoke_by_refresh_token(term(), DateTime.t()) ::
-          {:ok, Device.t()} | {:error, :invalid_token}
-  def revoke_by_refresh_token(token, now \\ DateTime.utc_now())
 
-  def revoke_by_refresh_token(token, now) when is_binary(token) do
+  The revocation is announced with reason `:sign_out`
+  (`Kanban.Devices.Revocation.announce/2`). `opts` takes `:ip`, recorded on
+  the audit row.
+  """
+  @spec revoke_by_refresh_token(term(), DateTime.t(), keyword()) ::
+          {:ok, Device.t()} | {:error, :invalid_token}
+  def revoke_by_refresh_token(token, now \\ DateTime.utc_now(), opts \\ [])
+
+  def revoke_by_refresh_token(token, now, opts) when is_binary(token) do
     hash = DeviceToken.hash_token(token)
     at = truncate(now)
 
@@ -212,9 +221,10 @@ defmodule Kanban.Devices do
       |> lock_refresh_token(hash)
       |> revoke_for_token(at)
     end)
+    |> announce_signed_out(opts)
   end
 
-  def revoke_by_refresh_token(_token, _now), do: {:error, :invalid_token}
+  def revoke_by_refresh_token(_token, _now, _opts), do: {:error, :invalid_token}
 
   @doc """
   The id of the device a refresh token belongs to, or `nil`. It reads no
@@ -232,24 +242,66 @@ defmodule Kanban.Devices do
   Revokes one of the scope user's devices at `now` and expires its tokens,
   recording the scope user in `revoked_by_id`.
 
-  A device that is already revoked is returned unchanged. A device of
-  another user is `{:error, :not_found}`.
+  Once it commits, the revocation writes `:device_revoked`, emits
+  `[:kanban, :device, :revoked]` and broadcasts on `"device:<id>"`
+  (`Kanban.Devices.Revocation`). `opts` takes `:reason`, `:user` (the
+  default) when the person revokes a device, or `:sign_out` when the app
+  signs itself out, `:ip`, recorded on the audit row, and `:by_device`, the
+  device the request came from: when that device has been revoked, as it
+  can be while its request is in flight, nothing is revoked and the result
+  is `{:error, :revoked}`.
+
+  A device that is already revoked is returned unchanged, and nothing is
+  written or broadcast again. A device of another user is
+  `{:error, :not_found}`. `now` must be a `DateTime`, so options are never
+  mistaken for it.
   """
-  @spec revoke_device(Scope.t(), Device.t(), DateTime.t()) ::
-          {:ok, Device.t()} | {:error, :not_found}
-  def revoke_device(scope, device, now \\ DateTime.utc_now())
+  @spec revoke_device(Scope.t(), Device.t(), DateTime.t(), keyword()) ::
+          {:ok, Device.t()} | {:error, :not_found | :revoked}
+  def revoke_device(scope, device, now \\ DateTime.utc_now(), opts \\ [])
 
-  def revoke_device(%Scope{user: %User{id: user_id}}, %Device{user_id: user_id} = device, now) do
-    revoked_at = truncate(now)
+  def revoke_device(%Scope{} = scope, %Device{} = device, %DateTime{} = now, opts)
+      when is_list(opts),
+      do: Revocation.revoke_own(scope, device, truncate(now), opts)
 
-    Repo.transact(fn ->
-      device.id
-      |> update_lock_device()
-      |> revoke_locked(user_id, revoked_at)
-    end)
+  @doc """
+  Gets one of the scope user's devices by id, revoked or not. Another
+  user's device, or an id that names no device, is `{:error, :not_found}`.
+  """
+  @spec fetch_device(Scope.t(), pos_integer()) :: {:ok, Device.t()} | {:error, :not_found}
+  def fetch_device(%Scope{user: %User{id: user_id}}, id) when is_integer(id) do
+    case Repo.get_by(Device, id: id, user_id: user_id) do
+      %Device{} = device -> {:ok, device}
+      nil -> {:error, :not_found}
+    end
   end
 
-  def revoke_device(%Scope{}, %Device{}, _now), do: {:error, :not_found}
+  @doc """
+  Updates the device the app runs on, one of the scope user's, with `attrs`
+  at `now`: its push token and push environment, locale, time zone and app
+  version (`Kanban.Devices.Device.update_changeset/3`). A push token another
+  device holds moves to this one.
+
+  A device revoked while the request was in flight is `{:error, :revoked}`;
+  another user's device is `{:error, :not_found}`; invalid attributes are
+  `{:error, changeset}`. See `Kanban.Devices.CurrentDevice`.
+  """
+  @spec update_current(Scope.t(), Device.t(), map(), DateTime.t()) ::
+          {:ok, Device.t()} | {:error, :not_found | :revoked | Ecto.Changeset.t()}
+  def update_current(%Scope{} = scope, %Device{} = device, attrs, now \\ DateTime.utc_now()),
+    do: CurrentDevice.update(scope, device, attrs, truncate(now))
+
+  @doc """
+  Lists the scope user's devices that are not revoked, newest first, for a
+  request from `device`. When `device` is not among them, because it was
+  revoked while the request was in flight, the result is
+  `{:error, :revoked}`; both come from one read.
+  """
+  @spec list_devices_for(Scope.t(), Device.t()) :: {:ok, [Device.t()]} | {:error, :revoked}
+  def list_devices_for(%Scope{} = scope, %Device{id: id}) do
+    devices = list_devices(scope)
+    if Enum.any?(devices, &(&1.id == id)), do: {:ok, devices}, else: {:error, :revoked}
+  end
 
   @doc """
   Lists the scope user's devices that are not revoked, newest first.
@@ -327,9 +379,9 @@ defmodule Kanban.Devices do
   end
 
   defp issue_for_locked(%Device{revoked_at: nil} = device, now) do
-    if device |> refresh_expiry(now) |> DateTime.compare(now) == :gt do
+    if device |> TokenPairs.refresh_expiry(now) |> DateTime.compare(now) == :gt do
       family_id = Ecto.UUID.generate()
-      insert_pair(device, family_id, now)
+      TokenPairs.insert(device, family_id, now)
     else
       {:error, :expired}
     end
@@ -337,25 +389,8 @@ defmodule Kanban.Devices do
 
   defp issue_for_locked(_revoked_or_missing, _now), do: {:error, :revoked}
 
-  defp revoke_locked(nil, _revoked_by_id, _now), do: {:error, :not_found}
-  defp revoke_locked(%Device{revoked_at: %DateTime{}} = device, _by, _now), do: {:ok, device}
-  defp revoke_locked(%Device{} = device, by, now), do: revoke_and_expire(device, by, now)
-
-  # Revokes the device and expires every token it still has live, which
-  # covers each of its token families.
-  defp revoke_and_expire(device, revoked_by_id, now) do
-    changeset = Device.revoke_changeset(device, revoked_by_id, now)
-
-    with {:ok, revoked} <- Repo.update(changeset) do
-      from(t in DeviceToken, where: t.device_id == ^revoked.id and t.expires_at > ^now)
-      |> Repo.update_all(set: [expires_at: now])
-
-      {:ok, revoked}
-    end
-  end
-
   # Locks the device row first and the token row second: the same order as
-  # revoke_device/3, which locks the device and then updates its tokens, so
+  # revoke_device/4, which locks the device and then updates its tokens, so
   # the two can never deadlock. Holding the device lock also serializes the
   # rotation against a revocation and against every other rotation or
   # issue on the device, so a revocation's expiry sweep sees every token a
@@ -417,7 +452,7 @@ defmodule Kanban.Devices do
   # revokes the device and is audited. The revocation is returned as
   # {:ok, _} so that Repo.transact commits it.
   defp rotate_locked(%DeviceToken{used_at: %DateTime{}, device: device}, now) do
-    with {:ok, revoked} <- revoke_and_expire(device, nil, now),
+    with {:ok, revoked} <- Revocation.revoke_and_expire(device, nil, now),
          do: {:ok, {:reuse_detected, %{revoked | user: device.user}}}
   end
 
@@ -441,7 +476,7 @@ defmodule Kanban.Devices do
 
   defp revoke_for_token(%DeviceToken{device: device} = token, now) do
     if DateTime.compare(token.expires_at, now) == :gt,
-      do: revoke_and_expire(device, device.user_id, now),
+      do: Revocation.revoke_and_expire(device, device.user_id, now),
       else: {:error, :invalid_token}
   end
 
@@ -450,7 +485,7 @@ defmodule Kanban.Devices do
   defp replace(%DeviceToken{id: id, device: device, family_id: family_id}, now) do
     query = from(t in DeviceToken, where: t.id == ^id and is_nil(t.used_at))
     {1, _} = Repo.update_all(query, set: [used_at: now])
-    insert_pair(device, family_id, now)
+    TokenPairs.insert(device, family_id, now)
   end
 
   defp unwrap_rotation({:ok, {:reuse_detected, device}}, opts) do
@@ -461,10 +496,30 @@ defmodule Kanban.Devices do
       ip: Keyword.get(opts, :ip)
     )
 
+    Revocation.announce({:ok, device},
+      owner: device.user,
+      user_id: device.user_id,
+      reason: :reuse_detected,
+      ip: Keyword.get(opts, :ip)
+    )
+
     {:error, :reuse_detected}
   end
 
   defp unwrap_rotation(result, _opts), do: result
+
+  # revoke_for_token/2 refuses an already revoked device, so every success
+  # here is a new revocation.
+  defp announce_signed_out({:ok, %Device{} = device} = result, opts) do
+    Revocation.announce(result,
+      owner: device.user,
+      user_id: device.user_id,
+      reason: :sign_out,
+      ip: Keyword.get(opts, :ip)
+    )
+  end
+
+  defp announce_signed_out(error, _opts), do: error
 
   @doc false
   # The Organization a device's audit rows are listed under, or nil.
@@ -474,46 +529,6 @@ defmodule Kanban.Devices do
       %{organization_id: organization_id} -> organization_id
       nil -> nil
     end
-  end
-
-  defp insert_pair(device, family_id, now) do
-    access_expires_at = access_expiry(now)
-    refresh_expires_at = refresh_expiry(device, now)
-    access = token_attrs(:access, family_id, access_expires_at, now)
-    refresh = token_attrs(:refresh, family_id, refresh_expires_at, now)
-
-    with {:ok, access_token} <- insert_token(device, access),
-         {:ok, refresh_token} <- insert_token(device, refresh) do
-      {:ok, issued(device, access_token, refresh_token)}
-    end
-  end
-
-  defp token_attrs(kind, family_id, expires_at, now),
-    do: %{kind: kind, family_id: family_id, expires_at: expires_at, inserted_at: now}
-
-  defp insert_token(device, attrs) do
-    device
-    |> DeviceToken.new_changeset(attrs)
-    |> Repo.insert()
-  end
-
-  defp issued(device, access, refresh) do
-    %{
-      device: device,
-      access_token: access.token,
-      access_token_expires_at: access.expires_at,
-      refresh_token: refresh.token,
-      refresh_token_expires_at: refresh.expires_at
-    }
-  end
-
-  defp access_expiry(now), do: DateTime.add(now, @access_ttl_seconds, :second)
-
-  # 30 days from now, but never past 90 days after the device signed in.
-  defp refresh_expiry(%Device{inserted_at: signed_in_at}, now) do
-    idle = DateTime.add(now, @refresh_idle_days, :day)
-    absolute = DateTime.add(signed_in_at, @refresh_absolute_days, :day)
-    Enum.min([idle, absolute], DateTime)
   end
 
   defp truncate(now), do: DateTime.truncate(now, :second)
