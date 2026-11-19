@@ -9,6 +9,14 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   event types arriving from the client are matched against the known list and
   never converted to atoms.
 
+  The push settings the Stride app shows are here too, so web and app agree
+  (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.9): a Push switch on the
+  rows of the eight events that can push (the four that never push show
+  none), the mode preset, and quiet hours with the time zone they follow. They
+  save through `Kanban.Notifications.update_push_settings/3` with
+  `via: :web`; their components are in
+  `KanbanWeb.UserLive.PushSettingsComponents`.
+
   A locked scope (`current_scope.notifications_locked`) sees
   `KanbanWeb.NotificationsLocked.panel/1` instead of the toggles. A crafted
   save is still refused by the context, which answers
@@ -20,8 +28,11 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   use KanbanWeb, :live_view
 
   import KanbanWeb.UserLive.SettingsComponents
+  import KanbanWeb.UserLive.PushSettingsComponents
 
   alias Kanban.Notifications
+  alias Kanban.Notifications.PushSettings
+  alias Kanban.Plans
   alias KanbanWeb.NotificationLabels
   alias KanbanWeb.NotificationsLocked
 
@@ -55,6 +66,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
       |> assign(:page_title, gettext("Notification preferences"))
       |> assign(:locked, socket.assigns.current_scope.notifications_locked)
       |> load_preferences()
+      |> load_push()
 
     {:ok, socket}
   end
@@ -73,6 +85,30 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   end
 
   @impl true
+  def handle_event("save_push", %{"event_type" => type, "push" => push}, socket) do
+    case find_push_type(type) do
+      nil -> {:noreply, put_flash(socket, :error, gettext("Unknown notification type."))}
+      event_type -> save_push(socket, %{"switches" => %{Atom.to_string(event_type) => push}})
+    end
+  end
+
+  @impl true
+  def handle_event("save_push_mode", %{"mode" => mode}, socket) do
+    save_push(socket, mode_attrs(mode))
+  end
+
+  @impl true
+  def handle_event("save_quiet_hours", params, socket) when is_map(params) do
+    attrs =
+      params
+      |> Map.take(~w(quiet_hours_enabled quiet_start quiet_end time_zone))
+      |> drop_blank_zone()
+
+    socket = assign(socket, :quiet_params, Map.merge(socket.assigns.quiet_params, attrs))
+    save_quiet_hours(socket, changed_quiet_attrs(attrs, socket.assigns.push))
+  end
+
+  @impl true
   def handle_event(_event, _params, socket) do
     {:noreply, put_flash(socket, :error, gettext("Unknown notification type."))}
   end
@@ -88,13 +124,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
         {:noreply, socket}
 
       {:error, {:plan_required, :notifications}} ->
-        socket =
-          socket
-          |> assign(:locked, true)
-          |> load_preferences()
-          |> put_flash(:error, gettext("Notification settings are available to organizations."))
-
-        {:noreply, socket}
+        {:noreply, lock(socket)}
 
       {:error, _reason} ->
         socket =
@@ -105,6 +135,125 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
         {:noreply, socket}
     end
   end
+
+  defp save_push(socket, attrs) do
+    scope = socket.assigns.current_scope
+
+    case Notifications.update_push_settings(scope, attrs, via: :web, feature: :notifications) do
+      {:ok, view} ->
+        socket =
+          socket
+          |> assign_push(view)
+          |> put_flash(:info, gettext("Notification preferences saved."))
+
+        {:noreply, socket}
+
+      {:error, {:plan_required, :notifications}} ->
+        {:noreply, lock(socket)}
+
+      {:error, reason} ->
+        {:noreply, refuse_push(socket, reason)}
+    end
+  end
+
+  # The loaded view is kept, not re-read, on a changeset: it is what the form
+  # shows, so the next quiet hours save still sends only what the person
+  # changed.
+  defp refuse_push(socket, %Ecto.Changeset{} = changeset) do
+    socket
+    |> assign(:quiet_errors, quiet_errors(changeset))
+    |> put_flash(:error, gettext("Could not save that preference."))
+  end
+
+  defp refuse_push(socket, _reason) do
+    socket
+    |> load_push()
+    |> put_flash(:error, gettext("Could not save that preference."))
+  end
+
+  # A refusal because the person's plan no longer includes notification
+  # settings switches the page to the locked panel.
+  defp lock(socket) do
+    socket
+    |> assign(:locked, true)
+    |> load_preferences()
+    |> load_push()
+    |> put_flash(:error, gettext("Notification settings are available to organizations."))
+  end
+
+  # Nothing differs from what the page loaded, so nothing is written (the
+  # context would otherwise store a first row of defaults). The plan is still
+  # checked, so a page opened before its settings were locked locks here too.
+  defp save_quiet_hours(socket, attrs) when map_size(attrs) == 0 do
+    case Plans.check_user(socket.assigns.current_scope, :notifications, surface: :live_view) do
+      :ok ->
+        socket =
+          socket
+          |> load_push()
+          |> put_flash(:info, gettext("Notification preferences saved."))
+
+        {:noreply, socket}
+
+      {:error, {:plan_required, :notifications}} ->
+        {:noreply, lock(socket)}
+    end
+  end
+
+  defp save_quiet_hours(socket, attrs), do: save_push(socket, attrs)
+
+  # A mode is a preset, so its eight switches are sent with it. The context
+  # applies a preset only when the mode differs from the stored one, which a
+  # page opened before the app changed the mode would not know.
+  defp mode_attrs(mode) when is_binary(mode) do
+    case Enum.find(PushSettings.modes(), &(Atom.to_string(&1) == mode)) do
+      nil -> %{"mode" => mode}
+      known -> %{"mode" => mode, "switches" => preset_switches(known)}
+    end
+  end
+
+  defp mode_attrs(mode), do: %{"mode" => mode}
+
+  defp preset_switches(mode) do
+    mode
+    |> PushSettings.preset()
+    |> Map.new(fn {type, on} -> {Atom.to_string(type), on} end)
+  end
+
+  # The quiet hours form posts every field. Only the fields that differ from
+  # what the page last loaded are sent, so a form left open while the app
+  # changed another field does not put that field back.
+  defp changed_quiet_attrs(attrs, nil), do: attrs
+
+  defp changed_quiet_attrs(attrs, push) do
+    loaded = loaded_quiet_values(push)
+
+    Map.reject(attrs, fn {key, value} -> Map.get(loaded, key) == normalize_quiet(key, value) end)
+  end
+
+  defp loaded_quiet_values(push) do
+    push
+    |> quiet_params(nil)
+    |> Map.put("time_zone", push.time_zone)
+  end
+
+  defp normalize_quiet("quiet_hours_enabled", value) when value in ["true", "false"],
+    do: value == "true"
+
+  defp normalize_quiet(_key, value), do: value
+
+  # A blank zone sent to the context is refused even when one is stored, and
+  # the picker's prompt sends one, so it is left out instead.
+  defp drop_blank_zone(%{"time_zone" => zone} = attrs) when is_binary(zone) do
+    if String.trim(zone) == "", do: Map.delete(attrs, "time_zone"), else: attrs
+  end
+
+  defp drop_blank_zone(attrs), do: attrs
+
+  defp find_push_type(type) when is_binary(type) do
+    Enum.find(PushSettings.push_events(), &(Atom.to_string(&1) == type))
+  end
+
+  defp find_push_type(_type), do: nil
 
   defp find_row_type(type) when is_binary(type) do
     Enum.find(@row_types, &(Atom.to_string(&1) == type))
@@ -122,6 +271,24 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
       |> Map.new(&{&1.event_type, &1})
 
     assign(socket, :preferences, preferences)
+  end
+
+  defp load_push(%{assigns: %{locked: true}} = socket) do
+    socket
+    |> assign(:push, nil)
+    |> assign(:quiet_params, %{})
+    |> assign(:quiet_errors, %{})
+  end
+
+  defp load_push(socket) do
+    assign_push(socket, Notifications.get_push_settings(socket.assigns.current_scope))
+  end
+
+  defp assign_push(socket, view) do
+    socket
+    |> assign(:push, view)
+    |> assign(:quiet_params, quiet_params(view, socket.assigns[:timezone]))
+    |> assign(:quiet_errors, %{})
   end
 
   defp groups, do: @groups
@@ -163,6 +330,8 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
 
         <NotificationsLocked.panel :if={@locked} id="notification-preferences-locked" />
 
+        <.push_mode_card :if={!@locked} push={@push} />
+
         <.settings_card
           :for={{group, types} <- @groups}
           :if={!@locked}
@@ -188,30 +357,33 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
                 {NotificationLabels.description(type)}
               </div>
             </div>
-            <form
-              id={"pref-#{type}"}
-              phx-change="save"
-              class={["flex gap-5", @toggle_layout]}
-              style="margin: 0;"
-            >
-              <input type="hidden" name="event_type" value={type} />
-              <.input
-                type="checkbox"
-                id={"pref-#{type}-in_app"}
-                name="in_app"
-                aria-describedby={"pref-#{type}-name"}
-                value={@preferences[type].in_app}
-                label={gettext("In-app")}
-              />
-              <.input
-                type="checkbox"
-                id={"pref-#{type}-email"}
-                name="email"
-                aria-describedby={"pref-#{type}-name"}
-                value={@preferences[type].email}
-                label={gettext("Email")}
-              />
-            </form>
+            <div class="flex flex-wrap items-center gap-5 min-w-0">
+              <form
+                id={"pref-#{type}"}
+                phx-change="save"
+                class={["flex gap-5", @toggle_layout]}
+                style="margin: 0;"
+              >
+                <input type="hidden" name="event_type" value={type} />
+                <.input
+                  type="checkbox"
+                  id={"pref-#{type}-in_app"}
+                  name="in_app"
+                  aria-describedby={"pref-#{type}-name"}
+                  value={@preferences[type].in_app}
+                  label={gettext("In-app")}
+                />
+                <.input
+                  type="checkbox"
+                  id={"pref-#{type}-email"}
+                  name="email"
+                  aria-describedby={"pref-#{type}-name"}
+                  value={@preferences[type].email}
+                  label={gettext("Email")}
+                />
+              </form>
+              <.push_switch type={type} switches={@push.switches} toggle_layout={@toggle_layout} />
+            </div>
           </div>
         </.settings_card>
 
@@ -237,6 +409,14 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
             />
           </form>
         </.settings_card>
+
+        <.quiet_hours_card
+          :if={!@locked}
+          params={@quiet_params}
+          errors={@quiet_errors}
+          zone_options={zone_options(@push.time_zone, @timezone)}
+          toggle_layout={@toggle_layout}
+        />
       </.settings_shell>
     </Layouts.app>
     """

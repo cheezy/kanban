@@ -4456,6 +4456,7 @@ msgstr "閉じる"
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex
 #: lib/kanban_web/live/org_live/console.html.heex
 #: lib/kanban_web/live/task_live/components/comment_row.ex
+#: lib/kanban_web/live/user_live/push_settings_components.ex
 #: lib/kanban_web/live/workspace_live/settings.html.heex
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -7882,6 +7883,7 @@ msgid "Generated"
 msgstr "生成日時"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex
+#: lib/kanban_web/live/user_live/push_settings_components.ex
 #, elixir-autogen, elixir-format
 msgid "Time zone"
 msgstr "タイムゾーン"
@@ -15476,3 +15478,83 @@ msgstr "レビュー: 変更要求"
 msgctxt "audit action"
 msgid "App approval signature rejected"
 msgstr "アプリ承認: 署名が拒否されました"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Choose a time zone"
+msgstr "タイムゾーンを選択"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Choose a time zone from the list."
+msgstr "一覧からタイムゾーンを選択してください。"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Choose a time zone to turn on quiet hours."
+msgstr "おやすみ時間をオンにするには、タイムゾーンを選択してください。"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Decisions only (Recommended)"
+msgstr "判断が必要なものだけ（推奨）"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Ends"
+msgstr "終了"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Enter a time, such as 22:00."
+msgstr "22:00 のように時刻を入力してください。"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Every event"
+msgstr "すべてのイベント"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Notify me"
+msgstr "通知する内容"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Push"
+msgstr "プッシュ"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Push notifications"
+msgstr "プッシュ通知"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Pushes go to the Stride app on your phone. Pick a preset, then change any event below."
+msgstr "プッシュ通知はスマートフォンの Stride アプリに届きます。プリセットを選んでから、下でイベントごとに変更できます。"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Pushes wait during quiet hours and arrive as one summary when they end. Quiet hours follow the time zone you choose here."
+msgstr "おやすみ時間中のプッシュ通知は保留され、終了時に 1 件のまとめとして届きます。おやすみ時間はここで選んだタイムゾーンに従います。"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Quiet hours"
+msgstr "おやすみ時間"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Quiet hours can't start and end at the same time."
+msgstr "おやすみ時間の開始と終了を同じ時刻にすることはできません。"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Starts"
+msgstr "開始"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Turn on quiet hours"
+msgstr "おやすみ時間をオンにする"

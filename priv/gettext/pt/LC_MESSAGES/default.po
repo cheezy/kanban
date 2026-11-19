@@ -4464,6 +4464,7 @@ msgstr "Fechar"
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex
 #: lib/kanban_web/live/org_live/console.html.heex
 #: lib/kanban_web/live/task_live/components/comment_row.ex
+#: lib/kanban_web/live/user_live/push_settings_components.ex
 #: lib/kanban_web/live/workspace_live/settings.html.heex
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -7917,6 +7918,7 @@ msgid "Generated"
 msgstr "Gerado"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex
+#: lib/kanban_web/live/user_live/push_settings_components.ex
 #, elixir-autogen, elixir-format
 msgid "Time zone"
 msgstr "Fuso horário"
@@ -15538,3 +15540,83 @@ msgstr "Revisão: alterações solicitadas"
 msgctxt "audit action"
 msgid "App approval signature rejected"
 msgstr "Aprovação no app: assinatura rejeitada"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Choose a time zone"
+msgstr "Escolha um fuso horário"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Choose a time zone from the list."
+msgstr "Escolha um fuso horário da lista."
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Choose a time zone to turn on quiet hours."
+msgstr "Escolha um fuso horário para ativar o horário de silêncio."
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Decisions only (Recommended)"
+msgstr "Apenas decisões (recomendado)"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Ends"
+msgstr "Fim"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Enter a time, such as 22:00."
+msgstr "Digite um horário, como 22:00."
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Every event"
+msgstr "Todos os eventos"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Notify me"
+msgstr "Notificar-me"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Push"
+msgstr "Push"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Push notifications"
+msgstr "Notificações push"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Pushes go to the Stride app on your phone. Pick a preset, then change any event below."
+msgstr "As notificações push vão para o app Stride no seu telefone. Escolha uma predefinição e depois altere qualquer evento abaixo."
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Pushes wait during quiet hours and arrive as one summary when they end. Quiet hours follow the time zone you choose here."
+msgstr "As notificações push aguardam durante o horário de silêncio e chegam como um único resumo quando ele termina. O horário de silêncio segue o fuso horário que você escolher aqui."
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Quiet hours"
+msgstr "Horário de silêncio"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Quiet hours can't start and end at the same time."
+msgstr "O horário de silêncio não pode começar e terminar no mesmo horário."
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Starts"
+msgstr "Início"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Turn on quiet hours"
+msgstr "Ativar horário de silêncio"

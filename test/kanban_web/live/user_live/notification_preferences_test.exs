@@ -7,6 +7,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
 
   alias Kanban.Notifications
   alias Kanban.Notifications.Preference
+  alias Kanban.Notifications.PushSettings
   alias Kanban.Repo
   alias KanbanWeb.UserLive.NotificationPreferences
 
@@ -281,6 +282,382 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
 
       assert %{in_app: false, email: false} = saved(scope, :goal_completed)
     end
+  end
+
+  describe "push" do
+    setup :register_and_log_in_user
+
+    test "a person with no settings row sees the defaults", %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      assert has_element?(view, ~s(#push-mode-select option[value="decisions"][selected]))
+
+      for type <- PushSettings.decision_events() do
+        assert checked?(view, type, "push"), "#{type} push should be on"
+      end
+
+      for type <- PushSettings.update_events() do
+        assert has_element?(view, "#pref-#{type}-push")
+        refute checked?(view, type, "push"), "#{type} push should be off"
+      end
+
+      refute has_element?(view, "#push-quiet_hours_enabled[checked]")
+      assert has_element?(view, ~s(#push-quiet_start[value="22:00"]))
+      assert has_element?(view, ~s(#push-quiet_end[value="07:00"]))
+      # the test browser reports no zone, so the prompt is chosen
+      refute has_element?(view, "#push-time_zone option[selected]")
+
+      # loading the page writes nothing
+      assert Repo.get(PushSettings, user.id) == nil
+      assert rows_for(user) == []
+    end
+
+    test "toggles push for review_requested", %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        view
+        |> element("#push-review_requested")
+        |> render_change(%{"event_type" => "review_requested", "push" => "false"})
+
+      assert html =~ "Notification preferences saved."
+      assert Notifications.get_push_settings(scope).switches.review_requested == false
+      # in-app and email are untouched
+      assert %{in_app: true, email: true} = saved(scope, :review_requested)
+      # one switch does not change the mode
+      assert Notifications.get_push_settings(scope).mode == :decisions
+
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      refute checked?(view, :review_requested, "push")
+      assert checked?(view, :review_requested, "email")
+    end
+
+    test "never-push events show no push switch", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      for type <- PushSettings.never_push_events() -- [:weekly_digest] do
+        refute has_element?(view, "#pref-#{type}-push"), "#{type} has a push switch"
+        refute has_element?(view, "#push-#{type}")
+        assert has_element?(view, "#pref-row-#{type} [data-push-none][aria-hidden=true]")
+      end
+
+      refute has_element?(view, "#pref-weekly_digest-push")
+
+      for type <- PushSettings.push_events() do
+        assert has_element?(
+                 view,
+                 ~s(#pref-#{type}-push[aria-describedby="pref-#{type}-name"])
+               )
+      end
+    end
+
+    test "a forged push for a never-push or unknown event is refused",
+         %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      for type <- ["task_assigned", "weekly_digest", "bogus"] do
+        html = render_hook(view, "save_push", %{"event_type" => type, "push" => "true"})
+        assert html =~ "Unknown notification type."
+      end
+
+      assert Repo.get(PushSettings, user.id) == nil
+      assert rows_for(user) == []
+    end
+
+    test "an invalid push value is reported, not saved", %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        render_hook(view, "save_push", %{"event_type" => "mentioned", "push" => "maybe"})
+
+      assert html =~ "Could not save that preference."
+      assert Notifications.get_push_settings(scope).switches.mentioned == false
+    end
+
+    test "choosing Every event turns every push switch on", %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      view
+      |> element("#push-mode-form")
+      |> render_change(%{"mode" => "every"})
+
+      assert %{mode: :every, switches: switches} = Notifications.get_push_settings(scope)
+      assert switches |> Map.values() |> Enum.all?()
+
+      for type <- PushSettings.push_events() do
+        assert checked?(view, type, "push")
+      end
+
+      assert has_element?(view, ~s(#push-mode-select option[value="every"][selected]))
+    end
+
+    test "an unknown mode is reported, not saved", %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html = render_hook(view, "save_push_mode", %{"mode" => "loud"})
+
+      assert html =~ "Could not save that preference."
+      assert Repo.get(PushSettings, user.id) == nil
+    end
+
+    test "saves quiet hours and time zone", %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        view
+        |> element("#push-quiet-hours-form")
+        |> render_submit(%{
+          "quiet_hours_enabled" => "true",
+          "quiet_start" => "23:30",
+          "quiet_end" => "06:15",
+          "time_zone" => "Europe/Berlin"
+        })
+
+      assert html =~ "Notification preferences saved."
+
+      assert %{
+               quiet_hours_enabled: true,
+               quiet_start: ~T[23:30:00],
+               quiet_end: ~T[06:15:00],
+               time_zone: "Europe/Berlin"
+             } = Notifications.get_push_settings(scope)
+
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      assert has_element?(view, "#push-quiet_hours_enabled[checked]")
+      assert has_element?(view, ~s(#push-quiet_start[value="23:30"]))
+      assert has_element?(view, ~s(#push-quiet_end[value="06:15"]))
+      assert has_element?(view, ~s(#push-time_zone option[value="Europe/Berlin"][selected]))
+    end
+
+    test "invalid quiet hours show an error", %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        view
+        |> element("#push-quiet-hours-form")
+        |> render_submit(%{
+          "quiet_hours_enabled" => "false",
+          "quiet_start" => "09:00",
+          "quiet_end" => "09:00",
+          "time_zone" => "Europe/Berlin"
+        })
+
+      assert html =~ "Could not save that preference."
+      assert html =~ "Quiet hours can&#39;t start and end at the same time."
+      # the submitted values stay in the form
+      assert has_element?(view, ~s(#push-quiet_end[value="09:00"]))
+      assert Notifications.get_push_settings(scope).quiet_start == ~T[22:00:00]
+
+      # turning quiet hours on needs a zone; the prompt sends a blank one
+      html =
+        view
+        |> element("#push-quiet-hours-form")
+        |> render_submit(%{
+          "quiet_hours_enabled" => "true",
+          "quiet_start" => "22:00",
+          "quiet_end" => "07:00",
+          "time_zone" => ""
+        })
+
+      assert html =~ "Choose a time zone to turn on quiet hours."
+      refute Notifications.get_push_settings(scope).quiet_hours_enabled
+    end
+
+    test "a forged zone or time is reported against its field", %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        render_hook(view, "save_quiet_hours", %{
+          "quiet_start" => "25:99",
+          "time_zone" => "Mars/Base"
+        })
+
+      assert html =~ "Choose a time zone from the list."
+      assert html =~ "Enter a time, such as 22:00."
+      assert Repo.get(PushSettings, user.id) == nil
+    end
+
+    test "a stored zone is kept when only the times change", %{conn: conn, scope: scope} do
+      {:ok, _view} =
+        Notifications.update_push_settings(scope, %{"time_zone" => "Asia/Kathmandu"},
+          via: :web,
+          feature: :notifications
+        )
+
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      # a zone outside the curated list is still offered, and chosen
+      assert has_element?(view, ~s(#push-time_zone option[value="Asia/Kathmandu"][selected]))
+
+      render_hook(view, "save_quiet_hours", %{"quiet_start" => "21:00", "time_zone" => ""})
+
+      assert %{quiet_start: ~T[21:00:00], time_zone: "Asia/Kathmandu"} =
+               Notifications.get_push_settings(scope)
+    end
+
+    test "suggests the browser's zone when none is stored", %{conn: conn, user: user} do
+      conn = put_connect_params(conn, %{"timezone" => "Asia/Tokyo"})
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      assert has_element?(view, ~s(#push-time_zone option[value="Asia/Tokyo"][selected]))
+      assert Repo.get(PushSettings, user.id) == nil
+    end
+
+    test "a quiet hours form left open does not revert what the app changed",
+         %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      # the app changes the end while the page still shows 07:00
+      {:ok, _view} =
+        Notifications.update_push_settings(scope, %{"quiet_end" => "08:30"},
+          via: :ios,
+          feature: :mobile_app
+        )
+
+      view
+      |> element("#push-quiet-hours-form")
+      |> render_submit(%{
+        "quiet_hours_enabled" => "false",
+        "quiet_start" => "22:00",
+        "quiet_end" => "07:00",
+        "time_zone" => "Europe/Berlin"
+      })
+
+      assert %{quiet_end: ~T[08:30:00], time_zone: "Europe/Berlin"} =
+               Notifications.get_push_settings(scope)
+
+      # and the page now shows what is stored
+      assert has_element?(view, ~s(#push-quiet_end[value="08:30"]))
+    end
+
+    test "a refused quiet hours save does not let the next one revert the app's change",
+         %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      {:ok, _view} =
+        Notifications.update_push_settings(scope, %{"quiet_start" => "23:00"},
+          via: :ios,
+          feature: :mobile_app
+        )
+
+      html =
+        render_hook(view, "save_quiet_hours", %{
+          "quiet_hours_enabled" => "false",
+          "quiet_start" => "22:00",
+          "quiet_end" => "06:00",
+          "time_zone" => "Mars/Base"
+        })
+
+      assert html =~ "Choose a time zone from the list."
+
+      # the form still shows 22:00 as the start, which the person never touched
+      view
+      |> element("#push-quiet-hours-form")
+      |> render_submit(%{
+        "quiet_hours_enabled" => "false",
+        "quiet_start" => "22:00",
+        "quiet_end" => "06:00",
+        "time_zone" => "Europe/Berlin"
+      })
+
+      assert %{quiet_start: ~T[23:00:00], quiet_end: ~T[06:00:00], time_zone: "Europe/Berlin"} =
+               Notifications.get_push_settings(scope)
+    end
+
+    test "submitting quiet hours unchanged saves nothing new", %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        view
+        |> element("#push-quiet-hours-form")
+        |> render_submit(%{
+          "quiet_hours_enabled" => "false",
+          "quiet_start" => "22:00",
+          "quiet_end" => "07:00",
+          "time_zone" => ""
+        })
+
+      assert html =~ "Notification preferences saved."
+      assert Repo.get(PushSettings, user.id) == nil
+    end
+
+    test "choosing a mode the app already stored applies its preset",
+         %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      # the app switches to every event and then turns one update off
+      {:ok, _view} =
+        Notifications.update_push_settings(
+          scope,
+          %{"mode" => "every", "switches" => %{"mentioned" => false}},
+          via: :ios,
+          feature: :mobile_app
+        )
+
+      # the stale page still shows Decisions only; choosing Every event turns all on
+      view
+      |> element("#push-mode-form")
+      |> render_change(%{"mode" => "every"})
+
+      assert %{mode: :every, switches: %{mentioned: true}} =
+               Notifications.get_push_settings(scope)
+    end
+
+    test "an app change is reflected on the next load", %{conn: conn, scope: scope} do
+      {:ok, _view} =
+        Notifications.update_push_settings(scope, %{"switches" => %{"mentioned" => true}},
+          via: :ios,
+          feature: :mobile_app
+        )
+
+      # an app change is reflected on the next load
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      assert checked?(view, :mentioned, "push")
+    end
+  end
+
+  test "the push controls let long German labels wrap", %{conn: conn} do
+    user = Kanban.AccountsFixtures.user_fixture()
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> Plug.Conn.put_session(:locale, "de")
+
+    {:ok, view, html} = live(conn, ~p"/users/notifications")
+    assert html =~ "Ruhezeiten einschalten"
+
+    for form <- ["#push-review_requested", "#push-mode-form"] do
+      assert has_element?(view, ~s(#{form}[class*="[&_.label]:whitespace-normal"]))
+    end
+
+    # the quiet hours toggle and the start, end and zone grid
+    assert has_element?(
+             view,
+             ~s(#push-quiet-hours-form > div[class*="[&_.label]:whitespace-normal"] #push-quiet_hours_enabled)
+           )
+
+    assert has_element?(
+             view,
+             ~s(#push-quiet-hours-form > div[class*="[&_.label]:whitespace-normal"] #push-time_zone)
+           )
+  end
+
+  test "renders in German", %{conn: conn} do
+    user = Kanban.AccountsFixtures.user_fixture()
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> Plug.Conn.put_session(:locale, "de")
+
+    {:ok, _view, html} = live(conn, ~p"/users/notifications")
+
+    assert html =~ "Ruhezeiten"
+    assert html =~ "Nur Entscheidungen (empfohlen)"
+    refute html =~ "Quiet hours"
+    refute html =~ "Every event"
+    refute html =~ "Notify me"
   end
 
   test "renders translated text", %{conn: conn} do

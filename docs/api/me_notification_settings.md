@@ -5,9 +5,11 @@ screen ([design](../plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md), §6.12, §7.9,
 §8): the mode, the eight push switches, quiet hours and the one time zone
 quiet hours follow. The switches are stored as the `push` column of the
 person's notification preferences, beside in-app and email, so a web page
-that reads those preferences sees the same values. The web preferences page
-does not show them yet; its Push column and quiet-hours setting come with
-W2768.
+that reads those preferences sees the same values. The web preferences page,
+`/users/notifications`, shows the same settings: a Push column with the eight
+switches, the mode preset, and quiet hours with their time zone. It saves them
+through the same context function with `via: :web`, so a change on either side
+is what the other reads next.
 
 | Method | Path | What it does |
 |---|---|---|

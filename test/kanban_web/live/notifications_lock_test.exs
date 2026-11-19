@@ -187,6 +187,27 @@ defmodule KanbanWeb.NotificationsLockTest do
       assert has_element?(view, "#notification-preferences-locked a[data-locked-review-link]")
       refute has_element?(view, "#pref-row-review_requested")
       refute has_element?(view, "#pref-weekly_digest-email")
+      refute has_element?(view, "#push-mode")
+      refute has_element?(view, "#push-quiet-hours")
+    end
+
+    test "a crafted push save is refused with a flash and writes no push settings",
+         %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      html =
+        render_hook(view, "save_push", %{"event_type" => "review_requested", "push" => "false"})
+
+      assert html =~ "Notification settings are available to organizations."
+
+      html = render_hook(view, "save_quiet_hours", %{"quiet_start" => "21:00"})
+      assert html =~ "Notification settings are available to organizations."
+
+      html = render_hook(view, "save_push_mode", %{"mode" => "every"})
+      assert html =~ "Notification settings are available to organizations."
+
+      refute Repo.get(Kanban.Notifications.PushSettings, user.id)
+      assert preference_rows(user) == []
     end
 
     test "a crafted save is refused with a flash and writes no preference",
@@ -269,6 +290,44 @@ defmodule KanbanWeb.NotificationsLockTest do
       assert has_element?(view, "#notification-preferences-locked [data-locked-feature]")
       refute has_element?(view, "#pref-task_assigned")
       refute Repo.get_by(Preference, user_id: user.id, event_type: :task_assigned)
+    end
+
+    test "a settings page opened before enforcement locks on an unchanged quiet hours save",
+         %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      enforce_plans()
+
+      view
+      |> element("#push-quiet-hours-form")
+      |> render_submit(%{
+        "quiet_hours_enabled" => "false",
+        "quiet_start" => "22:00",
+        "quiet_end" => "07:00",
+        "time_zone" => ""
+      })
+
+      assert render(view) =~ "Notification settings are available to organizations."
+      refute render(view) =~ "Notification preferences saved."
+      assert has_element?(view, "#notification-preferences-locked [data-locked-feature]")
+      refute has_element?(view, "#push-quiet-hours")
+      refute Repo.get(Kanban.Notifications.PushSettings, user.id)
+    end
+
+    test "a settings page opened before enforcement locks on its next push save",
+         %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      assert has_element?(view, "#push-review_requested")
+      enforce_plans()
+
+      view
+      |> element("#push-review_requested")
+      |> render_change(%{"event_type" => "review_requested", "push" => "false"})
+
+      assert render(view) =~ "Notification settings are available to organizations."
+      assert has_element?(view, "#notification-preferences-locked [data-locked-feature]")
+      refute has_element?(view, "#push-mode")
+      refute has_element?(view, "#push-quiet-hours")
+      refute Repo.get(Kanban.Notifications.PushSettings, user.id)
     end
   end
 

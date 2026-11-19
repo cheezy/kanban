@@ -47,7 +47,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
           %{
             title: "The Settings Tabs",
             content:
-              "Settings has six tabs:\n\n- **Profile**: your name and email address.\n- **Password**: change the password you sign in with.\n- **Two-factor**: add a code from an authenticator app to signing in.\n- **Single sign-on**: whether you sign in through your Organization's identity provider.\n- **Devices**: the phones and tablets signed in to your account. Revoke one you no longer use or have lost, and it is signed out at once.\n- **Delete account**: remove your account for good.\n\nBelow the tabs, **Notifications** opens a separate page where you choose which in-app and email notifications you get. See [Notification preferences](/users/notifications).\n\nChanges you save apply to your account straight away.",
+              "Settings has six tabs:\n\n- **Profile**: your name and email address.\n- **Password**: change the password you sign in with.\n- **Two-factor**: add a code from an authenticator app to signing in.\n- **Single sign-on**: whether you sign in through your Organization's identity provider.\n- **Devices**: the phones and tablets signed in to your account. Revoke one you no longer use or have lost, and it is signed out at once.\n- **Delete account**: remove your account for good.\n\nBelow the tabs, **Notifications** opens a separate page where you choose which in-app, email and push notifications you get. See [Notification preferences](/users/notifications).\n\nChanges you save apply to your account straight away.",
             image: "/images/resources/guides/managing-your-account-step-2.png",
             image_width: 1189,
             image_height: 392

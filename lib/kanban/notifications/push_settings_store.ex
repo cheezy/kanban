@@ -53,7 +53,7 @@ defmodule Kanban.Notifications.PushSettingsStore do
   `attrs` is validated by `PushSettings.request_changeset/2`. Options:
 
     * `:via` (required): who made the change, `:ios` or `:android` from the
-      app; `:web` is reserved for the web preferences page;
+      app; `:web` from the web preferences page, `/users/notifications`;
     * `:feature` (required): the plan feature the calling surface is gated
       by, checked with `Kanban.Plans.check_user/3`, so a crafted call cannot
       change a locked setting;

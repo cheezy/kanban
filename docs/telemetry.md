@@ -1074,8 +1074,8 @@ declared in `Kanban.Telemetry.Catalog.PushEvents`
   `"quiet_hours_enabled"`, `"quiet_start"`, `"quiet_end"`, `"time_zone"`, and
   the event type of each push switch, including the switches a mode's preset
   changed. `via` is `:ios` or `:android` for the app, from the device's
-  platform. `:web` is reserved for the web preferences page, which does not
-  change push settings yet (W2768). It never carries a value
+  platform, and `:web` for the web preferences page, `/users/notifications`
+  (W2768). It never carries a value
   such as the time zone or a quiet-hours time, a user or a device. `via` is
   its only tag; `mode` is not one.
 - **When it fires.** Only when a change stores something: a request that
