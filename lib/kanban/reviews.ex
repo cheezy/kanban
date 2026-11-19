@@ -64,8 +64,10 @@ defmodule Kanban.Reviews do
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Reviews.Audit
+  alias Kanban.Reviews.DiffHighlighter
   alias Kanban.Reviews.MobileGuard
   alias Kanban.Reviews.MobileReview
+  alias Kanban.Reviews.MobileReviewFile
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
@@ -173,6 +175,20 @@ defmodule Kanban.Reviews do
   @spec mobile_review(Task.t(), MobileGuard.device_class()) :: MobileReview.t()
   def mobile_review(%Task{} = task, device_class) do
     MobileReview.build(task, Kanban.Tasks.get_dependent_tasks(task), device_class)
+  end
+
+  @doc """
+  One file of `task`, a task from `get_reviewable_task/2`, for the app's
+  flagged-file screen (`GET /api/me/reviews/:task_id/files/:index`, W2753):
+  `index` is its position in `changed_files`, and its diff is highlighted by
+  `Kanban.Reviews.DiffHighlighter.highlight/4`. Returns `{:error, :not_found}`
+  for an index that names no file of this task
+  (`Kanban.Reviews.MobileReview.file/3`).
+  """
+  @spec mobile_review_file(Task.t(), non_neg_integer()) ::
+          {:ok, MobileReviewFile.t()} | {:error, :not_found}
+  def mobile_review_file(%Task{} = task, index) do
+    MobileReview.file(task, index, &DiffHighlighter.highlight/4)
   end
 
   @doc """

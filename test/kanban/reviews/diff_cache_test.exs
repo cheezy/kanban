@@ -6,7 +6,7 @@ defmodule Kanban.Reviews.DiffCacheTest do
   defp key(diff \\ "d"), do: [:positive] |> System.unique_integer() |> DiffCache.key(0, diff)
 
   test "key/3 hashes the diff" do
-    assert {7, 2, hash} = DiffCache.key(7, 2, "diff")
+    assert {7, 2, hash, nil} = DiffCache.key(7, 2, "diff")
     assert hash == :crypto.hash(:sha256, "diff")
     refute DiffCache.key(7, 2, "diff") == DiffCache.key(7, 2, "diff2")
   end

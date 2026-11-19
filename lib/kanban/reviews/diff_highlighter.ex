@@ -101,7 +101,22 @@ defmodule Kanban.Reviews.DiffHighlighter do
   def max_lines, do: @max_lines
 
   @doc """
-  Highlights one file's diff, cached by task id, file index and diff hash.
+  The language `path` is highlighted as, chosen by its extension as the
+  lexer is: `:elixir`, `:heex`, `:erlang`, or `:plain` for every other
+  extension, a file with none, and `nil`.
+  """
+  @spec language(String.t() | nil) :: :elixir | :heex | :erlang | :plain
+  def language(path) do
+    case lexer_for(path) do
+      {Makeup.Lexers.ElixirLexer, _opts} -> :elixir
+      {Makeup.Lexers.HEExLexer, _opts} -> :heex
+      {Makeup.Lexers.ErlangLexer, _opts} -> :erlang
+      nil -> :plain
+    end
+  end
+
+  @doc """
+  Highlights one file's diff, cached by task id, file index, diff hash and path.
 
   `file_index` is the file's position in the task's `changed_files`. An empty
   or `nil` diff returns `[]`; neither it nor a diff over 1 MB is cached.
@@ -115,7 +130,7 @@ defmodule Kanban.Reviews.DiffHighlighter do
 
   def highlight(task_id, file_index, diff, path) when is_binary(diff) do
     task_id
-    |> DiffCache.key(file_index, diff)
+    |> DiffCache.key(file_index, diff, path)
     |> DiffCache.fetch_or_compute(fn -> lines(diff, path) end, weight: weight(diff))
   end
 
@@ -259,8 +274,10 @@ defmodule Kanban.Reviews.DiffHighlighter do
 
   ## Rendering
 
-  defp lexer_for(nil), do: nil
-  defp lexer_for(path), do: Map.get(@lexers, path |> Path.extname() |> String.downcase())
+  defp lexer_for(path) when is_binary(path),
+    do: Map.get(@lexers, path |> Path.extname() |> String.downcase())
+
+  defp lexer_for(_path), do: nil
 
   # `budget` is the bytes still allowed to reach a lexer for this diff.
   defp render([%{lex: true} | _] = chunk, {lexer, opts}, budget) do

@@ -1,7 +1,8 @@
 defmodule KanbanWeb.API.Me.ReviewJSON do
   @moduledoc """
   JSON rendering for `GET /api/me/reviews/:task_id` (W2751), from what
-  `Kanban.Reviews.MobileReview.build/3` returns, for the approval
+  `Kanban.Reviews.MobileReview.build/3` returns, for one file's diff
+  (`GET /api/me/reviews/:task_id/files/:index`, W2753), for the approval
   challenge and approve routes (W2754), and for the request changes route
   (W2755).
 
@@ -11,9 +12,10 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   `test/kanban_web/controllers/api/open_api_contract_test.exs` checks they
   agree. Every key is always present; a value that is unknown is `null`.
 
-  The diffs themselves, their `diff_url`, and the task's `completion_notes`
-  are never rendered here: the diff of one file is a later route of its own,
-  and the notes are free text the app sends people to the web for.
+  The review detail never renders the diffs: each file's diff is its own
+  request, `file_diff/1`, so the detail stays small. A diff's `diff_url` and
+  the task's `completion_notes` are never rendered at all: the notes are
+  free text the app sends people to the web for.
   """
 
   alias Kanban.Accounts.User
@@ -125,6 +127,57 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
       truncated: file.truncated,
       flagged: file.flagged,
       flag_reason: atom_string(file.flag_reason)
+    }
+  end
+
+  @file_diff_fields [
+    :index,
+    :path,
+    :file_count,
+    :additions,
+    :deletions,
+    :truncated,
+    :flagged,
+    :review_requested_at
+  ]
+
+  @doc """
+  One file's highlighted diff and its inline notes (W2753), under `data`,
+  from `Kanban.Reviews.MobileReviewFile.build/3`. Each line's `spans` are
+  text with a class, never HTML.
+  """
+  def file_diff(%{file: file}) do
+    data =
+      file
+      |> Map.take(@file_diff_fields)
+      |> Map.merge(%{
+        language: atom_string(file.language),
+        flag_reason: atom_string(file.flag_reason),
+        lines: Enum.map(file.lines, &diff_line/1),
+        notes: Enum.map(file.notes, &note/1)
+      })
+
+    %{data: data}
+  end
+
+  @doc "One line of a highlighted diff."
+  def diff_line(line) do
+    %{
+      kind: atom_string(line.kind),
+      old: line.old,
+      new: line.new,
+      spans: Enum.map(line.spans, &%{class: atom_string(&1.class), text: &1.text})
+    }
+  end
+
+  @doc "A reviewer issue shown inline on a file, at its line when `anchored`."
+  def note(note) do
+    %{
+      line: note.line,
+      anchored: note.anchored,
+      severity: note.severity,
+      category: note.category,
+      description: note.description
     }
   end
 

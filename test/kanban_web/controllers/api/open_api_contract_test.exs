@@ -25,6 +25,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias Kanban.Accounts.User
   alias Kanban.ApiTokens
   alias Kanban.Reviews.ApprovalChallenge
+  alias Kanban.Reviews.DiffHighlighter
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.DeviceJSON
@@ -941,6 +942,56 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert get_in(update, ~w(422 content application/json schema)) == %{
                "$ref" => "#/components/schemas/ValidationError"
              }
+    end
+  end
+
+  describe "schema parity with ReviewJSON.file_diff/1 (W2753)" do
+    setup do
+      task = %Task{
+        id: 1,
+        changed_files: [%{"path" => "lib/a.ex", "diff" => "@@ -1 +1 @@\n+def a, do: 1"}],
+        reviewer_result: %{
+          "issues" => [%{"severity" => "minor", "file" => "lib/a.ex", "line" => 1}]
+        }
+      }
+
+      highlight = fn _task_id, _index, diff, path -> DiffHighlighter.lines(diff, path) end
+      {:ok, file} = MobileReview.file(task, 0, highlight)
+
+      %{body: ReviewJSON.file_diff(%{file: file})}
+    end
+
+    test "ReviewFileDiff and its parts list exactly the keys ReviewJSON renders, and require them all",
+         %{spec: spec, body: body} do
+      line = Enum.find(body.data.lines, &(&1.kind == "add"))
+
+      pairs = [
+        {body, "ReviewFileDiffResponse"},
+        {body.data, "ReviewFileDiff"},
+        {line, "ReviewDiffLine"},
+        {hd(line.spans), "ReviewDiffSpan"},
+        {hd(body.data.notes), "ReviewFileNote"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+    end
+
+    test "the kinds, classes and languages are the documented enums", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["ReviewDiffLine"]["properties"]["kind"]["enum"] == ~w(add del ctx hunk)
+
+      assert schemas["ReviewDiffSpan"]["properties"]["class"]["enum"] ==
+               Enum.map(DiffHighlighter.classes(), &Atom.to_string/1)
+
+      assert schemas["ReviewFileDiff"]["properties"]["language"]["enum"] ==
+               ~w(elixir heex erlang plain)
     end
   end
 

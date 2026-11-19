@@ -76,6 +76,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [GET /api/me](api/get_me.md) — The person API's first route for the mobile apps: the person, their Organization and workspaces, the plan status, the minimum app versions and the device.
 - [The device routes: /api/me/devices](api/me_devices.md) — List, sign out and revoke a person's devices, and update the current device's push token, locale and time zone.
 - [GET /api/me/reviews/:task_id](api/me_reviews.md) — One pending review for the app's review screen: verdicts, criteria, security, flagged files, size and whether this device may approve it.
+- [GET /api/me/reviews/:task_id/files/:index](api/me_review_file.md) — One changed file of a pending review: its highlighted diff, its flag and the reviewer's inline notes.
 - [Approve a review in the app](api/me_review_approval.md) — The approval challenge and the signed approve route: the check order, the signing string and the refusals.
 - [Request changes on a review in the app](api/me_review_request_changes.md) — The request changes route and the Idempotency-Key header that makes a retried review decision safe.
 

@@ -16,6 +16,12 @@ defmodule KanbanWeb.API.Me.ReviewController do
   for the requesting device's class. The data comes from
   `Kanban.Reviews.get_reviewable_task/2` and `Kanban.Reviews.mobile_review/2`.
 
+  `GET /api/me/reviews/:task_id/files/:index` (W2753, design §6.5) returns
+  one file's highlighted diff and inline notes, from
+  `Kanban.Reviews.mobile_review_file/2`, after the same checks as the detail.
+  `index` is the file's `index` in the detail; one that is not a
+  non-negative integer, or names no file of this task, answers 404.
+
   The app approves a review in two requests (W2754, design §6.6, §7.5),
   both run by `Kanban.Reviews.Approval`:
 
@@ -64,6 +70,16 @@ defmodule KanbanWeb.API.Me.ReviewController do
 
     with {:ok, task} <- fetch_reviewable(scope, task_id) do
       render(conn, :show, review: Reviews.mobile_review(task, device.device_class))
+    end
+  end
+
+  def file(conn, %{"task_id" => task_id, "index" => index}) do
+    %{current_scope: scope} = conn.assigns
+
+    with {:ok, task} <- fetch_reviewable(scope, task_id),
+         {:ok, index} <- parse_index(index),
+         {:ok, file} <- Reviews.mobile_review_file(task, index) do
+      render(conn, :file_diff, file: file)
     end
   end
 
@@ -136,6 +152,13 @@ defmodule KanbanWeb.API.Me.ReviewController do
 
   defp approval_rate_limit(%{id: device_id}),
     do: RateLimit.check(:review_approval, identity: "device:#{device_id}")
+
+  defp parse_index(index) do
+    case IdParams.parse_index(index) do
+      {:ok, index} -> {:ok, index}
+      :error -> {:error, :not_found}
+    end
+  end
 
   defp parse_id(id) do
     case IdParams.parse(id) do

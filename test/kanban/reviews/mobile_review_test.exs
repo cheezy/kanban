@@ -497,4 +497,160 @@ defmodule Kanban.Reviews.MobileReviewTest do
       assert unstamped.waiting_since == ~U[2026-11-17 09:00:00Z]
     end
   end
+
+  describe "file/3" do
+    @diff "@@ -1,2 +1,3 @@\n ctx\n-old\n+new\n+more"
+
+    # Records each call and returns the real lines, so the arguments are checked.
+    defp highlight(task_id, index, diff, path) do
+      send(self(), {:highlighted, task_id, index, diff, path})
+      Kanban.Reviews.DiffHighlighter.lines(diff, path)
+    end
+
+    test "anchors an issue with a line to that line and one without to the file" do
+      task =
+        task(%{
+          changed_files: [entry("lib/a.ex", @diff)],
+          reviewer_result: %{
+            "issues" => [
+              %{
+                "severity" => "important",
+                "category" => "pattern",
+                "file" => "lib/a.ex",
+                "line" => 3,
+                "description" => "  Move it.  "
+              },
+              %{"severity" => "minor", "category" => "testing", "file" => "lib/a.ex:9"},
+              %{
+                "severity" => "minor",
+                "category" => "pattern",
+                "file" => "b/lib/a.ex",
+                "line" => 120
+              },
+              %{"severity" => "minor", "file" => "lib/a.ex", "line" => "3"},
+              %{"severity" => "minor", "file" => "lib/a.ex", "line" => 0},
+              %{"severity" => "minor", "file" => "lib/other.ex", "line" => 3},
+              %{"severity" => "minor", "line" => 3},
+              "not a map"
+            ]
+          }
+        })
+
+      assert {:ok, file} = MobileReview.file(task, 0, &highlight/4)
+
+      assert [
+               %{
+                 line: 3,
+                 anchored: true,
+                 severity: "important",
+                 category: "pattern",
+                 description: "Move it."
+               },
+               %{line: nil, anchored: false, category: "testing", description: nil},
+               %{line: 120, anchored: false},
+               %{line: nil, anchored: false, category: nil},
+               %{line: nil, anchored: false}
+             ] = file.notes
+
+      assert file.lines |> Enum.find(&(&1.new == 3)) |> Map.fetch!(:kind) == :add
+      assert_received {:highlighted, 1, 0, @diff, "lib/a.ex"}
+    end
+
+    test "returns the entry's path, counts, flag and language" do
+      task =
+        task(%{
+          review_requested_at: ~U[2026-11-18 09:30:00Z],
+          changed_files: [
+            entry("./lib/a.ex", "@@ -1 +1 @@\n+x"),
+            entry("lib/b.heex", @diff),
+            entry("lib/a.ex", "@@ -1 +1,2 @@\n+y\n+z")
+          ],
+          reviewer_result: %{
+            "issues" => [%{"severity" => "minor", "category" => "security", "file" => "lib/a.ex"}]
+          }
+        })
+
+      assert {:ok, first} = MobileReview.file(task, 0, &highlight/4)
+      assert {:ok, second} = MobileReview.file(task, 2, &highlight/4)
+      assert {:ok, heex} = MobileReview.file(task, 1, &highlight/4)
+
+      assert %{index: 0, path: "lib/a.ex", language: :elixir, additions: 3, deletions: 0} = first
+      assert %{flagged: true, flag_reason: :security, file_count: 2} = first
+      assert %{truncated: false, review_requested_at: ~U[2026-11-18 09:30:00Z]} = first
+      assert %{index: 2, path: "lib/a.ex", additions: 3, flagged: true} = second
+      assert Enum.count(second.lines, &(&1.kind == :hunk)) == 2
+
+      assert %{language: :heex, additions: 2, deletions: 1, flagged: false, flag_reason: nil} =
+               heex
+    end
+
+    test "an issue names only the longest listed path it matches, and a trailing slash is dropped" do
+      task =
+        task(%{
+          changed_files: [
+            entry("lib/a.ex", @diff),
+            entry("test/lib/a.ex", @diff),
+            entry("lib/a.ex", "@@ -9 +9,2 @@\n+x\n+y")
+          ],
+          reviewer_result: %{
+            "issues" => [
+              %{"severity" => "minor", "file" => "test/lib/a.ex", "line" => 3},
+              %{"severity" => "minor", "file" => "b/test/lib/a.ex", "line" => 2},
+              %{"severity" => "minor", "file" => "lib/a.ex/", "line" => 10}
+            ]
+          }
+        })
+
+      assert {:ok, lib} = MobileReview.file(task, 0, &highlight/4)
+      assert {:ok, test_file} = MobileReview.file(task, 1, &highlight/4)
+
+      assert [%{line: 10, anchored: true}] = lib.notes
+      assert [%{line: 3, anchored: true}, %{line: 2, anchored: true}] = test_file.notes
+      assert %{flagged: true, flag_reason: :issue} = lib
+
+      assert MobileReview.issue_path("x/test/lib/a.ex", ["lib/a.ex", "test/lib/a.ex"]) ==
+               "test/lib/a.ex"
+
+      assert MobileReview.issue_path("lib/b.ex", ["lib/a.ex"]) == nil
+      assert MobileReview.normalize_file("./lib/a.ex//") == "lib/a.ex"
+    end
+
+    test "a stored diff cut at the cap is truncated" do
+      diff = "@@ -1,600 +1,600 @@\n" <> added(600) <> "\n" <> Backfill.truncation_marker()
+      task = task(%{changed_files: [entry("lib/big.ex", diff)]})
+
+      assert {:ok, %{truncated: true, lines: lines}} = MobileReview.file(task, 0, &highlight/4)
+      assert length(lines) == Kanban.Reviews.DiffHighlighter.max_lines()
+    end
+
+    test "an empty or missing diff has no lines" do
+      task = task(%{changed_files: [entry("lib/a.ex", ""), %{"path" => "lib/b.ex"}]})
+
+      assert {:ok, %{lines: [], additions: 0, deletions: 0}} =
+               MobileReview.file(task, 0, &highlight/4)
+
+      assert {:ok, %{lines: [], additions: nil, deletions: nil, truncated: false}} =
+               MobileReview.file(task, 1, &highlight/4)
+    end
+
+    test "an index that names no stored file is not found" do
+      task =
+        task(%{
+          changed_files: [entry("lib/a.ex", "+a"), %{"diff" => "+b"}, "junk", entry(" ", "+c")]
+        })
+
+      for index <- [1, 2, 3, 4, 99] do
+        assert MobileReview.file(task, index, &highlight/4) == {:error, :not_found},
+               "expected not found for #{index}"
+      end
+
+      listed_only = task(%{actual_files_changed: "lib/a.ex"})
+      assert MobileReview.file(listed_only, 0, &highlight/4) == {:error, :not_found}
+
+      no_diffs = task(%{changed_files: nil})
+      assert MobileReview.file(no_diffs, 0, &highlight/4) == {:error, :not_found}
+
+      refute_received {:highlighted, _, _, _, _}
+    end
+  end
 end

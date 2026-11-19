@@ -32,6 +32,20 @@ defmodule Kanban.Reviews.DiffHighlighterTest do
   \\ No newline at end of file
   """
 
+  describe "language/1" do
+    test "names the language the extension's lexer highlights, else plain" do
+      assert DiffHighlighter.language("lib/a.ex") == :elixir
+      assert DiffHighlighter.language("test/a_test.EXS") == :elixir
+      assert DiffHighlighter.language("lib/a.html.heex") == :heex
+      assert DiffHighlighter.language("src/a.erl") == :erlang
+      assert DiffHighlighter.language("include/a.hrl") == :erlang
+
+      for path <- ["app.js", "app.css", "Makefile", "", nil] do
+        assert DiffHighlighter.language(path) == :plain, "expected plain for #{inspect(path)}"
+      end
+    end
+  end
+
   describe "lines/2" do
     test "highlights an Elixir hunk into the fixed classes with line numbers" do
       lines = DiffHighlighter.lines(@elixir_diff, "lib/foo.ex")
@@ -210,7 +224,9 @@ defmodule Kanban.Reviews.DiffHighlighterTest do
       first = "@@ -1 +1 @@\n-a\n+b\n"
       resubmitted = "@@ -1 +1 @@\n-a\n+c\n"
 
-      assert id |> DiffCache.key(0, first) |> DiffCache.fetch_or_compute(fn -> :sentinel end) ==
+      assert id
+             |> DiffCache.key(0, first, "a.ex")
+             |> DiffCache.fetch_or_compute(fn -> :sentinel end) ==
                :sentinel
 
       assert DiffHighlighter.highlight(id, 0, first, "a.ex") == :sentinel
@@ -238,7 +254,20 @@ defmodule Kanban.Reviews.DiffHighlighterTest do
 
       assert [only] = Enum.uniq(results)
       assert only == DiffHighlighter.lines(diff, "lib/foo.ex")
-      assert length(:ets.lookup(DiffCache, DiffCache.key(id, 3, diff))) == 1
+      assert length(:ets.lookup(DiffCache, DiffCache.key(id, 3, diff, "lib/foo.ex"))) == 1
+    end
+
+    test "a file renamed with the same diff at the same index is highlighted for its new path" do
+      id = task_id()
+      diff = "@@ -1 +1 @@\n+def a, do: :ok\n"
+
+      assert id
+             |> DiffHighlighter.highlight(0, diff, "lib/a.ex")
+             |> classes()
+             |> Enum.member?(:keyword)
+
+      assert id |> DiffHighlighter.highlight(0, diff, "notes/a.txt") |> classes() |> Enum.uniq() ==
+               [:plain]
     end
 
     test "a diff over 1 MB is highlighted but not cached" do
@@ -246,7 +275,7 @@ defmodule Kanban.Reviews.DiffHighlighterTest do
       diff = "@@ -0,0 +1 @@\n+" <> String.duplicate("x", 1_100_000)
 
       assert DiffHighlighter.highlight(id, 0, diff, "a.ex") == DiffHighlighter.lines(diff, "a.ex")
-      assert :ets.lookup(DiffCache, DiffCache.key(id, 0, diff)) == []
+      assert :ets.lookup(DiffCache, DiffCache.key(id, 0, diff, "a.ex")) == []
     end
   end
 end

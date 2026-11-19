@@ -46,7 +46,7 @@ defmodule Kanban.Reviews.DiffCache do
   @max_bytes 64 * 1024 * 1024
 
   @typedoc "A cache key: task id, file index and the diff's SHA-256 hash."
-  @type key :: {term(), non_neg_integer(), binary()}
+  @type key :: {term(), non_neg_integer(), binary(), String.t() | nil}
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -55,10 +55,14 @@ defmodule Kanban.Reviews.DiffCache do
     GenServer.start_link(__MODULE__, opts[:interval], Keyword.take(opts, [:name]))
   end
 
-  @doc "The cache key for one file's diff in one task."
-  @spec key(term(), non_neg_integer(), String.t()) :: key()
-  def key(task_id, file_index, diff) when is_binary(diff) do
-    {task_id, file_index, :crypto.hash(:sha256, diff)}
+  @doc """
+  The cache key for one file's diff in one task. `path` is part of it, so a
+  file renamed with the same diff text at the same index, which may need
+  another lexer, is never served the old path's lines.
+  """
+  @spec key(term(), non_neg_integer(), String.t(), String.t() | nil) :: key()
+  def key(task_id, file_index, diff, path \\ nil) when is_binary(diff) do
+    {task_id, file_index, :crypto.hash(:sha256, diff), path}
   end
 
   @doc """

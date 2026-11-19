@@ -132,8 +132,8 @@ shows "See notes on the web" for it.
 
 `files` lists each changed file once. `additions` and `deletions` come from the
 stored diff, and `truncated` says whether that diff was cut at the per-diff
-cap. `index` is the file's position in the stored changed files, which the
-file's diff route will take. A task that stored no diffs lists the files it
+cap. `index` is the file's position in the stored changed files, which
+[the file's diff route](me_review_file.md) takes. A task that stored no diffs lists the files it
 named instead, with `index`, `additions` and `deletions` all `null`.
 
 A file is **flagged** when a reviewer issue names it, or when the security
@@ -154,7 +154,9 @@ is not in the list flags nothing. Flagged files
 come first; otherwise the files are in diff order. When the reviewer's issues
 carry no file at all, nothing is flagged and the files stay in diff order.
 
-The diffs themselves are not in this response.
+The diffs themselves are not in this response: the app fetches one file's
+highlighted diff at a time from
+[GET /api/me/reviews/:task_id/files/:index](me_review_file.md).
 
 ### Size and approvable_here
 

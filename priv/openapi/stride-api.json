@@ -2266,6 +2266,101 @@
         }
       }
     },
+    "/api/me/reviews/{task_id}/files/{index}": {
+      "get": {
+        "operationId": "getMyReviewFile",
+        "summary": "One file's highlighted diff for the app's flagged-file screen",
+        "description": "One changed file of a pending review: its path, language, additions, deletions, whether its diff was cut at the cap, its flag and the reason, the diff's lines highlighted on the server, and the reviewer issues that name the file as inline notes, each anchored to its line when the issue has one that is in the diff. index is the file's index in the review detail's files (its position in the stored changed files); the app fetches one file per request, never all of them. The same access and plan checks as GET /api/me/reviews/{task_id} run first, so an index only ever reaches the task's own diffs. A span's text is text with a class, never HTML. A resubmit, or an agent replacing the stored files in place, can make an index name another file, so compare path (and review_requested_at) with the detail row the app opened and reload the detail when they differ. A path stored twice is one file, as in the detail: its counts are summed and lines holds each of its diffs. Takes a device access token only. Human-readable reference: docs/api/me_review_file.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "description": "The file's index from the review detail's files.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewFileDiffResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the task's board, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No pending review the person can decide has this id, as for the review detail, or the index names no file of it: it is not a non-negative integer, it is past the last stored file, the entry at it has no path, or the task stores no diffs (its files come only from actual_files_changed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/me/reviews/{task_id}/approval_challenge": {
       "post": {
         "operationId": "createMyReviewApprovalChallenge",
@@ -6034,6 +6129,230 @@
               null
             ],
             "description": "security when a security issue or the security section names the file, issue when another issue does, null when not flagged."
+          }
+        }
+      },
+      "ReviewFileDiffResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReviewFileDiff"
+          }
+        }
+      },
+      "ReviewFileDiff": {
+        "type": "object",
+        "description": "One changed file with its highlighted diff and inline notes.",
+        "required": [
+          "index",
+          "path",
+          "language",
+          "file_count",
+          "additions",
+          "deletions",
+          "truncated",
+          "flagged",
+          "flag_reason",
+          "lines",
+          "notes",
+          "review_requested_at"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The file's position in the stored changed files, as requested."
+          },
+          "path": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "elixir",
+              "heex",
+              "erlang",
+              "plain"
+            ],
+            "description": "The language the diff was highlighted as, from the file's extension. plain for every language with no highlighter."
+          },
+          "file_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many files the review detail lists, for \"1 of 6\"."
+          },
+          "additions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Lines this file's stored diffs add, summed when the path is stored twice. Null when no diff is stored."
+          },
+          "deletions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Lines this file's stored diffs delete, summed when the path is stored twice. Null when no diff is stored."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "Whether the stored diff was cut at the per-diff cap."
+          },
+          "flagged": {
+            "type": "boolean",
+            "description": "Whether a reviewer issue or the security section names this file, as in the review detail."
+          },
+          "flag_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "issue",
+              "security",
+              null
+            ],
+            "description": "security when a security issue or the security section names the file, issue when another issue does, null when not flagged."
+          },
+          "lines": {
+            "type": "array",
+            "description": "The diff's lines, at most 500 per stored diff; a path stored twice has each of its diffs in stored order. Empty when the stored diff is empty or missing.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewDiffLine"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "description": "The reviewer issues that name this file, in the reviewer's order. An issue names one listed file: the longest one its path ends in.",
+            "items": {
+              "$ref": "#/components/schemas/ReviewFileNote"
+            }
+          },
+          "review_requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the task last entered Review, as in the review detail. Stored files can be replaced without it changing, so compare path with the detail row too."
+          }
+        }
+      },
+      "ReviewDiffLine": {
+        "type": "object",
+        "description": "One line of a highlighted diff.",
+        "required": [
+          "kind",
+          "old",
+          "new",
+          "spans"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "add",
+              "del",
+              "ctx",
+              "hunk"
+            ],
+            "description": "An added, deleted or context line, or a hunk header."
+          },
+          "old": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The line's number in the old file. Null for an added line or a hunk header."
+          },
+          "new": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The line's number in the new file. Null for a deleted line or a hunk header."
+          },
+          "spans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewDiffSpan"
+            }
+          }
+        }
+      },
+      "ReviewDiffSpan": {
+        "type": "object",
+        "description": "A run of text with one highlight class. Render text as text, never as markup.",
+        "required": [
+          "class",
+          "text"
+        ],
+        "properties": {
+          "class": {
+            "type": "string",
+            "enum": [
+              "keyword",
+              "string",
+              "atom",
+              "comment",
+              "function",
+              "module",
+              "number",
+              "operator",
+              "plain"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewFileNote": {
+        "type": "object",
+        "description": "A reviewer issue that names this file.",
+        "required": [
+          "line",
+          "anchored",
+          "severity",
+          "category",
+          "description"
+        ],
+        "properties": {
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The issue's line, when it gave a positive integer one."
+          },
+          "anchored": {
+            "type": "boolean",
+            "description": "Whether a diff line's new-side number is line. When false the note belongs to the file as a whole, including when the line is beyond the diff."
+          },
+          "severity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The issue's severity as the reviewer gave it: critical, important or minor."
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The review step that raised the issue."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reviewer's explanation."
           }
         }
       },

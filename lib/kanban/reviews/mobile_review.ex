@@ -35,7 +35,8 @@ defmodule Kanban.Reviews.MobileReview do
   compared after `normalize_file/1`: `./path`, `path:12`, `path:12:3`,
   `path:12-15`, `path#L12`, `lib\\a.ex` and `lib//a.ex` all name the same file,
   and so does an issue path that ends in `/` plus the listed path, such as a
-  `b/`-prefixed diff path or an absolute one. Security text may name a file
+  `b/`-prefixed diff path or an absolute one; an issue names only the
+  longest listed path it matches (`issue_path/2`). Security text may name a file
   as `path` or `./path`. Two stored entries that normalize to one path are
   one file. An issue that names no listed file flags nothing, and an older
   `reviewer_result` whose issues carry no `file` leaves every file unflagged,
@@ -56,6 +57,7 @@ defmodule Kanban.Reviews.MobileReview do
 
   alias Kanban.Reviews
   alias Kanban.Reviews.MobileGuard
+  alias Kanban.Reviews.MobileReviewFile
   alias Kanban.Tasks.Task
   alias KanbanWeb.ReviewAcceptance
   alias KanbanWeb.ReviewBehaviourMatrix
@@ -175,13 +177,23 @@ defmodule Kanban.Reviews.MobileReview do
   """
   @spec files(Task.t()) :: [map()]
   def files(%Task{} = task) do
-    mentions = mentions(task)
+    rows = file_rows(task)
+    mentions = mentions(task, Enum.map(rows, & &1.path))
 
-    task
-    |> file_rows()
+    rows
     |> Enum.map(&Map.merge(&1, flag(&1.path, mentions)))
     |> Enum.sort_by(&(not &1.flagged))
   end
+
+  @doc """
+  One file's highlighted diff and its inline notes, for the flagged-file
+  screen (`GET /api/me/reviews/:task_id/files/:index`, W2753), or
+  `{:error, :not_found}`. `highlight` is called as `DiffHighlighter.highlight/4`
+  is; `Kanban.Reviews.MobileReviewFile.build/3` documents the rest.
+  """
+  @spec file(Task.t(), non_neg_integer(), MobileReviewFile.highlight()) ::
+          {:ok, MobileReviewFile.t()} | {:error, :not_found}
+  defdelegate file(task, index, highlight), to: MobileReviewFile, as: :build
 
   # --- Verdict details ------------------------------------------------------
 
@@ -359,14 +371,15 @@ defmodule Kanban.Reviews.MobileReview do
 
   # Everything that can flag a file: the issues' files, and the security
   # section's text.
-  defp mentions(%Task{} = task) do
+  # Each issue flags only the listed path it names (`issue_path/2`).
+  defp mentions(%Task{} = task, paths) do
     issue_files =
       task
       |> issues()
       |> Enum.flat_map(fn issue ->
-        case normalize_file(issue["file"]) do
+        case issue["file"] |> normalize_file() |> issue_path(paths) do
           nil -> []
-          file -> [{file, issue_reason(issue)}]
+          path -> [{path, issue_reason(issue)}]
         end
       end)
 
@@ -395,7 +408,7 @@ defmodule Kanban.Reviews.MobileReview do
 
   defp flag(path, %{issue_files: issue_files, security_text: security_text}) do
     reasons =
-      for {file, reason} <- issue_files, same_file?(file, path), do: reason
+      for {file, reason} <- issue_files, file == path, do: reason
 
     reasons =
       if Enum.any?(security_text, &names_path?(&1, path)),
@@ -409,33 +422,62 @@ defmodule Kanban.Reviews.MobileReview do
     end
   end
 
-  # An issue names a listed path exactly, or by a longer path that ends in
-  # "/" plus it: a `b/`-prefixed diff path, or an absolute one.
-  defp same_file?(file, path), do: file == path or String.ends_with?(file, "/" <> path)
+  @doc """
+  Whether an issue's normalized `file` names the listed `path`: exactly, or
+  by a longer path that ends in "/" plus it, such as a `b/`-prefixed diff
+  path or an absolute one.
+  """
+  @spec same_file?(String.t(), String.t()) :: boolean()
+  def same_file?(file, path), do: file == path or String.ends_with?(file, "/" <> path)
+
+  @doc """
+  The one listed path in `paths` that an issue's normalized `file` names:
+  the path it equals, else the longest path it ends in after a "/" (so
+  `test/lib/a.ex` names `test/lib/a.ex`, never `lib/a.ex` as well), else
+  `nil`.
+  """
+  @spec issue_path(String.t() | nil, [String.t()]) :: String.t() | nil
+  def issue_path(file, paths) when is_binary(file) and is_list(paths) do
+    if file in paths,
+      do: file,
+      else:
+        paths
+        |> Enum.filter(&same_file?(file, &1))
+        |> Enum.max_by(&String.length/1, fn -> nil end)
+  end
+
+  def issue_path(_file, _paths), do: nil
 
   defp names_path?(text, path) do
     Regex.match?(~r/(?<![\w\/.-])(?:\.\/)?#{Regex.escape(path)}(?![\w\/-]|\.\w)/, text)
   end
 
-  # One spelling per file: backslashes become slashes, `//` and `/./`
-  # collapse, leading `./` go, and a trailing location (`:12`, `:12:3`,
-  # `:12-15`, `#L12`, a bare `:`) is dropped.
-  defp normalize_file(file) when is_binary(file) do
+  @doc """
+  One spelling per file: backslashes become slashes, `//` and `/./`
+  collapse, leading `./` and trailing `/` go, and a trailing location
+  (`:12`, `:12:3`, `:12-15`, `#L12`, a bare `:`) is dropped. A blank or
+  non-string is `nil`.
+  """
+  @spec normalize_file(term()) :: String.t() | nil
+  def normalize_file(file) when is_binary(file) do
     file
     |> String.trim()
     |> String.replace("\\", "/")
     |> String.replace(~r"/(\./)+", "/")
     |> String.replace(~r"/{2,}", "/")
     |> String.replace(~r"\A(\./)+", "")
+    |> String.replace(~r"/+\z", "")
     |> String.replace(~r/(#L\d.*|:[\d:-]*)\z/, "")
     |> blank_to_nil()
   end
 
-  defp normalize_file(_file), do: nil
+  def normalize_file(_file), do: nil
 
   # --- reviewer_result reads ----------------------------------------------
 
-  defp issues(%Task{} = task), do: task |> result_list("issues") |> Enum.filter(&is_map/1)
+  @doc "The `reviewer_result` issues that are maps; `[]` when there are none."
+  @spec issues(Task.t()) :: [map()]
+  def issues(%Task{} = task), do: task |> result_list("issues") |> Enum.filter(&is_map/1)
 
   defp result_list(%Task{reviewer_result: %{} = result}, key) do
     case Map.get(result, key) do

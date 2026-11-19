@@ -257,6 +257,7 @@ defmodule KanbanWeb.Router do
     # Plan-gated (design §10): check_user, then check_board for the task's
     # board.
     get "/reviews/:task_id", ReviewController, :show
+    get "/reviews/:task_id/files/:index", ReviewController, :file
     post "/reviews/:task_id/approval_challenge", ReviewController, :approval_challenge
     post "/reviews/:task_id/approve", ReviewController, :approve
     post "/reviews/:task_id/request_changes", ReviewController, :request_changes
