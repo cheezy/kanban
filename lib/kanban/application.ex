@@ -15,6 +15,10 @@ defmodule Kanban.Application do
       {Kanban.RateLimiter, clean_period: :timer.minutes(10)},
       {DNSCluster, query: Application.get_env(:kanban, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Kanban.PubSub},
+      # Feature flags (Kanban.FeatureFlags, W2907). Its cache-bust notifier
+      # subscribes to Kanban.PubSub, so it must start after it; Kanban.Repo,
+      # which stores the toggles, is already up.
+      FunWithFlags.Supervisor,
       # Fault-isolated supervisor for fire-and-forget background work, e.g.
       # off-request auth-email delivery (Kanban.Accounts.UserNotifier, D134).
       {Task.Supervisor, name: Kanban.TaskSupervisor},
@@ -58,6 +62,11 @@ defmodule Kanban.Application do
     # Pigeon and Goth print the push private keys in crash reports; this
     # filter redacts them. It adds nothing when no push credentials are set.
     :ok = Kanban.Push.LogRedaction.install()
+
+    # fun_with_flags logs every flag write at :debug with the user gate
+    # ("user:<id>") in it; this drops that line (W2907). The Repo query log
+    # redacts the same value (Kanban.Repo.QueryLogger).
+    :ok = Kanban.FeatureFlags.quiet_library_log()
 
     :kanban
     |> Application.get_env(Kanban.Attachments.BlobCleanupWorker, [])

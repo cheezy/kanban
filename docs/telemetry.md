@@ -141,6 +141,14 @@ verbatim (they are not filtered and can quote data from the failed operation),
 and do not tag a metric by an id. Forward ids as ids, and resolve them inside
 the app only when a person with access asks.
 
+The fun_with_flags library behind `Kanban.FeatureFlags` emits its own
+`[:fun_with_flags, :persistence, ...]` events. Their metadata is the library's
+gate struct, which names a user gate as the text `"user:<id>"`, and the
+emit path above never filters them. So nothing attaches a handler to them,
+they are never added to the catalog, and `Kanban.FeatureFlags` silences the
+library's `:debug` line that logs each one. `test/kanban/feature_flags_test.exs`
+fails if a handler is attached.
+
 ## Attaching a handler
 
 Every event is a standard `:telemetry` event, so any handler attached with

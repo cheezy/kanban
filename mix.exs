@@ -23,7 +23,12 @@ defmodule Kanban.MixProject do
       # line. With line numbers, any edit that shifts lines in a file with
       # gettext calls made default.pot stale, and only the after_goal hook's
       # `gettext.extract --check-up-to-date` noticed (G531, G476).
-      gettext: [write_reference_line_numbers: false]
+      gettext: [write_reference_line_numbers: false],
+      # fun_with_flags is a `runtime: false` dependency (Kanban.Application
+      # starts FunWithFlags.Supervisor itself, after Kanban.PubSub), and a
+      # release leaves out every runtime: false dependency. Loading it here
+      # keeps its modules in the production release (W2907).
+      releases: [kanban: [applications: [fun_with_flags: :load]]]
     ]
   end
 
@@ -111,6 +116,10 @@ defmodule Kanban.MixProject do
       # prod release starts its dispatchers; dev and test never contact
       # Apple or Google.
       {:pigeon, "~> 2.1"},
+      # Feature flags behind Kanban.FeatureFlags (W2907). runtime: false so it
+      # does not start before Kanban.PubSub; Kanban.Application starts
+      # FunWithFlags.Supervisor in the right place instead.
+      {:fun_with_flags, "~> 1.13", runtime: false},
       {:mox, "~> 1.3", only: :test}
     ]
   end

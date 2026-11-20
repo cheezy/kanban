@@ -171,6 +171,12 @@ config :kanban, :app_links,
 # Kanban.Push.Supervisor starts no dispatcher and no test sends a real push.
 config :kanban, Kanban.Push, adapters: [ios: Kanban.Push.APNsMock, android: Kanban.Push.FCMMock]
 
+# Feature flags (W2907): no ETS cache in tests. The cache is one table shared
+# by every test, so with it on a toggle set in one async test would leak into
+# the others. Without it every read goes to the database through the test's
+# own sandbox connection. FunWithFlags reads this setting at compile time.
+config :fun_with_flags, :cache, enabled: false
+
 # Webhook deliveries (W2227): route every request to a Req.Test stub and
 # resolve webhook hosts from a fixed table, so no test touches the network
 # or DNS. Both are static, so tests stay async.

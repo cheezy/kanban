@@ -266,6 +266,20 @@ config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 # sign-in.
 config :oidcc, max_clock_skew: 30
 
+# Feature flags (Kanban.FeatureFlags, W2907). Toggles live in the
+# fun_with_flags_toggles table through Kanban.Repo, and every change is
+# broadcast on Kanban.PubSub so each node drops its cached copy of the flag.
+# config/test.exs turns the cache off. Only Kanban.FeatureFlags calls
+# FunWithFlags.
+config :fun_with_flags, :persistence,
+  adapter: FunWithFlags.Store.Persistent.Ecto,
+  repo: Kanban.Repo
+
+config :fun_with_flags, :cache_bust_notifications,
+  enabled: true,
+  adapter: FunWithFlags.Notifications.PhoenixPubSub,
+  client: Kanban.PubSub
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 

@@ -259,6 +259,25 @@ defmodule Kanban.RepoLogRedactionTest do
       assert Enum.any?(metadata.params, &(Encryption.decrypt(&1) == {:ok, secret}))
       refute secret in metadata.params
     end
+
+    test "redacts a feature-flag user gate on write and on removal" do
+      user = user_fixture()
+      target = "user:#{user.id}"
+
+      log =
+        debug_log(fn ->
+          :ok = Kanban.FeatureFlags.enable_for_user(:mobile_app_preview, user)
+          :ok = Kanban.FeatureFlags.disable_for_user(:mobile_app_preview, user)
+        end)
+
+      assert log =~ ~s(source="fun_with_flags_toggles")
+      assert log =~ ~s([true, "#{@mark}", "mobile_app_preview", "actor", true])
+      assert log =~ ~s(["mobile_app_preview", "actor", "#{@mark}"])
+      refute log =~ target
+
+      # Only that table: the same text in any other query is logged as is.
+      assert QueryLogger.redact_params([target], [target]) == [target]
+    end
   end
 
   describe "invalid changeset errors" do

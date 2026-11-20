@@ -29,6 +29,10 @@ defmodule Kanban.Repo.QueryLogger do
   not matter; a new cipher needs an entry in `decryptors/0`. Every other param
   is logged as Ecto logs it, and `nil` stays `nil`.
 
+  A feature-flag user gate (`Kanban.FeatureFlags`) is stored as the text
+  `"user:<id>"`, so in a query on `fun_with_flags_toggles` every param of
+  that shape is logged as `"**redacted**"` too (W2907).
+
   If decryption raises (for example, no key is configured), no cast param is
   logged at all: the dumped params are logged instead, with every value that
   has the ciphertext shape replaced, so neither a plaintext nor a ciphertext's
@@ -249,11 +253,22 @@ defmodule Kanban.Repo.QueryLogger do
     params = Map.get(metadata, :params) || []
 
     try do
-      redact_params(Map.get(metadata, :cast_params), params)
+      metadata
+      |> Map.get(:cast_params)
+      |> redact_params(params)
+      |> redact_flag_targets(Map.get(metadata, :source))
     rescue
       _exception -> replace(params, &ciphertext?/1)
     end
   end
+
+  defp redact_flag_targets(params, "fun_with_flags_toggles"),
+    do: replace(params, &flag_user_target?/1)
+
+  defp redact_flag_targets(params, _source), do: params
+
+  defp flag_user_target?("user:" <> _id), do: true
+  defp flag_user_target?(_value), do: false
 
   defp ok_error({:ok, _result}), do: "OK"
   defp ok_error(_error), do: "ERROR"
