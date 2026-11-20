@@ -34,6 +34,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias KanbanWeb.API.Me.DecisionJSON
   alias KanbanWeb.API.Me.DeviceJSON
   alias KanbanWeb.API.Me.FallbackController
+  alias KanbanWeb.API.Me.GoalJSON
   alias KanbanWeb.API.Me.MeJSON
   alias KanbanWeb.API.Me.NotificationSettingsController
   alias KanbanWeb.API.Me.NotificationSettingsJSON
@@ -1724,6 +1725,136 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         {{"/api/me/agents", "403"}, {:error, {:plan_required, :mobile_app}}},
         {{"/api/me/goals/{id}/after_goal", "403"}, {:error, {:plan_required, :mobile_app}}},
         {{"/api/me/goals/{id}/after_goal", "404"}, {:error, :not_found}}
+      ]
+
+      for {{path, status} = where, error} <- examples do
+        assert error |> rendered.() |> Jason.decode!() == example.(path, status),
+               "#{inspect(where)} differs"
+      end
+    end
+  end
+
+  describe "schema parity with GoalJSON (W2762)" do
+    setup do
+      goal = %Task{id: 4, identifier: "G1", title: "G", type: :goal, status: :in_progress}
+
+      entry = %{
+        goal: goal,
+        board: %{id: 1, name: "Board"},
+        target: %Kanban.Targets.DeliveryTarget{id: 3, name: "Launch"},
+        counts: %{total: 2, completed: 1, doing: 1, review: 0, blocked: 0},
+        waiting_on_you: 1,
+        hook_failed: false
+      }
+
+      task = %Task{
+        id: 5,
+        identifier: "W1",
+        title: "T",
+        type: :work,
+        status: :in_progress,
+        needs_review: false
+      }
+
+      task_entry = %{
+        task: task,
+        agent: "Claude",
+        reviewable: false,
+        in_column_since: ~U[2026-11-20 09:00:00Z]
+      }
+
+      result = %{
+        goals: [entry],
+        filter: :open,
+        filters: %{open: 1, done: 0, no_target: 0},
+        page: 1,
+        per_page: 100,
+        total: 1,
+        next_page: nil
+      }
+
+      detail = %{
+        goal: entry,
+        agents: ["Claude"],
+        archived_done: 0,
+        groups: [%{status: :doing, tasks: [task_entry]}]
+      }
+
+      %{index: GoalJSON.index(%{result: result}), show: GoalJSON.show(%{detail: detail})}
+    end
+
+    test "the goal schemas list exactly the keys GoalJSON renders, and require them all",
+         %{spec: spec, index: index, show: show} do
+      [goal] = index.data.goals
+      [group] = show.data.groups
+      [task] = group.tasks
+
+      pairs = [
+        {index, "MeGoalListResponse"},
+        {index.data, "MeGoalList"},
+        {index.data.filters, "MeGoalFilterCounts"},
+        {goal, "MeGoal"},
+        {goal.board, "MeGoalBoard"},
+        {goal.target, "MeGoalTarget"},
+        {goal.counts, "MeAgentGoalCounts"},
+        {show, "MeGoalDetailResponse"},
+        {show.data, "MeGoalDetail"},
+        {group, "MeGoalTaskGroup"},
+        {task, "MeGoalTask"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+    end
+
+    test "the enums are the values the app can receive", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+      filters = ~w(open done no_target)
+
+      assert schemas["MeGoal"]["properties"]["status"]["enum"] == ecto_enum(:status)
+      assert schemas["MeGoalTask"]["properties"]["status"]["enum"] == ecto_enum(:status)
+      assert schemas["MeGoalTask"]["properties"]["type"]["enum"] == ecto_enum(:type)
+
+      assert schemas["MeGoalTaskGroup"]["properties"]["status"]["enum"] ==
+               ~w(backlog ready doing review done)
+
+      assert schemas["MeGoalList"]["properties"]["filter"]["enum"] == filters
+
+      assert get_in(spec, ["paths", "/api/me/goals", "get", "parameters"])
+             |> Enum.find(&(&1["name"] == "filter"))
+             |> get_in(["schema", "enum"]) == filters
+
+      for filter <- filters, do: assert({:ok, _} = Kanban.Tasks.parse_goal_filter(filter))
+    end
+
+    test "the refusal examples match what the person-API fallback renders", %{spec: spec} do
+      rendered = fn error ->
+        Phoenix.ConnTest.build_conn() |> FallbackController.call(error) |> Map.get(:resp_body)
+      end
+
+      example = fn path, status ->
+        get_in(spec, [
+          "paths",
+          path,
+          "get",
+          "responses",
+          status,
+          "content",
+          "application/json",
+          "example"
+        ])
+      end
+
+      examples = [
+        {{"/api/me/goals", "403"}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/goals", "422"}, Kanban.Tasks.parse_goal_filter("bogus")},
+        {{"/api/me/goals/{id}", "403"}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/goals/{id}", "404"}, {:error, :not_found}}
       ]
 
       for {{path, status} = where, error} <- examples do

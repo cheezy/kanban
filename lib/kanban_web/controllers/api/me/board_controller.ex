@@ -35,12 +35,12 @@ defmodule KanbanWeb.API.Me.BoardController do
   alias Kanban.Columns
   alias Kanban.Plans
   alias Kanban.Tasks
+  alias KanbanWeb.API.Me.PageParams
   alias KanbanWeb.API.Me.PromoteParams
   alias KanbanWeb.IdParams
 
   action_fallback KanbanWeb.API.Me.FallbackController
 
-  @max_page 10_000
   @write_access [:owner, :modify]
 
   def index(conn, _params) do
@@ -101,7 +101,7 @@ defmodule KanbanWeb.API.Me.BoardController do
 
   # The person's plan, then the page, in the documented check order.
   defp user_then_page(scope, params) do
-    with :ok <- check_user(scope), do: parse_page(params)
+    with :ok <- check_user(scope), do: PageParams.parse(params)
   end
 
   # The column and its page, as the view's assigns.
@@ -125,18 +125,6 @@ defmodule KanbanWeb.API.Me.BoardController do
       column -> {:ok, column}
     end
   end
-
-  defp parse_page(%{"page" => page}) when is_binary(page) do
-    case Integer.parse(page) do
-      {page, ""} when page >= 1 and page <= @max_page -> {:ok, page}
-      _invalid -> bad_page()
-    end
-  end
-
-  defp parse_page(%{"page" => _page}), do: bad_page()
-  defp parse_page(_params), do: {:ok, 1}
-
-  defp bad_page, do: {:error, {:bad_request, "page must be an integer from 1 to #{@max_page}."}}
 
   defp parse_id(id) do
     case IdParams.parse(id) do

@@ -21,8 +21,12 @@ defmodule Kanban.Tasks.GoalsTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.PlansHelpers
+  import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications.GoalCompletedWorker
@@ -851,6 +855,272 @@ defmodule Kanban.Tasks.GoalsTest do
 
       assert locked == []
       assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+  end
+
+  describe "the app's goal list and goal detail (W2762)" do
+    setup %{user: user, goal: outer_goal} do
+      # The module setup's goal sits on the user's own board; archive it so
+      # these lists hold only the goals each test makes.
+      archive!(outer_goal)
+      scope = user_scope_fixture(user)
+      board = ai_optimized_board_fixture(user)
+      cols = board |> Kanban.Columns.list_columns() |> Map.new(&{&1.name, &1})
+
+      %{scope: scope, app_board: board, cols: cols}
+    end
+
+    defp app_goal!(column, attrs \\ %{}), do: task_fixture(column, Map.put(attrs, :type, :goal))
+
+    defp aged!(task, seconds) do
+      at = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(seconds)
+      task |> Ecto.Changeset.change(inserted_at: at) |> Repo.update!()
+    end
+
+    defp list_ids(scope, opts), do: scope |> Goals.list_goals_for_app(opts) |> ids()
+
+    defp ids(%{goals: goals}), do: Enum.map(goals, & &1.goal.id)
+
+    defp detail!(scope, goal) do
+      {:ok, goal, board} = Tasks.get_goal_for_app(scope, goal.id)
+      Goals.get_goal_detail_for_app(scope, goal, board)
+    end
+
+    defp in_group(detail, status),
+      do: Enum.find(detail.groups, &(&1.status == status)).tasks
+
+    test "lists goals across workspaces, newest first, with filters", ctx do
+      personal = ctx.cols["Backlog"] |> app_goal!() |> aged!(-300)
+
+      org = organization_fixture()
+      organization_member_fixture(org, ctx.user)
+      workspace = org_workspace_fixture(org)
+      workspace_member_fixture(workspace, ctx.user)
+
+      org_board =
+        ctx.user
+        |> ai_optimized_board_fixture()
+        |> Ecto.Changeset.change(workspace_id: workspace.id)
+        |> Repo.update!()
+
+      org_cols = org_board |> Kanban.Columns.list_columns() |> Map.new(&{&1.name, &1})
+      org_goal = org_cols["Backlog"] |> app_goal!() |> aged!(-200)
+
+      owner = user_fixture()
+      shared_board = ai_optimized_board_fixture(owner)
+      {:ok, _} = Kanban.Boards.add_user_to_board(shared_board, ctx.user, :modify, owner)
+      shared_cols = shared_board |> Kanban.Columns.list_columns() |> Map.new(&{&1.name, &1})
+      shared_goal = shared_cols["Backlog"] |> app_goal!() |> aged!(-100)
+
+      done = ctx.cols["Done"] |> app_goal!() |> aged!(-50)
+      complete!(done)
+
+      target = delivery_target_fixture(ctx.user)
+      personal |> Ecto.Changeset.change(target_id: target.id) |> Repo.update!()
+
+      archived_goal = app_goal!(ctx.cols["Backlog"])
+      archive!(archived_goal)
+
+      app_goal!(
+        ai_optimized_board_fixture(user_fixture())
+        |> Kanban.Columns.list_columns()
+        |> hd()
+      )
+
+      page = Goals.list_goals_for_app(ctx.scope)
+      assert ids(page) == [shared_goal.id, org_goal.id, personal.id]
+      assert page.filters == %{open: 3, done: 1, no_target: 2}
+      assert %{filter: :open, page: 1, per_page: 100, total: 3, next_page: nil} = page
+
+      assert list_ids(ctx.scope, filter: :done) == [done.id]
+      assert list_ids(ctx.scope, filter: :no_target) == [shared_goal.id, org_goal.id]
+
+      for filter <- [:open, :done, :no_target] do
+        page = Goals.list_goals_for_app(ctx.scope, filter: filter)
+        assert page.total == Map.fetch!(page.filters, filter)
+        assert length(page.goals) == page.total
+      end
+
+      [org_row] = Enum.filter(page.goals, &(&1.goal.id == org_goal.id))
+      assert org_row.board == %{id: org_board.id, name: org_board.name}
+    end
+
+    test "no_target includes a goal whose target is archived", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      target = delivery_target_fixture(ctx.user)
+      goal |> Ecto.Changeset.change(target_id: target.id) |> Repo.update!()
+
+      assert list_ids(ctx.scope, filter: :no_target) == []
+
+      target |> Ecto.Changeset.change(archived_at: DateTime.utc_now()) |> Repo.update!()
+
+      assert [%{target: nil}] = Goals.list_goals_for_app(ctx.scope, filter: :no_target).goals
+    end
+
+    test "leaves out goals on boards outside the plan", ctx do
+      enforce_plans()
+      app_goal!(ctx.cols["Backlog"])
+
+      org = organization_fixture()
+      organization_member_fixture(org, ctx.user)
+      workspace = org_workspace_fixture(org)
+      workspace_member_fixture(workspace, ctx.user)
+
+      org_board =
+        ctx.user
+        |> ai_optimized_board_fixture()
+        |> Ecto.Changeset.change(workspace_id: workspace.id)
+        |> Repo.update!()
+
+      org_goal = org_board |> Kanban.Columns.list_columns() |> hd() |> app_goal!()
+
+      page = Goals.list_goals_for_app(ctx.scope)
+      assert ids(page) == [org_goal.id]
+      assert page.filters == %{open: 1, done: 0, no_target: 1}
+    end
+
+    test "a scope without a user lists nothing" do
+      assert %{goals: [], total: 0, filters: %{open: 0, done: 0, no_target: 0}} =
+               Goals.list_goals_for_app(nil)
+
+      assert %{goals: [], filter: :done} =
+               Goals.list_goals_for_app(%Kanban.Accounts.Scope{user: nil}, filter: :done)
+    end
+
+    test "parse_goal_filter/1 reads the three filters and refuses anything else" do
+      assert Goals.parse_goal_filter(nil) == {:ok, :open}
+      assert Goals.parse_goal_filter("open") == {:ok, :open}
+      assert Goals.parse_goal_filter("done") == {:ok, :done}
+      assert Goals.parse_goal_filter("no_target") == {:ok, :no_target}
+
+      for value <- ["bogus", "OPEN", ["open"], %{"a" => "b"}, 1] do
+        assert {:error, changeset} = Goals.parse_goal_filter(value)
+        assert errors_on(changeset) == %{filter: ["is invalid"]}
+      end
+    end
+
+    test "time in column comes from the latest move", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      task = task_fixture(ctx.cols["Doing"], %{parent_id: goal.id})
+
+      for {to, seconds} <- [{"Ready", -600}, {"Doing", -60}] do
+        row = Kanban.Tasks.History.create_move_history(task, "Backlog", to)
+        at = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(seconds)
+        row |> Ecto.Changeset.change(inserted_at: at) |> Repo.update!()
+      end
+
+      latest =
+        from(h in Kanban.Tasks.TaskHistory,
+          where: h.task_id == ^task.id and h.type == :move,
+          select: max(h.inserted_at)
+        )
+        |> Repo.one()
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:doing)
+      assert since == DateTime.from_naive!(latest, "Etc/UTC")
+    end
+
+    test "a task never moved uses its insert time", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      task = ctx.cols["Ready"] |> task_fixture(%{parent_id: goal.id}) |> aged!(-3600)
+
+      from(h in Kanban.Tasks.TaskHistory, where: h.task_id == ^task.id) |> Repo.delete_all()
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:ready)
+      assert since == DateTime.from_naive!(task.inserted_at, "Etc/UTC")
+    end
+
+    test "an agent's claim, review request or completion counts as entering the column",
+         ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      long_ago = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(-7200)
+      stamp = :second |> DateTime.utc_now() |> DateTime.add(-60)
+
+      for {column, field, group} <- [
+            {"Doing", :claimed_at, :doing},
+            {"Review", :review_requested_at, :review},
+            {"Done", :completed_at, :done}
+          ] do
+        task = task_fixture(ctx.cols[column], %{parent_id: goal.id})
+
+        task
+        |> Kanban.Tasks.History.create_move_history("Backlog", "Ready")
+        |> Ecto.Changeset.change(inserted_at: long_ago)
+        |> Repo.update!()
+
+        task |> Ecto.Changeset.change([{field, stamp}]) |> Repo.update!()
+
+        assert [%{in_column_since: ^stamp}] = ctx.scope |> detail!(goal) |> in_group(group)
+      end
+    end
+
+    test "a later move beats an older stamp, and a stamp for another column is ignored", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      old_stamp = :second |> DateTime.utc_now() |> DateTime.add(-7200)
+      doing = task_fixture(ctx.cols["Doing"], %{parent_id: goal.id})
+      doing |> Ecto.Changeset.change(claimed_at: old_stamp) |> Repo.update!()
+      moved_at = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(-60)
+
+      doing
+      |> Kanban.Tasks.History.create_move_history("Ready", "Doing")
+      |> Ecto.Changeset.change(inserted_at: moved_at)
+      |> Repo.update!()
+
+      ready = ctx.cols["Ready"] |> task_fixture(%{parent_id: goal.id}) |> aged!(-3600)
+
+      ready =
+        ready |> Ecto.Changeset.change(claimed_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      from(h in Kanban.Tasks.TaskHistory, where: h.task_id == ^ready.id) |> Repo.delete_all()
+
+      detail = detail!(ctx.scope, goal)
+      assert [%{in_column_since: since}] = in_group(detail, :doing)
+      assert since == DateTime.from_naive!(moved_at, "Etc/UTC")
+      assert [%{in_column_since: ready_since}] = in_group(detail, :ready)
+      assert ready_since == DateTime.from_naive!(ready.inserted_at, "Etc/UTC")
+    end
+
+    test "a goal with only archived children lists no task and counts by D124", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      done = task_fixture(ctx.cols["Done"], %{parent_id: goal.id})
+      complete!(done)
+      archive!(done)
+      archive!(task_fixture(ctx.cols["Ready"], %{parent_id: goal.id}))
+
+      detail = detail!(ctx.scope, goal)
+
+      assert Enum.all?(detail.groups, &(&1.tasks == []))
+      assert length(detail.groups) == 5
+      assert detail.archived_done == 1
+      assert %{total: 1, completed: 1, doing: 0, review: 0, blocked: 0} = detail.goal.counts
+    end
+
+    test "a task in an unknown column is listed under backlog", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      odd = column_fixture(ctx.app_board, %{name: "Parking"})
+      task = task_fixture(odd, %{parent_id: goal.id})
+
+      assert [%{task: %{id: id}}] = ctx.scope |> detail!(goal) |> in_group(:backlog)
+      assert id == task.id
+    end
+
+    test "header counts match the target page", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      task_fixture(ctx.cols["Doing"], %{parent_id: goal.id})
+      done = task_fixture(ctx.cols["Done"], %{parent_id: goal.id})
+      complete!(done)
+      archived = task_fixture(ctx.cols["Done"], %{parent_id: goal.id})
+      complete!(archived)
+      archive!(archived)
+      archive!(task_fixture(ctx.cols["Ready"], %{parent_id: goal.id}))
+
+      [view] = Kanban.Targets.Progress.goal_detail_views([Repo.preload(goal, :column)])
+      detail = detail!(ctx.scope, goal)
+      [row] = Goals.list_goals_for_app(ctx.scope).goals
+
+      for counts <- [detail.goal.counts, row.counts] do
+        assert {counts.total, counts.completed} == {view.total, view.completed}
+      end
     end
   end
 end

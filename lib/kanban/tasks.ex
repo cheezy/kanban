@@ -164,6 +164,9 @@ defmodule Kanban.Tasks do
   defdelegate get_children_including_archived_by_parent(goal_board_pairs), to: Goals
   defdelegate promote_goal_to_ready(goal, board_id), to: Goals
   defdelegate update_parent_goal_position(moving_task, old_column_id, new_column_id), to: Goals
+  defdelegate list_goals_for_app(scope, opts \\ []), to: Goals
+  defdelegate get_goal_detail_for_app(scope, goal, board), to: Goals
+  defdelegate parse_goal_filter(value), to: Goals
 
   # ── Agent query delegations ────────────────────────────────────────
 

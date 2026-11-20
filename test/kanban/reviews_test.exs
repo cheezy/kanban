@@ -274,6 +274,42 @@ defmodule Kanban.ReviewsTest do
     end
   end
 
+  describe "pending_review?/1" do
+    test "agrees with list_pending_reviews/1 over every condition", %{
+      board: board,
+      column: review
+    } do
+      ready = column_fixture(board, %{name: "Ready", position: 0})
+      archived_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      tasks = [
+        pending_task!(review),
+        pending_task!(review, %{review_status: :pending}),
+        pending_task!(review, %{needs_review: false}),
+        pending_task!(review)
+        |> Ecto.Changeset.change(review_status: :approved)
+        |> Repo.update!(),
+        pending_task!(review)
+        |> Ecto.Changeset.change(archived_at: archived_at)
+        |> Repo.update!(),
+        ready |> task_fixture() |> Ecto.Changeset.change(needs_review: true) |> Repo.update!()
+      ]
+
+      listed = MapSet.new(Reviews.list_pending_reviews(), & &1.id)
+
+      for task <- Repo.preload(tasks, :column, force: true) do
+        assert Reviews.pending_review?(task) == MapSet.member?(listed, task.id)
+      end
+
+      assert MapSet.size(listed) == 2
+    end
+
+    test "is false for a map without the review fields" do
+      refute Reviews.pending_review?(%{})
+      refute Reviews.pending_review?(%{needs_review: true, archived_at: nil, review_status: nil})
+    end
+  end
+
   describe "get_pending_review/2" do
     test "returns {:ok, task} for a pending task the user can access",
          %{column: column, user: user} do

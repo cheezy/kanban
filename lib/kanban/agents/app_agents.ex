@@ -24,7 +24,8 @@ defmodule Kanban.Agents.AppAgents do
   task that was not completed is removed work and counts in neither. `doing`,
   `review` and `blocked` count the live tasks in the Doing and Review
   columns, and with the blocked status. A goal with no tasks has every count
-  at 0. `hook_failed` is `Kanban.Tasks.AfterGoalAttempt.failed?/1`.
+  at 0. The rule lives in `Kanban.Tasks.GoalCounts`, which the app's Goals
+  list and Goal screen share. `hook_failed` is `Kanban.Tasks.AfterGoalAttempt.failed?/1`.
 
   Every query here is scoped to the boards the person can already see.
   """
@@ -35,24 +36,16 @@ defmodule Kanban.Agents.AppAgents do
   alias Kanban.Accounts.User
   alias Kanban.Agents
   alias Kanban.Agents.Agent
-  alias Kanban.Columns
   alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.AfterGoalAttempt
+  alias Kanban.Tasks.GoalCounts
   alias Kanban.Tasks.Task
-
-  @type counts :: %{
-          total: non_neg_integer(),
-          completed: non_neg_integer(),
-          doing: non_neg_integer(),
-          review: non_neg_integer(),
-          blocked: non_neg_integer()
-        }
 
   @type goal_entry :: %{
           goal: Task.t(),
           board_id: integer(),
-          counts: counts(),
+          counts: GoalCounts.counts(),
           hook_failed: boolean()
         }
 
@@ -123,60 +116,15 @@ defmodule Kanban.Agents.AppAgents do
   defp with_counts([]), do: []
 
   defp with_counts(goals) do
-    children = goals |> Enum.map(& &1.id) |> children_by_goal()
+    children = goals |> Enum.map(& &1.id) |> GoalCounts.children_by_goal()
 
     Enum.map(goals, fn goal ->
       %{
         goal: goal,
         board_id: goal.column.board_id,
-        counts: counts(Map.get(children, goal.id, [])),
+        counts: GoalCounts.counts(Map.get(children, goal.id, [])),
         hook_failed: AfterGoalAttempt.failed?(goal)
       }
     end)
   end
-
-  # Every task of the goals, archived ones included, each on its goal's own
-  # board, in one query.
-  defp children_by_goal(goal_ids) do
-    from(t in Task,
-      join: c in assoc(t, :column),
-      join: g in Task,
-      on: g.id == t.parent_id,
-      join: gc in assoc(g, :column),
-      where: t.parent_id in ^goal_ids and c.board_id == gc.board_id,
-      select: %{
-        parent_id: t.parent_id,
-        status: t.status,
-        archived_at: t.archived_at,
-        column: %{name: c.name}
-      }
-    )
-    |> Repo.all()
-    |> Enum.group_by(& &1.parent_id)
-  end
-
-  defp counts(children) do
-    children
-    |> Enum.filter(&credited?/1)
-    |> credited_counts()
-    |> Map.merge(children |> Enum.filter(&is_nil(&1.archived_at)) |> live_counts())
-  end
-
-  # total and completed count every credited task (D124).
-  defp credited_counts(credited) do
-    %{total: length(credited), completed: Enum.count(credited, &(&1.status == :completed))}
-  end
-
-  # doing, review and blocked count live tasks only.
-  defp live_counts(live) do
-    %{
-      doing: Enum.count(live, &Columns.named?(&1.column, "Doing")),
-      review: Enum.count(live, &Columns.named?(&1.column, "Review")),
-      blocked: Enum.count(live, &(&1.status == :blocked))
-    }
-  end
-
-  # D124: a live task counts; an archived one only when it was completed.
-  defp credited?(%{archived_at: nil}), do: true
-  defp credited?(%{status: status}), do: status == :completed
 end

@@ -1,6 +1,10 @@
 defmodule Kanban.Tasks.Goals do
   @moduledoc """
   Goal hierarchy, promotion, parent tracking, and tree queries.
+
+  The app's cross-board Goals list and Goal screen (W2762) are
+  `list_goals_for_app/2`, `get_goal_detail_for_app/3` and
+  `parse_goal_filter/1`, implemented in `Kanban.Tasks.AppGoals`.
   """
 
   import Ecto.Query, warn: false
@@ -9,6 +13,7 @@ defmodule Kanban.Tasks.Goals do
   alias Kanban.Columns.Column
   alias Kanban.Notifications.Events
   alias Kanban.Repo
+  alias Kanban.Tasks.AppGoals
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.GoalPlacement
   alias Kanban.Tasks.GoalTargetColumn
@@ -348,6 +353,15 @@ defmodule Kanban.Tasks.Goals do
   defdelegate update_parent_goal_position_locked(moving_task, opts \\ []),
     to: LockedGoalPlacement,
     as: :place
+
+  @doc "The app's Goals list. See `Kanban.Tasks.AppGoals.list/2`."
+  defdelegate list_goals_for_app(scope, opts \\ []), to: AppGoals, as: :list
+
+  @doc "The app's Goal screen. See `Kanban.Tasks.AppGoals.detail/3`."
+  defdelegate get_goal_detail_for_app(scope, goal, board), to: AppGoals, as: :detail
+
+  @doc "Reads the Goals list's filter. See `Kanban.Tasks.AppGoals.parse_filter/1`."
+  defdelegate parse_goal_filter(value), to: AppGoals, as: :parse_filter
 
   defp collect_backlog_tasks(goal, backlog_column) do
     children =

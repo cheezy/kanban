@@ -3,6 +3,8 @@ defmodule Kanban.Tasks.History do
   Task history records for tracking moves, priority changes, and assignments.
   """
 
+  import Ecto.Query, warn: false
+
   alias Kanban.Repo
   alias Kanban.Tasks.TaskHistory
 
@@ -46,5 +48,23 @@ defmodule Kanban.Tasks.History do
       to_user_id: to_user_id
     })
     |> Repo.insert!()
+  end
+
+  @doc """
+  The time of each task's latest `:move` row, as a map of task id to naive
+  UTC time, in one query. A task with no move row has no key. `[]` makes no
+  query.
+  """
+  @spec latest_move_at_by_task([integer()]) :: %{integer() => NaiveDateTime.t()}
+  def latest_move_at_by_task([]), do: %{}
+
+  def latest_move_at_by_task(task_ids) when is_list(task_ids) do
+    from(h in TaskHistory,
+      where: h.type == :move and h.task_id in ^task_ids,
+      group_by: h.task_id,
+      select: {h.task_id, max(h.inserted_at)}
+    )
+    |> Repo.all()
+    |> Map.new()
   end
 end

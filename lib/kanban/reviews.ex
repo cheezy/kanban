@@ -183,6 +183,20 @@ defmodule Kanban.Reviews do
   def can_review?(_scope, _task), do: false
 
   @doc """
+  Whether a loaded task is a pending review: the in-memory form of the query
+  `list_pending_reviews/1` runs. It needs review, is not archived, has no
+  decision yet (`review_status` nil or `:pending`) and sits in the Review
+  column. `task` needs `:needs_review`, `:archived_at`, `:review_status` and
+  its `:column` (a column name is enough).
+  """
+  @spec pending_review?(map()) :: boolean()
+  def pending_review?(%{needs_review: true, archived_at: nil, review_status: status} = task)
+      when status in [nil, :pending],
+      do: task |> Map.get(:column) |> Columns.named?(@review_column_name)
+
+  def pending_review?(_task), do: false
+
+  @doc """
   The ids of the boards among `tasks`' (each with its `:column` loaded) on
   which the scope's user may decide reviews, as a set, checking each board
   once. `/review` uses it to offer Approve and Request changes only where

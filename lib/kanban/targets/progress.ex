@@ -133,6 +133,7 @@ defmodule Kanban.Targets.Progress do
   alias Kanban.Targets.Queries
   alias Kanban.Targets.Status
   alias Kanban.Tasks
+  alias Kanban.Tasks.GoalCounts
   alias Kanban.Tasks.Task
 
   @typedoc """
@@ -462,9 +463,11 @@ defmodule Kanban.Targets.Progress do
   # `children` includes archived children (fetched via
   # `get_task_children_including_archived/2`): archived-completed work is
   # credited toward the fraction, archived-incomplete work is treated as removed
-  # (dropped from both counts). See D124.
+  # (dropped from both counts). See D124. The rule is
+  # `Kanban.Tasks.GoalCounts.credited?/1`, shared with the app's goal rows, so
+  # the app's "4/9" matches this page's.
   defp progress_shape(%Task{} = goal, children) do
-    credited = Enum.filter(children, &credited_child?/1)
+    credited = Enum.filter(children, &GoalCounts.credited?/1)
 
     %{
       completed_children: Enum.count(credited, &(&1.status == :completed)),
@@ -472,13 +475,6 @@ defmodule Kanban.Targets.Progress do
       goal_complete?: goal_complete?(goal)
     }
   end
-
-  # A child counts toward the goal's completed/total fraction when it is live
-  # (not archived) or archived-but-completed. Archived-incomplete children
-  # (wontdo/duplicate/deferred/cancelled) are removed work and drop out of the
-  # fraction entirely rather than dragging the denominator down. See D124.
-  defp credited_child?(%Task{archived_at: nil}), do: true
-  defp credited_child?(%Task{status: status}), do: status == :completed
 
   # A goal is complete when its own status is :completed, or it has been
   # archived as finished work — archive_reason :completed, or legacy nil. A goal
@@ -513,7 +509,7 @@ defmodule Kanban.Targets.Progress do
 
     %{
       goal: goal,
-      flow: flow_map(Enum.filter(children, &credited_child?/1)),
+      flow: flow_map(Enum.filter(children, &GoalCounts.credited?/1)),
       completed: progress.completed_children,
       total: progress.total_children,
       percentage: percentage(progress.completed_children, progress.total_children),

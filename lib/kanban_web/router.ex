@@ -292,6 +292,11 @@ defmodule KanbanWeb.Router do
     # (W2761).
     get "/agents", AgentController, :index
     get "/goals/:id/after_goal", AgentController, :after_goal
+
+    # Plan-gated (design §10): check_user; the goals list leaves out boards
+    # outside the plan, and the goal read checks the goal's board (W2762).
+    get "/goals", GoalController, :index
+    get "/goals/:id", GoalController, :show
   end
 
   # API routes with token authentication

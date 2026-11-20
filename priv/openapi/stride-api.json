@@ -4815,6 +4815,331 @@
           }
         }
       }
+    },
+    "/api/me/goals": {
+      "get": {
+        "operationId": "listMyGoals",
+        "summary": "The person's goals across every board",
+        "description": "One page of the goals on every board the person can see, across all their workspaces (a board_users row, or derived org-admin access), never a board list the caller sends. Boards the plan does not unlock are left out while paid plans are enforced, and archived goals are left out. Newest first, 100 per page. filter is open (the default: goals that are not completed), done (completed goals) or no_target (open goals with no target, or whose target is archived); filters carries every filter's count. Each row names its board and its target (null when it has none or the target is archived); counts never count the goal itself and follow the target's rule (D124: an archived task counts only when it was completed); waiting_on_you is the number of the goal's pending reviews (live tasks in Review that need review and have no decision yet); hook_failed is true when the goal waits on after_goal and its last attempt failed, as GET /api/me/goals/{id}/after_goal reports it. The checks run in this order: the person's plan (403 plan_required), filter (422), page (400). Takes a device access token only. Human-readable reference: docs/api/me_goals.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "open (the default), done or no_target.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "done",
+                "no_target"
+              ],
+              "default": "open"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The 1-based page. Default 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the person's goals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeGoalListResponse"
+                },
+                "example": {
+                  "data": {
+                    "goals": [
+                      {
+                        "id": 4790,
+                        "identifier": "G88",
+                        "title": "Ship the Stride app",
+                        "status": "in_progress",
+                        "board": {
+                          "id": 12,
+                          "name": "Mobile"
+                        },
+                        "target": {
+                          "id": 3,
+                          "name": "1.0 launch"
+                        },
+                        "counts": {
+                          "total": 9,
+                          "completed": 4,
+                          "doing": 2,
+                          "review": 1,
+                          "blocked": 0
+                        },
+                        "waiting_on_you": 1,
+                        "hook_failed": false
+                      }
+                    ],
+                    "filter": "open",
+                    "filters": {
+                      "open": 14,
+                      "done": 31,
+                      "no_target": 5
+                    },
+                    "page": 1,
+                    "per_page": 100,
+                    "total": 14,
+                    "next_page": null
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "422": {
+            "description": "filter is not open, done or no_target. Validation messages are in the device's language (its locale); match on the field, never on the message text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                "example": {
+                  "errors": {
+                    "filter": [
+                      "is invalid"
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/goals/{id}": {
+      "get": {
+        "operationId": "getMyGoal",
+        "summary": "A goal and its tasks grouped by column",
+        "description": "The goal's row (as on GET /api/me/goals), the agents who worked on the goal or its tasks, archived_done (its archived completed tasks, for the \"N archived\" line) and its live tasks grouped by column, always five groups in the web's order: backlog, ready, doing, review and done, each by position. A task in a column with any other name is in backlog, as on the web. Archived tasks are never listed, but the header counts include them by the target's rule (D124), so they match the goal's row on its target and can differ from the web goal page's own counts. Each task carries the agent on it (completed_by_agent, else created_by_agent), reviewable (a pending review the person may decide, so the app opens the review) and in_column_since: when it entered its column, the later of its latest move row in the task history and the stamp the agent workflow writes for the column it is in now (claimed_at in Doing, review_requested_at in Review, completed_at in Done), else when it was created. An unclaim, a claim-expiry release back to Ready and a changes-requested return to Doing record neither, so after one the time can predate the task's entry into its column. Any member of the goal's board, read-only included, may read it. The checks run in this order: the person's plan (403 plan_required), the goal: a goal on a board the person holds access to (404), the board's plan (403 plan_required). Takes a device access token only. Human-readable reference: docs/api/me_goals.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The goal's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The goal and its tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeGoalDetailResponse"
+                },
+                "example": {
+                  "data": {
+                    "goal": {
+                      "id": 4790,
+                      "identifier": "G88",
+                      "title": "Ship the Stride app",
+                      "status": "in_progress",
+                      "board": {
+                        "id": 12,
+                        "name": "Mobile"
+                      },
+                      "target": {
+                        "id": 3,
+                        "name": "1.0 launch"
+                      },
+                      "counts": {
+                        "total": 9,
+                        "completed": 4,
+                        "doing": 2,
+                        "review": 1,
+                        "blocked": 0
+                      },
+                      "waiting_on_you": 1,
+                      "hook_failed": false
+                    },
+                    "agents": [
+                      "Claude"
+                    ],
+                    "archived_done": 2,
+                    "groups": [
+                      {
+                        "status": "backlog",
+                        "tasks": []
+                      },
+                      {
+                        "status": "ready",
+                        "tasks": []
+                      },
+                      {
+                        "status": "doing",
+                        "tasks": [
+                          {
+                            "id": 4801,
+                            "identifier": "W2762",
+                            "title": "Add the goals routes",
+                            "type": "work",
+                            "status": "in_progress",
+                            "needs_review": false,
+                            "reviewable": false,
+                            "agent": "Claude",
+                            "in_column_since": "2026-11-20T08:02:11Z"
+                          }
+                        ]
+                      },
+                      {
+                        "status": "review",
+                        "tasks": []
+                      },
+                      {
+                        "status": "done",
+                        "tasks": []
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the board's, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. The board's plan is checked only once the person is known to see the goal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to the goal's board, no goal has this id (a work or defect task's id included), or the id is not a positive integer in the signed 64-bit range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10174,6 +10499,322 @@
           "failed": {
             "type": "boolean",
             "description": "status is pending and the exit code is not 0, a missing one included."
+          }
+        }
+      },
+      "MeGoalListResponse": {
+        "type": "object",
+        "description": "GET /api/me/goals.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeGoalList"
+          }
+        }
+      },
+      "MeGoalList": {
+        "type": "object",
+        "description": "One page of the person's goals, newest first.",
+        "required": [
+          "goals",
+          "filter",
+          "filters",
+          "page",
+          "per_page",
+          "total",
+          "next_page"
+        ],
+        "properties": {
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeGoal"
+            }
+          },
+          "filter": {
+            "type": "string",
+            "enum": [
+              "open",
+              "done",
+              "no_target"
+            ],
+            "description": "The filter this page was read with."
+          },
+          "filters": {
+            "$ref": "#/components/schemas/MeGoalFilterCounts"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "per_page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The number of goals the filter matches."
+          },
+          "next_page": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 2,
+            "description": "The next page, or null on the last one."
+          }
+        }
+      },
+      "MeGoalFilterCounts": {
+        "type": "object",
+        "description": "The number of goals each filter matches.",
+        "required": [
+          "open",
+          "done",
+          "no_target"
+        ],
+        "properties": {
+          "open": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "no_target": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MeGoal": {
+        "type": "object",
+        "description": "One goal row on the Goals list and the Goal screen header.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "status",
+          "board",
+          "target",
+          "counts",
+          "waiting_on_you",
+          "hook_failed"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "board": {
+            "$ref": "#/components/schemas/MeGoalBoard"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeGoalTarget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The goal's target, or null when it has none or the target is archived."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MeAgentGoalCounts"
+          },
+          "waiting_on_you": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The goal's pending reviews: live tasks in Review that need review and have no decision yet."
+          },
+          "hook_failed": {
+            "type": "boolean",
+            "description": "The goal waits on after_goal and its last attempt's exit code is not 0."
+          }
+        }
+      },
+      "MeGoalBoard": {
+        "type": "object",
+        "description": "The goal's board.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MeGoalTarget": {
+        "type": "object",
+        "description": "The goal's delivery target.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MeGoalDetailResponse": {
+        "type": "object",
+        "description": "GET /api/me/goals/{id}.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeGoalDetail"
+          }
+        }
+      },
+      "MeGoalDetail": {
+        "type": "object",
+        "description": "A goal and its live tasks grouped by column.",
+        "required": [
+          "goal",
+          "agents",
+          "archived_done",
+          "groups"
+        ],
+        "properties": {
+          "goal": {
+            "$ref": "#/components/schemas/MeGoal"
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The agents who worked on the goal or its tasks, the goal's first."
+          },
+          "archived_done": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The goal's archived tasks that were completed, for the \"N archived\" line."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeGoalTaskGroup"
+            },
+            "description": "Always five groups: backlog, ready, doing, review and done, in that order."
+          }
+        }
+      },
+      "MeGoalTaskGroup": {
+        "type": "object",
+        "description": "The goal's live tasks in one column, by position.",
+        "required": [
+          "status",
+          "tasks"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "backlog",
+              "ready",
+              "doing",
+              "review",
+              "done"
+            ]
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeGoalTask"
+            }
+          }
+        }
+      },
+      "MeGoalTask": {
+        "type": "object",
+        "description": "One live task of the goal.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "type",
+          "status",
+          "needs_review",
+          "reviewable",
+          "agent",
+          "in_column_since"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect",
+              "goal"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "needs_review": {
+            "type": "boolean"
+          },
+          "reviewable": {
+            "type": "boolean",
+            "description": "A pending review the person may decide: the app opens the review rather than the task."
+          },
+          "agent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The agent on the task: completed_by_agent, else created_by_agent."
+          },
+          "in_column_since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the task entered its column: the later of its latest move row and the agent workflow's stamp for its current column (claimed_at in Doing, review_requested_at in Review, completed_at in Done), else when the task was created. An unclaim, a claim-expiry release or a changes-requested return records neither, so after one it can predate the column entry."
           }
         }
       },

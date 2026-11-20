@@ -1133,6 +1133,28 @@ event of its own ([push notifications](push-notifications.md)).
   before the run, or one already taken emits nothing.
 - **It is not persisted,** like the delivery events.
 
+### Status events
+
+W2762 added the event the app's status screens emit
+([the goals routes](api/me_goals.md)). It is declared in
+`Kanban.Telemetry.Catalog.StatusEvents`
+(`lib/kanban/telemetry/catalog/status_events.ex`) and emitted by
+`KanbanWeb.API.Me.GoalController` once a read answers 200.
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :status, :viewed]` | `count` | `surface`, `via` | `GET /api/me/goals` (`surface: :goals`) and `GET /api/me/goals/:id` (`surface: :goal`) |
+
+- **What it carries.** `surface` names the screen, `:goals` for the goals
+  list and `:goal` for one goal's task status. `via` is `:ios` or `:android`,
+  from the device's platform. It never carries a goal, a board, a filter, a
+  user or a device. Both keys are tags.
+- **When it fires.** Only when the read answers 200: a refused read (no
+  plan, an unknown filter, a bad page, a goal the person cannot see) emits
+  nothing.
+- **It is not persisted.** A signed-in device can cause it at will, so it is
+  charted live only.
+
 ## Emitting an event
 
 ```elixir
@@ -1223,7 +1245,9 @@ raise.
    an entry in `Kanban.Telemetry.Catalog.DeviceEvents`, a new app
    approval event is an entry in `Kanban.Telemetry.Catalog.ReviewEvents`, a
    new decisions event is an entry in `Kanban.Telemetry.Catalog.DecisionEvents`,
-   and a new push event is an entry in `Kanban.Telemetry.Catalog.PushEvents`.
+   a new push event is an entry in `Kanban.Telemetry.Catalog.PushEvents`, and
+   a new app status screen event is an entry in
+   `Kanban.Telemetry.Catalog.StatusEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -1787,6 +1811,12 @@ the sections above explain which code emits each family and when.
 |---|---|---|---|---|
 | `[:kanban, :review_diff_panel, :opened]` | event, legacy | `system_time`, `count` | `task_id` | A reviewer opened the diff panel for a task in the review queue. |
 | `[:kanban, :review_diff_panel, :closed]` | event, legacy | `system_time`, `count` | `task_id` | A reviewer closed the diff panel in the review queue. |
+
+### Domain `status`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :status, :viewed]` | event | `count` | `surface`, `via` | A device read one of the app's status screens. surface is :goals (the goals list) or :goal (one goal's task status); via is :ios or :android. |
 
 ### Domain `target`
 

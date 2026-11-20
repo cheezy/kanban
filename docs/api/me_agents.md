@@ -92,7 +92,7 @@ activity, newest first.
 
 The open goals that have an agent on them now: the goal of each roster task
 in Doing or Review, when the goal is neither completed nor archived. Newest
-first. The full list of goals waits for its own route (design §6.19).
+first. The full list of goals is [GET /api/me/goals](me_goals.md).
 
 `counts` are the goal's own tasks. The goal itself is never one of them: the
 web's goal tree counts it as one of its own tasks (`total` is 1 plus its

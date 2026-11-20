@@ -1,12 +1,15 @@
 defmodule Kanban.Tasks.TaskHistoryTest do
   use Kanban.DataCase
 
+  import Ecto.Query
+
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.Repo
+  alias Kanban.Tasks.History
   alias Kanban.Tasks.TaskHistory
 
   describe "changeset/2" do
@@ -561,6 +564,38 @@ defmodule Kanban.Tasks.TaskHistoryTest do
 
       refute changeset.valid?
       assert %{type: ["is invalid"]} = errors_on(changeset)
+    end
+  end
+
+  describe "Kanban.Tasks.History.latest_move_at_by_task/1" do
+    test "returns each task's latest move time, and no key for a task never moved" do
+      user = user_fixture()
+      column = user |> board_fixture() |> column_fixture()
+      moved = task_fixture(column)
+      never = task_fixture(column)
+      from(h in TaskHistory, where: h.task_id in ^[moved.id, never.id]) |> Repo.delete_all()
+
+      times =
+        for {to, seconds} <- [{"Ready", -600}, {"Doing", -60}] do
+          at = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(seconds)
+
+          moved
+          |> History.create_move_history("Backlog", to)
+          |> Ecto.Changeset.change(inserted_at: at)
+          |> Repo.update!()
+
+          at
+        end
+
+      History.create_priority_change_history(:low, :high, moved.id)
+
+      assert History.latest_move_at_by_task([moved.id, never.id]) == %{
+               moved.id => List.last(times)
+             }
+    end
+
+    test "makes no query for no ids" do
+      assert History.latest_move_at_by_task([]) == %{}
     end
   end
 end
