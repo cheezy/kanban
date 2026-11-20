@@ -88,6 +88,14 @@ activity, newest first.
   days, in the device's time zone (as registered with
   [the device](me_devices.md)), else UTC.
 
+By rule, `status`, `stuck` and `current_task` read only the agent's tasks
+that are not archived. An archived task is no current work, even when it was archived
+while still in Doing or Review: it never makes an agent `working`, `waiting`
+or `stuck`, and it is never the `current_task`. It is still work the agent
+did, so `today`, `last_7d` and `last_active_at` count it, and so does
+`dormant`. An agent whose only tasks are archived stays in the list as
+`idle`.
+
 ### goals
 
 The open goals that have an agent on them now: the goal of each roster task

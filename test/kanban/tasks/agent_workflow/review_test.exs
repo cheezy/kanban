@@ -68,8 +68,7 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
       assert doing_task.status == :in_progress
     end
 
-    test "a return to Doing records the move in the task history; an approval records none",
-         ctx do
+    test "a return to Doing records the move in the task history", ctx do
       for status <- [:changes_requested, :rejected] do
         task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
         claimed = claim_for(task, ctx.user, ctx.board)
@@ -77,18 +76,42 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
         {:ok, completed, _} =
           AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
 
-        assert move_rows(task) == []
+        assert move_rows(task) == [{"Ready", "Doing"}, {"Doing", "Review"}]
 
         returned =
           completed |> Repo.preload([:column]) |> set_review_status(status, ctx.user)
 
         assert {:ok, _doing_task} = AgentWorkflow.mark_reviewed(returned, ctx.user)
-        assert move_rows(task) == [{"Review", "Doing"}]
+
+        assert move_rows(task) == [
+                 {"Ready", "Doing"},
+                 {"Doing", "Review"},
+                 {"Review", "Doing"}
+               ]
       end
+    end
+
+    test "an approval records the move from Review to Done; a refusal records none", ctx do
+      before = [{"Ready", "Doing"}, {"Doing", "Review"}]
+      assert move_rows(ctx.in_review_task) == before
+
+      assert {:error, :review_not_performed} =
+               AgentWorkflow.mark_reviewed(ctx.in_review_task, ctx.user)
 
       approved = set_review_status(ctx.in_review_task, :approved, ctx.user)
+      assert {:error, :not_authorized} = AgentWorkflow.mark_reviewed(approved, ctx.other)
+      assert move_rows(approved) == before
+
       assert {:ok, _done_task, _hooks} = AgentWorkflow.mark_reviewed(approved, ctx.user)
-      assert move_rows(approved) == []
+      assert move_rows(approved) == before ++ [{"Review", "Done"}]
+    end
+
+    test "an approval on a board with no Done column records no move", ctx do
+      ctx.done |> Ecto.Changeset.change(name: "Shipped") |> Repo.update!()
+      approved = set_review_status(ctx.in_review_task, :approved, ctx.user)
+
+      assert {:error, :column_not_found} = AgentWorkflow.mark_reviewed(approved, ctx.user)
+      assert move_rows(approved) == [{"Ready", "Doing"}, {"Doing", "Review"}]
     end
 
     test "returns :review_not_performed when review_status is nil", ctx do
@@ -169,6 +192,16 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
       assert done_task.column_id == ctx.done.id
       assert done_task.status == :completed
       assert done_task.completed_at
+    end
+
+    test "records the move from Review to Done; a refusal records none", ctx do
+      before = [{"Ready", "Doing"}, {"Doing", "Review"}]
+
+      assert {:error, :not_authorized} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.other)
+      assert move_rows(ctx.in_review_task) == before
+
+      assert {:ok, _done_task} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.user)
+      assert move_rows(ctx.in_review_task) == before ++ [{"Review", "Done"}]
     end
 
     test "keeps an existing completed_at rather than overwriting it", ctx do

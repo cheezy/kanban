@@ -85,9 +85,8 @@ defmodule Kanban.Tasks.ClaimRelease do
   # name (case and surrounding whitespace ignored), as the unclaim path finds it.
   defp ready_column(board_id), do: Columns.get_column_by_name(board_id, "Ready")
 
-  # The claim moved the task without a move row and the release clears its
-  # claimed_at stamp, so the move back to Ready is recorded, as an unclaim
-  # records it.
+  # The move back to Ready is recorded, as an unclaim records it and as the
+  # claim recorded the move to Doing.
   defp move_to_ready(task, column, ready) do
     released =
       task

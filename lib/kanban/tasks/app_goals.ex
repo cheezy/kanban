@@ -46,16 +46,19 @@ defmodule Kanban.Tasks.AppGoals do
   Each task carries the agent on it (`completed_by_agent`, else
   `created_by_agent`), `reviewable` (a pending review the person may decide,
   so the app opens the review rather than the task) and `in_column_since`:
-  when it entered its column. That is the later of its latest `:move` row in
-  `task_history` and the stamp the agent workflow writes when it moves a task
-  forward without a move row, read only for the column the task is in now:
-  `claimed_at` in Doing (a claim), `review_requested_at` in Review (a
-  completion that asks for review) and `completed_at` in Done (a completion
-  or an approved review). A task with neither uses its insert time. The
-  agent workflow's moves back write a move row instead
-  (`Kanban.Tasks.History.record_move/3`): an unclaim and a claim release
-  back to Ready, and a changes-requested or rejected review back to Doing,
-  which keeps the first claim's `claimed_at`.
+  when it entered its column. Every move writes a `:move` row in
+  `task_history`: a move on the web, a promote, a move to Backlog, and every
+  agent-workflow move (`Kanban.Tasks.History.record_move/3`: a claim, an
+  unclaim, a claim release, a completion, an auto-move to Done and a review).
+  So when the task's latest move row moved it into the column it is in now
+  (its name matched as `Kanban.Columns.named?/2` matches one), that row's
+  time is the answer, and no stamp is read: a stamp can outlive the move
+  that wrote it, as a return to Doing keeps the first claim's `claimed_at`.
+  Otherwise (a task the agent workflow moved before it recorded its moves,
+  or a column renamed since the row) it is the later of that row and the
+  stamp the agent workflow writes, read only for the column the task is in
+  now: `claimed_at` in Doing, `review_requested_at` in Review and
+  `completed_at` in Done. A task with neither uses its insert time.
   """
 
   import Ecto.Query, warn: false
@@ -207,7 +210,7 @@ defmodule Kanban.Tasks.AppGoals do
   end
 
   defp task_entries(children, can_review) do
-    moves = children |> Enum.map(& &1.id) |> History.latest_move_at_by_task()
+    moves = children |> Enum.map(& &1.id) |> History.latest_move_by_task()
     Enum.map(children, &task_entry(&1, moves, can_review))
   end
 
@@ -326,12 +329,22 @@ defmodule Kanban.Tasks.AppGoals do
     }
   end
 
-  # An agent's claim and completion change the column without a move row, so
-  # the stamp each writes counts as entering the column it moved the task to.
-  # Its moves back (unclaim, claim release, review return to Doing) write a
-  # move row, which is later than the stamp they leave behind.
-  defp in_column_since(%Task{} = task, moves) do
-    [Map.get(moves, task.id), entry_stamp(task)]
+  # The latest move row into the task's current column is when it entered
+  # it. Without one (an agent move made before the workflow recorded its
+  # moves, or a renamed column), the stamp the agent workflow writes for the
+  # current column counts too, and the later of the two wins.
+  defp in_column_since(%Task{} = task, moves), do: since(task, Map.get(moves, task.id))
+
+  defp since(%Task{column: column} = task, %{at: at, to_column: to_column}) do
+    if Columns.named?(column, to_column),
+      do: utc(at),
+      else: latest([at, entry_stamp(task)], task)
+  end
+
+  defp since(%Task{} = task, nil), do: latest([entry_stamp(task)], task)
+
+  defp latest(times, %Task{} = task) do
+    times
     |> Enum.reject(&is_nil/1)
     |> Enum.map(&utc/1)
     |> Enum.max(DateTime, fn -> utc(task.inserted_at) end)

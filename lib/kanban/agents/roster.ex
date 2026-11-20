@@ -23,6 +23,21 @@ defmodule Kanban.Agents.Roster do
   An agent is **dormant** when its most recent activity is older than
   `@dormant_threshold_days` (14 days). Dormant agents remain in the roster
   (flagged via `Agent.dormant`) but are excluded from the fleet-health rollup.
+
+  ## Archived tasks
+
+  This is a product rule, not a default: an archived task is no current
+  work, even when it was archived while still in Doing or Review. The agent's status (`:working` / `:waiting` / `:idle`),
+  its `stuck` flag and its `current_task` are taken from its unarchived tasks
+  only (`Kanban.Agents.unarchived?/1`), so an archived task never makes an
+  agent working or stuck, and never makes a goal or target stalled through
+  `Kanban.Targets.DeliveryRollup`.
+
+  An archived task, completed work archived later included, is still work
+  the agent did, so everything else counts it: the `today` and `last_7d` completed counts, `success_rate`,
+  `claim_count`, `last_active_at` (and so the roster order and the `dormant`
+  flag), and the owner the agent is shown under. An agent whose only tasks
+  are archived stays on the roster, `:idle` and not stuck.
   """
 
   alias Kanban.Agents
@@ -91,6 +106,10 @@ defmodule Kanban.Agents.Roster do
 
   defp build_agent({name, owner_key} = identity, tasks, today, timezone) do
     own_tasks = Agents.filter_by_identity(tasks, identity)
+    # Status and stuck read unarchived tasks only (`Agents.current_task/1`
+    # skips archived ones itself, as the detail panel's does); the counts,
+    # activity time and owner read every task (see "Archived tasks").
+    unarchived_tasks = Enum.filter(own_tasks, &Agents.unarchived?/1)
     now = now_naive()
     last_active_at = last_active(own_tasks)
 
@@ -98,8 +117,8 @@ defmodule Kanban.Agents.Roster do
       name: name,
       owner_key: owner_key,
       owner: resolve_owner_for_key(own_tasks, owner_key),
-      status: infer_status(own_tasks),
-      stuck: stuck?(own_tasks, now),
+      status: infer_status(unarchived_tasks),
+      stuck: stuck?(unarchived_tasks, now),
       last_active_at: last_active_at,
       dormant: dormant?(last_active_at, now),
       current_task: Agents.current_task(own_tasks),

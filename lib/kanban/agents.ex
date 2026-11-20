@@ -396,16 +396,25 @@ defmodule Kanban.Agents do
   defp to_naive(%DateTime{} = dt), do: DateTime.to_naive(dt)
 
   @doc false
-  # The current-task pill reflects active work only, so it surfaces a
-  # Doing-column task. When an agent has work in both Doing and Review, the
-  # Doing task wins; when its only open tasks are in Review, there is no pill.
-  # Shared by Roster and Detail.
+  # The current-task pill reflects active work only, so it surfaces an
+  # unarchived Doing-column task. When an agent has work in both Doing and
+  # Review, the Doing task wins; when its only open tasks are in Review, there
+  # is no pill. An archived task left in Doing is no current work. Shared by
+  # Roster and Detail.
   def current_task(tasks) do
-    case Enum.find(tasks, &doing?/1) do
+    case Enum.find(tasks, &(unarchived?(&1) and doing?(&1))) do
       nil -> nil
       task -> %{identifier: task.identifier, title: task.title}
     end
   end
+
+  @doc false
+  # Whether a task is not archived. An archived task left in Doing or Review
+  # is no current work: the roster's status, stuck flag and current task skip
+  # it, while its completed counts and activity time still count it. Reads the
+  # projected `archived_at` of both fetches (and `%Task{}` structs); a map
+  # without the key counts as unarchived.
+  def unarchived?(task), do: is_nil(Map.get(task, :archived_at))
 
   @doc false
   # Whether a task sits in the Doing column (an agent holding one is `:working`).

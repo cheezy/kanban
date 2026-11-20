@@ -74,7 +74,7 @@ The `after_review_result` parameter must be an object with these fields:
 
 The behavior depends on the review status:
 
-**If approved** - Task moves to Done column. The response carries a `hooks` list: `[after_review]`, plus an `after_goal` entry when the task was the last open child of a goal. You ran `after_review` before this call, so its entry describes a hook you have already run. Run `after_goal` when it appears and report it with [PATCH /api/tasks/:id/after_goal](patch_tasks_id_after_goal.md), against the goal:
+**If approved** - Task moves to Done column, and the move from Review to Done is recorded in the task's history. The response carries a `hooks` list: `[after_review]`, plus an `after_goal` entry when the task was the last open child of a goal. You ran `after_review` before this call, so its entry describes a hook you have already run. Run `after_goal` when it appears and report it with [PATCH /api/tasks/:id/after_goal](patch_tasks_id_after_goal.md), against the goal:
 
 ```json
 {

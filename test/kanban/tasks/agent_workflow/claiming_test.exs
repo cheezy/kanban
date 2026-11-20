@@ -177,6 +177,26 @@ defmodule Kanban.Tasks.AgentWorkflow.ClaimingTest do
       assert task.column_id == ctx.ready.id
       assert task.status == :open
       assert is_nil(task.assigned_to_id)
+      assert move_rows(task) == []
+    end
+
+    test "a claim records its move from Ready to Doing in the task history", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      assert move_rows(task) == []
+
+      assert {:ok, _claimed, _hook} =
+               AgentWorkflow.claim_next_task([], ctx.user, ctx.board.id, task.identifier, "C")
+
+      assert move_rows(task) == [{"Ready", "Doing"}]
+    end
+
+    test "a refused claim records no move", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"assigned_to_id" => ctx.other.id})
+
+      assert {:error, :assigned_to_other_user} =
+               AgentWorkflow.claim_next_task([], ctx.user, ctx.board.id, task.identifier, "C")
+
+      assert move_rows(task) == []
     end
   end
 
@@ -200,13 +220,13 @@ defmodule Kanban.Tasks.AgentWorkflow.ClaimingTest do
          ctx do
       task = create_open_task(ctx.ready, ctx.user)
       claimed = claim_for(task, ctx.user, ctx.board)
-      assert move_rows(task) == []
+      assert move_rows(task) == [{"Ready", "Doing"}]
 
       assert {:error, :not_authorized} = AgentWorkflow.unclaim_task(claimed, ctx.other)
-      assert move_rows(task) == []
+      assert move_rows(task) == [{"Ready", "Doing"}]
 
       assert {:ok, _unclaimed} = AgentWorkflow.unclaim_task(claimed, ctx.user)
-      assert move_rows(task) == [{"Doing", "Ready"}]
+      assert move_rows(task) == [{"Ready", "Doing"}, {"Doing", "Ready"}]
     end
 
     test "returns {:error, :not_claimed} for an open task", ctx do

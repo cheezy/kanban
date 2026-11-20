@@ -67,8 +67,10 @@ them:
   the web's Backlog arrow): the board's leftmost column of that name, matched
   ignoring case and surrounding spaces. On a board with two columns of one
   name, only the leftmost is counted, so a count always equals the column
-  read's `total`. The `/boards` card and the Now screen still add both
-  columns up.
+  read's `total`. The web's `/boards` cards and board header and the Now
+  screen ([GET /api/me/decisions](me_decisions.md)) count by the same rule,
+  so they agree with this list: a card's Open is the leftmost Backlog plus
+  the leftmost Ready.
 - `idle_agents` is the number of agents that worked on the board in the last
   24 hours and hold no task in Doing or Review on any board the person can
   see: the rule behind the Now screen's `ready_empty` item, so the header's

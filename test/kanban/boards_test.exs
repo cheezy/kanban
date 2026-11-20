@@ -1643,6 +1643,41 @@ defmodule Kanban.BoardsTest do
       assert {metrics.open, metrics.doing, metrics.review, metrics.done} == {2, 1, 2, 1}
     end
 
+    test "two columns of one name count only the leftmost, as the app's board list counts",
+         %{user: user, now: now} do
+      board = board_fixture(user, %{name: "Twin Columns"})
+      # Created first, so the lower ids, but moved right of their namesakes.
+      right_ready = column_fixture(board, %{name: "Ready"})
+      right_doing = column_fixture(board, %{name: "Doing"})
+      left_ready = column_fixture(board, %{name: " ready "})
+      left_doing = column_fixture(board, %{name: "DOING"})
+      backlog = column_fixture(board, %{name: "Backlog"})
+
+      :ok =
+        Kanban.Columns.reorder_columns(
+          board,
+          [backlog.id, left_ready.id, left_doing.id, right_ready.id, right_doing.id],
+          user
+        )
+
+      task_fixture(backlog)
+      task_fixture(left_ready)
+      for _ <- 1..3, do: task_fixture(right_ready)
+      # The leftmost Doing is empty; a second Doing's tasks are not counted.
+      for _ <- 1..2, do: task_fixture(right_doing)
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+      assert {metrics.open, metrics.doing, metrics.review, metrics.done} == {2, 0, 0, 0}
+
+      [%{counts: counts}] = user |> Scope.for_user() |> Boards.list_boards_for_app()
+      assert metrics.open == counts.backlog + counts.ready
+
+      assert {metrics.doing, metrics.review, metrics.done} ==
+               {counts.doing, counts.review, counts.done}
+
+      assert {:ok, ^metrics} = Boards.get_board_metrics(user, board.id, now: now)
+    end
+
     test "excludes archived tasks from the four buckets", %{user: user, now: now} do
       board = ai_optimized_board_fixture(user, %{name: "Archive Board"})
       cols = columns_by_name(board)

@@ -632,6 +632,33 @@ defmodule Kanban.DecisionsTest do
       assert reader |> Scope.for_user() |> Decisions.build() |> of_kind(:ready_empty) == []
     end
 
+    test "two columns of one name read only the leftmost, as the app's board list counts",
+         ctx do
+      plain = board_fixture(ctx.owner)
+      column = &Kanban.ColumnsFixtures.column_fixture(plain, %{name: &1})
+      backlog = column.("Backlog")
+      _ready = column.("Ready")
+      second_ready = column.(" ready ")
+      second_backlog = column.("backlog")
+      agent_task!(column.("Done"), DateTime.add(now(), -3600))
+
+      # Work in a second Ready does not fill the leftmost, the one a promote fills.
+      in_backlog = task_fixture(backlog)
+      task_fixture(second_ready)
+      assert [item] = ctx.scope |> Decisions.build() |> of_kind(:ready_empty)
+      assert item.details.backlog_count == 1
+
+      [%{counts: counts}] =
+        ctx.scope |> Boards.list_boards_for_app() |> Enum.filter(&(&1.board.id == plain.id))
+
+      assert {counts.ready, counts.backlog} == {0, 1}
+
+      # Work only in a second Backlog leaves the leftmost empty: nothing to promote.
+      in_backlog |> Ecto.Changeset.change(archived_at: now()) |> Repo.update!()
+      task_fixture(second_backlog)
+      assert ctx.scope |> Decisions.build() |> of_kind(:ready_empty) == []
+    end
+
     test "an empty Backlog or a board without Ready and Backlog columns is not ready_empty",
          ctx do
       agent_task!(ctx.cols["Done"], DateTime.add(now(), -3600))

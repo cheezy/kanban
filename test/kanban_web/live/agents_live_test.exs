@@ -260,6 +260,90 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert roster =~ "Waiting for review"
       refute roster =~ review_task.identifier
     end
+
+    test "an archived task left in Doing makes its agent neither working nor stuck",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      stale = DateTime.utc_now() |> DateTime.add(-90 * 60, :second) |> DateTime.truncate(:second)
+
+      archived =
+        doing
+        |> agent_doing_task(%{created_by_agent: "Archiver", claimed_at: stale})
+        |> archive_task!()
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+
+      assert has_element?(view, ~s([data-agent-name="Archiver"] [data-agent-status="idle"]))
+      refute has_element?(view, ~s([data-agent-name="Archiver"] [data-agent-current-task]))
+      refute roster_html(html) =~ archived.identifier
+      assert fleet_count(html, "working") == 0
+      assert fleet_count(html, "stuck") == 0
+      assert fleet_count(html, "idle") == 1
+    end
+
+    test "an agent with an archived stuck task is working on its live task",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      stale = DateTime.utc_now() |> DateTime.add(-90 * 60, :second) |> DateTime.truncate(:second)
+
+      live_task = agent_doing_task(doing, %{created_by_agent: "Mixed"})
+
+      archived =
+        doing
+        |> agent_doing_task(%{created_by_agent: "Mixed", claimed_at: stale})
+        |> archive_task!()
+
+      # Older than the archived task, so the archived one is read first.
+      from(t in Kanban.Tasks.Task, where: t.id == ^live_task.id)
+      |> Repo.update_all(set: [updated_at: ~N[2026-01-01 00:00:00]])
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+
+      assert has_element?(view, ~s([data-agent-name="Mixed"] [data-agent-status="working"]))
+
+      pill = view |> element(~s([data-agent-name="Mixed"] [data-agent-current-task])) |> render()
+      assert pill =~ live_task.identifier
+      refute pill =~ archived.identifier
+      assert fleet_count(html, "working") == 1
+      assert fleet_count(html, "stuck") == 0
+    end
+
+    test "an archived completed task still counts toward the agent's completed counts",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      done = column_fixture(board, %{name: "Done"})
+
+      done
+      |> agent_doing_task(%{
+        created_by_agent: "Finisher",
+        completed_by_agent: "Finisher",
+        status: :completed,
+        completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+      |> archive_task!()
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      stats =
+        view |> element(~s([data-agent-name="Finisher"] [data-agent-stats-grid])) |> render()
+
+      # Today, then 7d: both count the archived completed task.
+      assert [["1"], ["1"] | _] =
+               Regex.scan(~r/<dd[^>]*>\s*(\d+)\s*<\/dd>/, stats, capture: :all_but_first)
+    end
+  end
+
+  defp agent_doing_task(column, attrs) do
+    {:ok, task} =
+      column |> task_fixture() |> Tasks.update_task(Map.merge(%{status: :in_progress}, attrs))
+
+    task
+  end
+
+  defp archive_task!(task) do
+    task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
   end
 
   # Slices the rendered page down to the roster region (between the roster

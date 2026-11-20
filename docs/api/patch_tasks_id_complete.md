@@ -1,6 +1,6 @@
 # PATCH /api/tasks/:id/complete
 
-Mark a task as complete. This moves the task to the Review column (or directly to Done if `needs_review=false`).
+Mark a task as complete. This moves the task to the Review column (or directly to Done if `needs_review=false`). Each move is recorded in the task's history: Doing to Review, and then Review to Done when the task skips review.
 
 > **Note on `changed_files`.** The per-file diff snapshot is no longer written by this endpoint. As of W778, `changed_files` is owned exclusively by [`PUT /api/tasks/:id/changed_files`](put_tasks_id_changed_files.md) — the hook uploads it before this completion request fires. If you send `changed_files` in the completion body it is **never stored**, but it is still validated: a malformed value is rejected with `422` by `CompletionResultGate` in strict mode, the production default (grace mode logs a warning instead). New plugins should upload via the PUT endpoint and omit `changed_files` from the completion body. See the [Diff Contract](../diff-contract.md) for encoding rules.
 
@@ -726,6 +726,7 @@ fi
 - Task must be in `in_progress` or `blocked` status
 - If `needs_review=true`, task moves to the Review column and its status stays `in_progress` (there is no `review` status)
 - If `needs_review=false`, task automatically moves to Done column with `completed` status
+- The task's history records each move: Doing to Review, then Review to Done when the task skips review. A refused or failed completion records nothing
 - Both `after_doing` and `before_review` hooks are **blocking** - non-zero exit codes will cause the API to reject your completion
 - The `after_review` hook is also **blocking** and must be executed after API call returns (only if `needs_review=false`)
 - Hook timeouts: the server sends 600 seconds (600000 milliseconds) for `after_doing`, `before_review` and `after_review`

@@ -28,11 +28,13 @@ defmodule Kanban.Tasks.GoalsTest do
   import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
 
+  alias Kanban.AgentWorkflowHelpers
   alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications.GoalCompletedWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Repo
   alias Kanban.Tasks
+  alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.LockedGoalPlacement
   alias Kanban.Tasks.Task
@@ -1159,6 +1161,58 @@ defmodule Kanban.Tasks.GoalsTest do
       assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:doing)
       assert_just_entered(since, task)
       assert DateTime.compare(since, Repo.get!(Task, task.id).claimed_at) == :gt
+    end
+
+    test "a claim, a completion and an approval each count as entering their column", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+
+      task =
+        AgentWorkflowHelpers.create_open_task(ctx.cols["Ready"], ctx.user, %{
+          "parent_id" => goal.id,
+          "needs_review" => true
+        })
+
+      claimed = AgentWorkflowHelpers.claim_for(task, ctx.user, ctx.app_board)
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:doing)
+      assert_just_entered(since, task)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(
+          claimed,
+          ctx.user,
+          AgentWorkflowHelpers.valid_complete_params(),
+          "A"
+        )
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:review)
+      assert_just_entered(since, task)
+
+      approved =
+        completed
+        |> Repo.preload(:column)
+        |> AgentWorkflowHelpers.set_review_status(:approved, ctx.user)
+
+      assert {:ok, _done, _hooks} = AgentWorkflow.mark_reviewed(approved, ctx.user)
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:done)
+      assert_just_entered(since, task)
+    end
+
+    test "a move row into the task's column wins over a later stamp for it", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      task = task_fixture(ctx.cols["Doing"], %{parent_id: goal.id})
+      from(h in Kanban.Tasks.TaskHistory, where: h.task_id == ^task.id) |> Repo.delete_all()
+      moved_at = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(-3600)
+
+      task
+      |> Kanban.Tasks.History.create_move_history("Ready", " doing ")
+      |> Ecto.Changeset.change(inserted_at: moved_at)
+      |> Repo.update!()
+
+      claimed_at = :second |> DateTime.utc_now() |> DateTime.add(-60)
+      task |> Ecto.Changeset.change(claimed_at: claimed_at) |> Repo.update!()
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:doing)
+      assert since == DateTime.from_naive!(moved_at, "Etc/UTC")
     end
 
     test "a goal with only archived children lists no task and counts by D124", ctx do

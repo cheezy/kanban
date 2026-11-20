@@ -69,9 +69,11 @@ defmodule Kanban.Columns do
   has no such column.
 
   Column names are not unique on a board, so the lowest-positioned match
-  wins. The lookup is always scoped to `board_id`, and the name comparison
-  is `named?/2` itself (run over the board's few columns in memory), so the
-  two can never disagree about which whitespace or case counts as a match.
+  wins (`first_named/2`, the rule every count by name follows too:
+  `Kanban.Columns.TaskCounts`). The lookup is always scoped to `board_id`,
+  and the name comparison is `named?/2` itself (run over the board's few
+  columns in memory), so the two can never disagree about which whitespace
+  or case counts as a match.
 
   ## Examples
 
@@ -85,12 +87,35 @@ defmodule Kanban.Columns do
   def get_column_by_name(board_id, name) when is_binary(name) do
     Column
     |> where([c], c.board_id == ^board_id)
-    |> order_by([c], c.position)
+    |> order_by([c], [c.position, c.id])
     |> Repo.all()
-    |> Enum.find(&named?(&1, name))
+    |> first_named(name)
   end
 
   def get_column_by_name(_board_id, _name), do: nil
+
+  @doc """
+  The first of `columns` whose name matches `name` (`named?/2`), or `nil`.
+  Pure; runs no query.
+
+  Given one board's columns in position order, it is the column a name means
+  everywhere in Stride: the leftmost of that name, the column
+  `get_column_by_name/2` returns and the only one a count by name counts
+  (`Kanban.Columns.TaskCounts`). A second column of the same name is never
+  picked.
+
+  ## Examples
+
+      iex> first_named([%{id: 1, name: "Ready"}, %{id: 2, name: " ready "}], "READY")
+      %{id: 1, name: "Ready"}
+
+      iex> first_named([%{id: 1, name: "Doing"}], "Ready")
+      nil
+
+  """
+  @spec first_named([map()], String.t()) :: map() | nil
+  def first_named(columns, name) when is_list(columns),
+    do: Enum.find(columns, &named?(&1, name))
 
   @doc """
   True when `column`'s name equals `name`, ignoring case and surrounding

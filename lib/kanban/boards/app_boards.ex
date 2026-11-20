@@ -17,7 +17,9 @@ defmodule Kanban.Boards.AppBoards do
       rest of the app resolves it (`Kanban.Columns.get_column_by_name/2`):
       the board's lowest-positioned column of that name, case and
       surrounding whitespace ignored. A second column of the same name is not
-      counted, and a column the board does not have counts 0;
+      counted, and a column the board does not have counts 0. The counts are
+      `Kanban.Columns.TaskCounts`', the rule the web's `/boards` cards and
+      the Now screen count by too;
     * `idle_agents` — agents that worked on the board in the last 24 hours
       and are idle now (`Kanban.Agents.Idle`, the `:ready_empty` rule);
     * `group` and `workspace` — `:workspace` with the workspace when it is a
@@ -28,17 +30,12 @@ defmodule Kanban.Boards.AppBoards do
   Every query here is scoped to the boards the person can already see.
   """
 
-  import Ecto.Query, only: [from: 2]
-
   alias Kanban.Accounts.Scope
   alias Kanban.Agents.Idle
   alias Kanban.Boards
   alias Kanban.Boards.Board
-  alias Kanban.Columns
-  alias Kanban.Columns.Column
+  alias Kanban.Columns.TaskCounts
   alias Kanban.Plans
-  alias Kanban.Repo
-  alias Kanban.Tasks.Task
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Workspace
 
@@ -87,7 +84,7 @@ defmodule Kanban.Boards.AppBoards do
 
   defp entries(boards, scope, now) do
     ids = Enum.map(boards, & &1.id)
-    column_counts = column_counts(ids)
+    column_counts = TaskCounts.by_board(ids)
     idle = Idle.count_by_board(scope, ids, now)
     workspaces = visible_workspaces(scope)
 
@@ -105,35 +102,11 @@ defmodule Kanban.Boards.AppBoards do
     end)
   end
 
-  # Every column of `board_ids` with its live work and defect task count, the
-  # cards Kanban.Tasks.list_column_page/3 pages, as %{board_id => [{name,
-  # count}]} with each board's columns by position. One query.
-  defp column_counts(board_ids) do
-    from(c in Column,
-      left_join: t in Task,
-      on: t.column_id == c.id and is_nil(t.archived_at) and t.type in [:work, :defect],
-      where: c.board_id in ^board_ids,
-      group_by: c.id,
-      order_by: [c.board_id, c.position, c.id],
-      select: {c.board_id, c.name, count(t.id)}
-    )
-    |> Repo.all()
-    |> Enum.group_by(&elem(&1, 0), fn {_board_id, name, count} -> {name, count} end)
-  end
-
+  # The count of the board's leftmost column of each name, 0 for a name the
+  # board has no column for.
   defp counts(columns),
-    do: Map.new(@counted_columns, fn {key, name} -> {key, count_of(columns, name)} end)
-
-  # The count of the board's first column, by position, with `name`: the
-  # column Kanban.Columns.get_column_by_name/2 resolves the name to.
-  defp count_of(columns, name) do
-    case Enum.find(columns, fn {column_name, _count} -> named?(column_name, name) end) do
-      {_column_name, count} -> count
-      nil -> 0
-    end
-  end
-
-  defp named?(column_name, name), do: Columns.named?(%{name: column_name}, name)
+    do:
+      Map.new(@counted_columns, fn {key, name} -> {key, TaskCounts.count(columns, name) || 0} end)
 
   # The person's Organization workspaces and their personal workspace.
   defp visible_workspaces(%Scope{user: user} = scope) do

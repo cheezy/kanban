@@ -38,7 +38,11 @@ defmodule Kanban.Targets.DeliveryRollup do
   OR `dormant` (no activity past the dormancy threshold). A member goal is
   stalled when at least one stalled agent is active on it. The rollup never
   re-implements stuck/dormant detection — it reads the flags
-  `Kanban.Agents.Roster` already derived.
+  `Kanban.Agents.Roster` already derived. So an archived task never makes an
+  agent stuck, and never makes its goal or target stalled: the roster takes
+  the stuck flag from unarchived tasks only (its "Archived tasks" section).
+  An archived task still bridges its agent to the target and still counts
+  toward the agent's last activity, so `dormant` is unchanged by archiving.
 
   ## Scoping / security
 

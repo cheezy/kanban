@@ -9,7 +9,11 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
   The refusal checks run before any state change and in a fixed order: status,
   then the live board-write check (W1430), then the assignee. The detect-only
   credential audits run next, then the move to Review in one transaction. The
-  auto-Done move is a second, separate transaction; its `task.completed` and
+  auto-Done move is a second, separate transaction. Each move records itself
+  as a `task_history` move row inside its own transaction
+  (`Kanban.Tasks.History.record_move/3`), so a completion that skips review
+  records Doing to Review and then Review to Done, and a refused or failed
+  move records nothing. The auto-Done move's `task.completed` and
   goal telemetry go through `Kanban.Telemetry.AfterCommit.defer/2` after that
   transaction returns (D371), which emits straight away because no caller wraps
   this path in `after_commit/1` today. `AfterCommit` queues deferred emits in
@@ -34,6 +38,7 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
   alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.GoalTelemetry
+  alias Kanban.Tasks.History
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.SecurityConsiderationsScan
   alias Kanban.Tasks.TaskTelemetry
@@ -151,14 +156,15 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
 
       {:ok, updated_task, hooks}
     else
-      auto_move_to_done(updated_task, user, board, columns.done, agent_name)
+      auto_move_to_done(updated_task, user, board, columns, agent_name)
     end
   end
 
-  defp auto_move_to_done(updated_task, user, board, done_column, agent_name) do
+  defp auto_move_to_done(updated_task, user, board, columns, agent_name) do
     board_id = board.id
+    done_column = columns.done
 
-    case run_auto_done_transaction(updated_task, done_column) do
+    case run_auto_done_transaction(updated_task, columns.review, done_column) do
       {:ok, {last_child_tag, completed_goal_id}} ->
         Support.maybe_schedule_after_goal_grace(updated_task, last_child_tag)
         final_task = Support.finalize_completion(updated_task, user, board_id, done_column)
@@ -182,8 +188,9 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
   # never duplicates that check. Returns `{:ok, {tag, completed_goal_id}}`:
   # the tag decides whether to append the after_goal hook to the response
   # payload (W491), and the goal id (set only when this completion first
-  # completed the goal) is emitted as goal.completed after the commit.
-  defp run_auto_done_transaction(updated_task, done_column) do
+  # completed the goal) is emitted as goal.completed after the commit. The
+  # move from Review is recorded in the same transaction.
+  defp run_auto_done_transaction(updated_task, review_column, done_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(done_column)
       now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -196,8 +203,12 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
       }
 
       case GoalCompletion.finalize_child(updated_task, done_attrs) do
-        {:ok, tag, completed_goal_id} -> {tag, completed_goal_id}
-        {:error, _step, changeset, _changes} -> Repo.rollback(changeset)
+        {:ok, tag, completed_goal_id} ->
+          History.record_move(updated_task, review_column, done_column)
+          {tag, completed_goal_id}
+
+        {:error, _step, changeset, _changes} ->
+          Repo.rollback(changeset)
       end
     end)
   end
@@ -218,8 +229,12 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
       changeset = completion_changeset(task, user, params, review_column, next_position)
 
       case Repo.update(changeset) do
-        {:ok, updated_task} -> updated_task
-        {:error, changeset} -> Repo.rollback(changeset)
+        {:ok, updated_task} ->
+          History.record_move(updated_task, task.column, review_column)
+          updated_task
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
       end
     end)
   end

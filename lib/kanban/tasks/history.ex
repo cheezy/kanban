@@ -25,11 +25,17 @@ defmodule Kanban.Tasks.History do
   @doc """
   Records the move of `task` from the column `from` to the column `to`, as
   `create_move_history/3` does, when they are different columns. The agent
-  workflow calls it when it sends a task back: an unclaim
-  (`Kanban.Tasks.AgentWorkflow.Claiming`), a claim release
-  (`Kanban.Tasks.ClaimRelease`) and a changes-requested or rejected review
-  (`Kanban.Tasks.AgentWorkflow.Review`). A task that stays in its column
-  records nothing and answers `nil`.
+  workflow calls it for every column move it makes, inside the move's
+  transaction: a claim and an unclaim (`Kanban.Tasks.AgentWorkflow.Claiming`),
+  a completion to Review and its auto-move to Done
+  (`Kanban.Tasks.AgentWorkflow.Completion`), an approved, changes-requested
+  or rejected review and `mark_done` (`Kanban.Tasks.AgentWorkflow.Review`),
+  and a claim release (`Kanban.Tasks.ClaimRelease`). A task that stays in its
+  column records nothing and answers `nil`.
+
+  Metrics read move rows only on regular boards (`Kanban.Metrics`,
+  `Kanban.Metrics.TaskQueries`), and the agent workflow runs only on
+  AI-optimized boards, so these rows never reach a metric.
   """
   @spec record_move(map(), map(), map()) :: Ecto.Schema.t() | nil
   def record_move(_task, %{id: id}, %{id: id}), do: nil
@@ -66,18 +72,23 @@ defmodule Kanban.Tasks.History do
   end
 
   @doc """
-  The time of each task's latest `:move` row, as a map of task id to naive
-  UTC time, in one query. A task with no move row has no key. `[]` makes no
-  query.
+  Each task's latest `:move` row, as a map of task id to `%{at: at,
+  to_column: name}`: the row's naive UTC insert time and the name of the
+  column it moved the task to. The latest is the newest `inserted_at`, the
+  higher id on a tie. One query. A task with no move row has no key. `[]`
+  makes no query.
   """
-  @spec latest_move_at_by_task([integer()]) :: %{integer() => NaiveDateTime.t()}
-  def latest_move_at_by_task([]), do: %{}
+  @spec latest_move_by_task([integer()]) :: %{
+          integer() => %{at: NaiveDateTime.t(), to_column: String.t() | nil}
+        }
+  def latest_move_by_task([]), do: %{}
 
-  def latest_move_at_by_task(task_ids) when is_list(task_ids) do
+  def latest_move_by_task(task_ids) when is_list(task_ids) do
     from(h in TaskHistory,
       where: h.type == :move and h.task_id in ^task_ids,
-      group_by: h.task_id,
-      select: {h.task_id, max(h.inserted_at)}
+      distinct: h.task_id,
+      order_by: [asc: h.task_id, desc: h.inserted_at, desc: h.id],
+      select: {h.task_id, %{at: h.inserted_at, to_column: h.to_column}}
     )
     |> Repo.all()
     |> Map.new()

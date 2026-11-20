@@ -5,9 +5,11 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   deprecated straight-to-Done path, and the board-write check that authorizes
   either.
 
-  A return to Doing records its move in the task's history
-  (`Kanban.Tasks.History.record_move/3`); the move to Done is marked by its
-  `completed_at` stamp.
+  Every move records itself in the task's history
+  (`Kanban.Tasks.History.record_move/3`) inside the transaction that moves the
+  task: an approved review and the deprecated `mark_done/2` from Review to
+  Done, a changes-requested or rejected review from Review back to Doing. A
+  refused or failed move records nothing.
 
   The Done and Doing columns are found as `Kanban.Columns.get_column_by_name/2`
   finds a column (case and surrounding whitespace ignored); a board without
@@ -105,8 +107,12 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
           })
 
         case Repo.update(changeset) do
-          {:ok, _updated_task} -> :ok
-          {:error, changeset} -> Repo.rollback(changeset)
+          {:ok, updated_task} ->
+            History.record_move(updated_task, task.column, done_column)
+            :ok
+
+          {:error, changeset} ->
+            Repo.rollback(changeset)
         end
       end)
 
@@ -166,8 +172,12 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
       }
 
       case GoalCompletion.finalize_child(task, done_attrs) do
-        {:ok, tag, completed_goal_id} -> {tag, completed_goal_id}
-        {:error, _step, changeset, _changes} -> Repo.rollback(changeset)
+        {:ok, tag, completed_goal_id} ->
+          History.record_move(task, task.column, done_column)
+          {tag, completed_goal_id}
+
+        {:error, _step, changeset, _changes} ->
+          Repo.rollback(changeset)
       end
     end)
   end
@@ -188,9 +198,10 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
     end
   end
 
-  # Changes-requested or rejected review transition. The task keeps its first
-  # claim's claimed_at, so the return to Doing is recorded as a move row: the
-  # task history shows it and the app's in_column_since reads it.
+  # Changes-requested or rejected review transition. The return to Doing is
+  # recorded as a move row, as every agent-workflow move is: the task history
+  # shows it and the app's in_column_since reads it, not the first claim's
+  # claimed_at, which the task keeps.
   defp run_return_to_doing_transaction(task, user, doing_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(doing_column)

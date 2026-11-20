@@ -1,6 +1,6 @@
 # POST /api/tasks/claim
 
-Claim the next available task or a specific task by identifier. This moves the task to the Doing column and assigns it to you.
+Claim the next available task or a specific task by identifier. This moves the task to the Doing column and assigns it to you. The move from Ready to Doing is recorded in the task's history.
 
 ## Authentication
 
@@ -332,7 +332,7 @@ curl -X POST \
 - You MUST execute the `before_doing` hook BEFORE calling this endpoint
 - The hook must complete successfully (exit code 0) or the claim will be rejected
 - The task is assigned to the user associated with your API token
-- The task is moved from Ready column to Doing column
+- The task is moved from Ready column to Doing column, and the move is recorded in the task's history (a refused claim records nothing)
 - Task status changes from `open` to `in_progress`
 - Agent capabilities are checked - task must require capabilities you have
 - Dependencies must be satisfied - all dependency tasks must be completed

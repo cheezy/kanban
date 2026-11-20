@@ -50,7 +50,9 @@ defmodule Kanban.Agents.Queries do
   # (changed_files, review_report, explorer_result, description, ...) are never
   # transferred. `board_id` (the column's) lets a caller split one fetch by
   # board, as `Kanban.Agents.Idle` does. `archived_at` lets a caller leave out
-  # an archived task, as `Kanban.Agents.AppAgents` does for its goals. The
+  # an archived task, as `Kanban.Agents.AppAgents` does for its goals and
+  # `Kanban.Agents.Roster` does for an agent's status, stuck flag and current
+  # task. The
   # reshaped maps are shape-compatible with the preloaded structs
   # `fetch_target_bridged_tasks/1` still returns, so every shared helper and
   # derivation module consumes both without change.
@@ -170,8 +172,10 @@ defmodule Kanban.Agents.Queries do
   # Like `fetch_tasks/1` (W1733) this projects into lightweight maps rather than
   # loading full `%Task{}` structs and preloading four associations — the parent
   # goal, both owner users, and the column are all joined and projected in the
-  # SINGLE query. The reshaped maps carry the same fields as `fetch_tasks/1` plus
-  # a `parent: %{id, target_id}` map — the only two goal fields `DeliveryRollup`'s
+  # SINGLE query. The reshaped maps carry the same fields as `fetch_tasks/1`
+  # (`archived_at` included, so the roster built from this set skips an archived
+  # task for status and stuck exactly as the /agents roster does), except
+  # `board_id`, plus a `parent: %{id, target_id}` map — the only two goal fields `DeliveryRollup`'s
   # bridge reads (W1735). The heavy JSONB/text columns of both the task and its
   # parent goal are never transferred.
   def fetch_target_bridged_tasks(opts) do
@@ -194,6 +198,7 @@ defmodule Kanban.Agents.Queries do
       claim_expires_at: t.claim_expires_at,
       completed_at: t.completed_at,
       reviewed_at: t.reviewed_at,
+      archived_at: t.archived_at,
       inserted_at: t.inserted_at,
       updated_at: t.updated_at,
       created_by_agent: t.created_by_agent,

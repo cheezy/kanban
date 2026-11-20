@@ -75,6 +75,24 @@ defmodule Kanban.Agents.IdleTest do
                %{ctx.board.id => 1, ctx.other.id => 0}
     end
 
+    test "an archived task left in Doing does not keep its agent from being idle", ctx do
+      agent_task!(ctx.cols["Done"], DateTime.add(now(), -3600), "Archiver")
+
+      {:ok, doing} =
+        ctx.other
+        |> columns()
+        |> Map.fetch!("Doing")
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Archiver", status: :in_progress})
+
+      doing |> Ecto.Changeset.change(archived_at: now()) |> Kanban.Repo.update!()
+
+      assert Idle.count_by_board(ctx.scope, [ctx.board.id, ctx.other.id], now()) ==
+               %{ctx.board.id => 1, ctx.other.id => 1}
+
+      assert ctx.scope |> Idle.idle_keys() |> MapSet.member?({"Archiver", "none"})
+    end
+
     test "agrees with the per-board roster the decision list reads", ctx do
       agent_task!(ctx.cols["Done"], DateTime.add(now(), -600), "A")
       agent_task!(ctx.cols["Done"], DateTime.add(now(), -1200), "B")

@@ -3,10 +3,10 @@ defmodule Kanban.Tasks.AgentWorkflow.Claiming do
   The claim lifecycle of the agent workflow: claiming a task (the next
   available one, or a specific one by identifier) and releasing a claim.
 
-  A claim moves the task to Doing without a `task_history` move row: its
-  `claimed_at` stamp marks the move. An unclaim clears that stamp, so it
-  records its move back to Ready as a move row
-  (`Kanban.Tasks.History.record_move/3`).
+  A claim records its move from Ready to Doing, and an unclaim its move back
+  to Ready, as a `task_history` move row
+  (`Kanban.Tasks.History.record_move/3`), inside the transaction that moves
+  the task, so a refused or failed move records nothing.
 
   Not a public entry point. `Kanban.Tasks.AgentWorkflow` owns the public API,
   its defaults and its documentation, and delegates `claim_next_task/5` and
@@ -133,6 +133,8 @@ defmodule Kanban.Tasks.AgentWorkflow.Claiming do
           # Claim history outlives the claim, so a later reader can tell this
           # claim happened even after an unclaim or a release clears it.
           :ok = TaskClaim.record(task.id, now)
+          # The task was found in this column (the update above required it).
+          History.record_move(task, task.column, doing_column)
           :claimed
 
         {0, _} ->
@@ -246,9 +248,8 @@ defmodule Kanban.Tasks.AgentWorkflow.Claiming do
 
       case Repo.update(changeset) do
         {:ok, updated_task} ->
-          # The claim moved the task to Doing with only its claimed_at stamp,
-          # which the unclaim clears, so the move back to Ready is recorded:
-          # the task history shows it and the app's in_column_since reads it.
+          # Recorded as the claim records its move to Doing: the task history
+          # shows it and the app's in_column_since reads it.
           History.record_move(updated_task, task.column, ready_column)
           updated_task
 

@@ -40,6 +40,16 @@ defmodule Kanban.Tasks.AgentWorkflow.CompletionTest do
       assert Enum.map(hooks, & &1.name) == ["after_doing", "before_review"]
     end
 
+    test "records the move from Doing to Review in the task history", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:ok, _completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert move_rows(task) == [{"Ready", "Doing"}, {"Doing", "Review"}]
+    end
+
     test "leaves completed_at nil — the task is not Done until the reviewer approves",
          ctx do
       task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
@@ -105,6 +115,16 @@ defmodule Kanban.Tasks.AgentWorkflow.CompletionTest do
                ["after_doing", "before_review", "after_review"]
     end
 
+    test "records the move to Review and then the auto-move to Done", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:ok, _final, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert move_rows(task) == [{"Ready", "Doing"}, {"Doing", "Review"}, {"Review", "Done"}]
+    end
+
     test "broadcasts {:agent_event, kind: :complete} to the agents topic", ctx do
       task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
       claimed = claim_for(task, ctx.user, ctx.board)
@@ -163,6 +183,20 @@ defmodule Kanban.Tasks.AgentWorkflow.CompletionTest do
 
       assert %Task{column_id: column_id, status: :in_progress} = Repo.get!(Task, task.id)
       assert column_id == ctx.doing.id
+      assert move_rows(task) == [{"Ready", "Doing"}]
+    end
+
+    test "a refused or invalid completion records no move", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:error, :not_authorized} =
+               AgentWorkflow.complete_task(claimed, ctx.other, valid_complete_params(), "Claude")
+
+      assert {:error, %Ecto.Changeset{}} =
+               AgentWorkflow.complete_task(claimed, ctx.user, %{}, "C")
+
+      assert move_rows(task) == [{"Ready", "Doing"}]
     end
 
     test "rejects a task that is not in_progress or blocked", ctx do
@@ -553,5 +587,14 @@ defmodule Kanban.Tasks.AgentWorkflow.CompletionTest do
 
       refute_receive {:telemetry_event, [:kanban, :task, :completed], _, _}
     end
+  end
+
+  defp move_rows(task) do
+    from(h in Kanban.Tasks.TaskHistory,
+      where: h.task_id == ^task.id and h.type == :move,
+      order_by: h.id,
+      select: {h.from_column, h.to_column}
+    )
+    |> Repo.all()
   end
 end

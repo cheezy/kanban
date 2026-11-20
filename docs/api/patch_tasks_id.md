@@ -414,7 +414,7 @@ When `priority` is updated, a task history record is automatically created track
 ### Assignment Changes
 This endpoint does not assign tasks — `assigned_to_id` is rejected. Assignment happens through [`POST /api/tasks/claim`](post_tasks_claim.md) and [`POST /api/tasks/:id/unclaim`](post_tasks_id_unclaim.md).
 
-Note that **no task-history record is written for an API assignment.** The assignment history entry is produced only by an in-app (board UI) update; the claim path sets `assigned_to_id` in a single atomic statement and records nothing in the task's history.
+Note that **no task-history record is written for an API assignment.** The assignment history entry is produced only by an in-app (board UI) update; the claim path sets `assigned_to_id` in a single atomic statement and records no assignment in the task's history. It records only the claim's move from Ready to Doing.
 
 ### Dependency Updates
 When `dependencies` array is updated:

@@ -177,15 +177,18 @@ web goal page's own counts, which leave archived tasks out.
 - `reviewable` is `true` when the task is a pending review the person may
   decide, so the app opens the review rather than the task. A read-only
   member gets `false`.
-- `in_column_since` is when the task entered its column: the later of its
-  latest move in its history and the time the agent workflow stamps when it
-  moves a task forward without recording a move, read only for the column
-  the task is in now: `claimed_at` in Doing, `review_requested_at` in Review
-  and `completed_at` in Done. A task with neither uses the time it was
-  created. The agent workflow records its moves back as moves in the task's
-  history: an unclaim, a release of the claim when its holder loses access,
-  and a review that asks for changes or rejects the task and sends it back
-  to Doing.
+- `in_column_since` is when the task entered its column. Every move is
+  recorded in the task's history: a move on the web, a promote, a move to
+  Backlog, and every move the agent workflow makes (a claim, an unclaim, a
+  release of the claim when its holder loses access, a completion, the
+  move to Done of a task that skips review, and a review that approves it,
+  asks for changes or rejects it). So when the task's latest move took it
+  into the column it is in now, that move's time is the answer. Otherwise,
+  for a task an agent moved before its moves were recorded or a column
+  renamed since, it is the later of that move and the time the agent
+  workflow stamps for the column the task is in now: `claimed_at` in Doing,
+  `review_requested_at` in Review and `completed_at` in Done. A task with
+  neither uses the time it was created.
 
 Any member of the goal's board, read-only included, may read it, as on the
 web.

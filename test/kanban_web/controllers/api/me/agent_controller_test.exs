@@ -52,6 +52,23 @@ defmodule KanbanWeb.API.Me.AgentControllerTest do
     task
   end
 
+  # Claimed two hours ago: a Doing task this old would make its agent stuck.
+  defp stale!(task) do
+    at = :second |> DateTime.utc_now() |> DateTime.add(-2, :hour)
+    task |> Ecto.Changeset.change(claimed_at: at) |> Repo.update!()
+  end
+
+  defp backdate_updated_at!(task) do
+    at =
+      NaiveDateTime.utc_now() |> NaiveDateTime.add(-1, :hour) |> NaiveDateTime.truncate(:second)
+
+    task |> Ecto.Changeset.change(updated_at: at) |> Repo.update!()
+  end
+
+  defp archive!(task) do
+    task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+  end
+
   defp attempted_goal!(column, attempt) do
     goal =
       column
@@ -119,6 +136,47 @@ defmodule KanbanWeb.API.Me.AgentControllerTest do
                },
                "hook_failed" => false
              }
+    end
+
+    test "an archived task left in Doing makes its agent neither working nor stuck", ctx do
+      ctx.cols["Doing"] |> agent_task(%{title: "Archived"}) |> stale!() |> archive!()
+
+      assert %{"data" => %{"agents" => [agent], "goals" => []}} =
+               ctx.phone |> api_get("/api/me/agents") |> json_response(200)
+
+      assert %{
+               "name" => "Claude",
+               "status" => "idle",
+               "stuck" => false,
+               "current_task" => nil
+             } = agent
+    end
+
+    test "an agent with an archived stuck task is working on its live task", ctx do
+      live = agent_task(ctx.cols["Doing"], %{title: "Live"})
+      ctx.cols["Doing"] |> agent_task(%{title: "Archived"}) |> stale!() |> archive!()
+      # Older than the archived task, so the archived one is read first.
+      backdate_updated_at!(live)
+
+      assert %{"data" => %{"agents" => [agent]}} =
+               ctx.phone |> api_get("/api/me/agents") |> json_response(200)
+
+      assert %{
+               "status" => "working",
+               "stuck" => false,
+               "current_task" => %{"title" => "Live"}
+             } = agent
+    end
+
+    test "an archived completed task still counts toward the completed counts", ctx do
+      ctx.cols["Done"] |> agent_task(%{}) |> complete!() |> archive!()
+
+      assert %{"data" => %{"agents" => [agent]}} =
+               ctx.phone |> api_get("/api/me/agents") |> json_response(200)
+
+      assert %{"status" => "idle", "today" => 1, "last_7d" => 1} = agent
+      assert is_binary(agent["last_active_at"])
+      assert {:ok, _at, 0} = DateTime.from_iso8601(agent["last_active_at"])
     end
 
     test "an agent's owner is named without an email", ctx do

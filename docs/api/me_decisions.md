@@ -83,6 +83,12 @@ does not know.
   | `ready_empty` | a board with no Ready task, Backlog work and an idle agent | `idle_agents` and `backlog_count` |
 
 - `since` is when the item started waiting.
+- `ready_empty` reads the board's leftmost Ready column and its leftmost
+  Backlog column (matched ignoring case and surrounding spaces), the
+  columns [GET /api/me/boards](me_boards.md) counts and a promote fills,
+  so `backlog_count` equals that list's Backlog count. A second column of
+  the same name is not counted, and `move_to_backlog` is offered only while
+  the leftmost Backlog is under its WIP limit.
 - `task_id` is the task or goal, `null` for `ready_empty`.
 - `summary` carries the task's `identifier`, `title`, `priority` and `agent`,
   all `null` for `ready_empty`, and its `board`.

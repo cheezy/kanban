@@ -50,9 +50,13 @@ defmodule Kanban.Boards.Dashboard do
       been set
 
   Open/Doing/Review/Done are matched by column NAME (Backlog/Ready map to
-  Open; Doing/Review/Done map directly). Columns with other names — on
-  non-AI-optimized boards with custom column names — are not counted in
-  any bucket; their counts simply do not surface in the metrics map.
+  Open; Doing/Review/Done map directly), ignoring case and surrounding
+  whitespace. A name means the board's leftmost column of that name, so a
+  second column of the same name is not counted: the rule the app's board
+  list counts by (`Kanban.Columns.TaskCounts`). Only live work and defect
+  tasks count. Columns with other names — on non-AI-optimized boards with
+  custom column names — are not counted in any bucket; their counts simply
+  do not surface in the metrics map.
 
   All time windows are anchored in UTC; the optional `:now` keyword
   overrides `DateTime.utc_now/0` for deterministic tests.

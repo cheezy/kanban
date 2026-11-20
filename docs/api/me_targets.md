@@ -169,8 +169,10 @@ give, as the risk explanation on `/agents` decides it:
   target date, else `null`;
 - `stalled` lists each member goal a stalled agent is active on, by `id`,
   `identifier` and `title`, with its stalled agents by name and their
-  `reasons`: `stuck` (holding an active task past the stuck threshold) and/or
-  `dormant` (no activity past the dormancy threshold), in that order.
+  `reasons`: `stuck` (holding an unarchived active task past the stuck
+  threshold) and/or `dormant` (no activity past the dormancy threshold), in
+  that order. An archived task left in Doing or Review never makes an agent
+  `stuck`, as on [GET /api/me/agents](me_agents.md#agents).
 
 Otherwise `risk` is `null`: a missed, on-track or complete target has none,
 and neither has an at-risk target with no slipped estimate and no stalled

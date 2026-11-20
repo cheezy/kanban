@@ -11,7 +11,11 @@ defmodule Kanban.Agents.AppAgents do
       boards, every time range), less the tasks on boards the plan does not
       unlock (`Kanban.Plans.unlocked_board_ids/1`), as the app's other
       cross-board lists leave them out (design §7.10, "Plans on cross-board
-      lists"). An agent that works on two boards is one agent, as on `/agents`;
+      lists"). An agent that works on two boards is one agent, as on `/agents`.
+      An archived task left in Doing or Review does not make its agent
+      working, waiting or stuck, and is not its current task; it still counts
+      toward the agent's completed counts and last activity (the roster's
+      "Archived tasks" rule);
     * `goals` — the open goals that have an agent on them now: the parents of
       the roster's unarchived tasks in Doing or Review, when the goal is
       neither archived nor completed and sits on one of those same boards.
@@ -100,7 +104,7 @@ defmodule Kanban.Agents.AppAgents do
 
   defp active?(task), do: Agents.doing?(task) or Agents.in_review?(task)
 
-  defp live_child?(task), do: is_nil(task.archived_at) and not is_nil(task.parent_id)
+  defp live_child?(task), do: Agents.unarchived?(task) and not is_nil(task.parent_id)
 
   defp board_ids(tasks), do: tasks |> Enum.map(& &1.board_id) |> Enum.uniq()
 

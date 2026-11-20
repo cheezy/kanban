@@ -5,10 +5,12 @@ defmodule Kanban.Agents.Idle do
   list (`GET /api/me/boards`, W2759): an agent that worked on the board in the
   last 24 hours and is idle now.
 
-  An agent is idle now when it holds no task in Doing or Review on any board
-  the person can see, not only on this one (`Kanban.Agents.Roster` status
-  `:idle`). Boards the person cannot see are never read, so work there does
-  not count.
+  An agent is idle now when it holds no unarchived task in Doing or Review on
+  any board the person can see, not only on this one (`Kanban.Agents.Roster`
+  status `:idle`). An archived task left in Doing or Review is no current
+  work, so it does not keep an agent from being idle; it still counts as the
+  agent's last activity on its board. Boards the person cannot see are never
+  read, so work there does not count.
   """
 
   alias Kanban.Agents

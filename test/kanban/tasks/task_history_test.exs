@@ -567,16 +567,17 @@ defmodule Kanban.Tasks.TaskHistoryTest do
     end
   end
 
-  describe "Kanban.Tasks.History.latest_move_at_by_task/1" do
-    test "returns each task's latest move time, and no key for a task never moved" do
+  describe "Kanban.Tasks.History.latest_move_by_task/1" do
+    test "returns each task's latest move time and column, and no key for a task never moved" do
       user = user_fixture()
       column = user |> board_fixture() |> column_fixture()
       moved = task_fixture(column)
       never = task_fixture(column)
       from(h in TaskHistory, where: h.task_id in ^[moved.id, never.id]) |> Repo.delete_all()
 
+      # Inserted newest first, so the answer is the newest row, not the last one.
       times =
-        for {to, seconds} <- [{"Ready", -600}, {"Doing", -60}] do
+        for {to, seconds} <- [{"Doing", -60}, {"Ready", -600}] do
           at = :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(seconds)
 
           moved
@@ -589,13 +590,28 @@ defmodule Kanban.Tasks.TaskHistoryTest do
 
       History.create_priority_change_history(:low, :high, moved.id)
 
-      assert History.latest_move_at_by_task([moved.id, never.id]) == %{
-               moved.id => List.last(times)
+      assert History.latest_move_by_task([moved.id, never.id]) == %{
+               moved.id => %{at: List.first(times), to_column: "Doing"}
              }
     end
 
+    test "breaks a tie on the insert time by the later row" do
+      column = user_fixture() |> board_fixture() |> column_fixture()
+      task = task_fixture(column)
+      at = NaiveDateTime.utc_now(:second)
+
+      for to <- ["Doing", "Review"] do
+        task
+        |> History.create_move_history("Ready", to)
+        |> Ecto.Changeset.change(inserted_at: at)
+        |> Repo.update!()
+      end
+
+      assert %{at: ^at, to_column: "Review"} = History.latest_move_by_task([task.id])[task.id]
+    end
+
     test "makes no query for no ids" do
-      assert History.latest_move_at_by_task([]) == %{}
+      assert History.latest_move_by_task([]) == %{}
     end
   end
 

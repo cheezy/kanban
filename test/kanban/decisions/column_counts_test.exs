@@ -38,17 +38,44 @@ defmodule Kanban.Decisions.ColumnCountsTest do
     assert %{backlog: 1, backlog_full: true} = ColumnCounts.by_board([ctx.board.id])[ctx.board.id]
   end
 
-  test "recognises columns named in another case or padded, and adds up repeats", ctx do
+  test "recognises columns named in another case or padded, and counts only the leftmost of a name",
+       ctx do
     first = column_fixture(ctx.board, %{name: " READY "})
     second = column_fixture(ctx.board, %{name: "ready"})
     column_fixture(ctx.board, %{name: "\tbacklog\n"})
 
     task_fixture(first)
     task_fixture(second)
+    task_fixture(second)
 
     assert ColumnCounts.by_board([ctx.board.id]) == %{
-             ctx.board.id => %{ready: 2, backlog: 0, backlog_full: false}
+             ctx.board.id => %{ready: 1, backlog: 0, backlog_full: false}
            }
+  end
+
+  test "an empty leftmost Ready is empty even when a second Ready holds work", ctx do
+    column_fixture(ctx.board, %{name: "Ready"})
+    second = column_fixture(ctx.board, %{name: "Ready"})
+    task_fixture(second)
+
+    assert %{ready: 0} = ColumnCounts.by_board([ctx.board.id])[ctx.board.id]
+  end
+
+  test "backlog_full reads the leftmost Backlog's WIP limit, not a second Backlog's", ctx do
+    first = column_fixture(ctx.board, %{name: "Backlog"})
+    second = column_fixture(ctx.board, %{name: "Backlog"})
+    task_fixture(second)
+    task_fixture(second)
+    second |> Ecto.Changeset.change(wip_limit: 1) |> Repo.update!()
+
+    assert ColumnCounts.by_board([ctx.board.id])[ctx.board.id] ==
+             %{ready: nil, backlog: 0, backlog_full: false}
+
+    first |> Ecto.Changeset.change(wip_limit: 1) |> Repo.update!()
+    task_fixture(first)
+
+    assert ColumnCounts.by_board([ctx.board.id])[ctx.board.id] ==
+             %{ready: nil, backlog: 1, backlog_full: true}
   end
 
   test "a board without Ready or Backlog columns has nil counts; no boards, no query", ctx do

@@ -114,6 +114,20 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
+  describe "first_named/2" do
+    test "returns the first column in the order given whose name matches" do
+      columns = [%{id: 1, name: "Doing"}, %{id: 2, name: " READY "}, %{id: 3, name: "Ready"}]
+
+      assert Columns.first_named(columns, "ready") == %{id: 2, name: " READY "}
+      assert columns |> Enum.reverse() |> Columns.first_named("ready") == %{id: 3, name: "Ready"}
+    end
+
+    test "returns nil when no column matches, or for no columns" do
+      assert Columns.first_named([%{id: 1, name: "Doing"}], "Ready") == nil
+      assert Columns.first_named([], "Ready") == nil
+    end
+  end
+
   describe "named?/2" do
     test "matches ignoring case and surrounding whitespace" do
       assert Columns.named?(%Column{name: " backlog "}, "Backlog")

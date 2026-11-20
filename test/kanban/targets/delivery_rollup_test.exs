@@ -147,6 +147,35 @@ defmodule Kanban.Targets.DeliveryRollupTest do
       assert on_track_entry.stalled_goals == []
     end
 
+    test "an archived stuck task does not stall its goal or target", %{
+      scope: scope,
+      doing: doing
+    } do
+      now = ~U[2026-07-01 00:00:00Z]
+
+      # The same at-risk target as above, so only the stall is in question.
+      target =
+        delivery_target_fixture(scope.user, %{name: "AtRisk", target_date: ~D[2026-07-21]})
+
+      backdate_target(target, ~N[2026-04-12 00:00:00])
+      goal = goal_on_target(doing, target)
+
+      # Would be stuck (Doing, last touched 90 minutes ago), but it is archived.
+      doing
+      |> agent_task(%{created_by_agent: "Archiver", parent_id: goal.id, claimed_at: ago(90)})
+      |> archive!()
+
+      [entry] = DeliveryRollup.build(scope, now: now).targets
+
+      assert entry.status == :at_risk
+      # Still attributed to the target, but neither stuck nor stalling it.
+      assert [%Agent{name: "Archiver", stuck: false, status: :idle}] = entry.agents
+      assert entry.stalled_agents == []
+      assert entry.stalled_goals == []
+      assert entry.stalled_details == []
+      assert DeliveryRollup.build_target(scope, target, now: now).stalled_goals == []
+    end
+
     test "stalled_details pairs each stalled goal with the stalled agents on it",
          %{scope: scope, doing: doing} do
       target = delivery_target_fixture(scope.user)
@@ -605,6 +634,10 @@ defmodule Kanban.Targets.DeliveryRollupTest do
       |> Tasks.update_task(Map.merge(%{status: :in_progress}, attrs))
 
     task
+  end
+
+  defp archive!(task) do
+    task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
   end
 
   defp agent_names(agents), do: agents |> Enum.map(& &1.name) |> Enum.sort()

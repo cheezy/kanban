@@ -26,8 +26,8 @@ defmodule Kanban.Boards.Metrics do
 
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
-  alias Kanban.Columns
   alias Kanban.Columns.Column
+  alias Kanban.Columns.TaskCounts
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -205,11 +205,13 @@ defmodule Kanban.Boards.Metrics do
   defp email_local_part(_), do: "?"
 
   defp metrics_for_board(board_id, agg) do
+    counts = Map.get(agg.column_counts, board_id, %{})
+
     %{
-      open: Map.get(agg.column_counts, {board_id, :open}, 0),
-      doing: Map.get(agg.column_counts, {board_id, :doing}, 0),
-      review: Map.get(agg.column_counts, {board_id, :review}, 0),
-      done: Map.get(agg.column_counts, {board_id, :done}, 0),
+      open: Map.get(counts, :open, 0),
+      doing: Map.get(counts, :doing, 0),
+      review: Map.get(counts, :review, 0),
+      done: Map.get(counts, :done, 0),
       throughput_14d: Map.get(agg.throughput, board_id, 0),
       pulse_14d: build_pulse_array(Map.get(agg.pulse_rows, board_id, %{}), agg.pulse_dates),
       active_agents_14d: Map.get(agg.active_agents, board_id, 0),
@@ -242,41 +244,28 @@ defmodule Kanban.Boards.Metrics do
     Enum.map(pulse_dates, fn date -> Map.get(counts_by_date, date, 0) end)
   end
 
-  # Returns %{{board_id, :open | :doing | :review | :done} => count}.
-  # Archived tasks (those with a non-nil `archived_at`) and goal-type tasks
-  # are excluded so the board card stats reflect actionable work only.
+  # Returns %{board_id => %{open:, doing:, review:, done:}}: the live work and
+  # defect tasks (archived and goal-type tasks excluded, so the board card
+  # stats reflect actionable work only) of the board's leftmost column of
+  # each name, as `Kanban.Columns.TaskCounts` counts them for the app's board
+  # list, so the web and the app agree. :open adds the leftmost Backlog and
+  # the leftmost Ready; a second column of a name is not counted.
   defp column_counts_by_board(board_ids) do
-    Task
-    |> join(:inner, [t], c in Column, as: :column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids)
-    |> where([t, _c], is_nil(t.archived_at))
-    |> where([t, _c], t.type != :goal)
-    |> where(
-      ^Columns.name_matches(
-        :column,
-        @open_columns ++ [@doing_column, @review_column, @done_column]
-      )
-    )
-    |> group_by([_t, c], [c.board_id, c.name])
-    |> select([_t, c], {c.board_id, c.name, count()})
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn {board_id, name, count}, acc ->
-      # Backlog and Ready both bucket to :open, so accumulate when two
-      # column names roll up to the same bucket on the same board.
-      Map.update(acc, {board_id, bucket_for(name)}, count, &(&1 + count))
-    end)
+    board_ids
+    |> TaskCounts.by_board()
+    |> Map.new(fn {board_id, columns} -> {board_id, bucket_counts(columns)} end)
   end
 
-  # Column names match as `Kanban.Columns.named?/2` matches them (case and
-  # surrounding whitespace ignored), so " doing " counts as Doing.
-  defp bucket_for(name) do
-    case Columns.normalize_name(name) do
-      "doing" -> :doing
-      "review" -> :review
-      "done" -> :done
-      _backlog_or_ready -> :open
-    end
+  defp bucket_counts(columns) do
+    %{
+      open: Enum.sum_by(@open_columns, &count_of(columns, &1)),
+      doing: count_of(columns, @doing_column),
+      review: count_of(columns, @review_column),
+      done: count_of(columns, @done_column)
+    }
   end
+
+  defp count_of(columns, name), do: TaskCounts.count(columns, name) || 0
 
   # Returns %{board_id => %{Date => count}}.
   defp pulse_rows_by_board(board_ids, cutoff_dt) do

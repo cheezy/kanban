@@ -645,6 +645,29 @@ defmodule Kanban.AgentsTest do
       assert current == %{identifier: doing_task.identifier, title: doing_task.title}
     end
 
+    test "an archived task in Doing or Review sets neither status, stuck nor current task",
+         %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+      stale = DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.truncate(:second)
+
+      for {column, name} <- [{doing, "InDoing"}, {review, "InReview"}] do
+        {:ok, task} =
+          column
+          |> task_fixture()
+          |> Tasks.update_task(%{created_by_agent: name, status: :in_progress, claimed_at: stale})
+
+        task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+      end
+
+      agents = Map.new(Agents.list_agents(), &{&1.name, &1})
+
+      for name <- ["InDoing", "InReview"] do
+        assert %Agent{status: :idle, stuck: false, current_task: nil, dormant: false} =
+                 agents[name]
+      end
+    end
+
     test "infers :idle when the agent's only tasks are in the Done column", %{board: board} do
       done = column_fixture(board, %{name: "Done"})
 
@@ -1575,6 +1598,54 @@ defmodule Kanban.AgentsTest do
     end
   end
 
+  describe "unarchived?/1 and current_task/1" do
+    test "unarchived? is true without an archived_at and false with one" do
+      assert Agents.unarchived?(%{archived_at: nil})
+      refute Agents.unarchived?(%{archived_at: ~U[2026-11-01 00:00:00Z]})
+      assert Agents.unarchived?(%Kanban.Tasks.Task{})
+      refute Agents.unarchived?(%Kanban.Tasks.Task{archived_at: ~U[2026-11-01 00:00:00Z]})
+      assert Agents.unarchived?(%{})
+    end
+
+    test "current_task skips an archived Doing task" do
+      archived = %{
+        identifier: "W1",
+        title: "Old",
+        column: %{name: "Doing"},
+        archived_at: ~U[2026-11-01 00:00:00Z]
+      }
+
+      live = %{identifier: "W2", title: "Live", column: %{name: "Doing"}, archived_at: nil}
+
+      assert Agents.current_task([archived]) == nil
+      assert Agents.current_task([archived, live]) == %{identifier: "W2", title: "Live"}
+    end
+
+    test "an archived completed task still counts toward the roster's completed counts",
+         %{board: board} do
+      done = column_fixture(board, %{name: "Done"})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, task} =
+        done
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now,
+          claimed_at: now
+        })
+
+      task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert [%Agent{status: :idle, today: 1, last_7d: 1, claim_count: 1} = agent] =
+               Agents.list_agents()
+
+      assert agent.last_active_at == DateTime.to_naive(now)
+    end
+  end
+
   describe "list_agents_from/2 roster timezone" do
     test "per-agent today counts a completion under the user's local day, not the UTC day",
          %{column: column} do
@@ -2077,6 +2148,19 @@ defmodule Kanban.AgentsTest do
 
       assert [%{identifier: id, title: _, at: %DateTime{}}] = detail.failures
       assert id == task.identifier
+    end
+
+    test "returns a nil current_task when its only Doing task is archived", %{board: board} do
+      doing = column_fixture(board, %{name: "Doing"})
+
+      {:ok, task} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Claude", status: :in_progress})
+
+      task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert %{current_task: nil} = Agents.agent_detail("Claude")
     end
 
     test "returns a nil current_task when the agent holds no Doing task", %{column: column} do

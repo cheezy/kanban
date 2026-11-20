@@ -39,7 +39,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.AgentsAndPlanning do
           %{
             title: "The Header",
             content:
-              "**Agent activity** sums up your agents. Narrow it with the two menus at the top: one board or **All boards**, and **Today**, **Last 7 days**, **Last 30 days**, **Last 90 days** or **All time**, which is where it starts.\n\n- **Working**: agents holding a task in Doing.\n- **Waiting**: agents with a task in Review and none in Doing.\n- **Idle**: everyone else.\n- **Stuck**: agents with a Doing or Review task that hasn't moved for over an hour.\n\nThe tiles on the right count what was created, claimed, completed and approved today. **Delivery trends**, further down, charts completions day by day.",
+              "**Agent activity** sums up your agents. Narrow it with the two menus at the top: one board or **All boards**, and **Today**, **Last 7 days**, **Last 30 days**, **Last 90 days** or **All time**, which is where it starts.\n\n- **Working**: agents holding a task in Doing.\n- **Waiting**: agents with a task in Review and none in Doing.\n- **Idle**: everyone else.\n- **Stuck**: agents with a Doing or Review task that hasn't moved for over an hour.\n\nAn archived task never makes an agent Working, Waiting or Stuck, even if it was archived while still in Doing or Review. It still counts toward what the agent completed and when it was last active.\n\nThe tiles on the right count what was created, claimed, completed and approved today. **Delivery trends**, further down, charts completions day by day.",
             image: "/images/resources/guides/watching-your-agents-step-2.png",
             image_width: 1194,
             image_height: 173
