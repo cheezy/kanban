@@ -155,6 +155,17 @@ config :kanban, Kanban.Attachments.Storage.S3,
   path_style: false,
   req_options: [plug: {Req.Test, Kanban.Attachments.Storage.S3}, retry_delay: 0]
 
+# App links (W2764): fixed fake ids, so the association files in
+# /.well-known list one app per platform. They are public values in the
+# shape config/runtime.exs checks, and match no real app.
+config :kanban, :app_links,
+  ios_team_id: "TEST123456",
+  ios_bundle_id: "com.stride.test",
+  android_package: "com.stride.test",
+  android_cert_fingerprints: [
+    "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+  ]
+
 # Native push (W2770): both platforms go to Mox doubles defined in
 # test/test_helper.exs, and no APNs or FCM credentials are ever configured, so
 # Kanban.Push.Supervisor starts no dispatcher and no test sends a real push.

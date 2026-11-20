@@ -70,6 +70,22 @@
               out goals on boards outside it, while a target's status and
               counts stay the web's. See <code>docs/api/me_targets.md</code>.
             </li>
+            <li>
+              <strong>Stride links can open the Stride app.</strong> The site
+              now serves
+              <code>/.well-known/apple-app-site-association</code> and
+              <code>/.well-known/assetlinks.json</code>, which iOS and Android
+              check before a link opens an app instead of the browser. Only
+              six pages open the app: the review queue, Agents, a board, a
+              goal, a task and a target. Every other link stays in the
+              browser. Both files are public and need no sign-in. The app ids
+              come from four new variables, <code>STRIDE_IOS_TEAM_ID</code>,
+              <code>STRIDE_IOS_BUNDLE_ID</code>,
+              <code>STRIDE_ANDROID_PACKAGE</code> and
+              <code>STRIDE_ANDROID_CERT_FINGERPRINTS</code>; with none set,
+              both files list no apps. See
+              <code>docs/universal-links.md</code>.
+            </li>
           </ul>
         </div>
 

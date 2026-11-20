@@ -123,6 +123,12 @@ defmodule KanbanWeb.Router do
     pipe_through :well_known
 
     get "/stride-audit-signing-keys", AuditSigningKeysController, :show
+
+    # Universal links and App Links (W2764): Apple and Google refuse a file
+    # behind a redirect or a session, which is why these live here and not in
+    # :browser. The Apple file has no extension.
+    get "/apple-app-site-association", AppLinksController, :apple
+    get "/assetlinks.json", AppLinksController, :assetlinks
   end
 
   scope "/", KanbanWeb do

@@ -112,6 +112,110 @@ mobile_min_versions =
 
 config :kanban, :mobile_min_versions, mobile_min_versions
 
+# App links (W2764): the ids KanbanWeb.AppLinksController lists in
+# /.well-known/apple-app-site-association and /.well-known/assetlinks.json,
+# documented in docs/universal-links.md. Every value is public (no key or
+# secret belongs here):
+#
+#   STRIDE_IOS_TEAM_ID                the 10-character Apple team id
+#   STRIDE_IOS_BUNDLE_ID              the iOS app's bundle id
+#   STRIDE_ANDROID_PACKAGE            the Android app's package name
+#   STRIDE_ANDROID_CERT_FINGERPRINTS  comma-separated SHA-256 fingerprints of
+#                                     the app's signing certificates, as
+#                                     AA:BB:...; case does not matter
+#
+# This runs in every environment and sets only the keys whose variable is
+# set, so config/test.exs keeps its values; with none set both files list no
+# apps. Each value is trimmed, and a blank one counts as unset. A value that
+# does not have its shape, or one platform's ids set without the other,
+# stops the boot. Errors name the variable and never print its value.
+app_link_value = fn name ->
+  case System.get_env(name) do
+    nil -> nil
+    value -> if String.trim(value) == "", do: nil, else: String.trim(value)
+  end
+end
+
+app_link_check! = fn name, value, pattern ->
+  if value && !Regex.match?(pattern, value) do
+    raise "#{name} is not in the expected format (see docs/universal-links.md). " <>
+            "Its value is not shown here."
+  end
+
+  value
+end
+
+app_link_pair! = fn {first, first_value}, {second, second_value} ->
+  if is_nil(first_value) != is_nil(second_value) do
+    {set, unset} = if first_value, do: {first, second}, else: {second, first}
+    raise "#{set} is set but #{unset} is not; set both or neither (see docs/universal-links.md)."
+  end
+end
+
+app_link_fingerprints =
+  case app_link_value.("STRIDE_ANDROID_CERT_FINGERPRINTS") do
+    nil ->
+      nil
+
+    value ->
+      value
+      |> String.split(",")
+      |> Enum.map(&(&1 |> String.trim() |> String.upcase()))
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.map(
+        &app_link_check!.(
+          "STRIDE_ANDROID_CERT_FINGERPRINTS",
+          &1,
+          ~r/\A[0-9A-F]{2}(:[0-9A-F]{2}){31}\z/
+        )
+      )
+      |> case do
+        [] -> nil
+        fingerprints -> fingerprints
+      end
+  end
+
+app_links =
+  [
+    ios_team_id:
+      app_link_check!.(
+        "STRIDE_IOS_TEAM_ID",
+        app_link_value.("STRIDE_IOS_TEAM_ID"),
+        ~r/\A[A-Z0-9]{10}\z/
+      ),
+    ios_bundle_id:
+      app_link_check!.(
+        "STRIDE_IOS_BUNDLE_ID",
+        app_link_value.("STRIDE_IOS_BUNDLE_ID"),
+        ~r/\A[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+\z/
+      ),
+    android_package:
+      app_link_check!.(
+        "STRIDE_ANDROID_PACKAGE",
+        app_link_value.("STRIDE_ANDROID_PACKAGE"),
+        ~r/\A[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+\z/
+      ),
+    android_cert_fingerprints: app_link_fingerprints
+  ]
+
+app_link_pair!.(
+  {"STRIDE_IOS_TEAM_ID", app_links[:ios_team_id]},
+  {"STRIDE_IOS_BUNDLE_ID", app_links[:ios_bundle_id]}
+)
+
+app_link_pair!.(
+  {"STRIDE_ANDROID_PACKAGE", app_links[:android_package]},
+  {"STRIDE_ANDROID_CERT_FINGERPRINTS", app_links[:android_cert_fingerprints]}
+)
+
+case Enum.reject(app_links, fn {_key, value} -> is_nil(value) end) do
+  [] -> :ok
+  set -> config :kanban, :app_links, set
+end
+
+# End of the app links block (test/kanban_web/app_links_runtime_config_test.exs
+# cuts out and runs everything from its first comment line to this one)
+
 # Where workspace export archives are written (W2222). Set only when
 # EXPORT_DIR is, so config/test.exs keeps its own directory. Without it,
 # Kanban.Workspaces.Export.export_dir/0 uses the system temp directory.
