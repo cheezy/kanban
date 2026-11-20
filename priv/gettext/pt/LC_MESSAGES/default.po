@@ -407,6 +407,7 @@ msgstr "Limite WIP atingido para esta coluna"
 #: lib/kanban_web/components/layouts/root.html.heex
 #: lib/kanban_web/components/marketing_closing.ex
 #: lib/kanban_web/components/marketing_components.ex
+#: lib/kanban_web/components/seo_components.ex
 #: lib/kanban_web/components/side_nav.ex
 #, elixir-autogen, elixir-format
 msgid "Stride"
@@ -15948,3 +15949,8 @@ msgstr "Sinalizador de recurso desativado"
 msgctxt "audit action"
 msgid "Feature flag turned on"
 msgstr "Sinalizador de recurso ativado"
+
+#: lib/kanban_web/components/seo_components.ex
+#, elixir-autogen, elixir-format
+msgid "Stride is a kanban board where humans and AI agents plan, claim and ship work together."
+msgstr "Stride é um quadro kanban onde pessoas e agentes de IA planejam, assumem e entregam trabalho juntos."

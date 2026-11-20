@@ -16,6 +16,25 @@ defmodule KanbanWeb.ResourcesLive.IndexTest do
       conn = get(conn, ~p"/resources")
       assert conn.status == 200
     end
+
+    test "a resources page rendered through the app_chrome root layout carries the same tags",
+         %{conn: conn} do
+      for path <- ["/resources", "/resources/getting-started"] do
+        document = conn |> get(path) |> html_response(200) |> LazyHTML.from_document()
+        canonical = KanbanWeb.Endpoint.url() <> path
+
+        head_attr = fn selector, attribute ->
+          document |> LazyHTML.query("head " <> selector) |> LazyHTML.attribute(attribute)
+        end
+
+        assert [_description] = head_attr.(~s(meta[name="description"]), "content")
+        assert head_attr.(~s(link[rel="canonical"]), "href") == [canonical]
+        assert head_attr.(~s(meta[property="og:url"]), "content") == [canonical]
+        assert head_attr.(~s(meta[property="og:locale"]), "content") == ["en_US"]
+        assert head_attr.(~s(meta[name="twitter:card"]), "content") == ["summary_large_image"]
+        assert head_attr.(~s(meta[name="robots"]), "content") == []
+      end
+    end
   end
 
   describe "GET /resources/:id" do

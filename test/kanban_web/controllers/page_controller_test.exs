@@ -1871,4 +1871,55 @@ defmodule KanbanWeb.PageControllerTest do
       assert Kanban.Repo.get!(Kanban.Accounts.User, user.id).locale == "de"
     end
   end
+
+  describe "SEO head" do
+    defp head_attr(document, selector, attribute) do
+      document |> LazyHTML.query("head " <> selector) |> LazyHTML.attribute(attribute)
+    end
+
+    # "/" and "/pricing" use the marketing layout, "/about" app_chrome and
+    # "/users/log-in" the default root layout.
+    for path <- ["/", "/pricing", "/about", "/users/log-in"] do
+      test "GET #{path} carries exactly one description and one canonical tag", %{conn: conn} do
+        path = unquote(path)
+        document = conn |> get(path) |> html_response(200) |> LazyHTML.from_document()
+        canonical = KanbanWeb.Endpoint.url() <> path
+
+        assert [_description] = head_attr(document, ~s(meta[name="description"]), "content")
+        assert head_attr(document, ~s(link[rel="canonical"]), "href") == [canonical]
+        assert head_attr(document, ~s(meta[property="og:url"]), "content") == [canonical]
+        assert [_title] = head_attr(document, ~s(meta[property="og:title"]), "content")
+
+        assert head_attr(document, ~s(meta[name="twitter:card"]), "content") == [
+                 "summary_large_image"
+               ]
+
+        assert length(head_attr(document, ~s(meta[name="theme-color"]), "content")) == 2
+        assert head_attr(document, ~s(meta[name="robots"]), "content") == []
+      end
+    end
+
+    test "GET /pricing?locale=fr&utm_source=x points the canonical at the bare path", %{
+      conn: conn
+    } do
+      html = conn |> get("/pricing?locale=fr&utm_source=x") |> html_response(200)
+      document = LazyHTML.from_document(html)
+      canonical = KanbanWeb.Endpoint.url() <> "/pricing"
+
+      assert head_attr(document, ~s(link[rel="canonical"]), "href") == [canonical]
+      assert head_attr(document, ~s(meta[property="og:url"]), "content") == [canonical]
+      assert head_attr(document, ~s(meta[property="og:locale"]), "content") == ["fr_FR"]
+
+      assert head_attr(document, ~s(meta[name="description"]), "content") ==
+               [
+                 Gettext.with_locale(
+                   KanbanWeb.Gettext,
+                   "fr",
+                   &KanbanWeb.SeoComponents.default_description/0
+                 )
+               ]
+
+      refute document |> LazyHTML.query("head") |> LazyHTML.to_html() =~ "utm_source"
+    end
+  end
 end

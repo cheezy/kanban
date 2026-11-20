@@ -7,6 +7,7 @@ defmodule KanbanWeb.Layouts do
 
   import KanbanWeb.MarketingComponents
   import KanbanWeb.MarketingClosing
+  import KanbanWeb.SeoComponents
 
   alias KanbanWeb.NotificationBell
   alias KanbanWeb.OrganizationTwoFactorBanner

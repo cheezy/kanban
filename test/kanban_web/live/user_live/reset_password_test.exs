@@ -28,6 +28,35 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
       assert html =~ "New password"
     end
 
+    test "the head carries no canonical or og:url, so the token never reaches a meta tag",
+         %{conn: conn, token: token} do
+      document =
+        conn
+        |> get(~p"/users/reset-password/#{token}")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+
+      head = document |> LazyHTML.query("head") |> LazyHTML.to_html()
+
+      assert document |> LazyHTML.query(~s(head meta[name="description"])) |> Enum.count() == 1
+      assert document |> LazyHTML.query(~s(head link[rel="canonical"])) |> Enum.count() == 0
+      assert document |> LazyHTML.query(~s(head meta[property="og:url"])) |> Enum.count() == 0
+      refute head =~ token
+    end
+
+    test "a percent-encoded alias of the reset path also leaves the token out of the head",
+         %{conn: conn, token: token} do
+      document =
+        conn
+        |> get("/users/reset%2Dpassword/" <> token)
+        |> html_response(200)
+        |> LazyHTML.from_document()
+
+      assert document |> LazyHTML.query(~s(head link[rel="canonical"])) |> Enum.count() == 0
+      assert document |> LazyHTML.query(~s(head meta[property="og:url"])) |> Enum.count() == 0
+      refute document |> LazyHTML.query("head") |> LazyHTML.to_html() =~ token
+    end
+
     test "a validate re-render echoes both typed passwords back into their inputs",
          %{conn: conn, token: token} do
       # Regression: the inputs rendered no `value`, so every phx-change sent back

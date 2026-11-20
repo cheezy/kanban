@@ -407,6 +407,7 @@ msgstr "此列已达到在制品限制"
 #: lib/kanban_web/components/layouts/root.html.heex
 #: lib/kanban_web/components/marketing_closing.ex
 #: lib/kanban_web/components/marketing_components.ex
+#: lib/kanban_web/components/seo_components.ex
 #: lib/kanban_web/components/side_nav.ex
 #, elixir-autogen, elixir-format
 msgid "Stride"
@@ -15882,3 +15883,8 @@ msgstr "功能开关已关闭"
 msgctxt "audit action"
 msgid "Feature flag turned on"
 msgstr "功能开关已开启"
+
+#: lib/kanban_web/components/seo_components.ex
+#, elixir-autogen, elixir-format
+msgid "Stride is a kanban board where humans and AI agents plan, claim and ship work together."
+msgstr "Stride 是一个看板，让人类和 AI 代理一起规划、认领并交付工作。"
