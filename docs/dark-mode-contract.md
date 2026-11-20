@@ -312,6 +312,13 @@ themes, and `mix dark_mode.contrast` gates that pair. The `.btn-error` rule in
 `assets/css/app.css` also points the button's focus ring at
 `--color-error-ink`, which stays visible on the dark surfaces.
 
+Success badges (`badge-success`, such as the confirmed badge on `/admin/users`
+and the "On for everyone" state on `/admin/feature-flags`) draw their label in
+`--color-success-content` on `--color-success`. daisyUI's near-white label
+measured only 2.3:1 in the light theme and 3.5:1 in the dark one, so both
+themes use a deep teal ink instead, about 7.5:1 and 5.1:1.
+`mix dark_mode.contrast` gates that pair.
+
 ### Composite gradient tokens
 
 For the two surfaces that previously hardcoded a multi-stop gradient inline

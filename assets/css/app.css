@@ -94,7 +94,10 @@
   --color-info: oklch(58% 0.158 241.966);
   --color-info-content: oklch(97% 0.013 236.62);
   --color-success: oklch(60% 0.118 184.704);
-  --color-success-content: oklch(98% 0.014 180.72);
+  /* success-content was oklch(98% ...) near-white: only 3.5:1 on this teal
+     (2.3:1 in the light theme), so badge-success labels failed WCAG AA. Deep
+     teal of the same hue gives ~5.1:1 here and ~7.5:1 in the light theme. */
+  --color-success-content: oklch(18% 0.04 182);
   --color-warning: oklch(66% 0.179 58.318);
   --color-warning-content: oklch(98% 0.022 95.277);
   --color-error: oklch(58% 0.253 17.585);
@@ -141,7 +144,8 @@
   --color-info: oklch(62% 0.214 259.815);
   --color-info-content: oklch(97% 0.014 254.604);
   --color-success: oklch(70% 0.14 182.503);
-  --color-success-content: oklch(98% 0.014 180.72);
+  /* Deep teal, as in the dark theme: ~7.5:1 on this teal (was 2.3:1). */
+  --color-success-content: oklch(18% 0.04 182);
   --color-warning: oklch(66% 0.179 58.318);
   --color-warning-content: oklch(98% 0.022 95.277);
   --color-error: oklch(58% 0.253 17.585);

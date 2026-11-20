@@ -335,6 +335,9 @@ defmodule Mix.Tasks.DarkMode.Contrast do
 
   # .btn-error draws its label in --color-error-content on --color-error-fill,
   # so that pair is the text contrast of every destructive (Delete) button.
+  # .badge-success draws its label in --color-success-content on
+  # --color-success (the confirmed badge on /admin/users and the "On for
+  # everyone" state on /admin/feature-flags).
   defp daisy_specs do
     base =
       for fg <- ~w(--color-base-content --color-error-ink --color-placeholder-ink),
@@ -342,7 +345,11 @@ defmodule Mix.Tasks.DarkMode.Contrast do
         spec("daisyui-base", fg, bg, @aa_text)
       end
 
-    base ++ [spec("daisyui-button", "--color-error-content", "--color-error-fill", @aa_text)]
+    base ++
+      [
+        spec("daisyui-button", "--color-error-content", "--color-error-fill", @aa_text),
+        spec("daisyui-badge", "--color-success-content", "--color-success", @aa_text)
+      ]
   end
 
   defp spec(category, fg, bg, threshold) do
