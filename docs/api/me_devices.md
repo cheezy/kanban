@@ -165,3 +165,23 @@ A device that was already revoked records nothing again, and revoking it again
 from either page says it was already signed out. Neither the audit event
 nor the telemetry carries a token, and the telemetry never carries the device's
 name.
+
+## When the device lists show
+
+Until the app ships, the two web lists show only when they can matter:
+
+- the Devices section of `/users/settings`, and its tab, shows while the
+  `:mobile_app_preview` feature flag is on for the person, or while they still
+  have a device that is not revoked, whatever the flag says. So a device that
+  exists can always be revoked there, even one signed in through
+  `/oauth/authorize` without the flag. Asked for with `?section=devices` while
+  it is hidden, the page opens Profile instead. Revoking the person's last
+  device without the flag hides the section at once.
+- a member's **Devices** button in the Members section of the org console
+  shows only while that member has a device that is not revoked. Revoking
+  their last one closes the list and removes the button. The console reads
+  which members have one in a single query
+  (`Kanban.Devices.users_with_active_devices/2`), limited to the org-admin's
+  own Organization.
+
+`Kanban.Devices.show_devices?/1` holds the rule for the settings page.

@@ -6,7 +6,10 @@ defmodule Kanban.Devices.Lookup do
   `GET /api/me/devices` and the settings page. Behind
   `Kanban.Devices.fetch_by_access_token/2`,
   `Kanban.Devices.authenticate_access_token/2`, `Kanban.Devices.fetch_device/2`,
-  `Kanban.Devices.list_devices/1` and `Kanban.Devices.list_devices_for/2`.
+  `Kanban.Devices.list_devices/1` and `Kanban.Devices.list_devices_for/2`;
+  and whether anyone has a device at all, for showing the device lists only
+  when they can matter (`Kanban.Devices.show_devices?/1`,
+  `Kanban.Devices.users_with_active_devices/2`).
   """
 
   import Ecto.Query, warn: false
@@ -15,6 +18,7 @@ defmodule Kanban.Devices.Lookup do
   alias Kanban.Accounts.User
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
 
   @doc "See `Kanban.Devices.fetch_by_access_token/2`."
@@ -105,5 +109,34 @@ defmodule Kanban.Devices.Lookup do
       order_by: [desc: d.inserted_at, desc: d.id]
     )
     |> Repo.all()
+  end
+
+  @doc "Whether the scope user has at least one device that is not revoked."
+  @spec has_active_device?(Scope.t()) :: boolean()
+  def has_active_device?(%Scope{user: %User{id: user_id}}) do
+    from(d in Device, where: d.user_id == ^user_id and is_nil(d.revoked_at))
+    |> Repo.exists?()
+  end
+
+  @doc "See `Kanban.Devices.users_with_active_devices/2`."
+  @spec users_with_active_devices(Scope.t(), [pos_integer()]) :: MapSet.t(pos_integer())
+  def users_with_active_devices(%Scope{}, []), do: MapSet.new()
+
+  def users_with_active_devices(%Scope{user: %User{id: actor_id}}, user_ids)
+      when is_list(user_ids) do
+    # One query for every id. The second join keeps it to the members of the
+    # actor's own Organization (a person belongs to at most one), so an id
+    # from another Organization, or an actor with none, matches nothing.
+    from(d in Device,
+      join: m in OrganizationMember,
+      on: m.user_id == d.user_id,
+      join: a in OrganizationMember,
+      on: a.organization_id == m.organization_id and a.user_id == ^actor_id,
+      where: d.user_id in ^user_ids and is_nil(d.revoked_at),
+      distinct: true,
+      select: d.user_id
+    )
+    |> Repo.all()
+    |> MapSet.new()
   end
 end

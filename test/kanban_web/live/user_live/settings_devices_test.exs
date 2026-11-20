@@ -9,6 +9,7 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
   alias Kanban.AuditLog
   alias Kanban.Devices
   alias Kanban.Devices.Device
+  alias Kanban.FeatureFlags
   alias Kanban.Repo
 
   @t0 ~U[2026-11-18 12:00:00Z]
@@ -89,7 +90,8 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
     assert event.metadata["device_id"] == device.id
   end
 
-  test "shows an empty state when there are no devices", %{conn: conn} do
+  test "shows an empty state when there are no devices", %{conn: conn, user: user} do
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
     view = open_devices(conn)
 
     assert has_element?(view, "#device-list-empty", "No phones or tablets are signed in")
@@ -132,7 +134,9 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
     assert has_element?(view, "#device-name-#{device.id}", long_name)
   end
 
-  test "the empty state renders in German", %{conn: conn} do
+  test "the empty state renders in German", %{conn: conn, user: user} do
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
+
     {:ok, view, _html} =
       conn
       |> Plug.Conn.put_session(:locale, "de")
@@ -178,6 +182,7 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
     admin = user_fixture()
     organization_member_fixture(organization, admin, :org_admin)
     organization_member_fixture(organization, user, :member)
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
     device = device_fixture(scope)
     view = open_devices(conn)
 
@@ -189,8 +194,10 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
 
   test "a revoke while another section is open keeps the page up and shows on Devices", %{
     conn: conn,
-    scope: scope
+    scope: scope,
+    user: user
   } do
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
     device = device_fixture(scope)
     {:ok, view, _html} = live(conn, ~p"/users/settings")
     :ok = Devices.subscribe_devices(scope)
@@ -228,5 +235,122 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
     render_hook(target, "revoke_device", %{"device_id" => %{"id" => other.id}})
     render_hook(target, "revoke_device", %{})
     assert is_nil(Repo.get!(Device, other.id).revoked_at)
+  end
+
+  describe "when the Devices section shows (W2910)" do
+    test "the Devices section and its tab are hidden for a user without the flag and with no active device",
+         %{conn: conn, scope: scope} do
+      # A revoked device is no device.
+      {:ok, _} = Devices.revoke_device(scope, device_fixture(scope))
+
+      {:ok, view, html} = live(conn, ~p"/users/settings")
+
+      assert has_element?(view, "#settings-tab-profile")
+      refute has_element?(view, "#settings-tab-devices")
+      refute has_element?(view, "#devices")
+      refute html =~ "devices-section"
+    end
+
+    test "the Devices section shows for a user with :mobile_app_preview", %{
+      conn: conn,
+      user: user
+    } do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
+      view = open_devices(conn)
+
+      assert has_element?(view, "#settings-tab-devices[aria-selected=true]")
+      assert has_element?(view, "#devices #devices-section")
+      assert has_element?(view, "#device-list-empty")
+    end
+
+    test "the Devices section shows for an unflagged user who still has an active device, so they can revoke it",
+         %{conn: conn, scope: scope, user: user} do
+      # The flag turned off while the user still has a device keeps the
+      # section ("Change the Rights").
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
+      :ok = FeatureFlags.disable_for_user(:mobile_app_preview, user)
+      device = device_fixture(scope, %{name: "Last phone"})
+      view = open_devices(conn)
+
+      assert has_element?(view, "#settings-tab-devices[aria-selected=true]")
+      assert has_element?(view, "#device-#{device.id}")
+
+      view |> element("#device-revoke-#{device.id}") |> render_click()
+
+      assert %DateTime{} = Repo.get!(Device, device.id).revoked_at
+      # Nothing is left to show, so the section and its tab go and Profile
+      # opens, with the revoke reported.
+      assert has_element?(view, "#profile")
+      refute has_element?(view, "#devices")
+      refute has_element?(view, "#settings-tab-devices")
+      assert render(view) =~ "Device revoked."
+    end
+
+    test "?section=devices while hidden falls back to the profile section", %{conn: conn} do
+      view = open_devices(conn)
+
+      assert has_element?(view, "#profile")
+      assert has_element?(view, "#settings-tab-profile[aria-selected=true]")
+      refute has_element?(view, "#devices")
+
+      # A crafted select_section event is refused the same way.
+      render_hook(view, "select_section", %{"section" => "devices"})
+      assert has_element?(view, "#profile")
+      refute has_element?(view, "#devices")
+    end
+
+    test "revoking the last device elsewhere updates an open settings page", %{
+      conn: conn,
+      scope: scope
+    } do
+      device = device_fixture(scope)
+      view = open_devices(conn)
+      assert has_element?(view, "#device-#{device.id}")
+
+      {:ok, _} = Devices.revoke_device(scope, device)
+
+      assert has_element?(view, "#profile")
+      refute has_element?(view, "#settings-tab-devices")
+    end
+
+    test "a revoke while another section is open leaves that section open", %{
+      conn: conn,
+      scope: scope
+    } do
+      device = device_fixture(scope)
+      {:ok, view, _html} = live(conn, ~p"/users/settings?section=password")
+      assert has_element?(view, "#settings-tab-devices")
+
+      {:ok, _} = Devices.revoke_device(scope, device)
+
+      assert has_element?(view, "#settings-tab-password[aria-selected=true]")
+      refute has_element?(view, "#settings-tab-devices")
+      refute render(view) =~ "Device revoked."
+    end
+
+    test "a flagged user keeps the section after revoking their last device", %{
+      conn: conn,
+      scope: scope,
+      user: user
+    } do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
+      device = device_fixture(scope)
+      view = open_devices(conn)
+
+      {:ok, _} = Devices.revoke_device(scope, device)
+
+      assert has_element?(view, "#settings-tab-devices[aria-selected=true]")
+      assert has_element?(view, "#device-list-empty")
+    end
+
+    test "the notification preferences menu follows the same rule", %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      refute has_element?(view, "#settings-devices-link")
+      assert has_element?(view, "#settings-profile-link")
+
+      device_fixture(scope)
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      assert has_element?(view, "#settings-devices-link")
+    end
   end
 end

@@ -11,6 +11,8 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
   swap in place (`tabs`); on any other page they are links back to the settings
   page.
   Notifications is always a link, marked as the current page when active.
+  Devices is left out, as a tab and as a link, when `show_devices` is false
+  (`Kanban.Devices.show_devices?/1`).
   """
   use KanbanWeb, :html
 
@@ -21,6 +23,10 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
   attr :tabs, :boolean,
     default: false,
     doc: "render the account sections as in-page tabs (the settings page itself)"
+
+  attr :show_devices, :boolean,
+    default: true,
+    doc: "include the Devices section (see `Kanban.Devices.show_devices?/1`)"
 
   slot :inner_block, required: true
 
@@ -45,16 +51,17 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
           aria-label={gettext("Settings sections")}
           class="flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
         >
-          <%!-- Below md the six account sections sit in a two-column grid and
-                Notifications takes its own row: six or seven items in one
-                phone-width row would squeeze every label. --%>
+          <%!-- Below md the account sections (six, or five without Devices) sit
+                in a two-column grid and Notifications takes its own row: six
+                or seven items in one phone-width row would squeeze every label. --%>
           <div
             role={@tabs && "tablist"}
             aria-orientation={@tabs && "vertical"}
             aria-label={@tabs && gettext("Settings sections")}
             class="grid grid-cols-2 md:flex md:flex-col gap-1 basis-full md:basis-auto md:flex-initial"
           >
-            <%= for {section, label, hint} <- account_sections() do %>
+            <%= for {section, label, hint} <- account_sections(),
+                    section != :devices or @show_devices do %>
               <.section_tab
                 :if={@tabs}
                 section={section}

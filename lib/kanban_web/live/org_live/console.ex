@@ -86,7 +86,7 @@ defmodule KanbanWeb.OrgLive.Console do
     socket
     |> assign(:page_title, gettext("Organization"))
     |> assign(:organization, organization)
-    |> assign(:members, Organizations.list_members(organization))
+    |> ConsoleMemberDevices.assign_members()
     |> assign(:workspaces, OrgWorkspaces.list_workspaces(user, organization.id))
     |> assign(:create_rev, 0)
     |> assign(:create_form, create_form(0))
@@ -102,7 +102,7 @@ defmodule KanbanWeb.OrgLive.Console do
   def handle_params(%{"section" => "members"}, _uri, socket) do
     {:noreply,
      socket
-     |> assign(:members, Organizations.list_members(socket.assigns.organization))
+     |> ConsoleMemberDevices.assign_members()
      |> ConsoleMemberDevices.close()
      |> assign(:section, :members)}
   end
@@ -236,7 +236,7 @@ defmodule KanbanWeb.OrgLive.Console do
 
   defp refresh_members(socket) do
     socket
-    |> assign(:members, Organizations.list_members(socket.assigns.organization))
+    |> ConsoleMemberDevices.assign_members()
     |> ConsoleMemberDevices.close_if_gone()
   end
 

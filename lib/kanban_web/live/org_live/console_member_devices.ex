@@ -19,17 +19,41 @@ defmodule KanbanWeb.OrgLive.ConsoleMemberDevices do
   on another page, by the member or another org-admin, leaves the list at
   once (`refresh/1`); closing the list unsubscribes.
 
+  A member's Devices toggle shows only while they have a device that is not
+  revoked: `:members_with_devices` is the set of those members' user ids, read
+  with the members list in one query (`assign_members/1`), and kept up to date
+  whenever a member's list is read. A list that comes back empty, after its
+  last device is revoked, closes, and its toggle goes with it.
+
   Kept out of the console, which is at the module size guideline.
   """
   use Gettext, backend: KanbanWeb.Gettext
 
   import KanbanWeb.OrgLive.OrgAdminCheck, only: [refuse: 1]
-  import Phoenix.Component, only: [assign: 3]
+  import Phoenix.Component, only: [assign: 3, update: 3]
   import Phoenix.LiveView, only: [clear_flash: 1, put_flash: 3, push_event: 3]
 
   alias Kanban.Devices
   alias Kanban.Organizations
   alias Phoenix.LiveView.Socket
+
+  @doc """
+  Reads the Organization's members into `:members`, and into
+  `:members_with_devices` the user ids of its ordinary members with a device
+  that is not revoked, from one devices query.
+  """
+  @spec assign_members(Socket.t()) :: Socket.t()
+  def assign_members(%Socket{} = socket) do
+    members = Organizations.list_members(socket.assigns.organization)
+    ids = for %{role: :member, user: %{id: id}} <- members, do: id
+
+    socket
+    |> assign(:members, members)
+    |> assign(
+      :members_with_devices,
+      Devices.users_with_active_devices(socket.assigns.current_scope, ids)
+    )
+  end
 
   @doc "Closes the open member's devices."
   @spec close(Socket.t()) :: Socket.t()
@@ -89,13 +113,13 @@ defmodule KanbanWeb.OrgLive.ConsoleMemberDevices do
   def refresh(%Socket{assigns: %{current_scope: scope, devices_member_id: member_id}} = socket) do
     case Devices.list_devices_for_member(scope, member_id) do
       {:ok, devices} ->
-        {:noreply, assign(socket, :member_devices, devices)}
+        {:noreply, show_devices(socket, member_id, devices)}
 
       {:error, _reason} ->
         {:noreply,
          socket
          |> close()
-         |> assign(:members, Organizations.list_members(socket.assigns.organization))}
+         |> assign_members()}
     end
   end
 
@@ -112,12 +136,8 @@ defmodule KanbanWeb.OrgLive.ConsoleMemberDevices do
       else: close(socket)
   end
 
-  defp respond_to_list({:ok, devices}, user_id, socket) do
-    {:noreply,
-     socket
-     |> assign(:devices_member_id, to_integer(user_id))
-     |> assign(:member_devices, devices)}
-  end
+  defp respond_to_list({:ok, devices}, user_id, socket),
+    do: {:noreply, show_devices(socket, to_integer(user_id), devices)}
 
   defp respond_to_list({:error, reason}, _user_id, socket), do: refused(socket, reason)
 
@@ -146,7 +166,23 @@ defmodule KanbanWeb.OrgLive.ConsoleMemberDevices do
     socket
     |> replace_flash(:error, message)
     |> close()
-    |> assign(:members, Organizations.list_members(socket.assigns.organization))
+    |> assign_members()
+  end
+
+  # A member with no device left has nothing to show or revoke: their list
+  # closes and their toggle goes. Otherwise the list is open on their devices.
+  defp show_devices(socket, member_id, []) do
+    socket
+    |> assign(:devices_member_id, member_id)
+    |> close()
+    |> update(:members_with_devices, &MapSet.delete(&1, member_id))
+  end
+
+  defp show_devices(socket, member_id, devices) do
+    socket
+    |> assign(:devices_member_id, member_id)
+    |> assign(:member_devices, devices)
+    |> update(:members_with_devices, &MapSet.put(&1, member_id))
   end
 
   defp revoked_message(revoked) do

@@ -42,6 +42,23 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
       assert html =~ "SECTION BODY"
     end
 
+    test "show_devices false leaves Devices out, as a tab and as a link (W2910)" do
+      tabs =
+        %{active: :profile, tabs: true, show_devices: false}
+        |> shell()
+        |> LazyHTML.from_fragment()
+
+      assert tabs |> LazyHTML.query(~s([role="tablist"] button[role="tab"])) |> Enum.count() == 5
+      assert tabs |> LazyHTML.query("button#settings-tab-devices") |> Enum.count() == 0
+      assert tabs |> LazyHTML.query("button#settings-tab-profile") |> Enum.count() == 1
+
+      links =
+        %{active: :notifications, show_devices: false} |> shell() |> LazyHTML.from_fragment()
+
+      assert links |> LazyHTML.query("a#settings-devices-link") |> Enum.count() == 0
+      assert links |> LazyHTML.query("a#settings-danger_zone-link") |> Enum.count() == 1
+    end
+
     test "with tabs, the account sections are in-page tabs and Notifications is a link" do
       html = shell(%{active: :password, tabs: true})
       doc = LazyHTML.from_fragment(html)

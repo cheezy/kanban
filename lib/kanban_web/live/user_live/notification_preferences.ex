@@ -30,6 +30,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   import KanbanWeb.UserLive.SettingsComponents
   import KanbanWeb.UserLive.PushSettingsComponents
 
+  alias Kanban.Devices
   alias Kanban.Notifications
   alias Kanban.Notifications.PushSettings
   alias Kanban.Plans
@@ -65,6 +66,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
       socket
       |> assign(:page_title, gettext("Notification preferences"))
       |> assign(:locked, socket.assigns.current_scope.notifications_locked)
+      |> assign(:show_devices?, Devices.show_devices?(socket.assigns.current_scope))
       |> load_preferences()
       |> load_push()
 
@@ -316,7 +318,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
         <span style="color: var(--ink); font-weight: 500;">{gettext("Notifications")}</span>
       </:breadcrumbs>
 
-      <.settings_shell active={:notifications}>
+      <.settings_shell active={:notifications} show_devices={@show_devices?}>
         <div data-notification-preferences>
           <h2 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);">
             {gettext("Notification preferences")}

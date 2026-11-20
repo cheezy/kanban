@@ -173,7 +173,10 @@
                 </span>
                 <span class="flex gap-2 @md:w-44 @md:flex-shrink-0 @md:justify-end">
                   <.button
-                    :if={member.role == :member}
+                    :if={
+                      member.role == :member and
+                        MapSet.member?(@members_with_devices, member.user.id)
+                    }
                     id={"member-devices-toggle-#{member.user.id}"}
                     type="button"
                     phx-click="show_member_devices"

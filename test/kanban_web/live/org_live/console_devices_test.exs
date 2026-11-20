@@ -82,28 +82,26 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
 
     assert render(view) =~ "2 devices revoked."
     assert revoked?(tablet) and revoked?(spare)
-    assert has_element?(view, "#member-device-list-#{ctx.member.id}-empty")
-    refute has_element?(view, "#revoke-all-devices-#{ctx.member.id}")
+    # With no device left the list closes and the toggle goes (W2910).
+    refute has_element?(view, "#member-devices-#{ctx.member.id}")
+    refute has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+    refute watching?(view, ctx.member)
 
     events = revoked_events(ctx.org_admin.id)
     assert length(events) == 3
     assert Enum.all?(events, &(&1.metadata["reason"] == "org_admin"))
     assert Enum.all?(events, &(&1.metadata["device_user_id"] == ctx.member.id))
-
-    # The toggle closes the open list.
-    view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
-    refute has_element?(view, "#member-devices-#{ctx.member.id}")
   end
 
-  test "a member with no devices shows an empty state", ctx do
+  test "a member with no devices has no Devices toggle and a crafted one opens nothing", ctx do
     view = open_members(ctx.conn)
-    view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
+    assert has_element?(view, "#remove-member-#{ctx.member.id}")
+    refute has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
 
-    assert has_element?(
-             view,
-             "#member-device-list-#{ctx.member.id}-empty",
-             "This member has no phones or tablets signed in."
-           )
+    render_hook(view, "show_member_devices", %{"user_id" => to_string(ctx.member.id)})
+    refute has_element?(view, "#member-devices-#{ctx.member.id}")
+    refute has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+    refute watching?(view, ctx.member)
 
     render_hook(view, "revoke_member_devices", %{"user_id" => to_string(ctx.member.id)})
     assert render(view) =~ "0 devices revoked."
@@ -205,6 +203,7 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
   end
 
   test "a revoke that succeeds is reported so when the open member is gone", ctx do
+    device_fixture(ctx.member_scope)
     second = user_fixture()
     organization_member_fixture(ctx.organization, second, :member)
     removed_device = device_fixture(user_scope_fixture(second))
@@ -227,6 +226,7 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
     # The open member is promoted meanwhile.
     third = user_fixture()
     organization_member_fixture(ctx.organization, third, :member)
+    device_fixture(user_scope_fixture(third))
     view = open_members(ctx.conn)
     view |> element("#member-devices-toggle-#{third.id}") |> render_click()
 
@@ -312,6 +312,8 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
   test "opening another member's devices follows only that member", ctx do
     second = user_fixture()
     organization_member_fixture(ctx.organization, second, :member)
+    device_fixture(ctx.member_scope)
+    device_fixture(user_scope_fixture(second))
     view = open_members(ctx.conn)
 
     view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
@@ -336,8 +338,9 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
     view |> element("#member-device-revoke-#{device.id}") |> render_click()
 
     refute has_element?(other_view, "#member-device-#{device.id}")
-    assert has_element?(other_view, "#member-device-list-#{ctx.member.id}-empty")
-    refute has_element?(other_view, "#revoke-all-devices-#{ctx.member.id}")
+    refute has_element?(other_view, "#member-devices-#{ctx.member.id}")
+    refute has_element?(other_view, "#member-devices-toggle-#{ctx.member.id}")
+    refute watching?(other_view, ctx.member)
   end
 
   test "a demoted org-admin's open list closes quietly on a revoke elsewhere", ctx do
@@ -382,21 +385,6 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
     assert has_element?(view, "[id^=member-device-last-seen-]", "Zuletzt gesehen")
   end
 
-  test "the member's empty list renders in German", ctx do
-    {:ok, view, _html} =
-      ctx.conn
-      |> Plug.Conn.put_session(:locale, "de")
-      |> live(~p"/org?section=members")
-
-    view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
-
-    assert has_element?(
-             view,
-             "#member-device-list-#{ctx.member.id}-empty",
-             "Dieses Mitglied hat keine angemeldeten Telefone oder Tablets."
-           )
-  end
-
   test "the member devices panel uses theme tokens and a long name wraps", ctx do
     long_name = String.duplicate("Mel", 40)
     device = device_fixture(ctx.member_scope, %{name: long_name})
@@ -419,5 +407,101 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
              ~s(#member-device-name-#{device.id}[style*="overflow-wrap: anywhere"]),
              long_name
            )
+  end
+
+  describe "when a member's Devices toggle shows (W2910)" do
+    test "a member's Devices disclosure shows only when that member has an active device", ctx do
+      device_fixture(ctx.member_scope)
+      without = user_fixture()
+      organization_member_fixture(ctx.organization, without, :member)
+      revoked_only = user_fixture()
+      organization_member_fixture(ctx.organization, revoked_only, :member)
+      revoked_scope = user_scope_fixture(revoked_only)
+      {:ok, _} = Devices.revoke_device(revoked_scope, device_fixture(revoked_scope))
+      device_fixture(user_scope_fixture(ctx.org_admin))
+
+      view = open_members(ctx.conn)
+
+      assert has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+      refute has_element?(view, "#member-devices-toggle-#{without.id}")
+      refute has_element?(view, "#member-devices-toggle-#{revoked_only.id}")
+      # An org-admin's devices are managed on their own settings page.
+      refute has_element?(view, "#member-devices-toggle-#{ctx.org_admin.id}")
+      # Every ordinary member can still be removed.
+      assert has_element?(view, "#remove-member-#{without.id}")
+    end
+
+    test "revoking a member's last device hides the disclosure", ctx do
+      device = device_fixture(ctx.member_scope)
+      view = open_members(ctx.conn)
+      view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
+      assert watching?(view, ctx.member)
+
+      view |> element("#member-device-revoke-#{device.id}") |> render_click()
+
+      assert render(view) =~ "Device revoked."
+      assert revoked?(device)
+      refute has_element?(view, "#member-devices-#{ctx.member.id}")
+      refute has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+      refute watching?(view, ctx.member)
+    end
+
+    test "a last device revoked on another page hides the open disclosure", ctx do
+      device = device_fixture(ctx.member_scope)
+      view = open_members(ctx.conn)
+      view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
+
+      {:ok, _} = Devices.revoke_device(ctx.member_scope, device)
+
+      refute has_element?(view, "#member-devices-#{ctx.member.id}")
+      refute has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+      refute watching?(view, ctx.member)
+    end
+
+    test "a member's first device shows their toggle when Members is opened again", ctx do
+      view = open_members(ctx.conn)
+      refute has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+
+      device_fixture(ctx.member_scope)
+      view |> element("#settings-tab-details") |> render_click()
+      view |> element("#settings-tab-members") |> render_click()
+
+      assert has_element?(view, "#member-devices-toggle-#{ctx.member.id}")
+    end
+
+    test "the members table makes one devices query, not one per row", ctx do
+      device_fixture(ctx.member_scope)
+
+      for _ <- 1..4 do
+        user = user_fixture()
+        organization_member_fixture(ctx.organization, user, :member)
+        device_fixture(user_scope_fixture(user))
+      end
+
+      view = open_members(ctx.conn)
+      render_patch(view, ~p"/org?section=details")
+
+      count = :counters.new(1, [])
+      handler_id = "console-devices-#{System.unique_integer([:positive])}"
+      view_pid = view.pid
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, %{source: source}, _config ->
+          if self() == view_pid and source == "user_devices", do: :counters.add(count, 1, 1)
+        end,
+        nil
+      )
+
+      try do
+        render_patch(view, ~p"/org?section=members")
+      after
+        :telemetry.detach(handler_id)
+      end
+
+      assert :counters.get(count, 1) == 1
+      assert has_element?(view, "[id^=member-devices-toggle-]")
+    end
   end
 end

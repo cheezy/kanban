@@ -1508,6 +1508,103 @@ defmodule Kanban.DevicesTest do
       assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
     end
   end
+
+  describe "users_with_active_devices/2 and show_devices?/1 (W2910)" do
+    setup do
+      organization = organization_fixture()
+      admin = user_fixture()
+      organization_member_fixture(organization, admin, :org_admin)
+
+      [with_device, revoked_only, without] =
+        for _ <- 1..3 do
+          user = user_fixture()
+          organization_member_fixture(organization, user, :member)
+          user
+        end
+
+      device_fixture(user_scope_fixture(with_device))
+      device_fixture(user_scope_fixture(with_device))
+      revoked_scope = user_scope_fixture(revoked_only)
+      {:ok, _} = Devices.revoke_device(revoked_scope, device_fixture(revoked_scope))
+
+      outsider = user_fixture()
+      organization_member_fixture(organization_fixture(), outsider, :member)
+      device_fixture(user_scope_fixture(outsider))
+
+      loner = user_fixture()
+      device_fixture(user_scope_fixture(loner))
+
+      %{
+        admin_scope: user_scope_fixture(admin),
+        ids: Enum.map([admin, with_device, revoked_only, without, outsider, loner], & &1.id),
+        with_device: with_device,
+        loner: loner
+      }
+    end
+
+    defp count_device_queries(fun) do
+      test_pid = self()
+      ref = :counters.new(1, [])
+      handler_id = "devices-test-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, _metadata, _config ->
+          if self() == test_pid, do: :counters.add(ref, 1, 1)
+        end,
+        nil
+      )
+
+      try do
+        result = fun.()
+        {result, :counters.get(ref, 1)}
+      after
+        :telemetry.detach(handler_id)
+      end
+    end
+
+    test "users_with_active_devices/2 returns only ids with an unrevoked device, in one query",
+         ctx do
+      # A member with two devices appears once; a revoked device, no device,
+      # another Organization's member and a person with no Organization never.
+      assert {set, 1} =
+               count_device_queries(fn ->
+                 Devices.users_with_active_devices(ctx.admin_scope, ctx.ids)
+               end)
+
+      assert set == MapSet.new([ctx.with_device.id])
+    end
+
+    test "an empty id list runs no query", ctx do
+      assert {set, 0} =
+               count_device_queries(fn ->
+                 Devices.users_with_active_devices(ctx.admin_scope, [])
+               end)
+
+      assert set == MapSet.new()
+    end
+
+    test "an actor with no Organization gets an empty set", ctx do
+      scope = user_scope_fixture(ctx.loner)
+      assert Devices.users_with_active_devices(scope, ctx.ids) == MapSet.new()
+    end
+
+    test "show_devices?/1 follows the flag or an unrevoked device", ctx do
+      refute Devices.show_devices?(ctx.admin_scope)
+      assert ctx.with_device |> user_scope_fixture() |> Devices.show_devices?()
+
+      # A revoked device is no device.
+      scope = user_scope_fixture()
+      {:ok, _} = Devices.revoke_device(scope, device_fixture(scope))
+      refute Devices.show_devices?(scope)
+
+      :ok = Kanban.FeatureFlags.enable_for_user(:mobile_app_preview, scope.user)
+      assert Devices.show_devices?(scope)
+      :ok = Kanban.FeatureFlags.disable_for_user(:mobile_app_preview, scope.user)
+      refute Devices.show_devices?(scope)
+    end
+  end
 end
 
 defmodule Kanban.DevicesRotationAtomicityTest do

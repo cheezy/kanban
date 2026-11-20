@@ -13,7 +13,8 @@ defmodule Kanban.Devices do
     * `Kanban.Devices.Lookup` reads devices: the one an access token
       belongs to and a person's own (`fetch_by_access_token/2`,
       `authenticate_access_token/2`, `fetch_signed_in_device/1`, `fetch_device/2`,
-      `list_devices/1`, `list_devices_for/2`);
+      `list_devices/1`, `list_devices_for/2`, `users_with_active_devices/2`),
+      and whether a person has one at all (`show_devices?/1`);
     * `Kanban.Devices.RefreshTokens` rotates a refresh token and signs a
       device out with one (`rotate_refresh_token/3`,
       `revoke_by_refresh_token/3`);
@@ -86,6 +87,7 @@ defmodule Kanban.Devices do
   alias Kanban.Devices.MemberDevices
   alias Kanban.Devices.RefreshTokens
   alias Kanban.Devices.Revocation
+  alias Kanban.FeatureFlags
   alias Kanban.Organizations
 
   @typedoc "A newly issued token pair: the plain values are shown only here."
@@ -292,6 +294,25 @@ defmodule Kanban.Devices do
   """
   @spec list_devices(Scope.t()) :: [Device.t()]
   defdelegate list_devices(scope), to: Lookup
+
+  @doc """
+  Whether the scope user's own device list should be shown: while
+  `:mobile_app_preview` is on for them, or while they still have a device
+  that is not revoked, whatever the flag says, so a device that exists can
+  always be revoked.
+  """
+  @spec show_devices?(Scope.t()) :: boolean()
+  def show_devices?(%Scope{} = scope),
+    do: FeatureFlags.enabled?(scope, :mobile_app_preview) or Lookup.has_active_device?(scope)
+
+  @doc """
+  Returns the ids among `user_ids` of the people who have at least one device
+  that is not revoked, as a `MapSet`, from one query. Only members of the
+  scope user's Organization are ever returned, so it cannot reveal another
+  Organization's people; an actor with no Organization gets an empty set.
+  """
+  @spec users_with_active_devices(Scope.t(), [pos_integer()]) :: MapSet.t(pos_integer())
+  defdelegate users_with_active_devices(scope, user_ids), to: Lookup
 
   @doc """
   Subscribes the calling process to the scope user's device revocations,

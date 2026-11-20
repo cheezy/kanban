@@ -15372,6 +15372,7 @@ msgstr "デバイスが見つかりません。"
 
 #: lib/kanban_web/live/org_live/console_member_devices.ex
 #: lib/kanban_web/live/user_live/devices_component.ex
+#: lib/kanban_web/live/user_live/settings.ex
 #, elixir-autogen, elixir-format
 msgid "Device revoked."
 msgstr "デバイスを取り消しました。"

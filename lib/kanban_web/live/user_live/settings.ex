@@ -17,7 +17,7 @@ defmodule KanbanWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <.settings_shell active={@section} tabs>
+      <.settings_shell active={@section} show_devices={@show_devices?} tabs>
         <.settings_card
           :if={@section == :profile}
           id="profile"
@@ -205,7 +205,7 @@ defmodule KanbanWeb.UserLive.Settings do
         </.settings_card>
 
         <.settings_card
-          :if={@section == :devices}
+          :if={@section == :devices and @show_devices?}
           id="devices"
           tab={:devices}
           title={gettext("Devices")}
@@ -303,18 +303,28 @@ defmodule KanbanWeb.UserLive.Settings do
       |> assign(:trigger_submit, false)
       |> assign(:section, :profile)
       |> assign(:devices_rev, 0)
-      |> assign(:sso_locked?, not Plans.user_unlocked?(socket.assigns.current_scope))
-      |> assign(:sso_linked?, SSO.user_has_identity?(user))
+      |> assign_scope_flags()
       |> subscribe_devices()
 
     {:ok, socket}
+  end
+
+  # The assigns read from the signed-in scope: whether the Devices section
+  # shows (W2910) and whether SSO locks or is linked.
+  defp assign_scope_flags(socket) do
+    scope = socket.assigns.current_scope
+
+    socket
+    |> assign(:show_devices?, Devices.show_devices?(scope))
+    |> assign(:sso_locked?, not Plans.user_unlocked?(socket.assigns.current_scope))
+    |> assign(:sso_linked?, SSO.user_has_identity?(scope.user))
   end
 
   # The other settings pages link here with ?section=password (or two_factor,
   # sso, devices, danger_zone) to open that tab.
   @impl true
   def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
-    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+    {:noreply, open_section(socket, section)}
   end
 
   def handle_params(_params, _uri, socket), do: {:noreply, socket}
@@ -322,7 +332,7 @@ defmodule KanbanWeb.UserLive.Settings do
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)
       when section in @sections do
-    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+    {:noreply, open_section(socket, section)}
   end
 
   def handle_event("validate_email", params, socket) do
@@ -381,9 +391,33 @@ defmodule KanbanWeb.UserLive.Settings do
   end
 
   # A new :devices_rev updates the Devices component in this same render,
-  # which reads the person's devices again.
-  def handle_info({:device_revoked, _device_id}, socket),
-    do: {:noreply, update(socket, :devices_rev, &(&1 + 1))}
+  # which reads the person's devices again. Revoking the last device of a
+  # person without :mobile_app_preview hides the section; if it was open,
+  # Profile opens and the revoke is reported there, as the section would have.
+  def handle_info({:device_revoked, _device_id}, socket) do
+    socket =
+      socket
+      |> update(:devices_rev, &(&1 + 1))
+      |> assign(:show_devices?, Devices.show_devices?(socket.assigns.current_scope))
+
+    {:noreply, leave_hidden_devices(socket)}
+  end
+
+  defp leave_hidden_devices(%{assigns: %{show_devices?: false, section: :devices}} = socket) do
+    socket
+    |> assign(:section, :profile)
+    |> put_flash(:info, gettext("Device revoked."))
+  end
+
+  defp leave_hidden_devices(socket), do: socket
+
+  # Devices is shown only while it can matter (Kanban.Devices.show_devices?/1);
+  # asking for it while it is hidden opens Profile instead.
+  defp open_section(%{assigns: %{show_devices?: false}} = socket, "devices"),
+    do: assign(socket, :section, :profile)
+
+  defp open_section(socket, section),
+    do: assign(socket, :section, String.to_existing_atom(section))
 
   # A device revoked on another page, by the person, an org-admin or the
   # device itself, leaves the Devices section at once (handle_info/2).
