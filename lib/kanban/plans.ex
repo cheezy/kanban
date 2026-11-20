@@ -99,7 +99,7 @@ defmodule Kanban.Plans do
     :mobile_app
   ]
 
-  @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
+  @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context, :channel]
 
   # The task fields only a paid board stores, in the order warnings name them.
   @locked_task_fields ["telemetry_event", "metrics_to_track"]
@@ -119,7 +119,7 @@ defmodule Kanban.Plans do
           | :attachments
           | :mobile_app
 
-  @type surface :: :live_view | :controller | :rest | :mcp | :oban | :context
+  @type surface :: :live_view | :controller | :rest | :mcp | :oban | :context | :channel
 
   @doc """
   Returns true only when paid-plan enforcement is switched on.

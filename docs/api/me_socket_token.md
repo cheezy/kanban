@@ -3,8 +3,8 @@
 The Stride mobile app's live-updates socket
 ([design](../plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md), §7.7). The app asks
 for a single-use socket token, then connects the socket at `/api/socket` with
-it. The app's channels (`me:inbox` and `me:agents`) come in later releases;
-today the socket connects and closes on revoke.
+it. On the socket it joins the app's channels, `me:inbox` and `me:agents`
+([the channels](me_channels.md)), and the socket closes on revoke.
 
 This is not an agent endpoint. Agents keep using the routes in the
 [API reference](README.md) with their API token, and an agent API token is
@@ -87,8 +87,8 @@ Organization admin or through refresh-token reuse, broadcasts a disconnect on
 that topic, and every socket the device opened closes. One narrow window is
 not covered: a revoke that commits while a connect is being accepted, after
 the device was checked but before the socket listens on its topic, does not
-close that socket. The socket carries no channels yet, so it receives
-nothing; channels added later check the device again when they are joined.
+close that socket. Each channel checks the device again when it is joined
+([joining](me_channels.md#joining)), so such a socket cannot join one.
 After a revoke the app cannot get a new socket token, because its access
 token is refused too.
 

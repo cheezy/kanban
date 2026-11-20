@@ -818,7 +818,9 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
   `:integrations`, `:telemetry`, `:mcp`, `:attachments` or `:mobile_app`) and
   `surface` is
   the entry point that refused it: `:live_view`, `:controller`, `:rest`,
-  `:mcp`, `:oban` or `:context`. Both are tags. The board, the user and the
+  `:mcp`, `:oban`, `:context` or `:channel` (a join of the app's `me:inbox`
+  or `me:agents` channel, or a rebuild of one after the person's plan stopped
+  including the app). Both are tags. The board, the user and the
   request are never sent.
 - **A bad label raises instead.** A feature or surface outside those sets
   raises `ArgumentError` in `Kanban.Plans` before anything is emitted, with

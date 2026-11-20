@@ -346,7 +346,7 @@ defmodule Kanban.PlansTest do
     :attachments,
     :mobile_app
   ]
-  @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
+  @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context, :channel]
 
   describe "features/0 and surfaces/0" do
     test "features/0 returns exactly the ten paid features in a stable order" do
@@ -354,7 +354,7 @@ defmodule Kanban.PlansTest do
       assert Plans.features() == Plans.features()
     end
 
-    test "surfaces/0 returns the six entry points a refusal can come from" do
+    test "surfaces/0 returns the seven entry points a refusal can come from" do
       assert Plans.surfaces() == @surfaces
     end
   end

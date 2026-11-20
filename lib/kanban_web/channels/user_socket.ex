@@ -44,9 +44,20 @@ defmodule KanbanWeb.UserSocket do
   (`Kanban.Devices.Activity.signed_in?/1`); the plan (`:mobile_app`) was
   checked when the token was issued, and a channel checks it on join too.
 
-  The app's channels (`me:inbox`, `me:agents`) come in later tasks.
+  ## Channels
+
+    * `me:inbox` — `KanbanWeb.InboxChannel`, the Now screen's decisions;
+    * `me:agents` — `KanbanWeb.AgentsChannel`, the Agents tab's roster and
+      goal progress.
+
+  Both check the device and the plan on join (`KanbanWeb.MeChannel`), push
+  the full state on join and then at most once a second when it changed
+  (W2766). docs/api/me_channels.md is the app's contract.
   """
   use Phoenix.Socket
+
+  channel "me:inbox", KanbanWeb.InboxChannel
+  channel "me:agents", KanbanWeb.AgentsChannel
 
   alias Kanban.Devices
   alias Kanban.Devices.Nonces

@@ -21,6 +21,7 @@ defmodule Kanban.Boards do
 
   alias Kanban.Repo
 
+  alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Boards.AppBoards
   alias Kanban.Boards.Assignable
@@ -33,6 +34,7 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
   alias Kanban.Boards.OwnershipTransfer
+  alias Kanban.Plans
   alias Kanban.Workspaces.Policy
 
   @max_bigint 9_223_372_036_854_775_807
@@ -114,6 +116,31 @@ defmodule Kanban.Boards do
   ## The app's board list (see Kanban.Boards.AppBoards)
 
   defdelegate list_boards_for_app(scope, opts \\ []), to: AppBoards, as: :list
+
+  @doc """
+  Returns the ids, ascending, of every board the scoped person can access in
+  any workspace (`Kanban.Workspaces.Policy.accessible_board_ids/1`, org-admin
+  boards included) that the plan unlocks (`Kanban.Plans.unlocked_board_ids/1`):
+  the boards `Kanban.Decisions` and `Kanban.Agents.list_agents_for_app/2`
+  read. The app's live channels (`KanbanWeb.InboxChannel`,
+  `KanbanWeb.AgentsChannel`) subscribe to these boards' topics and no others.
+  A scope without a user gets `[]`.
+  """
+  @spec list_app_board_ids(Scope.t() | nil) :: [integer()]
+  def list_app_board_ids(%Scope{user: %User{id: user_id}}) do
+    ids =
+      from(a in subquery(Policy.accessible_board_ids(user_id)),
+        select: a.board_id,
+        distinct: true
+      )
+      |> Repo.all()
+
+    unlocked = Plans.unlocked_board_ids(ids)
+
+    ids |> Enum.filter(&MapSet.member?(unlocked, &1)) |> Enum.sort()
+  end
+
+  def list_app_board_ids(_scope), do: []
 
   @doc "Org-admins a board's tasks may be assigned to without a row. See `Kanban.Boards.Assignable`."
   defdelegate list_derived_assignees(board_id), to: Assignable

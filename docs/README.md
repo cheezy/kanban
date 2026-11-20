@@ -87,6 +87,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [The Goals list and Goal screen: /api/me/goals](api/me_goals.md) — Every goal on every board the person can see, with the open, done and no-target filters, and one goal's tasks grouped by column with the time each entered its column.
 - [The Targets list and Target screen: /api/me/targets](api/me_targets.md) — Every target the person can see with its status, estimate, task counts and owner, and one owned target's goals with why it is at risk.
 - [The live-updates socket: POST /api/me/socket_token](api/me_socket_token.md) — A single-use socket token for the app's socket at /api/socket, and how revoking the device closes it.
+- [The live channels: me:inbox and me:agents](api/me_channels.md) — The app's live Now and Agents updates: full state on join, at most one push a second, only when something changed, and only for the boards the person can see.
 
 ### Multi-agent instruction files
 
