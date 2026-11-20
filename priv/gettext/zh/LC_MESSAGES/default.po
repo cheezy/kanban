@@ -15776,8 +15776,8 @@ msgstr "已为所有人开启"
 
 #: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #, elixir-autogen, elixir-format
-msgid "Shows the screens that matter only once the phone apps ship: the device lists in account settings and on the Organization members page, the push notification settings, and the Organization policy that hides task titles in pushes."
-msgstr "显示只有在手机应用发布后才有意义的页面：账户设置和组织成员页面中的设备列表、推送通知设置，以及在推送中隐藏任务标题的组织策略。"
+msgid "Shows the screens that matter only once the phone apps ship: the device list in account settings, the push notification settings, and the Organization policy that hides task titles in pushes."
+msgstr "显示只有在手机应用发布后才有意义的页面：账户设置中的设备列表、推送通知设置，以及在推送中隐藏任务标题的组织策略。"
 
 #: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #, elixir-autogen, elixir-format

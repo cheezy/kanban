@@ -61,6 +61,7 @@ at all, so saving the page keeps whatever is stored rather than turning it off,
 and a value a crafted request sends for it while the card is left out is
 dropped on the server, so the setting cannot change from a control the page
 does not show.
+[Feature Flags](feature-flags.md) describes the flag and its rollout.
 
 The notification privacy setting is stored as `hide_titles_in_notifications`.
 Organizations that existed before it was added keep titles in their

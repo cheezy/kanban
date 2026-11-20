@@ -20,7 +20,7 @@ defmodule KanbanWeb.Admin.FeatureFlagLive.IndexTest do
     "Feature flags",
     "Turn unreleased features on for chosen users or for everyone. A change applies the next time a page loads; no restart is needed.",
     "Mobile app preview",
-    "Shows the screens that matter only once the phone apps ship: the device lists in account settings and on the Organization members page, the push notification settings, and the Organization policy that hides task titles in pushes.",
+    "Shows the screens that matter only once the phone apps ship: the device list in account settings, the push notification settings, and the Organization policy that hides task titles in pushes.",
     "Off",
     "On for everyone",
     "Turn on for everyone",
@@ -521,6 +521,27 @@ defmodule KanbanWeb.Admin.FeatureFlagLive.IndexTest do
           ] do
         assert doc =~ text, "docs/feature-flags.md does not mention #{text}"
       end
+    end
+
+    test "docs/feature-flags.md and AGENTS.md give the same steps for adding a flag" do
+      doc = File.cwd!() |> Path.join("docs/feature-flags.md") |> File.read!()
+      agents = File.cwd!() |> Path.join("AGENTS.md") |> File.read!()
+
+      for step <- [
+            "`@flags`",
+            "`@type flag`",
+            "`flag_label/1`",
+            "`flag_description/1`",
+            "`KanbanWeb.Admin.FeatureFlagLive.Index`",
+            "`Kanban.FeatureFlags.enabled?(scope, flag)`",
+            "`test/kanban/feature_flags_test.exs`",
+            "both states"
+          ] do
+        assert doc =~ step, "docs/feature-flags.md does not name #{step}"
+        assert agents =~ step, "AGENTS.md does not name #{step}"
+      end
+
+      assert agents =~ "`docs/feature-flags.md`"
     end
   end
 

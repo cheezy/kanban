@@ -15869,8 +15869,8 @@ msgstr "Für alle an"
 
 #: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #, elixir-autogen, elixir-format
-msgid "Shows the screens that matter only once the phone apps ship: the device lists in account settings and on the Organization members page, the push notification settings, and the Organization policy that hides task titles in pushes."
-msgstr "Zeigt die Bildschirme, die erst mit den Smartphone-Apps relevant werden: die Gerätelisten in den Kontoeinstellungen und auf der Mitgliederseite der Organisation, die Einstellungen für Push-Benachrichtigungen und die Organisationsrichtlinie, die Aufgabentitel in Push-Nachrichten ausblendet."
+msgid "Shows the screens that matter only once the phone apps ship: the device list in account settings, the push notification settings, and the Organization policy that hides task titles in pushes."
+msgstr "Zeigt die Bildschirme, die erst mit den Smartphone-Apps relevant werden: die Geräteliste in den Kontoeinstellungen, die Einstellungen für Push-Benachrichtigungen und die Organisationsrichtlinie, die Aufgabentitel in Push-Nachrichten ausblendet."
 
 #: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #, elixir-autogen, elixir-format

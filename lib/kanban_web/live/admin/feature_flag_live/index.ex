@@ -240,7 +240,7 @@ defmodule KanbanWeb.Admin.FeatureFlagLive.Index do
   defp flag_description(:mobile_app_preview),
     do:
       gettext(
-        "Shows the screens that matter only once the phone apps ship: the device lists in account settings and on the Organization members page, the push notification settings, and the Organization policy that hides task titles in pushes."
+        "Shows the screens that matter only once the phone apps ship: the device list in account settings, the push notification settings, and the Organization policy that hides task titles in pushes."
       )
 
   defp state_label(%{everyone?: true}), do: gettext("On for everyone")

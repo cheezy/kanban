@@ -1902,7 +1902,13 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
                "Delete account"
              ]
 
-      assert account =~ "Settings has six tabs"
+      assert account =~ "Settings has six tabs once you use the Stride app, and five until then"
+
+      # Devices shows while :mobile_app_preview is on, or while a device exists.
+      assert account =~ "It appears once you sign in to the Stride app"
+
+      assert File.read!("lib/kanban/devices.ex") =~
+               "FeatureFlags.enabled?(scope, :mobile_app_preview) or Lookup.has_active_device?(scope)"
 
       assert Enum.map(tabs, &"- **#{&1}**") ==
                Regex.scan(~r/^- \*\*[^*]+\*\*/m, account) |> List.flatten() |> Enum.take(6)
@@ -2350,6 +2356,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert heex =~ ~s(id={"member-devices-toggle-\#{member.user.id}"})
       assert console =~ "**Revoke** signs one out at once and **Revoke all** signs out every one"
 
+      # The members page's Devices button follows the member's devices, never the flag.
+      assert console =~
+               "A member who is signed in to the Stride app on a phone or tablet has a **Devices** button"
+
+      assert heex =~ "MapSet.member?(@members_with_devices, member.user.id)"
+      assert console =~ "Revoking their last one removes the button"
+
+      assert File.read!("lib/kanban_web/live/org_live/console_member_devices.ex") =~
+               "|> update(:members_with_devices, &MapSet.delete(&1, member_id))"
+
+      refute File.read!("lib/kanban_web/live/org_live/console.ex") =~ "FeatureFlags"
+
       assert console =~ "Stride refuses to remove, disable or delete its last one"
 
       assert File.read!("lib/kanban/organizations/membership_writes.ex") =~
@@ -2567,6 +2585,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert File.read!("lib/kanban_web/live/org_live/security.html.heex") =~
                "Members who sign in through single sign-on are not affected."
+
+      assert security =~
+               "appears once the Stride app is available to you, and whenever the setting is already on"
+
+      assert File.read!("lib/kanban_web/live/org_live/security.ex") =~
+               "socket.assigns.mobile_preview? or policy.hide_titles_in_notifications"
     end
 
     test "the single sign-on and SCIM facts match the code" do
@@ -3432,6 +3456,16 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert preferences =~ "@email_off_by_default [:goal_completed, :comment_added]"
       assert content =~ "except the email for **Completed goals** and **Comments**"
+
+      # The push settings show while :mobile_app_preview is on, or while a
+      # device a push can reach exists.
+      assert content =~
+               "Once you use the Stride app on a phone or tablet that can receive its pushes"
+
+      assert content =~ "Until then the page shows only the In-app and Email switches"
+
+      assert File.read!("lib/kanban/devices.ex") =~
+               "FeatureFlags.enabled?(scope, :mobile_app_preview) or push_device?(scope)"
 
       # Two gates: the board must be paid, and the user must be in an Organization.
       assert delivery =~ "A free board's events are dropped while plans are enforced"

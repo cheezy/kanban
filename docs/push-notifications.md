@@ -12,6 +12,14 @@ notifications push, and quiet hours with the summary push that follows them.
 Each person's settings are described in
 [GET and PUT /api/me/notification_settings](api/me_notification_settings.md).
 
+Until the app ships, the web controls for those settings, the **Push**
+switches, the push mode and quiet hours on `/users/notifications`, are behind
+the `:mobile_app_preview` feature flag. They show while the flag is on for the
+person, or while that person has a device a push can reach. The senders and
+the push workers never check the flag, so pushes reach every such device
+whatever it says.
+[Feature Flags](feature-flags.md) describes the flag and its rollout.
+
 ## The senders
 
 Stride sends one push to one device through the `Kanban.Push.Adapter`

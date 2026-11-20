@@ -54,7 +54,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Members",
             content:
-              "**Members** lists everyone in the Organization, org-admins first, with each person's role: **Org-admin** or **Member**. **Disabled** marks an account that can't sign in, and **Unconfirmed** one that hasn't confirmed its email address yet.\n\n**Remove** takes a member out of the Organization. They leave every one of its workspaces, lose their board memberships and API tokens there, and their open tasks are unassigned. If your Organization uses single sign-on, a removed person can sign in again through it until your identity provider stops them.\n\n**Devices** shows the phones and tablets a member is signed in to Stride on. **Revoke** signs one out at once and **Revoke all** signs out every one; each is recorded in the audit log. Removing a member does not sign out their devices.",
+              "**Members** lists everyone in the Organization, org-admins first, with each person's role: **Org-admin** or **Member**. **Disabled** marks an account that can't sign in, and **Unconfirmed** one that hasn't confirmed its email address yet.\n\n**Remove** takes a member out of the Organization. They leave every one of its workspaces, lose their board memberships and API tokens there, and their open tasks are unassigned. If your Organization uses single sign-on, a removed person can sign in again through it until your identity provider stops them.\n\nA member who is signed in to the Stride app on a phone or tablet has a **Devices** button, which shows the phones and tablets they are signed in to Stride on. **Revoke** signs one out at once and **Revoke all** signs out every one; each is recorded in the audit log. Revoking their last one removes the button. Removing a member does not sign out their devices.",
             image: "/images/resources/guides/administering-your-organization-step-4.png",
             image_width: 981,
             image_height: 228
@@ -290,7 +290,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.OrgAdmin do
           %{
             title: "Hiding Titles in Push Notifications",
             content:
-              "Under **Notification privacy**, tick **Hide task titles in push notifications** and click **Save security policy**. Push notifications to your members then show the task identifier and what happened, but no task, goal or target title, so none appears on a locked phone. It is off unless you turn it on.",
+              "The **Notification privacy** card appears once the Stride app is available to you, and whenever the setting is already on, so it can always be turned off. Under **Notification privacy**, tick **Hide task titles in push notifications** and click **Save security policy**. Push notifications to your members then show the task identifier and what happened, but no task, goal or target title, so none appears on a locked phone. It is off unless you turn it on.",
             image: nil
           }
         ]
