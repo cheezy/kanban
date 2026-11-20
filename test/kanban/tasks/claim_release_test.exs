@@ -52,6 +52,14 @@ defmodule Kanban.Tasks.ClaimReleaseTest do
     assert is_nil(released.assigned_to_id)
   end
 
+  test "records each release's move to Ready in the task history", ctx do
+    task = claimed_task(ctx.board, ctx.agent)
+    assert move_rows(task) == []
+
+    assert [%Task{}] = ClaimRelease.release(ctx.agent.id, [ctx.board.id])
+    assert move_rows(task) == [{"Doing", "Ready"}]
+  end
+
   test "leaves tasks that are not the user's live claims alone", ctx do
     other = user_fixture()
     theirs = claimed_task(ctx.board, other)
@@ -117,5 +125,15 @@ defmodule Kanban.Tasks.ClaimReleaseTest do
 
     assert ClaimRelease.release(ctx.agent.id, :all) == []
     assert Repo.get!(Task, task.id).column_id == doing.id
+    assert move_rows(task) == []
+  end
+
+  defp move_rows(task) do
+    from(h in Kanban.Tasks.TaskHistory,
+      where: h.task_id == ^task.id and h.type == :move,
+      order_by: h.id,
+      select: {h.from_column, h.to_column}
+    )
+    |> Repo.all()
   end
 end

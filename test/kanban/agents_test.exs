@@ -255,6 +255,7 @@ defmodule Kanban.AgentsTest do
                  :claim_expires_at,
                  :completed_at,
                  :reviewed_at,
+                 :archived_at,
                  :inserted_at,
                  :updated_at,
                  :created_by_agent,

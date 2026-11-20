@@ -1080,6 +1080,87 @@ defmodule Kanban.Tasks.GoalsTest do
       assert ready_since == DateTime.from_naive!(ready.inserted_at, "Etc/UTC")
     end
 
+    # A child of `goal` held by the user through a claim made two hours ago,
+    # in `column_name`, whose only move row is three hours old.
+    defp claimed_child!(ctx, goal, column_name, extra \\ []) do
+      task = task_fixture(ctx.cols[column_name], %{parent_id: goal.id})
+      from(h in Kanban.Tasks.TaskHistory, where: h.task_id == ^task.id) |> Repo.delete_all()
+
+      task
+      |> Kanban.Tasks.History.create_move_history("Backlog", "Ready")
+      |> Ecto.Changeset.change(
+        inserted_at: :second |> NaiveDateTime.utc_now() |> NaiveDateTime.add(-10_800)
+      )
+      |> Repo.update!()
+
+      now = DateTime.utc_now(:second)
+
+      fields =
+        [
+          status: :in_progress,
+          claimed_at: DateTime.add(now, -7200),
+          claim_expires_at: DateTime.add(now, 3600),
+          assigned_to_id: ctx.user.id
+        ] ++ extra
+
+      task |> Ecto.Changeset.change(fields) |> Repo.update!()
+    end
+
+    defp latest_move!(task) do
+      from(h in Kanban.Tasks.TaskHistory,
+        where: h.task_id == ^task.id and h.type == :move,
+        select: max(h.inserted_at)
+      )
+      |> Repo.one()
+      |> DateTime.from_naive!("Etc/UTC")
+    end
+
+    defp assert_just_entered(since, task) do
+      assert since == latest_move!(task)
+      assert DateTime.diff(DateTime.utc_now(), since) in 0..60
+    end
+
+    test "an unclaim back to Ready counts as entering Ready", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      task = claimed_child!(ctx, goal, "Doing")
+
+      assert {:ok, _} = Tasks.unclaim_task(task, ctx.user)
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:ready)
+      assert_just_entered(since, task)
+    end
+
+    test "a claim release back to Ready counts as entering Ready", ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      task = claimed_child!(ctx, goal, "Doing")
+
+      assert [_] = Kanban.Tasks.ClaimRelease.release(ctx.user.id, [ctx.app_board.id])
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:ready)
+      assert_just_entered(since, task)
+    end
+
+    test "a changes-requested return to Doing counts as entering Doing, not the old claim",
+         ctx do
+      goal = app_goal!(ctx.cols["Backlog"])
+      requested = :second |> DateTime.utc_now() |> DateTime.add(-3600)
+
+      task =
+        claimed_child!(ctx, goal, "Review",
+          needs_review: true,
+          review_requested_at: requested,
+          review_status: :changes_requested,
+          reviewed_at: DateTime.utc_now(:second),
+          reviewed_by_id: ctx.user.id
+        )
+
+      assert {:ok, _} = Tasks.mark_reviewed(task, ctx.user)
+
+      assert [%{in_column_since: since}] = ctx.scope |> detail!(goal) |> in_group(:doing)
+      assert_just_entered(since, task)
+      assert DateTime.compare(since, Repo.get!(Task, task.id).claimed_at) == :gt
+    end
+
     test "a goal with only archived children lists no task and counts by D124", ctx do
       goal = app_goal!(ctx.cols["Backlog"])
       done = task_fixture(ctx.cols["Done"], %{parent_id: goal.id})

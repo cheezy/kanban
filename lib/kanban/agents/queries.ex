@@ -49,9 +49,11 @@ defmodule Kanban.Agents.Queries do
   # in the one query rather than `Repo.preload`. The heavy JSONB/text columns
   # (changed_files, review_report, explorer_result, description, ...) are never
   # transferred. `board_id` (the column's) lets a caller split one fetch by
-  # board, as `Kanban.Agents.Idle` does. The reshaped maps are shape-compatible with the preloaded
-  # structs `fetch_target_bridged_tasks/1` still returns, so every shared helper
-  # and derivation module consumes both without change.
+  # board, as `Kanban.Agents.Idle` does. `archived_at` lets a caller leave out
+  # an archived task, as `Kanban.Agents.AppAgents` does for its goals. The
+  # reshaped maps are shape-compatible with the preloaded structs
+  # `fetch_target_bridged_tasks/1` still returns, so every shared helper and
+  # derivation module consumes both without change.
   #
   # Options:
   #   * `:scope`      - `Kanban.Accounts.Scope` for board-membership scoping (as before)
@@ -91,6 +93,7 @@ defmodule Kanban.Agents.Queries do
       claim_expires_at: t.claim_expires_at,
       completed_at: t.completed_at,
       reviewed_at: t.reviewed_at,
+      archived_at: t.archived_at,
       inserted_at: t.inserted_at,
       updated_at: t.updated_at,
       created_by_agent: t.created_by_agent,

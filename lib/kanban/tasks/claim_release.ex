@@ -12,7 +12,8 @@ defmodule Kanban.Tasks.ClaimRelease do
   assigned to nobody once the caller clears the assignee, and neither its
   board's owner nor an agent could unclaim or claim it until the claim
   expired. Each one is moved exactly as `Kanban.Tasks.unclaim_task/3` moves
-  it: open, unclaimed and unassigned, at the end of its board's Ready column.
+  it: open, unclaimed and unassigned, at the end of its board's Ready column,
+  with the move recorded in its task history.
   A task on a board with no Ready column is left where it is, for the caller
   to unassign.
 
@@ -27,6 +28,7 @@ defmodule Kanban.Tasks.ClaimRelease do
 
   alias Kanban.Columns
   alias Kanban.Repo
+  alias Kanban.Tasks.History
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
 
@@ -60,7 +62,7 @@ defmodule Kanban.Tasks.ClaimRelease do
       where: t.assigned_to_id == ^user_id and t.status == :in_progress,
       where: not is_nil(t.claimed_at) and is_nil(t.completed_at) and is_nil(t.archived_at),
       order_by: t.id,
-      select: {t, c.board_id}
+      select: {t, c}
     )
   end
 
@@ -72,10 +74,10 @@ defmodule Kanban.Tasks.ClaimRelease do
   defp on_boards(query, %Ecto.Query{} = board_ids),
     do: where(query, [column: c], c.board_id in subquery(board_ids))
 
-  defp release_task({task, board_id}) do
-    case ready_column(board_id) do
+  defp release_task({task, column}) do
+    case ready_column(column.board_id) do
       nil -> []
-      ready -> [move_to_ready(task, ready)]
+      ready -> [move_to_ready(task, column, ready)]
     end
   end
 
@@ -83,16 +85,23 @@ defmodule Kanban.Tasks.ClaimRelease do
   # name (case and surrounding whitespace ignored), as the unclaim path finds it.
   defp ready_column(board_id), do: Columns.get_column_by_name(board_id, "Ready")
 
-  defp move_to_ready(task, ready) do
-    task
-    |> Ecto.Changeset.change(%{
-      status: :open,
-      claimed_at: nil,
-      claim_expires_at: nil,
-      assigned_to_id: nil,
-      column_id: ready.id,
-      position: Positioning.get_next_position_locked(ready)
-    })
-    |> Repo.update!()
+  # The claim moved the task without a move row and the release clears its
+  # claimed_at stamp, so the move back to Ready is recorded, as an unclaim
+  # records it.
+  defp move_to_ready(task, column, ready) do
+    released =
+      task
+      |> Ecto.Changeset.change(%{
+        status: :open,
+        claimed_at: nil,
+        claim_expires_at: nil,
+        assigned_to_id: nil,
+        column_id: ready.id,
+        position: Positioning.get_next_position_locked(ready)
+      })
+      |> Repo.update!()
+
+    History.record_move(released, column, ready)
+    released
   end
 end

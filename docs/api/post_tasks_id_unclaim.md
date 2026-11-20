@@ -1,6 +1,6 @@
 # POST /api/tasks/:id/unclaim
 
-Unclaim a task that you previously claimed. This moves the task back to the Ready column and unassigns it.
+Unclaim a task that you previously claimed. This moves the task back to the Ready column and unassigns it. The move back to Ready is recorded in the task's history.
 
 ## Authentication
 

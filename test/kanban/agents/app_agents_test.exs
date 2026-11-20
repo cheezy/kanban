@@ -80,12 +80,26 @@ defmodule Kanban.Agents.AppAgentsTest do
              %{total: 2, completed: 1, doing: 1, review: 0, blocked: 0}
   end
 
-  test "a goal whose only task was removed counts 0 everywhere", ctx do
-    goal = task_fixture(ctx.cols["Backlog"], %{type: :goal})
-    agent_task(ctx.cols["Doing"], %{parent_id: goal.id}) |> archive!()
+  test "an archived task left in Doing or Review does not keep its goal on the list", ctx do
+    removed = task_fixture(ctx.cols["Backlog"], %{type: :goal})
+    agent_task(ctx.cols["Doing"], %{parent_id: removed.id}) |> archive!()
+    agent_task(ctx.cols["Review"], %{parent_id: removed.id}) |> archive!()
 
-    assert entry(Agents.list_agents_for_app(ctx.scope), goal).counts ==
-             %{total: 0, completed: 0, doing: 0, review: 0, blocked: 0}
+    worked = task_fixture(ctx.cols["Backlog"], %{type: :goal})
+    agent_task(ctx.cols["Review"], %{parent_id: worked.id})
+    agent_task(ctx.cols["Doing"], %{parent_id: worked.id}) |> archive!()
+
+    overview = Agents.list_agents_for_app(ctx.scope)
+
+    assert Enum.map(overview.goals, & &1.goal.id) == [worked.id]
+
+    assert entry(overview, worked).counts == %{
+             total: 1,
+             completed: 0,
+             doing: 0,
+             review: 1,
+             blocked: 0
+           }
   end
 
   test "completed and archived goals, and goals no agent works on, are left out", ctx do

@@ -362,6 +362,101 @@ defmodule Kanban.Targets.DeliveryRollupTest do
     end
   end
 
+  describe "build_target/3 — one target's entry (W2763)" do
+    test "equals build/2's entry for every target, by struct or by id",
+         %{scope: scope, doing: doing} do
+      now = ~U[2026-07-01 00:00:00Z]
+
+      at_risk =
+        delivery_target_fixture(scope.user, %{name: "AtRisk", target_date: ~D[2026-07-21]})
+
+      backdate_target(at_risk, ~N[2026-04-12 00:00:00])
+      at_risk_goal = goal_on_target(doing, at_risk)
+
+      on_track =
+        delivery_target_fixture(scope.user, %{name: "OnTrack", target_date: ~D[2026-12-31]})
+
+      on_track_goal = goal_on_target(doing, on_track)
+
+      agent_task(doing, %{
+        created_by_agent: "Stalled",
+        parent_id: at_risk_goal.id,
+        claimed_at: ago(90)
+      })
+
+      agent_task(doing, %{
+        created_by_agent: "Fresh",
+        parent_id: on_track_goal.id,
+        claimed_at: ago(5)
+      })
+
+      # One agent on both targets: its flags come from all of its work.
+      agent_task(doing, %{
+        created_by_agent: "Both",
+        parent_id: at_risk_goal.id,
+        claimed_at: ago(5)
+      })
+
+      agent_task(doing, %{
+        created_by_agent: "Both",
+        parent_id: on_track_goal.id,
+        claimed_at: ago(5)
+      })
+
+      for _ <- 1..2 do
+        doing
+        |> task_fixture(%{parent_id: on_track_goal.id})
+        |> Ecto.Changeset.change(
+          status: :completed,
+          completed_at: ~U[2026-06-30 12:00:00Z],
+          inserted_at: ~N[2026-06-29 12:00:00]
+        )
+        |> Repo.update!()
+      end
+
+      opts = [timezone: "Pacific/Auckland", now: DateTime.shift_zone!(now, "Pacific/Auckland")]
+      full = DeliveryRollup.build(scope, opts).targets
+
+      assert full |> Enum.map(& &1.target.id) |> Enum.sort() ==
+               Enum.sort([at_risk.id, on_track.id])
+
+      for entry <- full do
+        assert DeliveryRollup.build_target(scope, entry.target, opts) == entry
+        assert DeliveryRollup.build_target(scope, entry.target.id, opts) == entry
+      end
+
+      risky = DeliveryRollup.build_target(scope, at_risk, opts)
+      assert risky.status == :at_risk
+      assert [%{goal: %{id: goal_id}, agents: [%Agent{name: "Stalled"}]}] = risky.stalled_details
+      assert goal_id == at_risk_goal.id
+      assert agent_names(risky.agents) == ["Both", "Stalled"]
+      assert DeliveryRollup.build_target(scope, on_track, opts).completed == 2
+    end
+
+    test "is nil for a target build/2 has no entry for", %{scope: scope, doing: doing} do
+      archived = delivery_target_fixture(scope.user)
+      goal_on_target(doing, archived)
+
+      archived =
+        archived |> Ecto.Changeset.change(archived_at: DateTime.utc_now()) |> Repo.update!()
+
+      other = user_fixture()
+      other_doing = other |> board_fixture() |> column_fixture(%{name: "Doing"})
+      foreign = delivery_target_fixture(other)
+      goal_on_target(other_doing, foreign)
+
+      empty = delivery_target_fixture(scope.user)
+
+      assert DeliveryRollup.build(scope).targets == []
+
+      for target <- [archived, foreign, empty] do
+        assert DeliveryRollup.build_target(scope, target) == nil
+      end
+
+      assert DeliveryRollup.build_target(scope, -1) == nil
+    end
+  end
+
   describe "build/2 — agent_targets annotation" do
     test "annotates an agent with the target and goal it advances", %{scope: scope, doing: doing} do
       target = delivery_target_fixture(scope.user, %{name: "Launch"})

@@ -175,6 +175,23 @@ defmodule KanbanWeb.API.Me.BoardControllerTest do
                "expected 404 for #{path}"
       end
     end
+
+    test "the list's count and the column read's total agree when two columns share a name",
+         ctx do
+      second_ready = Kanban.ColumnsFixtures.column_fixture(ctx.board, %{name: "ready "})
+      for _ <- 1..3, do: task_fixture(second_ready)
+      task_fixture(ctx.cols["Ready"])
+
+      assert %{"data" => [%{"counts" => %{"ready" => 1}}]} =
+               ctx.phone |> api_get("/api/me/boards") |> json_response(200)
+
+      assert %{"data" => %{"column" => %{"id" => column_id}, "total" => 1}} =
+               ctx.phone
+               |> api_get("/api/me/boards/#{ctx.board.id}/columns/Ready")
+               |> json_response(200)
+
+      assert column_id == ctx.cols["Ready"].id
+    end
   end
 
   describe "POST /api/me/boards/:id/promote" do

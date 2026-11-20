@@ -5,6 +5,10 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   deprecated straight-to-Done path, and the board-write check that authorizes
   either.
 
+  A return to Doing records its move in the task's history
+  (`Kanban.Tasks.History.record_move/3`); the move to Done is marked by its
+  `completed_at` stamp.
+
   The Done and Doing columns are found as `Kanban.Columns.get_column_by_name/2`
   finds a column (case and surrounding whitespace ignored); a board without
   the one a transition needs answers `{:error, :column_not_found}`.
@@ -27,6 +31,7 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.GoalTelemetry
+  alias Kanban.Tasks.History
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.TaskTelemetry
@@ -183,27 +188,34 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
     end
   end
 
+  # Changes-requested or rejected review transition. The task keeps its first
+  # claim's claimed_at, so the return to Doing is recorded as a move row: the
+  # task history shows it and the app's in_column_since reads it.
+  defp run_return_to_doing_transaction(task, user, doing_column) do
+    Repo.transaction(fn ->
+      next_position = Positioning.get_next_position_locked(doing_column)
+
+      changeset =
+        Ecto.Changeset.change(task, %{
+          status: :in_progress,
+          reviewed_by_id: user.id,
+          column_id: doing_column.id,
+          position: next_position
+        })
+
+      case Repo.update(changeset) do
+        {:ok, updated_task} ->
+          History.record_move(updated_task, task.column, doing_column)
+          :ok
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
   defp move_to_doing_in(task, user, board_id, doing_column, opts) do
-    result =
-      Repo.transaction(fn ->
-        next_position = Positioning.get_next_position_locked(doing_column)
-
-        changeset =
-          task
-          |> Ecto.Changeset.change(%{
-            status: :in_progress,
-            reviewed_by_id: user.id,
-            column_id: doing_column.id,
-            position: next_position
-          })
-
-        case Repo.update(changeset) do
-          {:ok, _updated_task} -> :ok
-          {:error, changeset} -> Repo.rollback(changeset)
-        end
-      end)
-
-    case result do
+    case run_return_to_doing_transaction(task, user, doing_column) do
       {:ok, :ok} ->
         updated_task = Queries.get_task_for_view!(task.id)
 

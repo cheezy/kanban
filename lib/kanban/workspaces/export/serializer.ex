@@ -34,6 +34,12 @@ defmodule Kanban.Workspaces.Export.Serializer do
   attachments; the importer still reads version 1 archives, which have no
   `attachments.json` and no blob entries, and refuses any version it does
   not know.
+
+  A field added to a row does not change the version: an importer that does
+  not list it drops it (`decode_rows/2`), and a row written before it was
+  listed imports without it. A task's `created_via` (W2760, `"mobile"` for a
+  task captured in the Stride app) was added this way, so a task from an
+  older archive imports with none.
   """
 
   @format "stride-workspace-export"
@@ -113,6 +119,7 @@ defmodule Kanban.Workspaces.Export.Serializer do
       :assigned_to_id,
       :created_by_id,
       :created_by_agent,
+      :created_via,
       :completed_at,
       :completed_by_id,
       :completed_by_agent,

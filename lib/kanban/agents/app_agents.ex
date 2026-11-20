@@ -13,8 +13,10 @@ defmodule Kanban.Agents.AppAgents do
       cross-board lists leave them out (design §7.10, "Plans on cross-board
       lists"). An agent that works on two boards is one agent, as on `/agents`;
     * `goals` — the open goals that have an agent on them now: the parents of
-      the roster's tasks in Doing or Review, when the goal is neither archived
-      nor completed and sits on one of those same boards. Newest first.
+      the roster's unarchived tasks in Doing or Review, when the goal is
+      neither archived nor completed and sits on one of those same boards.
+      Newest first. An archived task left in Doing or Review does not keep
+      its goal on the list.
 
   A goal's `counts` are its own tasks only. The goal tree counts
   (`Kanban.Tasks.Goals.get_task_tree/2`) include the goal itself
@@ -85,10 +87,11 @@ defmodule Kanban.Agents.AppAgents do
     end
   end
 
-  # The goals the roster's agents hold a task under in Doing or Review.
+  # The goals the roster's agents hold a live task under in Doing or Review.
+  # An archived task left in either column is no agent on its goal now.
   defp goal_ids(tasks) do
     tasks
-    |> Enum.filter(&(agent_task?(&1) and active?(&1) and not is_nil(&1.parent_id)))
+    |> Enum.filter(&(agent_task?(&1) and active?(&1) and live_child?(&1)))
     |> Enum.map(& &1.parent_id)
     |> Enum.uniq()
   end
@@ -96,6 +99,8 @@ defmodule Kanban.Agents.AppAgents do
   defp agent_task?(task), do: not is_nil(task.created_by_agent || task.completed_by_agent)
 
   defp active?(task), do: Agents.doing?(task) or Agents.in_review?(task)
+
+  defp live_child?(task), do: is_nil(task.archived_at) and not is_nil(task.parent_id)
 
   defp board_ids(tasks), do: tasks |> Enum.map(& &1.board_id) |> Enum.uniq()
 

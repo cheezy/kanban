@@ -8,6 +8,7 @@ defmodule Kanban.Decisions.ActedOnTest do
   # the shared sandbox, so this module is not async.
   use Kanban.DataCase, async: false
 
+  import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.DevicesFixtures
@@ -225,6 +226,8 @@ defmodule Kanban.Decisions.ActedOnTest do
   describe "moves and replies" do
     test "an action on a task that is no decision emits nothing", ctx do
       task = task_fixture(ctx.cols["Backlog"])
+      # A decision on the same board that the action does not touch.
+      _other = released!(ctx.cols, ctx.owner)
 
       assert {:ok, _} = reply(ctx.scope, task)
       assert {:ok, _} = move_to_backlog(ctx, task)
@@ -240,15 +243,21 @@ defmodule Kanban.Decisions.ActedOnTest do
       assert rows() == 0
     end
 
-    test "an agent's comment on a released task emits nothing", ctx do
+    test "an agent's comment on a released task emits nothing and leaves the first reply",
+         ctx do
       task = released!(ctx.cols, ctx.owner)
 
+      # The agent comment path: the same context call, with no acted_on.
       assert {:ok, _} =
                Tasks.create_comment(ctx.scope, task, %{"content" => "From an agent"},
                  author_agent_name: "Claude"
                )
 
       refute_receive {:telemetry_event, @event, _, _}
+      assert rows() == 0
+
+      assert {:ok, _} = reply(ctx.scope, task)
+      assert_receive {:telemetry_event, @event, _, %{kind: :released, action: :reply}}
     end
 
     test "a reply on a released task emits reply with its board and task", ctx do
@@ -437,6 +446,59 @@ defmodule Kanban.Decisions.ActedOnTest do
       refute_receive {:telemetry_event, @event, _, _}
     end
 
+    # The failed-goal source lists a goal on any board it is given, so only
+    # the access check keeps a public board's non-member from counting.
+    test "a non-member of a public board counts nothing on its failed goal", ctx do
+      goal = failed_goal!(ctx.cols["Doing"])
+      ctx.board |> Ecto.Changeset.change(read_only: true) |> Repo.update!()
+      stranger = Scope.for_user(user_fixture())
+      act = [action: :reply, via: :web, task_id: goal.id]
+
+      assert {:ok, :done} = Decisions.acted_on(stranger, act, fn -> {:ok, :done} end)
+      refute_receive {:telemetry_event, @event, _, _}
+      assert rows() == 0
+
+      assert {:ok, :done} = Decisions.acted_on(ctx.scope, act, fn -> {:ok, :done} end)
+      assert_receive {:telemetry_event, @event, _, %{kind: :hook_failed, action: :reply}}
+    end
+
+    # The failed-goal source does not read the plan, so only the plan check
+    # keeps a locked board's goal from counting.
+    test "a failed goal on a board the plan locks counts nothing", ctx do
+      goal = failed_goal!(ctx.cols["Doing"])
+      act = [action: :reply, via: :web, task_id: goal.id]
+      enforce_plans()
+
+      assert {:ok, :done} = Decisions.acted_on(ctx.scope, act, fn -> {:ok, :done} end)
+      refute_receive {:telemetry_event, @event, _, _}
+      assert rows() == 0
+
+      Application.put_env(:kanban, :plans_enforced, false)
+
+      assert {:ok, :done} = Decisions.acted_on(ctx.scope, act, fn -> {:ok, :done} end)
+      assert_receive {:telemetry_event, @event, _, %{kind: :hook_failed, action: :reply}}
+    end
+
+    test "a row the database refuses drops the count and keeps the action's result", ctx do
+      task = released!(ctx.cols, ctx.owner)
+      act = [action: :reply, via: :web, task_id: task.id]
+
+      log =
+        capture_log(fn ->
+          # The task is gone by the time its row is written.
+          assert {:ok, :deleted} =
+                   Decisions.acted_on(ctx.scope, act, fn ->
+                     Repo.delete!(task)
+                     {:ok, :deleted}
+                   end)
+        end)
+
+      assert log =~ "decision acted_on not recorded: Postgrex.Error"
+      refute log =~ task.title
+      refute_receive {:telemetry_event, @event, _, _}
+      assert rows() == 0
+    end
+
     test "an unknown via raises", ctx do
       assert_raise ArgumentError, ~r/unknown decision via/, fn ->
         Decisions.acted_on(ctx.scope, [action: :reply, via: :agent, task_id: 1], fn ->
@@ -473,6 +535,26 @@ defmodule Kanban.Decisions.ActedOnTest do
       assert :ok = ActedOn.finish([decision], :web, since)
       refute_receive {:telemetry_event, @event, _, _}
       assert rows() == 1
+    end
+
+    test "a row the database refuses is logged and emits nothing", ctx do
+      since = ~U[2026-11-20 10:00:00.000000Z]
+
+      decision = %{
+        id: "ready_empty:board:0",
+        kind: :ready_empty,
+        since: since,
+        task_id: nil,
+        board_id: 0,
+        action: :promote
+      }
+
+      log = capture_log(fn -> assert :ok = ActedOn.finish([decision], :web, since) end)
+
+      assert log =~ "decision acted_on not recorded: Postgrex.Error"
+      refute_receive {:telemetry_event, @event, _, _}
+      assert rows() == 0
+      assert Repo.reload!(ctx.board)
     end
   end
 end

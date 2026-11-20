@@ -9,8 +9,9 @@ defmodule Kanban.Tasks.AppTasks do
   the person must hold access to the task's board. A task that does not
   exist, or sits on a board the person holds no access to (a public board
   they are not a member of included), is `{:error, :not_found}`, so a refusal
-  never says that the task exists. An archived task is found, as the web's
-  task page shows it.
+  never says that the task exists. Both cost the same one query, scoped to
+  the person's boards, so neither does the time a refusal takes. An archived
+  task is found, as the web's task page shows it.
 
   A capture creates a work or defect task in the board's Backlog through the
   web's create path (`Kanban.Tasks.create_task/2`), so positions, the
@@ -21,6 +22,8 @@ defmodule Kanban.Tasks.AppTasks do
   changeset.
   """
 
+  import Ecto.Query, only: [from: 2]
+
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
   alias Kanban.Boards.Board
@@ -29,7 +32,9 @@ defmodule Kanban.Tasks.AppTasks do
   alias Kanban.Repo
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Task
+  alias Kanban.Workspaces.Policy
 
+  @max_bigint 9_223_372_036_854_775_807
   @capture_types ["work", "defect"]
   @write_access [:owner, :modify]
 
@@ -46,18 +51,40 @@ defmodule Kanban.Tasks.AppTasks do
   """
   @spec get_task_for_app(Scope.t() | nil, term()) ::
           {:ok, Task.t(), Board.t()} | {:error, :not_found}
-  def get_task_for_app(%Scope{user: %{id: _} = user}, id) when is_integer(id) and id > 0 do
-    with %Task{} = task <- Repo.get(Task, id),
-         task = Repo.preload(task, [:column, :labels]),
-         {:ok, %Board{user_access: access} = board} when not is_nil(access) <-
-           Boards.get_board(task.column.board_id, user) do
-      {:ok, task, board}
-    else
-      _not_found -> {:error, :not_found}
-    end
+  def get_task_for_app(%Scope{user: %{id: user_id} = user}, id)
+      when is_integer(id) and id > 0 and id <= @max_bigint do
+    id |> visible_task_query(user_id) |> Repo.one() |> with_board(user)
   end
 
   def get_task_for_app(_scope, _id), do: {:error, :not_found}
+
+  # The board of a task the scope's user can see, with their access set.
+  defp with_board(%Task{} = task, user) do
+    case Boards.get_board(task.column.board_id, user) do
+      {:ok, %Board{user_access: access} = board} when not is_nil(access) ->
+        {:ok, Repo.preload(task, :labels), board}
+
+      _not_found ->
+        {:error, :not_found}
+    end
+  end
+
+  defp with_board(nil, _user), do: {:error, :not_found}
+
+  # One query, scoped to the boards the user holds effective access to
+  # (`Kanban.Workspaces.Policy.accessible_board_ids/1`), so a missing id and a
+  # task on a board the user cannot see cost the same single query and give
+  # the same nil: the answer's timing never tells the two apart. Only a
+  # task the user can see goes on to the board and label reads.
+  defp visible_task_query(id, user_id) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      join: v in subquery(Policy.accessible_board_ids(user_id)),
+      on: v.board_id == c.board_id,
+      where: t.id == ^id,
+      preload: [column: c]
+    )
+  end
 
   @doc """
   Like `get_task_for_app/2`, for a goal: a task with `id` that is not a goal

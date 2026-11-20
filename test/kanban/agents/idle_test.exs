@@ -22,6 +22,28 @@ defmodule Kanban.Agents.IdleTest do
 
   defp now, do: DateTime.utc_now() |> DateTime.truncate(:second)
 
+  # Runs `fun` and counts the Repo queries this process issued meanwhile.
+  defp count_queries(fun) do
+    test_pid = self()
+    ref = :counters.new(1, [])
+    handler_id = {__MODULE__, make_ref()}
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, _metadata, _config ->
+        if self() == test_pid, do: :counters.add(ref, 1, 1)
+      end,
+      nil
+    )
+
+    try do
+      {fun.(), :counters.get(ref, 1)}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
   defp agent_task!(column, completed_at, agent) do
     {:ok, task} =
       column
@@ -56,21 +78,30 @@ defmodule Kanban.Agents.IdleTest do
     test "agrees with the per-board roster the decision list reads", ctx do
       agent_task!(ctx.cols["Done"], DateTime.add(now(), -600), "A")
       agent_task!(ctx.cols["Done"], DateTime.add(now(), -1200), "B")
+      # Work on the other board counts there, never on this one.
+      ctx.other |> columns() |> Map.fetch!("Done") |> agent_task!(DateTime.add(now(), -600), "C")
 
       idle = Idle.idle_keys(ctx.scope)
       cutoff = Idle.cutoff(now())
 
       per_board =
-        [scope: ctx.scope, board_id: ctx.board.id]
-        |> Agents.list_agents()
-        |> Idle.recent_idle(idle, cutoff)
+        Map.new([ctx.board, ctx.other], fn board ->
+          count =
+            [scope: ctx.scope, board_id: board.id]
+            |> Agents.list_agents()
+            |> Idle.recent_idle(idle, cutoff)
+            |> length()
 
-      assert length(per_board) == 2
-      assert Idle.count_by_board(ctx.scope, [ctx.board.id], now()) == %{ctx.board.id => 2}
+          {board.id, count}
+        end)
+
+      assert per_board == %{ctx.board.id => 2, ctx.other.id => 1}
+      assert Idle.count_by_board(ctx.scope, [ctx.board.id, ctx.other.id], now()) == per_board
     end
 
     test "an empty board list reads nothing", ctx do
-      assert Idle.count_by_board(ctx.scope, [], now()) == %{}
+      assert {result, 0} = count_queries(fn -> Idle.count_by_board(ctx.scope, [], now()) end)
+      assert result == %{}
     end
 
     test "cutoff is 24 hours before now" do

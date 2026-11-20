@@ -23,8 +23,9 @@ defmodule KanbanWeb.API.Me.BoardController do
   A board is found as the web finds it (`Kanban.Boards.get_board/2`): a board
   the person holds no access to, or an id that is not one, answers 404. The
   column name is matched against the board's own columns
-  (`Kanban.Columns.get_column_by_name/2`), never put into a query, and an
-  unknown one answers 404. A promote needs owner or modify access: a
+  (`Kanban.Columns.get_column_by_name/2`, the leftmost of that name, the
+  column the board list counts), never put into a query, and an unknown one
+  answers 404. A promote needs owner or modify access: a
   read-only member gets 403 `Forbidden` before the body is looked at.
 
   Every refusal is rendered by `KanbanWeb.API.Me.FallbackController`.

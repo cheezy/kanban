@@ -196,6 +196,19 @@ defmodule Kanban.Tasks.AgentWorkflow.ClaimingTest do
       assert is_nil(unclaimed.assigned_to_id)
     end
 
+    test "records the move back to Ready in the task history, and a refusal records none",
+         ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      assert move_rows(task) == []
+
+      assert {:error, :not_authorized} = AgentWorkflow.unclaim_task(claimed, ctx.other)
+      assert move_rows(task) == []
+
+      assert {:ok, _unclaimed} = AgentWorkflow.unclaim_task(claimed, ctx.user)
+      assert move_rows(task) == [{"Doing", "Ready"}]
+    end
+
     test "returns {:error, :not_claimed} for an open task", ctx do
       task = create_open_task(ctx.ready, ctx.user)
 
@@ -447,5 +460,14 @@ defmodule Kanban.Tasks.AgentWorkflow.ClaimingTest do
       assert claimed.column_id == ctx.doing.id
       assert Repo.get!(Task, goal.id).column_id == ctx.ready.id
     end
+  end
+
+  defp move_rows(task) do
+    from(h in Kanban.Tasks.TaskHistory,
+      where: h.task_id == ^task.id and h.type == :move,
+      order_by: h.id,
+      select: {h.from_column, h.to_column}
+    )
+    |> Repo.all()
   end
 end

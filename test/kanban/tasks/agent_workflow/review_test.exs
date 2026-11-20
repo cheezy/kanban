@@ -68,6 +68,29 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
       assert doing_task.status == :in_progress
     end
 
+    test "a return to Doing records the move in the task history; an approval records none",
+         ctx do
+      for status <- [:changes_requested, :rejected] do
+        task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+        claimed = claim_for(task, ctx.user, ctx.board)
+
+        {:ok, completed, _} =
+          AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+        assert move_rows(task) == []
+
+        returned =
+          completed |> Repo.preload([:column]) |> set_review_status(status, ctx.user)
+
+        assert {:ok, _doing_task} = AgentWorkflow.mark_reviewed(returned, ctx.user)
+        assert move_rows(task) == [{"Review", "Doing"}]
+      end
+
+      approved = set_review_status(ctx.in_review_task, :approved, ctx.user)
+      assert {:ok, _done_task, _hooks} = AgentWorkflow.mark_reviewed(approved, ctx.user)
+      assert move_rows(approved) == []
+    end
+
     test "returns :review_not_performed when review_status is nil", ctx do
       assert {:error, :review_not_performed} =
                AgentWorkflow.mark_reviewed(ctx.in_review_task, ctx.user)
@@ -185,5 +208,14 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
 
       assert {:error, :not_authorized} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.other)
     end
+  end
+
+  defp move_rows(task) do
+    from(h in Kanban.Tasks.TaskHistory,
+      where: h.task_id == ^task.id and h.type == :move,
+      order_by: h.id,
+      select: {h.from_column, h.to_column}
+    )
+    |> Repo.all()
   end
 end

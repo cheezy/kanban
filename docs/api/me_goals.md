@@ -179,12 +179,13 @@ web goal page's own counts, which leave archived tasks out.
   member gets `false`.
 - `in_column_since` is when the task entered its column: the later of its
   latest move in its history and the time the agent workflow stamps when it
-  moves a task without recording a move, read only for the column the task
-  is in now: `claimed_at` in Doing, `review_requested_at` in Review and
-  `completed_at` in Done. A task with neither uses the time it was created.
-  An unclaim, a claim-expiry release back to Ready and a changes-requested
-  return to Doing record neither, so after one of them the time can predate
-  the task's entry into its column.
+  moves a task forward without recording a move, read only for the column
+  the task is in now: `claimed_at` in Doing, `review_requested_at` in Review
+  and `completed_at` in Done. A task with neither uses the time it was
+  created. The agent workflow records its moves back as moves in the task's
+  history: an unclaim, a release of the claim when its holder loses access,
+  and a review that asks for changes or rejects the task and sends it back
+  to Doing.
 
 Any member of the goal's board, read-only included, may read it, as on the
 web.

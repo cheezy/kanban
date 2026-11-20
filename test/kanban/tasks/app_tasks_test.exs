@@ -4,7 +4,10 @@ defmodule Kanban.Tasks.AppTasksTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Boards
   alias Kanban.Columns
@@ -63,6 +66,64 @@ defmodule Kanban.Tasks.AppTasksTest do
       assert Tasks.get_task_for_app(ctx.scope, task.id + 1_000_000) == {:error, :not_found}
       assert Tasks.get_task_for_app(nil, task.id) == {:error, :not_found}
       assert Tasks.get_task_for_app(ctx.scope, "1") == {:error, :not_found}
+      assert Tasks.get_task_for_app(ctx.scope, 9_223_372_036_854_775_808) == {:error, :not_found}
+    end
+
+    test "an org-admin finds a task on a board in their Organization with no board row" do
+      organization = organization_fixture()
+      admin = user_fixture()
+      organization_member_fixture(organization, admin, :org_admin)
+      board = organization |> org_workspace_fixture() |> place_board_in_workspace()
+      task = task_fixture(column_fixture(board))
+
+      assert {:ok, %Task{id: id}, %{user_access: :owner}} =
+               admin |> user_scope_fixture() |> Tasks.get_task_for_app(task.id)
+
+      assert id == task.id
+    end
+
+    test "a missing id and a task on an unseen board cost the same one query", ctx do
+      task = task_fixture(ctx.cols["Ready"])
+      stranger = user_scope_fixture(user_fixture())
+
+      {missing, missing_sql} = sql_of(fn -> Tasks.get_task_for_app(stranger, task.id + 1) end)
+      {unseen, unseen_sql} = sql_of(fn -> Tasks.get_task_for_app(stranger, task.id) end)
+
+      assert missing == {:error, :not_found}
+      assert unseen == {:error, :not_found}
+      assert [_one_query] = missing_sql
+      assert unseen_sql == missing_sql
+    end
+  end
+
+  # The SQL text of every query this process ran inside `fun`, in order.
+  defp sql_of(fun) do
+    test_pid = self()
+    ref = make_ref()
+    handler_id = "app-tasks-sql-#{System.unique_integer([:positive])}"
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, %{query: sql}, _config ->
+        if self() == test_pid, do: send(test_pid, {ref, sql})
+      end,
+      nil
+    )
+
+    try do
+      result = fun.()
+      {result, collect_sql(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp collect_sql(ref, acc) do
+    receive do
+      {^ref, sql} -> collect_sql(ref, [sql | acc])
+    after
+      0 -> Enum.reverse(acc)
     end
   end
 

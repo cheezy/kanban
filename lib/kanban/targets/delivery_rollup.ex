@@ -70,6 +70,7 @@ defmodule Kanban.Targets.DeliveryRollup do
   alias Kanban.Agents.Roster
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
+  alias Kanban.Targets.Progress
   alias Kanban.Targets.Status
   alias Kanban.Tasks.Task
   alias Kanban.Timezone
@@ -164,6 +165,47 @@ defmodule Kanban.Targets.DeliveryRollup do
       unrolled_agents: unrolled_agents(agents, bridges),
       agent_targets: agent_targets(agents, bridges, target_rollups)
     }
+  end
+
+  @doc """
+  The rollup entry of one target, as `t:target_rollup/0`: the entry `build/2`
+  gives it with the same `scope` and options, or `nil` when `build/2` has none
+  (the target is archived, or has no member goal on a board `scope` can see).
+  `target` is a `Kanban.Targets.DeliveryTarget` or its id.
+
+  It reads the same board-scoped task set and roster as `build/2`, since an
+  agent's stuck and dormant flags come from all of its work, but summarizes
+  only this target, so a one-target read (the app's Target screen) does not
+  pay for every other target's member goals and status.
+  """
+  @spec build_target(Scope.t() | nil, DeliveryTarget.t() | integer(), keyword()) ::
+          target_rollup() | nil
+  def build_target(scope, target, opts \\ [])
+
+  def build_target(scope, %DeliveryTarget{id: id}, opts), do: build_target(scope, id, opts)
+
+  def build_target(scope, target_id, opts) when is_integer(target_id) do
+    case visible_target(scope, target_id) do
+      nil -> nil
+      %DeliveryTarget{} = target -> one_target_rollup(scope, target, opts)
+    end
+  end
+
+  # The target as `build/2` lists it: active, with a member goal `scope` can see.
+  defp visible_target(scope, target_id),
+    do: scope |> Targets.list_targets() |> Enum.find(&(&1.id == target_id))
+
+  defp one_target_rollup(scope, target, opts) do
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    now = Keyword.get(opts, :now, Timezone.local_now(timezone))
+
+    tasks = fetch_bridged_tasks(scope)
+    agents = Roster.from_tasks(tasks, timezone)
+    [{summary, goals}] = Progress.summarize_targets(scope, [target], now)
+
+    summary
+    |> Map.put(:goals, goals)
+    |> target_rollup(agents, agent_bridges(agents, tasks))
   end
 
   # The board-scoped task set the in-memory bridge needs. Each projected task

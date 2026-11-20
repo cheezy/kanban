@@ -15,6 +15,33 @@ defmodule Kanban.Notifications do
   with push on but in-app and email off gets a hidden row only when a push
   can reach them.
 
+  ## Module layout
+
+  This module is the public API. Every function delegates to the module that
+  owns its concern, so callers only ever use `Kanban.Notifications`:
+
+    * `Kanban.Notifications.Delivery` - `notify/3`: recipient resolution,
+      row inserts, email and push enqueueing, and the plan gate
+    * `Kanban.Notifications.Inbox` - `list_notifications/2`,
+      `unread_count/1`, `mark_read/2` and `mark_all_read/1`
+    * `Kanban.Notifications.Preferences` - `event_types/0`,
+      `default_preference/1`, `get_preferences/1`, `update_preference/3`
+      and `unsubscribe/2`
+    * `Kanban.Notifications.Broadcaster` - `topic/1`, `subscribe/1` and the
+      broadcasts `Delivery` and `Inbox` send
+    * `Kanban.Notifications.Visibility` - the visibility rule `Inbox` reads
+      through, and `list_task_notifications/4`
+    * `Kanban.Notifications.ExpiredClaims` - `list_recently_expired_claims/2`
+    * `Kanban.Notifications.PushSettingsStore`,
+      `Kanban.Notifications.DigestRecipients` and
+      `Kanban.Notifications.AuditStreamAlerts` - push settings, digest
+      recipients and audit stream security emails
+
+  `Delivery` uses `Preferences` for event types and defaults,
+  `Kanban.Notifications.Recipients` for who hears about an event and
+  `Broadcaster` for live updates; `Inbox` uses `Visibility` and
+  `Broadcaster`. None of them calls back into this module.
+
   ## Visibility
 
   Read and mark functions take a `%Kanban.Accounts.Scope{}` and only ever
@@ -90,211 +117,42 @@ defmodule Kanban.Notifications do
   unsubscribe link.
   """
 
-  import Ecto.Query, warn: false
-
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
-  alias Kanban.Columns
   alias Kanban.Notifications.AuditStreamAlerts
+  alias Kanban.Notifications.Broadcaster
+  alias Kanban.Notifications.Delivery
   alias Kanban.Notifications.DigestRecipients
-  alias Kanban.Notifications.EmailWorker
+  alias Kanban.Notifications.ExpiredClaims
+  alias Kanban.Notifications.Inbox
   alias Kanban.Notifications.Notification
-  alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Notifications.Preference
+  alias Kanban.Notifications.Preferences
   alias Kanban.Notifications.PushSettings
   alias Kanban.Notifications.PushSettingsStore
-  alias Kanban.Notifications.Recipients
   alias Kanban.Notifications.Visibility
-  alias Kanban.Plans
-  alias Kanban.Push.PushWorker
-  alias Kanban.Repo
   alias Kanban.Tasks.Task
 
-  @email_off_by_default [:goal_completed, :comment_added]
-  @default_limit 50
-  @max_limit 100
+  @type event_type :: Preferences.event_type()
+  @type notify_attrs :: Delivery.notify_attrs()
 
-  @type event_type :: atom()
-  @type notify_attrs :: %{
-          optional(:title) => String.t(),
-          optional(:body) => String.t() | nil,
-          optional(:url_path) => String.t() | nil,
-          optional(:actor_name) => String.t() | nil,
-          optional(:metadata) => map(),
-          optional(:board_id) => integer() | nil,
-          optional(:task_id) => integer() | nil,
-          optional(:dedupe_key) => String.t() | nil
-        }
+  # -- preferences: Kanban.Notifications.Preferences -------------------------
 
   @doc """
   Returns every notification event type, including the reserved
   `:comment_added` and `:mentioned` types.
   """
   @spec event_types() :: [event_type()]
-  def event_types, do: Preference.event_types()
+  defdelegate event_types(), to: Preferences
 
   @doc """
   Returns the in-code default preference for an event type, as an unsaved
-  `%Preference{}` with no user.
-
-  Accepts the atom or string form. Raises `ArgumentError` for an unknown
-  event type — this is a programmer-facing API.
+  `%Preference{}` with no user. Accepts the atom or string form and raises
+  `ArgumentError` for an unknown event type; see
+  `Kanban.Notifications.Preferences.default_preference/1`.
   """
   @spec default_preference(event_type() | String.t()) :: Preference.t()
-  def default_preference(event_type) do
-    case normalize_event_type(event_type) do
-      {:ok, type} ->
-        %Preference{
-          event_type: type,
-          in_app: true,
-          email: type not in @email_off_by_default,
-          push: PushSettings.default_push?(type)
-        }
-
-      :error ->
-        raise ArgumentError, "unknown notification event type: #{inspect(event_type)}"
-    end
-  end
-
-  @doc """
-  Returns the PubSub topic carrying one user's notification events.
-  """
-  @spec topic(Scope.t() | User.t() | pos_integer()) :: String.t()
-  def topic(%Scope{user: %User{id: id}}), do: topic(id)
-  def topic(%User{id: id}), do: topic(id)
-  def topic(user_id) when is_integer(user_id), do: "user:#{user_id}:notifications"
-
-  @doc """
-  Subscribes the calling process to a user's notification topic.
-  """
-  @spec subscribe(Scope.t() | User.t() | pos_integer()) :: :ok | {:error, term()}
-  def subscribe(scope_or_user), do: Phoenix.PubSub.subscribe(Kanban.PubSub, topic(scope_or_user))
-
-  @doc """
-  Records an event for a list of recipients.
-
-  `recipients` is a list of users (any map with an integer `:id`); `nil`
-  entries and duplicates are ignored, and when `:board_id` is given only
-  current members of that board are notified. `attrs` accepts `:title` (required),
-  `:body`, `:url_path` (app-relative), `:actor_name`, `:metadata`,
-  `:board_id`, `:task_id` and `:dedupe_key`, all with atom keys or all with
-  string keys. `:board_id` is required unless the event type is one of
-  `Kanban.Notifications.Notification.board_less_event_types/0`, and a
-  `:task_id` must belong to that board. Board-less notifications stay visible
-  after the user leaves every board, so callers must not put task titles or
-  identifiers in their `:title` or `:body`; the changeset rejects board-scoped
-  `:url_path` values and task metadata keys on them.
-
-  In-app and email preferences are independent. A recipient with both off is
-  skipped. A recipient with in-app off but email on gets a row stored with
-  `in_app: false`, which is never listed, counted or broadcast but is emailed.
-  For each inserted row whose recipient's email preference is on, an
-  `EmailWorker` job is enqueued in the same transaction.
-  The same `dedupe_key` yields at most one row per recipient, so retries and
-  races are idempotent. Each newly inserted in-app row is broadcast as
-  `{:notification_created, notification}` on its recipient's topic after the
-  transaction commits.
-
-  Returns `{:ok, inserted}` (only the rows actually inserted, including
-  email-only rows),
-  `{:error, :invalid_event_type}`, or `{:error, changeset}` when the
-  attributes are invalid — in which case nothing is inserted for anyone.
-
-  ## Examples
-
-      iex> notify(:task_assigned, [user], %{title: "W12 was assigned to you"})
-      {:ok, [%Notification{}]}
-
-      iex> notify("bogus", [user], %{title: "x"})
-      {:error, :invalid_event_type}
-
-  """
-  @spec notify(event_type() | String.t(), [User.t() | nil], notify_attrs() | map()) ::
-          {:ok, [Notification.t()]} | {:error, :invalid_event_type | Ecto.Changeset.t()}
-  def notify(event_type, recipients, attrs) do
-    with {:ok, type} <- event_type |> normalize_event_type() |> invalid_event_type_error(),
-         :ok <- validate_task_board(type, attrs),
-         :ok <- check_board_plan(attrs),
-         {:ok, inserted} <- insert_for_recipients(type, recipients, attrs) do
-      inserted
-      |> broadcast_created()
-      |> NotificationTelemetry.created()
-    end
-  end
-
-  @doc """
-  Lists the scoped user's visible notifications, newest first.
-
-  ## Options
-
-    * `:unread_only` - only unread notifications (default `false`)
-    * `:limit` - page size, clamped to 1..#{@max_limit} (default #{@default_limit})
-    * `:before` - a `%Notification{}` cursor; returns rows older than it
-  """
-  @spec list_notifications(Scope.t(), keyword()) :: [Notification.t()]
-  def list_notifications(%Scope{user: %User{}} = scope, opts \\ []) do
-    scope
-    |> visible_query()
-    |> maybe_unread_only(Keyword.get(opts, :unread_only, false))
-    |> maybe_before(Keyword.get(opts, :before))
-    |> order_by([n], desc: n.inserted_at, desc: n.id)
-    |> limit(^clamp_limit(Keyword.get(opts, :limit, @default_limit)))
-    |> Repo.all()
-  end
-
-  @doc """
-  Counts the scoped user's visible unread notifications.
-  """
-  @spec unread_count(Scope.t()) :: non_neg_integer()
-  def unread_count(%Scope{user: %User{}} = scope) do
-    scope
-    |> visible_query()
-    |> where([n], is_nil(n.read_at))
-    |> select([n], count(n.id))
-    |> Repo.one()
-  end
-
-  @doc """
-  Marks one of the scoped user's notifications read and broadcasts the new
-  unread count.
-
-  Returns `{:error, :not_found}` for an id that does not exist, belongs to
-  another user, or is hidden because the user left its board. Marking an
-  already-read notification is a no-op that still succeeds.
-  """
-  @spec mark_read(Scope.t(), integer() | String.t()) ::
-          {:ok, Notification.t()} | {:error, :not_found}
-  def mark_read(%Scope{user: %User{}} = scope, id) do
-    with {:ok, id} <- cast_id(id),
-         %Notification{} = notification <- get_visible(scope, id),
-         {:ok, notification} <- stamp_read(notification) do
-      broadcast(scope.user.id, {:notifications_read, unread_count(scope)})
-      {:ok, notification}
-    else
-      _ -> {:error, :not_found}
-    end
-  end
-
-  @doc """
-  Marks every visible unread notification of the scoped user read and
-  broadcasts the new unread count. Returns `{:ok, updated_count}`.
-
-  Notifications hidden because the user left their board are left untouched,
-  so this touches exactly the rows `unread_count/1` counts.
-  """
-  @spec mark_all_read(Scope.t()) :: {:ok, non_neg_integer()}
-  def mark_all_read(%Scope{user: %User{id: user_id}} = scope) do
-    now = DateTime.utc_now()
-
-    {count, _} =
-      scope
-      |> visible_query()
-      |> where([n], is_nil(n.read_at))
-      |> Repo.update_all(set: [read_at: now, updated_at: now])
-
-    broadcast(user_id, {:notifications_read, unread_count(scope)})
-    NotificationTelemetry.all_read({:ok, count}, user_id)
-  end
+  defdelegate default_preference(event_type), to: Preferences
 
   @doc """
   Returns the scoped user's preference for every event type, in
@@ -302,120 +160,100 @@ defmodule Kanban.Notifications do
   `default_preference/1`.
   """
   @spec get_preferences(Scope.t()) :: [Preference.t()]
-  def get_preferences(%Scope{user: %User{id: user_id}}) do
-    saved =
-      Preference
-      |> where([p], p.user_id == ^user_id)
-      |> Repo.all()
-      |> Map.new(&{&1.event_type, &1})
-
-    Enum.map(event_types(), fn type ->
-      Map.get_lazy(saved, type, fn -> %{default_preference(type) | user_id: user_id} end)
-    end)
-  end
+  defdelegate get_preferences(scope), to: Preferences
 
   @doc """
-  Creates or updates the scoped user's preference for one event type.
-
-  `attrs` may set `:in_app` and/or `:email`; an omitted flag keeps its
-  current (or default) value. Returns `{:error, :invalid_event_type}` for an
-  unknown event type.
-
-  While paid plans are enforced, a user without paid access is refused with
-  `{:error, {:plan_required, :notifications}}` (`Kanban.Plans.check_user/3`),
-  so a crafted event cannot change a locked setting. `unsubscribe/2` skips
-  this check: turning email off is never a paid action.
+  Creates or updates the scoped user's preference for one event type,
+  refusing a user without paid access while plans are enforced; see
+  `Kanban.Notifications.Preferences.update_preference/3`.
   """
   @spec update_preference(Scope.t(), event_type() | String.t(), map()) ::
           {:ok, Preference.t()}
           | {:error, :invalid_event_type | {:plan_required, :notifications} | Ecto.Changeset.t()}
-  def update_preference(%Scope{} = scope, event_type, attrs) do
-    with :ok <- Plans.check_user(scope, :notifications, surface: :context) do
-      write_preference(scope, event_type, attrs)
-    end
-  end
-
-  defp write_preference(%Scope{user: %User{id: user_id}}, event_type, attrs) do
-    case normalize_event_type(event_type) do
-      {:ok, type} ->
-        current = current_preference(user_id, type)
-
-        %Preference{
-          user_id: user_id,
-          event_type: type,
-          in_app: current.in_app,
-          email: current.email,
-          push: current.push
-        }
-        |> Preference.changeset(attrs)
-        |> Repo.insert(
-          on_conflict: {:replace, [:in_app, :email, :updated_at]},
-          conflict_target: [:user_id, :event_type],
-          returning: true
-        )
-        |> NotificationTelemetry.preference_updated(current)
-
-      :error ->
-        {:error, :invalid_event_type}
-    end
-  end
+  defdelegate update_preference(scope, event_type, attrs), to: Preferences
 
   @doc """
   Turns email off for one user and one event type, leaving in-app delivery
-  as it was. Used by the signed unsubscribe links, which carry a verified
-  user id and event type rather than a session.
-
-  Idempotent. Returns `{:error, :not_found}` when the user no longer exists
-  and `{:error, :invalid_event_type}` for an unknown event type.
+  as it was, for the signed unsubscribe links. Never a paid action; see
+  `Kanban.Notifications.Preferences.unsubscribe/2`.
   """
   @spec unsubscribe(pos_integer(), event_type() | String.t()) ::
           :ok | {:error, :not_found | :invalid_event_type | Ecto.Changeset.t()}
-  def unsubscribe(user_id, event_type) when is_integer(user_id) do
-    case Repo.get(User, user_id) do
-      nil ->
-        {:error, :not_found}
+  defdelegate unsubscribe(user_id, event_type), to: Preferences
 
-      user ->
-        user
-        |> Scope.for_user()
-        |> write_preference(event_type, %{email: false})
-        |> NotificationTelemetry.unsubscribed()
-        |> ok_or_error()
-    end
-  end
-
-  defp ok_or_error({:ok, _preference}), do: :ok
-  defp ok_or_error({:error, _reason} = error), do: error
+  # -- PubSub: Kanban.Notifications.Broadcaster ------------------------------
 
   @doc """
-  Lists tasks whose agent claim expired in the half-open window
-  `[now - lookback_seconds, now)` and that are still being worked: in
-  progress, in the Doing column (its name matched as `Kanban.Columns.named?/2`
-  matches it, case and surrounding whitespace ignored), assigned, unarchived,
-  agent work or defect.
+  Returns the PubSub topic carrying one user's notification events.
+  """
+  @spec topic(Scope.t() | User.t() | pos_integer()) :: String.t()
+  defdelegate topic(scope_or_user), to: Broadcaster
 
-  The expiry test mirrors the claim query (`claim_expires_at < now`). Tasks in
-  Review are excluded on purpose: completing a task keeps its old
-  `claim_expires_at`, so without the Doing filter every task awaiting review
-  would look expired. Read-only; never unclaims anything.
+  @doc """
+  Subscribes the calling process to a user's notification topic.
+  """
+  @spec subscribe(Scope.t() | User.t() | pos_integer()) :: :ok | {:error, term()}
+  defdelegate subscribe(scope_or_user), to: Broadcaster
+
+  # -- delivery: Kanban.Notifications.Delivery -------------------------------
+
+  @doc """
+  Records an event for a list of recipients: at most one row per recipient
+  and `dedupe_key`, their email and push jobs enqueued in the same
+  transaction, and each new in-app row broadcast as
+  `{:notification_created, notification}` after it commits.
+
+  Returns `{:ok, inserted}`, `{:error, :invalid_event_type}` or
+  `{:error, changeset}` (nothing is inserted for anyone). See
+  `Kanban.Notifications.Delivery.notify/3` for the attributes and rules.
+  """
+  @spec notify(event_type() | String.t(), [User.t() | nil], notify_attrs() | map()) ::
+          {:ok, [Notification.t()]} | {:error, :invalid_event_type | Ecto.Changeset.t()}
+  defdelegate notify(event_type, recipients, attrs), to: Delivery
+
+  # -- inbox: Kanban.Notifications.Inbox -------------------------------------
+
+  @doc """
+  Lists the scoped user's visible notifications, newest first; see
+  `Kanban.Notifications.Inbox.list_notifications/2` for the `:unread_only`,
+  `:limit` and `:before` options.
+  """
+  @spec list_notifications(Scope.t(), keyword()) :: [Notification.t()]
+  defdelegate list_notifications(scope, opts \\ []), to: Inbox
+
+  @doc """
+  Counts the scoped user's visible unread notifications.
+  """
+  @spec unread_count(Scope.t()) :: non_neg_integer()
+  defdelegate unread_count(scope), to: Inbox
+
+  @doc """
+  Marks one of the scoped user's notifications read and broadcasts the new
+  unread count. Returns `{:error, :not_found}` for an id the user cannot
+  see; see `Kanban.Notifications.Inbox.mark_read/2`.
+  """
+  @spec mark_read(Scope.t(), integer() | String.t()) ::
+          {:ok, Notification.t()} | {:error, :not_found}
+  defdelegate mark_read(scope, id), to: Inbox
+
+  @doc """
+  Marks every visible unread notification of the scoped user read and
+  broadcasts the new unread count. Returns `{:ok, updated_count}`; see
+  `Kanban.Notifications.Inbox.mark_all_read/1`.
+  """
+  @spec mark_all_read(Scope.t()) :: {:ok, non_neg_integer()}
+  defdelegate mark_all_read(scope), to: Inbox
+
+  # -- other reads and stores ------------------------------------------------
+
+  @doc """
+  Lists tasks whose agent claim expired in `[now - lookback_seconds, now)`
+  and that are still in Doing; see
+  `Kanban.Notifications.ExpiredClaims.list_recently_expired_claims/2`.
+  Read-only; never unclaims anything.
   """
   @spec list_recently_expired_claims(DateTime.t(), pos_integer()) :: [Task.t()]
-  def list_recently_expired_claims(%DateTime{} = now, lookback_seconds)
-      when is_integer(lookback_seconds) and lookback_seconds > 0 do
-    since = DateTime.add(now, -lookback_seconds, :second)
-
-    from(t in Task,
-      join: c in assoc(t, :column),
-      as: :column,
-      where: ^Columns.name_matches(:column, "Doing"),
-      where: t.status == :in_progress and is_nil(t.archived_at),
-      where: not is_nil(t.assigned_to_id),
-      where: t.claim_expires_at < ^now and t.claim_expires_at >= ^since,
-      where: t.type in [:work, :defect] and t.human_task == false,
-      order_by: [asc: t.claim_expires_at, asc: t.id]
-    )
-    |> Repo.all()
-  end
+  defdelegate list_recently_expired_claims(now, lookback_seconds), to: ExpiredClaims
 
   @doc """
   Lists the scoped user's visible notifications of `event_types` on tasks on
@@ -463,185 +301,4 @@ defmodule Kanban.Notifications do
   defdelegate enqueue_audit_stream_email(kind, destination, actor, details \\ %{}),
     to: AuditStreamAlerts,
     as: :enqueue
-
-  # -- notify/3 helpers ------------------------------------------------------
-
-  # Resolving recipients inside the transaction lets Recipients' FOR SHARE
-  # membership locks hold until the rows are inserted.
-  defp insert_for_recipients(type, recipients, attrs) do
-    board_id = attrs |> fetch_attr(:board_id) |> cast_optional_id()
-
-    Repo.transaction(fn -> deliver_in_transaction(type, recipients, board_id, attrs) end)
-  end
-
-  defp deliver_in_transaction(type, recipients, board_id, attrs) do
-    deliveries = Recipients.resolve(type, recipients, board_id, default_preference(type))
-    push_user_ids = PushWorker.recipient_ids(type, deliveries)
-
-    deliveries
-    |> Enum.filter(&row_needed?(&1, push_user_ids))
-    |> Enum.map(&insert_notification!(&1, type, attrs))
-    |> Enum.reject(&is_nil(&1.id))
-    |> enqueue_emails!(deliveries)
-    |> enqueue_pushes!(push_user_ids)
-  end
-
-  # A push-only delivery gets a (hidden) row only when a push can reach it.
-  defp row_needed?(%{in_app: in_app, email: email, user_id: user_id}, push_user_ids),
-    do: in_app or email or MapSet.member?(push_user_ids, user_id)
-
-  # Only recipients who want email and have paid access get a job.
-  defp enqueue_emails!(inserted, deliveries) do
-    email_user_ids =
-      for(%{email: true, user_id: id} <- deliveries, do: id) |> Plans.unlocked_user_ids()
-
-    inserted
-    |> Enum.filter(&MapSet.member?(email_user_ids, &1.user_id))
-    |> EmailWorker.enqueue()
-    |> case do
-      :ok -> inserted
-      {:error, changeset} -> Repo.rollback(changeset)
-    end
-  end
-
-  # Only recipients PushWorker.recipient_ids/2 picked get a job; it only
-  # enqueues, the worker sends.
-  defp enqueue_pushes!(inserted, push_user_ids) do
-    case PushWorker.enqueue(inserted, push_user_ids) do
-      :ok -> inserted
-      {:error, changeset} -> Repo.rollback(changeset)
-    end
-  end
-
-  defp broadcast_created(inserted) do
-    inserted
-    |> Enum.filter(& &1.in_app)
-    |> Enum.each(&broadcast(&1.user_id, {:notification_created, &1}))
-
-    {:ok, inserted}
-  end
-
-  defp invalid_event_type_error(:error), do: {:error, :invalid_event_type}
-  defp invalid_event_type_error({:ok, _} = ok), do: ok
-
-  defp validate_task_board(type, attrs) do
-    task_id = attrs |> fetch_attr(:task_id) |> cast_optional_id()
-    board_id = attrs |> fetch_attr(:board_id) |> cast_optional_id()
-
-    if is_nil(task_id) or is_nil(board_id) or task_board_id(task_id) == board_id do
-      :ok
-    else
-      changeset =
-        %Notification{event_type: type}
-        |> Ecto.Changeset.change()
-        |> Ecto.Changeset.add_error(:task_id, "does not belong to the board")
-
-      {:error, %{changeset | action: :insert}}
-    end
-  end
-
-  # A free board's events are dropped while plans are enforced. Returning
-  # {:ok, []} ends notify/3's with chain before any lock, insert or job.
-  defp check_board_plan(attrs) do
-    case attrs |> fetch_attr(:board_id) |> cast_optional_id() do
-      nil -> :ok
-      board_id -> if Plans.board_unlocked?(board_id), do: :ok, else: {:ok, []}
-    end
-  end
-
-  defp task_board_id(task_id) do
-    from(t in Task, join: c in assoc(t, :column), where: t.id == ^task_id, select: c.board_id)
-    |> Repo.one()
-  end
-
-  defp insert_notification!(%{user_id: user_id, in_app: in_app}, type, attrs) do
-    %Notification{user_id: user_id, event_type: type, in_app: in_app}
-    |> Notification.changeset(attrs)
-    |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :dedupe_key])
-    |> case do
-      {:ok, notification} -> notification
-      {:error, changeset} -> Repo.rollback(changeset)
-    end
-  end
-
-  # -- query helpers ---------------------------------------------------------
-
-  defp visible_query(scope), do: Visibility.query(scope)
-
-  defp get_visible(scope, id) do
-    scope
-    |> visible_query()
-    |> where([n], n.id == ^id)
-    |> Repo.one()
-  end
-
-  defp maybe_unread_only(query, true), do: where(query, [n], is_nil(n.read_at))
-  defp maybe_unread_only(query, _), do: query
-
-  defp maybe_before(query, %Notification{inserted_at: inserted_at, id: id}) do
-    where(
-      query,
-      [n],
-      n.inserted_at < ^inserted_at or (n.inserted_at == ^inserted_at and n.id < ^id)
-    )
-  end
-
-  defp maybe_before(query, _), do: query
-
-  defp clamp_limit(limit) when is_integer(limit), do: limit |> max(1) |> min(@max_limit)
-  defp clamp_limit(_), do: @default_limit
-
-  # -- misc helpers ----------------------------------------------------------
-
-  defp stamp_read(%Notification{read_at: nil} = notification) do
-    notification
-    |> Ecto.Changeset.change(read_at: DateTime.utc_now())
-    |> Repo.update()
-    |> NotificationTelemetry.read()
-  end
-
-  defp stamp_read(%Notification{} = notification), do: {:ok, notification}
-
-  defp current_preference(user_id, type) do
-    Repo.get_by(Preference, user_id: user_id, event_type: type) || default_preference(type)
-  end
-
-  defp fetch_attr(attrs, key) when is_map(attrs) do
-    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-  end
-
-  defp fetch_attr(_attrs, _key), do: nil
-
-  defp cast_optional_id(nil), do: nil
-
-  defp cast_optional_id(id) do
-    case cast_id(id) do
-      {:ok, id} -> id
-      :error -> nil
-    end
-  end
-
-  defp cast_id(id) do
-    case Ecto.Type.cast(:id, id) do
-      {:ok, id} when is_integer(id) -> {:ok, id}
-      _ -> :error
-    end
-  end
-
-  defp normalize_event_type(type) when is_atom(type) do
-    if type in Preference.event_types(), do: {:ok, type}, else: :error
-  end
-
-  defp normalize_event_type(type) when is_binary(type) do
-    case Enum.find(Preference.event_types(), &(Atom.to_string(&1) == type)) do
-      nil -> :error
-      found -> {:ok, found}
-    end
-  end
-
-  defp normalize_event_type(_), do: :error
-
-  defp broadcast(user_id, message) do
-    Phoenix.PubSub.broadcast(Kanban.PubSub, topic(user_id), message)
-  end
 end

@@ -3164,7 +3164,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       comments = task_details_content(["commenting-and-mentioning"])
       policy = File.read!("lib/kanban/tasks/comment_policy.ex")
       notifier = File.read!("lib/kanban/tasks/comment_notifier.ex")
-      notifications = File.read!("lib/kanban/notifications.ex")
+      delivery = File.read!("lib/kanban/notifications/delivery.ex")
+      preferences = File.read!("lib/kanban/notifications/preferences.ex")
 
       # Who can comment, edit and delete.
       assert policy =~ "def allowed?(%{access: access}, :comment), do: not is_nil(access)"
@@ -3207,7 +3208,11 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       # A plain comment notifies nobody: nothing emits :comment_added.
       for path <- Path.wildcard("lib/kanban/**/*.ex"),
-          path not in ["lib/kanban/notifications.ex", "lib/kanban/notifications/preference.ex"] do
+          path not in [
+            "lib/kanban/notifications.ex",
+            "lib/kanban/notifications/preference.ex",
+            "lib/kanban/notifications/preferences.ex"
+          ] do
         refute File.read!(path) =~ "comment_added", "#{path} now emits comment notifications"
       end
 
@@ -3223,12 +3228,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert comments =~ "A read-only member lands on the board instead"
 
       # Paid rule.
-      assert notifications =~ "if Plans.board_unlocked?(board_id), do: :ok, else: {:ok, []}"
+      assert delivery =~ "if Plans.board_unlocked?(board_id), do: :ok, else: {:ok, []}"
 
       assert File.read!("lib/kanban/notifications/email_worker.ex") =~
                "plan_verdict(Plans.user_unlocked?(user) and Plans.board_unlocked?(board_id))"
 
-      assert notifications =~ "Plans.check_user(scope, :notifications"
+      assert preferences =~ "Plans.check_user(scope, :notifications"
 
       assert comments =~
                "When Stride's plans are switched on, a free board sends no notifications."
@@ -3403,7 +3408,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
     test "the notifications facts match the code" do
       content = notifications_integrations_content(["staying-informed-with-notifications"])
-      notifications = File.read!("lib/kanban/notifications.ex")
+      delivery = File.read!("lib/kanban/notifications/delivery.ex")
+      preferences = File.read!("lib/kanban/notifications/preferences.ex")
 
       assert File.read!("lib/kanban_web/components/notification_bell.ex") =~
                ~s|count > 99, do: "99+"|
@@ -3424,12 +3430,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert content =~ "never in the bell"
 
-      assert notifications =~ "@email_off_by_default [:goal_completed, :comment_added]"
+      assert preferences =~ "@email_off_by_default [:goal_completed, :comment_added]"
       assert content =~ "except the email for **Completed goals** and **Comments**"
 
       # Two gates: the board must be paid, and the user must be in an Organization.
-      assert notifications =~ "A free board's events are dropped while plans are enforced"
-      assert notifications =~ "Plans.check_user(scope, :notifications, surface: :context)"
+      assert delivery =~ "A free board's events are dropped while plans are enforced"
+      assert preferences =~ "Plans.check_user(scope, :notifications, surface: :context)"
       assert content =~ "a free board sends no notifications at all, even to Organization members"
       assert content =~ "only Organization members can change their preferences"
 
@@ -3439,7 +3445,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       # Unsubscribing: a confirm page, 90 days, never a paid action.
       assert File.read!("lib/kanban_web/unsubscribe_token.ex") =~ "@max_age 90 * 24 * 60 * 60"
-      assert notifications =~ "turning email off is never a paid action"
+      assert preferences =~ "turning email off is never a paid action"
       assert content =~ "opens a page that asks you to confirm"
       assert content =~ "The link works for 90 days, and unsubscribing never needs a paid plan."
     end

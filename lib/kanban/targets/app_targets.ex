@@ -36,8 +36,10 @@ defmodule Kanban.Targets.AppTargets do
   Owner only: `Kanban.Targets.get_owned_target/2` answers `{:error,
   :not_found}` for anyone else. The counts and member goals are
   `Kanban.Targets.get_target_progress/3`'s, as `/targets/:id` reads them; the
-  status, the estimate and the stalled goals are the target's rollup entry,
-  as the risk explanation on `/agents` reads them. An owned target the rollup
+  status, the estimate and the stalled goals are the target's rollup entry
+  (`Kanban.Targets.DeliveryRollup.build_target/3`, the entry `build/2` gives
+  it, built for this target alone), as the risk explanation on `/agents`
+  reads them. An owned target the rollup
   has no entry for (archived, or with no visible member goal) takes its status
   and estimate from its progress summary and has no stalled goals. Goal rows
   and stalled goals on boards outside the plan are left out.
@@ -176,12 +178,8 @@ defmodule Kanban.Targets.AppTargets do
     }
   end
 
-  defp rollup_entry(scope, zone, now, %DeliveryTarget{id: id}) do
-    Enum.find(
-      DeliveryRollup.build(scope, timezone: zone, now: now).targets,
-      &(&1.target.id == id)
-    )
-  end
+  defp rollup_entry(scope, zone, now, %DeliveryTarget{} = target),
+    do: DeliveryRollup.build_target(scope, target, timezone: zone, now: now)
 
   defp status_and_estimate(nil, summary), do: {summary.status, summary.estimated_completion_date}
   defp status_and_estimate(entry, _summary), do: {entry.status, entry.estimated_completion_date}

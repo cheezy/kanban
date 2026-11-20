@@ -1,5 +1,8 @@
 defmodule Kanban.Tasks.MoveToBacklogTest do
-  @moduledoc "Tests for `Kanban.Tasks.MoveToBacklog` (W2760): the app's move of a Ready task to Backlog."
+  @moduledoc """
+  Tests for `Kanban.Tasks.MoveToBacklog` (W2760): the app's move of a released
+  task in Ready, or an expired claim in Doing, to Backlog.
+  """
   use Kanban.DataCase, async: true
 
   import Kanban.AccountsFixtures

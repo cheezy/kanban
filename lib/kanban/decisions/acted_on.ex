@@ -52,6 +52,11 @@ defmodule Kanban.Decisions.ActedOn do
   read is not under the action's locks: if an agent resolves the decision in
   the instant between the read and the person's write, the person's action
   still counts, once. A review is read under the task's row lock.
+
+  When the database refuses the `decision_actions` row (a lost connection,
+  or a task or board deleted in the meantime), the count is dropped and a
+  warning naming only the error's module is logged. The person's action has
+  already committed, so its result is returned as it would be otherwise.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -65,6 +70,8 @@ defmodule Kanban.Decisions.ActedOn do
   alias Kanban.Reviews
   alias Kanban.Tasks.Task
   alias Kanban.Telemetry.AfterCommit
+
+  require Logger
 
   @event [:kanban, :decision, :acted_on]
   @vias [:web, :ios, :android]
@@ -191,6 +198,10 @@ defmodule Kanban.Decisions.ActedOn do
       )
 
     MapSet.new(inserted, &{&1.decision_key, &1.since})
+  rescue
+    error in [DBConnection.ConnectionError, Postgrex.Error] ->
+      Logger.warning("decision acted_on not recorded: #{inspect(error.__struct__)}")
+      MapSet.new()
   end
 
   defp emit(decision, via, now) do
@@ -242,7 +253,13 @@ defmodule Kanban.Decisions.ActedOn do
   defp pending(_scope, _act), do: []
 
   # The board the action is on, when the person is a member of it and the
-  # plan unlocks it: the boards `Kanban.Decisions` reads.
+  # plan unlocks it: the boards `Kanban.Decisions` reads, and the only boards
+  # `Sources.context/3` may be given. `Boards.get_board/2` also returns a
+  # public board to a non-member, with no access. The released and
+  # expired-claim sources drop a locked board's notifications, but
+  # `Sources.hook_failed/1` lists a failed goal on any board it is given,
+  # and `Sources.ready_empty/1` any writable one, so these two checks are
+  # what keep a public board's non-member and a locked board out.
   defp decision_board(act, user) do
     with {:ok, board_id} <- board_id(act),
          {:ok, %{user_access: access} = board} when not is_nil(access) <-

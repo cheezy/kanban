@@ -48,12 +48,14 @@ defmodule Kanban.Tasks.AppGoals do
   so the app opens the review rather than the task) and `in_column_since`:
   when it entered its column. That is the later of its latest `:move` row in
   `task_history` and the stamp the agent workflow writes when it moves a task
-  without a move row, read only for the column the task is in now:
-  `claimed_at` in Doing, `review_requested_at` in Review and `completed_at` in
-  Done. A task with neither uses its insert time. Three agent-workflow moves
-  write neither a move row nor such a stamp: an unclaim, a claim-expiry
-  release back to Ready and a changes-requested return to Doing, so after
-  one the field can predate the task's entry into its column.
+  forward without a move row, read only for the column the task is in now:
+  `claimed_at` in Doing (a claim), `review_requested_at` in Review (a
+  completion that asks for review) and `completed_at` in Done (a completion
+  or an approved review). A task with neither uses its insert time. The
+  agent workflow's moves back write a move row instead
+  (`Kanban.Tasks.History.record_move/3`): an unclaim and a claim release
+  back to Ready, and a changes-requested or rejected review back to Doing,
+  which keeps the first claim's `claimed_at`.
   """
 
   import Ecto.Query, warn: false
@@ -326,6 +328,8 @@ defmodule Kanban.Tasks.AppGoals do
 
   # An agent's claim and completion change the column without a move row, so
   # the stamp each writes counts as entering the column it moved the task to.
+  # Its moves back (unclaim, claim release, review return to Doing) write a
+  # move row, which is later than the stamp they leave behind.
   defp in_column_since(%Task{} = task, moves) do
     [Map.get(moves, task.id), entry_stamp(task)]
     |> Enum.reject(&is_nil/1)

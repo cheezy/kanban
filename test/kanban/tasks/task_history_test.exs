@@ -598,4 +598,34 @@ defmodule Kanban.Tasks.TaskHistoryTest do
       assert History.latest_move_at_by_task([]) == %{}
     end
   end
+
+  describe "Kanban.Tasks.History.record_move/3" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      from = column_fixture(board, %{name: "Doing"})
+      to = column_fixture(board, %{name: "Ready"})
+      task = task_fixture(from)
+      from(h in TaskHistory, where: h.task_id == ^task.id) |> Repo.delete_all()
+      %{task: task, from: from, to: to}
+    end
+
+    defp move_rows(task) do
+      from(h in TaskHistory,
+        where: h.task_id == ^task.id and h.type == :move,
+        select: {h.from_column, h.to_column}
+      )
+      |> Repo.all()
+    end
+
+    test "records a move between two columns by their names", ctx do
+      assert %TaskHistory{type: :move} = History.record_move(ctx.task, ctx.from, ctx.to)
+      assert move_rows(ctx.task) == [{"Doing", "Ready"}]
+    end
+
+    test "records nothing when the task stays in its column", ctx do
+      assert History.record_move(ctx.task, ctx.from, ctx.from) == nil
+      assert move_rows(ctx.task) == []
+    end
+  end
 end

@@ -101,16 +101,16 @@ The task, agent and metric data in the designs are realistic examples, not real 
 
 - **The event types.** `Kanban.Notifications.Preference` defines 12 event types (`lib/kanban/notifications/preference.ex:15-28`): `review_requested`, `task_assigned`, `task_reviewed`, `task_unclaimed`, `claim_expired`, `goal_completed`, `after_goal_failed`, `board_access_changed`, `target_status_changed`, `weekly_digest`, `comment_added` and `mentioned`. Nothing emits `comment_added` yet.
 - **The emitter.** `Kanban.Notifications.Events` (`lib/kanban/notifications/events.ex:1`) turns lifecycle moments into notifications, for example `review_requested` at `:74` and `after_goal_failed` at `:205`.
-- **One entry point.** Every event goes through `Kanban.Notifications.notify/3` (`lib/kanban/notifications.ex:188-197`).
-  - It checks the plan (`check_board_plan`, `:470-475`).
-  - In one transaction it resolves the recipients (`Recipients.resolve/4`, `recipients.ex:29`), inserts a row for each, and enqueues the email jobs (`enqueue_emails!`, `:428-438`).
-  - After the commit it broadcasts on `"user:<id>:notifications"` (`topic/1`, `:137-139`; the broadcast helpers, `:441-447`).
+- **One entry point.** Every event goes through `Kanban.Notifications.notify/3` (`lib/kanban/notifications.ex`, implemented in `lib/kanban/notifications/delivery.ex:91-101`).
+  - It checks the plan (`check_board_plan`, `:180-185`).
+  - In one transaction it resolves the recipients (`Recipients.resolve/4`, `recipients.ex:29`), inserts a row for each, and enqueues the email jobs (`enqueue_emails!`, `:129-140`).
+  - After the commit it broadcasts on `"user:<id>:notifications"` (`topic/1`, `notifications/broadcaster.ex:18-20`; `broadcast_created`, `delivery.ex:151-157`).
 - **Two channels today, with no channel abstraction.**
   - **In app:** the bell (`lib/kanban_web/components/notification_bell.ex:19`) and `/notifications`.
   - **Email:** `Kanban.Notifications.EmailWorker` on the Oban `:notifications` queue (`lib/kanban/notifications/email_worker.ex:36-39`). It checks the plan again when it runs (`check_plan`, `:126-133`): the user always, and the board when the notification has one.
   - **The weekly digest** is a separate Oban cron path. It doesn't go through `notify/3`.
 - **Privacy is already right for a lock screen.** Titles carry only the task identifier and title, never agent free text (`events.ex:11-16`). The only stored free text is review notes and the unclaim reason, cut to 500 characters (`:63`, `:313-331`). `after_goal_failed` stores the exit code and duration, never the hook output (`:464-474`).
-- **Preferences.** `notification_preferences` has `in_app` and `email` for each event type (`preference.ex:32-40`). A row exists only once a setting has been changed; defaults come from `default_preference/1` (`notifications.ex:123-131`). **There are no quiet hours, no snooze and no "only when it blocks" mode.**
+- **Preferences.** `notification_preferences` has `in_app` and `email` for each event type (`preference.ex:32-40`). A row exists only once a setting has been changed; defaults come from `default_preference/1` (`notifications/preferences.ex:59-72`). **There are no quiet hours, no snooze and no "only when it blocks" mode.**
 
 ### 3.2 Reviews
 
@@ -818,7 +818,7 @@ The web review could use the same highlighter later. That's a separate task, not
 - **Dropped devices.** When a device is revoked, the socket is disconnected through the device's own topic, `"device:<id>"`, which is broadcast on revoke.
 
 **`me:inbox` channel:**
-- **On join,** it subscribes the channel process to `Notifications.topic(user_id)` (`notifications.ex:137-139`) and to `"board:<id>"` for each board the person can see, in every workspace ([§5.1](#51-one-navigation-on-both-platforms)).
+- **On join,** it subscribes the channel process to `Notifications.topic(user_id)` (`notifications/broadcaster.ex:18-20`) and to `"board:<id>"` for each board the person can see, in every workspace ([§5.1](#51-one-navigation-on-both-platforms)).
 - **On any message,** it schedules a rebuild of `Kanban.Decisions.build/1`, coalesced to one per second. It then pushes `decisions` with the full list, or nothing when nothing changed.
 - **Board access.** When `board_access_changed` arrives, it re-reads the person's boards and re-subscribes.
 
@@ -832,10 +832,10 @@ The web review could use the same highlighter later. That's a separate task, not
 
 **A third delivery channel** inside `Kanban.Notifications`, beside in-app and email.
 
-- **Where it hooks in.** In `notify/3`, in the same transaction that inserts the rows and enqueues the emails (`insert_for_recipients`, `notifications.ex:414-425`; `enqueue_emails!`, `:428-438`), a new `enqueue_pushes!` enqueues one `Kanban.Push.PushWorker` job per recipient. It does so only when:
+- **Where it hooks in.** In `notify/3`, in the same transaction that inserts the rows and enqueues the emails (`insert_for_recipients`, `notifications/delivery.ex:105-122`; `enqueue_emails!`, `:129-140`), a new `enqueue_pushes!` enqueues one `Kanban.Push.PushWorker` job per recipient. It does so only when:
   - the recipient has at least one active device with a push token,
   - push is on for that event type, and
-  - the recipient has paid access, as `enqueue_emails!` checks (`Plans.unlocked_user_ids/1`, `:430`).
+  - the recipient has paid access, as `enqueue_emails!` checks (`Plans.unlocked_user_ids/1`, `notifications/delivery.ex:131`).
 - **The worker** runs on a new Oban queue, `:push` (5 attempts, backoff). It:
   1. re-checks the plan, as `EmailWorker` does: the user always, and the board when there is one (`check_plan`, `email_worker.ex:126-133`; [§10](#10-plans-and-access));
   2. re-checks the person's push settings and quiet hours ([§7.9](#79-notification-settings-for-push));
@@ -858,7 +858,7 @@ The web review could use the same highlighter later. That's a separate task, not
   - **Updates:** `task_reviewed`, `goal_completed`, `target_status_changed` and `mentioned`.
 
   The other four event types (`task_assigned`, `board_access_changed`, `weekly_digest` and `comment_added`) never push.
-- **Per event type:** a new `push` column on `notification_preferences`, beside `in_app` and `email` (`preference.ex:32-40`). `default_preference/1` (`notifications.ex:123-131`) gives:
+- **Per event type:** a new `push` column on `notification_preferences`, beside `in_app` and `email` (`preference.ex:32-40`). `default_preference/1` (`notifications/preferences.ex:59-72`) gives:
   - `push: true` for the four decision events;
   - `false` for everything else.
 - **Per person:** a new table, `user_push_settings`, holds:
@@ -1018,7 +1018,7 @@ Phase 1 adds an authorization server, a new token type, a socket and a push path
 
 - **Signing in.** Anyone can sign in. `GET /api/me` returns `app_unlocked: false` for a person who isn't in an Organization while enforcement is on. The app then shows the locked panel: what the app does, that it's part of the Organization plan, and a link to the pricing page.
 - **The server checks every call.** Each `/api/me/*` route except `/api/me` and the device routes calls `Plans.check_user(scope, :mobile_app, ...)`. Board routes also call `check_board`, so a person in an Organization still can't use the app on a board outside it.
-- **Push respects the plan too, with its own per-user check.** `notify/3` drops only events whose `board_id` is on a free board (`check_board_plan`, `notifications.ex:470-475`). Events with no board aren't dropped there. The code that sends them does its own gating: `board_access_changed` (`events.ex:351`), `weekly_digest`'s recipients query (`digest_recipients.ex:66-67`) and the `target_status_changed` sweeper (`target_status_worker.ex:60`). `EmailWorker.check_plan` then checks the user before any email goes out (`email_worker.ex:126-133`). Push needs the same per-user check, so `enqueue_pushes!` and `PushWorker` both check the recipient's paid access, and the board's when there is one ([§7.8](#78-push-delivery)).
+- **Push respects the plan too, with its own per-user check.** `notify/3` drops only events whose `board_id` is on a free board (`check_board_plan`, `notifications/delivery.ex:180-185`). Events with no board aren't dropped there. The code that sends them does its own gating: `board_access_changed` (`events.ex:351`), `weekly_digest`'s recipients query (`digest_recipients.ex:66-67`) and the `target_status_changed` sweeper (`target_status_worker.ex:60`). `EmailWorker.check_plan` then checks the user before any email goes out (`email_worker.ex:126-133`). Push needs the same per-user check, so `enqueue_pushes!` and `PushWorker` both check the recipient's paid access, and the board's when there is one ([§7.8](#78-push-delivery)).
 - **Without enforcement.** With `:plans_enforced` off (dev and review), everything is unlocked, as for the other features.
 
 Free users don't get a read-only app in Phase 1. They can sign in and see the locked panel ([decision 2](#24-decisions-needed), decided).

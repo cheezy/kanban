@@ -91,8 +91,9 @@ activity, newest first.
 ### goals
 
 The open goals that have an agent on them now: the goal of each roster task
-in Doing or Review, when the goal is neither completed nor archived. Newest
-first. The full list of goals is [GET /api/me/goals](me_goals.md).
+in Doing or Review that is not archived, when the goal is neither completed
+nor archived. An archived task left in Doing or Review does not keep its
+goal on the list. Newest first. The full list of goals is [GET /api/me/goals](me_goals.md).
 
 `counts` are the goal's own tasks. The goal itself is never one of them: the
 web's goal tree counts it as one of its own tasks (`total` is 1 plus its
@@ -101,7 +102,7 @@ tasks), and this route does not.
 - `total` and `completed` count the goal's tasks as the `/agents` goal rows
   count them: a live task counts, an archived task that was completed counts
   as done work, and an archived task that was not completed counts in
-  neither. A goal whose every task was removed that way counts `0`.
+  neither.
 - `doing`, `review` and `blocked` count the goal's live tasks in the Doing and
   Review columns, and with the blocked status. `review` is what waits on the
   person, and `doing` what is in progress.

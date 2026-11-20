@@ -18,6 +18,7 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
 
   alias Kanban.ApiTokens
   alias Kanban.Boards
+  alias Kanban.Boards.BoardUser
   alias Kanban.Columns
   alias Kanban.Repo
   alias Kanban.Tasks
@@ -194,6 +195,36 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
       assert ctx.phone |> capture(capture_body(public)) |> json_response(404) == @not_found
     end
 
+    test "a missing id and a task on an unseen board run the same queries on every route", ctx do
+      foreign = task_fixture(columns(ai_optimized_board_fixture(user_fixture()))["Ready"])
+      missing = foreign.id + 1_000_000
+      seen = task_fixture(ctx.cols["Ready"])
+
+      requests = [
+        &api_get(ctx.phone, "/api/me/tasks/#{&1}"),
+        &comment(ctx.phone, &1, %{content: "hi"}),
+        &move(ctx.phone, &1)
+      ]
+
+      # A first request warms the token's last-used write, which would
+      # otherwise run once on whichever request comes first.
+      api_get(ctx.phone, "/api/me/tasks/#{seen.id}")
+
+      for request <- requests do
+        {missing_conn, missing_sql} = sql_of(fn -> request.(missing) end)
+        {foreign_conn, foreign_sql} = sql_of(fn -> request.(foreign.id) end)
+        {_seen_conn, seen_sql} = sql_of(fn -> request.(seen.id) end)
+
+        assert json_response(missing_conn, 404) == @not_found
+        assert missing_conn.resp_body == foreign_conn.resp_body
+        # The same queries, so the same count, in the same order.
+        assert foreign_sql == missing_sql
+
+        # Non-vacuous: a task the person can see does go on to more reads.
+        assert length(seen_sql) > length(missing_sql)
+      end
+    end
+
     test "capture into a board the person cannot see answers 404", ctx do
       foreign_board = ai_optimized_board_fixture(user_fixture())
 
@@ -275,6 +306,38 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
 
       assert ctx.phone |> comment(task.id, %{content: "Too late"}) |> json_response(404) ==
                @not_found
+    end
+
+    test "Pull the Rug: a task deleted, or the person removed, after the lookup answers 404",
+         ctx do
+      gone = task_fixture(ctx.cols["Ready"])
+
+      conn =
+        pull_the_rug(
+          fn -> {:ok, _} = Tasks.delete_task(gone) end,
+          fn -> comment(ctx.phone, gone.id, %{content: "Too late"}) end
+        )
+
+      assert json_response(conn, 404) == @not_found
+      refute Repo.get(Task, gone.id)
+
+      # The comment policy refuses a person removed in between; that is a 404
+      # too, never a 403 that says the task is there.
+      {member, token} = member_token(ctx.board, ctx.user, :modify)
+      kept = task_fixture(ctx.cols["Ready"])
+
+      conn =
+        pull_the_rug(
+          fn ->
+            BoardUser
+            |> Repo.get_by!(board_id: ctx.board.id, user_id: member.id)
+            |> Repo.delete!()
+          end,
+          fn -> comment(token, kept.id, %{content: "Too late"}) end
+        )
+
+      assert json_response(conn, 404) == @not_found
+      assert Tasks.list_comments(kept) == []
     end
 
     test "a mention's push and notification never carry the comment text", ctx do
@@ -644,9 +707,20 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
 
     test "a reply on a task that is no decision emits nothing", ctx do
       task = task_fixture(ctx.cols["Backlog"])
+      # A decision on the same board that the reply does not touch.
+      released = released_task!(ctx)
 
       assert ctx.phone |> comment(task.id, %{content: "Hello"}) |> json_response(201)
       refute_receive {:telemetry_event, [:kanban, :decision, :acted_on], _, _}
+      assert Repo.aggregate(Kanban.Decisions.DecisionAction, :count) == 0
+
+      # The same route on the decision itself does count, via the phone.
+      assert ctx.phone |> comment(released.id, %{content: "On it"}) |> json_response(201)
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], _,
+                      %{kind: :released, action: :reply, via: :ios, task_id: task_id}}
+
+      assert task_id == released.id
     end
   end
 
@@ -746,6 +820,65 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
       doing = task_fixture(ctx.cols["Doing"])
       refusal = ctx.phone |> move(doing.id) |> json_response(422)
       assert_schema(spec, refusal, "MeTaskRefusal")
+    end
+  end
+
+  # Runs `request`, calling `pull` once inside it, right after the app's task
+  # lookup (the request's first query on tasks), so the change lands between
+  # the lookup and the action. Returns the request's result.
+  defp pull_the_rug(pull, request) do
+    test_pid = self()
+    pulled = :counters.new(1, [])
+    handler_id = "me-task-rug-#{System.unique_integer([:positive])}"
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, metadata, _config ->
+        if self() == test_pid and metadata[:source] == "tasks" and
+             :counters.get(pulled, 1) == 0 do
+          :counters.add(pulled, 1, 1)
+          pull.()
+        end
+      end,
+      nil
+    )
+
+    try do
+      result = request.()
+      assert :counters.get(pulled, 1) == 1, "the rug was never pulled"
+      result
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  # The SQL text of every query the test process ran inside `fun`, in order.
+  defp sql_of(fun) do
+    test_pid = self()
+    handler_id = "me-task-sql-#{System.unique_integer([:positive])}"
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, %{query: sql}, _config ->
+        if self() == test_pid, do: send(test_pid, {:sql, handler_id, sql})
+      end,
+      nil
+    )
+
+    try do
+      {fun.(), collect_sql(handler_id, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  defp collect_sql(handler_id, acc) do
+    receive do
+      {:sql, ^handler_id, sql} -> collect_sql(handler_id, [sql | acc])
+    after
+      0 -> Enum.reverse(acc)
     end
   end
 

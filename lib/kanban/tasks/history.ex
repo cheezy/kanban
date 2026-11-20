@@ -23,6 +23,21 @@ defmodule Kanban.Tasks.History do
   end
 
   @doc """
+  Records the move of `task` from the column `from` to the column `to`, as
+  `create_move_history/3` does, when they are different columns. The agent
+  workflow calls it when it sends a task back: an unclaim
+  (`Kanban.Tasks.AgentWorkflow.Claiming`), a claim release
+  (`Kanban.Tasks.ClaimRelease`) and a changes-requested or rejected review
+  (`Kanban.Tasks.AgentWorkflow.Review`). A task that stays in its column
+  records nothing and answers `nil`.
+  """
+  @spec record_move(map(), map(), map()) :: Ecto.Schema.t() | nil
+  def record_move(_task, %{id: id}, %{id: id}), do: nil
+
+  def record_move(task, %{name: from_name}, %{name: to_name}),
+    do: create_move_history(task, from_name, to_name)
+
+  @doc """
   Records a priority change on a task.
   """
   def create_priority_change_history(from_priority, to_priority, task_id) do

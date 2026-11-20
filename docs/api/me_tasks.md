@@ -31,7 +31,9 @@ too, and only once the person is known to see the task or the board, so a
 A task is found as the web finds its board: the person must hold access to
 the task's board. A task on a board they hold no access to, or on a public
 board they are not a member of, answers `404`, as an id that names no task
-does.
+does. Both answers have the same body and run the same single lookup, scoped
+to the person's boards, so neither the answer nor the time it takes tells
+the two apart. This holds on every `/api/me/tasks/:id` route.
 
 - Any member of the board, read-only included, may read a task and comment on
   it, as on the web.

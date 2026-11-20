@@ -1093,6 +1093,9 @@ acts on it, the measure the native apps are judged by
   neither does a person's action on a decision an agent already resolved.
 - **Not counted.** Moving a task in Review or a failed goal, which is not one
   of their decision's actions, and a reorder that leaves a decision in place.
+  When the database refuses the `decision_actions` row after the action has
+  committed, the count is dropped and a warning naming only the error's
+  module is logged; the action itself still succeeds.
 - **The domain is singular.** Unlike `[:kanban, :decisions, :built]`, it
   follows the naming rule's singular noun.
 - **Its tags are `kind` and `via`.** `action` is not an allowed tag, and an id

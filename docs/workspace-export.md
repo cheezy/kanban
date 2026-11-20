@@ -39,6 +39,13 @@ kind of record. It holds the workspace's boards and what is on them:
 Users appear only by id, email and name, and only when something in the
 archive refers to them.
 
+A task's row holds its `created_via`: `"mobile"` for a task captured in the
+Stride app (see [the app's task actions](api/me_tasks.md)), and `null` for
+any other task. An import keeps it. An archive written before `created_via`
+was exported has no such key, and its tasks import with none. Adding the
+field did not change the archive's `format_version`, so an older Stride
+instance still imports a new archive and leaves the field out.
+
 An attachment's row in `attachments.json` holds its id, task, comment,
 uploader, file name, content type, size, sha256 and upload time. It never
 holds where the file is stored: an import stores every file again under a

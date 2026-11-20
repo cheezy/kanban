@@ -59,10 +59,16 @@ them:
   `personal` for their personal workspace, and `shared` for a board shared
   from anyone else's workspace. `workspace` is `null` for `shared`, so it
   never names a workspace the person does not belong to.
-- `counts` are the live work and defect tasks in each column: Backlog and
-  Ready as the Now screen counts them, Doing, Review and Done as the `/boards`
-  card counts them. Goals and archived tasks are left out, and a column the
-  board does not have counts `0`. Two columns with the same name add up.
+- `counts` are the live work and defect tasks in the board's Backlog, Ready,
+  Doing, Review and Done columns: for each name, the `total` the
+  [column read](#get-apimeboardsidcolumnsname) answers. Goals and archived
+  tasks are left out, and a column the board does not have counts `0`.
+- A name means one column, as everywhere else in Stride (a claim, a promote,
+  the web's Backlog arrow): the board's leftmost column of that name, matched
+  ignoring case and surrounding spaces. On a board with two columns of one
+  name, only the leftmost is counted, so a count always equals the column
+  read's `total`. The `/boards` card and the Now screen still add both
+  columns up.
 - `idle_agents` is the number of agents that worked on the board in the last
   24 hours and hold no task in Doing or Review on any board the person can
   see: the rule behind the Now screen's `ready_empty` item, so the header's
@@ -119,10 +125,10 @@ to `1`.
 - Pages are read by offset, so a task moved, added or archived in the column
   between two page reads can shift a card onto the page already read or past
   it. When `total` changes between pages, read the column again from page 1.
-- The column is the board's first column with that name, matched ignoring case
-  and surrounding spaces. The board list's counts add every column of that
-  name, so on a board with two columns of one name the counts can exceed the
-  column read's `total`.
+- The column is the board's leftmost column with that name (the lowest
+  position), matched ignoring case and surrounding spaces. It is the column
+  the board list counts, so `total` equals the list's count for that name,
+  even on a board with two columns of one name.
 
 The checks run in this order, and the first that fails answers:
 
