@@ -35,52 +35,166 @@ defmodule KanbanWeb.PageController do
         _ -> false
       end
 
-    render(conn, :home, has_boards: has_boards)
+    render(conn, :home, [has_boards: has_boards] ++ seo(:home))
   end
 
   def about(conn, _params) do
-    render(conn, :about)
+    render(conn, :about, seo(:about))
   end
 
   def hit_me(conn, _params) do
-    render(conn, :hit_me, page_title: gettext("Half-day AI proof-of-concept sessions"))
+    render(conn, :hit_me, seo(:hit_me))
   end
 
   def pricing(conn, _params) do
-    render(conn, :pricing)
+    render(conn, :pricing, seo(:pricing))
   end
 
   def acceptable_use(conn, _params) do
-    render(conn, :acceptable_use)
+    render(conn, :acceptable_use, seo(:acceptable_use))
   end
 
   def privacy(conn, _params) do
-    render(conn, :privacy)
+    render(conn, :privacy, seo(:privacy))
   end
 
   def product(conn, _params) do
-    render(conn, :product)
+    render(conn, :product, seo(:product))
   end
 
   def security(conn, _params) do
-    render(conn, :security)
+    render(conn, :security, seo(:security))
   end
 
   def terms(conn, _params) do
-    render(conn, :terms)
+    render(conn, :terms, seo(:terms))
   end
 
   def workflows(conn, _params) do
-    render(conn, :workflows)
+    render(conn, :workflows, seo(:workflows))
   end
 
   def tango(conn, _params) do
-    render(conn, :tango)
+    render(conn, :tango, seo(:tango))
   end
 
   def changelog(conn, _params) do
-    render(conn, :changelog)
+    render(conn, :changelog, seo(:changelog))
   end
+
+  # The page_title and meta_description every public page passes to seo_head
+  # (KanbanWeb.SeoComponents, rendered by the root layouts). A function, not a
+  # module attribute, so gettext runs per request in the visitor's locale.
+  # test/kanban_web/controllers/page_controller_seo_test.exs walks every GET
+  # route on this controller and fails when one lacks a clause here, or when
+  # two pages share a title or a description.
+  defp seo(:home),
+    do: [
+      page_title: gettext("Stride: kanban for people and AI agents"),
+      meta_description:
+        gettext(
+          "Plan, claim and ship work on one kanban board shared by your team and its AI agents, with workflow hooks, review gates and a full REST API."
+        )
+    ]
+
+  defp seo(:about),
+    do: [
+      page_title: gettext("About Stride"),
+      meta_description:
+        gettext(
+          "How Stride was built, who it is for, how people and AI agents work together on one board, and how you can get involved in the project."
+        )
+    ]
+
+  defp seo(:acceptable_use),
+    do: [
+      page_title: gettext("Acceptable Use Policy"),
+      meta_description:
+        gettext(
+          "What you may and may not do with Stride and the AI agents you connect to it, and what happens when an account breaks these rules."
+        )
+    ]
+
+  defp seo(:hit_me),
+    do: [
+      page_title: gettext("Half-day AI proof-of-concept sessions"),
+      meta_description:
+        gettext(
+          "Book a half-day session in which your team and AI agents set up a Stride board and deliver the first part of your proof of concept."
+        )
+    ]
+
+  defp seo(:pricing),
+    do: [
+      page_title: gettext("Pricing"),
+      meta_description:
+        gettext(
+          "Compare the Stride plans for individuals, small teams and larger organizations, and see what each plan includes for people, boards and support."
+        )
+    ]
+
+  defp seo(:privacy),
+    do: [
+      page_title: gettext("Privacy Policy"),
+      meta_description:
+        gettext(
+          "What personal information Stride collects, how it is used and shared, how long it is kept, and the rights you have over your data."
+        )
+    ]
+
+  defp seo(:product),
+    do: [
+      page_title: gettext("Product"),
+      meta_description:
+        gettext(
+          "A tour of Stride: the board your people and agents share, goals that track their own progress, built-in review, and metrics on how work flows."
+        )
+    ]
+
+  defp seo(:security),
+    do: [
+      page_title: gettext("Security"),
+      meta_description:
+        gettext(
+          "How Stride protects your account and data: authentication and access control, encryption in transit and at rest, and application-level safeguards."
+        )
+    ]
+
+  defp seo(:terms),
+    do: [
+      page_title: gettext("Terms of Service"),
+      meta_description:
+        gettext(
+          "The terms that govern your Stride account, the content you add, the AI agents you connect, and how either side can end the agreement."
+        )
+    ]
+
+  defp seo(:workflows),
+    do: [
+      page_title: gettext("Workflows"),
+      meta_description:
+        gettext(
+          "How work moves through a Stride board from Backlog to Done: getting ready, claiming tasks, running hooks and deciding what needs review."
+        )
+    ]
+
+  defp seo(:tango),
+    do: [
+      page_title: gettext("The People Behind This App"),
+      meta_description:
+        gettext(
+          "Meet the people and the AI collaborator behind Stride, why they built it, and how they can help your team build what comes next."
+        )
+    ]
+
+  defp seo(:changelog),
+    do: [
+      page_title: gettext("Changelog"),
+      meta_description:
+        gettext(
+          "Release notes for Stride: the new features, improvements and fixes in each release, with the newest release listed first."
+        )
+    ]
 
   def set_locale(conn, %{"locale" => locale}) do
     conn

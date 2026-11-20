@@ -801,6 +801,7 @@ msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
 msgid "About"
 msgstr "À propos"
 
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/about.html.heex
 #, elixir-autogen, elixir-format
 msgid "About Stride"
@@ -967,6 +968,7 @@ msgstr "Notre mission"
 msgid "Read about the people behind this app"
 msgstr "En savoir plus sur les personnes derrière cette application"
 
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/tango.html.heex
 #, elixir-autogen, elixir-format
 msgid "The People Behind This App"
@@ -3252,6 +3254,7 @@ msgid "Persist field_visibility on board edit"
 msgstr "Persister field_visibility lors de l'édition d'un tableau"
 
 #: lib/kanban_web/components/marketing_components.ex
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/pricing.html.heex
 #: lib/kanban_web/emails/announcement_email.ex
 #, elixir-autogen, elixir-format
@@ -3264,6 +3267,7 @@ msgid "Privacy"
 msgstr "Confidentialité"
 
 #: lib/kanban_web/components/marketing_components.ex
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "Product"
@@ -3294,6 +3298,7 @@ msgstr "Révisez à la vitesse de l'approbation"
 
 #: lib/kanban_web/components/marketing_closing.ex
 #: lib/kanban_web/components/review_report_panel.ex
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
 #: lib/kanban_web/controllers/page_html/security.html.heex
 #: lib/kanban_web/live/org_live/console.html.heex
@@ -3342,6 +3347,7 @@ msgid "Tasks declare key_files. Two agents can't touch the same code at the same
 msgstr "Les tâches déclarent key_files. Deux agents ne peuvent pas toucher au même code en même temps."
 
 #: lib/kanban_web/components/marketing_components.ex
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/workflows.html.heex
 #, elixir-autogen, elixir-format
 msgid "Workflows"
@@ -3785,6 +3791,7 @@ msgstr "Mots de passe"
 msgid "Plan at the level you think at"
 msgstr "Planifiez au niveau où vous pensez"
 
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
 #: lib/kanban_web/controllers/page_html/security.html.heex
 #, elixir-autogen, elixir-format
@@ -5283,6 +5290,7 @@ msgstr "Comment Stride a été construit, à qui il s'adresse et comment s'impli
 msgid "Key collaboration features"
 msgstr "Fonctionnalités clés de collaboration"
 
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex
 #: lib/kanban_web/controllers/page_html/terms.html.heex
 #: lib/kanban_web/live/user_live/registration.ex
@@ -5319,6 +5327,7 @@ msgstr "Retour à la connexion"
 msgid "Board → Tokens"
 msgstr "Tableau → Jetons"
 
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/changelog.html.heex
 #, elixir-autogen, elixir-format
 msgid "Changelog"
@@ -5431,6 +5440,7 @@ msgstr "Startups qui cherchent à avancer vite sans sacrifier la qualité."
 msgid "Tango"
 msgstr "Tango"
 
+#: lib/kanban_web/controllers/page_controller.ex
 #: lib/kanban_web/controllers/page_html/terms.html.heex
 #: lib/kanban_web/emails/announcement_email.ex
 #: lib/kanban_web/live/user_live/registration.ex
@@ -15931,3 +15941,73 @@ msgstr "Indicateur de fonctionnalité activé"
 #, elixir-autogen, elixir-format
 msgid "Stride is a kanban board where humans and AI agents plan, claim and ship work together."
 msgstr "Stride est un tableau kanban où humains et agents IA planifient, prennent en charge et livrent le travail ensemble."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "A tour of Stride: the board your people and agents share, goals that track their own progress, built-in review, and metrics on how work flows."
+msgstr "Découvrez Stride : le tableau partagé par vos équipes et vos agents, des objectifs qui suivent leur progression, la revue intégrée et des métriques de flux."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Compare the Stride plans for individuals, small teams and larger organizations, and see what each plan includes for people, boards and support."
+msgstr "Comparez les offres Stride pour les particuliers, les petites équipes et les grandes organisations, et ce que chacune inclut en membres, tableaux et support."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride protects your account and data: authentication and access control, encryption in transit and at rest, and application-level safeguards."
+msgstr "Comment Stride protège votre compte et vos données : authentification et contrôle d'accès, chiffrement en transit et au repos, protections applicatives."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride was built, who it is for, how people and AI agents work together on one board, and how you can get involved in the project."
+msgstr "Comment Stride a été conçu, à qui il s'adresse, comment humains et agents IA travaillent sur un même tableau, et comment participer au projet."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "How work moves through a Stride board from Backlog to Done: getting ready, claiming tasks, running hooks and deciding what needs review."
+msgstr "Comment le travail avance sur un tableau Stride de l'Arriéré à Terminé : préparation, réservation des tâches, exécution des hooks et choix des revues."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Meet the people and the AI collaborator behind Stride, why they built it, and how they can help your team build what comes next."
+msgstr "Découvrez les personnes et le collaborateur IA derrière Stride, pourquoi ils l'ont créé et comment ils peuvent aider votre équipe à bâtir la suite."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Plan, claim and ship work on one kanban board shared by your team and its AI agents, with workflow hooks, review gates and a full REST API."
+msgstr "Planifiez, réservez et livrez le travail sur un tableau kanban partagé par votre équipe et ses agents IA, avec hooks, revues et une API REST complète."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Release notes for Stride: the new features, improvements and fixes in each release, with the newest release listed first."
+msgstr "Notes de version de Stride : les nouvelles fonctionnalités, améliorations et corrections de chaque version, la plus récente en premier."
+
+#: lib/kanban_web/live/resources_live/seo.ex
+#, elixir-autogen, elixir-format
+msgid "Step-by-step guides for Stride: set up boards, write tasks agents can finish, review their work, connect integrations and run an organization."
+msgstr "Guides pas à pas pour Stride : tableaux, tâches que les agents peuvent finir, revue de leur travail, intégrations et gestion d'une organisation."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "The terms that govern your Stride account, the content you add, the AI agents you connect, and how either side can end the agreement."
+msgstr "Les conditions qui régissent votre compte Stride, le contenu ajouté, les agents IA connectés, et comment chaque partie peut mettre fin à l'accord."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "What personal information Stride collects, how it is used and shared, how long it is kept, and the rights you have over your data."
+msgstr "Les informations personnelles que Stride collecte, leur utilisation et leur partage, leur durée de conservation et vos droits sur vos données."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "What you may and may not do with Stride and the AI agents you connect to it, and what happens when an account breaks these rules."
+msgstr "Ce que vous pouvez faire ou non avec Stride et les agents IA que vous y connectez, et ce qui arrive lorsqu'un compte enfreint ces règles."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Book a half-day session in which your team and AI agents set up a Stride board and deliver the first part of your proof of concept."
+msgstr "Réservez une demi-journée où votre équipe et des agents IA configurent un tableau Stride et livrent la première partie de votre preuve de concept."
+
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride: kanban for people and AI agents"
+msgstr "Stride : kanban pour les humains et les agents IA"

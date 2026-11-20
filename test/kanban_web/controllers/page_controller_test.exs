@@ -1910,14 +1910,11 @@ defmodule KanbanWeb.PageControllerTest do
       assert head_attr(document, ~s(meta[property="og:url"]), "content") == [canonical]
       assert head_attr(document, ~s(meta[property="og:locale"]), "content") == ["fr_FR"]
 
-      assert head_attr(document, ~s(meta[name="description"]), "content") ==
-               [
-                 Gettext.with_locale(
-                   KanbanWeb.Gettext,
-                   "fr",
-                   &KanbanWeb.SeoComponents.default_description/0
-                 )
-               ]
+      # /pricing has its own description (W2889), in the visitor's locale.
+      assert head_attr(document, ~s(meta[name="description"]), "content") == [
+               "Comparez les offres Stride pour les particuliers, les petites équipes et " <>
+                 "les grandes organisations, et ce que chacune inclut en membres, tableaux et support."
+             ]
 
       refute document |> LazyHTML.query("head") |> LazyHTML.to_html() =~ "utm_source"
     end

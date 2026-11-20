@@ -10,6 +10,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
   import KanbanWeb.ResourcesLive.Components
 
   alias KanbanWeb.ResourcesLive.HowToData
+  alias KanbanWeb.ResourcesLive.Seo
 
   @impl true
   def mount(%{"id" => id}, session, socket) do
@@ -30,11 +31,13 @@ defmodule KanbanWeb.ResourcesLive.Show do
 
     socket
     |> assign(:page_title, how_to.title)
+    |> assign(:meta_description, Seo.how_to_meta_description(how_to))
     |> assign(:how_to, how_to)
     |> assign(:prev_how_to, prev_how_to)
     |> assign(:next_how_to, next_how_to)
   end
 
+  # No meta_description: seo_head falls back to its default description.
   defp assign_how_to_not_found(socket) do
     socket
     |> assign(:page_title, gettext("Not Found"))

@@ -9,13 +9,18 @@ defmodule KanbanWeb.ResourcesLive.Index do
   import KanbanWeb.ResourcesLive.Components
 
   alias KanbanWeb.ResourcesLive.HowToData
+  alias KanbanWeb.ResourcesLive.Seo
 
   @impl true
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
     Gettext.put_locale(KanbanWeb.Gettext, locale)
 
-    {:ok, assign(socket, :page_title, gettext("Resources & How-Tos"))}
+    {:ok,
+     assign(socket,
+       page_title: gettext("Resources & How-Tos"),
+       meta_description: Seo.resources_description()
+     )}
   end
 
   @impl true
