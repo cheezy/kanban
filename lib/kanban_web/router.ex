@@ -263,6 +263,10 @@ defmodule KanbanWeb.Router do
     delete "/devices/current", DeviceController, :delete_current
     delete "/devices/:id", DeviceController, :delete
 
+    # Plan-gated (design §10): check_user only; a single-use, 60-second
+    # token for the /api/socket connect (W2765).
+    post "/socket_token", SocketTokenController, :create
+
     # Plan-gated (design §10): check_user only; the person's own settings.
     get "/notification_settings", NotificationSettingsController, :show
     put "/notification_settings", NotificationSettingsController, :update

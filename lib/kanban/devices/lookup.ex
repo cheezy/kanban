@@ -64,6 +64,23 @@ defmodule Kanban.Devices.Lookup do
       else: {:error, :expired_token}
   end
 
+  @doc "See `Kanban.Devices.fetch_signed_in_device/1`."
+  @spec fetch_signed_in_device(term()) :: {:ok, Device.t()} | {:error, :invalid_token}
+  def fetch_signed_in_device(id) when is_integer(id) do
+    query =
+      from d in Device,
+        join: u in assoc(d, :user),
+        where: d.id == ^id and is_nil(d.revoked_at) and is_nil(u.disabled_at),
+        select: {d, u}
+
+    case Repo.one(query) do
+      {device, user} -> {:ok, %{device | user: user}}
+      nil -> {:error, :invalid_token}
+    end
+  end
+
+  def fetch_signed_in_device(_id), do: {:error, :invalid_token}
+
   @doc "See `Kanban.Devices.fetch_device/2`."
   @spec fetch_device(Scope.t(), pos_integer()) :: {:ok, Device.t()} | {:error, :not_found}
   def fetch_device(%Scope{user: %User{id: user_id}}, id) when is_integer(id) do

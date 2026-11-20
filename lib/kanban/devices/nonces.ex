@@ -34,8 +34,15 @@ defmodule Kanban.Devices.Nonces do
   key itself. A row whose 24 hours ran out is taken over by the next claim, so
   the same key after expiry acts anew.
 
+  ## Socket tokens
+
+  `use_socket_token/3` records the id of a socket token the app connected
+  `/api/socket` with (§7.7), as a `:socket_token` row, so the same token can
+  never connect twice. Only a hash of the id is stored, and the row expires
+  just after the token itself would.
+
   `sweep_expired/2`, run hourly by `Kanban.Devices.NonceSweepWorker`, deletes
-  expired rows.
+  expired rows of both kinds.
   """
 
   import Ecto.Query, warn: false
@@ -48,6 +55,9 @@ defmodule Kanban.Devices.Nonces do
   alias Kanban.Tasks.Task
 
   @ttl_seconds 86_400
+  # A socket token is valid for 60 seconds (KanbanWeb.SocketToken); its used
+  # id is kept one second longer, so it outlives the token.
+  @socket_token_ttl_seconds 61
   @sweep_batch_size 1000
   @actions [:approve, :request_changes]
   @key_format ~r/\A[\x21-\x7E]{1,255}\z/
@@ -178,6 +188,49 @@ defmodule Kanban.Devices.Nonces do
 
     :ok
   end
+
+  @doc """
+  Records that `device` connected its socket with the socket token whose id
+  is `token_id`, at `now` (`KanbanWeb.SocketToken`, design §7.7). Returns
+  `:ok` the first time and `{:error, :used}` for every later use of the same
+  id by the same device.
+
+  Only a hash of the id is stored. The row expires #{@socket_token_ttl_seconds}
+  seconds after `now`, rounded up to the next whole second: at least as long
+  as the token itself is valid, so the hourly sweep never deletes the record
+  of a token that could still connect.
+
+  It is one `INSERT … ON CONFLICT DO NOTHING` on the unique index of
+  `(device_id, kind, key_hash)`, so two connects racing with one token both
+  insert and exactly one of them wins: the second waits for the first to
+  commit and then inserts nothing.
+  """
+  @spec use_socket_token(Device.t(), String.t(), DateTime.t()) :: :ok | {:error, :used}
+  def use_socket_token(%Device{id: device_id}, token_id, %DateTime{} = now)
+      when is_integer(device_id) and is_binary(token_id) do
+    row = %{
+      device_id: device_id,
+      kind: :socket_token,
+      key_hash: socket_token_hash(token_id),
+      expires_at: now |> DateTime.add(@socket_token_ttl_seconds, :second) |> ceil_second(),
+      inserted_at: DateTime.truncate(now, :second)
+    }
+
+    case Repo.insert_all(Nonce, [row],
+           on_conflict: :nothing,
+           conflict_target: [:device_id, :kind, :key_hash]
+         ) do
+      {1, _rows} -> :ok
+      {0, _rows} -> {:error, :used}
+    end
+  end
+
+  @doc """
+  The hash a socket token id is stored as by `use_socket_token/3`.
+  """
+  @spec socket_token_hash(String.t()) :: String.t()
+  def socket_token_hash(token_id) when is_binary(token_id),
+    do: DeviceToken.hash_token("socket_token:v1:" <> token_id)
 
   @doc """
   Deletes the nonces whose time ran out by `now`, `batch_size` rows per

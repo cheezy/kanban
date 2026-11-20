@@ -2216,6 +2216,85 @@
         }
       }
     },
+    "/api/me/socket_token": {
+      "post": {
+        "operationId": "createMySocketToken",
+        "summary": "Issue a single-use token to connect the live-updates socket",
+        "description": "Returns a socket token valid for 60 seconds and usable once, bound to this device. The app passes it as the `token` connect parameter of the live-updates socket at /api/socket (the websocket transport, /api/socket/websocket), never the access token itself, which the socket refuses. The socket accepts it only while the device is still signed in, records a SHA-256 hash of its id so it can never connect twice, and is closed when the device is revoked. Request a new token for every connect. Takes a device access token only. Human-readable reference: docs/api/me_socket_token.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "A new socket token, shown once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeSocketTokenResponse"
+                },
+                "example": {
+                  "data": {
+                    "token": "SFMyNTY.EXAMPLE0socket0token0for0documentation0only",
+                    "expires_at": "2026-11-20T09:31:00Z",
+                    "expires_in": 60
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/me/notification_settings": {
       "get": {
         "operationId": "getMyNotificationSettings",
@@ -11320,6 +11399,45 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "MeSocketTokenResponse": {
+        "type": "object",
+        "description": "POST /api/me/socket_token.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeSocketToken"
+          }
+        }
+      },
+      "MeSocketToken": {
+        "type": "object",
+        "description": "A single-use socket token for /api/socket, bound to the device that asked for it.",
+        "required": [
+          "token",
+          "expires_at",
+          "expires_in"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Pass as the token connect parameter of /api/socket. Valid once, for 60 seconds."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the token stops connecting, 60 seconds after issue, in UTC."
+          },
+          "expires_in": {
+            "type": "integer",
+            "enum": [
+              60
+            ],
+            "description": "Seconds the token is valid after issue."
           }
         }
       }

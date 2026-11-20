@@ -136,8 +136,13 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
     |> resp(:unauthorized, Jason.encode!(%{error: "Invalid access token"}))
   end
 
-  # The scope KanbanWeb.UserAuth builds for the web, membership included.
-  defp scope_for(user) do
+  @doc """
+  The scope a device's `user` acts with: the one `KanbanWeb.UserAuth` builds
+  for the web, Organization membership included. `KanbanWeb.UserSocket`
+  assigns the same scope.
+  """
+  @spec scope_for(Kanban.Accounts.User.t()) :: Scope.t()
+  def scope_for(user) do
     user
     |> Scope.for_user()
     |> Scope.put_organization_membership(Organizations.get_membership(user))

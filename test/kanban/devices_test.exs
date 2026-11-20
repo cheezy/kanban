@@ -166,6 +166,36 @@ defmodule Kanban.DevicesTest do
     end
   end
 
+  describe "fetch_signed_in_device/1 and device_topic/1" do
+    test "returns a live device of an active user, with its user", %{scope: scope} do
+      device = device_fixture(scope, %{}, @t0)
+
+      assert {:ok, fetched} = Devices.fetch_signed_in_device(device.id)
+      assert fetched.id == device.id
+      assert fetched.user.id == scope.user.id
+    end
+
+    test "refuses a revoked device, a disabled user and an unknown id", %{scope: scope} do
+      revoked = device_fixture(scope, %{}, @t0)
+      {:ok, _revoked} = Devices.revoke_device(scope, revoked, at(5))
+      assert Devices.fetch_signed_in_device(revoked.id) == {:error, :invalid_token}
+
+      other = user_scope_fixture()
+      disabled = device_fixture(other, %{}, @t0)
+      disable(other.user)
+      assert Devices.fetch_signed_in_device(disabled.id) == {:error, :invalid_token}
+
+      assert Devices.fetch_signed_in_device(-1) == {:error, :invalid_token}
+      assert Devices.fetch_signed_in_device("1") == {:error, :invalid_token}
+      assert Devices.fetch_signed_in_device(nil) == {:error, :invalid_token}
+    end
+
+    test "device_topic/1 is the topic a revocation is broadcast on" do
+      assert Devices.device_topic(42) == "device:42"
+      assert Devices.device_topic(42) == Revocation.topic(42)
+    end
+  end
+
   describe "touch_last_seen/2" do
     test "sets last_seen_at, truncated to the second", %{scope: scope} do
       device = device_fixture(scope, %{}, @t0)

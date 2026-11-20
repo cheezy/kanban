@@ -180,6 +180,46 @@ defmodule Kanban.Devices.NoncesTest do
     end
   end
 
+  describe "use_socket_token/3" do
+    @token_id "Zm9yLXRlc3RzLW9ubHktMTI4"
+
+    test "a socket token id records once and refuses a second use", ctx do
+      assert Nonces.use_socket_token(ctx.phone, @token_id, @now) == :ok
+      assert Nonces.use_socket_token(ctx.phone, @token_id, @now) == {:error, :used}
+
+      # Later, while the row is still kept, the id is still refused.
+      later = DateTime.add(@now, 60, :second)
+      assert Nonces.use_socket_token(ctx.phone, @token_id, later) == {:error, :used}
+
+      # The same id from another device is another row.
+      assert Nonces.use_socket_token(ctx.tablet, @token_id, @now) == :ok
+
+      row = Repo.get_by!(Nonce, device_id: ctx.phone.id, kind: :socket_token)
+      assert row.key_hash == DeviceToken.hash_token("socket_token:v1:" <> @token_id)
+      assert row.key_hash == Nonces.socket_token_hash(@token_id)
+      refute row.key_hash == @token_id
+      assert row.expires_at == ~U[2026-11-19 12:01:01Z]
+      assert row.inserted_at == @now
+      assert row.response_status == nil
+    end
+
+    test "keeps the row at least 60 seconds after a fractional now", ctx do
+      now = ~U[2026-11-19 12:00:00.400000Z]
+      assert Nonces.use_socket_token(ctx.phone, @token_id, now) == :ok
+
+      row = Repo.get_by!(Nonce, device_id: ctx.phone.id, kind: :socket_token)
+      assert row.expires_at == ~U[2026-11-19 12:01:02Z]
+    end
+
+    test "the sweep removes it once it expired", ctx do
+      assert Nonces.use_socket_token(ctx.phone, @token_id, @now) == :ok
+
+      assert @now |> DateTime.add(60, :second) |> Nonces.sweep_expired() == 0
+      assert @now |> DateTime.add(61, :second) |> Nonces.sweep_expired() == 1
+      assert nonce_ids() == []
+    end
+  end
+
   describe "valid_key?/1" do
     test "accepts 1 to 255 visible ASCII characters only" do
       assert Nonces.valid_key?(@key)

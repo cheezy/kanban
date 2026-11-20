@@ -22,6 +22,11 @@ defmodule KanbanWeb.Endpoint do
     websocket: [connect_info: [session: @session_options, user_agent: true, peer_data: true]],
     longpoll: [connect_info: [session: @session_options, user_agent: true, peer_data: true]]
 
+  # The Stride app's live-updates socket (W2765, design §7.7). It connects
+  # with a single-use socket token from POST /api/me/socket_token, never
+  # with the browser session, so it takes no session connect_info.
+  socket "/api/socket", KanbanWeb.UserSocket, websocket: true, longpoll: false
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # When code reloading is disabled (e.g., in production),

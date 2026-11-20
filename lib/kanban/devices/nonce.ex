@@ -6,12 +6,15 @@ defmodule Kanban.Devices.Nonce do
   An `:idempotency` row is the first successful result of an app review
   decision sent with an `Idempotency-Key` header: the HTTP status and the
   JSON body the device was sent, kept until `expires_at` (24 hours) so a
-  retried request with the same key gets the same answer. `:socket_token` is
-  reserved for the app's socket tokens.
+  retried request with the same key gets the same answer. A `:socket_token`
+  row is the id of a socket token the app connected `/api/socket` with, kept
+  until just after the token expires so it can never connect twice; it has
+  no response.
 
   Only `key_hash` is stored: a SHA-256 hash of the key together with the
-  action and the task it was sent for (`Kanban.Devices.Nonces`), so a key is
-  never compared, logged or stored in plain text. Rows are unique on
+  action and the task it was sent for, or of the socket token id
+  (`Kanban.Devices.Nonces`), so a key is never compared, logged or stored in
+  plain text. Rows are unique on
   `(device_id, kind, key_hash)` and are written only through
   `Kanban.Devices.Nonces`, so the schema has no changeset.
   """

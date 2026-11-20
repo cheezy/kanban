@@ -12,7 +12,8 @@ defmodule Kanban.Devices do
       pair (`create_device/3`, `issue_tokens/2`);
     * `Kanban.Devices.Lookup` reads devices: the one an access token
       belongs to and a person's own (`fetch_by_access_token/2`,
-      `authenticate_access_token/2`, `fetch_device/2`, `list_devices/1`, `list_devices_for/2`);
+      `authenticate_access_token/2`, `fetch_signed_in_device/1`, `fetch_device/2`,
+      `list_devices/1`, `list_devices_for/2`);
     * `Kanban.Devices.RefreshTokens` rotates a refresh token and signs a
       device out with one (`rotate_refresh_token/3`,
       `revoke_by_refresh_token/3`);
@@ -137,6 +138,22 @@ defmodule Kanban.Devices do
   @spec authenticate_access_token(term(), DateTime.t()) ::
           {:ok, Device.t()} | {:error, :expired_token | :invalid_token}
   defdelegate authenticate_access_token(token, now \\ DateTime.utc_now()), to: Lookup
+
+  @doc """
+  The device with id `id`, with its user preloaded, while it is still signed
+  in: not revoked, and its user not disabled. Every other case, an unknown id
+  included, is `{:error, :invalid_token}`. `KanbanWeb.UserSocket` reads the
+  device a socket token names with it.
+  """
+  @spec fetch_signed_in_device(term()) :: {:ok, Device.t()} | {:error, :invalid_token}
+  defdelegate fetch_signed_in_device(id), to: Lookup
+
+  @doc """
+  The PubSub topic a device's revocation is broadcast on, `"device:<id>"`:
+  a socket whose `id/1` is this topic is closed when the device is revoked.
+  """
+  @spec device_topic(pos_integer()) :: String.t()
+  defdelegate device_topic(device_id), to: Revocation, as: :topic
 
   @doc """
   Records that the device used the person API at `now`. Safe under
