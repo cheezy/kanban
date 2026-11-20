@@ -37,6 +37,17 @@ defmodule KanbanWeb.Router do
     plug KanbanWeb.Plugs.Timezone
   end
 
+  # Marks a response noindex (W2890): the robots meta tag through the
+  # :noindex assign seo_head reads, and an X-Robots-Tag header for crawlers
+  # that never parse the HTML and for bodiless redirects. Piped second, right
+  # after :browser, so a later plug that halts (the log-in redirect, the
+  # OAuth refusal) still carries it. Never added to :browser itself: public
+  # pages stay indexable because noindex is opt-in. A request to crawlers,
+  # not access control.
+  pipeline :put_noindex do
+    plug KanbanWeb.Plugs.PutNoindex
+  end
+
   # Pins the response format to json for every /api route (D351). It must be
   # its own pipeline, piped through BEFORE :api / :api_public, rather than a
   # plug inside them: when `plug :accepts, ["json"]` rejects an unsupported
@@ -412,6 +423,7 @@ defmodule KanbanWeb.Router do
   scope "/admin" do
     pipe_through [
       :browser,
+      :put_noindex,
       :require_authenticated_user,
       :require_admin_user,
       :enforce_organization_two_factor
@@ -437,6 +449,7 @@ defmodule KanbanWeb.Router do
   scope "/admin", KanbanWeb.Admin do
     pipe_through [
       :browser,
+      :put_noindex,
       :require_authenticated_user,
       :require_admin_user,
       :enforce_organization_two_factor
@@ -450,7 +463,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.UserAuth, :require_admin},
         {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :enforce},
         {KanbanWeb.NotificationsOnMount, :default},
-        {KanbanWeb.TwoFactorReminderOnMount, :default}
+        {KanbanWeb.TwoFactorReminderOnMount, :default},
+        {KanbanWeb.SeoOnMount, :noindex}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/messages", MessageLive.Index, :index
@@ -478,7 +492,7 @@ defmodule KanbanWeb.Router do
   # settings page to enroll, so enforcing it here would loop. The banner hook
   # still shows them the requirement.
   scope "/", KanbanWeb do
-    pipe_through [:browser, :require_authenticated_user]
+    pipe_through [:browser, :put_noindex, :require_authenticated_user]
 
     # Account settings mutate the credentials themselves (password, email), so
     # they sit behind a re-authentication (sudo) gate rather than a plain
@@ -493,7 +507,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.UserAuth, :require_sudo_mode},
         {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :banner},
         {KanbanWeb.NotificationsOnMount, :default},
-        {KanbanWeb.TwoFactorReminderOnMount, :default}
+        {KanbanWeb.TwoFactorReminderOnMount, :default},
+        {KanbanWeb.SeoOnMount, :noindex}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/users/settings", UserLive.Settings, :edit
@@ -504,7 +519,12 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/", KanbanWeb do
-    pipe_through [:browser, :require_authenticated_user, :enforce_organization_two_factor]
+    pipe_through [
+      :browser,
+      :put_noindex,
+      :require_authenticated_user,
+      :enforce_organization_two_factor
+    ]
 
     live_session :require_authenticated_user,
       on_mount: [
@@ -514,7 +534,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.UserAuth, :require_authenticated},
         {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :enforce},
         {KanbanWeb.NotificationsOnMount, :default},
-        {KanbanWeb.TwoFactorReminderOnMount, :default}
+        {KanbanWeb.TwoFactorReminderOnMount, :default},
+        {KanbanWeb.SeoOnMount, :noindex}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/boards", BoardLive.Index, :index
@@ -630,6 +651,7 @@ defmodule KanbanWeb.Router do
   scope "/", KanbanWeb do
     pipe_through [
       :browser,
+      :put_noindex,
       :oauth_authorize,
       :require_authenticated_user,
       :enforce_organization_two_factor
@@ -644,6 +666,7 @@ defmodule KanbanWeb.Router do
   scope "/org", KanbanWeb do
     pipe_through [
       :browser,
+      :put_noindex,
       :require_authenticated_user,
       :require_org_admin_user,
       :enforce_organization_two_factor
@@ -665,16 +688,28 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :mount_current_scope}
       ] do
+      # Log-in and register stay indexable: people search for them.
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
-      live "/users/two-factor", UserLive.TwoFactor, :new
-      live "/users/confirm/:token", UserLive.Confirmation, :new
-      live "/users/forgot-password", UserLive.ForgotPassword, :new
-      live "/users/reset-password/:token", UserLive.ResetPassword, :edit
-      live "/users/confirmation-pending", UserLive.ConfirmationPending, :new
-      # Works with or without a signed-in user: an invitee may not have an
-      # account yet (W2219).
-      live "/invitations/:token", WorkspaceLive.InvitationAccept, :show
+
+      # Token and account pages are noindex (W2890): a token URL in a search
+      # result leaks the token. Each LiveView declares
+      # `on_mount {KanbanWeb.SeoOnMount, :noindex}` itself, so they stay in
+      # this live_session and live navigation from log-in keeps working; this
+      # nested scope adds the X-Robots-Tag header. It is not an auth pipeline,
+      # so the session's routes still share one authentication rule.
+      scope "/" do
+        pipe_through :put_noindex
+
+        live "/users/two-factor", UserLive.TwoFactor, :new
+        live "/users/confirm/:token", UserLive.Confirmation, :new
+        live "/users/forgot-password", UserLive.ForgotPassword, :new
+        live "/users/reset-password/:token", UserLive.ResetPassword, :edit
+        live "/users/confirmation-pending", UserLive.ConfirmationPending, :new
+        # Works with or without a signed-in user: an invitee may not have an
+        # account yet (W2219).
+        live "/invitations/:token", WorkspaceLive.InvitationAccept, :show
+      end
     end
 
     live_session :public,
@@ -707,8 +742,14 @@ defmodule KanbanWeb.Router do
     delete "/users/log-out", UserSessionController, :delete
     # Single sign-on (W2245). Public because the person is not signed in yet;
     # both GET routes are rate limited per IP inside the controller, and the
-    # callback accepts only the flow it finds in this browser's session.
-    get "/users/sso/start", SSOController, :start
-    get "/users/sso/callback", SSOController, :callback
+    # callback accepts only the flow it finds in this browser's session. Their
+    # redirects carry X-Robots-Tag (W2890): the callback URL carries the
+    # identity provider's code and state.
+    scope "/" do
+      pipe_through :put_noindex
+
+      get "/users/sso/start", SSOController, :start
+      get "/users/sso/callback", SSOController, :callback
+    end
   end
 end

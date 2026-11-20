@@ -18,6 +18,10 @@ defmodule KanbanWeb.NotificationUnsubscribeController do
 
   use KanbanWeb, :controller
 
+  # Every response, the bodiless one-click POST included, is noindex and
+  # carries X-Robots-Tag (W2890): the signed token is in the URL.
+  plug KanbanWeb.Plugs.PutNoindex
+
   alias Kanban.Notifications
   alias KanbanWeb.NotificationLabels
   alias KanbanWeb.UnsubscribeToken

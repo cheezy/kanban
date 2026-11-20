@@ -1,6 +1,9 @@
 defmodule KanbanWeb.UserLive.ResetPassword do
   use KanbanWeb, :live_view
 
+  # A token or account page: never in search results (W2890).
+  on_mount {KanbanWeb.SeoOnMount, :noindex}
+
   import KanbanWeb.AuthFrame
   import KanbanWeb.FormHelpers
 

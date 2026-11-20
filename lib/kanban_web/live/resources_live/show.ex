@@ -38,9 +38,12 @@ defmodule KanbanWeb.ResourcesLive.Show do
   end
 
   # No meta_description: seo_head falls back to its default description.
+  # noindex (W2890): an unknown guide id renders a 200 "Not Found" page, which
+  # must not be indexed as a page of its own.
   defp assign_how_to_not_found(socket) do
     socket
     |> assign(:page_title, gettext("Not Found"))
+    |> assign(:noindex, true)
     |> assign(:how_to, nil)
     |> assign(:prev_how_to, nil)
     |> assign(:next_how_to, nil)

@@ -21,6 +21,9 @@ defmodule KanbanWeb.WorkspaceLive.InvitationAccept do
   """
   use KanbanWeb, :live_view
 
+  # A token or account page: never in search results (W2890).
+  on_mount {KanbanWeb.SeoOnMount, :noindex}
+
   import KanbanWeb.AuthFrame
 
   alias Kanban.Workspaces.Invitations

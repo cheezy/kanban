@@ -19,7 +19,7 @@ defmodule KanbanWeb.ResourcesLive.IndexTest do
 
     test "a resources page rendered through the app_chrome root layout carries the same tags",
          %{conn: conn} do
-      for path <- ["/resources", "/resources/getting-started"] do
+      for path <- ["/resources", "/resources/creating-your-first-board"] do
         document = conn |> get(path) |> html_response(200) |> LazyHTML.from_document()
         canonical = KanbanWeb.Endpoint.url() <> path
 
