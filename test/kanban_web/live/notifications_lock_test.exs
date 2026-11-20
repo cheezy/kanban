@@ -20,6 +20,7 @@ defmodule KanbanWeb.NotificationsLockTest do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards.Board
+  alias Kanban.FeatureFlags
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.Preference
@@ -294,6 +295,7 @@ defmodule KanbanWeb.NotificationsLockTest do
 
     test "a settings page opened before enforcement locks on an unchanged quiet hours save",
          %{conn: conn, user: user} do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
       {:ok, view, _html} = live(conn, ~p"/users/notifications")
       enforce_plans()
 
@@ -315,6 +317,7 @@ defmodule KanbanWeb.NotificationsLockTest do
 
     test "a settings page opened before enforcement locks on its next push save",
          %{conn: conn, user: user} do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
       {:ok, view, _html} = live(conn, ~p"/users/notifications")
       assert has_element?(view, "#push-review_requested")
       enforce_plans()

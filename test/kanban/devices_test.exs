@@ -1605,6 +1605,57 @@ defmodule Kanban.DevicesTest do
       refute Devices.show_devices?(scope)
     end
   end
+
+  describe "push_device?/1 and show_push?/1 (W2911)" do
+    test "push_device?/1 is true only for an unrevoked device with a push token", %{scope: scope} do
+      refute Devices.push_device?(scope)
+
+      device_fixture(scope)
+      refute Devices.push_device?(scope)
+
+      device = device_fixture(scope, %{push_token: "w2911-lookup-tok"})
+      assert Devices.push_device?(scope)
+
+      # Revoking clears the token, and a revoked device is no device.
+      {:ok, _} = Devices.revoke_device(scope, device)
+      refute Devices.push_device?(scope)
+    end
+
+    test "push_device?/1 does not see another person's push device", %{scope: scope} do
+      other = user_scope_fixture()
+      device_fixture(other, %{push_token: "w2911-other-tok"})
+
+      refute Devices.push_device?(scope)
+      assert Devices.push_device?(other)
+    end
+
+    test "push_device?/1 agrees with the push workers' reachability rule", %{scope: scope} do
+      device_fixture(scope, %{push_token: "w2911-rule-tok"})
+
+      reachable? =
+        [scope.user.id]
+        |> Kanban.Devices.PushTokens.user_ids_with_device()
+        |> MapSet.member?(scope.user.id)
+
+      assert Devices.push_device?(scope) == reachable?
+    end
+
+    test "show_push?/1 follows the flag or a push device", %{scope: scope} do
+      refute Devices.show_push?(scope)
+
+      # a device without a push token is not enough
+      device_fixture(scope)
+      refute Devices.show_push?(scope)
+
+      :ok = Kanban.FeatureFlags.enable_for_user(:mobile_app_preview, scope.user)
+      assert Devices.show_push?(scope)
+      :ok = Kanban.FeatureFlags.disable_for_user(:mobile_app_preview, scope.user)
+      refute Devices.show_push?(scope)
+
+      device_fixture(scope, %{push_token: "w2911-show-tok"})
+      assert Devices.show_push?(scope)
+    end
+  end
 end
 
 defmodule Kanban.DevicesRotationAtomicityTest do

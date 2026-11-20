@@ -9,7 +9,9 @@ defmodule Kanban.Devices.Lookup do
   `Kanban.Devices.list_devices/1` and `Kanban.Devices.list_devices_for/2`;
   and whether anyone has a device at all, for showing the device lists only
   when they can matter (`Kanban.Devices.show_devices?/1`,
-  `Kanban.Devices.users_with_active_devices/2`).
+  `Kanban.Devices.users_with_active_devices/2`); and whether a person has a
+  device a push can reach, for showing the push settings only when they can
+  matter (`Kanban.Devices.push_device?/1`, `Kanban.Devices.show_push?/1`).
   """
 
   import Ecto.Query, warn: false
@@ -18,6 +20,7 @@ defmodule Kanban.Devices.Lookup do
   alias Kanban.Accounts.User
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Devices.PushTokens
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
 
@@ -116,6 +119,16 @@ defmodule Kanban.Devices.Lookup do
   def has_active_device?(%Scope{user: %User{id: user_id}}) do
     from(d in Device, where: d.user_id == ^user_id and is_nil(d.revoked_at))
     |> Repo.exists?()
+  end
+
+  @doc "See `Kanban.Devices.push_device?/1`."
+  @spec push_device?(Scope.t()) :: boolean()
+  def push_device?(%Scope{user: %User{id: user_id}}) do
+    # The push workers' own rule, so the page and delivery always agree on
+    # which devices a push can reach.
+    [user_id]
+    |> PushTokens.user_ids_with_device()
+    |> MapSet.member?(user_id)
   end
 
   @doc "See `Kanban.Devices.users_with_active_devices/2`."

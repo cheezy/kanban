@@ -7,6 +7,7 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
   import Kanban.OrganizationsFixtures
 
   alias Kanban.AuditLog
+  alias Kanban.FeatureFlags
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
@@ -144,6 +145,7 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
 
     test "an org admin toggles the policy and an audit row is written",
          %{conn: conn, org: org, org_admin: org_admin} do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, org_admin)
       {:ok, lv, html} = live(conn, ~p"/org/security")
 
       assert html =~ "Notification privacy"
@@ -228,6 +230,7 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
 
       other_admin = user_fixture()
       organization_member_fixture(org, other_admin, :org_admin)
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, other_admin)
       {:ok, other_lv, _html} = live(log_in_user(build_conn(), other_admin), ~p"/org/security")
 
       html =
@@ -343,6 +346,97 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
 
       assert length(AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)) ==
                length(events)
+    end
+  end
+
+  describe "when the hide-titles checkbox shows (W2911)" do
+    @hide_titles_input ~s(input[name="security_policy[hide_titles_in_notifications]"])
+
+    defp hide_titles_on!(org_admin) do
+      {:ok, _policy} =
+        SecurityPolicies.update_policy(org_admin, %{"hide_titles_in_notifications" => "true"})
+    end
+
+    test "the hide-titles checkbox is hidden for an unflagged org admin while the policy is off",
+         %{conn: conn} do
+      {:ok, lv, html} = live(conn, ~p"/org/security")
+
+      assert has_element?(lv, "#security-policy-form")
+      refute has_element?(lv, "#notification-privacy-policy")
+      # the core checkbox's hidden "false" input goes with it
+      refute has_element?(lv, @hide_titles_input)
+      refute html =~ "Notification privacy"
+    end
+
+    test "it shows for a flagged org admin, and for anyone while the policy is already on",
+         %{conn: conn, org_admin: org_admin} do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, org_admin)
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+      assert has_element?(lv, ~s(#notification-privacy-policy input[type="checkbox"]))
+      refute has_element?(lv, "#{@hide_titles_input}[checked]")
+
+      # the flag turned off while the policy is on keeps the checkbox visible
+      hide_titles_on!(org_admin)
+      :ok = FeatureFlags.disable_for_user(:mobile_app_preview, org_admin)
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+      assert has_element?(lv, ~s(#notification-privacy-policy #{@hide_titles_input}[checked]))
+    end
+
+    test "an unflagged org admin can turn an active policy off, and the checkbox then goes",
+         %{conn: conn, org: org, org_admin: org_admin} do
+      hide_titles_on!(org_admin)
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+
+      assert submit(lv, %{"hide_titles_in_notifications" => "false"}) =~ "Security policy saved."
+
+      refute SecurityPolicies.policy_for_organization(org.id).hide_titles_in_notifications
+      refute has_element?(lv, "#notification-privacy-policy")
+    end
+
+    test "a crafted hide-titles value sent while the checkbox is hidden is refused",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+      refute has_element?(lv, @hide_titles_input)
+
+      for event <- ["validate", "save"] do
+        render_hook(lv, event, %{
+          "security_policy" => %{
+            "require_two_factor" => "true",
+            "hide_titles_in_notifications" => "true"
+          }
+        })
+      end
+
+      policy = SecurityPolicies.policy_for_organization(org.id)
+      # the visible field still saved; the hidden one did not
+      assert policy.require_two_factor
+      refute policy.hide_titles_in_notifications
+      refute has_element?(lv, "#notification-privacy-policy")
+    end
+
+    test "saving the form while the checkbox is hidden leaves hide_titles_in_notifications unchanged",
+         %{conn: conn, org: org, org_admin: org_admin} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+      refute has_element?(lv, @hide_titles_input)
+
+      # The policy goes on behind the open page, which still has no checkbox
+      # and so sends no value for it.
+      hide_titles_on!(org_admin)
+
+      lv
+      |> form("#security-policy-form",
+        security_policy: %{"require_two_factor" => "true", "two_factor_grace_days" => "14"}
+      )
+      |> render_change()
+
+      html = submit(lv, %{"require_two_factor" => "true", "two_factor_grace_days" => "14"})
+      assert html =~ "Security policy saved."
+
+      policy = SecurityPolicies.policy_for_organization(org.id)
+      assert policy.require_two_factor
+      assert policy.hide_titles_in_notifications
+      assert SecurityPolicies.hide_titles?(org_admin)
+      assert has_element?(lv, "#{@hide_titles_input}[checked]")
     end
   end
 end

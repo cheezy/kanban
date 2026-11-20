@@ -3,8 +3,11 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
 
   import Ecto.Query
   import Phoenix.LiveViewTest
+  import Kanban.DevicesFixtures
   import Kanban.NotificationsFixtures
 
+  alias Kanban.Devices
+  alias Kanban.FeatureFlags
   alias Kanban.Notifications
   alias Kanban.Notifications.Preference
   alias Kanban.Notifications.PushSettings
@@ -19,6 +22,32 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
     Preference
     |> where([p], p.user_id == ^user.id)
     |> Repo.all()
+  end
+
+  defp enable_mobile_app_preview(%{user: user}) do
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
+  end
+
+  defp push_settings_row(user), do: Repo.get_by(PushSettings, user_id: user.id)
+
+  defp assert_push_hidden(view, html) do
+    refute has_element?(view, "#push-mode")
+    refute has_element?(view, "#push-quiet-hours")
+    refute html =~ "data-push-none"
+
+    for type <- NotificationPreferences.row_types() do
+      refute has_element?(view, "#push-#{type}")
+      refute has_element?(view, "#pref-#{type}-push")
+      assert has_element?(view, "#pref-#{type}-in_app")
+      assert has_element?(view, "#pref-#{type}-email")
+    end
+  end
+
+  defp assert_push_shown(view) do
+    assert has_element?(view, "#push-mode")
+    assert has_element?(view, "#push-quiet-hours")
+    assert has_element?(view, "#push-review_requested")
+    assert has_element?(view, "#pref-review_requested-push")
   end
 
   defp saved(scope, type) do
@@ -285,7 +314,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
   end
 
   describe "push" do
-    setup :register_and_log_in_user
+    setup [:register_and_log_in_user, :enable_mobile_app_preview]
 
     test "a person with no settings row sees the defaults", %{conn: conn, user: user} do
       {:ok, view, _html} = live(conn, ~p"/users/notifications")
@@ -653,6 +682,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
 
   test "the push controls let long German labels wrap", %{conn: conn} do
     user = Kanban.AccountsFixtures.user_fixture()
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
 
     conn =
       conn
@@ -678,8 +708,28 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
            )
   end
 
+  test "without push, the rows still wrap their long German labels", %{conn: conn} do
+    user = Kanban.AccountsFixtures.user_fixture()
+
+    conn =
+      conn
+      |> log_in_user(user)
+      |> Plug.Conn.put_session(:locale, "de")
+
+    {:ok, view, html} = live(conn, ~p"/users/notifications")
+
+    assert_push_hidden(view, html)
+    refute html =~ "Ruhezeiten"
+
+    for type <- NotificationPreferences.row_types() do
+      assert has_element?(view, ~s(#pref-#{type}[class*="[&_.label]:whitespace-normal"]))
+      assert has_element?(view, ~s(#pref-row-#{type}[class*="@md:flex-row"]))
+    end
+  end
+
   test "renders in German", %{conn: conn} do
     user = Kanban.AccountsFixtures.user_fixture()
+    :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
 
     conn =
       conn
@@ -707,5 +757,89 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
 
     refute html =~ "Notification preferences"
     refute html =~ "Tasks and agents"
+  end
+
+  describe "push visibility (W2911)" do
+    setup :register_and_log_in_user
+
+    test "the Push column, push mode preset and quiet hours are hidden for an unflagged user with no push device",
+         %{conn: conn} do
+      {:ok, view, html} = live(conn, ~p"/users/notifications")
+
+      assert_push_hidden(view, html)
+      assert has_element?(view, "#pref-weekly_digest-email")
+    end
+
+    test "a device with no push token, or a revoked push device, does not show them",
+         %{conn: conn, scope: scope} do
+      device_fixture(scope)
+      {:ok, _} = Devices.revoke_device(scope, device_fixture(scope, %{push_token: "w2911-tok-r"}))
+
+      {:ok, view, html} = live(conn, ~p"/users/notifications")
+
+      assert_push_hidden(view, html)
+    end
+
+    test "they show for a user with :mobile_app_preview", %{conn: conn, user: user} do
+      :ok = FeatureFlags.enable_for_user(:mobile_app_preview, user)
+
+      {:ok, view, html} = live(conn, ~p"/users/notifications")
+
+      assert_push_shown(view)
+      assert html =~ "data-push-none"
+    end
+
+    test "they show for an unflagged user with an active push device", %{conn: conn, scope: scope} do
+      device_fixture(scope, %{push_token: "w2911-tok-a"})
+
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      assert_push_shown(view)
+    end
+
+    test "save_push, save_push_mode and save_quiet_hours sent while hidden change nothing",
+         %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      for {event, params} <- [
+            {"save_push", %{"event_type" => "review_requested", "push" => "false"}},
+            {"save_push_mode", %{"mode" => "everything"}},
+            {"save_quiet_hours",
+             %{"quiet_hours_enabled" => "true", "quiet_start" => "21:00", "quiet_end" => "07:00"}}
+          ] do
+        html = render_hook(view, event, params)
+
+        refute html =~ "Notification preferences saved."
+        refute html =~ "Could not save that preference."
+        refute html =~ "Unknown notification type."
+      end
+
+      assert push_settings_row(user) == nil
+      assert rows_for(user) == []
+      assert_push_hidden(view, render(view))
+    end
+
+    test "email and in-app switches still save while push is hidden",
+         %{conn: conn, scope: scope, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      view
+      |> element("#pref-review_requested")
+      |> render_change(%{
+        "event_type" => "review_requested",
+        "in_app" => "true",
+        "email" => "false"
+      })
+
+      assert render(view) =~ "Notification preferences saved."
+      assert %{in_app: true, email: false} = saved(scope, :review_requested)
+
+      view
+      |> element("#pref-weekly_digest")
+      |> render_change(%{"email" => "false"})
+
+      assert %{email: false} = saved(scope, :weekly_digest)
+      assert push_settings_row(user) == nil
+    end
   end
 end

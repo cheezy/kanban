@@ -11,6 +11,16 @@ switches, the mode preset, and quiet hours with their time zone. It saves them
 through the same context function with `via: :web`, so a change on either side
 is what the other reads next.
 
+Until the app ships, the web page shows those push controls only when they can
+matter: while the `:mobile_app_preview` feature flag is on for the person, or
+while they have a device a push can reach (not revoked, with a push token),
+whatever the flag says, so settings already in force can still be seen and
+changed. Otherwise the Push switches, the mode preset and quiet hours are
+left out, and the server refuses their events too, writing nothing, so a
+crafted LiveView event cannot change a setting the page does not show.
+`Kanban.Devices.show_push?/1` holds the rule. This endpoint is not affected:
+the app always reads and changes all of them.
+
 | Method | Path | What it does |
 |---|---|---|
 | GET | `/api/me/notification_settings` | Reads the person's push settings |

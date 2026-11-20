@@ -19,6 +19,16 @@ defmodule KanbanWeb.OrgLive.Security do
   only as the `"true"` or `"false"` they send, so a crafted payload cannot crash the re-rendered inputs. A
   `validate` or `save` event whose `"security_policy"` param is missing or not
   a map runs the same org-admin check and changes nothing.
+
+  The hide-titles checkbox controls pushes, which reach only the Stride app,
+  so it is rendered only while `:mobile_app_preview` is on for the viewing
+  org-admin or the policy is already on, so a policy in force can always be
+  seen and turned off. When it is not rendered the form sends no
+  `hide_titles_in_notifications` value at all, `FormParams.scalar/2` copies
+  only the keys present and the changeset casts only those, so the stored
+  value is kept rather than read as false; and a value a crafted event sends
+  while it is not rendered is dropped before the cast, so the server refuses
+  the hidden control too.
   """
   use KanbanWeb, :live_view
 
@@ -30,6 +40,7 @@ defmodule KanbanWeb.OrgLive.Security do
   # to members, free users and site admins even if the route is moved.
   on_mount {KanbanWeb.UserAuth, :require_org_admin}
 
+  alias Kanban.FeatureFlags
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
   alias KanbanWeb.LocalTime
@@ -44,6 +55,10 @@ defmodule KanbanWeb.OrgLive.Security do
      socket
      |> assign(:page_title, gettext("Organization security"))
      |> assign(:organization, organization)
+     |> assign(
+       :mobile_preview?,
+       FeatureFlags.enabled?(socket.assigns.current_scope, :mobile_app_preview)
+     )
      |> assign_policy(policy)}
   end
 
@@ -52,7 +67,7 @@ defmodule KanbanWeb.OrgLive.Security do
     with_org_admin(socket, fn _actor ->
       form =
         socket.assigns.policy
-        |> SecurityPolicies.change_policy(scalar_params(params))
+        |> SecurityPolicies.change_policy(scalar_params(params, socket))
         |> Map.put(:action, :validate)
         |> to_form()
 
@@ -62,7 +77,9 @@ defmodule KanbanWeb.OrgLive.Security do
 
   def handle_event("save", %{"security_policy" => params}, socket) when is_map(params) do
     with_org_admin(socket, fn actor ->
-      actor |> SecurityPolicies.update_policy(scalar_params(params)) |> policy_saved(socket)
+      actor
+      |> SecurityPolicies.update_policy(scalar_params(params, socket))
+      |> policy_saved(socket)
     end)
   end
 
@@ -74,6 +91,13 @@ defmodule KanbanWeb.OrgLive.Security do
   end
 
   def handle_event(_event, _params, socket), do: {:noreply, socket}
+
+  # A hide-titles value is refused while its checkbox is not rendered, so only
+  # a crafted event could send one, and it cannot change the policy either way.
+  defp scalar_params(params, %{assigns: %{show_hide_titles?: false}}),
+    do: params |> Map.delete("hide_titles_in_notifications") |> scalar_params()
+
+  defp scalar_params(params, _socket), do: scalar_params(params)
 
   defp scalar_params(params),
     do: FormParams.scalar(params, ["require_two_factor", "hide_titles_in_notifications"])
@@ -91,6 +115,10 @@ defmodule KanbanWeb.OrgLive.Security do
   defp assign_policy(socket, %SecurityPolicy{} = policy) do
     socket
     |> assign(:policy, policy)
+    |> assign(
+      :show_hide_titles?,
+      socket.assigns.mobile_preview? or policy.hide_titles_in_notifications
+    )
     |> assign(:form, policy |> SecurityPolicies.change_policy() |> to_form())
   end
 

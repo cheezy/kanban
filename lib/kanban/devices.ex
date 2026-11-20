@@ -14,7 +14,8 @@ defmodule Kanban.Devices do
       belongs to and a person's own (`fetch_by_access_token/2`,
       `authenticate_access_token/2`, `fetch_signed_in_device/1`, `fetch_device/2`,
       `list_devices/1`, `list_devices_for/2`, `users_with_active_devices/2`),
-      and whether a person has one at all (`show_devices?/1`);
+      whether a person has one at all (`show_devices?/1`), and whether they
+      have one a push can reach (`push_device?/1`, `show_push?/1`);
     * `Kanban.Devices.RefreshTokens` rotates a refresh token and signs a
       device out with one (`rotate_refresh_token/3`,
       `revoke_by_refresh_token/3`);
@@ -304,6 +305,24 @@ defmodule Kanban.Devices do
   @spec show_devices?(Scope.t()) :: boolean()
   def show_devices?(%Scope{} = scope),
     do: FeatureFlags.enabled?(scope, :mobile_app_preview) or Lookup.has_active_device?(scope)
+
+  @doc """
+  Whether the scope user has at least one device a push can reach: not
+  revoked, with a push token. The same rule `Kanban.Devices.PushTokens`
+  applies when sending.
+  """
+  @spec push_device?(Scope.t()) :: boolean()
+  defdelegate push_device?(scope), to: Lookup
+
+  @doc """
+  Whether the scope user's push settings should be shown: while
+  `:mobile_app_preview` is on for them, or while they still have a device a
+  push can reach, whatever the flag says, so settings that are in force can
+  always be seen and changed.
+  """
+  @spec show_push?(Scope.t()) :: boolean()
+  def show_push?(%Scope{} = scope),
+    do: FeatureFlags.enabled?(scope, :mobile_app_preview) or push_device?(scope)
 
   @doc """
   Returns the ids among `user_ids` of the people who have at least one device

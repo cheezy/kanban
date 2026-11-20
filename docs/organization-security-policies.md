@@ -53,6 +53,15 @@ policy saved.", but the stored policy keeps its `updated_by_id` and
 when. No audit event or telemetry is recorded. An Organization with no saved
 policy gets no row from a save that keeps every default.
 
+Until the Stride app ships, the **Notification privacy** card shows only while
+the `:mobile_app_preview` feature flag is on for the org-admin viewing the page,
+or while the setting is already on, so a policy in force can always be seen and
+turned off. When the card is left out, the form sends no value for the setting
+at all, so saving the page keeps whatever is stored rather than turning it off,
+and a value a crafted request sends for it while the card is left out is
+dropped on the server, so the setting cannot change from a control the page
+does not show.
+
 The notification privacy setting is stored as `hide_titles_in_notifications`.
 Organizations that existed before it was added keep titles in their
 notifications until an org-admin turns it on.

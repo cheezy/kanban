@@ -15,7 +15,10 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   none), the mode preset, and quiet hours with the time zone they follow. They
   save through `Kanban.Notifications.update_push_settings/3` with
   `via: :web`; their components are in
-  `KanbanWeb.UserLive.PushSettingsComponents`.
+  `KanbanWeb.UserLive.PushSettingsComponents`. They show only while
+  `Kanban.Devices.show_push?/1` holds (`:mobile_app_preview` is on, or the
+  person has a device a push can reach); while they are hidden the server
+  refuses their events too, writing nothing.
 
   A locked scope (`current_scope.notifications_locked`) sees
   `KanbanWeb.NotificationsLocked.panel/1` instead of the toggles. A crafted
@@ -48,6 +51,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
     comments: [:comment_added, :mentioned]
   ]
   @row_types @groups |> Keyword.values() |> List.flatten()
+  @push_events ~w(save_push save_push_mode save_quiet_hours)
 
   # The core checkbox wraps itself in a padded, bottom-margined .fieldset,
   # which left the toggles off-centre and the row gaps uneven. Drop that
@@ -67,6 +71,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
       |> assign(:page_title, gettext("Notification preferences"))
       |> assign(:locked, socket.assigns.current_scope.notifications_locked)
       |> assign(:show_devices?, Devices.show_devices?(socket.assigns.current_scope))
+      |> assign(:show_push?, Devices.show_push?(socket.assigns.current_scope))
       |> load_preferences()
       |> load_push()
 
@@ -74,6 +79,10 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   end
 
   @impl true
+  def handle_event(event, _params, %{assigns: %{show_push?: false}} = socket)
+      when event in @push_events,
+      do: refuse_hidden_push(socket)
+
   def handle_event("save", %{"event_type" => type} = params, socket) do
     case find_row_type(type) do
       nil -> {:noreply, put_flash(socket, :error, gettext("Unknown notification type."))}
@@ -181,6 +190,16 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
     |> load_preferences()
     |> load_push()
     |> put_flash(:error, gettext("Notification settings are available to organizations."))
+  end
+
+  # The push controls were never rendered, so only a crafted event reaches
+  # here: nothing is written and nothing is said. The plan is checked first,
+  # so a locked page still locks as it would for a visible control.
+  defp refuse_hidden_push(socket) do
+    case Plans.check_user(socket.assigns.current_scope, :notifications, surface: :live_view) do
+      :ok -> {:noreply, socket}
+      {:error, {:plan_required, :notifications}} -> {:noreply, lock(socket)}
+    end
   end
 
   # Nothing differs from what the page loaded, so nothing is written (the
@@ -332,7 +351,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
 
         <NotificationsLocked.panel :if={@locked} id="notification-preferences-locked" />
 
-        <.push_mode_card :if={!@locked} push={@push} />
+        <.push_mode_card :if={!@locked and @show_push?} push={@push} />
 
         <.settings_card
           :for={{group, types} <- @groups}
@@ -384,7 +403,12 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
                   label={gettext("Email")}
                 />
               </form>
-              <.push_switch type={type} switches={@push.switches} toggle_layout={@toggle_layout} />
+              <.push_switch
+                :if={@show_push?}
+                type={type}
+                switches={@push.switches}
+                toggle_layout={@toggle_layout}
+              />
             </div>
           </div>
         </.settings_card>
@@ -413,7 +437,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
         </.settings_card>
 
         <.quiet_hours_card
-          :if={!@locked}
+          :if={!@locked and @show_push?}
           params={@quiet_params}
           errors={@quiet_errors}
           zone_options={zone_options(@push.time_zone, @timezone)}
