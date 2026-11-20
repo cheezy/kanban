@@ -1,0 +1,69 @@
+defmodule KanbanWeb.SeoController do
+  @moduledoc """
+  Serves `/robots.txt` and `/sitemap.xml` (W2891).
+
+  `robots.txt` allows crawling, disallows `/api/` and names the sitemap only
+  when both of these hold:
+
+    * the deployment is indexable: `config :kanban, KanbanWeb.SeoController,
+      indexable: true`, which `config/runtime.exs` sets from `SEO_INDEXABLE`
+      and only `fly.production.toml` turns on, and
+    * the request came to the canonical host, the host of
+      `KanbanWeb.Endpoint.url/0` (`www.stridelikeaboss.com` in production).
+
+  Everywhere else it disallows everything: the review app, whose `PHX_HOST`
+  makes it its own endpoint host but which is not indexable, the
+  `kanban-prod.fly.dev` origin, which is not the canonical host, and dev. So
+  no copy is indexed as a duplicate of the real site. The Host header is only
+  compared, never written into a response.
+
+  Both go through the router's `:seo` pipeline, which fetches no session and
+  sets no cookie. The sitemap body comes from `KanbanWeb.SeoXML`.
+  """
+  use KanbanWeb, :controller
+
+  alias KanbanWeb.Endpoint
+  alias KanbanWeb.SeoXML
+
+  # An hour: crawlers fetch these rarely, and a new page is seen the same day.
+  @cache_control "public, max-age=3600"
+
+  @disallow_all "User-agent: *\nDisallow: /\n"
+
+  @spec robots(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def robots(conn, _params) do
+    body = if indexable?(conn.host), do: canonical_robots(), else: @disallow_all
+
+    conn
+    |> put_resp_content_type("text/plain")
+    |> put_resp_header("cache-control", @cache_control)
+    |> send_resp(:ok, body)
+  end
+
+  # The body is the sitemap from `SeoXML.sitemap/0`, which escapes every value,
+  # sent as application/xml, not HTML.
+  @spec sitemap(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # sobelow_skip ["XSS.SendResp"]
+  def sitemap(conn, _params) do
+    conn
+    |> put_resp_content_type("application/xml")
+    |> put_resp_header("cache-control", @cache_control)
+    |> send_resp(:ok, SeoXML.sitemap())
+  end
+
+  defp canonical_robots do
+    "User-agent: *\nDisallow: /api/\n\nSitemap: #{Endpoint.url()}/sitemap.xml\n"
+  end
+
+  # conn.host is always a binary and never carries the port. Host names are
+  # case-insensitive, and the match is exact, so a look-alike such as
+  # `localhost.example.com` is another host.
+  defp indexable?(host) do
+    indexable_deployment?() and String.downcase(host) == String.downcase(Endpoint.host())
+  end
+
+  # Read at request time so a test can turn it off; anything but `true` is off.
+  defp indexable_deployment? do
+    :kanban |> Application.get_env(__MODULE__, []) |> Keyword.get(:indexable) == true
+  end
+end

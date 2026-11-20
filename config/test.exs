@@ -222,3 +222,7 @@ config :kanban, Kanban.AuditLog.Signing, fallback: :ephemeral
 # dropped, so telemetry can never take down a request. Forbidden keys (personal
 # data, credentials) are dropped in every environment, strict or not.
 config :kanban, Kanban.Telemetry, strict: true
+
+# The test endpoint host stands in for the real site, so robots.txt there is
+# the permissive one (W2891). Dev leaves this unset and disallows everything.
+config :kanban, KanbanWeb.SeoController, indexable: true

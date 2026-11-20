@@ -142,6 +142,23 @@ defmodule KanbanWeb.Router do
     get "/assetlinks.json", AppLinksController, :assetlinks
   end
 
+  # robots.txt and sitemap.xml (W2891) are fetched by crawlers, so like
+  # :well_known this fetches no session, sets no cookie and never redirects.
+  # robots.txt is not in KanbanWeb.static_paths/0, so Plug.Static leaves it
+  # to the router.
+  pipeline :seo do
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "default-src 'none'; frame-ancestors 'none'"
+    }
+  end
+
+  scope "/", KanbanWeb do
+    pipe_through :seo
+
+    get "/robots.txt", SeoController, :robots
+    get "/sitemap.xml", SeoController, :sitemap
+  end
+
   scope "/", KanbanWeb do
     pipe_through :browser
 

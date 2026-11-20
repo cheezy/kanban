@@ -772,6 +772,11 @@ if config_env() == :prod do
   config :kanban, KanbanWeb.Plugs.RemoteClientIp,
     trust_fly_client_ip: System.get_env("FLY_APP_NAME") != nil
 
+  # Only the real site may be crawled (W2891). fly.production.toml sets
+  # SEO_INDEXABLE; the review app does not, so its robots.txt disallows
+  # everything even though PHX_HOST makes it its own endpoint host.
+  config :kanban, KanbanWeb.SeoController, indexable: System.get_env("SEO_INDEXABLE") == "true"
+
   config :kanban, KanbanWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [

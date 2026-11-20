@@ -14,6 +14,8 @@ kill_signal = 'SIGTERM'
 
 [env]
   PHX_HOST = 'www.stridelikeaboss.com'
+  # Lets robots.txt allow crawling on this host (W2891); never set it on review.
+  SEO_INDEXABLE = 'true'
   PORT = '8080'
 
 [http_service]
