@@ -262,6 +262,7 @@ defmodule Kanban.AgentsTest do
                  :review_status,
                  :needs_review,
                  :time_spent_minutes,
+                 :board_id,
                  :column,
                  :created_by,
                  :completed_by

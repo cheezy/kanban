@@ -27,6 +27,7 @@ defmodule Kanban.Decisions.Sources do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Agents
+  alias Kanban.Agents.Idle
   alias Kanban.Columns
   alias Kanban.Decisions.ColumnCounts
   alias Kanban.Notifications
@@ -41,7 +42,6 @@ defmodule Kanban.Decisions.Sources do
   @write_access [:owner, :modify]
   @pill_sections [:acceptance_criteria, :testing_strategy, :patterns, :security_considerations]
   @notification_types [:task_unclaimed, :claim_expired]
-  @recent_agent_seconds 24 * 60 * 60
 
   @doc """
   Builds the context every source reads, for `boards`: the boards the
@@ -367,8 +367,8 @@ defmodule Kanban.Decisions.Sources do
   defp empty_ready?(_counts, _ctx), do: false
 
   defp ready_empty_items(candidates, ctx) do
-    idle = idle_agent_keys(ctx.scope)
-    cutoff = ctx.now |> DateTime.to_naive() |> NaiveDateTime.add(-@recent_agent_seconds)
+    idle = Idle.idle_keys(ctx.scope)
+    cutoff = Idle.cutoff(ctx.now)
 
     Enum.flat_map(candidates, fn {board_id, counts} ->
       ctx
@@ -377,11 +377,12 @@ defmodule Kanban.Decisions.Sources do
     end)
   end
 
-  # Agents that worked on this board since `cutoff` and are idle everywhere.
+  # Agents that worked on this board since `cutoff` and are idle everywhere
+  # (`Kanban.Agents.Idle`).
   defp idle_recent_agents(ctx, board_id, idle, cutoff) do
     [scope: ctx.scope, board_id: board_id]
     |> Agents.list_agents()
-    |> Enum.filter(&(recent?(&1.last_active_at, cutoff) and MapSet.member?(idle, agent_key(&1))))
+    |> Idle.recent_idle(idle, cutoff)
   end
 
   defp ready_empty_item([], _board_id, _counts, _ctx), do: []
@@ -409,21 +410,6 @@ defmodule Kanban.Decisions.Sources do
       }
     ]
   end
-
-  # An agent is idle now when it holds no task in Doing or Review on any
-  # board the person can see, not only on this one. Boards the person cannot
-  # see are never read, so work there does not count.
-  defp idle_agent_keys(scope) do
-    [scope: scope]
-    |> Agents.list_agents()
-    |> Enum.filter(&(&1.status == :idle))
-    |> MapSet.new(&agent_key/1)
-  end
-
-  defp agent_key(agent), do: {agent.name, agent.owner_key}
-
-  defp recent?(%NaiveDateTime{} = at, cutoff), do: NaiveDateTime.compare(at, cutoff) != :lt
-  defp recent?(_at, _cutoff), do: false
 
   # -- shared ----------------------------------------------------------------
 

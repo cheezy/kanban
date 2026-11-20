@@ -94,9 +94,9 @@ defmodule Kanban.Tasks.Positioning do
 
   @doc """
   Moves `task` into `column` at display `index` with no WIP check and no
-  broadcast. For `Kanban.Tasks.BulkActions`, which checks the WIP limit once
-  for the whole batch, runs every move inside its own transaction (this one
-  joins it) and broadcasts once after commit. Like every move, it re-reads
+  broadcast. For `Kanban.Tasks.BulkActions` and `Kanban.Tasks.Promote`, which
+  check the WIP limit once for the whole batch, run every move inside their
+  own transaction (this one joins it) and broadcast after commit. Like every move, it re-reads
   the task under the column locks, so a struct loaded before an earlier move
   in the same batch is safe to pass.
   """

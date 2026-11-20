@@ -22,6 +22,18 @@ defmodule Kanban.Tasks.ColumnRenumbering do
   alias Kanban.Tasks.Task
 
   @doc """
+  The number of live tasks in `column` (unarchived, at a non-negative
+  position): the display index that places a moved card last. A card parked
+  at a temporary negative position mid-move is not counted.
+  """
+  def live_count(%{id: column_id}) do
+    from(t in Task,
+      where: t.column_id == ^column_id and is_nil(t.archived_at) and t.position >= 0
+    )
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Places `task` at `index` among the other live cards of `column` and returns
   the position it gets. The task itself must already sit at a temporary
   negative position.

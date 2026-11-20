@@ -3393,6 +3393,493 @@
           }
         }
       }
+    },
+    "/api/me/boards": {
+      "get": {
+        "operationId": "listMyBoards",
+        "summary": "The person's boards for the app",
+        "description": "Every board the person can see, in the order /boards shows them and loaded the same way, less any board the person's plan does not unlock. Each board carries the person's access, its workspace group (workspace for a workspace of the person's Organization, personal for their personal workspace, shared otherwise, with no workspace named), its live work and defect task counts in Backlog, Ready, Doing, Review and Done (0 for a column the board does not have), and idle_agents: the agents that worked on the board in the last 24 hours and hold no task in Doing or Review on any board the person can see. Plan-gated with the mobile_app feature: the person's plan is checked. Takes a device access token only. Human-readable reference: docs/api/me_boards.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The boards.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeBoardListResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 12,
+                      "name": "Stride Development",
+                      "access": "owner",
+                      "group": "workspace",
+                      "workspace": {
+                        "id": 3,
+                        "name": "Engineering",
+                        "slug": "engineering"
+                      },
+                      "counts": {
+                        "backlog": 5,
+                        "ready": 0,
+                        "doing": 1,
+                        "review": 1,
+                        "done": 40
+                      },
+                      "idle_agents": 1
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/boards/{id}/columns/{name}": {
+      "get": {
+        "operationId": "getMyBoardColumn",
+        "summary": "One column of a board, by position",
+        "description": "The live work and defect tasks of one column, ordered by position then id, 100 per page. Goals and archived tasks are left out, as the counts leave them out. The column is named as it reads on the board, ignoring case and surrounding whitespace, and matched against the board's own columns. The checks run in this order: the person's plan (403 plan_required), the page parameter (400 Bad Request, message \"page must be an integer from 1 to 10000.\"), the board: one the person holds access to, read-only included (404), the board's plan (403 plan_required), then the column (404). Each card carries the counts of the task's acceptance criteria (non-blank lines), key files and security considerations, never their text. Takes a device access token only. Human-readable reference: docs/api/me_boards.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The board's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "description": "The column's name, for example Backlog.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The 1-based page. Default 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the column's cards.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeColumnPageResponse"
+                },
+                "example": {
+                  "data": {
+                    "board_id": 12,
+                    "column": {
+                      "id": 81,
+                      "name": "Backlog"
+                    },
+                    "tasks": [
+                      {
+                        "id": 4812,
+                        "identifier": "W2701",
+                        "title": "Add the member table",
+                        "type": "work",
+                        "priority": "high",
+                        "status": "open",
+                        "needs_review": false,
+                        "position": 0,
+                        "label": {
+                          "id": 7,
+                          "name": "frontend",
+                          "color": "blue"
+                        },
+                        "criteria_count": 3,
+                        "key_files_count": 2,
+                        "security_considerations_count": 2
+                      }
+                    ],
+                    "page": 1,
+                    "per_page": 100,
+                    "total": 1,
+                    "next_page": null
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the board's, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. The board's plan is checked only once the person is known to see the board.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to a board with this id, the id is not a positive integer in the signed 64-bit range, or the board has no column with this name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/boards/{id}/promote": {
+      "post": {
+        "operationId": "promoteMyBoardTasks",
+        "summary": "Move Backlog tasks to Ready",
+        "description": "Moves several tasks to the end of the board's Ready column in one transaction, through the move path a drag on the web uses, so positions, status, move history and the parent goal's placement are written as the web writes them. Only work and defect tasks in Backlog move; a task already in Ready is left where it is and listed in already_ready, so a retry or a second promote of the same task moves nothing. needs_review true sets needs_review on every moved task; false or absent leaves it unchanged. Nothing else about a task is written. The checks run in this order: the person's plan (403 plan_required), the board: one the person holds access to (404), write access: owner or modify (403 Forbidden), the board's plan (403 plan_required), the body (422 errors.task_ids or errors.needs_review), the board's Ready column (422 no_ready_column); then, with the board's columns locked and the tasks read FOR UPDATE: every id names a live task on this board (404, so a task from another board or one archived since it was read refuses the whole promote), every task is in Backlog or Ready (422 not_promotable), and Ready's WIP limit holds them (422 wip_limit_reached). It succeeds or fails as a whole; once it commits, each moved task is broadcast to the board as a move on the web is. Takes a device access token only. Human-readable reference: docs/api/me_boards.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The board's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MePromoteRequest"
+              },
+              "example": {
+                "task_ids": [
+                  4812,
+                  4815
+                ],
+                "needs_review": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The tasks were promoted. promoted holds the moved cards in their new order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MePromoteResponse"
+                },
+                "example": {
+                  "data": {
+                    "promoted": [
+                      {
+                        "id": 4812,
+                        "identifier": "W2701",
+                        "title": "Add the member table",
+                        "type": "work",
+                        "priority": "high",
+                        "status": "open",
+                        "needs_review": true,
+                        "position": 3,
+                        "label": {
+                          "id": 7,
+                          "name": "frontend",
+                          "color": "blue"
+                        },
+                        "criteria_count": 3,
+                        "key_files_count": 2,
+                        "security_considerations_count": 2
+                      }
+                    ],
+                    "already_ready": []
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person can only read this board (Forbidden), or the person's plan or the board's does not include the Stride app (plan_required, only while paid plans are enforced).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlanRequired"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                },
+                "examples": {
+                  "forbidden": {
+                    "summary": "Read-only access",
+                    "value": {
+                      "error": "Forbidden",
+                      "message": "This needs write access to the board."
+                    }
+                  },
+                  "planRequired": {
+                    "summary": "Outside the plan",
+                    "value": {
+                      "error": "plan_required",
+                      "feature": "mobile_app",
+                      "message": "The Stride app is available to boards in an Organization."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to a board with this id, the id is not a positive integer in the signed 64-bit range, or a task id names no live task on this board. Nothing is moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "409": {
+            "description": "A task was moved by someone else in the middle of the promote. Nothing is moved; try again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "conflict",
+                  "message": "A task was moved by someone else at the same time. Try again."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "422": {
+            "description": "The body is invalid (errors.task_ids: missing or empty, more than 100 ids, or an id that is not a positive integer; errors.needs_review: not a boolean), or the promote is refused: a task is not a work or defect task in Backlog or Ready (not_promotable, with its ids), Ready's WIP limit would be exceeded (wip_limit_reached), or the board has no Ready column (no_ready_column). Nothing is moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MePromoteRefusal"
+                    }
+                  ]
+                },
+                "examples": {
+                  "emptyTaskIds": {
+                    "summary": "No task ids",
+                    "value": {
+                      "errors": {
+                        "task_ids": [
+                          "can't be blank"
+                        ]
+                      }
+                    }
+                  },
+                  "notPromotable": {
+                    "summary": "A task not in Backlog",
+                    "value": {
+                      "error": "not_promotable",
+                      "message": "Only work and defect tasks in Backlog can be promoted to Ready.",
+                      "task_ids": [
+                        4813
+                      ]
+                    }
+                  },
+                  "wipLimitReached": {
+                    "summary": "Ready is full",
+                    "value": {
+                      "error": "wip_limit_reached",
+                      "message": "Ready has no room for these tasks under its WIP limit."
+                    }
+                  },
+                  "noReadyColumn": {
+                    "summary": "No Ready column",
+                    "value": {
+                      "error": "no_ready_column",
+                      "message": "This board has no Ready column."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5926,6 +6413,393 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/Me"
+          }
+        }
+      },
+      "MeBoardListResponse": {
+        "type": "object",
+        "description": "GET /api/me/boards.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeBoard"
+            }
+          }
+        }
+      },
+      "MeBoard": {
+        "type": "object",
+        "description": "One board of the app's board list.",
+        "required": [
+          "id",
+          "name",
+          "access",
+          "group",
+          "workspace",
+          "counts",
+          "idle_agents"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "modify",
+              "read_only"
+            ],
+            "description": "The person's access to the board."
+          },
+          "group": {
+            "type": "string",
+            "enum": [
+              "workspace",
+              "personal",
+              "shared"
+            ],
+            "description": "workspace: a workspace of the person's Organization; personal: their personal workspace; shared: anyone else's, never named."
+          },
+          "workspace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeWorkspace"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The board's workspace; null when group is shared."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MeBoardCounts"
+          },
+          "idle_agents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Agents that worked on the board in the last 24 hours and hold no task in Doing or Review on any board the person can see."
+          }
+        }
+      },
+      "MeBoardCounts": {
+        "type": "object",
+        "description": "Live work and defect tasks per column; 0 for a column the board does not have.",
+        "required": [
+          "backlog",
+          "ready",
+          "doing",
+          "review",
+          "done"
+        ],
+        "properties": {
+          "backlog": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ready": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "doing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "review": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MeColumnPageResponse": {
+        "type": "object",
+        "description": "GET /api/me/boards/{id}/columns/{name}.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeColumnPage"
+          }
+        }
+      },
+      "MeColumnPage": {
+        "type": "object",
+        "description": "One page of a column's cards, by position then id.",
+        "required": [
+          "board_id",
+          "column",
+          "tasks",
+          "page",
+          "per_page",
+          "total",
+          "next_page"
+        ],
+        "properties": {
+          "board_id": {
+            "type": "integer"
+          },
+          "column": {
+            "$ref": "#/components/schemas/MeColumnRef"
+          },
+          "tasks": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/MeTaskCard"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "per_page": {
+            "type": "integer",
+            "enum": [
+              100
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Live work and defect tasks in the column."
+          },
+          "next_page": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The next page, or null on the last one."
+          }
+        }
+      },
+      "MeColumnRef": {
+        "type": "object",
+        "description": "The column read.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "MeTaskCard": {
+        "type": "object",
+        "description": "A card of the Boards tab (design §6.9). Counts only, never the text of the criteria, files or considerations.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "type",
+          "priority",
+          "status",
+          "needs_review",
+          "position",
+          "label",
+          "criteria_count",
+          "key_files_count",
+          "security_considerations_count"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "needs_review": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeCardLabel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first label by name, ignoring case, then id; null without one."
+          },
+          "criteria_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-blank lines of acceptance_criteria."
+          },
+          "key_files_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "security_considerations_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MeCardLabel": {
+        "type": "object",
+        "description": "A card's first label.",
+        "required": [
+          "id",
+          "name",
+          "color"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "gray",
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "teal",
+              "blue",
+              "purple",
+              "pink"
+            ]
+          }
+        }
+      },
+      "MePromoteRequest": {
+        "type": "object",
+        "description": "The body of a promote. Any other key is ignored.",
+        "required": [
+          "task_ids"
+        ],
+        "properties": {
+          "task_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The tasks to move to Ready. Duplicates count once."
+          },
+          "needs_review": {
+            "type": "boolean",
+            "description": "true sets needs_review on every moved task; false or absent leaves it unchanged."
+          }
+        }
+      },
+      "MePromoteResponse": {
+        "type": "object",
+        "description": "POST /api/me/boards/{id}/promote.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MePromoteResult"
+          }
+        }
+      },
+      "MePromoteResult": {
+        "type": "object",
+        "description": "What a promote moved.",
+        "required": [
+          "promoted",
+          "already_ready"
+        ],
+        "properties": {
+          "promoted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeTaskCard"
+            },
+            "description": "The moved cards, in their new Ready order."
+          },
+          "already_ready": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Ids of tasks that were already in Ready and were left where they are."
+          }
+        }
+      },
+      "MePromoteRefusal": {
+        "type": "object",
+        "description": "A promote refused as a whole: nothing is moved.",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "not_promotable",
+              "wip_limit_reached",
+              "no_ready_column",
+              "update_failed"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "task_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "not_promotable only: the tasks that are not work or defect tasks in Backlog or Ready."
           }
         }
       },

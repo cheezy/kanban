@@ -764,4 +764,231 @@ defmodule Kanban.Tasks.PositioningTest do
       assert Repo.reload!(staying).updated_at == @old
     end
   end
+
+  describe "promote_to_ready/4 (W2759)" do
+    setup %{user: user, board: board} do
+      backlog = column_fixture(board, %{name: "Backlog", position: 1})
+      ready = column_fixture(board, %{name: "Ready", position: 2})
+      doing = column_fixture(board, %{name: "Doing", position: 3})
+
+      original = Application.get_env(:kanban, Positioning)
+      on_exit(fn -> restore_promote_env(original) end)
+
+      %{scope: user_scope_fixture(user), backlog: backlog, ready: ready, doing: doing}
+    end
+
+    defp restore_promote_env(nil), do: Application.delete_env(:kanban, Positioning)
+    defp restore_promote_env(original), do: Application.put_env(:kanban, Positioning, original)
+
+    defp column_ids_and_positions(column) do
+      Kanban.Tasks.Task
+      |> where([t], t.column_id == ^column.id and is_nil(t.archived_at))
+      |> order_by([t], asc: t.position)
+      |> select([t], {t.id, t.position})
+      |> Repo.all()
+    end
+
+    test "promotes several tasks in one transaction and rolls back on one failure", ctx do
+      [first, second, third] = for _ <- 1..3, do: task_fixture(ctx.backlog)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+
+      # One failure: a concurrent mover relocates the second task between the
+      # move's read and its locks, so its move is refused and rolls back the
+      # whole promote, the first task's move included.
+      Application.put_env(:kanban, Positioning,
+        after_column_read: fn task_id ->
+          if task_id == second.id do
+            Kanban.Tasks.Task
+            |> where([t], t.id == ^task_id)
+            |> Repo.update_all(set: [column_id: ctx.doing.id, position: 90])
+          end
+        end
+      )
+
+      assert {:error, :conflict} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [first.id, second.id],
+                 needs_review: true
+               )
+
+      for task <- [first, second] do
+        reloaded = Repo.reload!(task)
+        assert reloaded.column_id == ctx.backlog.id
+        refute reloaded.needs_review
+      end
+
+      assert column_ids_and_positions(ctx.ready) == []
+      refute_receive {Kanban.Tasks, :task_moved, _}
+
+      # Without the failure, all three move in one go, in Backlog order.
+      Application.delete_env(:kanban, Positioning)
+
+      assert {:ok, %{promoted: promoted, already_ready: []}} =
+               Kanban.Tasks.promote_to_ready(
+                 ctx.scope,
+                 ctx.board,
+                 [third.id, first.id, second.id],
+                 needs_review: true
+               )
+
+      assert Enum.map(promoted, & &1.id) == [first.id, second.id, third.id]
+      assert Enum.all?(promoted, & &1.needs_review)
+
+      assert column_ids_and_positions(ctx.ready) ==
+               [{first.id, 0}, {second.id, 1}, {third.id, 2}]
+
+      assert column_ids_and_positions(ctx.backlog) == []
+
+      for task <- [first, second, third] do
+        task_id = task.id
+        assert_receive {Kanban.Tasks, :task_moved, %{id: ^task_id}}
+      end
+    end
+
+    test "appends to Ready after its tasks and leaves needs_review alone unless asked", ctx do
+      existing = task_fixture(ctx.ready)
+      flagged = ctx.backlog |> task_fixture() |> Ecto.Changeset.change(needs_review: true)
+      flagged = Repo.update!(flagged)
+      plain = task_fixture(ctx.backlog)
+
+      assert {:ok, %{promoted: promoted}} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [flagged.id, plain.id])
+
+      assert Enum.map(promoted, &{&1.id, &1.needs_review}) ==
+               [{flagged.id, true}, {plain.id, false}]
+
+      assert column_ids_and_positions(ctx.ready) ==
+               [{existing.id, 0}, {flagged.id, 1}, {plain.id, 2}]
+    end
+
+    test "a task already in Ready is reported, not moved again", ctx do
+      task = task_fixture(ctx.backlog)
+
+      assert {:ok, %{promoted: [_moved], already_ready: []}} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [task.id])
+
+      assert {:ok, %{promoted: [], already_ready: [task_id]}} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [task.id], needs_review: true)
+
+      assert task_id == task.id
+      assert column_ids_and_positions(ctx.ready) == [{task.id, 0}]
+      refute Repo.reload!(task).needs_review
+    end
+
+    test "a foreign, archived or unknown id refuses the whole promote", ctx do
+      task = task_fixture(ctx.backlog)
+      other_board = board_fixture(ctx.user)
+      foreign = other_board |> column_fixture(%{name: "Backlog"}) |> task_fixture()
+      archived = ctx.backlog |> task_fixture() |> archive!()
+
+      for bad <- [foreign.id, archived.id, 999_999_999] do
+        assert {:error, :not_found} =
+                 Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [task.id, bad])
+      end
+
+      assert Repo.reload!(task).column_id == ctx.backlog.id
+    end
+
+    test "a goal or a task outside Backlog is not promotable", ctx do
+      task = task_fixture(ctx.backlog)
+      doing_task = task_fixture(ctx.doing)
+      goal = task_fixture(ctx.backlog, %{type: :goal})
+
+      assert {:error, {:not_promotable, ids}} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [
+                 task.id,
+                 doing_task.id,
+                 goal.id
+               ])
+
+      assert Enum.sort(ids) == Enum.sort([doing_task.id, goal.id])
+      assert Repo.reload!(task).column_id == ctx.backlog.id
+    end
+
+    test "a blocked task moves and stays blocked", ctx do
+      task = ctx.backlog |> task_fixture() |> Ecto.Changeset.change(status: :blocked)
+      task = Repo.update!(task)
+
+      assert {:ok, %{promoted: [moved]}} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [task.id])
+
+      assert moved.status == :blocked
+      assert moved.column_id == ctx.ready.id
+    end
+
+    test "Ready's WIP limit must hold every moved task", ctx do
+      ctx.ready |> Ecto.Changeset.change(wip_limit: 2) |> Repo.update!()
+      ready = Repo.reload!(ctx.ready)
+      task_fixture(ready)
+      [a, b] = for _ <- 1..2, do: task_fixture(ctx.backlog)
+
+      assert {:error, :wip_limit_reached} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [a.id, b.id])
+
+      assert {:ok, %{promoted: [_]}} = Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [a.id])
+    end
+
+    test "refuses a read-only member, an empty or oversized list, and a board without Ready",
+         ctx do
+      task = task_fixture(ctx.backlog)
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, reader, :read_only, ctx.user)
+
+      reader_scope = user_scope_fixture(reader)
+
+      assert {:error, :forbidden} =
+               Kanban.Tasks.promote_to_ready(reader_scope, ctx.board, [task.id])
+
+      assert {:error, :forbidden} = Kanban.Tasks.promote_to_ready(nil, ctx.board, [task.id])
+      assert {:error, :empty_selection} = Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, [])
+
+      assert {:error, :too_many_tasks} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, Enum.to_list(1..101))
+
+      assert {:error, :not_found} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, ["1", task.id])
+
+      assert {:error, :not_found} = Kanban.Tasks.promote_to_ready(ctx.scope, ctx.board, "1")
+
+      no_ready = board_fixture(ctx.user)
+      backlog = column_fixture(no_ready, %{name: "Backlog"})
+      other = task_fixture(backlog)
+
+      assert {:error, :no_ready_column} =
+               Kanban.Tasks.promote_to_ready(ctx.scope, no_ready, [other.id])
+
+      assert Repo.reload!(task).column_id == ctx.backlog.id
+    end
+  end
+
+  describe "list_column_page/3 (W2759)" do
+    setup %{user: user}, do: %{scope: user_scope_fixture(user)}
+
+    test "pages live work and defect tasks by position, 100 per page",
+         %{scope: scope, column: column} do
+      tasks = for _ <- 1..101, do: task_fixture(column)
+      task_fixture(column, %{type: :goal})
+      column |> task_fixture() |> archive!()
+
+      assert {:ok, page1} = Kanban.Tasks.list_column_page(scope, column)
+      assert page1.total == 101
+      assert page1.per_page == 100
+      assert page1.next_page == 2
+      assert Enum.map(page1.tasks, & &1.id) == tasks |> Enum.take(100) |> Enum.map(& &1.id)
+
+      assert {:ok, page2} = Kanban.Tasks.list_column_page(scope, column, page: 2)
+      assert Enum.map(page2.tasks, & &1.id) == [List.last(tasks).id]
+      assert page2.next_page == nil
+
+      assert {:ok, %{tasks: []}} = Kanban.Tasks.list_column_page(scope, column, page: 3)
+      assert {:ok, %{page: 1}} = Kanban.Tasks.list_column_page(scope, column, page: 0)
+    end
+
+    test "refuses a column of a board the person cannot see", %{column: column} do
+      task_fixture(column)
+      stranger = user_scope_fixture(user_fixture())
+
+      assert Kanban.Tasks.list_column_page(stranger, column) == {:error, :not_found}
+      assert Kanban.Tasks.list_column_page(nil, column) == {:error, :not_found}
+    end
+  end
 end

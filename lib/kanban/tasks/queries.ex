@@ -8,7 +8,10 @@ defmodule Kanban.Tasks.Queries do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Accounts.Scope
   alias Kanban.Attachments.TaskAttachment
+  alias Kanban.Boards
+  alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.BoardFilters
   alias Kanban.Tasks.Task
@@ -29,6 +32,61 @@ defmodule Kanban.Tasks.Queries do
     |> order_by([t], t.position)
     |> preload([:assigned_to, :labels])
     |> Repo.all()
+  end
+
+  @column_page_size 100
+
+  @doc """
+  One page of the live work and defect tasks in `column`, by position (then
+  id), for the app's column read (W2759). `page:` is 1-based (default 1);
+  pages hold #{@column_page_size} tasks. Goals and archived tasks are left
+  out, as the board's column counts leave them out. Labels are preloaded.
+
+  The scope's user must have access to the column's board
+  (`Kanban.Boards.get_user_access/2`, re-read on every call), else
+  `{:error, :not_found}`, so a column of a board the person cannot see is
+  never read.
+
+  Returns `{:ok, %{tasks: tasks, total: count, page: page, per_page: 100,
+  next_page: page + 1 | nil}}`.
+  """
+  def list_column_page(scope, column, opts \\ [])
+
+  def list_column_page(%Scope{user: %{id: user_id}}, %Column{} = column, opts) do
+    case Boards.get_user_access(column.board_id, user_id) do
+      nil -> {:error, :not_found}
+      _access -> {:ok, column_page(column, opts)}
+    end
+  end
+
+  def list_column_page(_scope, _column, _opts), do: {:error, :not_found}
+
+  defp column_page(%Column{id: column_id}, opts) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+
+    base =
+      from(t in Task,
+        where: t.column_id == ^column_id and is_nil(t.archived_at),
+        where: t.type in [:work, :defect]
+      )
+
+    total = Repo.aggregate(base, :count)
+
+    tasks =
+      base
+      |> order_by([t], asc: t.position, asc: t.id)
+      |> limit(@column_page_size)
+      |> offset(^((page - 1) * @column_page_size))
+      |> preload(:labels)
+      |> Repo.all()
+
+    %{
+      tasks: tasks,
+      total: total,
+      page: page,
+      per_page: @column_page_size,
+      next_page: if(page * @column_page_size < total, do: page + 1)
+    }
   end
 
   @doc """

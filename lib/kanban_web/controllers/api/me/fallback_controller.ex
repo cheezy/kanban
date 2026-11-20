@@ -38,6 +38,16 @@ defmodule KanbanWeb.API.Me.FallbackController do
       blank"]}}` (`ValidationError`), with the message only, never the notes
       sent; `:review_notes_invalid`, notes with a NUL byte, is `422
       {"errors": {"notes": ["contains characters that are not allowed"]}}`.
+    * the app's promote to Ready (W2759, `Kanban.Tasks.Promote`):
+      `:forbidden`, a person who can see the board but not write to it, is
+      `403 {"error": "Forbidden", "message": message}` (`Error`);
+      `:empty_selection` and `:too_many_tasks` are `422 {"errors":
+      {"task_ids": [message]}}` (`ValidationError`); `{:not_promotable, ids}`
+      is `422 {"error": "not_promotable", "message", "task_ids"}` and
+      `:wip_limit_reached`, `:no_ready_column` and `:update_failed` are `422
+      {"error": reason, "message"}` (`PromoteRefusal`); and `:conflict`, a
+      task moved by someone else in the middle of the promote, is `409
+      {"error": "conflict", "message"}` (`Error`).
     * `{:rate_limited, retry_after_ms}`, the app approval's per-device limit,
       is `429 {"error": "rate_limited", "message": message}` (`Error`) with a
       `retry-after` header in seconds.
@@ -49,6 +59,7 @@ defmodule KanbanWeb.API.Me.FallbackController do
   use KanbanWeb, :controller
 
   alias Kanban.Reviews.MobileGuard
+  alias Kanban.Tasks.Promote
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.ReviewJSON
 
@@ -61,6 +72,9 @@ defmodule KanbanWeb.API.Me.FallbackController do
     :invalid_column,
     :invalid_review_status
   ]
+
+  # The promote refusals that carry only a reason and a message.
+  @promote_refusals [:wip_limit_reached, :no_ready_column, :update_failed]
 
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
@@ -159,6 +173,49 @@ defmodule KanbanWeb.API.Me.FallbackController do
     |> json(%{errors: %{notes: ["contains characters that are not allowed"]}})
   end
 
+  def call(conn, {:error, :forbidden}) do
+    conn
+    |> put_status(:forbidden)
+    |> json(%{error: "Forbidden", message: "This needs write access to the board."})
+  end
+
+  def call(conn, {:error, :empty_selection}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: %{task_ids: ["can't be blank"]}})
+  end
+
+  def call(conn, {:error, :too_many_tasks}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: %{task_ids: ["should have at most #{Promote.max_tasks()} item(s)"]}})
+  end
+
+  def call(conn, {:error, {:not_promotable, task_ids}}) when is_list(task_ids) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{
+      error: "not_promotable",
+      message: "Only work and defect tasks in Backlog can be promoted to Ready.",
+      task_ids: task_ids
+    })
+  end
+
+  def call(conn, {:error, reason}) when reason in @promote_refusals do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: Atom.to_string(reason), message: promote_message(reason)})
+  end
+
+  def call(conn, {:error, :conflict}) do
+    conn
+    |> put_status(:conflict)
+    |> json(%{
+      error: "conflict",
+      message: "A task was moved by someone else at the same time. Try again."
+    })
+  end
+
   def call(conn, {:error, {:rate_limited, retry_after_ms}}) when is_integer(retry_after_ms) do
     conn
     |> put_resp_header("retry-after", Integer.to_string(div(retry_after_ms, 1000) + 1))
@@ -186,6 +243,13 @@ defmodule KanbanWeb.API.Me.FallbackController do
 
   defp signature_message(:reused),
     do: "The approval nonce has already been used. Request a new one."
+
+  defp promote_message(:wip_limit_reached),
+    do: "Ready has no room for these tasks under its WIP limit."
+
+  defp promote_message(:no_ready_column), do: "This board has no Ready column."
+
+  defp promote_message(:update_failed), do: "The tasks could not be promoted. Try again."
 
   defp plan_message(:mobile_app), do: "The Stride app is available to boards in an Organization."
   defp plan_message(_feature), do: "This feature is available to boards in an Organization."

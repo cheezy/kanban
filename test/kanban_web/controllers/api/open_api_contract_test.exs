@@ -28,6 +28,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias Kanban.Reviews.DiffHighlighter
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.Me.BoardJSON
   alias KanbanWeb.API.Me.DecisionJSON
   alias KanbanWeb.API.Me.DeviceJSON
   alias KanbanWeb.API.Me.FallbackController
@@ -1355,6 +1356,129 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
         assert Jason.decode!(conn.resp_body) == example["example"]
         assert example["schema"] == %{"$ref" => "#/components/schemas/PlanRequired"}
+      end
+    end
+  end
+
+  describe "schema parity with BoardJSON (W2759)" do
+    setup do
+      label = %Kanban.Labels.Label{id: 7, name: "mobile", color: :blue}
+
+      task = %Task{
+        id: 9,
+        identifier: "W1",
+        title: "T",
+        type: :work,
+        priority: :high,
+        status: :open,
+        needs_review: false,
+        position: 0,
+        labels: [label],
+        acceptance_criteria: "a\nb",
+        key_files: [],
+        security_considerations: ["s"]
+      }
+
+      entry = %{
+        board: %Kanban.Boards.Board{id: 1, name: "Board"},
+        access: :owner,
+        group: :workspace,
+        workspace: %Kanban.Workspaces.Workspace{id: 3, name: "W", slug: "w"},
+        counts: %{backlog: 1, ready: 0, doing: 0, review: 0, done: 0},
+        idle_agents: 1
+      }
+
+      page = %{tasks: [task], total: 1, page: 1, per_page: 100, next_page: nil}
+      column = %Kanban.Columns.Column{id: 81, name: "Backlog"}
+
+      %{
+        list: BoardJSON.index(%{boards: [entry]}),
+        column: BoardJSON.column(%{board_id: 1, column: column, page: page}),
+        promoted: BoardJSON.promoted(%{result: %{promoted: [task], already_ready: [5]}})
+      }
+    end
+
+    test "the board schemas list exactly the keys BoardJSON renders, and require them all",
+         %{spec: spec, list: list, column: column, promoted: promoted} do
+      board = hd(list.data)
+      card = hd(column.data.tasks)
+
+      pairs = [
+        {list, "MeBoardListResponse"},
+        {board, "MeBoard"},
+        {board.counts, "MeBoardCounts"},
+        {column, "MeColumnPageResponse"},
+        {column.data, "MeColumnPage"},
+        {column.data.column, "MeColumnRef"},
+        {card, "MeTaskCard"},
+        {card.label, "MeCardLabel"},
+        {promoted, "MePromoteResponse"},
+        {promoted.data, "MePromoteResult"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert schema_keys(spec, "MePromoteRequest") == MapSet.new(["task_ids", "needs_review"])
+      assert spec["components"]["schemas"]["MePromoteRequest"]["required"] == ["task_ids"]
+    end
+
+    test "the enums are the values the app can receive", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["MeTaskCard"]["properties"]["priority"]["enum"] == ecto_enum(:priority)
+      assert schemas["MeTaskCard"]["properties"]["status"]["enum"] == ecto_enum(:status)
+      assert schemas["MeTaskCard"]["properties"]["type"]["enum"] == ecto_enum(:type) -- ["goal"]
+
+      assert schemas["MeCardLabel"]["properties"]["color"]["enum"] ==
+               Kanban.Labels.Label |> Ecto.Enum.values(:color) |> Enum.map(&Atom.to_string/1)
+
+      assert schemas["MeBoard"]["properties"]["access"]["enum"] ==
+               ~w(owner modify read_only)
+
+      assert Kanban.Boards.BoardUser |> Ecto.Enum.values(:access) |> Enum.sort() ==
+               Enum.sort([:owner, :modify, :read_only])
+
+      assert schemas["MeBoard"]["properties"]["group"]["enum"] == ~w(workspace personal shared)
+    end
+
+    test "the refusal examples match what the person-API fallback renders", %{spec: spec} do
+      promote = get_in(spec, ["paths", "/api/me/boards/{id}/promote", "post", "responses"])
+
+      rendered = fn error ->
+        Phoenix.ConnTest.build_conn() |> FallbackController.call(error) |> Map.get(:resp_body)
+      end
+
+      examples = [
+        {["403", "forbidden"], {:error, :forbidden}},
+        {["403", "planRequired"], {:error, {:plan_required, :mobile_app}}},
+        {["422", "emptyTaskIds"], {:error, :empty_selection}},
+        {["422", "notPromotable"], {:error, {:not_promotable, [4813]}}},
+        {["422", "wipLimitReached"], {:error, :wip_limit_reached}},
+        {["422", "noReadyColumn"], {:error, :no_ready_column}}
+      ]
+
+      for {[status, name], error} <- examples do
+        example =
+          get_in(promote, [status, "content", "application/json", "examples", name, "value"])
+
+        assert error |> rendered.() |> Jason.decode!() == example, "#{status} #{name} differs"
+      end
+
+      conflict = get_in(promote, ["409", "content", "application/json", "example"])
+      assert {:error, :conflict} |> rendered.() |> Jason.decode!() == conflict
+
+      for path <- ["/api/me/boards", "/api/me/boards/{id}/columns/{name}"] do
+        example =
+          get_in(spec, ["paths", path, "get", "responses", "403", "content", "application/json"])
+
+        plan_required = {:error, {:plan_required, :mobile_app}}
+        assert plan_required |> rendered.() |> Jason.decode!() == example["example"]
       end
     end
   end

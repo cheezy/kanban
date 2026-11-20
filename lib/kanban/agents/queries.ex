@@ -48,7 +48,8 @@ defmodule Kanban.Agents.Queries do
   # and `created_by`/`completed_by` as an owner map (or nil), resolved via joins
   # in the one query rather than `Repo.preload`. The heavy JSONB/text columns
   # (changed_files, review_report, explorer_result, description, ...) are never
-  # transferred. The reshaped maps are shape-compatible with the preloaded
+  # transferred. `board_id` (the column's) lets a caller split one fetch by
+  # board, as `Kanban.Agents.Idle` does. The reshaped maps are shape-compatible with the preloaded
   # structs `fetch_target_bridged_tasks/1` still returns, so every shared helper
   # and derivation module consumes both without change.
   #
@@ -98,6 +99,7 @@ defmodule Kanban.Agents.Queries do
       needs_review: t.needs_review,
       time_spent_minutes: t.time_spent_minutes,
       column_name: c.name,
+      board_id: c.board_id,
       created_by_id: cb.id,
       created_by_name: cb.name,
       created_by_email: cb.email,

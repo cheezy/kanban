@@ -2,7 +2,8 @@ defmodule Kanban.Tasks.ColumnLocks do
   @moduledoc """
   Takes several column advisory locks at once, for every writer that needs
   more than one: `Kanban.Tasks.Positioning` (a board move),
-  `Kanban.Tasks.BulkActions` (a bulk move), `Kanban.Tasks.Creation` (a task
+  `Kanban.Tasks.BulkActions` (a bulk move), `Kanban.Tasks.Promote` (the
+  app's promote to Ready), `Kanban.Tasks.Creation` (a task
   created under a goal) and `Kanban.Tasks.LockedGoalPlacement` (a goal
   re-placement, D373). A writer that needs a single column still locks it
   directly, as `Kanban.Tasks.Positioning.get_next_position_locked/1` does.
@@ -18,6 +19,9 @@ defmodule Kanban.Tasks.ColumnLocks do
   without blocking.
   """
 
+  import Ecto.Query, only: [from: 2]
+
+  alias Kanban.Columns.Column
   alias Kanban.Repo
 
   @doc """
@@ -29,6 +33,22 @@ defmodule Kanban.Tasks.ColumnLocks do
     locked = normalize(column_ids)
     Enum.each(locked, &Repo.query!("SELECT pg_advisory_xact_lock($1)", [&1]))
     locked
+  end
+
+  @doc """
+  Takes the advisory lock of every column of the board `board_id` in one
+  ascending pass, as `lock/1` does, and returns those columns ordered by id.
+  For a writer that moves several tasks of one board in one transaction
+  (`Kanban.Tasks.BulkActions` and `Kanban.Tasks.Promote`), so it never takes
+  a lower column after a higher one, whichever columns its moves touch.
+  """
+  def lock_board_columns(board_id) do
+    columns =
+      from(c in Column, where: c.board_id == ^board_id, order_by: c.id)
+      |> Repo.all()
+
+    columns |> Enum.map(& &1.id) |> lock()
+    columns
   end
 
   @doc """

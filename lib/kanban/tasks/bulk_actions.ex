@@ -65,6 +65,7 @@ defmodule Kanban.Tasks.BulkActions do
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ColumnLocks
+  alias Kanban.Tasks.ColumnRenumbering
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -138,10 +139,10 @@ defmodule Kanban.Tasks.BulkActions do
 
   defp move_multi(board, ids, column) do
     Multi.new()
-    |> Multi.run(:columns, fn repo, _ -> lock_board_columns(repo, board) end)
+    |> Multi.run(:columns, fn _repo, _ -> lock_board_columns(board) end)
     |> Multi.run(:tasks, fn repo, _ -> fetch_tasks(repo, board, ids, false) end)
     |> Multi.run(:movable, fn _repo, %{tasks: tasks} -> check_wip(tasks, column) end)
-    |> Multi.run(:summary, fn repo, changes -> move_all(repo, changes, column) end)
+    |> Multi.run(:summary, fn _repo, changes -> move_all(changes, column) end)
   end
 
   defp assign_multi(board, ids, assignee_id),
@@ -245,15 +246,8 @@ defmodule Kanban.Tasks.BulkActions do
   # side can hold a higher column while waiting on a lower one: the batch and
   # a concurrent drag cannot deadlock on these advisory locks, whichever
   # columns the drag touches.
-  defp lock_board_columns(repo, %Board{id: board_id}) do
-    columns =
-      from(c in Column, where: c.board_id == ^board_id, order_by: c.id)
-      |> repo.all()
-
-    columns |> Enum.map(& &1.id) |> ColumnLocks.lock()
-
-    {:ok, columns}
-  end
+  defp lock_board_columns(%Board{id: board_id}),
+    do: {:ok, ColumnLocks.lock_board_columns(board_id)}
 
   defp check_wip(tasks, %Column{} = column) do
     movable = Enum.reject(tasks, &(goal?(&1) or &1.column_id == column.id))
@@ -270,13 +264,15 @@ defmodule Kanban.Tasks.BulkActions do
   defp exceeds_wip?(%Column{wip_limit: limit} = column, incoming),
     do: Positioning.wip_count(column) + incoming > limit
 
-  defp move_all(repo, %{columns: columns, tasks: tasks, movable: movable}, column) do
+  defp move_all(%{columns: columns, tasks: tasks, movable: movable}, column) do
     # An earlier move in this batch may have renumbered a task's source
     # column; move_task_unchecked re-reads the task under the column locks, so
     # the gap it leaves is closed from its current position.
     movable
     |> in_board_order(columns)
-    |> update_each(&Positioning.move_task_unchecked(&1, column, live_count(repo, column)))
+    |> update_each(
+      &Positioning.move_task_unchecked(&1, column, ColumnRenumbering.live_count(column))
+    )
     |> to_summary(tasks)
   end
 
@@ -284,13 +280,6 @@ defmodule Kanban.Tasks.BulkActions do
   defp in_board_order(tasks, columns) do
     column_order = Map.new(columns, &{&1.id, &1.position})
     Enum.sort_by(tasks, &{Map.get(column_order, &1.column_id), &1.position, &1.id})
-  end
-
-  defp live_count(repo, %Column{id: column_id}) do
-    from(t in Task,
-      where: t.column_id == ^column_id and is_nil(t.archived_at) and t.position >= 0
-    )
-    |> repo.aggregate(:count)
   end
 
   # ── Assign ─────────────────────────────────────────────────────────

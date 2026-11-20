@@ -273,6 +273,12 @@ defmodule KanbanWeb.Router do
     post "/reviews/:task_id/approval_challenge", ReviewController, :approval_challenge
     post "/reviews/:task_id/approve", ReviewController, :approve
     post "/reviews/:task_id/request_changes", ReviewController, :request_changes
+
+    # Plan-gated (design §10): check_user; the list leaves out boards outside
+    # the plan, and the column read and promote check_board for their board.
+    get "/boards", BoardController, :index
+    get "/boards/:id/columns/:name", BoardController, :column
+    post "/boards/:id/promote", BoardController, :promote
   end
 
   # API routes with token authentication

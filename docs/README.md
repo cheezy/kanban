@@ -81,6 +81,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [GET /api/me/reviews/:task_id/files/:index](api/me_review_file.md) — One changed file of a pending review: its highlighted diff, its flag and the reviewer's inline notes.
 - [Approve a review in the app](api/me_review_approval.md) — The approval challenge and the signed approve route: the check order, the signing string and the refusals.
 - [Request changes on a review in the app](api/me_review_request_changes.md) — The request changes route and the Idempotency-Key header that makes a retried review decision safe.
+- [The Boards tab: /api/me/boards](api/me_boards.md) — The person's boards with their column counts and idle agents, one column's cards, and promoting several Backlog tasks to Ready in one step.
 
 ### Multi-agent instruction files
 

@@ -22,6 +22,7 @@ defmodule Kanban.Boards do
   alias Kanban.Repo
 
   alias Kanban.Accounts.User
+  alias Kanban.Boards.AppBoards
   alias Kanban.Boards.Assignable
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardTelemetry
@@ -109,6 +110,10 @@ defmodule Kanban.Boards do
   defdelegate list_workspace_members(user, opts \\ []), to: Dashboard
   defdelegate list_board_members(board_id), to: Dashboard
   defdelegate list_assignable_board_members(board_id), to: Dashboard
+
+  ## The app's board list (see Kanban.Boards.AppBoards)
+
+  defdelegate list_boards_for_app(scope, opts \\ []), to: AppBoards, as: :list
 
   @doc "Org-admins a board's tasks may be assigned to without a row. See `Kanban.Boards.Assignable`."
   defdelegate list_derived_assignees(board_id), to: Assignable
