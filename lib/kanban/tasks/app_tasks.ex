@@ -2,7 +2,8 @@ defmodule Kanban.Tasks.AppTasks do
   @moduledoc """
   The task lookup and the quick capture of the Stride app (W2760,
   docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §6.11, §7.10), called as
-  `Kanban.Tasks.get_task_for_app/2` and `Kanban.Tasks.capture_task/3`.
+  `Kanban.Tasks.get_task_for_app/2` and `Kanban.Tasks.capture_task/3`, and
+  its goal lookup (W2761), called as `Kanban.Tasks.get_goal_for_app/2`.
 
   A task is found as the web finds its board (`Kanban.Boards.get_board/2`):
   the person must hold access to the task's board. A task that does not
@@ -57,6 +58,20 @@ defmodule Kanban.Tasks.AppTasks do
   end
 
   def get_task_for_app(_scope, _id), do: {:error, :not_found}
+
+  @doc """
+  Like `get_task_for_app/2`, for a goal: a task with `id` that is not a goal
+  is `{:error, :not_found}` too, so the app's goal routes never answer for a
+  work or defect task.
+  """
+  @spec get_goal_for_app(Scope.t() | nil, term()) ::
+          {:ok, Task.t(), Board.t()} | {:error, :not_found}
+  def get_goal_for_app(scope, id) do
+    case get_task_for_app(scope, id) do
+      {:ok, %Task{type: :goal} = goal, board} -> {:ok, goal, board}
+      _not_a_goal -> {:error, :not_found}
+    end
+  end
 
   @doc """
   Creates a task captured in the app in `board`'s Backlog.

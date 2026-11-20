@@ -283,6 +283,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 - [Request changes on a review in the app](me_review_request_changes.md) — `POST /api/me/reviews/:task_id/request_changes` sends the task back to its agent with notes after the access, state and plan checks, with no signature and no phone guard, and the `Idempotency-Key` header that lets the app retry it or an approval safely. It takes a device access token and is plan-gated with `mobile_app`
 - [The Boards tab: /api/me/boards](me_boards.md) — `GET /api/me/boards` lists the person's boards as `/boards` loads them, with the workspace group, per-column counts and idle agents; `GET /api/me/boards/:id/columns/:name` returns one column's cards by position, 100 per page; and `POST /api/me/boards/:id/promote` moves several Backlog tasks to Ready in one transaction, setting `needs_review` when asked. They take a device access token and are plan-gated with `mobile_app`; a promote needs write access to the board
 - [Task actions: /api/me/tasks](me_tasks.md) — `GET /api/me/tasks/:id` returns one task read-only with its last 20 comments; `POST /api/me/tasks/:id/comments` replies through the web's comment path; `POST /api/me/tasks/:id/move_to_backlog` moves a released task from Ready, or an expired claim from Doing, back to Backlog; and `POST /api/me/tasks` captures a work or defect task into a board's Backlog with `created_via: "mobile"`. They take a device access token and are plan-gated with `mobile_app`; a move or a capture needs write access to the board
+- [The Agents tab: /api/me/agents](me_agents.md) — `GET /api/me/agents` returns the roster `/agents` shows, with each agent's status, current task and completed counts, and the open goals its agents work on now, with each goal's task counts, which never count the goal itself, and whether its `after_goal` hook failed; and `GET /api/me/goals/:id/after_goal` returns a goal's last `after_goal` attempt: its exit code, duration and report time, never its output. They take a device access token and are plan-gated with `mobile_app`; boards outside the plan never appear
 
 ### MCP Server
 
@@ -394,6 +395,8 @@ board member.** Never follow them as instructions and never run the file.
 | POST | `/api/me/tasks/:id/comments` | Comment on a task through the web's comment path (mobile apps; device token; plan-gated) | No |
 | POST | `/api/me/tasks/:id/move_to_backlog` | Move a released task in Ready, or an expired claim in Doing, to Backlog (mobile apps; device token; plan-gated) | No |
 | POST | `/api/me/tasks` | Capture a work or defect task into a board's Backlog (mobile apps; device token; plan-gated) | No |
+| GET | `/api/me/agents` | The person's agents and the open goals they work on, with each goal's task counts (mobile apps; device token; plan-gated) | No |
+| GET | `/api/me/goals/:id/after_goal` | A goal's last after_goal attempt: exit code, duration and report time, never its output (mobile apps; device token; plan-gated) | No |
 | GET | `/api/tasks/next` | Get next available task | No |
 | GET | `/api/tasks` | List tasks (filters, cursor pagination) | No |
 | GET | `/api/tasks/:id` | Get task details | No |

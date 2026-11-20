@@ -29,6 +29,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me
+  alias KanbanWeb.API.Me.AgentJSON
   alias KanbanWeb.API.Me.BoardJSON
   alias KanbanWeb.API.Me.DecisionJSON
   alias KanbanWeb.API.Me.DeviceJSON
@@ -1619,6 +1620,114 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       for {{path, method, status, name} = where, error} <- examples do
         assert error |> rendered.() |> Jason.decode!() == example.(path, method, status, name),
+               "#{inspect(where)} differs"
+      end
+    end
+  end
+
+  describe "schema parity with AgentJSON (W2761)" do
+    setup do
+      agent = %Kanban.Agents.Agent{
+        name: "Claude",
+        owner_key: "12",
+        owner: %{id: 12, name: "Sam", email: "sam@example.test"},
+        status: :working,
+        stuck: false,
+        dormant: false,
+        last_active_at: ~N[2026-11-20 09:00:00],
+        current_task: %{identifier: "W1", title: "T"},
+        today: 1,
+        last_7d: 2
+      }
+
+      goal = %Task{
+        id: 4,
+        identifier: "G1",
+        title: "G",
+        type: :goal,
+        status: :in_progress,
+        after_goal_status: :pending,
+        after_goal_result: %{"exit_code" => 1, "output" => "o", "duration_ms" => 5}
+      }
+
+      entry = %{
+        goal: goal,
+        board_id: 1,
+        counts: %{total: 2, completed: 1, doing: 1, review: 0, blocked: 0},
+        hook_failed: true
+      }
+
+      %{
+        index: AgentJSON.index(%{overview: %{agents: [agent], goals: [entry]}}),
+        after_goal: AgentJSON.after_goal(%{goal: goal})
+      }
+    end
+
+    test "the agent schemas list exactly the keys AgentJSON renders, and require them all",
+         %{spec: spec, index: index, after_goal: after_goal} do
+      [agent] = index.data.agents
+      [goal] = index.data.goals
+
+      pairs = [
+        {index, "MeAgentsResponse"},
+        {index.data, "MeAgents"},
+        {agent, "MeAgent"},
+        {agent.owner, "MeAgentOwner"},
+        {agent.current_task, "MeAgentCurrentTask"},
+        {goal, "MeAgentGoal"},
+        {goal.counts, "MeAgentGoalCounts"},
+        {after_goal, "MeAfterGoalResponse"},
+        {after_goal.data, "MeAfterGoalAttempt"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      refute Map.has_key?(after_goal.data, :output)
+      refute Map.has_key?(agent.owner, :email)
+    end
+
+    test "the enums are the values the app can receive", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["MeAgent"]["properties"]["status"]["enum"] == ~w(working waiting idle)
+      assert schemas["MeAgentGoal"]["properties"]["status"]["enum"] == ecto_enum(:status)
+
+      assert schemas["MeAfterGoalAttempt"]["properties"]["status"]["enum"] ==
+               ecto_enum(:after_goal_status) ++ [nil]
+    end
+
+    test "the refusal examples match what the person-API fallback renders", %{spec: spec} do
+      rendered = fn error ->
+        Phoenix.ConnTest.build_conn() |> FallbackController.call(error) |> Map.get(:resp_body)
+      end
+
+      example = fn path, status ->
+        get_in(spec, [
+          "paths",
+          path,
+          "get",
+          "responses",
+          status,
+          "content",
+          "application/json",
+          "example"
+        ])
+      end
+
+      examples = [
+        {{"/api/me/agents", "403"}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/goals/{id}/after_goal", "403"}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/goals/{id}/after_goal", "404"}, {:error, :not_found}}
+      ]
+
+      for {{path, status} = where, error} <- examples do
+        assert error |> rendered.() |> Jason.decode!() == example.(path, status),
                "#{inspect(where)} differs"
       end
     end

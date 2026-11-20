@@ -66,6 +66,28 @@ defmodule Kanban.Tasks.AppTasksTest do
     end
   end
 
+  describe "get_goal_for_app/2 (W2761)" do
+    test "returns a goal with its board", ctx do
+      goal = task_fixture(ctx.cols["Backlog"], %{type: :goal})
+
+      assert {:ok, %Task{id: id, type: :goal}, board} = Tasks.get_goal_for_app(ctx.scope, goal.id)
+      assert id == goal.id
+      assert board.id == ctx.board.id
+    end
+
+    test "a work or defect task, a stranger's goal or no scope is :not_found", ctx do
+      work = task_fixture(ctx.cols["Ready"])
+      defect = task_fixture(ctx.cols["Ready"], %{type: :defect})
+      goal = task_fixture(ctx.cols["Backlog"], %{type: :goal})
+      stranger = user_scope_fixture(user_fixture())
+
+      assert Tasks.get_goal_for_app(ctx.scope, work.id) == {:error, :not_found}
+      assert Tasks.get_goal_for_app(ctx.scope, defect.id) == {:error, :not_found}
+      assert Tasks.get_goal_for_app(stranger, goal.id) == {:error, :not_found}
+      assert Tasks.get_goal_for_app(nil, goal.id) == {:error, :not_found}
+    end
+  end
+
   describe "capture_task/3" do
     test "creates the task at the end of Backlog with created_via mobile", ctx do
       task_fixture(ctx.cols["Backlog"])

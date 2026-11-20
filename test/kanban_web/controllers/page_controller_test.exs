@@ -1643,6 +1643,7 @@ defmodule KanbanWeb.PageControllerTest do
       |> Enum.map(&(&1 |> LazyHTML.text() |> String.split() |> Enum.join(" ")))
 
     for lead <- [
+          "Agents and goal hook results for the Stride app.",
           "Deleting a column now says how many tasks go with it."
         ] do
       assert lead in leads

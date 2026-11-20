@@ -21,6 +21,8 @@ defmodule Kanban.Agents do
     * `Kanban.Agents.Events` — the activity-event stream synthesis.
     * `Kanban.Agents.Detail` — the per-agent drill-down.
     * `Kanban.Agents.Metrics` — fleet-level aggregate rollups.
+    * `Kanban.Agents.AppAgents` — the app's Agents tab: the roster and the
+      open goals its agents work on.
 
   Each is re-exported through the thin wrappers below, so callers continue to
   use the `Kanban.Agents` public API unchanged.
@@ -40,6 +42,7 @@ defmodule Kanban.Agents do
 
   alias Kanban.Accounts.User
   alias Kanban.Agents.Agent
+  alias Kanban.Agents.AppAgents
   alias Kanban.Agents.Detail
   alias Kanban.Agents.Event
   alias Kanban.Agents.Events
@@ -81,6 +84,12 @@ defmodule Kanban.Agents do
   """
   @spec list_agents_from([Task.t()], String.t()) :: [Agent.t()]
   def list_agents_from(tasks, timezone \\ "Etc/UTC"), do: Roster.from_tasks(tasks, timezone)
+
+  @doc """
+  The app's Agents tab: the roster and the open goals its agents work on, for
+  the boards the plan unlocks. See `Kanban.Agents.AppAgents.overview/2`.
+  """
+  defdelegate list_agents_for_app(scope, opts \\ []), to: AppAgents, as: :overview
 
   @doc """
   Returns a chronological list of derived activity events.

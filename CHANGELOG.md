@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Agents and goal hook results for the Stride app.** The person API the Stride mobile app calls has two new read routes for its Agents tab. `GET /api/me/agents` returns the agents `/agents` shows, with each one's status, current task and completed counts, and the open goals they are working on now, with each goal's task counts, which never count the goal itself, and whether its `after_goal` hook failed. `GET /api/me/goals/:id/after_goal` returns a goal's last `after_goal` attempt: its exit code, duration and report time. It never returns the hook's output, which can hold secrets and which no web page shows. Both take a device token, need the Organization plan, and leave out boards outside it. See `docs/api/me_agents.md`.
+
 ### Fixed
 
 - **Deleting a column now says how many tasks go with it.** Deleting a column also deletes every task in it, archived ones included, but the old prompt gave no count and never mentioned the archived tasks, which the board doesn't show. A column's **Delete** now opens a confirmation that names how many open and archived tasks will be deleted with it, counted when you click it. An empty column's confirmation only asks whether to delete it.

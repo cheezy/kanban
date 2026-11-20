@@ -286,6 +286,12 @@ defmodule KanbanWeb.Router do
     post "/tasks/:id/comments", TaskController, :comment
     post "/tasks/:id/move_to_backlog", TaskController, :move_to_backlog
     post "/tasks", TaskController, :create
+
+    # Plan-gated (design §10): check_user; the roster leaves out boards
+    # outside the plan, and the after_goal read checks the goal's board
+    # (W2761).
+    get "/agents", AgentController, :index
+    get "/goals/:id/after_goal", AgentController, :after_goal
   end
 
   # API routes with token authentication

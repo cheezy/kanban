@@ -23,7 +23,8 @@ defmodule Kanban.Tasks do
   - `Tasks.BulkActions` - Board-scoped bulk move, assign, label and archive
   - `Tasks.Promote` - The app's promote of several Backlog tasks to Ready
   - `Tasks.MoveToBacklog` - The app's move of a released or expired task back to Backlog
-  - `Tasks.AppTasks` - The app's task lookup and quick capture into Backlog
+  - `Tasks.AppTasks` - The app's task and goal lookup and quick capture into Backlog
+  - `Tasks.AfterGoalAttempt` - A goal's last `after_goal` attempt, as the app reads it
   """
 
   alias Kanban.Tasks.AgentQueries
@@ -143,6 +144,7 @@ defmodule Kanban.Tasks do
   defdelegate promote_to_ready(scope, board, task_ids, opts \\ []), to: Promote, as: :promote
   defdelegate move_to_backlog(scope, board, task), to: MoveToBacklog, as: :move
   defdelegate get_task_for_app(scope, id), to: AppTasks
+  defdelegate get_goal_for_app(scope, id), to: AppTasks
   defdelegate capture_task(scope, board, attrs), to: AppTasks
 
   # ── Dependency delegations ─────────────────────────────────────────

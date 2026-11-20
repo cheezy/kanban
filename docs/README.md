@@ -83,6 +83,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [Request changes on a review in the app](api/me_review_request_changes.md) — The request changes route and the Idempotency-Key header that makes a retried review decision safe.
 - [The Boards tab: /api/me/boards](api/me_boards.md) — The person's boards with their column counts and idle agents, one column's cards, and promoting several Backlog tasks to Ready in one step.
 - [Task actions: /api/me/tasks](api/me_tasks.md) — Reading one task with its last 20 comments, replying on it, moving a released card back to Backlog, and capturing a new task into Backlog.
+- [The Agents tab: /api/me/agents](api/me_agents.md) — The person's agents with their status and current task, the open goals they work on with their task counts, and a goal's last after_goal attempt without its output.
 
 ### Multi-agent instruction files
 

@@ -4581,6 +4581,240 @@
           }
         }
       }
+    },
+    "/api/me/agents": {
+      "get": {
+        "operationId": "listMyAgents",
+        "summary": "The person's agents and the goals they work on",
+        "description": "The Agents tab. agents is the roster /agents shows by default: every agent that created or completed a task on a board the person can see, newest activity first, with its status (working with a task in Doing, waiting with one in Review, else idle), stuck (a Doing or Review task with no activity for 60 minutes), dormant (no activity for 14 days), its current Doing task and its completed counts for today and the last 7 days, taken in the device's time zone, else UTC. An agent that works on two boards is one agent. Its owner is named by id and name only. goals is the open goals that have an agent on them now: the goals of the roster's tasks in Doing or Review that are neither completed nor archived, newest first. A goal's counts are its own tasks and never the goal itself: total and completed count a live task, and an archived task only when it was completed, as the /agents goal rows do; doing, review and blocked count its live tasks. hook_failed is true when the goal still waits on after_goal and the last attempt's exit code is not 0. Boards the person's plan does not unlock are left out of both lists. Plan-gated with the mobile_app feature: the person's plan is checked. Takes a device access token only. Human-readable reference: docs/api/me_agents.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The roster and the open goals its agents work on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeAgentsResponse"
+                },
+                "example": {
+                  "data": {
+                    "agents": [
+                      {
+                        "name": "Claude Opus 4.6",
+                        "owner": {
+                          "id": 12,
+                          "name": "Sam Rivera"
+                        },
+                        "status": "working",
+                        "stuck": false,
+                        "dormant": false,
+                        "last_active_at": "2026-11-20T09:14:02Z",
+                        "current_task": {
+                          "identifier": "W2711",
+                          "title": "Add the member table"
+                        },
+                        "today": 3,
+                        "last_7d": 14
+                      },
+                      {
+                        "name": "Codex",
+                        "owner": null,
+                        "status": "idle",
+                        "stuck": false,
+                        "dormant": false,
+                        "last_active_at": "2026-11-20T07:02:40Z",
+                        "current_task": null,
+                        "today": 1,
+                        "last_7d": 5
+                      }
+                    ],
+                    "goals": [
+                      {
+                        "id": 4790,
+                        "identifier": "G88",
+                        "title": "Organization members",
+                        "status": "in_progress",
+                        "board_id": 55,
+                        "counts": {
+                          "total": 9,
+                          "completed": 4,
+                          "doing": 1,
+                          "review": 1,
+                          "blocked": 0
+                        },
+                        "hook_failed": false
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/goals/{id}/after_goal": {
+      "get": {
+        "operationId": "getMyGoalAfterGoal",
+        "summary": "A goal's last after_goal attempt",
+        "description": "The goal's last after_goal attempt, the latest one an agent reported: its exit code, its duration and when it was reported, with status (pending while the goal waits on after_goal, succeeded once it passed, null before the goal's last task completed) and failed (true when the goal still waits and the exit code is not 0, a missing one included). The hook's output is never returned: it is shown only where the web goal page shows it, and no web page does. A goal with no attempt has null exit_code, duration_ms and reported_at. Any member of the goal's board, read-only included, may read it. The checks run in this order: the person's plan (403 plan_required), the goal: a goal on a board the person holds access to (404), the board's plan (403 plan_required). Takes a device access token only. Human-readable reference: docs/api/me_agents.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The goal's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The goal's last after_goal attempt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeAfterGoalResponse"
+                },
+                "example": {
+                  "data": {
+                    "goal_id": 4790,
+                    "identifier": "G88",
+                    "status": "pending",
+                    "exit_code": 1,
+                    "duration_ms": 4000,
+                    "reported_at": "2026-11-20T09:14:02Z",
+                    "failed": true
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the board's, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. The board's plan is checked only once the person is known to see the goal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to the goal's board, no goal has this id (a work or defect task's id included), or the id is not a positive integer in the signed 64-bit range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9651,6 +9885,295 @@
           },
           "task": {
             "$ref": "#/components/schemas/MeTaskCard"
+          }
+        }
+      },
+      "MeAgentsResponse": {
+        "type": "object",
+        "description": "GET /api/me/agents.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeAgents"
+          }
+        }
+      },
+      "MeAgents": {
+        "type": "object",
+        "description": "The roster and the open goals its agents work on.",
+        "required": [
+          "agents",
+          "goals"
+        ],
+        "properties": {
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeAgent"
+            }
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeAgentGoal"
+            }
+          }
+        }
+      },
+      "MeAgent": {
+        "type": "object",
+        "description": "One agent of the roster, as /agents derives it.",
+        "required": [
+          "name",
+          "owner",
+          "status",
+          "stuck",
+          "dormant",
+          "last_active_at",
+          "current_task",
+          "today",
+          "last_7d"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeAgentOwner"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The person who runs the agent, or null when none is known."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "working",
+              "waiting",
+              "idle"
+            ],
+            "description": "working: a task in Doing; waiting: a task in Review and none in Doing; idle otherwise."
+          },
+          "stuck": {
+            "type": "boolean",
+            "description": "A task in Doing or Review with no activity for 60 minutes."
+          },
+          "dormant": {
+            "type": "boolean",
+            "description": "No activity for 14 days."
+          },
+          "last_active_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "current_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeAgentCurrentTask"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The agent's task in Doing, or null."
+          },
+          "today": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tasks completed today, in the device's time zone."
+          },
+          "last_7d": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tasks completed in the last 7 days, in the device's time zone."
+          }
+        }
+      },
+      "MeAgentOwner": {
+        "type": "object",
+        "description": "The person who runs an agent, by id and name only.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MeAgentCurrentTask": {
+        "type": "object",
+        "description": "An agent's task in Doing.",
+        "required": [
+          "identifier",
+          "title"
+        ],
+        "properties": {
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "MeAgentGoal": {
+        "type": "object",
+        "description": "An open goal that an agent works on now.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "status",
+          "board_id",
+          "counts",
+          "hook_failed"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "board_id": {
+            "type": "integer"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MeAgentGoalCounts"
+          },
+          "hook_failed": {
+            "type": "boolean",
+            "description": "The goal waits on after_goal and its last attempt's exit code is not 0."
+          }
+        }
+      },
+      "MeAgentGoalCounts": {
+        "type": "object",
+        "description": "The goal's own tasks; the goal itself is never counted. total and completed count a live task, and an archived one only when it was completed; doing, review and blocked count live tasks.",
+        "required": [
+          "total",
+          "completed",
+          "doing",
+          "review",
+          "blocked"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "doing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "review": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blocked": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MeAfterGoalResponse": {
+        "type": "object",
+        "description": "GET /api/me/goals/{id}/after_goal.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeAfterGoalAttempt"
+          }
+        }
+      },
+      "MeAfterGoalAttempt": {
+        "type": "object",
+        "description": "A goal's last after_goal attempt. It never carries the hook's output.",
+        "required": [
+          "goal_id",
+          "identifier",
+          "status",
+          "exit_code",
+          "duration_ms",
+          "reported_at",
+          "failed"
+        ],
+        "properties": {
+          "goal_id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "succeeded",
+              null
+            ],
+            "description": "pending while the goal waits on after_goal, succeeded once it passed, null before the goal's last task completed."
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reported_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "failed": {
+            "type": "boolean",
+            "description": "status is pending and the exit code is not 0, a missing one included."
           }
         }
       },
