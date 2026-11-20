@@ -307,6 +307,61 @@ defmodule Kanban.Targets.DeliveryRollupTest do
     end
   end
 
+  describe "build/2 — task counts and the time zone (W2763)" do
+    test "entries carry completed and total", %{scope: scope, doing: doing} do
+      target = delivery_target_fixture(scope.user)
+      goal = goal_on_target(doing, target)
+      other = goal_on_target(doing, target)
+
+      doing
+      |> task_fixture(%{parent_id: goal.id})
+      |> Ecto.Changeset.change(status: :completed, completed_at: ~U[2026-06-30 12:00:00Z])
+      |> Repo.update!()
+
+      task_fixture(doing, %{parent_id: goal.id})
+      task_fixture(doing, %{parent_id: other.id})
+
+      now = ~U[2026-07-01 00:00:00Z]
+      [entry] = DeliveryRollup.build(scope, now: now).targets
+      [summary] = Kanban.Targets.list_targets_with_status(scope, now)
+
+      assert {entry.completed, entry.total} == {1, 3}
+      # Passed through from the summary, so they are the boards strip's counts.
+      assert {entry.completed, entry.total} == {summary.completed, summary.total}
+    end
+
+    test "a target with no child tasks counts zero of zero", %{scope: scope, doing: doing} do
+      target = delivery_target_fixture(scope.user)
+      goal_on_target(doing, target)
+
+      [entry] = DeliveryRollup.build(scope, now: ~U[2026-07-01 00:00:00Z]).targets
+
+      assert {entry.completed, entry.total} == {0, 0}
+    end
+
+    test "a device time zone moves a target across midnight", %{scope: scope, doing: doing} do
+      # 13:00 UTC on the target date is already 01:00 the next day in Auckland
+      # (UTC+12 in July), so the same instant is the target's last day in UTC
+      # and a day past it in Auckland.
+      instant = ~U[2026-07-10 13:00:00Z]
+      target = delivery_target_fixture(scope.user, %{target_date: ~D[2026-07-10]})
+      backdate_target(target, ~N[2026-06-10 00:00:00])
+      goal = goal_on_target(doing, target)
+      task_fixture(doing, %{parent_id: goal.id})
+
+      [utc] = DeliveryRollup.build(scope, timezone: "Etc/UTC", now: instant).targets
+
+      [auckland] =
+        DeliveryRollup.build(scope,
+          timezone: "Pacific/Auckland",
+          now: DateTime.shift_zone!(instant, "Pacific/Auckland")
+        ).targets
+
+      assert utc.status == :at_risk
+      assert auckland.status == :missed
+    end
+  end
+
   describe "build/2 — agent_targets annotation" do
     test "annotates an agent with the target and goal it advances", %{scope: scope, doing: doing} do
       target = delivery_target_fixture(scope.user, %{name: "Launch"})

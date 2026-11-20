@@ -5140,6 +5140,256 @@
           }
         }
       }
+    },
+    "/api/me/targets": {
+      "get": {
+        "operationId": "listMyTargets",
+        "summary": "The targets the person can see, with status and counts",
+        "description": "Every active target the web lists, as /agents and the boards strip list them: every target with at least one member goal on a board the person can see, soonest target date first, then by id. Ownership does not limit the list; owner says whether the person owns the target, and only an owned target can be opened with GET /api/me/targets/{id}. Archived targets are left out. status, estimated_completion_date, completed and total are the web's (Kanban.Targets.DeliveryRollup.build/2, the call behind the delivery health band on /agents), derived at read time in the device's time zone (PUT /api/me/devices/current), else UTC, so the status agrees with the web's pages. status is an enum, never translated text. completed and total count the member goals' child tasks, never the goals. Plans on cross-board lists: member goals on boards outside the plan are left out of goal_count, and a target with no member goal on a board the plan unlocks is left out of the list, while a listed target's status and task counts stay the web's. The checks run in this order: the person's plan (403 plan_required). Takes a device access token only. Human-readable reference: docs/api/me_targets.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The person's targets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeTargetListResponse"
+                },
+                "example": {
+                  "data": {
+                    "targets": [
+                      {
+                        "id": 3,
+                        "name": "1.0 launch",
+                        "status": "at_risk",
+                        "target_date": "2026-12-15",
+                        "estimated_completion_date": "2026-12-19",
+                        "goal_count": 5,
+                        "completed": 6,
+                        "total": 20,
+                        "owner": true
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/targets/{id}": {
+      "get": {
+        "operationId": "getMyTarget",
+        "summary": "A target the person owns, its goals and its risk",
+        "description": "A target the person owns, as /targets/:id shows it: its row (as on GET /api/me/targets, with owner always true), one row per member goal (as on GET /api/me/goals) and risk. completed, total and the goal rows are Kanban.Targets.get_target_progress/3's; status, estimated_completion_date and the stalled goals are the target's DeliveryRollup.build/2 entry, all derived at the same instant in the device's time zone, else UTC. An owned target the rollup does not list (archived, or with no member goal the person can see) takes its status and estimate from its progress and has no stalled goals. risk is present only when status is at_risk and there is a reason to give, as the risk explanation on /agents decides it: slipped, when the estimate is past the target date, and stalled, each stalled goal with its stalled agents and their reasons (stuck, dormant). Otherwise risk is null, so a missed, on-track or complete target has none. Goal rows and stalled goals on boards outside the plan are left out, and goal_count counts the goal rows; status and task counts stay the web's. The checks run in this order: the person's plan (403 plan_required), the target: one the person owns (404 to anyone else, never 403, so it never reveals the target exists). Takes a device access token only. Human-readable reference: docs/api/me_targets.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The target's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The target, its goals and its risk.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeTargetDetailResponse"
+                },
+                "example": {
+                  "data": {
+                    "target": {
+                      "id": 3,
+                      "name": "1.0 launch",
+                      "status": "at_risk",
+                      "target_date": "2026-12-15",
+                      "estimated_completion_date": "2026-12-19",
+                      "goal_count": 1,
+                      "completed": 6,
+                      "total": 20,
+                      "owner": true
+                    },
+                    "goals": [
+                      {
+                        "id": 4790,
+                        "identifier": "G88",
+                        "title": "Ship the Stride app",
+                        "status": "in_progress",
+                        "board": {
+                          "id": 12,
+                          "name": "Mobile"
+                        },
+                        "target": {
+                          "id": 3,
+                          "name": "1.0 launch"
+                        },
+                        "counts": {
+                          "total": 9,
+                          "completed": 4,
+                          "doing": 2,
+                          "review": 1,
+                          "blocked": 0
+                        },
+                        "waiting_on_you": 1,
+                        "hook_failed": false
+                      }
+                    ],
+                    "risk": {
+                      "slipped": {
+                        "estimate": "2026-12-19",
+                        "target_date": "2026-12-15"
+                      },
+                      "stalled": [
+                        {
+                          "id": 4790,
+                          "identifier": "G88",
+                          "title": "Ship the Stride app",
+                          "agents": [
+                            {
+                              "name": "Claude",
+                              "reasons": [
+                                "stuck"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person does not own the target, no target has this id, or the id is not a positive integer in the signed 64-bit range. A target someone else owns answers 404, never 403.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10815,6 +11065,239 @@
             "type": "string",
             "format": "date-time",
             "description": "When the task entered its column: the later of its latest move row and the agent workflow's stamp for its current column (claimed_at in Doing, review_requested_at in Review, completed_at in Done), else when the task was created. An unclaim, a claim-expiry release or a changes-requested return records neither, so after one it can predate the column entry."
+          }
+        }
+      },
+      "MeTargetListResponse": {
+        "type": "object",
+        "description": "GET /api/me/targets.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeTargetList"
+          }
+        }
+      },
+      "MeTargetList": {
+        "type": "object",
+        "description": "The person's targets, soonest target date first.",
+        "required": [
+          "targets"
+        ],
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeTarget"
+            }
+          }
+        }
+      },
+      "MeTarget": {
+        "type": "object",
+        "description": "One target row on the Targets list and the Target screen header.",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "target_date",
+          "estimated_completion_date",
+          "goal_count",
+          "completed",
+          "total",
+          "owner"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "on_track",
+              "at_risk",
+              "missed",
+              "complete"
+            ],
+            "description": "The web's derived status, read in the device's time zone, else UTC. An enum, never translated text."
+          },
+          "target_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "estimated_completion_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The projected completion date, or null when there is no estimate (nothing remains, or no lead-time history)."
+          },
+          "goal_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The member goals on boards the plan unlocks."
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The member goals' completed child tasks, the web's count."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The member goals' child tasks, the web's count."
+          },
+          "owner": {
+            "type": "boolean",
+            "description": "The person owns the target, so can open it with GET /api/me/targets/{id}."
+          }
+        }
+      },
+      "MeTargetDetailResponse": {
+        "type": "object",
+        "description": "GET /api/me/targets/{id}.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeTargetDetail"
+          }
+        }
+      },
+      "MeTargetDetail": {
+        "type": "object",
+        "description": "A target the person owns, its goal rows and its risk.",
+        "required": [
+          "target",
+          "goals",
+          "risk"
+        ],
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/MeTarget"
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeGoal"
+            },
+            "description": "One row per member goal on a board the plan unlocks, by identifier."
+          },
+          "risk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeTargetRisk"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the target is at risk, or null when it is not at risk or there is no reason to give."
+          }
+        }
+      },
+      "MeTargetRisk": {
+        "type": "object",
+        "description": "Why an at-risk target is at risk: a slipped estimate, stalled goals, or both.",
+        "required": [
+          "slipped",
+          "stalled"
+        ],
+        "properties": {
+          "slipped": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MeTargetSlip"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The estimate and the target date when the estimate is past the target date, else null."
+          },
+          "stalled": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeTargetStalledGoal"
+            },
+            "description": "Each member goal a stalled agent is active on."
+          }
+        }
+      },
+      "MeTargetSlip": {
+        "type": "object",
+        "description": "An estimate that slipped past the target date.",
+        "required": [
+          "estimate",
+          "target_date"
+        ],
+        "properties": {
+          "estimate": {
+            "type": "string",
+            "format": "date"
+          },
+          "target_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MeTargetStalledGoal": {
+        "type": "object",
+        "description": "A stalled member goal and the stalled agents active on it.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "agents"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "agents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeTargetStalledAgent"
+            }
+          }
+        }
+      },
+      "MeTargetStalledAgent": {
+        "type": "object",
+        "description": "A stalled agent, by its agent name.",
+        "required": [
+          "name",
+          "reasons"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "stuck",
+                "dormant"
+              ]
+            },
+            "description": "stuck (holding an active task past the stuck threshold) and/or dormant (no activity past the dormancy threshold), in that order."
           }
         }
       },

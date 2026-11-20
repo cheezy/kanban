@@ -85,6 +85,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [Task actions: /api/me/tasks](api/me_tasks.md) — Reading one task with its last 20 comments, replying on it, moving a released card back to Backlog, and capturing a new task into Backlog.
 - [The Agents tab: /api/me/agents](api/me_agents.md) — The person's agents with their status and current task, the open goals they work on with their task counts, and a goal's last after_goal attempt without its output.
 - [The Goals list and Goal screen: /api/me/goals](api/me_goals.md) — Every goal on every board the person can see, with the open, done and no-target filters, and one goal's tasks grouped by column with the time each entered its column.
+- [The Targets list and Target screen: /api/me/targets](api/me_targets.md) — Every target the person can see with its status, estimate, task counts and owner, and one owned target's goals with why it is at risk.
 
 ### Multi-agent instruction files
 

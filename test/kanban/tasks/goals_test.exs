@@ -1122,5 +1122,29 @@ defmodule Kanban.Tasks.GoalsTest do
         assert {counts.total, counts.completed} == {view.total, view.completed}
       end
     end
+
+    test "goal_rows_for_app/1 builds rows for goals already read, in order (W2763)", ctx do
+      target = delivery_target_fixture(ctx.user)
+      second = app_goal!(ctx.cols["Doing"])
+
+      first =
+        ctx.cols["Backlog"]
+        |> app_goal!()
+        |> Ecto.Changeset.change(target_id: target.id)
+        |> Repo.update!()
+
+      complete!(task_fixture(ctx.cols["Done"], %{parent_id: first.id}))
+      task_fixture(ctx.cols["Doing"], %{parent_id: first.id})
+
+      assert Goals.goal_rows_for_app([]) == []
+
+      assert [one, two] = Tasks.goal_rows_for_app([second, first])
+      assert {one.goal.id, two.goal.id} == {second.id, first.id}
+      assert one.board == %{id: ctx.app_board.id, name: ctx.app_board.name}
+      assert {two.counts.total, two.counts.completed} == {2, 1}
+      assert two.target.id == target.id
+      assert one.target == nil
+      assert {one.waiting_on_you, one.hook_failed} == {0, false}
+    end
   end
 end

@@ -84,6 +84,10 @@ defmodule Kanban.Targets.DeliveryRollup do
   One target's rollup entry: the target, its read-time status, its member
   goals, the agents active on it, and the stalled subset of each.
 
+  `completed` and `total` are the target's child-task counts, passed through
+  from the status summary the entry is built from rather than recounted, so
+  they are the counts the boards strip shows (W2763, the app's Targets list).
+
   `stalled_details` pairs each stalled goal with the stalled agents active on
   that specific goal (a subset of `stalled_agents`), so a consumer can tie a
   named agent stall to the named goal it is stalling without re-deriving the
@@ -93,6 +97,8 @@ defmodule Kanban.Targets.DeliveryRollup do
           target: DeliveryTarget.t(),
           status: Status.status(),
           estimated_completion_date: Date.t() | nil,
+          completed: non_neg_integer(),
+          total: non_neg_integer(),
           goals: [Task.t()],
           agents: [Agent.t()],
           stalled_goals: [Task.t()],
@@ -202,15 +208,26 @@ defmodule Kanban.Targets.DeliveryRollup do
     stalled_agents = Enum.filter(target_agents, &stalled?/1)
     stalled_goals = stalled_goals(goals, stalled_agents, target.id, bridges)
 
-    %{
+    summary
+    |> summary_fields()
+    |> Map.merge(%{
       target: target,
       status: status,
-      estimated_completion_date: Map.get(summary, :estimated_completion_date),
       goals: goals,
       agents: target_agents,
       stalled_goals: stalled_goals,
       stalled_agents: stalled_agents,
       stalled_details: stalled_details(stalled_goals, stalled_agents, target.id, bridges)
+    })
+  end
+
+  # The summary's estimate and task counts, passed through rather than
+  # recomputed, so the entry carries the values the status was derived from.
+  defp summary_fields(summary) do
+    %{
+      estimated_completion_date: Map.get(summary, :estimated_completion_date),
+      completed: Map.get(summary, :completed, 0),
+      total: Map.get(summary, :total, 0)
     }
   end
 

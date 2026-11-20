@@ -33,10 +33,11 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
   # GET /api/me/reviews/:task_id/files/:index and
   # GET /api/me/notification_settings, GET /api/me/boards and
   # GET /api/me/boards/:id/columns/:name, GET /api/me/tasks/:id,
-  # GET /api/me/agents, GET /api/me/goals/:id/after_goal, GET /api/me/goals
-  # and GET /api/me/goals/:id (a device token, never a board token, W2747,
-  # W2748, W2751, W2753, W2758, W2767, W2759, W2760, W2761 and W2762) read no
-  # board through a board token.
+  # GET /api/me/agents, GET /api/me/goals/:id/after_goal, GET /api/me/goals,
+  # GET /api/me/goals/:id, GET /api/me/targets and GET /api/me/targets/:id (a
+  # device token, never a board token, W2747, W2748, W2751, W2753, W2758,
+  # W2767, W2759, W2760, W2761, W2762 and W2763) read no board through a board
+  # token.
   @not_board_reads [
     "/api/agent/onboarding",
     "/api/openapi.json",
@@ -54,7 +55,9 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
     "/api/me/agents",
     "/api/me/goals/:id/after_goal",
     "/api/me/goals",
-    "/api/me/goals/:id"
+    "/api/me/goals/:id",
+    "/api/me/targets",
+    "/api/me/targets/:id"
   ]
 
   setup do

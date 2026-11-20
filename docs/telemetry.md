@@ -1136,22 +1136,25 @@ event of its own ([push notifications](push-notifications.md)).
 ### Status events
 
 W2762 added the event the app's status screens emit
-([the goals routes](api/me_goals.md)). It is declared in
+([the goals routes](api/me_goals.md)), and W2763 added the targets routes
+([the targets routes](api/me_targets.md)). It is declared in
 `Kanban.Telemetry.Catalog.StatusEvents`
 (`lib/kanban/telemetry/catalog/status_events.ex`) and emitted by
-`KanbanWeb.API.Me.GoalController` once a read answers 200.
+`KanbanWeb.API.Me.TargetController` and `KanbanWeb.API.Me.GoalController`
+once a read answers 200.
 
 | Event | Measurements | Metadata | Emitted by |
 |---|---|---|---|
-| `[:kanban, :status, :viewed]` | `count` | `surface`, `via` | `GET /api/me/goals` (`surface: :goals`) and `GET /api/me/goals/:id` (`surface: :goal`) |
+| `[:kanban, :status, :viewed]` | `count` | `surface`, `via` | `GET /api/me/targets` (`surface: :targets`), `GET /api/me/targets/:id` (`surface: :target`), `GET /api/me/goals` (`surface: :goals`) and `GET /api/me/goals/:id` (`surface: :goal`) |
 
-- **What it carries.** `surface` names the screen, `:goals` for the goals
-  list and `:goal` for one goal's task status. `via` is `:ios` or `:android`,
-  from the device's platform. It never carries a goal, a board, a filter, a
-  user or a device. Both keys are tags.
+- **What it carries.** `surface` names the screen: `:targets` for the
+  targets list, `:target` for one target's goal status, `:goals` for the
+  goals list and `:goal` for one goal's task status. `via` is `:ios` or
+  `:android`, from the device's platform. It never carries a target, a goal,
+  a board, a filter, a user or a device. Both keys are tags.
 - **When it fires.** Only when the read answers 200: a refused read (no
-  plan, an unknown filter, a bad page, a goal the person cannot see) emits
-  nothing.
+  plan, an unknown filter, a bad page, a goal the person cannot see, a target
+  the person does not own) emits nothing.
 - **It is not persisted.** A signed-in device can cause it at will, so it is
   charted live only.
 
@@ -1816,7 +1819,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :status, :viewed]` | event | `count` | `surface`, `via` | A device read one of the app's status screens. surface is :goals (the goals list) or :goal (one goal's task status); via is :ios or :android. |
+| `[:kanban, :status, :viewed]` | event | `count` | `surface`, `via` | A device read one of the app's status screens. surface is :targets (the targets list), :target (one target's goal status), :goals (the goals list) or :goal (one goal's task status); via is :ios or :android. |
 
 ### Domain `target`
 

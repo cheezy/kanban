@@ -4,7 +4,8 @@ defmodule Kanban.Tasks.Goals do
 
   The app's cross-board Goals list and Goal screen (W2762) are
   `list_goals_for_app/2`, `get_goal_detail_for_app/3` and
-  `parse_goal_filter/1`, implemented in `Kanban.Tasks.AppGoals`.
+  `parse_goal_filter/1`, implemented in `Kanban.Tasks.AppGoals`; the app's
+  Target screen (W2763) reads its goal rows through `goal_rows_for_app/1`.
   """
 
   import Ecto.Query, warn: false
@@ -362,6 +363,9 @@ defmodule Kanban.Tasks.Goals do
 
   @doc "Reads the Goals list's filter. See `Kanban.Tasks.AppGoals.parse_filter/1`."
   defdelegate parse_goal_filter(value), to: AppGoals, as: :parse_filter
+
+  @doc "Goal rows for goals already read. See `Kanban.Tasks.AppGoals.rows/1`."
+  defdelegate goal_rows_for_app(goals), to: AppGoals, as: :rows
 
   defp collect_backlog_tasks(goal, backlog_column) do
     children =

@@ -39,6 +39,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias KanbanWeb.API.Me.NotificationSettingsController
   alias KanbanWeb.API.Me.NotificationSettingsJSON
   alias KanbanWeb.API.Me.ReviewJSON
+  alias KanbanWeb.API.Me.TargetJSON
   alias KanbanWeb.API.OpenApiSpec
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
@@ -1855,6 +1856,113 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         {{"/api/me/goals", "422"}, Kanban.Tasks.parse_goal_filter("bogus")},
         {{"/api/me/goals/{id}", "403"}, {:error, {:plan_required, :mobile_app}}},
         {{"/api/me/goals/{id}", "404"}, {:error, :not_found}}
+      ]
+
+      for {{path, status} = where, error} <- examples do
+        assert error |> rendered.() |> Jason.decode!() == example.(path, status),
+               "#{inspect(where)} differs"
+      end
+    end
+  end
+
+  describe "schema parity with TargetJSON (W2763)" do
+    setup do
+      target = %Kanban.Targets.DeliveryTarget{id: 3, name: "Launch", target_date: ~D[2026-12-15]}
+      goal = %Task{id: 4, identifier: "G1", title: "G", type: :goal, status: :in_progress}
+
+      row = %{
+        target: target,
+        status: :at_risk,
+        estimated_completion_date: ~D[2026-12-19],
+        goal_count: 1,
+        completed: 6,
+        total: 20,
+        owner: true
+      }
+
+      goal_entry = %{
+        goal: goal,
+        board: %{id: 1, name: "Board"},
+        target: target,
+        counts: %{total: 2, completed: 1, doing: 1, review: 0, blocked: 0},
+        waiting_on_you: 0,
+        hook_failed: false
+      }
+
+      risk = %{
+        slipped: %{estimate: ~D[2026-12-19], target_date: ~D[2026-12-15]},
+        stalled: [%{goal: goal, agents: [%{name: "Claude", reasons: [:stuck, :dormant]}]}]
+      }
+
+      detail = %{target: row, goals: [goal_entry], risk: risk}
+
+      %{index: TargetJSON.index(%{targets: [row]}), show: TargetJSON.show(%{detail: detail})}
+    end
+
+    test "the target schemas list exactly the keys TargetJSON renders, and require them all",
+         %{spec: spec, index: index, show: show} do
+      [row] = index.data.targets
+      risk = show.data.risk
+      [stalled] = risk.stalled
+      [agent] = stalled.agents
+
+      pairs = [
+        {index, "MeTargetListResponse"},
+        {index.data, "MeTargetList"},
+        {row, "MeTarget"},
+        {show, "MeTargetDetailResponse"},
+        {show.data, "MeTargetDetail"},
+        {show.data.target, "MeTarget"},
+        {risk, "MeTargetRisk"},
+        {risk.slipped, "MeTargetSlip"},
+        {stalled, "MeTargetStalledGoal"},
+        {agent, "MeTargetStalledAgent"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert TargetJSON.risk(nil) == nil
+    end
+
+    test "the enums are the values the app can receive", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+
+      # Kanban.Targets.Status.status/0: every value the derivation can return.
+      assert schemas["MeTarget"]["properties"]["status"]["enum"] ==
+               ~w(on_track at_risk missed complete)
+
+      assert get_in(schemas, ["MeTargetStalledAgent", "properties", "reasons", "items", "enum"]) ==
+               ~w(stuck dormant)
+    end
+
+    test "the refusal examples match what the person-API fallback renders", %{spec: spec} do
+      rendered = fn error ->
+        Phoenix.ConnTest.build_conn() |> FallbackController.call(error) |> Map.get(:resp_body)
+      end
+
+      example = fn path, status ->
+        get_in(spec, [
+          "paths",
+          path,
+          "get",
+          "responses",
+          status,
+          "content",
+          "application/json",
+          "example"
+        ])
+      end
+
+      examples = [
+        {{"/api/me/targets", "403"}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/targets/{id}", "403"}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/targets/{id}", "404"}, {:error, :not_found}}
       ]
 
       for {{path, status} = where, error} <- examples do

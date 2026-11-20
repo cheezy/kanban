@@ -189,6 +189,21 @@ defmodule Kanban.Tasks.AppGoals do
     }
   end
 
+  @doc """
+  Goal rows, as `t:entry/0`, for goals the caller already read through a
+  board-scoped path (the app's Target screen reads its member goals from
+  `Kanban.Targets.get_target_progress/3`). It keeps their order and reads
+  their counts in one query; no goals is no rows.
+  """
+  @spec rows([Task.t()]) :: [entry()]
+  def rows([]), do: []
+
+  def rows(goals) when is_list(goals) do
+    goals = Repo.preload(goals, [:target, column: :board])
+    children = goals |> Enum.map(& &1.id) |> GoalCounts.children_by_goal()
+    Enum.map(goals, &entry(&1, &1.column.board, Map.get(children, &1.id, [])))
+  end
+
   defp task_entries(children, can_review) do
     moves = children |> Enum.map(& &1.id) |> History.latest_move_at_by_task()
     Enum.map(children, &task_entry(&1, moves, can_review))

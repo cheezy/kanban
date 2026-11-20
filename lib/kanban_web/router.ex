@@ -297,6 +297,11 @@ defmodule KanbanWeb.Router do
     # outside the plan, and the goal read checks the goal's board (W2762).
     get "/goals", GoalController, :index
     get "/goals/:id", GoalController, :show
+
+    # Plan-gated (design §10): check_user; the targets list leaves out goals on
+    # boards outside the plan, and a target is owner only, 404 to anyone else (W2763).
+    get "/targets", TargetController, :index
+    get "/targets/:id", TargetController, :show
   end
 
   # API routes with token authentication
