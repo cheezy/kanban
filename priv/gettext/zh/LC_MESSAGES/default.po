@@ -15968,3 +15968,8 @@ msgstr "预约半天的工作坊，让你的团队与 AI 代理搭建 Stride 看
 #, elixir-autogen, elixir-format
 msgid "Stride: kanban for people and AI agents"
 msgstr "Stride：面向人与 AI 代理的看板"
+
+#: lib/kanban_web/components/seo_components.ex
+#, elixir-autogen, elixir-format
+msgid "The Stride logo beside the words: Kanban for humans and AI agents"
+msgstr "Stride 标志，旁边写着：面向人类和 AI 智能体的看板"

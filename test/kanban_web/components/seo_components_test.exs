@@ -57,8 +57,9 @@ defmodule KanbanWeb.SeoComponentsTest do
                "(prefers-color-scheme: dark)"
              ]
 
-      assert attr_of(html, ~s(meta[property="og:image"]), "content") == []
-      assert attr_of(html, ~s(meta[name="twitter:image"]), "content") == []
+      default_image = base() <> "/images/og/stride-og.png"
+      assert attr_of(html, ~s(meta[property="og:image"]), "content") == [default_image]
+      assert attr_of(html, ~s(meta[name="twitter:image"]), "content") == [default_image]
       assert attr_of(html, ~s(meta[name="keywords"]), "content") == []
     end
 
@@ -72,6 +73,10 @@ defmodule KanbanWeb.SeoComponentsTest do
       assert attr_of(html, ~s(meta[name="twitter:image"]), "content") == [
                "https://cdn.test/og.png"
              ]
+
+      fragment = LazyHTML.from_fragment(html)
+      assert fragment |> LazyHTML.query(~s(meta[property="og:image:width"])) |> Enum.empty?()
+      assert fragment |> LazyHTML.query(~s(meta[property="og:image:alt"])) |> Enum.empty?()
     end
   end
 

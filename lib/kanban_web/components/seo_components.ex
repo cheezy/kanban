@@ -15,6 +15,12 @@ defmodule KanbanWeb.SeoComponents do
   (`KanbanWeb.TokenPaths`), as received or percent-decoded, so the token never
   reaches a meta tag.
 
+  Every page gets an `og:image` and `twitter:image`: the 1200x630 PNG at
+  `priv/static/images/og/stride-og.png` by default, with its `og:image:width`,
+  `og:image:height` and translated `og:image:alt`, or the page's own
+  `og_image` assign. Both are absolute URLs, because link-preview crawlers
+  ignore relative ones.
+
   Note that live navigation inside one `live_session` does not re-render the
   root layout, so the canonical keeps the path of the first full page load
   until the next full load. Crawlers always do full loads.
@@ -35,6 +41,12 @@ defmodule KanbanWeb.SeoComponents do
 
   @default_og_locale "en_US"
 
+  # The default link-preview image, a raster PNG because Slack, LinkedIn and X
+  # do not render an SVG preview.
+  @og_image_path "/images/og/stride-og.png"
+  @og_image_width 1200
+  @og_image_height 630
+
   # The daisyUI base-100 background of each theme (assets/css/app.css).
   @theme_color_light "#f8f8f8"
   @theme_color_dark "#151618"
@@ -45,6 +57,11 @@ defmodule KanbanWeb.SeoComponents do
   A blank `title` falls back to "Stride" and a blank `description` to
   `default_description/0`. The robots tag is emitted only when `noindex` is
   exactly `true`. Canonical and `og:url` are left out when `path` is `nil`.
+
+  A page's own `og_image` is made absolute (see `og_image_url/1`) and carries
+  no width, height or alt, since those describe the default image only. A
+  blank `og_image`, or one `og_image_url/1` cannot make absolute, falls back
+  to `default_og_image_url/0` with the default image's width, height and alt.
   """
   attr :title, :string, default: nil, doc: "the page title, usually assigns[:page_title]"
 
@@ -54,7 +71,10 @@ defmodule KanbanWeb.SeoComponents do
 
   attr :path, :string, default: nil, doc: "the request path, see request_path/1"
   attr :noindex, :boolean, default: false, doc: "emit robots noindex,nofollow when true"
-  attr :og_image, :string, default: nil, doc: "an absolute image URL for og:image"
+
+  attr :og_image, :string,
+    default: nil,
+    doc: "the og:image URL or path, usually assigns[:og_image]; nil uses the default"
 
   attr :locale, :string,
     default: nil,
@@ -69,6 +89,7 @@ defmodule KanbanWeb.SeoComponents do
       |> assign(:resolved_description, description)
       |> assign(:canonical_url, canonical_url(assigns.path))
       |> assign(:og_locale, og_locale(assigns.locale || Gettext.get_locale(KanbanWeb.Gettext)))
+      |> assign_og_image()
       |> assign(:theme_light, @theme_color_light)
       |> assign(:theme_dark, @theme_color_dark)
 
@@ -82,11 +103,15 @@ defmodule KanbanWeb.SeoComponents do
     <meta property="og:description" content={@resolved_description} />
     <meta :if={@canonical_url} property="og:url" content={@canonical_url} />
     <meta property="og:locale" content={@og_locale} />
-    <meta :if={@og_image} property="og:image" content={@og_image} />
+    <meta property="og:image" content={@og_image_url} />
+    <meta :if={@og_image_default?} property="og:image:width" content={@og_image_width} />
+    <meta :if={@og_image_default?} property="og:image:height" content={@og_image_height} />
+    <meta :if={@og_image_default?} property="og:image:alt" content={@og_image_alt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={@resolved_title} />
     <meta name="twitter:description" content={@resolved_description} />
-    <meta :if={@og_image} name="twitter:image" content={@og_image} />
+    <meta name="twitter:image" content={@og_image_url} />
+    <meta :if={@og_image_default?} name="twitter:image:alt" content={@og_image_alt} />
     <meta name="theme-color" content={@theme_light} media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content={@theme_dark} media="(prefers-color-scheme: dark)" />
     """
@@ -100,6 +125,39 @@ defmodule KanbanWeb.SeoComponents do
       "Stride is a kanban board where humans and AI agents plan, claim and ship work together."
     )
   end
+
+  @doc """
+  The absolute URL of the default link-preview image, through the static path
+  so a digested asset name is used when the cache manifest is loaded.
+  """
+  def default_og_image_url, do: og_image_url(@og_image_path)
+
+  @doc """
+  The translated alt text of the default link-preview image.
+  """
+  def default_og_image_alt do
+    gettext("The Stride logo beside the words: Kanban for humans and AI agents")
+  end
+
+  @doc """
+  Makes an `og:image` value absolute.
+
+  An `http://` or `https://` URL is kept as it is. A path starting with a
+  single `/` is resolved through the endpoint's static URL and static path.
+  Anything else, including a protocol-relative `//host/...` value, returns
+  `nil`, because platforms ignore a relative `og:image`.
+  """
+  def og_image_url("//" <> _rest), do: nil
+
+  def og_image_url("/" <> _rest = path) do
+    KanbanWeb.Endpoint.static_url() <> KanbanWeb.Endpoint.static_path(path)
+  end
+
+  def og_image_url(value) when is_binary(value) do
+    if absolute_http_url?(value), do: value
+  end
+
+  def og_image_url(_value), do: nil
 
   @doc """
   Maps a Gettext locale to its Open Graph form, falling back to `en_US`.
@@ -135,6 +193,36 @@ defmodule KanbanWeb.SeoComponents do
   """
   def request_path(%Plug.Conn{request_path: path}), do: path
   def request_path(_conn), do: nil
+
+  defp assign_og_image(assigns) do
+    case assigns.og_image |> present() |> og_image_url() do
+      nil ->
+        assigns
+        |> assign(:og_image_url, default_og_image_url())
+        |> assign(:og_image_default?, true)
+        |> assign(:og_image_width, @og_image_width)
+        |> assign(:og_image_height, @og_image_height)
+        |> assign(:og_image_alt, default_og_image_alt())
+
+      url ->
+        assigns
+        |> assign(:og_image_url, url)
+        |> assign(:og_image_default?, false)
+        |> assign(:og_image_width, nil)
+        |> assign(:og_image_height, nil)
+        |> assign(:og_image_alt, nil)
+    end
+  end
+
+  defp absolute_http_url?(value) do
+    case URI.parse(value) do
+      %URI{scheme: scheme, host: host} when scheme in ["http", "https"] and is_binary(host) ->
+        host != ""
+
+      _uri ->
+        false
+    end
+  end
 
   # The router matches on the percent-decoded path, so `/%69nvitations/<token>`
   # reaches the invitation page too. Check the decoded form as well.

@@ -15972,3 +15972,8 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Stride: kanban for people and AI agents"
 msgstr ""
+
+#: lib/kanban_web/components/seo_components.ex
+#, elixir-autogen, elixir-format
+msgid "The Stride logo beside the words: Kanban for humans and AI agents"
+msgstr ""

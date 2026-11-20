@@ -16056,3 +16056,8 @@ msgstr "Reserva una sesión de medio día en la que tu equipo y agentes de IA co
 #, elixir-autogen, elixir-format
 msgid "Stride: kanban for people and AI agents"
 msgstr "Stride: kanban para personas y agentes de IA"
+
+#: lib/kanban_web/components/seo_components.ex
+#, elixir-autogen, elixir-format
+msgid "The Stride logo beside the words: Kanban for humans and AI agents"
+msgstr "El logotipo de Stride junto a las palabras: Kanban para personas y agentes de IA"
