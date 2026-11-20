@@ -279,6 +279,13 @@ defmodule KanbanWeb.Router do
     get "/boards", BoardController, :index
     get "/boards/:id/columns/:name", BoardController, :column
     post "/boards/:id/promote", BoardController, :promote
+
+    # Plan-gated (design §10): check_user, then check_board for the task's
+    # board, or for the capture's board (W2760).
+    get "/tasks/:id", TaskController, :show
+    post "/tasks/:id/comments", TaskController, :comment
+    post "/tasks/:id/move_to_backlog", TaskController, :move_to_backlog
+    post "/tasks", TaskController, :create
   end
 
   # API routes with token authentication

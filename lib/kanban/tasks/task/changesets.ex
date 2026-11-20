@@ -112,6 +112,8 @@ defmodule Kanban.Tasks.Task.Changesets do
       # Creator tracking (02)
       :created_by_id,
       :created_by_agent,
+      # Set by Kanban.Tasks.AppTasks.capture_task/3 (W2760)
+      :created_via,
       # Completion tracking (02)
       :completed_at,
       :completed_by_id,

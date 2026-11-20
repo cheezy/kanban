@@ -3609,6 +3609,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "position" => :server_managed,
       "created_by_id" => :server_managed,
       "created_by_agent" => :server_managed,
+      "created_via" => :server_managed,
       "archived_at" => :server_managed,
       "archive_reason" => :server_managed,
       "archive_note" => :server_managed,

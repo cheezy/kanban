@@ -28,6 +28,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias Kanban.Reviews.DiffHighlighter
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.Me
   alias KanbanWeb.API.Me.BoardJSON
   alias KanbanWeb.API.Me.DecisionJSON
   alias KanbanWeb.API.Me.DeviceJSON
@@ -1479,6 +1480,146 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
         plan_required = {:error, {:plan_required, :mobile_app}}
         assert plan_required |> rendered.() |> Jason.decode!() == example["example"]
+      end
+    end
+  end
+
+  describe "schema parity with Me.TaskJSON (W2760)" do
+    setup do
+      column = %Kanban.Columns.Column{id: 81, name: "Ready", board_id: 1}
+
+      task = %Task{
+        id: 9,
+        identifier: "W1",
+        title: "T",
+        type: :work,
+        priority: :high,
+        status: :open,
+        needs_review: false,
+        position: 0,
+        labels: [],
+        column: column,
+        description: "d",
+        acceptance_criteria: "a\nb",
+        key_files: [%Kanban.Schemas.Task.KeyFile{file_path: "lib/a.ex", note: "n", position: 0}],
+        security_considerations: ["s"],
+        created_via: :mobile,
+        archived_at: nil
+      }
+
+      comment = %Kanban.Tasks.TaskComment{
+        id: 3,
+        task_id: 9,
+        content: "c",
+        author: nil,
+        author_agent_name: nil,
+        mentioned_user_ids: [],
+        inserted_at: ~U[2026-11-20 09:00:00Z],
+        updated_at: ~U[2026-11-20 09:00:00Z]
+      }
+
+      %{
+        show: Me.TaskJSON.show(%{task: task, comments: [comment], has_more: true}),
+        comment: Me.TaskJSON.comment(%{comment: comment}),
+        moved: Me.TaskJSON.moved(%{result: %{task: task, moved: true}})
+      }
+    end
+
+    test "the task schemas list exactly the keys Me.TaskJSON renders, and require them all",
+         %{spec: spec, show: show, comment: comment, moved: moved} do
+      pairs = [
+        {show, "MeTaskDetailResponse"},
+        {show.data, "MeTaskDetail"},
+        {show.data.column, "MeColumnRef"},
+        {hd(show.data.key_files), "MeKeyFile"},
+        {hd(show.data.comments), "TaskComment"},
+        {comment, "TaskCommentEnvelope"},
+        {moved, "MeMoveToBacklogResponse"},
+        {moved.data, "MeMoveToBacklogResult"},
+        {moved.data.task, "MeTaskCard"}
+      ]
+
+      for {rendered, name} <- pairs do
+        assert rendered_keys(rendered) == schema_keys(spec, name), "#{name} keys differ"
+
+        assert spec["components"]["schemas"][name]["required"] |> MapSet.new() ==
+                 schema_keys(spec, name),
+               "#{name} must require every key it lists"
+      end
+
+      assert schema_keys(spec, "MeCommentRequest") == MapSet.new(["content"])
+
+      assert schema_keys(spec, "MeCaptureRequest") ==
+               MapSet.new(["board_id", "type", "title", "description"])
+
+      assert spec["components"]["schemas"]["MeCaptureRequest"]["required"] ==
+               ["board_id", "type", "title"]
+    end
+
+    test "the enums are the values the app can receive", %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+      detail = schemas["MeTaskDetail"]["properties"]
+
+      assert detail["priority"]["enum"] == ecto_enum(:priority)
+      assert detail["status"]["enum"] == ecto_enum(:status)
+      assert detail["type"]["enum"] == ecto_enum(:type)
+      assert detail["created_via"]["enum"] == ecto_enum(:created_via) ++ [nil]
+
+      assert schemas["MeCaptureRequest"]["properties"]["type"]["enum"] ==
+               ecto_enum(:type) -- ["goal"]
+
+      assert schemas["MeTaskRefusal"]["properties"]["error"]["enum"] ==
+               ~w(not_movable no_backlog_column wip_limit_reached move_failed)
+    end
+
+    test "the refusal examples match what the person-API fallback renders", %{spec: spec} do
+      rendered = fn error ->
+        Phoenix.ConnTest.build_conn() |> FallbackController.call(error) |> Map.get(:resp_body)
+      end
+
+      example = fn path, method, status, name ->
+        content = ["paths", path, method, "responses", status, "content", "application/json"]
+
+        case name do
+          nil -> get_in(spec, content ++ ["example"])
+          name -> get_in(spec, content ++ ["examples", name, "value"])
+        end
+      end
+
+      move = "/api/me/tasks/{id}/move_to_backlog"
+      capture = "/api/me/tasks"
+      blank = {%{}, %{t: :string}} |> Ecto.Changeset.cast(%{}, [:t])
+
+      examples = [
+        {{move, "post", "403", "forbidden"}, {:error, :forbidden}},
+        {{move, "post", "403", "planRequired"}, {:error, {:plan_required, :mobile_app}}},
+        {{move, "post", "409", nil}, {:error, :conflict}},
+        {{move, "post", "422", "notMovable"}, {:error, :not_movable}},
+        {{move, "post", "422", "noBacklogColumn"}, {:error, :no_backlog_column}},
+        {{move, "post", "422", "wipLimitReached"}, {:error, :backlog_wip_limit_reached}},
+        {{move, "post", "422", "moveFailed"}, {:error, :move_failed}},
+        {{capture, "post", "403", "forbidden"}, {:error, :forbidden}},
+        {{capture, "post", "422", "noBacklogColumn"}, {:error, :no_backlog_column}},
+        {{capture, "post", "422", "wipLimitReached"}, {:error, :backlog_wip_limit_reached}},
+        {{capture, "post", "422", "goalRefused"},
+         {:error,
+          {:in_device_locale,
+           Ecto.Changeset.add_error(blank, :type, "is invalid", validation: :inclusion)}}},
+        {{capture, "post", "422", "blankTitle"},
+         {:error, {:in_device_locale, Ecto.Changeset.add_error(blank, :title, "can't be blank")}}},
+        {{"/api/me/tasks/{id}", "get", "403", nil}, {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/tasks/{id}", "get", "404", nil}, {:error, :not_found}},
+        {{"/api/me/tasks/{id}/comments", "post", "403", nil},
+         {:error, {:plan_required, :mobile_app}}},
+        {{"/api/me/tasks/{id}/comments", "post", "422", nil},
+         {:error,
+          {:in_device_locale,
+           Ecto.Changeset.add_error(blank, :content, "can't be blank", validation: :required)}}}
+      ]
+
+      for {{path, method, status, name} = where, error} <- examples do
+        assert error |> rendered.() |> Jason.decode!() == example.(path, method, status, name),
+               "#{inspect(where)} differs"
       end
     end
   end

@@ -48,6 +48,14 @@ defmodule KanbanWeb.API.Me.FallbackController do
       {"error": reason, "message"}` (`PromoteRefusal`); and `:conflict`, a
       task moved by someone else in the middle of the promote, is `409
       {"error": "conflict", "message"}` (`Error`).
+    * the app's task actions (W2760, `KanbanWeb.API.Me.TaskController`):
+      `{:in_device_locale, changeset}` is the changeset's `422 {"errors":
+      {field: [message]}}` above, with each message translated into the
+      device's language (its `locale`, resolved by `Kanban.Locales.resolve/1`;
+      English without a device); `:not_movable`, `:no_backlog_column` and
+      `:move_failed` are `422 {"error": reason, "message"}`
+      (`MeTaskRefusal`); and `:backlog_wip_limit_reached` is `422 {"error":
+      "wip_limit_reached", "message"}` with a message about Backlog.
     * `{:rate_limited, retry_after_ms}`, the app approval's per-device limit,
       is `429 {"error": "rate_limited", "message": message}` (`Error`) with a
       `retry-after` header in seconds.
@@ -58,10 +66,12 @@ defmodule KanbanWeb.API.Me.FallbackController do
   """
   use KanbanWeb, :controller
 
+  alias Kanban.Locales
   alias Kanban.Reviews.MobileGuard
   alias Kanban.Tasks.Promote
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.ReviewJSON
+  alias KanbanWeb.CoreComponents
 
   # The refusals Kanban.Reviews.approve_review/3 can return once the approval
   # checks have passed: the board has no Done column to move the task to, or
@@ -76,10 +86,26 @@ defmodule KanbanWeb.API.Me.FallbackController do
   # The promote refusals that carry only a reason and a message.
   @promote_refusals [:wip_limit_reached, :no_ready_column, :update_failed]
 
+  # The app's task-action refusals that carry only a reason and a message.
+  @task_refusals [:not_movable, :no_backlog_column, :move_failed]
+
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)
     |> json(%{errors: Ecto.Changeset.traverse_errors(changeset, &interpolate/1)})
+  end
+
+  def call(conn, {:error, {:in_device_locale, %Ecto.Changeset{} = changeset}}) do
+    locale = conn.assigns |> Map.get(:current_device) |> device_locale() |> Locales.resolve()
+
+    errors =
+      Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+        Ecto.Changeset.traverse_errors(changeset, &CoreComponents.translate_error/1)
+      end)
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: errors})
   end
 
   def call(conn, {:error, :not_found}) do
@@ -207,6 +233,21 @@ defmodule KanbanWeb.API.Me.FallbackController do
     |> json(%{error: Atom.to_string(reason), message: promote_message(reason)})
   end
 
+  def call(conn, {:error, reason}) when reason in @task_refusals do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{error: Atom.to_string(reason), message: task_message(reason)})
+  end
+
+  def call(conn, {:error, :backlog_wip_limit_reached}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{
+      error: "wip_limit_reached",
+      message: "Backlog has no room for this task under its WIP limit."
+    })
+  end
+
   def call(conn, {:error, :conflict}) do
     conn
     |> put_status(:conflict)
@@ -250,6 +291,16 @@ defmodule KanbanWeb.API.Me.FallbackController do
   defp promote_message(:no_ready_column), do: "This board has no Ready column."
 
   defp promote_message(:update_failed), do: "The tasks could not be promoted. Try again."
+
+  defp task_message(:not_movable),
+    do:
+      "Only work and defect tasks in Ready, or in Doing with an expired claim, can be moved to Backlog."
+
+  defp task_message(:no_backlog_column), do: "This board has no Backlog column."
+  defp task_message(:move_failed), do: "The task could not be moved. Try again."
+
+  defp device_locale(%{locale: locale}), do: locale
+  defp device_locale(_device), do: nil
 
   defp plan_message(:mobile_app), do: "The Stride app is available to boards in an Organization."
   defp plan_message(_feature), do: "This feature is available to boards in an Organization."

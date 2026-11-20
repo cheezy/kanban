@@ -3880,6 +3880,707 @@
           }
         }
       }
+    },
+    "/api/me/tasks": {
+      "post": {
+        "operationId": "captureMyTask",
+        "summary": "Capture a task into a board's Backlog",
+        "description": "Creates a work or defect task at the end of the board's Backlog through the web's create path, so the identifier, position, WIP limit, history row and board broadcast are those of a task created on the web. Only board_id, type, title and description are read from the body; any other key (parent_id, identifier, status, column_id, assigned_to_id, created_via, ...) is ignored, and a goal is refused. The task is stored with created_via mobile and the person as its creator. There is no draft flag: the task is an ordinary Backlog task. The checks run in this order: the person's plan (403 plan_required), the body (422 errors.board_id, errors.type or errors.title), the board: one the person holds access to (404), write access: owner or modify (403 Forbidden), the board's plan (403 plan_required), the board's Backlog column (422 no_backlog_column), Backlog's WIP limit (422 wip_limit_reached) and the task's own fields (422, for example a title over 255 characters). Validation messages are in the device's language (its locale); match on the field and on error codes, never on the message text. Takes a device access token only. Human-readable reference: docs/api/me_tasks.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeCaptureRequest"
+              },
+              "example": {
+                "board_id": 55,
+                "type": "defect",
+                "title": "Sync button does nothing offline",
+                "description": "Tapping Sync with no connection shows no message."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The task was captured. comments is empty and has_more_comments false.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeTaskDetailResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": 4830,
+                    "identifier": "D461",
+                    "title": "Sync button does nothing offline",
+                    "type": "defect",
+                    "priority": "medium",
+                    "status": "open",
+                    "needs_review": false,
+                    "board_id": 55,
+                    "column": {
+                      "id": 126,
+                      "name": "Backlog"
+                    },
+                    "description": "Tapping Sync with no connection shows no message.",
+                    "acceptance_criteria": null,
+                    "key_files": [],
+                    "security_considerations": [],
+                    "created_via": "mobile",
+                    "archived_at": null,
+                    "comments": [],
+                    "has_more_comments": false
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person can only read this board (Forbidden), or the person's plan or the board's does not include the Stride app (plan_required, only while paid plans are enforced). Nothing is created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlanRequired"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                },
+                "examples": {
+                  "forbidden": {
+                    "summary": "Read-only access",
+                    "value": {
+                      "error": "Forbidden",
+                      "message": "This needs write access to the board."
+                    }
+                  },
+                  "planRequired": {
+                    "summary": "Outside the plan",
+                    "value": {
+                      "error": "plan_required",
+                      "feature": "mobile_app",
+                      "message": "The Stride app is available to boards in an Organization."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to a board with this board_id. Nothing is created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "422": {
+            "description": "The body is invalid (errors.board_id: missing or not a positive integer; errors.type: missing, or not work or defect, so a goal is refused; errors.title: missing, blank or over 255 characters), or the capture is refused: the board has no Backlog column (no_backlog_column) or Backlog's WIP limit is reached (wip_limit_reached). Nothing is created. Validation messages are in the device's language (its locale); match on the field and on error codes, never on the message text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MeTaskRefusal"
+                    }
+                  ]
+                },
+                "examples": {
+                  "goalRefused": {
+                    "summary": "A goal",
+                    "value": {
+                      "errors": {
+                        "type": [
+                          "is invalid"
+                        ]
+                      }
+                    }
+                  },
+                  "blankTitle": {
+                    "summary": "No title",
+                    "value": {
+                      "errors": {
+                        "title": [
+                          "can't be blank"
+                        ]
+                      }
+                    }
+                  },
+                  "noBacklogColumn": {
+                    "summary": "No Backlog column",
+                    "value": {
+                      "error": "no_backlog_column",
+                      "message": "This board has no Backlog column."
+                    }
+                  },
+                  "wipLimitReached": {
+                    "summary": "Backlog is full",
+                    "value": {
+                      "error": "wip_limit_reached",
+                      "message": "Backlog has no room for this task under its WIP limit."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/tasks/{id}": {
+      "get": {
+        "operationId": "getMyTask",
+        "summary": "Read one task",
+        "description": "Returns one task, read-only: its title, description, acceptance criteria, key files and security considerations, and its last 20 comments, oldest first; has_more_comments says whether older ones exist. An archived task is returned with archived_at set. Any member of the task's board, read-only included, may read it. The checks run in this order: the person's plan (403 plan_required), the task: one on a board the person holds access to (404), the board's plan (403 plan_required). Takes a device access token only. Human-readable reference: docs/api/me_tasks.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeTaskDetailResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": 4812,
+                    "identifier": "W2701",
+                    "title": "Add the member table",
+                    "type": "work",
+                    "priority": "high",
+                    "status": "open",
+                    "needs_review": false,
+                    "board_id": 55,
+                    "column": {
+                      "id": 127,
+                      "name": "Ready"
+                    },
+                    "description": "List the organization's members with their roles.",
+                    "acceptance_criteria": "The table lists every member\nEach row shows the role",
+                    "key_files": [
+                      {
+                        "file_path": "lib/kanban_web/live/org_live/members.ex",
+                        "note": "New table",
+                        "position": 0
+                      }
+                    ],
+                    "security_considerations": [
+                      "Only organization admins see email addresses"
+                    ],
+                    "created_via": null,
+                    "archived_at": null,
+                    "comments": [
+                      {
+                        "id": 9120,
+                        "task_id": 4812,
+                        "content": "Released because the migration needs a decision: keep the old column?",
+                        "author_name": "Sam Rivera",
+                        "author_agent_name": null,
+                        "mentioned_user_ids": [],
+                        "edited_at": null,
+                        "inserted_at": "2026-11-20T09:14:02Z",
+                        "updated_at": "2026-11-20T09:14:02Z"
+                      }
+                    ],
+                    "has_more_comments": false
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the board's, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. The board's plan is checked only once the person is known to see the task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to the task's board, no task has this id, or the id is not a positive integer in the signed 64-bit range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/tasks/{id}/comments": {
+      "post": {
+        "operationId": "commentOnMyTask",
+        "summary": "Comment on a task",
+        "description": "Adds a comment through the web's comment path, so it is stored, mentioned and notified as a comment written on the web; the text is never put in a push notification. Only content is read from the body. Any member of the task's board, read-only included, may comment, as on the web. The checks run in this order: the person's plan (403 plan_required), the task: one on a board the person holds access to (404, also for a task deleted in the meantime), the board's plan (403 plan_required), the content (422 errors.content). Validation messages are in the device's language (its locale); match on the field and on error codes, never on the message text. Takes a device access token only. Human-readable reference: docs/api/me_tasks.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeCommentRequest"
+              },
+              "example": {
+                "content": "Keep the old column for now; drop it next release."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The comment was added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "id": 9120,
+                    "task_id": 4812,
+                    "content": "Keep the old column for now; drop it next release.",
+                    "author_name": "Sam Rivera",
+                    "author_agent_name": null,
+                    "mentioned_user_ids": [],
+                    "edited_at": null,
+                    "inserted_at": "2026-11-20T09:14:02Z",
+                    "updated_at": "2026-11-20T09:14:02Z"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person's plan, or the board's, does not include the Stride app (plan feature mobile_app). Only answered while paid plans are enforced. The board's plan is checked only once the person is known to see the task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanRequired"
+                },
+                "example": {
+                  "error": "plan_required",
+                  "feature": "mobile_app",
+                  "message": "The Stride app is available to boards in an Organization."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to the task's board, no task has this id, or the id is not a positive integer in the signed 64-bit range. A task deleted since it was read is a 404 too.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "422": {
+            "description": "The content is missing, blank, not a string, over 10,000 characters or holds characters that cannot be stored. Nothing is added. Validation messages are in the device's language (its locale); match on the field and on error codes, never on the message text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                "example": {
+                  "errors": {
+                    "content": [
+                      "can't be blank"
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/tasks/{id}/move_to_backlog": {
+      "post": {
+        "operationId": "moveMyTaskToBacklog",
+        "summary": "Move a released task back to Backlog",
+        "description": "Moves a work or defect task from Ready, or from Doing when its claim has expired, to the end of the board's Backlog, through the move path a drag on the web uses, so its position, status, move history and parent goal's placement are written as the web writes them. It is the Move to Backlog of a released or expired card: an agent's release leaves the task open in Ready, and an expired claim leaves it in_progress in Doing with claim_expires_at in the past. Moving an expired claim also clears it: claimed_at, claim_expires_at and assigned_to_id become null. A task already in Backlog is left where it is and answered with moved false, so a retry moves nothing. The body is not read. The checks run in this order: the person's plan (403 plan_required), the task: one on a board the person holds access to (404), write access: owner or modify (403 Forbidden), the board's plan (403 plan_required), the board's Backlog column (422 no_backlog_column); then, with the board's columns locked and the task read FOR UPDATE: the task is still live on this board (404, so one archived since it was read is refused), it is a work or defect task in Ready, or in Doing with an expired claim (422 not_movable, so a task an agent claimed, or renewed its claim on, in the meantime stays in Doing), and Backlog's WIP limit holds it (422 wip_limit_reached). Once it commits, the move is broadcast to the board as a move on the web is. Takes a device access token only. Human-readable reference: docs/api/me_tasks.md.",
+        "tags": [
+          "Mobile"
+        ],
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The task's id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/StrideApp"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The task is in Backlog. moved is false when it already was.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeMoveToBacklogResponse"
+                },
+                "example": {
+                  "data": {
+                    "moved": true,
+                    "task": {
+                      "id": 4812,
+                      "identifier": "W2701",
+                      "title": "Add the member table",
+                      "type": "work",
+                      "priority": "high",
+                      "status": "open",
+                      "needs_review": false,
+                      "position": 4,
+                      "label": null,
+                      "criteria_count": 2,
+                      "key_files_count": 1,
+                      "security_considerations_count": 1
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The person can only read this board (Forbidden), or the person's plan or the board's does not include the Stride app (plan_required, only while paid plans are enforced). Nothing is moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlanRequired"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                },
+                "examples": {
+                  "forbidden": {
+                    "summary": "Read-only access",
+                    "value": {
+                      "error": "Forbidden",
+                      "message": "This needs write access to the board."
+                    }
+                  },
+                  "planRequired": {
+                    "summary": "Outside the plan",
+                    "value": {
+                      "error": "plan_required",
+                      "feature": "mobile_app",
+                      "message": "The Stride app is available to boards in an Organization."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "404": {
+            "description": "The person holds no access to the task's board, no task has this id, or the id is not a positive integer in the signed 64-bit range. An archived task is a 404 too. Nothing is moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Not Found"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "409": {
+            "description": "The task was moved by someone else in the middle of the move. Nothing is moved; try again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "conflict",
+                  "message": "A task was moved by someone else at the same time. Try again."
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "422": {
+            "description": "The move is refused: the task is a goal, or is in neither Ready nor Backlog and not an expired claim in Doing (not_movable), the board has no Backlog column (no_backlog_column), Backlog's WIP limit is reached (wip_limit_reached), or the write failed (move_failed). Nothing is moved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeTaskRefusal"
+                },
+                "examples": {
+                  "notMovable": {
+                    "summary": "Not movable",
+                    "value": {
+                      "error": "not_movable",
+                      "message": "Only work and defect tasks in Ready, or in Doing with an expired claim, can be moved to Backlog."
+                    }
+                  },
+                  "noBacklogColumn": {
+                    "summary": "No Backlog column",
+                    "value": {
+                      "error": "no_backlog_column",
+                      "message": "This board has no Backlog column."
+                    }
+                  },
+                  "wipLimitReached": {
+                    "summary": "Backlog is full",
+                    "value": {
+                      "error": "wip_limit_reached",
+                      "message": "Backlog has no room for this task under its WIP limit."
+                    }
+                  },
+                  "moveFailed": {
+                    "summary": "The write failed",
+                    "value": {
+                      "error": "move_failed",
+                      "message": "The task could not be moved. Try again."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
+          },
+          "426": {
+            "$ref": "#/components/responses/AppUpdateRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8714,6 +9415,264 @@
             "items": {
               "$ref": "#/components/schemas/DecisionItem"
             }
+          }
+        }
+      },
+      "MeTaskDetailResponse": {
+        "type": "object",
+        "description": "GET /api/me/tasks/{id} and POST /api/me/tasks.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeTaskDetail"
+          }
+        }
+      },
+      "MeTaskDetail": {
+        "type": "object",
+        "description": "One task, read-only (design §7.10), with its last 20 comments, oldest first.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "type",
+          "priority",
+          "status",
+          "needs_review",
+          "board_id",
+          "column",
+          "description",
+          "acceptance_criteria",
+          "key_files",
+          "security_considerations",
+          "created_via",
+          "archived_at",
+          "comments",
+          "has_more_comments"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect",
+              "goal"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "needs_review": {
+            "type": "boolean"
+          },
+          "board_id": {
+            "type": "integer"
+          },
+          "column": {
+            "$ref": "#/components/schemas/MeColumnRef"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acceptance_criteria": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One criterion per line."
+          },
+          "key_files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeKeyFile"
+            }
+          },
+          "security_considerations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_via": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mobile",
+              null
+            ],
+            "description": "mobile for a task captured in the app; null otherwise."
+          },
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskComment"
+            }
+          },
+          "has_more_comments": {
+            "type": "boolean",
+            "description": "true when the task has comments older than the ones returned."
+          }
+        }
+      },
+      "MeKeyFile": {
+        "type": "object",
+        "description": "A file the task expects to change.",
+        "required": [
+          "file_path",
+          "note",
+          "position"
+        ],
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "MeCommentRequest": {
+        "type": "object",
+        "description": "The body of a comment. Any other key is ignored.",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        }
+      },
+      "MeCaptureRequest": {
+        "type": "object",
+        "description": "The body of a capture: the fields the app's form has. Any other key is ignored.",
+        "required": [
+          "board_id",
+          "type",
+          "title"
+        ],
+        "properties": {
+          "board_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MeMoveToBacklogResponse": {
+        "type": "object",
+        "description": "POST /api/me/tasks/{id}/move_to_backlog.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MeMoveToBacklogResult"
+          }
+        }
+      },
+      "MeMoveToBacklogResult": {
+        "type": "object",
+        "description": "The task's card in Backlog, and whether this request moved it.",
+        "required": [
+          "moved",
+          "task"
+        ],
+        "properties": {
+          "moved": {
+            "type": "boolean",
+            "description": "false when the task was already in Backlog."
+          },
+          "task": {
+            "$ref": "#/components/schemas/MeTaskCard"
+          }
+        }
+      },
+      "MeTaskRefusal": {
+        "type": "object",
+        "description": "A move to Backlog or a capture refused as a whole: nothing is written.",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "not_movable",
+              "no_backlog_column",
+              "wip_limit_reached",
+              "move_failed"
+            ]
+          },
+          "message": {
+            "type": "string"
           }
         }
       }

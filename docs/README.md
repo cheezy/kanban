@@ -82,6 +82,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [Approve a review in the app](api/me_review_approval.md) — The approval challenge and the signed approve route: the check order, the signing string and the refusals.
 - [Request changes on a review in the app](api/me_review_request_changes.md) — The request changes route and the Idempotency-Key header that makes a retried review decision safe.
 - [The Boards tab: /api/me/boards](api/me_boards.md) — The person's boards with their column counts and idle agents, one column's cards, and promoting several Backlog tasks to Ready in one step.
+- [Task actions: /api/me/tasks](api/me_tasks.md) — Reading one task with its last 20 comments, replying on it, moving a released card back to Backlog, and capturing a new task into Backlog.
 
 ### Multi-agent instruction files
 

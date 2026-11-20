@@ -28,6 +28,10 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   archived or read-only tasks and moves the task to Done. The agent and API
   paths that set a review status or review notes do not pass through this
   module.
+
+  `created_via` is dropped too (`drop_created_via/1`): only a capture in the
+  app sets it (`Kanban.Tasks.AppTasks.capture_task/3`, W2760), so a crafted
+  form submission can neither stamp a task as captured nor clear the mark.
   """
   use Gettext, backend: KanbanWeb.Gettext
 
@@ -52,7 +56,7 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   @spec save(Phoenix.LiveView.Socket.t(), map()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def save(socket, task_params) do
     if modify_authorized?(socket) do
-      do_save_task(socket, drop_review_fields(task_params))
+      do_save_task(socket, task_params |> drop_review_fields() |> drop_created_via())
     else
       {:noreply,
        put_flash(
@@ -272,6 +276,14 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   @spec drop_review_fields(map()) :: map()
   def drop_review_fields(task_params) when is_map(task_params),
     do: Map.drop(task_params, @review_field_keys)
+
+  @doc """
+  Drops `created_via` (as a string or atom key) from form params. It is set
+  only when the app captures a task (W2760), never by the web form.
+  """
+  @spec drop_created_via(map()) :: map()
+  def drop_created_via(task_params) when is_map(task_params),
+    do: Map.drop(task_params, ["created_via", :created_via])
 
   @doc false
   def maybe_add_completed_at(task_params, task) do

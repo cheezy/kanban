@@ -110,6 +110,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
     reviewer_result
     created_by_id
     created_by_agent
+    created_via
     archived_at
     changed_files
     after_goal_status

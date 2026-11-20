@@ -78,4 +78,69 @@ defmodule KanbanWeb.API.Me.FallbackControllerTest do
              }
     end
   end
+
+  describe "the task-action refusals (W2760)" do
+    test "the reason-only refusals answer 422 with their reason", %{conn: conn} do
+      for {reason, message} <- [
+            not_movable:
+              "Only work and defect tasks in Ready, or in Doing with an expired claim, can be moved to Backlog.",
+            no_backlog_column: "This board has no Backlog column.",
+            move_failed: "The task could not be moved. Try again."
+          ] do
+        assert conn |> FallbackController.call({:error, reason}) |> json_response(422) ==
+                 %{"error" => Atom.to_string(reason), "message" => message}
+      end
+    end
+
+    test "a full Backlog answers wip_limit_reached with a Backlog message", %{conn: conn} do
+      assert conn
+             |> FallbackController.call({:error, :backlog_wip_limit_reached})
+             |> json_response(422) == %{
+               "error" => "wip_limit_reached",
+               "message" => "Backlog has no room for this task under its WIP limit."
+             }
+    end
+
+    test "a changeset in the device's locale is translated, English without a device",
+         %{conn: conn} do
+      changeset =
+        {%{}, %{title: :string, content: :string}}
+        |> Ecto.Changeset.cast(%{content: String.duplicate("a", 4)}, [:title, :content])
+        |> Ecto.Changeset.validate_required([:title])
+        |> Ecto.Changeset.validate_length(:content, max: 3)
+
+      error = {:error, {:in_device_locale, changeset}}
+
+      assert conn |> FallbackController.call(error) |> json_response(422) == %{
+               "errors" => %{
+                 "title" => ["can't be blank"],
+                 "content" => ["should be at most 3 character(s)"]
+               }
+             }
+
+      german =
+        conn
+        |> Plug.Conn.assign(:current_device, %Kanban.Devices.Device{locale: "de-AT"})
+        |> FallbackController.call(error)
+        |> json_response(422)
+
+      assert german == %{
+               "errors" => %{
+                 "title" => ["darf nicht leer sein"],
+                 "content" => ["sollte höchstens 3 Zeichen haben"]
+               }
+             }
+
+      # The locale is scoped to the response: the process keeps its own.
+      assert Gettext.get_locale(KanbanWeb.Gettext) == "en"
+
+      unknown =
+        conn
+        |> Plug.Conn.assign(:current_device, %Kanban.Devices.Device{locale: nil})
+        |> FallbackController.call(error)
+        |> json_response(422)
+
+      assert unknown["errors"]["title"] == ["can't be blank"]
+    end
+  end
 end

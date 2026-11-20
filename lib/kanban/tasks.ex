@@ -22,10 +22,13 @@ defmodule Kanban.Tasks do
   - `Tasks.MyWork` - Cross-board queue of tasks assigned to the current user
   - `Tasks.BulkActions` - Board-scoped bulk move, assign, label and archive
   - `Tasks.Promote` - The app's promote of several Backlog tasks to Ready
+  - `Tasks.MoveToBacklog` - The app's move of a released or expired task back to Backlog
+  - `Tasks.AppTasks` - The app's task lookup and quick capture into Backlog
   """
 
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.AgentWorkflow
+  alias Kanban.Tasks.AppTasks
   alias Kanban.Tasks.Archiving
   alias Kanban.Tasks.BoardLookup
   alias Kanban.Tasks.BulkActions
@@ -38,6 +41,7 @@ defmodule Kanban.Tasks do
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Interventions
   alias Kanban.Tasks.Lifecycle
+  alias Kanban.Tasks.MoveToBacklog
   alias Kanban.Tasks.MyWork
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Promote
@@ -137,6 +141,9 @@ defmodule Kanban.Tasks do
   defdelegate bulk_archive_tasks(scope, board, task_ids), to: BulkActions, as: :archive
 
   defdelegate promote_to_ready(scope, board, task_ids, opts \\ []), to: Promote, as: :promote
+  defdelegate move_to_backlog(scope, board, task), to: MoveToBacklog, as: :move
+  defdelegate get_task_for_app(scope, id), to: AppTasks
+  defdelegate capture_task(scope, board, attrs), to: AppTasks
 
   # ── Dependency delegations ─────────────────────────────────────────
 

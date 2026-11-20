@@ -42,6 +42,19 @@ defmodule KanbanWeb.TaskLive.Form.SaveTest do
       assert_received {FormComponent, {:saved, %Tasks.Task{id: ^id}}}
     end
 
+    test "a crafted save cannot stamp created_via (W2760)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      assert {:noreply, _socket} =
+               user
+               |> form_socket(board, column)
+               |> Save.save(%{"title" => "Not captured", "created_via" => "mobile"})
+
+      assert %Tasks.Task{created_via: nil} = Repo.get_by(Tasks.Task, title: "Not captured")
+    end
+
     test "refuses a read-only member and saves nothing (D110)" do
       owner = user_fixture()
       board = board_fixture(owner)

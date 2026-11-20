@@ -10425,4 +10425,34 @@ defmodule Kanban.TasksTest do
       refute_receive {:telemetry_event, [:kanban, :task, :comment_created], _, _}
     end
   end
+
+  describe "created_via (W2760)" do
+    test "created_via is cast and stored and is nil by default" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, plain} = Tasks.create_task(column, %{"title" => "Web"})
+      assert Repo.reload!(plain).created_via == nil
+
+      {:ok, captured} = Tasks.create_task(column, %{"title" => "App", "created_via" => "mobile"})
+      assert Repo.reload!(captured).created_via == :mobile
+
+      assert {:error, changeset} =
+               Tasks.create_task(column, %{"title" => "Forged", "created_via" => "web"})
+
+      assert %{created_via: ["is invalid"]} = errors_on(changeset)
+
+      # The agent API's changesets never cast it.
+      refute Map.has_key?(
+               Task.api_create_changeset(%Task{}, %{"created_via" => "mobile"}).changes,
+               :created_via
+             )
+
+      refute Map.has_key?(
+               Task.api_update_changeset(plain, %{"created_via" => "mobile"}).changes,
+               :created_via
+             )
+    end
+  end
 end

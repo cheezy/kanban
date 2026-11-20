@@ -3078,6 +3078,13 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       assert Save.drop_review_fields(%{}) == %{}
     end
+
+    test "drop_created_via/1 drops created_via under string or atom keys" do
+      params = %{"title" => "Kept", "created_via" => "mobile", :created_via => :mobile}
+
+      assert Save.drop_created_via(params) == %{"title" => "Kept"}
+      assert Save.drop_created_via(%{}) == %{}
+    end
   end
 
   describe "the read-only Review Status field" do

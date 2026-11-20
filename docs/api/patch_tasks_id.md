@@ -120,7 +120,7 @@ These fields are not unwritable; they are written **somewhere else**. Use the en
 | `after_goal_status`, `after_goal_result`, `after_goal_attempts` | [`PATCH /api/tasks/:id/after_goal`](patch_tasks_id_after_goal.md) |
 | `archive_reason`, `archive_note`, `archived_by_id` | The archive action |
 | `target_id`, `duplicate_of_id` | Set in the board UI |
-| `identifier`, `parent_id`, `created_by_id`, `created_by_agent` | Set at creation and never changed. A task **cannot be reparented** — ask a human to move it in the board UI |
+| `identifier`, `parent_id`, `created_by_id`, `created_by_agent`, `created_via` | Set at creation and never changed. A task **cannot be reparented** — ask a human to move it in the board UI |
 | `position` | Board placement — set when a task is created or moved |
 | `column_id` | Board placement. This one does **not** return 422: sending the task's **current** `column_id` is accepted as a no-op, and sending a different one returns **403** (see [Column changes](#column-changes)) |
 | `archived_at` | The archive action |

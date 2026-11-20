@@ -68,6 +68,8 @@ defmodule Kanban.Tasks.Task do
   - `dependencies` - Task identifiers that must complete first
   - `parent_id` - Parent goal (for hierarchical structure)
   - `created_by` / `created_by_agent` - Creator tracking
+  - `created_via` - How a task was created outside the web form and the agent API:
+    `:mobile` for a task captured in the app (`POST /api/me/tasks`, W2760); `nil` otherwise
   - `completed_by` / `completed_by_agent` - Completer tracking
   - `claimed_at` / `claim_expires_at` - Claim tracking
   - `needs_review` / `review_status` - Review workflow
@@ -276,6 +278,11 @@ defmodule Kanban.Tasks.Task do
     # Creator Tracking
     # Agent model that created task - Example: "claude-sonnet-4-5", "gpt-4"
     field :created_by_agent, :string
+
+    # How the task was created outside the web form and the agent API (W2760).
+    # :mobile is a task captured in the app; nil otherwise. No draft flag
+    # (design decision 6). Set at creation only, never by the agent API.
+    field :created_via, Ecto.Enum, values: [:mobile]
 
     # Completion Tracking
     # When completed - Validated: Must be set when status=:completed

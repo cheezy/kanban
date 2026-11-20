@@ -1038,11 +1038,17 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       # emails render in the account's language. A file whose every with_locale call pins "en" (the
       # audit stream payload, whose labels are English whatever the locale)
       # renders in no account's language, so it is left out. The guide's
-      # section is about emails, so the push payload builder, which renders in
-      # each device's language rather than the account's, is left out too.
+      # section is about emails, so the push payload builder and the person
+      # API's fallback controller (W2760), which render in each device's
+      # language rather than the account's, are left out too.
       with_locale =
         Path.wildcard("lib/**/*.ex")
-        |> Enum.reject(&(&1 == "lib/kanban/push/payload_builder.ex"))
+        |> Enum.reject(
+          &(&1 in [
+              "lib/kanban/push/payload_builder.ex",
+              "lib/kanban_web/controllers/api/me/fallback_controller.ex"
+            ])
+        )
         |> Enum.filter(&(File.read!(&1) =~ "Gettext.with_locale"))
         |> Enum.reject(fn path ->
           source = File.read!(path)
