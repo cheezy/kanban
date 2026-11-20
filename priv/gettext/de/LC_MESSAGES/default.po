@@ -12,6 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: lib/kanban_web/components/core_components.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/admin/organization_live/index.html.heex
 #: lib/kanban_web/live/admin/organization_live/show.html.heex
 #: lib/kanban_web/live/admin/user_live/index.html.heex
@@ -117,6 +118,7 @@ msgstr "Konto erstellen"
 msgid "Creating account..."
 msgstr "Konto wird erstellt..."
 
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/admin/organization_live/show.html.heex
 #: lib/kanban_web/live/admin/user_live/index.html.heex
 #: lib/kanban_web/live/user_live/confirmation_pending.ex
@@ -203,6 +205,7 @@ msgid "Board updated successfully"
 msgstr "Board erfolgreich aktualisiert"
 
 #: lib/kanban_web/controllers/oauth_html/authorize.html.heex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/admin/organization_live/form.ex
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex
 #: lib/kanban_web/live/board_live/form.html.heex
@@ -650,6 +653,7 @@ msgid "Read Only"
 msgstr "Nur Lesen"
 
 #: lib/kanban_web/components/bulk_action_bar.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/admin/organization_live/show.html.heex
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/members_form_component.ex
@@ -759,6 +763,7 @@ msgid "No history available"
 msgstr "Kein Verlauf verfügbar"
 
 #: lib/kanban_web/components/task_metadata_grid.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/board_live/webhook_views.ex
 #: lib/kanban_web/live/org_live/audit_stream_destination.html.heex
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
@@ -3099,6 +3104,7 @@ msgstr "Aufgabe auf diesem Board nicht gefunden"
 msgid "You must be a board member to comment on this task"
 msgstr "Sie müssen Board-Mitglied sein, um diese Aufgabe zu kommentieren"
 
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #: lib/kanban_web/live/admin/message_live/index.ex
 #: lib/kanban_web/live/admin/organization_live/form.ex
 #: lib/kanban_web/live/admin/user_live/index.ex
@@ -7605,6 +7611,7 @@ msgid "Confirmed"
 msgstr "Bestätigt"
 
 #: lib/kanban_web/components/account_status.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/admin/user_live/index.html.heex
 #: lib/kanban_web/live/board_live/members_form_component.ex
 #: lib/kanban_web/live/board_live/webhook_views.ex
@@ -10927,6 +10934,7 @@ msgstr "Dieser Workspace ist nicht verfügbar."
 msgid "The boards in this workspace you have access to."
 msgstr "Die Boards in diesem Workspace, auf die Sie Zugriff haben."
 
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #: lib/kanban_web/live/workspace_live/settings.ex
 #, elixir-autogen, elixir-format
 msgid "The change could not be saved. Please try again."
@@ -11233,6 +11241,7 @@ msgstr "Ein Token funktioniert nicht mehr, wenn es widerrufen wird, abläuft ode
 msgid "API tokens · create · revoke"
 msgstr "API-Token · erstellen · widerrufen"
 
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #: lib/kanban_web/live/org_live/scim.html.heex
 #: lib/kanban_web/live/workspace_live/tokens_card.ex
 #, elixir-autogen, elixir-format
@@ -15794,3 +15803,175 @@ msgstr "Diese Spalte löschen?"
 #, elixir-autogen, elixir-format
 msgid "Delete this column? It holds %{open_tasks} and %{archived_tasks}, which will be deleted with it."
 msgstr "Diese Spalte löschen? Sie enthält %{open_tasks} und %{archived_tasks}, die mit ihr gelöscht werden."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Confirm the change first."
+msgstr "Bestätigen Sie die Änderung zuerst."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Deleted"
+msgstr "Gelöscht"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Deleted account (#%{id})"
+msgstr "Gelöschtes Konto (#%{id})"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Email address"
+msgstr "E-Mail-Adresse"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Enter an email address."
+msgstr "Geben Sie eine E-Mail-Adresse ein."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Feature flags"
+msgstr "Feature-Flags"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Mobile app preview"
+msgstr "Vorschau der mobilen App"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "No account uses that email address."
+msgstr "Kein Konto verwendet diese E-Mail-Adresse."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "No users have this flag."
+msgstr "Kein Benutzer hat dieses Flag."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Off"
+msgstr "Aus"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "On for %{count} user"
+msgid_plural "On for %{count} users"
+msgstr[0] "Für %{count} Benutzer an"
+msgstr[1] "Für %{count} Benutzer an"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "On for everyone"
+msgstr "Für alle an"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Shows the screens that matter only once the phone apps ship: the device lists in account settings and on the Organization members page, the push notification settings, and the Organization policy that hides task titles in pushes."
+msgstr "Zeigt die Bildschirme, die erst mit den Smartphone-Apps relevant werden: die Gerätelisten in den Kontoeinstellungen und auf der Mitgliederseite der Organisation, die Einstellungen für Push-Benachrichtigungen und die Organisationsrichtlinie, die Aufgabentitel in Push-Nachrichten ausblendet."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "That account is disabled, so it was not added."
+msgstr "Dieses Konto ist deaktiviert und wurde daher nicht hinzugefügt."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "That user already has this flag."
+msgstr "Dieser Benutzer hat dieses Flag bereits."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "That user no longer has this flag."
+msgstr "Dieser Benutzer hat dieses Flag nicht mehr."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "This flag is already off for everyone."
+msgstr "Dieses Flag ist bereits für alle aus."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "This flag is already on for everyone."
+msgstr "Dieses Flag ist bereits für alle an."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Turn %{flag} off for everyone? Users with their own gate keep it."
+msgstr "%{flag} für alle ausschalten? Benutzer mit eigener Freigabe behalten sie."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Turn %{flag} on for everyone? Every user, and every visitor who is not signed in, gets it at once."
+msgstr "%{flag} für alle einschalten? Alle Benutzer und alle nicht angemeldeten Besucher erhalten es sofort."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Turn off for everyone"
+msgstr "Für alle ausschalten"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Turn on for everyone"
+msgstr "Für alle einschalten"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Turn on for this user"
+msgstr "Für diesen Benutzer einschalten"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Turn unreleased features on for chosen users or for everyone. A change applies the next time a page loads; no restart is needed."
+msgstr "Schalten Sie unveröffentlichte Funktionen für ausgewählte Benutzer oder für alle ein. Eine Änderung gilt beim nächsten Laden einer Seite; ein Neustart ist nicht nötig."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Turned off for everyone."
+msgstr "Für alle ausgeschaltet."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Turned off for that user."
+msgstr "Für diesen Benutzer ausgeschaltet."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Turned on for everyone."
+msgstr "Für alle eingeschaltet."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Turned on for that user."
+msgstr "Für diesen Benutzer eingeschaltet."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Unknown feature flag."
+msgstr "Unbekanntes Feature-Flag."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Users with their own gate keep it when this is turned off for everyone."
+msgstr "Benutzer mit eigener Freigabe behalten sie, wenn dies für alle ausgeschaltet wird."
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Users with this flag"
+msgstr "Benutzer mit diesem Flag"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Feature flag turned off"
+msgstr "Feature-Flag ausgeschaltet"
+
+#: lib/kanban_web/components/audit_log_actions.ex
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Feature flag turned on"
+msgstr "Feature-Flag eingeschaltet"

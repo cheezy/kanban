@@ -136,6 +136,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Error Pages and Error Responses](error-pages.md) — What a browser, API or SCIM client gets when a request fails, and which module renders it.
 - [Organizations Launch Runbook](organizations-launch-runbook.md) — The launch-day steps for enforcing plans, the verification checklist and rollback.
 - [Telemetry Events](telemetry.md) — Every telemetry event, its privacy rule, attaching a handler and metrics retention.
+- [Feature Flags](feature-flags.md) — The flag registry, the `/admin/feature-flags` page that turns a flag on for chosen users or for everyone, and its audit events.
 
 ## Contributors to Stride
 

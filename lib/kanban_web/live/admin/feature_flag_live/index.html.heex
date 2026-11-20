@@ -1,0 +1,176 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <.header>
+      {gettext("Feature flags")}
+      <:subtitle>
+        {gettext(
+          "Turn unreleased features on for chosen users or for everyone. A change applies the next time a page loads; no restart is needed."
+        )}
+      </:subtitle>
+    </.header>
+
+    <section
+      :for={overview <- @overviews}
+      id={"flag-#{overview.flag}"}
+      class="mt-8 rounded-box border border-base-300 bg-base-100 p-6"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="max-w-2xl">
+          <h2 class="text-lg font-semibold text-base-content">{flag_label(overview.flag)}</h2>
+          <p class="mt-1 text-sm" style="color: var(--ink-2);">
+            {flag_description(overview.flag)}
+          </p>
+        </div>
+        <span id={"flag-#{overview.flag}-state"} class={["badge", state_class(overview)]}>
+          {state_label(overview)}
+        </span>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-4">
+        <.button
+          :if={!overview.everyone?}
+          id={"everyone-#{overview.flag}"}
+          type="button"
+          phx-click="confirm_everyone"
+          phx-value-flag={overview.flag}
+          phx-value-to="on"
+        >
+          {gettext("Turn on for everyone")}
+        </.button>
+        <.button
+          :if={overview.everyone?}
+          id={"everyone-#{overview.flag}"}
+          type="button"
+          phx-click="confirm_everyone"
+          phx-value-flag={overview.flag}
+          phx-value-to="off"
+        >
+          {gettext("Turn off for everyone")}
+        </.button>
+        <p
+          :if={overview.everyone? and gated?(overview)}
+          id={"flag-#{overview.flag}-everyone-note"}
+          class="text-sm"
+          style="color: var(--ink-2);"
+        >
+          {gettext("Users with their own gate keep it when this is turned off for everyone.")}
+        </p>
+      </div>
+
+      <div
+        :if={confirm_to(@confirming, overview.flag)}
+        id={"confirm-everyone-#{overview.flag}"}
+        role="alert"
+        class="mt-4 rounded-box border border-base-300 bg-base-200 p-4"
+      >
+        <p class="text-base-content">
+          {confirm_text(overview.flag, confirm_to(@confirming, overview.flag))}
+        </p>
+        <div class="mt-3 flex gap-3">
+          <.button
+            id={"confirm-everyone-yes-#{overview.flag}"}
+            type="button"
+            variant="primary"
+            phx-click="set_everyone"
+            phx-value-flag={overview.flag}
+            phx-value-to={confirm_to(@confirming, overview.flag)}
+          >
+            {confirm_button_label(confirm_to(@confirming, overview.flag))}
+          </.button>
+          <.button
+            id={"confirm-everyone-cancel-#{overview.flag}"}
+            type="button"
+            phx-click="cancel_everyone"
+          >
+            {gettext("Cancel")}
+          </.button>
+        </div>
+      </div>
+
+      <h3 class="mt-8 text-base font-semibold text-base-content">
+        {gettext("Users with this flag")}
+      </h3>
+
+      <p
+        :if={!gated?(overview)}
+        id={"flag-#{overview.flag}-empty"}
+        class="mt-2 text-sm"
+        style="color: var(--ink-2);"
+      >
+        {gettext("No users have this flag.")}
+      </p>
+
+      <div :if={gated?(overview)} class="mt-2 overflow-x-auto">
+        <table id={"flag-#{overview.flag}-users"} class="table">
+          <thead>
+            <tr>
+              <th>{gettext("Email")}</th>
+              <th>{gettext("Status")}</th>
+              <th class="w-0"><span class="sr-only">{gettext("Actions")}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={user <- overview.users} id={"flag-#{overview.flag}-user-#{user.id}"}>
+              <td><span class="text-base-content break-all">{user.email}</span></td>
+              <td>
+                <span :if={disabled?(user)} class="badge badge-error">{gettext("Disabled")}</span>
+                <span :if={!disabled?(user)} class="badge badge-ghost">{gettext("Active")}</span>
+              </td>
+              <td>
+                <.button
+                  id={"remove-#{overview.flag}-#{user.id}"}
+                  type="button"
+                  phx-click="remove_user"
+                  phx-value-flag={overview.flag}
+                  phx-value-id={user.id}
+                >
+                  {gettext("Remove")}
+                </.button>
+              </td>
+            </tr>
+            <tr :for={id <- overview.missing_user_ids} id={"flag-#{overview.flag}-user-#{id}"}>
+              <td>
+                <span class="text-base-content">
+                  {gettext("Deleted account (#%{id})", id: id)}
+                </span>
+              </td>
+              <td><span class="badge badge-ghost">{gettext("Deleted")}</span></td>
+              <td>
+                <.button
+                  id={"remove-#{overview.flag}-#{id}"}
+                  type="button"
+                  phx-click="remove_user"
+                  phx-value-flag={overview.flag}
+                  phx-value-id={id}
+                >
+                  {gettext("Remove")}
+                </.button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <.form
+        for={@forms[overview.flag]}
+        id={"add-user-form-#{overview.flag}"}
+        phx-submit="add_user"
+        class="mt-6 flex max-w-xl flex-wrap items-end gap-3"
+      >
+        <input type="hidden" name="flag" value={overview.flag} />
+        <div class="min-w-64 flex-1">
+          <.input
+            field={@forms[overview.flag][:email]}
+            type="email"
+            label={gettext("Email address")}
+            autocomplete="off"
+            maxlength="160"
+          />
+        </div>
+        <div class="mb-2">
+          <.button type="submit" variant="primary">{gettext("Turn on for this user")}</.button>
+        </div>
+      </.form>
+    </section>
+  </div>
+</Layouts.app>

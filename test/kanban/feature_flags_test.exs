@@ -240,6 +240,201 @@ defmodule Kanban.FeatureFlagsTest do
     assert FeatureFlags.state(@flag) == :everyone
   end
 
+  # The topic is global and these tests run async, so another test's broadcast
+  # can arrive at any time: only receipt is asserted here, never absence.
+  # Kanban.FeatureFlagsStoreErrorTest, which runs alone, asserts absence.
+  describe "the audited admin writes" do
+    setup do
+      :ok = FeatureFlags.subscribe()
+      %{admin: Scope.for_user(admin_fixture())}
+    end
+
+    defp events(action), do: Kanban.AuditLog.list_events(action: action)
+
+    test "topic/0 is feature_flags" do
+      assert FeatureFlags.topic() == "feature_flags"
+    end
+
+    test "turn_on_for_email/3 trims the address, ignores case, audits and broadcasts",
+         %{admin: admin} do
+      user = user_fixture()
+
+      assert :ok = FeatureFlags.turn_on_for_email(admin, @flag, " #{String.upcase(user.email)} ")
+      assert FeatureFlags.state(@flag) == {:users, [user.id]}
+      assert_receive {:feature_flag_changed, :mobile_app_preview}
+
+      assert [event] = events("feature_flag_enabled")
+      assert event.actor_user_id == admin.user.id
+
+      assert event.metadata == %{
+               "user_id" => admin.user.id,
+               "flag" => "mobile_app_preview",
+               "target_user_id" => user.id,
+               "scope" => "user"
+             }
+    end
+
+    test "turn_on_for_email/3 refuses bad input with nothing written or sent", %{admin: admin} do
+      disabled =
+        user_fixture()
+        |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+        |> Repo.update!()
+
+      assert {:error, :invalid_email} = FeatureFlags.turn_on_for_email(admin, @flag, "  ")
+      assert {:error, :invalid_email} = FeatureFlags.turn_on_for_email(admin, @flag, nil)
+
+      assert {:error, :invalid_email} =
+               FeatureFlags.turn_on_for_email(admin, @flag, String.duplicate("a", 161))
+
+      assert {:error, :user_not_found} =
+               FeatureFlags.turn_on_for_email(admin, @flag, "nobody@example.invalid")
+
+      assert {:error, :user_disabled} =
+               FeatureFlags.turn_on_for_email(admin, @flag, disabled.email)
+
+      assert FeatureFlags.state(@flag) == :off
+      assert events("feature_flag_enabled") == []
+    end
+
+    test "turn_on_for_email/3 counts the length cap in characters, as users.email does",
+         %{admin: admin} do
+      # 112 characters but 212 bytes: a stored address a byte cap would refuse.
+      email = String.duplicate("é", 100) <> "@example.com"
+
+      user =
+        user_fixture()
+        |> Ecto.Changeset.change(email: email)
+        |> Repo.update!()
+
+      assert :ok = FeatureFlags.turn_on_for_email(admin, @flag, email)
+      assert on_for?(user)
+
+      assert {:error, :invalid_email} =
+               FeatureFlags.turn_on_for_email(admin, @flag, String.duplicate("é", 161))
+    end
+
+    test "turn_on_for_email/3 refuses a user who already has the gate", %{admin: admin} do
+      user = user_fixture()
+      :ok = FeatureFlags.enable_for_user(@flag, user)
+
+      assert {:error, :already_enabled} = FeatureFlags.turn_on_for_email(admin, @flag, user.email)
+      assert events("feature_flag_enabled") == []
+    end
+
+    test "every write refuses anyone but an enabled site admin, before any lookup" do
+      user = user_fixture()
+      :ok = FeatureFlags.enable_for_user(@flag, user)
+
+      disabled_admin =
+        admin_fixture()
+        |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+        |> Repo.update!()
+
+      for scope <- [
+            nil,
+            %Scope{user: nil},
+            Scope.for_user(user),
+            Scope.for_user(disabled_admin)
+          ] do
+        assert {:error, :unauthorized} =
+                 FeatureFlags.turn_on_for_email(scope, @flag, "nobody@example.invalid")
+
+        assert {:error, :unauthorized} = FeatureFlags.turn_off_for_user_id(scope, @flag, user.id)
+        assert {:error, :unauthorized} = FeatureFlags.turn_on_for_everyone(scope, @flag)
+        assert {:error, :unauthorized} = FeatureFlags.turn_off_for_everyone(scope, @flag)
+      end
+
+      assert FeatureFlags.state(@flag) == {:users, [user.id]}
+      assert events("feature_flag_enabled") == []
+      assert events("feature_flag_disabled") == []
+    end
+
+    test "turn_off_for_user_id/3 removes the gate, audits and broadcasts", %{admin: admin} do
+      user = user_fixture()
+      :ok = FeatureFlags.enable_for_user(@flag, user)
+
+      assert :ok = FeatureFlags.turn_off_for_user_id(admin, @flag, user.id)
+      assert FeatureFlags.state(@flag) == :off
+      assert_receive {:feature_flag_changed, :mobile_app_preview}
+
+      assert [%{metadata: %{"target_user_id" => target, "scope" => "user"}}] =
+               events("feature_flag_disabled")
+
+      assert target == user.id
+
+      assert {:error, :not_enabled} = FeatureFlags.turn_off_for_user_id(admin, @flag, user.id)
+      assert length(events("feature_flag_disabled")) == 1
+    end
+
+    test "turn_on_for_everyone/2 and turn_off_for_everyone/2 audit scope everyone",
+         %{admin: admin} do
+      user = user_fixture()
+      :ok = FeatureFlags.enable_for_user(@flag, user)
+
+      assert {:error, :not_enabled} = FeatureFlags.turn_off_for_everyone(admin, @flag)
+      assert :ok = FeatureFlags.turn_on_for_everyone(admin, @flag)
+      assert {:error, :already_enabled} = FeatureFlags.turn_on_for_everyone(admin, @flag)
+      assert FeatureFlags.state(@flag) == :everyone
+      assert_receive {:feature_flag_changed, :mobile_app_preview}
+
+      assert :ok = FeatureFlags.turn_off_for_everyone(admin, @flag)
+      assert FeatureFlags.state(@flag) == {:users, [user.id]}
+      assert_receive {:feature_flag_changed, :mobile_app_preview}
+
+      assert [%{metadata: on}] = events("feature_flag_enabled")
+      assert [%{metadata: off}] = events("feature_flag_disabled")
+
+      for metadata <- [on, off] do
+        assert metadata == %{
+                 "user_id" => admin.user.id,
+                 "flag" => "mobile_app_preview",
+                 "scope" => "everyone"
+               }
+      end
+    end
+
+    test "overview/1 lists users with a gate even while everyone is on, and deleted ids apart" do
+      user = user_fixture()
+      deleted = user_fixture()
+      :ok = FeatureFlags.enable_for_user(@flag, user)
+      :ok = FeatureFlags.enable_for_user(@flag, deleted)
+      :ok = FeatureFlags.enable_for_everyone(@flag)
+      Repo.delete!(deleted)
+
+      assert %{flag: @flag, everyone?: true, users: [listed], missing_user_ids: [missing]} =
+               FeatureFlags.overview(@flag)
+
+      assert listed.id == user.id
+      assert missing == deleted.id
+
+      :ok = FeatureFlags.disable_for_everyone(@flag)
+      assert %{everyone?: false} = FeatureFlags.overview(@flag)
+    end
+
+    test "overview/1 of a flag with no gates is empty" do
+      assert FeatureFlags.overview(@flag) == %{
+               flag: @flag,
+               everyone?: false,
+               users: [],
+               missing_user_ids: []
+             }
+    end
+
+    test "a gate whose id overflows a bigint is ignored" do
+      Repo.insert_all("fun_with_flags_toggles", [
+        %{
+          flag_name: "mobile_app_preview",
+          gate_type: "actor",
+          target: "user:99999999999999999999",
+          enabled: true
+        }
+      ])
+
+      assert FeatureFlags.overview(@flag).missing_user_ids == []
+      assert FeatureFlags.state(@flag) == :off
+    end
+  end
+
   test "the kanban release loads fun_with_flags, which does not start on its own" do
     config = Mix.Project.config()
 

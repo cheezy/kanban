@@ -24,6 +24,31 @@ defmodule Kanban.AccountsTest do
     end
   end
 
+  describe "list_users_by_ids/1" do
+    test "returns the users with those ids, disabled ones included, ordered by email" do
+      b = user_fixture(%{email: "b-#{System.unique_integer([:positive])}@example.com"})
+      a = user_fixture(%{email: "a-#{System.unique_integer([:positive])}@example.com"})
+
+      disabled =
+        user_fixture(%{email: "c-#{System.unique_integer([:positive])}@example.com"})
+        |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+        |> Repo.update!()
+
+      _other = user_fixture()
+
+      ids =
+        [b.id, disabled.id, a.id, 999_999_999]
+        |> Accounts.list_users_by_ids()
+        |> Enum.map(& &1.id)
+
+      assert ids == [a.id, b.id, disabled.id]
+    end
+
+    test "returns [] for no ids" do
+      assert Accounts.list_users_by_ids([]) == []
+    end
+  end
+
   describe "get_user_by_email_and_password/2" do
     test "does not return the user if the email does not exist" do
       refute Accounts.get_user_by_email_and_password("unknown@example.com", "hello world!")

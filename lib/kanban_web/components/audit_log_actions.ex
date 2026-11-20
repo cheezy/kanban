@@ -192,6 +192,12 @@ defmodule KanbanWeb.AuditLogActions do
 
   def action_label("device_revoked"), do: pgettext("audit action", "Device revoked")
 
+  def action_label("feature_flag_enabled"),
+    do: pgettext("audit action", "Feature flag turned on")
+
+  def action_label("feature_flag_disabled"),
+    do: pgettext("audit action", "Feature flag turned off")
+
   def action_label("review_approved"), do: pgettext("audit action", "Review approved")
 
   def action_label("review_changes_requested"),

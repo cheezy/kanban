@@ -101,6 +101,20 @@ defmodule Kanban.Accounts do
   """
   def get_user(id), do: Repo.get(User, id)
 
+  @doc """
+  The users whose ids are in `ids`, disabled ones included, ordered by email,
+  from one query. An id with no user row is simply absent from the result.
+  """
+  @spec list_users_by_ids([pos_integer()]) :: [User.t()]
+  def list_users_by_ids([]), do: []
+
+  def list_users_by_ids(ids) when is_list(ids) do
+    User
+    |> where([u], u.id in ^ids)
+    |> order_by([u], asc: u.email)
+    |> Repo.all()
+  end
+
   ## User registration
 
   @doc """
