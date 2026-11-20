@@ -5,6 +5,12 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Deleting a column now says how many tasks go with it.** Deleting a column also deletes every task in it, archived ones included, but the old prompt gave no count and never mentioned the archived tasks, which the board doesn't show. A column's **Delete** now opens a confirmation that names how many open and archived tasks will be deleted with it, counted when you click it. An empty column's confirmation only asks whether to delete it.
+
 ## [3.2.0] - 2026-11-15
 
 ### Added

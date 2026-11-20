@@ -208,6 +208,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/labels_manager_component.ex
 #: lib/kanban_web/live/board_live/settings_form_component.ex
+#: lib/kanban_web/live/board_live/show.html.heex
 #: lib/kanban_web/live/board_live/webhook_form.ex
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex
 #: lib/kanban_web/live/org_live/console.html.heex
@@ -893,11 +894,6 @@ msgstr "不能为空"
 #, elixir-autogen, elixir-format
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr "从数据库设计到用户界面，整个应用程序都是通过与 Claude Code 和 TideWave 的对话开发的。这包括架构、实时更新、拖放功能和国际化支持。"
-
-#: lib/kanban_web/live/board_live/show.html.heex
-#, elixir-autogen, elixir-format
-msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
-msgstr "您确定要删除此列吗？此列中的所有任务也将被删除。"
 
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/members_form_component.ex
@@ -15683,3 +15679,25 @@ msgstr "未审核"
 #, elixir-autogen, elixir-format
 msgid "Reviews are decided in the review queue, not in this form."
 msgstr "审核在审核队列中决定，而不是在此表单中。"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} archived task"
+msgid_plural "%{count} archived tasks"
+msgstr[0] "%{count} 个已归档任务"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} open task"
+msgid_plural "%{count} open tasks"
+msgstr[0] "%{count} 个开放任务"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this column?"
+msgstr "删除此列？"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this column? It holds %{open_tasks} and %{archived_tasks}, which will be deleted with it."
+msgstr "删除此列？其中有%{open_tasks}和%{archived_tasks}，将随该列一起删除。"

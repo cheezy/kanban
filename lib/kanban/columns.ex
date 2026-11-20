@@ -16,6 +16,7 @@ defmodule Kanban.Columns do
   alias Kanban.Columns.Column
   alias Kanban.Columns.ColumnTelemetry
   alias Kanban.Repo
+  alias Kanban.Tasks.Task
 
   @doc """
   Returns the list of columns for a board, ordered by position.
@@ -248,6 +249,33 @@ defmodule Kanban.Columns do
     else
       {:error, :unauthorized}
     end
+  end
+
+  @doc """
+  Counts the task rows in `column`, split into open and archived ones.
+
+  A task is archived when its `archived_at` is set and open otherwise. Every
+  task row in the column counts, goals included, because deleting the column
+  cascades to all of them (`tasks.column_id` is `on_delete: :delete_all`).
+  The counts come from one grouped query.
+
+  ## Examples
+
+      iex> count_column_tasks(column)
+      %{open: 12, archived: 30}
+
+      iex> count_column_tasks(empty_column)
+      %{open: 0, archived: 0}
+
+  """
+  def count_column_tasks(%Column{id: column_id}) do
+    Task
+    |> where([t], t.column_id == ^column_id)
+    |> select([t], %{
+      open: filter(count(t.id), is_nil(t.archived_at)),
+      archived: filter(count(t.id), not is_nil(t.archived_at))
+    })
+    |> Repo.one()
   end
 
   @doc """

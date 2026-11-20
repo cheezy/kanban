@@ -208,6 +208,7 @@ msgstr "Tablero actualizado exitosamente"
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/labels_manager_component.ex
 #: lib/kanban_web/live/board_live/settings_form_component.ex
+#: lib/kanban_web/live/board_live/show.html.heex
 #: lib/kanban_web/live/board_live/webhook_form.ex
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex
 #: lib/kanban_web/live/org_live/console.html.heex
@@ -893,11 +894,6 @@ msgstr "no puede estar en blanco"
 #, elixir-autogen, elixir-format
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr "Toda la aplicación, desde el diseño de la base de datos hasta la interfaz de usuario, fue desarrollada a través de conversaciones con Claude Code y TideWave. Esto incluye la arquitectura, actualizaciones en tiempo real, funcionalidad de arrastrar-soltar y soporte de internacionalización."
-
-#: lib/kanban_web/live/board_live/show.html.heex
-#, elixir-autogen, elixir-format
-msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
-msgstr "¿Estás seguro de que quieres eliminar esta columna? Todas las tareas en esta columna también serán eliminadas."
 
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/members_form_component.ex
@@ -15768,3 +15764,27 @@ msgstr "Sin revisar"
 #, elixir-autogen, elixir-format
 msgid "Reviews are decided in the review queue, not in this form."
 msgstr "Las revisiones se deciden en la cola de revisión, no en este formulario."
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} archived task"
+msgid_plural "%{count} archived tasks"
+msgstr[0] "%{count} tarea archivada"
+msgstr[1] "%{count} tareas archivadas"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} open task"
+msgid_plural "%{count} open tasks"
+msgstr[0] "%{count} tarea abierta"
+msgstr[1] "%{count} tareas abiertas"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this column?"
+msgstr "¿Eliminar esta columna?"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this column? It holds %{open_tasks} and %{archived_tasks}, which will be deleted with it."
+msgstr "¿Eliminar esta columna? Contiene %{open_tasks} y %{archived_tasks}, que se eliminarán con ella."

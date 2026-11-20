@@ -3,6 +3,40 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [Unreleased]
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Deleting a column now says how many tasks go with
+              it.</strong> Deleting a column also deletes every task in it,
+              archived ones included, but the old prompt gave no count and
+              never mentioned the archived tasks, which the board doesn't
+              show. A column's <strong>Delete</strong> now opens a
+              confirmation that names how many open and archived tasks will
+              be deleted with it, counted when you click it. An empty
+              column's confirmation only asks whether to delete it.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [3.2.0] - 2026-11-15
         </h2>
 

@@ -208,6 +208,7 @@ msgstr "Board erfolgreich aktualisiert"
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/labels_manager_component.ex
 #: lib/kanban_web/live/board_live/settings_form_component.ex
+#: lib/kanban_web/live/board_live/show.html.heex
 #: lib/kanban_web/live/board_live/webhook_form.ex
 #: lib/kanban_web/live/org_live/audit_stream_form.html.heex
 #: lib/kanban_web/live/org_live/console.html.heex
@@ -893,11 +894,6 @@ msgstr "darf nicht leer sein"
 #, elixir-autogen, elixir-format
 msgid "The entire application, from database design to user interface, was developed through conversations with Claude Code and TideWave. This includes the architecture, real-time updates, drag-and-drop functionality, and internationalization support."
 msgstr "Die gesamte Anwendung, vom Datenbankdesign bis zur Benutzeroberfläche, wurde durch Gespräche mit Claude Code und TideWave entwickelt. Dies umfasst die Architektur, Echtzeit-Updates, Drag-and-Drop-Funktionalität und Internationalisierungsunterstützung."
-
-#: lib/kanban_web/live/board_live/show.html.heex
-#, elixir-autogen, elixir-format
-msgid "Are you sure you want to delete this column? All tasks in this column will also be deleted."
-msgstr "Sind Sie sicher, dass Sie diese Spalte löschen möchten? Alle Aufgaben in dieser Spalte werden ebenfalls gelöscht."
 
 #: lib/kanban_web/live/board_live/form.html.heex
 #: lib/kanban_web/live/board_live/members_form_component.ex
@@ -15773,3 +15769,27 @@ msgstr "Nicht geprüft"
 #, elixir-autogen, elixir-format
 msgid "Reviews are decided in the review queue, not in this form."
 msgstr "Prüfungen werden in der Prüfungswarteschlange entschieden, nicht in diesem Formular."
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} archived task"
+msgid_plural "%{count} archived tasks"
+msgstr[0] "%{count} archivierte Aufgabe"
+msgstr[1] "%{count} archivierte Aufgaben"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "%{count} open task"
+msgid_plural "%{count} open tasks"
+msgstr[0] "%{count} offene Aufgabe"
+msgstr[1] "%{count} offene Aufgaben"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this column?"
+msgstr "Diese Spalte löschen?"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this column? It holds %{open_tasks} and %{archived_tasks}, which will be deleted with it."
+msgstr "Diese Spalte löschen? Sie enthält %{open_tasks} und %{archived_tasks}, die mit ihr gelöscht werden."

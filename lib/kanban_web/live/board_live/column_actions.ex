@@ -1,9 +1,10 @@
 defmodule KanbanWeb.BoardLive.ColumnActions do
   @moduledoc """
   Column and board-display handlers for `KanbanWeb.BoardLive.Show`, extracted
-  from the LiveView to keep it under the module-size guideline: deleting and
-  reordering columns, toggling field visibility, and the column name and
-  status helpers the board template and `KanbanWeb.BoardLive.Goals` use. The
+  from the LiveView to keep it under the module-size guideline: opening the
+  column-deletion confirmation step, deleting and reordering columns,
+  toggling field visibility, and the column name and status helpers the board
+  template and `KanbanWeb.BoardLive.Goals` use. The
   owner and AI-board checks stay in the LiveView's `handle_event/3` clauses.
   Flash strings are asserted in tests and shown to users — do not reword.
   """
@@ -17,6 +18,62 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
   alias Kanban.Columns
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.Show
+
+  @doc """
+  Opens the column-deletion confirmation step for the column `raw_id` names.
+
+  Resolves the column on this board, counts its open and archived tasks at
+  this moment, and assigns `:column_deletion` as
+  `%{column_id: id, open: n, archived: m}`, which renders the
+  `delete-column-modal`. A column that is not on this board gets
+  "Column not found on this board" and opens nothing. The caller has already
+  run the owner and AI-board checks; any further refusal (such as a held
+  board) belongs in this function.
+  """
+  def open_column_deletion(socket, raw_id) do
+    with {:ok, column_id} <- Show.parse_task_id(raw_id),
+         %Columns.Column{} = column <-
+           Columns.get_column_for_board(column_id, socket.assigns.board.id) do
+      %{open: open, archived: archived} = Columns.count_column_tasks(column)
+
+      {:noreply,
+       assign(socket, :column_deletion, %{column_id: column.id, open: open, archived: archived})}
+    else
+      _ ->
+        {:noreply,
+         socket
+         |> assign(:column_deletion, nil)
+         |> put_flash(:error, gettext("Column not found on this board"))}
+    end
+  end
+
+  @doc """
+  The confirmation sentence the `delete-column-modal` shows for a
+  `:column_deletion` step: both counts when the column holds tasks, and only
+  "Delete this column?" when it holds none.
+  """
+  def column_deletion_prompt(%{open: 0, archived: 0}), do: gettext("Delete this column?")
+
+  def column_deletion_prompt(%{open: open, archived: archived}) do
+    gettext(
+      "Delete this column? It holds %{open_tasks} and %{archived_tasks}, which will be deleted with it.",
+      open_tasks: ngettext("%{count} open task", "%{count} open tasks", open),
+      archived_tasks: ngettext("%{count} archived task", "%{count} archived tasks", archived)
+    )
+  end
+
+  @doc """
+  Runs `fun` on `socket` only while the column a confirmation step stored is
+  still on this board. A column, or its board, deleted elsewhere since the
+  step opened gets "Column not found on this board" instead, before any access
+  check can answer for a board that no longer exists.
+  """
+  def with_column_on_board(socket, column_id, fun) do
+    case Columns.get_column_for_board(column_id, socket.assigns.board.id) do
+      %Columns.Column{} -> fun.(socket)
+      nil -> {:noreply, put_flash(socket, :error, gettext("Column not found on this board"))}
+    end
+  end
 
   def do_delete_column(socket, raw_id) do
     with {:ok, column_id} <- Show.parse_task_id(raw_id),

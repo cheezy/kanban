@@ -46,7 +46,8 @@ defmodule KanbanWeb.BoardLive.Show do
        filter_options: FilterActions.empty_options(),
        filters_active: false,
        visible_tasks_by_column: %{},
-       show_shortcuts_help: false
+       show_shortcuts_help: false,
+       column_deletion: nil
      )
      |> BulkSelection.init()
      |> stream(:undismissed_messages, undismissed_messages)}
@@ -122,24 +123,32 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  def handle_event("delete_column", %{"id" => id}, socket) do
-    socket = BoardState.refresh_access(socket)
+  # Deleting a column is a two-step server flow: delete_column opens a
+  # confirmation naming the column's open and archived task counts, and
+  # confirm_delete_column deletes only the column that step stored, never an
+  # id from the client. Both re-check owner access; the confirm first checks
+  # that column is still on this board, so a column or board deleted
+  # elsewhere reports "Column not found on this board".
+  def handle_event("delete_column", %{"id" => id}, socket),
+    do: with_column_delete_access(socket, &ColumnActions.open_column_deletion(&1, id))
 
-    cond do
-      socket.assigns.user_access != :owner ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Only the board owner can delete columns"))}
-
-      socket.assigns.board.ai_optimized_board ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Cannot delete columns on AI optimized boards"))}
-
-      true ->
-        ColumnActions.do_delete_column(socket, id)
-    end
+  def handle_event(
+        "confirm_delete_column",
+        _params,
+        %{assigns: %{column_deletion: %{column_id: column_id}}} = socket
+      ) do
+    socket
+    |> assign(:column_deletion, nil)
+    |> ColumnActions.with_column_on_board(column_id, fn socket ->
+      with_column_delete_access(socket, &ColumnActions.do_delete_column(&1, column_id))
+    end)
   end
+
+  # A confirm with no open step (stale or forged) is ignored.
+  def handle_event("confirm_delete_column", _params, socket), do: {:noreply, socket}
+
+  def handle_event("cancel_delete_column", _params, socket),
+    do: {:noreply, assign(socket, :column_deletion, nil)}
 
   def handle_event("view_task", %{"id" => id}, socket) do
     case TaskActions.lookup_viewable_task(socket, id) do
@@ -396,6 +405,24 @@ defmodule KanbanWeb.BoardLive.Show do
 
   # Everything broadcast on the board's "board:<id>" topic.
   def handle_info(message, socket), do: BoardEvents.handle(message, socket)
+
+  # Re-reads the user's board access, then runs `fun` only for the board
+  # owner on a board that is not AI optimized; otherwise flashes the refusal.
+  defp with_column_delete_access(socket, fun) do
+    socket = BoardState.refresh_access(socket)
+
+    cond do
+      socket.assigns.user_access != :owner ->
+        {:noreply, put_flash(socket, :error, gettext("Only the board owner can delete columns"))}
+
+      socket.assigns.board.ai_optimized_board ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Cannot delete columns on AI optimized boards"))}
+
+      true ->
+        fun.(socket)
+    end
+  end
 
   defp dismiss_message(socket, message_id) do
     case Messages.dismiss_message(socket.assigns.current_scope.user, message_id) do

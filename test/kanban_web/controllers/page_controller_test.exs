@@ -1643,10 +1643,7 @@ defmodule KanbanWeb.PageControllerTest do
       |> Enum.map(&(&1 |> LazyHTML.text() |> String.split() |> Enum.join(" ")))
 
     for lead <- [
-          "Audit log streaming.",
-          "Emails about audit streaming.",
-          "Signed audit exports.",
-          "A language link no longer changes your saved language."
+          "Deleting a column now says how many tasks go with it."
         ] do
       assert lead in leads
     end

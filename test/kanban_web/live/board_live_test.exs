@@ -525,8 +525,12 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Inbox"
       assert has_element?(show_live, ~s(#snap-indicator [data-indicator-dot="#{column.id}"]))
 
-      # Trigger the delete_column event directly
+      # Trigger the delete_column event directly; it opens the confirmation
       show_live |> render_click("delete_column", %{"id" => column.id})
+      assert has_element?(show_live, "#delete-column-modal")
+      assert has_element?(show_live, ~s(#snap-indicator [data-indicator-dot="#{column.id}"]))
+
+      show_live |> render_click("confirm_delete_column", %{})
 
       html = render(show_live)
       assert html =~ "Column deleted successfully"
@@ -1147,10 +1151,12 @@ defmodule KanbanWeb.BoardLiveTest do
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
 
       assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/#{column.id}/edit"]))
-      # Check that delete link with confirmation exists
-      assert html =~ ~s(phx-click)
+      # The delete link asks the server, which opens the confirmation step;
+      # it carries no browser-side data-confirm prompt
       assert html =~ ~s(delete_column)
-      assert html =~ ~s(Are you sure you want to delete this column?)
+      assert has_element?(show_live, "a[aria-label='Delete column'][phx-click*='delete_column']")
+      refute has_element?(show_live, "a[aria-label='Delete column'][data-confirm]")
+      refute html =~ ~s(Are you sure you want to delete this column?)
     end
 
     test "owner can see edit and delete buttons for tasks", %{conn: conn, user: user} do
@@ -1268,7 +1274,8 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      refute has_element?(show_live, ~s([phx-click="delete_column"]))
+      refute has_element?(show_live, "a[aria-label='Delete column']")
+      refute has_element?(show_live, ~s([phx-click*="delete_column"]))
       refute has_element?(show_live, ~s([phx-click="delete_task"]))
     end
 

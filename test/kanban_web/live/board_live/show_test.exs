@@ -82,10 +82,18 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert show_live |> has_element?("#columns-#{column.id}")
 
       show_live
-      |> element("a[data-confirm][phx-click*='delete_column']")
+      |> element("a[aria-label='Delete column'][phx-click*='delete_column']")
+      |> render_click()
+
+      assert has_element?(show_live, "#delete-column-modal")
+      assert show_live |> has_element?("#columns-#{column.id}")
+
+      show_live
+      |> element("#delete-column-modal button[phx-click='confirm_delete_column']")
       |> render_click()
 
       refute has_element?(show_live, "#columns-#{column.id}")
+      refute has_element?(show_live, "#delete-column-modal")
     end
 
     test "displays task count per column", %{conn: conn, user: user} do
@@ -657,7 +665,8 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      refute has_element?(show_live, "a[data-confirm][phx-click*='delete_column']")
+      refute has_element?(show_live, "a[aria-label='Delete column']")
+      refute has_element?(show_live, "a[phx-click*='delete_column']")
     end
 
     test "owner can see delete column link on regular board", %{conn: conn, user: user} do
@@ -666,7 +675,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      assert has_element?(show_live, "a[data-confirm][phx-click*='delete_column']")
+      assert has_element?(show_live, "a[aria-label='Delete column'][phx-click*='delete_column']")
     end
 
     test "owner cannot see column drag handle on AI optimized board", %{conn: conn, user: user} do
@@ -3779,6 +3788,8 @@ defmodule KanbanWeb.BoardLive.ShowTest do
                       %{board_id: ^board_id, actor_user_id: ^user_id}}
 
       render_hook(view, "delete_column", %{"id" => to_string(c3.id)})
+      refute_receive {:telemetry_event, @deleted, _, _}, 50
+      render_hook(view, "confirm_delete_column", %{})
 
       assert_receive {:telemetry_event, @deleted, %{count: 1},
                       %{board_id: ^board_id, column_id: ^c3_id, actor_user_id: ^user_id}}
@@ -3805,6 +3816,376 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       render_hook(view, "delete_column", %{"id" => to_string(c1.id)})
 
       refute_receive {:telemetry_event, _, _, %{board_id: ^board_id}}, 50
+    end
+  end
+
+  describe "column deletion confirmation (D453)" do
+    setup [:register_and_log_in_user]
+
+    defp archive_task!(task) do
+      {:ok, task} =
+        Kanban.Tasks.update_task(task, %{
+          archived_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      task
+    end
+
+    defp open_deletion(view, column) do
+      view
+      |> element("#columns-#{column.id} a[phx-click*='delete_column']")
+      |> render_click()
+    end
+
+    defp confirm_deletion(view) do
+      view
+      |> element("#delete-column-modal button[phx-click='confirm_delete_column']")
+      |> render_click()
+    end
+
+    defp prompt_text(view) do
+      view
+      |> element("#delete-column-modal [data-column-deletion-prompt]")
+      |> render()
+      |> LazyHTML.from_fragment()
+      |> LazyHTML.text()
+      |> String.trim()
+    end
+
+    test "delete opens a confirmation naming the open and archived task counts", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      for _ <- 1..2, do: task_fixture(column)
+      for _ <- 1..3, do: column |> task_fixture() |> archive_task!()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      refute has_element?(view, "#delete-column-modal")
+
+      open_deletion(view, column)
+
+      assert has_element?(view, "#delete-column-modal")
+
+      assert prompt_text(view) ==
+               "Delete this column? It holds 2 open tasks and 3 archived tasks, which will be deleted with it."
+
+      assert has_element?(view, "#delete-column-modal button[phx-click='cancel_delete_column']")
+      assert has_element?(view, "#delete-column-modal button[phx-click='confirm_delete_column']")
+      # Opening the step deletes nothing
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(column.id, board.id)
+    end
+
+    test "a column holding one open and one archived task uses the singular forms", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task_fixture(column)
+      column |> task_fixture() |> archive_task!()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      assert prompt_text(view) ==
+               "Delete this column? It holds 1 open task and 1 archived task, which will be deleted with it."
+    end
+
+    test "a column holding only archived tasks still names them", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      for _ <- 1..4, do: column |> task_fixture() |> archive_task!()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      assert prompt_text(view) ==
+               "Delete this column? It holds 0 open tasks and 4 archived tasks, which will be deleted with it."
+    end
+
+    test "an empty column's confirmation names no counts", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      assert prompt_text(view) == "Delete this column?"
+      refute render(view) =~ "It holds"
+    end
+
+    test "the delete link carries no data-confirm", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(view, "a[aria-label='Delete column'][phx-click*='delete_column']")
+      refute has_element?(view, "a[aria-label='Delete column'][data-confirm]")
+      refute html =~ "All tasks in this column will also be deleted"
+    end
+
+    test "confirming deletes the column with its open and archived tasks", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      open_task = task_fixture(column)
+      archived_task = column |> task_fixture() |> archive_task!()
+      goal = task_fixture(column, %{type: :goal, title: "Column goal"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+      html = confirm_deletion(view)
+
+      assert html =~ "Column deleted successfully"
+      refute has_element?(view, "#delete-column-modal")
+      refute has_element?(view, "#columns-#{column.id}")
+      assert Kanban.Columns.get_column_for_board(column.id, board.id) == nil
+
+      for task <- [open_task, archived_task, goal] do
+        assert Kanban.Repo.get(Kanban.Tasks.Task, task.id) == nil
+      end
+    end
+
+    test "cancelling the confirmation deletes nothing", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      # Escape and click-away run the modal's data-cancel (its on_cancel),
+      # which pushes the same cancel event as the Cancel button.
+      assert has_element?(view, "#delete-column-modal[data-cancel*='cancel_delete_column']")
+
+      view
+      |> element("#delete-column-modal button[phx-click='cancel_delete_column']")
+      |> render_click()
+
+      refute has_element?(view, "#delete-column-modal")
+      assert has_element?(view, "#columns-#{column.id}")
+      assert %Kanban.Tasks.Task{} = Kanban.Repo.get(Kanban.Tasks.Task, task.id)
+
+      # A confirm after cancelling has no open step and deletes nothing
+      render_hook(view, "confirm_delete_column", %{})
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(column.id, board.id)
+    end
+
+    test "a non-owner's delete_column opens no confirmation and deletes nothing", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task_fixture(column)
+
+      for access <- [:modify, :read_only] do
+        member = user_fixture()
+        {:ok, _} = Kanban.Boards.add_user_to_board(board, member, access, owner)
+        {:ok, view, _html} = live(log_in_user(conn, member), ~p"/boards/#{board}")
+
+        refute has_element?(view, "a[aria-label='Delete column']")
+
+        html = render_hook(view, "delete_column", %{"id" => to_string(column.id)})
+        assert html =~ "Only the board owner can delete columns"
+        refute has_element?(view, "#delete-column-modal")
+        refute html =~ "It holds"
+
+        render_hook(view, "confirm_delete_column", %{"id" => to_string(column.id)})
+        assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(column.id, board.id)
+      end
+    end
+
+    test "an AI-optimized board refuses delete_column and opens no confirmation", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      [column | _] = Kanban.Columns.list_columns(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      refute has_element?(view, "a[aria-label='Delete column']")
+
+      html = render_hook(view, "delete_column", %{"id" => to_string(column.id)})
+      assert html =~ "Cannot delete columns on AI optimized boards"
+      refute has_element?(view, "#delete-column-modal")
+
+      render_hook(view, "confirm_delete_column", %{})
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(column.id, board.id)
+    end
+
+    test "confirm_delete_column with no open confirmation does nothing", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      html = render_hook(view, "confirm_delete_column", %{"id" => to_string(column.id)})
+
+      refute html =~ "Column deleted successfully"
+      refute html =~ "Column not found on this board"
+      assert has_element?(view, "#columns-#{column.id}")
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(column.id, board.id)
+    end
+
+    test "confirm_delete_column uses the column held by the step, not a client id", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      held = column_fixture(board, %{name: "Held step"})
+      other = column_fixture(board, %{name: "Other"})
+
+      foreign = board_fixture(user_fixture()) |> column_fixture()
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, held)
+
+      html =
+        render_hook(view, "confirm_delete_column", %{
+          "id" => to_string(other.id),
+          "column_id" => to_string(foreign.id)
+        })
+
+      assert html =~ "Column deleted successfully"
+      assert Kanban.Columns.get_column_for_board(held.id, board.id) == nil
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(other.id, board.id)
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column!(foreign.id)
+    end
+
+    test "a column from another board opens no confirmation and reveals no counts", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      _column = column_fixture(board)
+      foreign = board_fixture(user_fixture()) |> column_fixture()
+      task_fixture(foreign)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      html = render_hook(view, "delete_column", %{"id" => to_string(foreign.id)})
+
+      assert html =~ "Column not found on this board"
+      refute has_element?(view, "#delete-column-modal")
+      refute html =~ "It holds"
+    end
+
+    test "a column deleted elsewhere before confirming flashes column not found", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      _kept = column_fixture(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      {:ok, _} = Kanban.Columns.delete_column(column, user)
+      # The other tab's delete broadcasts :columns_changed; the open step stays
+      assert has_element?(view, "#delete-column-modal")
+
+      html = confirm_deletion(view)
+
+      assert html =~ "Column not found on this board"
+      refute has_element?(view, "#delete-column-modal")
+    end
+
+    test "a board deleted elsewhere before confirming flashes not found without crashing", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      {:ok, _} = Kanban.Boards.delete_board(board, user)
+
+      # The column went with its board, so the confirm reports it missing
+      # rather than answering an access check for a board that is gone.
+      html = confirm_deletion(view)
+
+      assert html =~ "Column not found on this board"
+      refute html =~ "Only the board owner can delete columns"
+      refute has_element?(view, "#delete-column-modal")
+      assert Process.alive?(view.pid)
+    end
+
+    test "an owner whose access changed while the confirmation is open cannot confirm", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      open_deletion(view, column)
+
+      Kanban.Boards.BoardUser
+      |> Kanban.Repo.get_by!(board_id: board.id, user_id: user.id)
+      |> Ecto.Changeset.change(access: :modify)
+      |> Kanban.Repo.update!()
+
+      html = confirm_deletion(view)
+
+      assert html =~ "Only the board owner can delete columns"
+      refute has_element?(view, "#delete-column-modal")
+      assert %Kanban.Columns.Column{} = Kanban.Columns.get_column_for_board(column.id, board.id)
+    end
+
+    test "the counts are taken when the step opens, including tasks archived after the board loaded",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      [first, _second] = for _ <- 1..2, do: task_fixture(column)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      archive_task!(first)
+      open_deletion(view, column)
+
+      assert prompt_text(view) ==
+               "Delete this column? It holds 1 open task and 1 archived task, which will be deleted with it."
+
+      # A task added after the step opened keeps the counts but is still
+      # deleted with the column (D16)
+      late = task_fixture(column)
+
+      assert prompt_text(view) ==
+               "Delete this column? It holds 1 open task and 1 archived task, which will be deleted with it."
+
+      assert confirm_deletion(view) =~ "Column deleted successfully"
+      assert Kanban.Repo.get(Kanban.Tasks.Task, late.id) == nil
+    end
+
+    test "the confirmation renders translated in ja", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      for _ <- 1..2, do: task_fixture(column)
+      column |> task_fixture() |> archive_task!()
+      empty = column_fixture(board)
+
+      conn = Plug.Test.init_test_session(conn, %{"locale" => "ja"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      open_deletion(view, column)
+
+      assert prompt_text(view) ==
+               "この列を削除しますか？オープンなタスク 2 件とアーカイブ済みタスク 1 件が含まれており、列と一緒に削除されます。"
+
+      view
+      |> element("#delete-column-modal button[phx-click='cancel_delete_column']")
+      |> render_click()
+
+      view |> element("#columns-#{empty.id} a[phx-click*='delete_column']") |> render_click()
+      assert prompt_text(view) == "この列を削除しますか？"
     end
   end
 end

@@ -485,6 +485,70 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
+  describe "count_column_tasks/1" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      %{user: user, board: board, column: column_fixture(board)}
+    end
+
+    defp archive!(task) do
+      {:ok, task} =
+        Kanban.Tasks.update_task(task, %{
+          archived_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      task
+    end
+
+    test "count_column_tasks/1 counts open and archived tasks separately", %{column: column} do
+      for _ <- 1..3, do: task_fixture(column)
+      for _ <- 1..2, do: column |> task_fixture() |> archive!()
+
+      assert Columns.count_column_tasks(column) == %{open: 3, archived: 2}
+    end
+
+    test "count_column_tasks/1 returns zeros for an empty column", %{column: column} do
+      assert Columns.count_column_tasks(column) == %{open: 0, archived: 0}
+    end
+
+    test "count_column_tasks/1 counts only the given column's tasks", %{
+      board: board,
+      column: column
+    } do
+      other_column = column_fixture(board)
+      other_board_column = board_fixture(user_fixture()) |> column_fixture()
+
+      task_fixture(column)
+      for _ <- 1..2, do: task_fixture(other_column)
+      other_column |> task_fixture() |> archive!()
+      task_fixture(other_board_column)
+
+      assert Columns.count_column_tasks(column) == %{open: 1, archived: 0}
+      assert Columns.count_column_tasks(other_column) == %{open: 2, archived: 1}
+    end
+
+    test "count_column_tasks/1 counts a goal row in the column like any task", %{
+      board: board,
+      column: column
+    } do
+      goal = task_fixture(column, %{type: :goal, title: "Goal"})
+      other_column = column_fixture(board)
+      # A child of the goal in another column belongs to that column's count.
+      # Creating the child moves its goal along with it, so the child is
+      # placed in the other column directly afterwards.
+      child = task_fixture(column, %{parent_id: goal.id})
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^child.id)
+      |> Kanban.Repo.update_all(set: [column_id: other_column.id])
+
+      column |> task_fixture(%{type: :goal, title: "Old goal"}) |> archive!()
+
+      assert Columns.count_column_tasks(column) == %{open: 1, archived: 1}
+      assert Columns.count_column_tasks(other_column) == %{open: 1, archived: 0}
+    end
+  end
+
   describe "D140: create_column/update_column owner authorization" do
     setup do
       owner = user_fixture()
