@@ -125,11 +125,15 @@ defmodule Kanban.RateLimit do
   `check/2` before anything is parsed or looked up, so one source cannot
   guess authorization codes or refresh tokens. Neither request has a
   trusted identity yet. `:oauth_device` then counts refresh and revoke
-  requests per device (`identity: "device:<id>"`, the id of the device the
-  presented refresh token belongs to, no IP), so a device's token cannot be
-  hammered from many addresses. A token that names no device is not counted
-  there; the IP ceiling still is. The `authorization_code` grant has no
-  device yet, so only the IP ceiling applies to it.
+  requests per presented refresh token (`identity: "token:<hex>"`, a short
+  digest of the token, never the token itself, and no IP), so one token
+  cannot be hammered from many addresses. Every presented token is counted
+  the same way whether it is unknown, revoked or live, and nothing is looked
+  up first, so an unknown and a revoked token reach the limit after the same
+  number of attempts and get the same `429`: the limit says nothing about
+  which tokens were ever real (decided 2026-11-19). The
+  `authorization_code` grant has no refresh token, so only the IP ceiling
+  applies to it.
 
   `:review_approval` counts the app's review decision requests,
   `POST /api/me/reviews/:task_id/approval_challenge`,

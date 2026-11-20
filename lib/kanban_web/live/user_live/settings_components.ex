@@ -78,7 +78,7 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
             navigate={~p"/users/notifications"}
             active={@active == :notifications}
             label={gettext("Notifications")}
-            hint={gettext("in-app · email")}
+            hint={gettext("in-app · email · push")}
             class="basis-full md:basis-auto md:flex-initial"
           />
         </nav>

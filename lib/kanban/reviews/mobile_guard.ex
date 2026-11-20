@@ -7,6 +7,9 @@ defmodule Kanban.Reviews.MobileGuard do
 
     * it changed more than `max_files/0` files, counted from `changed_files`,
       or from `actual_files_changed` when `changed_files` is empty;
+    * its files are unknown: `changed_files` is empty and
+      `actual_files_changed` holds a count (such as `"14"` or `"14 files"`)
+      rather than a list of paths, so the change cannot be shown to be small;
     * it changed more than `max_changed_lines/0` lines, counted as added plus
       deleted lines across every stored diff;
     * any stored diff was cut at the per-diff cap (it ends with
@@ -21,6 +24,12 @@ defmodule Kanban.Reviews.MobileGuard do
   `-` line counts, so a deleted `-- x` followed by an added `++ y` is two
   changes, not a header.
 
+  Files are counted as the review detail lists them
+  (`Kanban.Reviews.MobileReview.files/1`): each path is normalized first
+  (`normalize_file/1`), so `./lib/a.ex`, `lib/a.ex:40`, `lib\\a.ex` and
+  `lib//a.ex` are one file, and `actual_files_changed` is split on commas,
+  semicolons, newlines and other whitespace (`listed_files/1`).
+
   The limits are constants in Phase 1. The module is pure: it reads only the
   task it is given and never touches the database.
   """
@@ -31,8 +40,13 @@ defmodule Kanban.Reviews.MobileGuard do
   @max_files 10
   @max_changed_lines 500
 
+  # A word of actual_files_changed that is a count, not a path: digits,
+  # optionally wrapped in punctuation such as "(14)" or "#14".
+  @bare_count ~r/\A[^\w\/.]*\d+[^\w\/.]*\z/u
+
   @type size :: %{
           files: non_neg_integer(),
+          files_unknown: boolean(),
           changed_lines: non_neg_integer(),
           truncated: boolean()
         }
@@ -62,31 +76,107 @@ defmodule Kanban.Reviews.MobileGuard do
   def limits, do: %{max_files: @max_files, max_changed_lines: @max_changed_lines}
 
   @doc """
-  The size of `task`'s change: how many files it touched, how many lines its
-  stored diffs add or delete, and whether any diff was cut at the cap.
+  The size of `task`'s change: how many distinct files it touched, whether
+  those files are unknown (`actual_files_changed` gave a count, not paths;
+  `files` is then 0), how many lines its stored diffs add or delete, and
+  whether any diff was cut at the cap.
   """
   @spec size(Task.t()) :: size()
   def size(%Task{} = task) do
     diffs = task |> stored_entries() |> Enum.flat_map(&diff_text/1)
+    {files, files_unknown} = file_count(task)
 
     %{
-      files: file_count(task),
+      files: files,
+      files_unknown: files_unknown,
       changed_lines: Enum.reduce(diffs, 0, &(changed_lines(&1) + &2)),
       truncated: Enum.any?(diffs, &truncated?/1)
     }
   end
 
+  defp file_count(task) do
+    case file_paths(task) do
+      {:ok, paths} -> {length(paths), false}
+      :unknown -> {0, true}
+    end
+  end
+
   @doc """
   Whether `task` (or a size from `size/1`) is a large change: more than
-  #{@max_files} files, more than #{@max_changed_lines} lines, or a diff cut at
-  the cap.
+  #{@max_files} files, more than #{@max_changed_lines} lines, files that are
+  unknown, or a diff cut at the cap.
   """
   @spec large_change?(Task.t() | size()) :: boolean()
   def large_change?(%Task{} = task), do: task |> size() |> large_change?()
 
-  def large_change?(%{files: files, changed_lines: lines, truncated: truncated}) do
-    files > @max_files or lines > @max_changed_lines or truncated == true
+  def large_change?(%{files: files, changed_lines: lines, truncated: truncated} = size) do
+    files > @max_files or lines > @max_changed_lines or truncated == true or
+      Map.get(size, :files_unknown) == true
   end
+
+  @doc """
+  The distinct paths `task` changed, normalized (`normalize_file/1`) and in
+  first-seen order: from the stored `changed_files` entries that have a
+  path, or, when there are none, from `actual_files_changed`
+  (`listed_files/1`). `:unknown` when `actual_files_changed` gives a count
+  instead of paths.
+  """
+  @spec file_paths(Task.t()) :: {:ok, [String.t()]} | :unknown
+  def file_paths(%Task{} = task) do
+    case stored_entries(task) do
+      [] -> listed_files(task.actual_files_changed)
+      entries -> {:ok, entries |> Enum.flat_map(&entry_path/1) |> Enum.uniq()}
+    end
+  end
+
+  @doc """
+  The distinct paths a free-text `actual_files_changed` value names,
+  normalized (`normalize_file/1`) and in order. The value is split on
+  commas, semicolons, newlines and any other whitespace, so a list written
+  one path per line or separated by spaces counts path by path.
+
+  Returns `:unknown` when the value holds a bare count (a word made of digits,
+  as in `"14"`, `"14 files"` or `"(14)"`): it says how many files changed but
+  names none, so the files cannot be counted. A non-string or blank value is
+  `{:ok, []}`.
+  """
+  @spec listed_files(term()) :: {:ok, [String.t()]} | :unknown
+  def listed_files(text) when is_binary(text) do
+    words = String.split(text, ~r/[,;\s]+/u, trim: true)
+
+    if Enum.any?(words, &Regex.match?(@bare_count, &1)) do
+      :unknown
+    else
+      {:ok, words |> Enum.map(&normalize_file/1) |> Enum.reject(&is_nil/1) |> Enum.uniq()}
+    end
+  end
+
+  def listed_files(_text), do: {:ok, []}
+
+  @doc """
+  One spelling per file: backslashes become slashes, `//` and `/./`
+  collapse, leading `./` and trailing `/` go, and a trailing location
+  (`:12`, `:12:3`, `:12-15`, `#L12`, a bare `:`) is dropped. A blank or
+  non-string is `nil`. The review detail lists files, and matches the
+  reviewer's issue files, under these spellings.
+  """
+  @spec normalize_file(term()) :: String.t() | nil
+  def normalize_file(file) when is_binary(file) do
+    normalized =
+      file
+      |> String.trim()
+      |> String.replace("\\", "/")
+      |> String.replace(~r"/(\./)+", "/")
+      |> String.replace(~r"/{2,}", "/")
+      |> String.replace(~r"\A(\./)+", "")
+      |> String.replace(~r"/+\z", "")
+      |> String.replace(~r/(#L\d.*|:[\d:-]*)\z/, "")
+      |> String.trim()
+
+    if normalized == "", do: nil, else: normalized
+  end
+
+  def normalize_file(_file), do: nil
 
   @doc """
   The size of one stored diff: the lines it adds, the lines it deletes, and
@@ -119,27 +209,10 @@ defmodule Kanban.Reviews.MobileGuard do
   defp stored_entries(%Task{changed_files: entries}) when is_list(entries), do: entries
   defp stored_entries(%Task{}), do: []
 
-  defp file_count(%Task{} = task) do
-    case stored_entries(task) do
-      [] -> task.actual_files_changed |> listed_files() |> length()
-      entries -> entries |> Enum.flat_map(&entry_path/1) |> Enum.uniq() |> length()
-    end
-  end
-
-  defp listed_files(text) when is_binary(text) do
-    text
-    |> String.split(",")
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.uniq()
-  end
-
-  defp listed_files(_text), do: []
-
   defp entry_path(entry) when is_map(entry) do
-    case Map.get(entry, "path") || Map.get(entry, :path) do
-      path when is_binary(path) -> if String.trim(path) == "", do: [], else: [path]
-      _ -> []
+    case entry |> Map.get("path", Map.get(entry, :path)) |> normalize_file() do
+      nil -> []
+      path -> [path]
     end
   end
 

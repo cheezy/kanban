@@ -37,9 +37,11 @@ defmodule Kanban.Notifications.PushSettingsStore do
   A change to quiet hours (on or off, the times or the zone) also decides
   what the next summary covers:
 
-    * made outside quiet hours while a summary is still owed (a period that
-      is due, or a one-person summary not yet sent), it enqueues the summary
-      at once, so the change never cancels it;
+    * made outside quiet hours while a one-person summary job is queued,
+      retrying or running, it leaves the summary to that job: no second job
+      and no stamp, so the job still sends it once;
+    * made outside quiet hours while a period's summary is due, it enqueues
+      the summary at once, so the change never cancels it;
     * made outside quiet hours otherwise, it sets `last_summary_at` to now,
       so a period that ended before quiet hours were on, or one the new
       settings would have had, gets no summary;
@@ -272,20 +274,20 @@ defmodule Kanban.Notifications.PushSettingsStore do
   end
 
   # What a quiet-hours change means for the next summary (see the moduledoc).
+  # A one-person summary job that is queued, retrying or running already
+  # covers the summary owed, so the change leaves it alone: a second job
+  # would claim again after the first one's claim and send a second summary,
+  # and a stamp would make a job that has not claimed yet find it taken.
   defp quiet_change(settings, current, new_view, settings_changes, now) do
     cond do
       not Enum.any?(@quiet_fields, &Map.has_key?(settings_changes, &1)) -> :none
       QuietHours.inside?(current, now) and QuietHours.inside?(new_view, now) -> :none
       QuietHours.inside?(current, now) -> :ended
-      summary_owed?(settings, now) -> :ended
+      SummaryWorker.pending?(settings.user_id) -> :none
+      SummaryWorker.due(settings, now) != :not_due -> :ended
       true -> :stamp
     end
   end
-
-  # A summary the old settings still owe: a period that ended and is due, or
-  # a one-person summary enqueued by an earlier change and not yet sent.
-  defp summary_owed?(settings, now),
-    do: SummaryWorker.due(settings, now) != :not_due or SummaryWorker.pending?(settings.user_id)
 
   defp summarize_ended(user_id, :ended, now) do
     {:ok, _job} = SummaryWorker.enqueue_ended(user_id, now)

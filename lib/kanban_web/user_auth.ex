@@ -12,6 +12,7 @@ defmodule KanbanWeb.UserAuth do
   alias Kanban.Workspaces.Current
   alias KanbanWeb.UserAuth.LiveSessions
   alias KanbanWeb.UserAuth.OrgAdminGate
+  alias KanbanWeb.UserAuth.ReturnTo
   alias KanbanWeb.UserAuth.SessionLocale
   alias KanbanWeb.UserAuth.SessionReissue
 
@@ -444,7 +445,7 @@ defmodule KanbanWeb.UserAuth do
   defp halt_with_login_redirect(conn, message) do
     conn
     |> put_flash(:error, message)
-    |> maybe_store_return_to()
+    |> ReturnTo.maybe_store()
     |> redirect(to: ~p"/users/log-in")
     |> halt()
   end
@@ -498,10 +499,4 @@ defmodule KanbanWeb.UserAuth do
       OrgAdminGate.authorize_conn(conn)
     end
   end
-
-  defp maybe_store_return_to(%{method: "GET"} = conn) do
-    put_session(conn, :user_return_to, current_path(conn))
-  end
-
-  defp maybe_store_return_to(conn), do: conn
 end

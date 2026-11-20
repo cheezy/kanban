@@ -666,6 +666,7 @@ OAuth 2.0 for native apps (RFC 8252) with PKCE (RFC 7636). Stride is both the au
   - takes the approval public key as the uncompressed P-256 point, base64url with no padding (87 characters), and refuses any other curve or encoding.
 - **The `refresh_token` grant** rotates the refresh token. **Reusing an old refresh token revokes the device** and records `:device_refresh_reuse_detected` in the audit log, because that's the sign of a stolen token.
 - **Refresh is refused** when the user is disabled, the device is revoked, or the user no longer meets the Organization's two-factor requirement: their grace period is over, the same line the web sign-in draws. The app then returns to Sign in.
+  - **The single sign-on exemption carries to the device** (decided 2026-11-19). The web exempts a session signed in through the member's own Organization's single sign-on from that Organization's requirement. When **Allow** is pressed in such a session, the authorization code records the Organization (`sso_organization_id`) and the device takes it at the exchange. Each refresh is exempt only while that Organization is still the member's own, read again at the refresh, as the web gate reads the session's mark on every request (`Kanban.Devices.SsoExemption`). A device allowed from a password sign-in keeps the plain rule.
 
 The request and error reference for both endpoints is [POST /oauth/token](../api/post_oauth_token.md).
 
@@ -705,7 +706,7 @@ The app calls it at launch and after every sign-in.
 | Kind | Source | Clears when |
 |---|---|---|
 | `review` | pending reviews the person can approve, using the same query and access check as `/review` (`reviews.ex:167-176`, `:361`) | the review is decided, or the task leaves Review |
-| `released` | the person's unread or unresolved `task_unclaimed` notifications; the reason comes from the notification body | the task is claimed again, moved, or the card is acted on |
+| `released` | the person's unread or unresolved `task_unclaimed` notifications; the reason comes from the notification body | the task is claimed again (any claim after the notification, kept in `task_claims`, even one that later expires or is released without a new notification), moved, or the card is acted on |
 | `claim_expired` | the person's `claim_expired` notifications whose task is still unclaimed | the task is claimed, moved, or completed |
 | `hook_failed` | goals on the person's boards whose last `after_goal` attempt failed (`task.ex:381-387`) | a later attempt succeeds |
 | `ready_empty` | boards the person can write to with no Ready tasks, at least one Backlog task, and an agent that worked on the board in the last 24 hours and is idle now (`roster.ex:148-157`) | a task reaches Ready, or no agent is idle |
@@ -932,7 +933,7 @@ Changed tables:
 | `tasks` | add `created_via` string, nullable (no `draft` flag, [decision 6](#24-decisions-needed)) |
 | `organization_security_policies` | add `hide_titles_in_notifications` boolean, default false (`lib/kanban/organizations/security_policy.ex:37-41`; [§9.4](#94-what-a-notification-and-the-widget-may-show), [decision 8](#24-decisions-needed)) |
 
-The token, code and nonce values are stored only as hashes, as `api_tokens` and `users_tokens` do today. Every table cascades on user delete.
+The token, code and nonce values are stored only as SHA-256 hashes, as `api_tokens` stores its tokens today. `users_tokens` is not a precedent: it hashes only the tokens it emails, and stores session tokens as they are, because a session token reaches the browser only inside the signed session cookie. A device token is a bearer token the app sends itself, so it is hashed. Every table cascades on user delete.
 
 Migrations need no backfill. Following the dev-database practice, run them as soon as they're written.
 
@@ -949,7 +950,10 @@ Migrations need no backfill. Following the dev-database practice, run them as so
   - `state` is checked;
   - the confirmation page names the device.
 - **Token lifetimes.** Access tokens last an hour. Refresh tokens rotate, and reuse revokes the whole family and the device.
-- **Rate limits.** Requests to `/oauth/token` and `/api/me/*` are limited per device and per IP, like the existing API.
+- **Rate limits.** Requests to `/oauth/token` and `/api/me/*` are limited per IP, like the existing API, and refresh and revoke requests per presented refresh token as well.
+  - **The per-token limit is uniform** (decided 2026-11-19). It is keyed on a digest of the presented token, checked before any lookup, so an unknown, a revoked and a live token reach the `429` after the same number of attempts and the limit cannot be used to tell which tokens were real.
+  - **An expired access token is not a failure** (decided 2026-11-19). A device access token Stride recognises that has only expired answers the same `401` as any invalid token but does not count toward the per-IP failure limit agent tokens share, so phones refreshing on schedule never lock their office's agents out.
+- **Caching.** Every `/api/me` response is `cache-control: private, no-store`, errors and the device plug's refusals included, except a response that carries an `ETag` (the review reads), which is `private, max-age=0, must-revalidate` (decided 2026-11-19; `KanbanWeb.Plugs.DeviceApiCacheControl`).
 
 ### 9.2 Two kinds of token, never mixed
 
@@ -1227,7 +1231,7 @@ New events, named by the rule in [`docs/telemetry.md`](../telemetry.md) and decl
 ## 17. Translations, accessibility and dark mode
 
 - **Every visible string** in both apps, every server-built push text, and every new web string (the device list, the confirmation page and the push settings) is in gettext. Each is translated into de, en, es, fr, ja, pt and zh in the same task. Run `mix gettext.extract --merge` and check for new fuzzy entries.
-- **Push text** is built on the server in the device's locale, so a notification arrives in the language the phone uses even when the web account is set to another.
+- **Push text** is built on the server in the device's locale, so a notification arrives in the language the phone uses even when the web account is set to another. A regional tag falls back to its base language (`de-AT` is German, `pt-BR` Portuguese, `zh-Hant-TW` Chinese) and a language Stride is not translated into falls back to English (`ko`), through `Kanban.Locales.resolve/1`.
 - **Layouts survive longer translations.** German and Portuguese labels run long, so the screens are checked at the largest text size in German.
 - **Dark mode on the new web pages** follows [`docs/dark-mode-contract.md`](../dark-mode-contract.md), with `mix dark_mode.scan` as part of precommit.
 - **Status values arrive as data, not text.** The server sends a target's status as an enum, `on_track`, `at_risk`, `missed` or `complete`, and the risk reason as structured data ([§7.10](#710-boards-tasks-agents-and-capture)). The app shows the web's labels, "On-track", "At-risk", "Missed" and "Complete" (`delivery_health_band.ex:172-175`), and the risk explainer's sentences, as copies in its `mobile` strings. They're translated with the web's, so the two never read differently.

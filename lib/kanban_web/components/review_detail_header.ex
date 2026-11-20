@@ -38,10 +38,14 @@ defmodule KanbanWeb.ReviewDetailHeader do
       Approve button.
     * `on_request_changes` — required. The `phx-click` event name fired
       by the Request changes button.
+    * `can_review` — whether the viewer may decide this review (write access
+      to its board). When `false` the two buttons are left out and a
+      read-only note takes their place. Defaults to `true`.
   """
   attr :task, :map, required: true
   attr :on_approve, :string, required: true
   attr :on_request_changes, :string, required: true
+  attr :can_review, :boolean, default: true
 
   def review_detail_header(assigns) do
     task = assigns.task
@@ -144,7 +148,16 @@ defmodule KanbanWeb.ReviewDetailHeader do
 
       <span style="flex: 1;" />
 
+      <p
+        :if={!@can_review}
+        data-review-detail-header-read-only
+        style="margin: 0; font-size: 12px; color: var(--ink-2);"
+      >
+        {gettext("Read-only access: you can view this review but not decide it.")}
+      </p>
+
       <div
+        :if={@can_review}
         data-review-detail-header-actions
         class="flex flex-wrap items-center gap-2"
       >

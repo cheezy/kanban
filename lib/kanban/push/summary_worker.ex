@@ -21,9 +21,10 @@ defmodule Kanban.Push.SummaryWorker do
     * **Once for one person** (`enqueue_ended/2`), when a settings change ends
       quiet hours while they hold, such as turning them off at night or moving
       to a time zone where they are over. The period ends at the change. A
-      change made while a summary is still owed (a period that is due, or a
-      one-person summary not yet sent) enqueues one too, so the change never
-      cancels it.
+      change made while a period's summary is due enqueues one too, so the
+      change never cancels it. A change made while a one-person job is
+      queued, retrying or running (`pending?/1`) enqueues nothing and leaves
+      `last_summary_at` alone, so that job sends the summary once.
 
   A quiet period followed less than 30 minutes later by the next one may
   have no run in the gap, so its summary goes at the first run after it,
@@ -100,7 +101,9 @@ defmodule Kanban.Push.SummaryWorker do
   end
 
   @doc """
-  True when a one-person summary for `user_id` is enqueued and not yet run.
+  True when a one-person summary job for `user_id` is queued, scheduled,
+  waiting to retry or running. A running job counts: it may not have taken
+  its period yet, and once it has, the summary it sends is the one owed.
   """
   @spec pending?(pos_integer()) :: boolean()
   def pending?(user_id) when is_integer(user_id) do

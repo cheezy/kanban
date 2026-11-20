@@ -80,10 +80,14 @@ defmodule Kanban.Telemetry.Catalog do
 
   ## Adding an event
 
-  Add a map to the list in this module, with every field above, and emit it
-  with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`. A new API or
-  audit action is a new tuple in `@api_actions` or `@audit_actions` in
-  `Kanban.Telemetry.Catalog.Families`. Board, membership and column, task
+  Add a map, with every field above, to the family module its domain belongs
+  to (or, for an event no family fits, to `@core_events` in this module), and
+  emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`. A new
+  API or audit action is a new tuple in `@api_actions` or `@audit_actions` in
+  `Kanban.Telemetry.Catalog.Families`. The legacy API token and request, task
+  lifecycle and web review screen events are in `ApiEvents`,
+  `TaskLifecycleEvents` and `ReviewPanelEvents`; they are never renamed and
+  take no new events. Board, membership and column, task
   activity, account and user administration, notification, delivery target,
   broadcast message, goal, dependency or after_goal, Organization, paid
   plan, attachment, audit log streaming, mobile app, decisions and push
@@ -97,6 +101,7 @@ defmodule Kanban.Telemetry.Catalog do
   persist flag or tags are invalid.
   """
 
+  alias Kanban.Telemetry.Catalog.ApiEvents
   alias Kanban.Telemetry.Catalog.AttachmentEvents
   alias Kanban.Telemetry.Catalog.AuditStreamEvents
   alias Kanban.Telemetry.Catalog.BoardEvents
@@ -110,8 +115,10 @@ defmodule Kanban.Telemetry.Catalog do
   alias Kanban.Telemetry.Catalog.PlanEvents
   alias Kanban.Telemetry.Catalog.PushEvents
   alias Kanban.Telemetry.Catalog.ReviewEvents
+  alias Kanban.Telemetry.Catalog.ReviewPanelEvents
   alias Kanban.Telemetry.Catalog.TargetEvents
   alias Kanban.Telemetry.Catalog.TaskEvents
+  alias Kanban.Telemetry.Catalog.TaskLifecycleEvents
   alias Kanban.Telemetry.Catalog.UserEvents
 
   @type entry :: %{
@@ -164,198 +171,6 @@ defmodule Kanban.Telemetry.Catalog do
       persist: true
     },
     %{
-      name: [:kanban, :api, :token_created],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:user_id, :board_id, :workspace_id, :token_id],
-      description: "An API token was created.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :api, :token_revoked],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:user_id, :token_id],
-      description: "An API token was revoked.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :api, :token_deleted],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:user_id, :token_id],
-      description: "An API token was deleted.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :api, :token_used],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:user_id, :token_id],
-      description: "An API token authenticated a request.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :api, :request],
-      kind: :event,
-      domain: :api,
-      measurements: [:count, :duration],
-      metadata: [:endpoint, :method, :status],
-      description: "An API request finished. Duration is in native time units.",
-      legacy: true,
-      metrics: [counter: :count, summary: :duration],
-      persist: true,
-      tags: [:endpoint, :method]
-    },
-    %{
-      name: [:kanban, :api, :error],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:endpoint, :status, :method],
-      description: "An API request finished with a status of 400 or above.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: true,
-      tags: [:endpoint, :status]
-    },
-    %{
-      name: [:kanban, :api, :auth_failed],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:reason, :path, :method],
-      description: "An API request failed bearer-token authentication or board selection.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :api, :after_goal_delivered],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:goal_id, :board_id, :project_id],
-      description: "An after_goal hook was included in a /complete or /mark_reviewed response.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: true
-    },
-    %{
-      name: [:kanban, :task, :creation],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:task_id, :column_id],
-      description: "A task was created.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :archived],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:task_id, :identifier, :via, :goal_id],
-      description:
-        "A task was archived, directly, in bulk (via: :bulk) or with its goal (via: :goal_cascade).",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :unarchived],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:task_id, :identifier],
-      description: "A task was restored from the archive.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :bulk_archived],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:board_id],
-      description:
-        "A batch of completed tasks on a board was archived. count is the number of tasks archived and may be 0.",
-      legacy: true,
-      metrics: [sum: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :completed],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:task_id, :completed_by],
-      description: "An agent completed a task.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :moved_to_review],
-      kind: :event,
-      domain: :task,
-      measurements: [:count, :time_spent_minutes],
-      metadata: [:task_id, :completed_by_id],
-      description:
-        "A completed task moved to the Review column. time_spent_minutes is an integer, or absent when unknown.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :returned_to_doing],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:task_id, :reviewed_by, :review_status],
-      description: "A reviewed task was sent back to Doing.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :task, :changed_files_missing],
-      kind: :event,
-      domain: :task,
-      measurements: [:count],
-      metadata: [:task_id, :identifier, :board_id],
-      description: "A task reached review reporting changed files but with no uploaded diff.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: false
-    },
-    %{
-      name: [:kanban, :goal, :created_with_tasks],
-      kind: :event,
-      domain: :goal,
-      measurements: [:goal_count, :task_count],
-      metadata: [:goal_id, :column_id],
-      description: "A goal was created together with its child tasks.",
-      legacy: true,
-      metrics: [counter: :goal_count],
-      persist: false
-    },
-    %{
       name: [:kanban, :pubsub, :broadcast],
       kind: :event,
       domain: :pubsub,
@@ -365,50 +180,6 @@ defmodule Kanban.Telemetry.Catalog do
       legacy: true,
       metrics: [counter: :count],
       persist: false
-    },
-    %{
-      name: [:kanban, :review, :structured_used],
-      kind: :event,
-      domain: :review,
-      measurements: [:count],
-      metadata: [:task_id, :identifier],
-      description: "A task's review report, built from the structured review block, was shown.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: true
-    },
-    %{
-      name: [:kanban, :review, :fallback_used],
-      kind: :event,
-      domain: :review,
-      measurements: [:count],
-      metadata: [:task_id, :identifier],
-      description: "A task's review report, parsed from the legacy review summary, was shown.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: true
-    },
-    %{
-      name: [:kanban, :review_diff_panel, :opened],
-      kind: :event,
-      domain: :review_diff_panel,
-      measurements: [:system_time, :count],
-      metadata: [:task_id],
-      description: "A reviewer opened the diff panel for a task in the review queue.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: true
-    },
-    %{
-      name: [:kanban, :review_diff_panel, :closed],
-      kind: :event,
-      domain: :review_diff_panel,
-      measurements: [:system_time, :count],
-      metadata: [:task_id],
-      description: "A reviewer closed the diff panel in the review queue.",
-      legacy: true,
-      metrics: [counter: :count],
-      persist: true
     },
     %{
       name: [:kanban, :metrics, :retention_completed],
@@ -476,7 +247,12 @@ defmodule Kanban.Telemetry.Catalog do
     }
   ]
 
+  # Each legacy family comes before any family sharing its domain, so every
+  # domain keeps the order its events had when they were all listed here.
   @events @core_events ++
+            ApiEvents.events() ++
+            TaskLifecycleEvents.events() ++
+            ReviewPanelEvents.events() ++
             BoardEvents.events() ++
             TaskEvents.events() ++
             UserEvents.events() ++

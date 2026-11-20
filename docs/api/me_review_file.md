@@ -30,6 +30,14 @@ the last stored file, or names an entry with no path answers
 `404 {"error": "Not Found"}`, and so does any index on a task that stored no
 diffs, whose files the detail lists with a `null` index.
 
+Send the detail's `files_version` as the `files_version` query parameter,
+for example `GET /api/me/reviews/4812/files/0?files_version=q2l9v0ZsB3m7xQ1a`.
+An index only means something against the list it was read from: when the
+task's stored files have changed since (a resubmit, or an agent replacing
+them in place without a new `review_requested_at`), the answer is
+`409 files_changed` with the current version, whatever the index, and the app
+reloads the detail. Leaving the parameter out skips the check.
+
 ## The response
 
 `200 OK`:
@@ -54,7 +62,8 @@ diffs, whose files the detail lists with a `null` index.
     "notes": [
       {"line": 11, "anchored": true, "severity": "important", "category": "pattern", "description": "This query belongs in the context."}
     ],
-    "review_requested_at": "2026-11-18T09:30:00Z"
+    "review_requested_at": "2026-11-18T09:30:00Z",
+    "files_version": "q2l9v0ZsB3m7xQ1a"
   }
 }
 ```
@@ -82,11 +91,11 @@ diffs, whose files the detail lists with a `null` index.
   `lines` has that number as its `new` number; the app shows the note at that
   line. Otherwise the note belongs to the file as a whole, including when its
   line is beyond the diff.
-- `review_requested_at` is the detail's. A resubmit, or an agent replacing
-  the stored files in place, can make an index the app kept name another file
-  now, and the second leaves `review_requested_at` unchanged: compare `path`
-  (and `review_requested_at`) with the detail row the app opened, and reload
-  the detail when they differ.
+- `review_requested_at` and `files_version` are the detail's, as they are
+  now. A resubmit, or an agent replacing the stored files in place, can make
+  an index the app kept name another file, and the second leaves
+  `review_requested_at` unchanged; `files_version` changes with either, so
+  send it with the request (above).
 
 Highlighting is cached by task, index, the diff's hash and the path, so a
 changed diff or a renamed file is never answered from an older highlight.
@@ -99,3 +108,7 @@ changed diff or a renamed file is never answered from an older highlight.
 - `403` with the [`plan_required` body](me_reviews.md#plans).
 - `404 {"error": "Not Found"}` as described in
   [Who can see a file](#who-can-see-a-file).
+- `409 {"error": "files_changed", "message": "...", "files_version": "..."}`
+  when the `files_version` sent is not the task's current one: its stored
+  files changed since the detail was loaded. `files_version` is the current
+  version; reload the detail before asking for a file again.

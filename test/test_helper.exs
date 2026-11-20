@@ -53,13 +53,16 @@ Mox.defmock(Kanban.Push.FCMMock, for: Kanban.Push.Adapter)
 # commit audit events the same way, so they are excluded on the same terms
 # and refuse any database but kanban_test_race. The tests tagged
 # :push_settings_race (Kanban.Notifications.PushSettingsRaceTest) commit their
-# rows on real connections, so they are excluded on the same terms too.
+# rows on real connections, so they are excluded on the same terms too, as
+# are the tests tagged :device_token_race (Kanban.Devices.TokenRaceTest),
+# which refuse any database whose name does not end in _race.
 ExUnit.start(
   capture_log: true,
   exclude: [
     :audit_stream_race,
     :review_race,
-    :push_settings_race | Kanban.OpenSSL3.exclusions()
+    :push_settings_race,
+    :device_token_race | Kanban.OpenSSL3.exclusions()
   ]
 )
 

@@ -34,6 +34,7 @@ defmodule Kanban.Metrics.TaskQueries do
   import Ecto.Query, warn: false
 
   alias Kanban.Boards.Board
+  alias Kanban.Columns
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -138,7 +139,8 @@ defmodule Kanban.Metrics.TaskQueries do
   @doc """
   Returns completed goal rows for the throughput view's "Completed Goals"
   section, newest completion first. A goal counts as completed when it has a
-  `completed_at` OR sits in a column named "done"; its effective completion
+  `completed_at` OR sits in a column named "done" (case and surrounding
+  whitespace ignored, as `Kanban.Columns.named?/2` matches); its effective completion
   timestamp is `coalesce(completed_at, updated_at)`, which is what the window
   bound and ordering use.
   """
@@ -146,10 +148,10 @@ defmodule Kanban.Metrics.TaskQueries do
     {start_date, agent_name} = window(opts)
 
     Task
-    |> join(:inner, [t], c in assoc(t, :column))
+    |> join(:inner, [t], c in assoc(t, :column), as: :column)
     |> where([t, c], c.board_id == ^board_id)
     |> where([t], t.type == ^:goal)
-    |> where([t, c], not is_nil(t.completed_at) or fragment("lower(?)", c.name) == "done")
+    |> where(^dynamic([t], not is_nil(t.completed_at) or ^Columns.name_matches(:column, "Done")))
     |> where([t], coalesce(t.completed_at, t.updated_at) >= ^start_date)
     |> order_by([t], desc: coalesce(t.completed_at, t.updated_at))
     |> select([t], %{

@@ -52,6 +52,56 @@ defmodule KanbanWeb.ReviewQueueItemTest do
     """)
   end
 
+  # The .stride-screen light block and the dark override block of app.css, as
+  # Mix.Tasks.DarkMode.Contrast reads them: dark is layered over light.
+  defp stride_palettes do
+    css = File.read!("assets/css/app.css")
+    light = stride_block(css, ~r/\n\.stride-marketing,\s*\n\s*\.stride-screen\s*\{/)
+    dark = stride_block(css, ~r/:where\(\[data-theme="dark"\]\)\s*\.stride-marketing[^{]*\{/)
+    %{light: light, dark: Map.merge(light, dark)}
+  end
+
+  defp stride_block(css, regex) do
+    [{start, len} | _] = Regex.run(regex, css, return: :index)
+    after_selector = start + len
+
+    css
+    |> binary_part(after_selector, byte_size(css) - after_selector)
+    |> String.split("}", parts: 2)
+    |> hd()
+    |> declarations()
+  end
+
+  # A later declaration of a token in the same block wins, as in CSS.
+  defp declarations(body) do
+    ~r/--([a-z0-9-]+)\s*:\s*([^;]+);/
+    |> Regex.scan(body)
+    |> Map.new(fn [_, name, value] -> {name, String.trim(value)} end)
+  end
+
+  describe "review_queue_item/1 — board chip contrast" do
+    test "every chip fill takes its 8.5px var(--surface) initials at 4.5:1 in both themes" do
+      palettes = stride_palettes()
+
+      for {theme, tokens} <- palettes, token <- ["ink-3" | ReviewQueueItem.chip_accents()] do
+        fill = Map.fetch!(tokens, token)
+        ratio = tokens |> Map.fetch!("surface") |> Mix.Tasks.DarkMode.Contrast.contrast(fill)
+
+        assert ratio >= 4.5,
+               "#{theme}: --surface on --#{token} (#{fill}) is #{Float.round(ratio, 2)}:1"
+      end
+    end
+
+    test "boards cycle through the chip fills" do
+      for {token, id} <- Enum.with_index(ReviewQueueItem.chip_accents()) do
+        html = render_item(%{column: %{board: %{id: id}}})
+        assert html =~ "background: var(--#{token}); color: var(--surface);"
+      end
+
+      assert render_item(%{column: nil}) =~ "background: var(--ink-3); color: var(--surface);"
+    end
+  end
+
   describe "review_queue_item/1 — base rendering" do
     test "has the data-review-queue-item marker on the root" do
       assert render_item() =~ "data-review-queue-item"

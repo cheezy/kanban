@@ -29,6 +29,10 @@ defmodule KanbanWeb.API.Me.FallbackController do
       `Kanban.Reviews.approve_review/3` itself is `422 {"error":
       "approval_failed", "reason"}` (`ApprovalFailed`). `:not_authorized` is
       the 404 above, so a refusal never reveals the task.
+    * `{:files_changed, files_version}`, a file's diff asked for with a
+      `files_version` the task's file list no longer has (W2753), is `409
+      {"error": "files_changed", "message", "files_version"}`
+      (`FilesChanged`) with the current version.
     * the app's request for changes (W2755): `:review_notes_required`, notes
       that are missing or blank, is `422 {"errors": {"notes": ["can't be
       blank"]}}` (`ValidationError`), with the message only, never the notes
@@ -51,7 +55,12 @@ defmodule KanbanWeb.API.Me.FallbackController do
   # The refusals Kanban.Reviews.approve_review/3 can return once the approval
   # checks have passed: the board has no Done column to move the task to, or
   # the task left the state an approval needs.
-  @approval_failures [:review_not_performed, :invalid_column, :invalid_review_status]
+  @approval_failures [
+    :column_not_found,
+    :review_not_performed,
+    :invalid_column,
+    :invalid_review_status
+  ]
 
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
@@ -94,6 +103,17 @@ defmodule KanbanWeb.API.Me.FallbackController do
     })
   end
 
+  def call(conn, {:error, {:files_changed, files_version}}) when is_binary(files_version) do
+    conn
+    |> put_status(:conflict)
+    |> json(%{
+      error: "files_changed",
+      message:
+        "This task's changed files changed since the review was loaded. Reload the review.",
+      files_version: files_version
+    })
+  end
+
   def call(conn, {:error, {:too_large_for_phone, size}}) do
     conn
     |> put_status(:unprocessable_entity)
@@ -101,7 +121,12 @@ defmodule KanbanWeb.API.Me.FallbackController do
       error: "too_large_for_phone",
       message:
         "This change is too large to approve on a phone. Approve it on a tablet or on the web.",
-      size: %{files: size.files, changed_lines: size.changed_lines, truncated: size.truncated},
+      size: %{
+        files: size.files,
+        files_unknown: Map.get(size, :files_unknown, false),
+        changed_lines: size.changed_lines,
+        truncated: size.truncated
+      },
       limits: MobileGuard.limits()
     })
   end

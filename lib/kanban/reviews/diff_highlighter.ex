@@ -131,19 +131,18 @@ defmodule Kanban.Reviews.DiffHighlighter do
   def highlight(task_id, file_index, diff, path) when is_binary(diff) do
     task_id
     |> DiffCache.key(file_index, diff, path)
-    |> DiffCache.fetch_or_compute(fn -> lines(diff, path) end, weight: weight(diff))
+    |> DiffCache.fetch_or_compute(fn -> lines(diff, path) end)
   end
-
-  # The off-heap bytes a cached result can hold alive: span texts are cut from
-  # lines/2's own copy of the diff and from each lexed hunk's text, which
-  # together are at most the diff plus twice the lexing budget.
-  defp weight(diff), do: byte_size(diff) + 2 * @max_lex_bytes
 
   @doc """
   Turns a unified diff into display lines, without the cache.
 
   Lines before the first hunk header (`diff --git`, `---`, `+++`, a binary
-  file note) are dropped, as is the truncation marker. A `\\ No newline at end
+  file note) are dropped, as is the truncation marker. A diff with no hunk
+  header at all is read as one hunk without line numbers, so its `+`, `-`
+  and context lines are shown rather than dropped: `Kanban.Reviews.MobileGuard`
+  counts those lines, and a change the size counts must not be hidden from
+  the reviewer. A `\\ No newline at end
   of file` note is a `:ctx` line with no numbers.
   """
   @spec lines(String.t() | nil, String.t() | nil) :: [line()]
@@ -155,9 +154,6 @@ defmodule Kanban.Reviews.DiffHighlighter do
     diff
     |> String.replace("\0", "")
     |> String.replace_invalid()
-    # Span texts point into this copy, never into whatever larger binary the
-    # caller's diff was cut from, so a cached result pins only the diff.
-    |> :binary.copy()
     |> parse()
     |> Enum.chunk_by(& &1.lex)
     |> Enum.flat_map_reduce(@max_lex_bytes, &render(&1, lexer, &2))
@@ -169,9 +165,18 @@ defmodule Kanban.Reviews.DiffHighlighter do
   defp parse(diff) do
     diff
     |> String.splitter("\n")
-    |> Enum.reduce_while({[], 0, @initial_state}, &collect/2)
+    |> Enum.reduce_while({[], 0, initial_state(diff)}, &collect/2)
     |> elem(0)
     |> Enum.reverse()
+  end
+
+  # Without any hunk header, every diff line is read as hunk content with no
+  # line numbers; file headers (`diff --git`, `index`, `---`/`+++`) are still
+  # dropped by trailing_content?/1.
+  defp initial_state(diff) do
+    if String.starts_with?(diff, "@@") or String.contains?(diff, "\n@@"),
+      do: @initial_state,
+      else: %{@initial_state | started: true}
   end
 
   defp collect(raw, {acc, count, state}) do

@@ -75,9 +75,11 @@ defmodule Kanban.Reviews.Approval do
   answering 409. A refused approval stores nothing.
 
   `approve_review/3` opens its own transaction, which nests inside this one,
-  and its telemetry waits for this one's commit (`Kanban.Telemetry.AfterCommit`).
-  Its PubSub and webhook notifications run once its own transaction returns,
-  which is the last statement before this one commits.
+  and everything it causes outside the database waits for this one's commit
+  (`Kanban.Telemetry.AfterCommit`): its telemetry, the audit event's telemetry
+  and log line, the completer's notification and the webhooks. So an approval
+  that rolls back here, after `approve_review/3` returned (an idempotency
+  record that fails, or an exception), emits and sends none of them.
 
   ## The signing string
 

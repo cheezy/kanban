@@ -233,8 +233,11 @@ defmodule KanbanWeb.Router do
   # authenticates a device access token, never an agent API token, so never
   # add AuthenticateApiToken here and never mount /api/me routes under :api.
   # AppVersion runs before the token plug so an outdated app is sent to its
-  # update screen even when its token has expired.
+  # update screen even when its token has expired. DeviceApiCacheControl
+  # comes first so every response, the plugs' refusals included, is
+  # no-store unless it carries an etag.
   pipeline :device_api do
+    plug KanbanWeb.Plugs.DeviceApiCacheControl
     plug :accepts, ["json"]
     plug KanbanWeb.Plugs.RemoteClientIp
     plug KanbanWeb.Plugs.ApiTelemetry
@@ -571,10 +574,26 @@ defmodule KanbanWeb.Router do
     # The workspace switcher. Signed-in users only; the controller checks paid
     # access and reach before it changes the session.
     post "/workspace/switch", WorkspaceSessionController, :switch
-    # Device sign-in (W2745, design §7.1): the system browser shows a
-    # confirmation naming the device, and Allow (a CSRF-protected POST, never
-    # a GET) issues the app's one-time code. Deliberately in this browser
-    # scope, not :api, so log-in, SSO and the two-factor gate apply.
+  end
+
+  # Device sign-in (W2745, design §7.1): the system browser shows a
+  # confirmation naming the device, and Allow (a CSRF-protected POST, never
+  # a GET) issues the app's one-time code. Deliberately a browser scope, not
+  # :api, so log-in, SSO and the two-factor gate apply. :oauth_authorize runs
+  # before the log-in gate: a signed-out request too long to come back to
+  # after signing in is refused with the page's 400, not a cookie overflow.
+  pipeline :oauth_authorize do
+    plug KanbanWeb.Plugs.OAuthReturnTo
+  end
+
+  scope "/", KanbanWeb do
+    pipe_through [
+      :browser,
+      :oauth_authorize,
+      :require_authenticated_user,
+      :enforce_organization_two_factor
+    ]
+
     get "/oauth/authorize", OAuthController, :authorize
     post "/oauth/authorize", OAuthController, :confirm
   end

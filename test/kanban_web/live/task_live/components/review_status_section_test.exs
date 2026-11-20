@@ -93,7 +93,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
   # review_status_badge_fallback_style/1, review_status_label/1, and
   # review_section_class/1 — the design's stride-screen fallback path.
   describe "review_status_section/1 — fallback styling for unknown status" do
-    test "renders the Unknown label and the stride-screen fallback styles when status is nil" do
+    test "renders the Not reviewed label and the stride-screen fallback styles when status is nil" do
       assigns = %{
         task: %{
           review_status: nil,
@@ -108,7 +108,9 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSectionTest do
         <ReviewStatusSection.review_status_section task={@task} />
         """)
 
-      assert html =~ "Unknown"
+      # The read-only form field (D2) shows a task with no verdict yet.
+      assert html =~ "Not reviewed"
+      refute html =~ "Unknown"
       # Fallback badge style replaces the daisyUI gray with stride-screen tokens.
       assert html =~ "background: var(--surface-sunken)"
       assert html =~ "color: var(--ink-3)"

@@ -2,6 +2,10 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
   @moduledoc """
   Renders the review-status panel including reviewer, timestamps, and notes.
   Caller is responsible for the outer review-flag guard.
+
+  `review_status_badge/1` is the status badge on its own. The task edit form
+  shows it as read-only text, because a verdict is only ever decided through
+  `Kanban.Reviews` (the review queue or the app), never by editing the task.
   """
   use KanbanWeb, :html
 
@@ -14,12 +18,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
       <div class="space-y-2">
         <p>
           <span class="font-semibold">{gettext("Status")}:</span>
-          <span
-            class={review_status_badge_class(@task.review_status)}
-            style={review_status_badge_fallback_style(@task.review_status)}
-          >
-            {review_status_label(@task.review_status)}
-          </span>
+          <.review_status_badge status={@task.review_status} />
         </p>
         <%= if @task.reviewed_by do %>
           <p>
@@ -41,6 +40,26 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
         <% end %>
       </div>
     </div>
+    """
+  end
+
+  attr :status, :atom, required: true, doc: "the task's review_status, or nil"
+  attr :rest, :global
+
+  @doc """
+  The review-status badge: a translated label on its status's theme-token
+  colors, so it reads in light and dark mode. A nil status reads
+  "Not reviewed".
+  """
+  def review_status_badge(assigns) do
+    ~H"""
+    <span
+      class={review_status_badge_class(@status)}
+      style={review_status_badge_fallback_style(@status)}
+      {@rest}
+    >
+      {review_status_label(@status)}
+    </span>
     """
   end
 
@@ -76,6 +95,7 @@ defmodule KanbanWeb.TaskLive.Components.ReviewStatusSection do
   defp review_status_label(:approved), do: gettext("Approved")
   defp review_status_label(:changes_requested), do: gettext("Changes Requested")
   defp review_status_label(:rejected), do: gettext("Rejected")
+  defp review_status_label(nil), do: gettext("Not reviewed")
   defp review_status_label(_), do: gettext("Unknown")
 
   defp review_section_class(:pending),

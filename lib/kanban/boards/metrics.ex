@@ -26,6 +26,7 @@ defmodule Kanban.Boards.Metrics do
 
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
+  alias Kanban.Columns
   alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -246,13 +247,15 @@ defmodule Kanban.Boards.Metrics do
   # are excluded so the board card stats reflect actionable work only.
   defp column_counts_by_board(board_ids) do
     Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
+    |> join(:inner, [t], c in Column, as: :column, on: c.id == t.column_id)
     |> where([t, c], c.board_id in ^board_ids)
     |> where([t, _c], is_nil(t.archived_at))
     |> where([t, _c], t.type != :goal)
     |> where(
-      [_t, c],
-      c.name in ^@open_columns or c.name in [@doing_column, @review_column, @done_column]
+      ^Columns.name_matches(
+        :column,
+        @open_columns ++ [@doing_column, @review_column, @done_column]
+      )
     )
     |> group_by([_t, c], [c.board_id, c.name])
     |> select([_t, c], {c.board_id, c.name, count()})
@@ -264,10 +267,16 @@ defmodule Kanban.Boards.Metrics do
     end)
   end
 
-  defp bucket_for(name) when name in @open_columns, do: :open
-  defp bucket_for(@doing_column), do: :doing
-  defp bucket_for(@review_column), do: :review
-  defp bucket_for(@done_column), do: :done
+  # Column names match as `Kanban.Columns.named?/2` matches them (case and
+  # surrounding whitespace ignored), so " doing " counts as Doing.
+  defp bucket_for(name) do
+    case Columns.normalize_name(name) do
+      "doing" -> :doing
+      "review" -> :review
+      "done" -> :done
+      _backlog_or_ready -> :open
+    end
+  end
 
   # Returns %{board_id => %{Date => count}}.
   defp pulse_rows_by_board(board_ids, cutoff_dt) do

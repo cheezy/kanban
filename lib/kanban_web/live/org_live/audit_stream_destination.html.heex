@@ -294,7 +294,10 @@
             >
               {if @view.excluded_actions == [],
                 do: gettext("None"),
-                else: Enum.join(@view.excluded_actions, ", ")}
+                else:
+                  @view.excluded_actions
+                  |> AuditStreamDestinationView.excluded_action_labels()
+                  |> Enum.join(", ")}
             </dd>
           </div>
         </dl>

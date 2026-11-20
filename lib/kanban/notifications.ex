@@ -94,6 +94,7 @@ defmodule Kanban.Notifications do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
+  alias Kanban.Columns
   alias Kanban.Notifications.AuditStreamAlerts
   alias Kanban.Notifications.DigestRecipients
   alias Kanban.Notifications.EmailWorker
@@ -389,7 +390,9 @@ defmodule Kanban.Notifications do
   @doc """
   Lists tasks whose agent claim expired in the half-open window
   `[now - lookback_seconds, now)` and that are still being worked: in
-  progress, in the Doing column, assigned, unarchived, agent work or defect.
+  progress, in the Doing column (its name matched as `Kanban.Columns.named?/2`
+  matches it, case and surrounding whitespace ignored), assigned, unarchived,
+  agent work or defect.
 
   The expiry test mirrors the claim query (`claim_expires_at < now`). Tasks in
   Review are excluded on purpose: completing a task keeps its old
@@ -403,7 +406,8 @@ defmodule Kanban.Notifications do
 
     from(t in Task,
       join: c in assoc(t, :column),
-      where: c.name == "Doing",
+      as: :column,
+      where: ^Columns.name_matches(:column, "Doing"),
       where: t.status == :in_progress and is_nil(t.archived_at),
       where: not is_nil(t.assigned_to_id),
       where: t.claim_expires_at < ^now and t.claim_expires_at >= ^since,

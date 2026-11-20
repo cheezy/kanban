@@ -48,6 +48,16 @@ defmodule KanbanWeb.BoardLive.GoalsTest do
       refute MapSet.member?(promotable, 20)
     end
 
+    test "finds a Backlog column named with other case and padding" do
+      columns = [%{id: 1, name: " backlog\u00A0"}, %{id: 2, name: "Ready"}]
+      goal = %{id: 10, type: :goal, parent_id: nil}
+      child = %{id: 11, type: :work, parent_id: 10}
+
+      promotable = Goals.compute_backlog_promotable_goals(columns, %{1 => [goal, child]})
+
+      assert MapSet.member?(promotable, 10)
+    end
+
     test "returns an empty set when there is no Backlog column" do
       assert Goals.compute_backlog_promotable_goals([%{id: 1, name: "Ready"}], %{}) ==
                MapSet.new()

@@ -141,6 +141,30 @@ defmodule Kanban.Tasks.AgentWorkflow.CompletionTest do
   describe "complete_task/4 — error paths" do
     setup :setup_board
 
+    test "finds a Done column whose name differs only in case and spacing", ctx do
+      ctx.done |> Ecto.Changeset.change(name: " done ") |> Repo.update!()
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert completed.column_id == ctx.done.id
+      assert completed.status == :completed
+    end
+
+    test "a board without a Done column refuses before the task moves", ctx do
+      ctx.done |> Ecto.Changeset.change(name: "Shipped") |> Repo.update!()
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:error, :column_not_found} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert %Task{column_id: column_id, status: :in_progress} = Repo.get!(Task, task.id)
+      assert column_id == ctx.doing.id
+    end
+
     test "rejects a task that is not in_progress or blocked", ctx do
       task = create_open_task(ctx.ready, ctx.user)
 

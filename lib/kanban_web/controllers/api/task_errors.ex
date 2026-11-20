@@ -328,6 +328,11 @@ defmodule KanbanWeb.API.TaskErrors do
       {"Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'",
        :invalid_review_status}
 
+  def mark_reviewed_error(:column_not_found),
+    do:
+      {"The board has no Done or Doing column for the reviewed task to move to",
+       :column_not_found}
+
   def mark_reviewed_error(_other),
     do: {"Unexpected mark_reviewed error", :unexpected_mark_reviewed_error}
 

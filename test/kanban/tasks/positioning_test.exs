@@ -42,6 +42,16 @@ defmodule Kanban.Tasks.PositioningTest do
       assert DateTime.diff(DateTime.utc_now(), review_requested_at(task)) in 0..5
     end
 
+    test "a drag into a Review column named in another case or padded stamps it too",
+         %{doing: doing, review: review} do
+      review = review |> Ecto.Changeset.change(name: " REVIEW ") |> Repo.update!()
+      task = task_fixture(doing)
+
+      assert {:ok, _} = Kanban.Tasks.move_task(task, review, 0)
+
+      assert DateTime.diff(DateTime.utc_now(), review_requested_at(task)) in 0..5
+    end
+
     test "a reorder inside Review keeps the original stamp", %{doing: doing, review: review} do
       first = task_fixture(review)
       _second = task_fixture(review)

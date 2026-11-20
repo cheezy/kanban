@@ -79,6 +79,18 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
       assert {:error, :invalid_column} = AgentWorkflow.mark_reviewed(task, ctx.user)
     end
 
+    test "accepts a task in a Review column named in another case or padded", ctx do
+      ctx.review |> Ecto.Changeset.change(name: " REVIEW ") |> Repo.update!()
+
+      task =
+        ctx.in_review_task
+        |> set_review_status(:approved, ctx.user)
+        |> Repo.preload(:column, force: true)
+
+      assert {:ok, done_task, _hooks} = AgentWorkflow.mark_reviewed(task, ctx.user)
+      assert done_task.column_id == ctx.done.id
+    end
+
     test "returns :not_authorized when the caller is not a board member", ctx do
       # ctx.other is a real user but has no membership on ctx.board.
       task = set_review_status(ctx.in_review_task, :approved, ctx.user)
@@ -154,6 +166,14 @@ defmodule Kanban.Tasks.AgentWorkflow.ReviewTest do
       task = create_open_task(ctx.ready, ctx.user)
 
       assert {:error, :invalid_column} = AgentWorkflow.mark_done(task, ctx.user)
+    end
+
+    test "accepts a task in a Review column named in another case or padded", ctx do
+      ctx.review |> Ecto.Changeset.change(name: "review\t") |> Repo.update!()
+      task = Repo.preload(ctx.in_review_task, :column, force: true)
+
+      assert {:ok, done_task} = AgentWorkflow.mark_done(task, ctx.user)
+      assert done_task.column_id == ctx.done.id
     end
 
     test "returns :not_authorized when the caller is not a board member", ctx do

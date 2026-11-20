@@ -213,6 +213,44 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
       assert SecurityPolicies.policy_for_organization(org.id).id == nil
     end
 
+    # D5: saving the form unchanged shows the flash and writes nothing.
+    test "a no-op save by another admin shows the saved flash and keeps the last editor",
+         %{conn: conn, org: org, org_admin: org_admin} do
+      {:ok, lv, _html} = live(conn, ~p"/org/security")
+      submit(lv, %{"require_two_factor" => "true", "two_factor_grace_days" => "14"})
+      saved = SecurityPolicies.policy_for_organization(org.id)
+
+      stamped = ~U[2026-10-01 09:00:00Z]
+
+      {1, _} =
+        from(p in SecurityPolicy, where: p.id == ^saved.id)
+        |> Repo.update_all(set: [updated_at: stamped])
+
+      other_admin = user_fixture()
+      organization_member_fixture(org, other_admin, :org_admin)
+      {:ok, other_lv, _html} = live(log_in_user(build_conn(), other_admin), ~p"/org/security")
+
+      html =
+        submit(other_lv, %{
+          "require_two_factor" => "true",
+          "two_factor_grace_days" => "14",
+          "audit_retention_days" => "",
+          "hide_titles_in_notifications" => "false"
+        })
+
+      assert html =~ "Security policy saved."
+      reloaded = Repo.get!(SecurityPolicy, saved.id)
+      assert reloaded.updated_by_id == org_admin.id
+      assert reloaded.updated_at == stamped
+
+      assert [_one] = AuditLog.list_events(action: :organization_policy_updated)
+
+      assert AuditLog.list_events(
+               action: :organization_policy_updated,
+               actor_user_id: other_admin.id
+             ) == []
+    end
+
     test "an empty retention keeps audit events forever", %{conn: conn, org: org} do
       {:ok, lv, _html} = live(conn, ~p"/org/security")
       submit(lv, %{"audit_retention_days" => "400"})
@@ -225,7 +263,16 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
   # D441: a value that is not a string failed the cast but stayed in the
   # changeset params, so the re-rendered input raised and crashed the view.
   describe "malformed params" do
-    test "a map- or list-valued field does not crash the policy form", %{conn: conn, org: org} do
+    test "a map- or list-valued field does not crash the policy form", %{
+      conn: conn,
+      org: org,
+      org_admin: org_admin
+    } do
+      # Stored as true, so a checkbox value that was blanked instead of
+      # dropped shows: Ecto casts a blank to the schema default, false.
+      {:ok, _policy} =
+        SecurityPolicies.update_policy(org_admin, %{"hide_titles_in_notifications" => "true"})
+
       {:ok, lv, _html} = live(conn, ~p"/org/security")
 
       for event <- ["validate", "save"],
@@ -244,7 +291,8 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
 
       policy = SecurityPolicies.policy_for_organization(org.id)
       refute policy.require_two_factor
-      refute policy.hide_titles_in_notifications
+      # the crafted values were dropped, so the stored true stands
+      assert policy.hide_titles_in_notifications
     end
 
     test "a crafted hide_titles_in_notifications value is dropped, not saved or shown",

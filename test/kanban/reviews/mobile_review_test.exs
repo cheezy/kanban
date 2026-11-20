@@ -151,7 +151,13 @@ defmodule Kanban.Reviews.MobileReviewTest do
                %{path: "lib/c.ex", index: 3, additions: nil, deletions: nil, truncated: false}
              ] = review.files
 
-      assert review.size == %{files: 3, changed_lines: 7, truncated: true, large_change: true}
+      assert review.size == %{
+               files: 3,
+               files_unknown: false,
+               changed_lines: 7,
+               truncated: true,
+               large_change: true
+             }
 
       file_lines =
         review.files

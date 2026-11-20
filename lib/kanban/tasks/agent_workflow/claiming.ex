@@ -22,6 +22,7 @@ defmodule Kanban.Tasks.AgentWorkflow.Claiming do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskClaim
   alias Kanban.Tasks.TaskTelemetry
 
   require Logger
@@ -123,6 +124,9 @@ defmodule Kanban.Tasks.AgentWorkflow.Claiming do
              ]
            ) do
         {1, _} ->
+          # Claim history outlives the claim, so a later reader can tell this
+          # claim happened even after an unclaim or a release clears it.
+          :ok = TaskClaim.record(task.id, now)
           :claimed
 
         {0, _} ->

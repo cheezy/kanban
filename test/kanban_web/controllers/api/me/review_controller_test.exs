@@ -126,6 +126,61 @@ defmodule KanbanWeb.API.Me.ReviewControllerTest do
     |> Repo.update!()
   end
 
+  describe "GET /api/me/reviews and web /review list the same reviews (W2751)" do
+    import Phoenix.LiveViewTest
+
+    defp api_ids(token) do
+      build_conn()
+      |> put_req_header("authorization", "Bearer " <> token)
+      |> get("/api/me/reviews")
+      |> json_response(200)
+      |> Map.fetch!("data")
+      |> Enum.map(& &1["task_id"])
+    end
+
+    defp web_ids(user) do
+      {:ok, _view, html} = build_conn() |> log_in_user(user) |> live(~p"/review")
+
+      ~r/data-review-queue-item-id="(\d+)"/
+      |> Regex.scan(html, capture: :all_but_first)
+      |> Enum.map(fn [id] -> String.to_integer(id) end)
+    end
+
+    defp waiting!(column, minutes_ago, attrs \\ %{}) do
+      at = DateTime.add(~U[2026-11-18 12:00:00Z], -minutes_ago * 60)
+      pending_task!(column, Map.put(attrs, :review_requested_at, at))
+    end
+
+    test "the same items in the same order, without archived or other people's tasks", ctx do
+      other_review = user_fixture() |> board_fixture() |> column_fixture(%{name: "Review"})
+      _other = waiting!(other_review, 90)
+
+      second_review = ctx.user |> board_fixture() |> column_fixture(%{name: "Review"})
+      oldest = waiting!(ctx.review, 60)
+      middle = waiting!(second_review, 30)
+      newest = waiting!(ctx.review, 5)
+      _archived = waiting!(ctx.review, 45, %{archived_at: ~U[2026-11-18 11:50:00Z]})
+
+      assert web_ids(ctx.user) == [oldest.id, middle.id, newest.id]
+      assert api_ids(ctx.phone) == web_ids(ctx.user)
+    end
+
+    test "under enforcement the app leaves out plan-locked boards and keeps the web order", ctx do
+      org_board = ctx.user |> board_fixture() |> then(&into_org_workspace!(ctx.user, &1))
+      org_review = column_fixture(org_board, %{name: "Review"})
+
+      locked = waiting!(ctx.review, 50)
+      first = waiting!(org_review, 40)
+      second = waiting!(org_review, 10)
+
+      enforce_plans()
+
+      web = web_ids(ctx.user)
+      assert web == [locked.id, first.id, second.id]
+      assert api_ids(ctx.phone) == Enum.reject(web, &(&1 == locked.id))
+    end
+  end
+
   describe "GET /api/me/reviews/:task_id" do
     test "returns the review for a pending task the person can review", ctx do
       task = pending_task!(ctx.review, reviewed_attrs())
@@ -199,6 +254,7 @@ defmodule KanbanWeb.API.Me.ReviewControllerTest do
 
       assert data["size"] == %{
                "files" => 2,
+               "files_unknown" => false,
                "changed_lines" => 4,
                "truncated" => false,
                "large_change" => false

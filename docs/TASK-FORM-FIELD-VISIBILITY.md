@@ -111,8 +111,17 @@ The **Review Queue** section only appears on AI-optimized boards, and only for a
 - For tasks that have not yet been reviewed, this section is hidden to reduce form clutter
 
 **Fields in This Section:**
-- **Review Status** - Pending, Approved, Changes Requested, or Rejected
-- **Review Notes** - Notes from the reviewer about the task
+- **Review Status** - Pending, Approved, Changes Requested, or Rejected, shown
+  read-only, with a link to the review queue. A verdict is decided in the
+  review queue (`/review`) or the mobile app, through `Kanban.Reviews`, which
+  writes the audit event, emits the review telemetry, sends the notifications
+  and moves the task. The save ignores any `review_status`, `reviewed_at` or
+  `reviewed_by_id` the form sends.
+- **Review Notes** - The reviewer's notes, shown read-only like the status,
+  and only when the task has notes. Line breaks are kept and long words wrap.
+  The reviewer writes them with the verdict (the review queue, the mobile app
+  or the agent API). The save and the live validation ignore any
+  `review_notes` the form sends, for a new task and an edit alike.
 
 **Why This Design?**
 - Reduces clutter for tasks that haven't entered the review workflow yet

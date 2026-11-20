@@ -207,6 +207,40 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationTest do
       end
     end
 
+    test "excluded actions are listed by their labels, as the picker shows them",
+         %{conn: conn, org: org} do
+      destination = destination_fixture(org, :datadog)
+      assert {:ok, lv, _html} = live(conn, path(destination))
+      assert has_element?(lv, "#destination-excluded-actions", "None")
+
+      destination = set(destination, excluded_actions: ["sso_login", "org_member_added"])
+
+      {:ok, lv, _html} = live(conn, path(destination))
+
+      assert has_element?(
+               lv,
+               "#destination-excluded-actions",
+               "Organization member added, Single sign-on login"
+             )
+
+      refute has_element?(lv, "#destination-excluded-actions", "sso_login")
+      refute has_element?(lv, "#destination-excluded-actions", "org_member_added")
+
+      {:ok, lv, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> live(path(destination))
+
+      german =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          Gettext.pgettext(KanbanWeb.Gettext, "audit action", "Single sign-on login")
+        end)
+
+      refute german == "Single sign-on login"
+      assert has_element?(lv, "#destination-excluded-actions", german)
+      refute has_element?(lv, "#destination-excluded-actions", "sso_login")
+    end
+
     test "a destination with no attempts and no gaps shows the empty states",
          %{conn: conn, org: org} do
       destination = destination_fixture(org, :datadog)

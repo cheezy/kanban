@@ -232,6 +232,105 @@ defmodule KanbanWeb.API.Me.ReviewFileTest do
     end
   end
 
+  describe "files_version" do
+    defp get_versioned(token, id, index, version) do
+      build_conn()
+      |> put_req_header("authorization", "Bearer " <> token)
+      |> get("/api/me/reviews/#{id}/files/#{index}", %{"files_version" => version})
+    end
+
+    defp detail_version(token, id) do
+      build_conn()
+      |> put_req_header("authorization", "Bearer " <> token)
+      |> get("/api/me/reviews/#{id}")
+      |> json_response(200)
+      |> get_in(["data", "files_version"])
+    end
+
+    defp replace_files!(task, files),
+      do: task |> Ecto.Changeset.change(changed_files: files) |> Repo.update!()
+
+    test "the detail and each file carry the same version", ctx do
+      task = pending_task!(ctx.review, reviewed_attrs())
+
+      version = detail_version(ctx.phone, task.id)
+      assert is_binary(version) and version != ""
+
+      data = ctx.phone |> get_file(task.id, 1) |> json_response(200) |> Map.fetch!("data")
+      assert data["files_version"] == version
+
+      assert ctx.phone |> get_versioned(task.id, 1, version) |> json_response(200)
+    end
+
+    test "a stale version answers 409 files_changed with the current version", ctx do
+      task = pending_task!(ctx.review, reviewed_attrs())
+      stale = detail_version(ctx.phone, task.id)
+
+      # The agent resubmitted in place: same count, files reordered.
+      [a, b, c] = task.changed_files
+      replace_files!(task, [b, a, c])
+      current = detail_version(ctx.phone, task.id)
+      refute current == stale
+
+      assert %{
+               "error" => "files_changed",
+               "files_version" => ^current,
+               "message" => message
+             } = ctx.phone |> get_versioned(task.id, 0, stale) |> json_response(409)
+
+      assert message =~ "Reload"
+
+      assert %{"data" => %{"path" => "lib/kanban_web/live/org_live/show.ex"}} =
+               ctx.phone |> get_versioned(task.id, 0, current) |> json_response(200)
+    end
+
+    test "a diff edited in place changes the version", ctx do
+      task = pending_task!(ctx.review, reviewed_attrs())
+      before = detail_version(ctx.phone, task.id)
+
+      [a, b, c] = task.changed_files
+      replace_files!(task, [Map.put(a, "diff", "@@ -1,0 +1,1 @@\n+other"), b, c])
+
+      refute detail_version(ctx.phone, task.id) == before
+
+      assert %{"error" => "files_changed"} =
+               ctx.phone |> get_versioned(task.id, 0, before) |> json_response(409)
+    end
+
+    test "a missing or empty version skips the check", ctx do
+      task = pending_task!(ctx.review, reviewed_attrs())
+
+      assert ctx.phone |> get_file(task.id, 0) |> json_response(200)
+      assert ctx.phone |> get_versioned(task.id, 0, "") |> json_response(200)
+    end
+
+    test "the 409 matches the documented FilesChanged schema", ctx do
+      task = pending_task!(ctx.review, reviewed_attrs())
+      body = ctx.phone |> get_versioned(task.id, 0, "stale") |> json_response(409)
+      spec = KanbanWeb.API.OpenApiSpec.path() |> File.read!() |> Jason.decode!()
+      properties = get_in(spec, ["components", "schemas", "FilesChanged", "properties"])
+
+      assert body |> Map.keys() |> MapSet.new() == properties |> Map.keys() |> MapSet.new()
+    end
+  end
+
+  describe "archived tasks" do
+    test "answer 404 for the detail and the files", ctx do
+      task =
+        ctx.review
+        |> pending_task!(reviewed_attrs())
+        |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second))
+        |> Repo.update!()
+
+      assert ctx.phone |> get_file(task.id, 0) |> json_response(404) == %{"error" => "Not Found"}
+
+      assert build_conn()
+             |> put_req_header("authorization", "Bearer " <> ctx.phone)
+             |> get("/api/me/reviews/#{task.id}")
+             |> json_response(404)
+    end
+  end
+
   # A property with a $ref is checked by its own schema in the loop above.
   defp type_allowed?(_value, %{"$ref" => _}), do: true
 

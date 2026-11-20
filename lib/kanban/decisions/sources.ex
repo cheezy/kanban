@@ -6,13 +6,21 @@ defmodule Kanban.Decisions.Sources do
   `context/3` loads what more than one source needs once: the boards the
   person can see (already narrowed to the plan), their access to each, the
   person's `task_unclaimed` and `claim_expired` notifications, and the
-  Ready and Backlog task counts per board. Each source then returns plain
-  item maps in the shape `Kanban.Decisions` documents.
+  Ready and Backlog task counts per board (`Kanban.Decisions.ColumnCounts`).
+  Each source then returns plain item maps in the shape `Kanban.Decisions`
+  documents.
 
   Actions follow the same write checks the web applies: approving, asking
   for changes and moving a task need owner or modify access; replying needs
   only membership, as `Kanban.Tasks.CommentPolicy` allows any member to
-  comment.
+  comment. Approving also follows the app's large-change guard: a phone is
+  not offered `:approve` on a change `Kanban.Reviews.MobileGuard` refuses for
+  a phone, the rule the review detail's `approvable_here` and the approve
+  route apply. A tablet and the web keep it.
+
+  A task item's `:web_url` is the task's edit page for a person who can write
+  to the board, and the board itself for a read-only member, because the edit
+  page refuses them and sends them to the board.
   """
 
   import Ecto.Query, warn: false
@@ -20,41 +28,59 @@ defmodule Kanban.Decisions.Sources do
   alias Kanban.Accounts.Scope
   alias Kanban.Agents
   alias Kanban.Columns
-  alias Kanban.Columns.Column
+  alias Kanban.Decisions.ColumnCounts
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias Kanban.Repo
   alias Kanban.Reviews
+  alias Kanban.Reviews.MobileGuard
   alias Kanban.Reviews.MobileReview
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskClaim
 
   @write_access [:owner, :modify]
   @pill_sections [:acceptance_criteria, :testing_strategy, :patterns, :security_considerations]
   @notification_types [:task_unclaimed, :claim_expired]
-  @agent_task_types [:work, :defect]
   @recent_agent_seconds 24 * 60 * 60
 
   @doc """
   Builds the context every source reads, for `boards`: the boards the
   scoped `user` can access that the plan unlocks, each with its virtual
-  `:user_access` set.
+  `:user_access` set. `device_class` is the class of the device asking,
+  `:phone` or `:tablet`, or `nil` for the web.
   """
-  @spec context(Scope.t(), Kanban.Accounts.User.t(), [Kanban.Boards.Board.t()]) :: map()
-  def context(%Scope{} = scope, user, boards) do
+  @spec context(
+          Scope.t(),
+          Kanban.Accounts.User.t(),
+          [Kanban.Boards.Board.t()],
+          MobileGuard.device_class()
+        ) :: map()
+  def context(%Scope{} = scope, user, boards, device_class \\ nil) do
     board_ids = Enum.map(boards, & &1.id)
 
-    %{
+    boards
+    |> board_maps()
+    |> Map.merge(%{
       scope: scope,
       user: user,
+      device_class: device_class,
       now: DateTime.utc_now(),
+      notifications: open_task_notifications(scope, board_ids),
+      columns: ColumnCounts.by_board(board_ids)
+    })
+  end
+
+  defp board_maps(boards) do
+    %{
       boards: Map.new(boards, &{&1.id, &1}),
-      access: Map.new(boards, &{&1.id, &1.user_access}),
-      notifications:
-        Notifications.list_task_notifications(scope, @notification_types, board_ids,
-          task_statuses: [:open, :in_progress]
-        ),
-      columns: column_counts(board_ids)
+      access: Map.new(boards, &{&1.id, &1.user_access})
     }
+  end
+
+  defp open_task_notifications(scope, board_ids) do
+    Notifications.list_task_notifications(scope, @notification_types, board_ids,
+      task_statuses: [:open, :in_progress]
+    )
   end
 
   # -- review ----------------------------------------------------------------
@@ -84,7 +110,7 @@ defmodule Kanban.Decisions.Sources do
         first_failed_note: first_failed_note(verdicts)
       },
       actions: review_actions(task, ctx, board_id),
-      path: task_path(board_id, task.id)
+      path: task_path(ctx, board_id, task.id)
     })
   end
 
@@ -95,52 +121,104 @@ defmodule Kanban.Decisions.Sources do
     end)
   end
 
-  # Approval and change requests are refused for read-only members and
-  # archived tasks by `Kanban.Reviews.DecisionChecks.decidable/4` (app) and
-  # by the write check in `Reviews.commit_review!` (web), so only offer them
-  # where both would pass.
-  defp review_actions(%Task{archived_at: nil}, ctx, board_id) do
+  # Approval and change requests are refused for read-only members by
+  # `Kanban.Reviews.DecisionChecks.decidable/4` (app) and by the write check
+  # in `Kanban.Reviews.ReviewCommit` (web), so only offer them where both
+  # would pass. Archived tasks never reach here: the pending-review query
+  # leaves them out. Approval is also refused on a phone for a change
+  # `MobileGuard` finds too large; asking for changes never is.
+  defp review_actions(task, ctx, board_id) do
     if writable?(ctx, board_id),
-      do: [:open_review, :approve, :request_changes, :open_on_web],
+      do: [:open_review] ++ approve(task, ctx) ++ [:request_changes, :open_on_web],
       else: [:open_on_web]
   end
 
-  defp review_actions(_task, _ctx, _board_id), do: [:open_on_web]
+  defp approve(task, ctx) do
+    case MobileGuard.check(task, ctx.device_class) do
+      :ok -> [:approve]
+      {:error, :too_large_for_phone} -> []
+    end
+  end
 
   # -- released --------------------------------------------------------------
 
   @doc """
   The person's newest `task_unclaimed` notification per task, while it is
-  unread and the task is still open in Ready.
+  unread, the task is still open in Ready, and the task has not been claimed
+  since the notification was sent (`Kanban.Tasks.TaskClaim`): any later
+  claim resolves the release, even one that ended without a release of its
+  own, such as a claim that expired before the task went back to Ready.
+  One claim-history query for the candidates; none when there are none.
   """
   @spec released(map()) :: [map()]
   def released(ctx) do
     ctx.notifications
     |> newest_per_task(:task_unclaimed)
     |> Enum.filter(&released?/1)
+    |> reject_claimed_since()
     |> Enum.map(&released_item(&1, ctx))
+  end
+
+  defp reject_claimed_since([]), do: []
+
+  defp reject_claimed_since(notifications) do
+    latest = notifications |> Enum.map(& &1.task_id) |> TaskClaim.latest_claims()
+
+    Enum.reject(notifications, fn n ->
+      claimed_at = Map.get(latest, n.task_id)
+      claimed_at != nil and DateTime.after?(claimed_at, n.inserted_at)
+    end)
   end
 
   @doc """
   Whether one `task_unclaimed` or `claim_expired` notification is still an
   open decision, by the rules `released/1` and `claim_expired/1` apply,
-  whatever its `in_app` flag. Expects `task: :column` preloaded; any other
-  event type is `false`.
+  whatever its `in_app` flag: it is the person's newest notification of its
+  event type for the task (those sources keep only the newest per task), the
+  task is unarchived, and the kind's own rule holds. Expects `task: :column`
+  preloaded; any other event type is `false`.
+
+  A row is compared with every newer row the person has for that task and
+  event type, hidden or not, so a late or retried push for a release that a
+  newer notification replaced is not open, as the list would not show it.
+
+  A `task_unclaimed` row is also closed by any claim of its task after it
+  was sent, as `released/1` decides.
 
   `Kanban.Push.PushWorker` asks this for a decision missing from the
-  person's list, which reads only in-app rows and stops at 100 items.
+  person's list, which reads only in-app rows on unarchived tasks and stops
+  at 100 items.
   """
   @spec notification_open?(Notification.t(), DateTime.t()) :: boolean()
-  def notification_open?(%Notification{event_type: :task_unclaimed} = notification, _now),
-    do: released?(notification)
+  def notification_open?(%Notification{event_type: :task_unclaimed} = notification, _now) do
+    released?(notification) and newest?(notification) and
+      not TaskClaim.claimed_after?(notification.task_id, notification.inserted_at)
+  end
 
   def notification_open?(%Notification{event_type: :claim_expired} = notification, now),
-    do: still_expired?(notification, now)
+    do: still_expired?(notification, now) and newest?(notification)
 
   def notification_open?(%Notification{}, _now), do: false
 
-  defp released?(%Notification{read_at: nil, task: %Task{status: :open, column: column}}),
-    do: Columns.named?(column, "Ready")
+  # The order `newest_per_task/2` reads rows in: newest `inserted_at`, then
+  # highest id.
+  defp newest?(%Notification{} = n) do
+    newer =
+      from(o in Notification,
+        where: o.user_id == ^n.user_id and o.task_id == ^n.task_id,
+        where: o.event_type == ^n.event_type,
+        where:
+          o.inserted_at > ^n.inserted_at or (o.inserted_at == ^n.inserted_at and o.id > ^n.id)
+      )
+
+    not Repo.exists?(newer)
+  end
+
+  defp released?(%Notification{
+         read_at: nil,
+         task: %Task{status: :open, archived_at: nil, column: column}
+       }),
+       do: Columns.named?(column, "Ready")
 
   defp released?(_notification), do: false
 
@@ -153,7 +231,7 @@ defmodule Kanban.Decisions.Sources do
       board_id: board_id,
       details: %{reason: notification.body, notification_id: notification.id},
       actions: [:reply] ++ move_to_backlog(ctx, board_id) ++ [:open_on_web],
-      path: task_path(board_id, task.id)
+      path: task_path(ctx, board_id, task.id)
     })
   end
 
@@ -172,7 +250,10 @@ defmodule Kanban.Decisions.Sources do
     |> Enum.map(&claim_expired_item(&1, ctx))
   end
 
-  defp still_expired?(%Notification{task: %Task{status: :in_progress} = task} = notification, now) do
+  defp still_expired?(
+         %Notification{task: %Task{status: :in_progress, archived_at: nil} = task} = notification,
+         now
+       ) do
     Columns.named?(task.column, "Doing") and before?(task.claim_expires_at, now) and
       current_claim?(notification, task)
   end
@@ -199,7 +280,7 @@ defmodule Kanban.Decisions.Sources do
       board_id: board_id,
       details: %{claimed_at: task.claimed_at, expired_at: task.claim_expires_at},
       actions: move_to_backlog(ctx, board_id) ++ [:open_on_web],
-      path: task_path(board_id, task.id)
+      path: task_path(ctx, board_id, task.id)
     })
   end
 
@@ -344,55 +425,6 @@ defmodule Kanban.Decisions.Sources do
   defp recent?(%NaiveDateTime{} = at, cutoff), do: NaiveDateTime.compare(at, cutoff) != :lt
   defp recent?(_at, _cutoff), do: false
 
-  # One query: unarchived work and defect tasks in each Ready and Backlog
-  # column, `nil` where a board has no such column.
-  defp column_counts([]), do: %{}
-
-  defp column_counts(board_ids) do
-    from(c in Column,
-      left_join: t in Task,
-      on: t.column_id == c.id and is_nil(t.archived_at) and t.type in ^@agent_task_types,
-      where: c.board_id in ^board_ids,
-      group_by: [c.board_id, c.id, c.name, c.wip_limit],
-      select: {c.board_id, c.name, c.wip_limit, count(t.id)}
-    )
-    |> Repo.all()
-    |> Enum.reduce(%{}, &add_column_count/2)
-  end
-
-  defp add_column_count({board_id, name, wip_limit, count}, acc) do
-    acc
-    |> Map.put_new(board_id, %{ready: nil, backlog: nil, backlog_full: false})
-    |> Map.update!(board_id, &add_to_counts(&1, column_key(name), wip_limit, count))
-  end
-
-  defp add_to_counts(counts, nil, _wip_limit, _count), do: counts
-
-  defp add_to_counts(counts, :backlog, wip_limit, count) do
-    %{
-      counts
-      | backlog: (counts.backlog || 0) + count,
-        backlog_full: counts.backlog_full or at_wip_limit?(wip_limit, count)
-    }
-  end
-
-  defp add_to_counts(counts, key, _wip_limit, count),
-    do: Map.update!(counts, key, &((&1 || 0) + count))
-
-  # The same rule `Kanban.Tasks.Positioning` refuses a move with.
-  defp at_wip_limit?(wip_limit, count) when is_integer(wip_limit) and wip_limit > 0,
-    do: count >= wip_limit
-
-  defp at_wip_limit?(_wip_limit, _count), do: false
-
-  defp column_key(name) do
-    cond do
-      Columns.named?(%{name: name}, "Ready") -> :ready
-      Columns.named?(%{name: name}, "Backlog") -> :backlog
-      true -> nil
-    end
-  end
-
   # -- shared ----------------------------------------------------------------
 
   defp item(ctx, kind, id, %{task: task, board_id: board_id} = fields) do
@@ -449,7 +481,13 @@ defmodule Kanban.Decisions.Sources do
   defp to_utc(%DateTime{} = at), do: at
   defp to_utc(_at), do: nil
 
-  defp task_path(board_id, task_id), do: "/boards/#{board_id}/tasks/#{task_id}/edit"
+  # The edit page refuses a member without write access and sends them to
+  # the board, so a read-only member's link is the board itself.
+  defp task_path(ctx, board_id, task_id) do
+    if writable?(ctx, board_id),
+      do: "/boards/#{board_id}/tasks/#{task_id}/edit",
+      else: "/boards/#{board_id}"
+  end
 
   defp url(path), do: KanbanWeb.Endpoint.url() <> path
 end

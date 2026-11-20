@@ -217,6 +217,80 @@ defmodule Kanban.Organizations.SecurityPolicyTest do
       assert length(policy_events()) == 1
     end
 
+    # D5: a save with no field different writes nothing at all.
+    test "a no-op save by another admin leaves the editor, the time, the audit log and telemetry alone" do
+      {org, admin} = org_with_admin()
+      other_admin = user_fixture()
+      organization_member_fixture(org, other_admin, :org_admin)
+
+      {:ok, saved} =
+        SecurityPolicies.update_policy(admin, %{
+          "require_two_factor" => "true",
+          "two_factor_grace_days" => "10"
+        })
+
+      stamped = ~U[2026-10-01 09:00:00Z]
+
+      {1, _} =
+        from(p in SecurityPolicy, where: p.id == ^saved.id)
+        |> Repo.update_all(set: [updated_at: stamped])
+
+      Kanban.TelemetryHelpers.attach_telemetry([:kanban, :audit, :organization_policy_updated])
+
+      assert {:ok, returned} =
+               SecurityPolicies.update_policy(other_admin, %{
+                 "require_two_factor" => "true",
+                 "two_factor_grace_days" => "10",
+                 "audit_retention_days" => "",
+                 "hide_titles_in_notifications" => "false"
+               })
+
+      assert returned.id == saved.id
+      reloaded = Repo.get!(SecurityPolicy, saved.id)
+      assert reloaded.updated_by_id == admin.id
+      assert reloaded.updated_at == stamped
+      assert reloaded.two_factor_enforced_at == saved.two_factor_enforced_at
+      assert length(policy_events()) == 1
+      refute_received {:telemetry_event, [:kanban, :audit, :organization_policy_updated], _, _}
+    end
+
+    test "a real change by another admin is written, attributed and audited as before" do
+      {org, admin} = org_with_admin()
+      other_admin = user_fixture()
+      organization_member_fixture(org, other_admin, :org_admin)
+      {:ok, saved} = SecurityPolicies.update_policy(admin, %{"two_factor_grace_days" => "10"})
+
+      Kanban.TelemetryHelpers.attach_telemetry([:kanban, :audit, :organization_policy_updated])
+
+      assert {:ok, changed} =
+               SecurityPolicies.update_policy(other_admin, %{
+                 "two_factor_grace_days" => "12",
+                 "hide_titles_in_notifications" => "false"
+               })
+
+      assert changed.updated_by_id == other_admin.id
+      assert Repo.get!(SecurityPolicy, saved.id).two_factor_grace_days == 12
+      assert [_first, second] = Enum.sort_by(policy_events(), & &1.id)
+      assert second.metadata["new_values"] == %{"two_factor_grace_days" => 12}
+      assert_received {:telemetry_event, [:kanban, :audit, :organization_policy_updated], _, _}
+    end
+
+    test "a no-op save for an Organization with no policy row inserts none" do
+      {org, admin} = org_with_admin()
+
+      assert {:ok, %SecurityPolicy{id: nil, organization_id: org_id}} =
+               SecurityPolicies.update_policy(admin, %{
+                 "require_two_factor" => "false",
+                 "two_factor_grace_days" => "7",
+                 "audit_retention_days" => "",
+                 "hide_titles_in_notifications" => "false"
+               })
+
+      assert org_id == org.id
+      assert Repo.aggregate(SecurityPolicy, :count) == 0
+      assert policy_events() == []
+    end
+
     test "a member, an outsider and a site admin who is not an org-admin are refused and nothing is written" do
       {org, _admin} = org_with_admin()
       member = user_fixture()

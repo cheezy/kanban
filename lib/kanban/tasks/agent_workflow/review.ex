@@ -5,6 +5,10 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   deprecated straight-to-Done path, and the board-write check that authorizes
   either.
 
+  The Done and Doing columns are found as `Kanban.Columns.get_column_by_name/2`
+  finds a column (case and surrounding whitespace ignored); a board without
+  the one a transition needs answers `{:error, :column_not_found}`.
+
   This is the path `Kanban.Reviews` drives inside its own transaction, with its
   telemetry held by `Kanban.Telemetry.AfterCommit` until commit (D371), so
   everything here runs in the caller's process and transaction.
@@ -15,6 +19,7 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   outside the agent workflow call the facade, never this module.
   """
 
+  alias Kanban.Columns
   alias Kanban.Hooks.Metadata
   alias Kanban.Repo
   alias Kanban.Tasks.AgentWorkflow.Support
@@ -37,7 +42,7 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
       not authorized_reviewer?(board_id, user) ->
         {:error, :not_authorized}
 
-      task.column.name != "Review" ->
+      not Columns.named?(task.column, "Review") ->
         {:error, :invalid_column}
 
       is_nil(task.review_status) ->
@@ -63,7 +68,7 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
       not authorized_reviewer?(board_id, user) ->
         {:error, :not_authorized}
 
-      task.column.name != "Review" ->
+      not Columns.named?(task.column, "Review") ->
         {:error, :invalid_column}
 
       true ->
@@ -75,8 +80,11 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   def authorized_reviewer?(board_id, user), do: Support.board_write_access?(board_id, user)
 
   defp do_mark_done(task, user, board_id) do
-    done_column = Support.get_column_by_name(board_id, "Done")
+    with {:ok, done_column} <- workflow_column(board_id, "Done"),
+         do: mark_done_in(task, user, board_id, done_column)
+  end
 
+  defp mark_done_in(task, user, board_id, done_column) do
     result =
       Repo.transaction(fn ->
         next_position = Positioning.get_next_position_locked(done_column)
@@ -107,9 +115,13 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   end
 
   defp move_to_done(task, user, board_id, opts) do
+    with {:ok, done_column} <- workflow_column(board_id, "Done"),
+         do: move_to_done_in(task, user, board_id, done_column, opts)
+  end
+
+  defp move_to_done_in(task, user, board_id, done_column, opts) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
-    done_column = Support.get_column_by_name(board_id, "Done")
 
     case run_move_to_done_transaction(task, user, done_column) do
       {:ok, {last_child_tag, completed_goal_id}} ->
@@ -156,8 +168,22 @@ defmodule Kanban.Tasks.AgentWorkflow.Review do
   end
 
   defp move_to_doing(task, user, board_id, opts) do
-    doing_column = Support.get_column_by_name(board_id, "Doing")
+    with {:ok, doing_column} <- workflow_column(board_id, "Doing"),
+         do: move_to_doing_in(task, user, board_id, doing_column, opts)
+  end
 
+  # The column a review moves the task to, matched as `Kanban.Columns.named?/2`
+  # matches a name (case and surrounding whitespace ignored), so a board whose
+  # column is "done" or "Done " still works; a board with none answers
+  # `{:error, :column_not_found}` instead of crashing the review.
+  defp workflow_column(board_id, name) do
+    case Columns.get_column_by_name(board_id, name) do
+      nil -> {:error, :column_not_found}
+      column -> {:ok, column}
+    end
+  end
+
+  defp move_to_doing_in(task, user, board_id, doing_column, opts) do
     result =
       Repo.transaction(fn ->
         next_position = Positioning.get_next_position_locked(doing_column)

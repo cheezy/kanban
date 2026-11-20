@@ -34,6 +34,9 @@ the person's devices or by refresh-token reuse, gets
 token would on the next request. It sees no device list, changes nothing and
 revokes nothing, itself included.
 
+Every response here, success or error, is `cache-control: private, no-store`
+([caching](README.md#caching-of-the-person-api)).
+
 ## GET /api/me/devices
 
 `200 OK` with the person's devices that are signed in, newest first:
@@ -75,7 +78,7 @@ is:
 |---|---|
 | `push_token` | The APNs or FCM token. `""` or `null` clears it, so the device gets no pushes |
 | `push_environment` | `"sandbox"` or `"production"` |
-| `locale` | A BCP 47 language tag, or the platform form with underscores, such as `en_GB` |
+| `locale` | A BCP 47 language tag, or the platform form with underscores, such as `en_GB`. Pushes use the matching translated locale, else the tag's base language (`de-AT` is German), else English |
 | `time_zone` | An IANA time zone name, such as `Europe/London` |
 | `app_version` | The app's version |
 
@@ -146,7 +149,8 @@ However a device is revoked, once the revocation commits Stride:
     from the Devices section of `/users/settings`;
   - `org_admin`: an Organization admin revoked it, or all of a member's
     devices, from the Members section of the org console (`/org`);
-  - `reuse_detected`: an old refresh token was presented again (see
+  - `reuse_detected`: an old refresh token, or an authorization code that was
+    already redeemed, was presented again (see
     [POST /oauth/token](post_oauth_token.md)).
 - emits `[:kanban, :device, :revoked]` with the platform and the reason
   ([telemetry](../telemetry.md#mobile-app-events)).

@@ -378,5 +378,46 @@ defmodule KanbanWeb.OrgLive.ConsoleDevicesTest do
 
     assert has_element?(view, "#member-devices-toggle-#{ctx.member.id}", "Geräte")
     assert has_element?(view, "#revoke-all-devices-#{ctx.member.id}", "Alle widerrufen")
+    assert has_element?(view, "[id^=member-device-revoke-]", "Widerrufen")
+    assert has_element?(view, "[id^=member-device-last-seen-]", "Zuletzt gesehen")
+  end
+
+  test "the member's empty list renders in German", ctx do
+    {:ok, view, _html} =
+      ctx.conn
+      |> Plug.Conn.put_session(:locale, "de")
+      |> live(~p"/org?section=members")
+
+    view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
+
+    assert has_element?(
+             view,
+             "#member-device-list-#{ctx.member.id}-empty",
+             "Dieses Mitglied hat keine angemeldeten Telefone oder Tablets."
+           )
+  end
+
+  test "the member devices panel uses theme tokens and a long name wraps", ctx do
+    long_name = String.duplicate("Mel", 40)
+    device = device_fixture(ctx.member_scope, %{name: long_name})
+    view = open_members(ctx.conn)
+
+    view |> element("#member-devices-toggle-#{ctx.member.id}") |> render_click()
+
+    panel = "#member-devices-#{ctx.member.id}"
+
+    assert has_element?(
+             view,
+             ~s(.stride-screen [class*="@container"] #{panel} #member-device-list-#{ctx.member.id})
+           )
+
+    assert has_element?(view, ~s|#{panel}[style*="border: 1px solid var(--line)"]|)
+    assert has_element?(view, ~s|#{panel}[style*="background: var(--surface)"]|)
+
+    assert has_element?(
+             view,
+             ~s(#member-device-name-#{device.id}[style*="overflow-wrap: anywhere"]),
+             long_name
+           )
   end
 end

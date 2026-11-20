@@ -8,17 +8,21 @@ defmodule Kanban.Tasks.CreationSupport do
   attrs already use.
   """
 
+  alias Kanban.Columns
   alias Kanban.Tasks.Task
 
   @doc """
   The struct a new task in `column` is built from. A task created straight
   into Review starts waiting for review now, so an edit does not reset its age
-  (`Kanban.Reviews.waiting_since/1`, D348).
+  (`Kanban.Reviews.waiting_since/1`, D348). Review is matched as
+  `Kanban.Columns.named?/2` matches a name (case and surrounding whitespace
+  ignored).
   """
-  def new_task(%{id: id, name: "Review"}),
-    do: %Task{column_id: id, review_requested_at: DateTime.utc_now(:second)}
-
-  def new_task(column), do: %Task{column_id: column.id}
+  def new_task(%{id: id} = column) do
+    if Columns.named?(column, "Review"),
+      do: %Task{column_id: id, review_requested_at: DateTime.utc_now(:second)},
+      else: %Task{column_id: id}
+  end
 
   @doc """
   Puts `position` into `attrs`, matching their key style.

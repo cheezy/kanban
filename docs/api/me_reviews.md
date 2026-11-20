@@ -90,7 +90,8 @@ locked panel without matching the message.
       {"index": 1, "path": "lib/kanban_web/live/org_live/show.ex", "additions": 11, "deletions": 2, "truncated": false, "flagged": true, "flag_reason": "issue"},
       {"index": 0, "path": "lib/kanban/organizations.ex", "additions": 20, "deletions": 0, "truncated": false, "flagged": false, "flag_reason": null}
     ],
-    "size": {"files": 2, "changed_lines": 33, "truncated": false, "large_change": false},
+    "files_version": "q2l9v0ZsB3m7xQ1a",
+    "size": {"files": 2, "files_unknown": false, "changed_lines": 33, "truncated": false, "large_change": false},
     "approvable_here": true,
     "approvable_here_reason": null,
     "review_requested_at": "2026-11-18T09:30:00Z",
@@ -162,14 +163,28 @@ The diffs themselves are not in this response: the app fetches one file's
 highlighted diff at a time from
 [GET /api/me/reviews/:task_id/files/:index](me_review_file.md).
 
+`files_version` is the version of the stored file list the `index` values
+point into. It changes whenever an agent reorders, renames, adds or removes a
+stored file or changes a diff, including a change that leaves
+`review_requested_at` as it was. The app sends it back with each file request,
+which answers `409 files_changed` instead of another file's diff once the list
+has changed (see [the file route](me_review_file.md#errors)).
+
 ### Size and approvable_here
 
 `size` counts the change as the large-change guard does (design §7.6): the
 files, the added plus deleted lines of the stored diffs, and whether any diff
-was cut at the cap. It counts every stored diff, including an entry with no
+was cut at the cap. `size.files` counts the same paths `files` lists, under the
+same spellings, so `./lib/a.ex` and `lib/a.ex:40` are one file. A task that
+stored no diffs has its files counted from the list it named, split on commas,
+semicolons, newlines and spaces. When that list is a count rather than paths
+(such as `14 files`), `files` is empty, `size.files` is `0` and
+`size.files_unknown` is `true`: the change cannot be shown to be small.
+`size` counts every stored diff, including an entry with no
 usable path, which `files` leaves out, so the files' counts can add up to less
 than `changed_lines`. `large_change` is `true` above the phone limits that
-[GET /api/me](get_me.md) returns, or when a diff was cut.
+[GET /api/me](get_me.md) returns, when the files are unknown, or when a diff
+was cut.
 
 `approvable_here` says whether **this device** may approve the review: a phone
 may not approve a large change, and a tablet may approve any change.

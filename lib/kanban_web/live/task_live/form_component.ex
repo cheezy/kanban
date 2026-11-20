@@ -2,6 +2,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   use KanbanWeb, :live_component
 
   import KanbanWeb.ReviewReportHelpers.Panels, only: [review_panel_visible?: 1]
+  import KanbanWeb.TaskLive.Components.ReviewStatusSection, only: [review_status_badge: 1]
   import KanbanWeb.TaskLive.Form.EmbedSections, only: [embed_sections: 1]
   import KanbanWeb.TaskLive.Form.GuidanceSections, only: [guidance_sections: 1]
   import KanbanWeb.TaskLive.Form.LabelPicker, only: [label_picker: 1]
@@ -120,8 +121,11 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   @impl true
   def handle_event("validate", %{"task" => task_params}, socket) do
-    # Normalize params before validation to avoid false validation errors
-    task_params = ParamNormalizer.normalize_array_params(task_params)
+    # Normalize params before validation to avoid false validation errors.
+    # The review verdict and notes are never cast from the form (D2).
+    task_params =
+      task_params |> ParamNormalizer.normalize_array_params() |> Save.drop_review_fields()
+
     raw = Map.get(task_params, "technical_details")
 
     {decoded_params, td_error} = TechnicalDetails.decode_for_changeset(task_params)
@@ -244,4 +248,15 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # foreign keys nilify), so the name falls back as in TaskActivityLog.
   defp history_user_name(%{name: name}) when is_binary(name), do: name
   defp history_user_name(_user), do: gettext("Unknown")
+
+  @doc """
+  True when the task has review notes worth showing: a string with something
+  other than whitespace. The form shows them read-only in its Review Queue
+  section and hides the block otherwise.
+  """
+  @spec review_notes_present?(map()) :: boolean()
+  def review_notes_present?(%{review_notes: notes}) when is_binary(notes),
+    do: String.trim(notes) != ""
+
+  def review_notes_present?(_task), do: false
 end

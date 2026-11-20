@@ -133,6 +133,81 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
+  describe "name_matches/2" do
+    defp matching_names(board, names) do
+      from(c in Column, as: :column, where: c.board_id == ^board.id)
+      |> where(^Columns.name_matches(:column, names))
+      |> select([c], c.name)
+      |> Repo.all()
+      |> Enum.sort()
+    end
+
+    test "matches in SQL ignoring case and surrounding whitespace" do
+      board = board_fixture(user_fixture())
+
+      for name <- [" doing ", "READY", "\tReview\n", "Doing soon", "To Do"],
+          do: column_fixture(board, %{name: name})
+
+      assert matching_names(board, "Doing") == [" doing "]
+      assert matching_names(board, "ready") == ["READY"]
+      assert matching_names(board, ["Doing", " review "]) == ["\tReview\n", " doing "]
+      assert matching_names(board, "Backlog") == []
+    end
+
+    test "trims every whitespace String.trim/1 trims, as named?/2 does" do
+      board = board_fixture(user_fixture())
+      padded = "\u3000\u00A0\v Done\u2028\u0085"
+      column_fixture(board, %{name: padded})
+      column_fixture(board, %{name: "\u200BDone"})
+
+      assert Columns.named?(%{name: padded}, "Done")
+      refute Columns.named?(%{name: "\u200BDone"}, "Done")
+      assert matching_names(board, "Done") == [padded]
+    end
+
+    test "trims each code point String.trim/1 trims, and no other" do
+      board = board_fixture(user_fixture())
+
+      trimmed =
+        for cp <- 0..0x3000,
+            cp not in 0xD800..0xDFFF,
+            String.trim(<<cp::utf8>>) == "",
+            do: <<cp::utf8>>
+
+      assert length(trimmed) == 25
+      for ch <- trimmed, do: column_fixture(board, %{name: ch <> "Done" <> ch})
+
+      assert length(matching_names(board, "Done")) == 25
+    end
+
+    test "agrees with named?/2 on every column of a board" do
+      board = board_fixture(user_fixture())
+      names = ["Backlog", " backlog", "BACKLOG\r", "Back log", "Backlogs", "\fbackLog\u2003"]
+      for name <- names, do: column_fixture(board, %{name: name})
+
+      expected = names |> Enum.filter(&Columns.named?(%{name: &1}, "Backlog")) |> Enum.sort()
+
+      assert matching_names(board, "Backlog") == expected
+      assert length(expected) == 4
+    end
+  end
+
+  describe "trimmed_whitespace/0" do
+    test "is exactly the set String.trim/1 strips" do
+      chars = String.graphemes(Columns.trimmed_whitespace())
+
+      assert length(chars) == 25
+      assert Enum.all?(chars, &(String.trim("a" <> &1) == "a"))
+    end
+  end
+
+  describe "normalize_name/1" do
+    test "trims and lower-cases" do
+      assert Columns.normalize_name(" Review\n") == "review"
+      assert Columns.normalize_name("\u3000DOING") == "doing"
+    end
+  end
+
   describe "create_column/3" do
     test "creates a column with valid attributes" do
       user = user_fixture()

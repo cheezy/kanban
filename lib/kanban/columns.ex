@@ -111,7 +111,66 @@ defmodule Kanban.Columns do
 
   def named?(_column, _name), do: false
 
-  defp normalize_name(name), do: name |> String.trim() |> String.downcase()
+  # Every code point `String.trim/1` strips (Unicode White_Space), passed to
+  # Postgres `btrim/2` so the SQL form trims exactly what `named?/2` trims.
+  @trimmed_whitespace "\t\n\v\f\r \u0085\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005" <>
+                        "\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000"
+
+  @doc """
+  The characters `named?/2` and `name_matches/2` trim from a column name:
+  every code point `String.trim/1` strips. For a query whose column binding
+  is positional, pass it to Postgres `btrim/2` as
+  `fragment("lower(btrim(?, ?))", c.name, ^Columns.trimmed_whitespace())`.
+  """
+  def trimmed_whitespace, do: @trimmed_whitespace
+
+  @doc """
+  The SQL form of `named?/2`: an `Ecto.Query.dynamic/2` that is true when the
+  column at the named binding `binding` is named one of `names`, ignoring case
+  and surrounding whitespace. `names` is one name or a list of names.
+
+  The query must bind the column with `as: binding`, for example
+  `join: c in assoc(t, :column), as: :column`, then
+  `where: ^Columns.name_matches(:column, ["Doing", "Review"])`.
+
+  It compares `lower(btrim(name, <whitespace>))` with each name normalised
+  as `named?/2` normalises it. `btrim/2` is given every code point
+  `String.trim/1` strips, so the two trim the same characters. Case differs
+  in one way only: Postgres `lower/1` follows the database's character type
+  (a `C` database lower-cases ASCII letters only), while `String.downcase/1`
+  is full Unicode. For the workflow names (Backlog, Ready, Doing, Review,
+  Done) the one character that can tell them apart is KELVIN SIGN (U+212A),
+  which `named?/2` reads as `k` in "Backlog" and a `C` database does not.
+
+  The expression is not indexed. Every caller reaches the column through
+  `board_id` or through the task's own indexed fields first, so it filters
+  only the few columns those rows point at, as the exact `name =` it
+  replaced did (`columns.name` had no index either).
+  """
+  @spec name_matches(atom(), String.t() | [String.t()]) :: Ecto.Query.dynamic_expr()
+  def name_matches(binding, names) when is_atom(binding) do
+    normalized = names |> List.wrap() |> Enum.map(&normalize_name/1)
+
+    dynamic(
+      [{^binding, c}],
+      fragment("lower(btrim(?, ?))", c.name, ^@trimmed_whitespace) in type(
+        ^normalized,
+        {:array, :string}
+      )
+    )
+  end
+
+  @doc """
+  `name`, trimmed and lower-cased as `named?/2` compares it.
+
+  ## Examples
+
+      iex> normalize_name(" Review\\n")
+      "review"
+
+  """
+  @spec normalize_name(String.t()) :: String.t()
+  def normalize_name(name) when is_binary(name), do: name |> String.trim() |> String.downcase()
 
   @doc """
   Creates a column for a board with automatic position assignment.

@@ -1620,6 +1620,29 @@ defmodule Kanban.BoardsTest do
       assert metrics.done == 1
     end
 
+    test "counts columns named in another case or padded in their buckets",
+         %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Renamed Board"})
+      cols = columns_by_name(board)
+
+      for {name, new_name} <- [
+            {"Backlog", "BACKLOG"},
+            {"Ready", " ready "},
+            {"Doing", " doing "},
+            {"Review", "REVIEW\n"},
+            {"Done", "\tdone"}
+          ] do
+        cols[name] |> Ecto.Changeset.change(name: new_name) |> Repo.update!()
+      end
+
+      for name <- ["Backlog", "Ready", "Doing", "Review", "Review", "Done"],
+          do: task_fixture(cols[name], %{title: name})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert {metrics.open, metrics.doing, metrics.review, metrics.done} == {2, 1, 2, 1}
+    end
+
     test "excludes archived tasks from the four buckets", %{user: user, now: now} do
       board = ai_optimized_board_fixture(user, %{name: "Archive Board"})
       cols = columns_by_name(board)

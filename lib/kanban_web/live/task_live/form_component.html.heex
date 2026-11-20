@@ -401,19 +401,43 @@
         <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Review Queue")}
         </h2>
-        <.input
-          field={f[:review_status]}
-          type="select"
-          label={gettext("Review Status")}
-          options={[
-            {gettext("Pending"), :pending},
-            {gettext("Approved"), :approved},
-            {gettext("Changes Requested"), :changes_requested},
-            {gettext("Rejected"), :rejected}
-          ]}
-          prompt={gettext("Select status")}
-        />
-        <.input field={f[:review_notes]} type="textarea" label={gettext("Review Notes")} rows="2" />
+        <%!-- D2: read-only. A verdict is decided through Kanban.Reviews (the
+             review queue or the app), which records the audit row, telemetry
+             and notifications and moves the task; the save drops any
+             review_status the form submits (Form.Save.drop_review_fields/1). --%>
+        <div class="fieldset mb-2" data-review-status-readonly>
+          <span class="label">{gettext("Review Status")}</span>
+          <div>
+            <.review_status_badge
+              status={@task.review_status}
+              data-review-status={@task.review_status}
+            />
+          </div>
+          <p style="font-size: 12px; margin: 6px 0 0; color: var(--ink-2);">
+            {gettext("Reviews are decided in the review queue, not in this form.")}
+            <.link navigate={~p"/review"} style="color: var(--color-primary);">
+              {gettext("Open the review queue")}
+            </.link>
+          </p>
+        </div>
+        <%!-- Read-only like the status: the reviewer writes the notes with the
+             verdict (the review queue, the app or the agent API), and the
+             save drops any review_notes the form submits
+             (Form.Save.drop_review_fields/1). Shown only when there are notes. --%>
+        <div
+          :if={review_notes_present?(@task)}
+          class="fieldset mb-2"
+          data-review-notes-readonly
+        >
+          <span class="label">{gettext("Review Notes")}</span>
+          <%!-- phx-no-format: pre-wrap would render any whitespace the
+               formatter put around the notes. --%>
+          <p
+            phx-no-format
+            data-review-notes
+            style="white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; font-size: 13px; margin: 0; color: var(--ink);"
+          >{@task.review_notes}</p>
+        </div>
       </div>
     <% end %>
 

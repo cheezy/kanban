@@ -25,7 +25,7 @@ defmodule Kanban.Tasks.ClaimRelease do
 
   import Ecto.Query, warn: false
 
-  alias Kanban.Columns.Column
+  alias Kanban.Columns
   alias Kanban.Repo
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
@@ -79,10 +79,9 @@ defmodule Kanban.Tasks.ClaimRelease do
     end
   end
 
-  defp ready_column(board_id) do
-    from(c in Column, where: c.board_id == ^board_id and c.name == "Ready", limit: 1)
-    |> Repo.one()
-  end
+  # The board's Ready column, matched as `Kanban.Columns.named?/2` matches a
+  # name (case and surrounding whitespace ignored), as the unclaim path finds it.
+  defp ready_column(board_id), do: Columns.get_column_by_name(board_id, "Ready")
 
   defp move_to_ready(task, ready) do
     task

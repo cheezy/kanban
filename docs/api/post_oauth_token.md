@@ -68,6 +68,17 @@ The checks run in this order, and nothing is created until all of them pass:
 Steps 2 and 3 answer the same `invalid_grant`. The code is already used up when
 step 3 fails, so a wrong verifier cannot be retried against the same code.
 
+**A code presented again** once it was redeemed means it leaked (RFC 6749
+§4.1.2). The request answers `invalid_grant`, and Stride revokes the device the
+first redemption created and expires every token issued from the code,
+rotated ones included, whichever `client_id` sends it and even after the code
+has expired. This is recorded as a `device_revoked` event with reason
+`reuse_detected` ([device routes](me_devices.md#what-a-revocation-records)).
+An app that retries an exchange whose response it lost therefore signs itself
+out, and must start signing in again from the authorize page. A replay of a
+code whose first redemption failed, such as on a wrong verifier, has no device
+to revoke.
+
 ### Rotating a refresh token
 
 | Parameter | Required | Notes |
@@ -92,6 +103,18 @@ A refresh is also refused, with `invalid_grant`, when:
   A member still in the grace period can refresh, the same line the web sign-in
   draws. The refresh token is not used up, so it works again once two-factor is
   on.
+
+The web exempts a session signed in through the Organization's own single
+sign-on from its two-factor requirement, and a device gets the same exemption
+(decided 2026-11-19). When the person presses **Allow** on `/oauth/authorize`
+in a browser session that signed in through their Organization's single
+sign-on, the device records that Organization. Each refresh of that device is
+then exempt from the requirement while that Organization is still the person's
+own, checked again at every refresh, exactly as the web session is checked on
+every request. Once the person belongs to another Organization, that
+Organization's requirement applies to the device. A device allowed from a
+password sign-in keeps the plain rule above. Nothing in the request can claim
+the exemption: it comes only from the browser session's server-side mark.
 
 ### Signing a device out
 
@@ -157,8 +180,12 @@ carries a token.
 ### Too Many Requests (429)
 
 Both routes are rate limited per IP address. A refresh and a revoke are also
-limited per device, across addresses, so one device's token cannot be hammered
-from many places. The response says how long to wait in `retry-after`, in
+limited per presented refresh token, across addresses, so one token cannot be
+hammered from many places. That limit counts every token the same way, whether
+it is unknown, revoked or live, and is checked before the token is looked up,
+so an unknown and a revoked token get the same answers and the same `429`
+after the same number of attempts: the limit never tells a caller which
+tokens were real. The response says how long to wait in `retry-after`, in
 seconds:
 
 ```json

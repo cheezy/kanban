@@ -394,7 +394,7 @@ defmodule Kanban.Tasks.Positioning do
     updates =
       %{column_id: new_column.id, position: new_position}
       |> Map.merge(determine_status_for_column(new_column, task))
-      |> Map.merge(review_entry_updates(new_column.name, cross_column?))
+      |> Map.merge(review_entry_updates(new_column, cross_column?))
       |> stamp_if_changed(task, now)
 
     Task
@@ -410,9 +410,15 @@ defmodule Kanban.Tasks.Positioning do
   end
 
   # A drag into Review from another column starts the task's review wait; a
-  # reorder inside Review does not (see Kanban.Reviews.waiting_since/1).
-  defp review_entry_updates("Review", true), do: %{review_requested_at: DateTime.utc_now(:second)}
-  defp review_entry_updates(_column_name, _cross_column?), do: %{}
+  # reorder inside Review does not (see Kanban.Reviews.waiting_since/1). The
+  # column is matched as `Kanban.Columns.named?/2` matches a name.
+  defp review_entry_updates(column, true) do
+    if Columns.named?(column, "Review"),
+      do: %{review_requested_at: DateTime.utc_now(:second)},
+      else: %{}
+  end
+
+  defp review_entry_updates(_column, _cross_column?), do: %{}
 
   # A same-column, same-position move rewrites the row with the values it
   # already holds; it must not look updated to an incremental sync.

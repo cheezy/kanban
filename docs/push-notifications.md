@@ -87,7 +87,11 @@ A recipient with in-app and email off but push on gets a hidden row
    `:resolved`. A released or expired-claim decision is checked on its own
    row, so it is judged the same with in-app on or off; a review or failed
    hook ranked below the first 100 decisions is sent without its counts;
-4. builds the payload in each device's locale (`Kanban.Push.PayloadBuilder`);
+4. builds the payload in each device's locale (`Kanban.Push.PayloadBuilder`),
+   mapped by `Kanban.Locales.resolve/1`: a locale Stride is translated into
+   is used as it is, else the tag's base language (`de-AT` is German, `pt-BR`
+   Portuguese, `zh-Hant-TW` Chinese), else English (`ko`). The match ignores
+   case and accepts `_` separators;
 5. sends it to each device that is still active with a push token, reading
    each device again just before its send, so one revoked while the job runs
    gets nothing.
@@ -165,8 +169,10 @@ when the Organization hides titles.
   no summary for it. A change that ends quiet hours while they hold, such as
   turning them off at night or moving to a zone where they are over, enqueues
   the summary for that period at once, and so does a change made while a
-  summary is still owed, so a change never cancels one. A change that leaves
-  them holding changes nothing.
+  period's summary is due, so a change never cancels one. A change made while
+  such a one-person summary is still queued, retrying or being sent leaves it
+  to that job, with no second job and no new `last_summary_at`, so it is sent
+  once. A change that leaves them holding changes nothing.
 - **Short gaps.** When the next quiet period starts less than 30 minutes
   after one ends, the 15-minute run may fall in neither gap, so the summary
   goes at the first run after the period ended, inside the next one.
@@ -222,8 +228,13 @@ Pigeon and Goth keep the APNs key and the service account's private key in
 their own processes and start arguments, and OTP can print those in crash and
 supervisor reports. `Kanban.Push.LogRedaction` adds a `:logger` filter at boot
 that replaces each line of either key's body with
-`[REDACTED push credential]` in every warning-or-worse log event. It adds
-nothing when no push credentials are configured. `Kanban.Push.Supervisor`'s
+`[REDACTED push credential]` in every warning-or-worse log event. A body
+line shorter than 16 characters, such as the short last line of an Apple
+`.p8` key, is too short to redact wherever it appears, since ordinary text
+could hold it, so it is replaced together with the line next to it, joined
+by a line break, an escaped `\n` or nothing; wherever the key itself is
+logged, that line is redacted too. It adds nothing when no push credentials
+are configured. `Kanban.Push.Supervisor`'s
 own child specs never hold a credential: each child reads the credentials when
 it starts.
 

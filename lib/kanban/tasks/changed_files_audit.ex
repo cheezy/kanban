@@ -22,6 +22,7 @@ defmodule Kanban.Tasks.ChangedFilesAudit do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Columns
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -69,8 +70,9 @@ defmodule Kanban.Tasks.ChangedFilesAudit do
   end
 
   @doc """
-  Scans every task currently in a Review column for a missing `changed_files`
-  diff and alerts on each hit.
+  Scans every task currently in a Review column (its name matched as
+  `Kanban.Columns.named?/2` matches it, case and surrounding whitespace
+  ignored) for a missing `changed_files` diff and alerts on each hit.
 
   Unlike `audit_review_bound_task/2` — which fires only at the instant a task
   transitions into Review — this is a standing sweep over all rows already in
@@ -88,7 +90,8 @@ defmodule Kanban.Tasks.ChangedFilesAudit do
     from(t in Task,
       join: c in assoc(t, :column),
       as: :column,
-      where: c.name == ^@review_column_name and is_nil(t.archived_at),
+      where: ^Columns.name_matches(:column, @review_column_name),
+      where: is_nil(t.archived_at),
       preload: [column: c]
     )
     |> Repo.all()

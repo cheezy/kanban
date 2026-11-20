@@ -23,9 +23,12 @@ defmodule Kanban.Reviews.MobileReview do
     * the files, flagged first (`flag/2` below), each with its additions,
       deletions and whether its diff was cut at the cap;
     * the size and `approvable_here`, both from `Kanban.Reviews.MobileGuard`,
-      so the screen and the approve route apply one rule;
-    * `review_requested_at`, `waiting_since` and `holds_up`: the dependent
-      tasks that are not yet completed.
+      so the screen and the approve route apply one rule; `size.files`
+      counts the file rows (`MobileGuard.file_paths/1`), and a count in place
+      of paths lists none, with `size.files_unknown` set;
+    * `files_version` (`MobileReviewFile.files_version/1`), and
+      `review_requested_at`, `waiting_since` and `holds_up` (the dependents
+      not yet completed).
 
   A file is flagged when a `reviewer_result` issue's `file` names its path
   (reason `:issue`, or `:security` for a security issue), or when the
@@ -78,6 +81,7 @@ defmodule Kanban.Reviews.MobileReview do
           exploratory: %{count: non_neg_integer() | nil, note: String.t() | nil},
           behaviour_matrix: [map()],
           files: [map()],
+          files_version: String.t(),
           size: map(),
           approvable_here: boolean(),
           approvable_here_reason: atom() | nil,
@@ -124,6 +128,7 @@ defmodule Kanban.Reviews.MobileReview do
 
     %{
       files: files(task),
+      files_version: MobileReviewFile.files_version(task),
       size: Map.put(size, :large_change, MobileGuard.large_change?(size)),
       approvable_here: approvable,
       approvable_here_reason: reason
@@ -187,13 +192,14 @@ defmodule Kanban.Reviews.MobileReview do
 
   @doc """
   One file's highlighted diff and its inline notes, for the flagged-file
-  screen (`GET /api/me/reviews/:task_id/files/:index`, W2753), or
-  `{:error, :not_found}`. `highlight` is called as `DiffHighlighter.highlight/4`
-  is; `Kanban.Reviews.MobileReviewFile.build/3` documents the rest.
+  screen (`GET /api/me/reviews/:task_id/files/:index`, W2753): see
+  `Kanban.Reviews.MobileReviewFile.build/4`.
   """
-  @spec file(Task.t(), non_neg_integer(), MobileReviewFile.highlight()) ::
-          {:ok, MobileReviewFile.t()} | {:error, :not_found}
-  defdelegate file(task, index, highlight), to: MobileReviewFile, as: :build
+  @spec file(Task.t(), non_neg_integer(), MobileReviewFile.highlight(), String.t() | nil) ::
+          {:ok, MobileReviewFile.t()} | {:error, :not_found | {:files_changed, String.t()}}
+  defdelegate file(task, index, highlight, expected_version \\ nil),
+    to: MobileReviewFile,
+    as: :build
 
   # --- Verdict details ------------------------------------------------------
 
@@ -311,13 +317,19 @@ defmodule Kanban.Reviews.MobileReview do
     |> ordered_rows()
   end
 
+  # The same paths MobileGuard counts, so size.files matches the rows; a
+  # count in place of paths lists nothing (size.files_unknown says why).
   defp file_rows(%Task{actual_files_changed: text}) when is_binary(text) do
-    text
-    |> String.split(",")
-    |> Enum.map(&normalize_file/1)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq()
-    |> Enum.map(&%{index: nil, path: &1, additions: nil, deletions: nil, truncated: false})
+    case MobileGuard.listed_files(text) do
+      {:ok, paths} ->
+        Enum.map(
+          paths,
+          &%{index: nil, path: &1, additions: nil, deletions: nil, truncated: false}
+        )
+
+      :unknown ->
+        []
+    end
   end
 
   defp file_rows(%Task{}), do: []
@@ -452,26 +464,9 @@ defmodule Kanban.Reviews.MobileReview do
     Regex.match?(~r/(?<![\w\/.-])(?:\.\/)?#{Regex.escape(path)}(?![\w\/-]|\.\w)/, text)
   end
 
-  @doc """
-  One spelling per file: backslashes become slashes, `//` and `/./`
-  collapse, leading `./` and trailing `/` go, and a trailing location
-  (`:12`, `:12:3`, `:12-15`, `#L12`, a bare `:`) is dropped. A blank or
-  non-string is `nil`.
-  """
+  @doc "See `Kanban.Reviews.MobileGuard.normalize_file/1`, which the size count shares."
   @spec normalize_file(term()) :: String.t() | nil
-  def normalize_file(file) when is_binary(file) do
-    file
-    |> String.trim()
-    |> String.replace("\\", "/")
-    |> String.replace(~r"/(\./)+", "/")
-    |> String.replace(~r"/{2,}", "/")
-    |> String.replace(~r"\A(\./)+", "")
-    |> String.replace(~r"/+\z", "")
-    |> String.replace(~r/(#L\d.*|:[\d:-]*)\z/, "")
-    |> blank_to_nil()
-  end
-
-  def normalize_file(_file), do: nil
+  defdelegate normalize_file(file), to: MobileGuard
 
   # --- reviewer_result reads ----------------------------------------------
 

@@ -113,10 +113,13 @@ A person removed from their Organization after signing in gets
 | `401` | `{"error": "Missing or invalid Authorization header"}` | No `Authorization` header, or one that is not `Bearer` |
 | `401` | `{"error": "Invalid access token"}` | The token is unknown, expired or a refresh token, the device is revoked, the account is disabled, or the token is an agent API token. A device revoked, or an account disabled, while the request was in flight gets it too, never the data. The body is the same for every cause |
 | `426` | `{"error": "app_update_required", "store_url": "…"}` | The `X-Stride-App` version is below the platform's minimum |
-| `429` | `{"error": "Too many requests"}` | Too many failed authentications from this address. Wait for the `retry-after` seconds |
+| `429` | `{"error": "Too many requests"}` | Too many failed authentications from this address. Wait for the `retry-after` seconds. A device token that has only expired answers the same `401` but is not counted, so phones refreshing on schedule never lock their address out |
 
 The `400` and `406` responses every `/api` route can return are described in the
 [API reference](README.md#errors).
+
+Every response, success or error, is `cache-control: private, no-store`, as on
+every `/api/me` route ([caching](README.md#caching-of-the-person-api)).
 
 ## Telemetry
 

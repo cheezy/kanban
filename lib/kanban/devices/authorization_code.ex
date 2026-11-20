@@ -8,6 +8,13 @@ defmodule Kanban.Devices.AuthorizationCode do
   plain code (prefix `sdac_`) is shown once in the virtual `code` field and
   only its SHA-256 hash is stored. `code_challenge` is the PKCE S256
   challenge: 43 characters of unpadded URL-safe base64.
+
+  `sso_organization_id` is the Organization whose single sign-on signed in
+  the web session that allowed the sign-in, when the web two-factor gate
+  would exempt that session, and `nil` otherwise
+  (`Kanban.Devices.SsoExemption`). It is set from the server's session,
+  never cast from a parameter, and the code exchange copies it onto the
+  device.
   """
   use Ecto.Schema
 
@@ -17,6 +24,7 @@ defmodule Kanban.Devices.AuthorizationCode do
   alias Kanban.ChangesetText
   alias Kanban.Devices.Device
   alias Kanban.Devices.DeviceToken
+  alias Kanban.Organizations.Organization
 
   @lifetime_seconds 60
   @prefix "sdac"
@@ -36,6 +44,7 @@ defmodule Kanban.Devices.AuthorizationCode do
     field :used_at, :utc_datetime
 
     belongs_to :user, User
+    belongs_to :sso_organization, Organization
 
     timestamps(type: :utc_datetime, updated_at: false)
   end

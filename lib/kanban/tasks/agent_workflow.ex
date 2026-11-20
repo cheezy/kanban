@@ -60,7 +60,10 @@ defmodule Kanban.Tasks.AgentWorkflow do
   Atomically claims the next available task for an AI agent, or a specific task by identifier.
 
   Updates the task status to "in_progress", sets claimed_at, claim_expires_at,
-  assigned_to, and moves it to the "Doing" column.
+  assigned_to, and moves it to the "Doing" column. The claim is also recorded
+  in the task's claim history (`Kanban.Tasks.TaskClaim`) in the same
+  transaction, which outlives the claim. Ready and Doing are found by name,
+  ignoring case and surrounding whitespace (`Kanban.Columns.named?/2`).
 
   Executes the before_doing hook before moving the task.
 
@@ -79,7 +82,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
   @doc """
   Releases a claimed task back to the "open" status and "Ready" column.
 
-  Clears claimed_at, claim_expires_at, and assigned_to fields.
+  Clears claimed_at, claim_expires_at, and assigned_to fields. The claim's
+  row in `Kanban.Tasks.TaskClaim` is kept.
   Optionally accepts a reason for analytics.
 
   Returns {:ok, task} if successful, {:error, reason} otherwise. A `reason`

@@ -1106,7 +1106,6 @@ msgid "Agent"
 msgstr "代理"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #: lib/kanban_web/notification_labels.ex
 #: lib/kanban_web/review_report_helpers/tokens.ex
 #, elixir-autogen, elixir-format
@@ -1142,7 +1141,6 @@ msgid "Cannot reorder columns on AI optimized boards"
 msgstr "无法重新排序 AI 优化看板上的列"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #, elixir-autogen, elixir-format
 msgid "Changes Requested"
 msgstr "已请求更改"
@@ -1375,7 +1373,6 @@ msgstr "需遵循的模式"
 #: lib/kanban_web/components/acceptance_checklist.ex
 #: lib/kanban_web/live/board_live/webhook_views.ex
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #: lib/kanban_web/live/workspace_live/exports.ex
 #, elixir-autogen, elixir-format
 msgid "Pending"
@@ -1394,7 +1391,6 @@ msgstr "陷阱"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #, elixir-autogen, elixir-format
 msgid "Rejected"
 msgstr "已拒绝"
@@ -1442,11 +1438,6 @@ msgstr "选择"
 #, elixir-autogen, elixir-format
 msgid "Select complexity"
 msgstr "选择复杂度"
-
-#: lib/kanban_web/live/task_live/form_component.html.heex
-#, elixir-autogen, elixir-format
-msgid "Select status"
-msgstr "选择状态"
 
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex
 #: lib/kanban_web/live/task_live/form_component.html.heex
@@ -8806,11 +8797,6 @@ msgstr "未知的通知类型。"
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "你被添加到看板或从看板移除，或你的访问权限发生变化。"
 
-#: lib/kanban_web/live/user_live/settings_components.ex
-#, elixir-autogen, elixir-format
-msgid "in-app · email"
-msgstr "应用内 · 邮件"
-
 #: lib/kanban_web/emails/digest_email.ex
 #, elixir-autogen, elixir-format
 msgid "%{count} d"
@@ -8842,6 +8828,7 @@ msgid "Oldest pending reviews"
 msgstr "最早的待审核项"
 
 #: lib/kanban_web/emails/digest_email.ex
+#: lib/kanban_web/live/task_live/form_component.html.heex
 #, elixir-autogen, elixir-format
 msgid "Open the review queue"
 msgstr "打开审核队列"
@@ -15671,3 +15658,28 @@ msgstr "%{identifier} 的 after-goal 钩子执行失败"
 msgid "%{count} thing waited overnight"
 msgid_plural "%{count} things waited overnight"
 msgstr[0] "%{count} 项事务在夜间等待处理"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Custom"
+msgstr "自定义"
+
+#: lib/kanban_web/components/review_detail_header.ex
+#, elixir-autogen, elixir-format
+msgid "Read-only access: you can view this review but not decide it."
+msgstr "只读权限：你可以查看此审核，但不能做出决定。"
+
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "in-app · email · push"
+msgstr "应用内 · 邮件 · 推送"
+
+#: lib/kanban_web/live/task_live/components/review_status_section.ex
+#, elixir-autogen, elixir-format
+msgid "Not reviewed"
+msgstr "未审核"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reviews are decided in the review queue, not in this form."
+msgstr "审核在审核队列中决定，而不是在此表单中。"

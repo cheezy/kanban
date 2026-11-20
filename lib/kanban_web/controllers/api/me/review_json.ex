@@ -66,6 +66,7 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   defp change_part(review) do
     %{
       files: Enum.map(review.files, &file/1),
+      files_version: review.files_version,
       size: size(review.size),
       approvable_here: review.approvable_here,
       approvable_here_reason: atom_string(review.approvable_here_reason),
@@ -146,7 +147,8 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
     :deletions,
     :truncated,
     :flagged,
-    :review_requested_at
+    :review_requested_at,
+    :files_version
   ]
 
   @doc """
@@ -193,6 +195,7 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
   def size(size) do
     %{
       files: size.files,
+      files_unknown: Map.get(size, :files_unknown, false),
       changed_lines: size.changed_lines,
       truncated: size.truncated,
       large_change: size.large_change

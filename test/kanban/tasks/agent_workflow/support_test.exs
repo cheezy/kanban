@@ -43,6 +43,14 @@ defmodule Kanban.Tasks.AgentWorkflow.SupportTest do
       assert column.board_id == ctx.board.id
     end
 
+    test "get_column_by_name/2 matches a column renamed in case or spacing", ctx do
+      ctx.done |> Ecto.Changeset.change(name: " done ") |> Repo.update!()
+      assert Support.get_column_by_name(ctx.board.id, "Done").id == ctx.done.id
+
+      ctx.done |> Ecto.Changeset.change(name: "DONE") |> Repo.update!()
+      assert Support.get_column_by_name(ctx.board.id, "Done").id == ctx.done.id
+    end
+
     test "get_column_by_name/2 returns nil when the board has no column with that name", ctx do
       assert Support.get_column_by_name(ctx.board.id, "No Such Column") == nil
     end

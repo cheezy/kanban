@@ -112,6 +112,31 @@ defmodule Kanban.DecisionsTest do
 
   defp of_kind(items, kind), do: Enum.filter(items, &(&1.kind == kind))
 
+  defp loaded(notification), do: Repo.preload(notification, task: :column)
+
+  defp released_rows(user, task) do
+    Notification
+    |> where([n], n.user_id == ^user.id and n.task_id == ^task.id)
+    |> where([n], n.event_type == :task_unclaimed)
+    |> Repo.all()
+  end
+
+  # The claim runs out and a person moves the card back to Ready, which opens
+  # it again; nothing sends a task_unclaimed.
+  defp expire_and_return_to_ready!(task, cols) do
+    past = DateTime.add(now(), -60)
+
+    task
+    |> Repo.reload!()
+    |> Ecto.Changeset.change(%{
+      claimed_at: DateTime.add(past, -3600),
+      claim_expires_at: past,
+      status: :open,
+      column_id: cols["Ready"].id
+    })
+    |> Repo.update!()
+  end
+
   # Sets dependencies directly: task_fixture/2 swaps given dependencies for
   # new placeholder tasks.
   defp dependent!(column, identifiers) do
@@ -207,10 +232,75 @@ defmodule Kanban.DecisionsTest do
       assert :approve in owner_item.actions
     end
 
-    test "an archived pending review offers only the web", ctx do
+    test "a phone is not offered approve on a change too large for a phone", ctx do
+      files = Enum.map_join(1..11, ", ", &"lib/file_#{&1}.ex")
+
+      large =
+        ctx.cols["Review"]
+        |> pending_task!()
+        |> Ecto.Changeset.change(actual_files_changed: files)
+        |> Repo.update!()
+
+      small = pending_task!(ctx.cols["Review"])
+      assert Kanban.Reviews.MobileGuard.large_change?(large)
+
+      actions = fn opts ->
+        ctx.scope
+        |> Decisions.build(opts)
+        |> of_kind(:review)
+        |> Map.new(&{&1.task_id, &1.actions})
+      end
+
+      phone = actions.(device_class: :phone)
+      assert phone[large.id] == [:open_review, :request_changes, :open_on_web]
+      assert phone[small.id] == [:open_review, :approve, :request_changes, :open_on_web]
+
+      for opts <- [[device_class: :tablet], [device_class: nil], []] do
+        assert :approve in actions.(opts)[large.id]
+      end
+
+      assert [%{actions: [:open_review, :request_changes, :open_on_web]}, _small] =
+               ctx.scope
+               |> Decisions.review_queue(device_class: :phone)
+               |> Enum.sort_by(&(&1.task_id != large.id))
+    end
+
+    test "an unknown device class raises", ctx do
+      assert_raise ArgumentError, ~r/unknown device class :watch/, fn ->
+        Decisions.build(ctx.scope, device_class: :watch)
+      end
+    end
+
+    test "a read-only member's review links to a page they can open", ctx do
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(ctx.board, reader, :read_only, ctx.owner)
+      task = pending_task!(ctx.cols["Review"])
+
+      [reader_item] = reader |> Scope.for_user() |> Decisions.build() |> of_kind(:review)
+      [owner_item] = ctx.scope |> Decisions.build() |> of_kind(:review)
+
+      assert reader_item.web_url == KanbanWeb.Endpoint.url() <> "/boards/#{ctx.board.id}"
+
+      assert owner_item.web_url ==
+               KanbanWeb.Endpoint.url() <> "/boards/#{ctx.board.id}/tasks/#{task.id}/edit"
+    end
+
+    test "an archived pending review is not an item", ctx do
       ctx.cols["Review"] |> pending_task!() |> archive!()
 
-      assert [%{actions: [:open_on_web]}] = ctx.scope |> Decisions.build() |> of_kind(:review)
+      assert ctx.scope |> Decisions.build() |> of_kind(:review) == []
+    end
+
+    test "items tied on time sort by the number in their id" do
+      at = ~U[2026-11-19 10:00:00Z]
+      item = &%{kind: :review, holds_up: 0, since: at, id: "review:task:#{&1}"}
+
+      sorted =
+        [item.(1_000_000), item.(999_999), item.(10)]
+        |> Enum.sort_by(&Decisions.sort_key/1)
+        |> Enum.map(& &1.id)
+
+      assert sorted == ["review:task:10", "review:task:999999", "review:task:1000000"]
     end
 
     test "clears when the review is decided", ctx do
@@ -268,6 +358,53 @@ defmodule Kanban.DecisionsTest do
       assert ctx.scope |> Decisions.build() |> of_kind(:released) == []
     end
 
+    test "stays cleared once an agent claims the task, after that claim expires and the task goes back to Ready",
+         ctx do
+      task = released!(ctx.cols, ctx.owner, "why")
+      task = Repo.reload!(task)
+      assert task.column_id == ctx.cols["Ready"].id
+      assert [_] = ctx.scope |> Decisions.build() |> of_kind(:released)
+
+      [row] = released_rows(ctx.owner, task)
+      assert row |> loaded() |> Sources.notification_open?(now())
+
+      {:ok, claimed, _hook} = Tasks.claim_next_task([], ctx.owner, ctx.board.id, task.identifier)
+      assert claimed.id == task.id
+
+      # The claim expires and a person drags the card back to Ready: no
+      # task_unclaimed is sent, the task is open in Ready again, and the old
+      # notification is still unread.
+      expire_and_return_to_ready!(claimed, ctx.cols)
+
+      assert ctx.scope |> Decisions.build() |> of_kind(:released) == []
+      refute row |> Repo.reload!() |> loaded() |> Sources.notification_open?(now())
+    end
+
+    test "stays cleared after a claim that ClaimRelease returns to Ready without a notification",
+         ctx do
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(ctx.board, member, :modify, ctx.owner)
+      task = released!(ctx.cols, ctx.owner, "why")
+
+      {:ok, _claimed, _hook} = Tasks.claim_next_task([], member, ctx.board.id, task.identifier)
+      assert [_] = Kanban.Tasks.ClaimRelease.release(member.id, [ctx.board.id])
+      assert Repo.reload!(task).column_id == ctx.cols["Ready"].id
+
+      assert ctx.scope |> Decisions.build() |> of_kind(:released) == []
+    end
+
+    test "a release of a real claim is an item: only a claim after the notification clears it",
+         ctx do
+      task = task_fixture(ctx.cols["Ready"])
+      {:ok, claimed, _hook} = Tasks.claim_next_task([], ctx.owner, ctx.board.id, task.identifier)
+      {:ok, _} = Tasks.unclaim_task(claimed, ctx.owner, "blocked")
+
+      assert [item] = ctx.scope |> Decisions.build() |> of_kind(:released)
+      assert item.details.reason == "blocked"
+      [row] = released_rows(ctx.owner, task)
+      assert row |> loaded() |> Sources.notification_open?(now())
+    end
+
     test "a task archived while its notification is unread leaves the list", ctx do
       ctx.cols |> released!(ctx.owner, "why") |> archive!()
 
@@ -303,6 +440,7 @@ defmodule Kanban.DecisionsTest do
 
       assert [item] = reader |> Scope.for_user() |> Decisions.build() |> of_kind(:released)
       assert item.actions == [:reply, :open_on_web]
+      assert item.web_url == KanbanWeb.Endpoint.url() <> "/boards/#{ctx.board.id}"
     end
 
     test "reads no other person's notifications", ctx do
@@ -452,6 +590,35 @@ defmodule Kanban.DecisionsTest do
         ctx.cols["Doing"]
         |> task_fixture()
         |> Tasks.update_task(%{created_by_agent: agent.created_by_agent, status: :in_progress})
+
+      assert ctx.scope |> Decisions.build() |> of_kind(:ready_empty) == []
+    end
+
+    test "an agent in a Doing column renamed in case or spacing is working, not idle", ctx do
+      task_fixture(ctx.cols["Backlog"])
+      agent = agent_task!(ctx.cols["Done"], DateTime.add(now(), -3600))
+
+      {:ok, _} =
+        ctx.cols["Doing"]
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: agent.created_by_agent, status: :in_progress})
+
+      ctx.cols["Doing"] |> Ecto.Changeset.change(name: " doing ") |> Repo.update!()
+
+      assert ctx.scope |> Decisions.build() |> of_kind(:ready_empty) == []
+      assert %{summary: %{agents_working: 1}} = Decisions.build_with_summary(ctx.scope)
+    end
+
+    test "an agent in a renamed Review column is waiting, not idle", ctx do
+      task_fixture(ctx.cols["Backlog"])
+      agent = agent_task!(ctx.cols["Done"], DateTime.add(now(), -3600))
+
+      {:ok, _} =
+        ctx.cols["Review"]
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: agent.created_by_agent, status: :in_progress})
+
+      ctx.cols["Review"] |> Ecto.Changeset.change(name: "REVIEW") |> Repo.update!()
 
       assert ctx.scope |> Decisions.build() |> of_kind(:ready_empty) == []
     end
@@ -761,8 +928,6 @@ defmodule Kanban.DecisionsTest do
   end
 
   describe "Sources.notification_open?/2" do
-    defp loaded(notification), do: Repo.preload(notification, task: :column)
-
     defp hidden!(notification),
       do: notification |> Ecto.Changeset.change(in_app: false) |> Repo.update!()
 
@@ -806,6 +971,84 @@ defmodule Kanban.DecisionsTest do
 
       claimed!(task, ctx.owner, ctx.cols["Doing"], now(), DateTime.add(now(), 3600))
       refute n |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+    end
+
+    test "an older unread release that a newer read one replaced is not open, as in the list",
+         ctx do
+      task = task_fixture(ctx.cols["Ready"])
+      attrs = %{event_type: :task_unclaimed, board_id: ctx.board.id, task_id: task.id}
+      older = notification_fixture(ctx.owner, attrs)
+      newer = notification_fixture(ctx.owner, attrs)
+
+      # Same second: the higher id is the newer row, as the list reads them.
+      Notification
+      |> where([n], n.id in ^[older.id, newer.id])
+      |> Repo.update_all(set: [inserted_at: DateTime.add(now(), -60)])
+
+      assert [%{details: %{notification_id: newer_id}}] =
+               ctx.scope |> Decisions.build() |> of_kind(:released)
+
+      assert newer_id == newer.id
+      assert newer |> Repo.reload!() |> loaded() |> Sources.notification_open?(now())
+
+      {:ok, _} = Notifications.mark_read(ctx.scope, newer.id)
+
+      assert ctx.scope |> Decisions.build() |> of_kind(:released) == []
+      refute older |> Repo.reload!() |> loaded() |> Sources.notification_open?(now())
+      refute newer |> Repo.reload!() |> loaded() |> Sources.notification_open?(now())
+    end
+
+    test "a newer hidden row replaces an older visible one", ctx do
+      task = task_fixture(ctx.cols["Ready"])
+      attrs = %{event_type: :task_unclaimed, board_id: ctx.board.id, task_id: task.id}
+      older = notification_fixture(ctx.owner, attrs)
+      newer = ctx.owner |> notification_fixture(attrs) |> hidden!()
+
+      Notification
+      |> where([n], n.id == ^older.id)
+      |> Repo.update_all(set: [inserted_at: DateTime.add(now(), -60)])
+
+      refute older |> Repo.reload!() |> loaded() |> Sources.notification_open?(now())
+      assert newer |> loaded() |> Sources.notification_open?(now())
+    end
+
+    test "a release or an expired claim on an archived task is not open", ctx do
+      released = task_fixture(ctx.cols["Ready"])
+
+      released_row =
+        notification_fixture(ctx.owner, %{
+          event_type: :task_unclaimed,
+          board_id: ctx.board.id,
+          task_id: released.id
+        })
+
+      expired_task =
+        ctx.cols["Doing"]
+        |> task_fixture()
+        |> claimed!(
+          ctx.owner,
+          ctx.cols["Doing"],
+          DateTime.add(now(), -7200),
+          DateTime.add(now(), -3600)
+        )
+
+      expired_row =
+        notification_fixture(ctx.owner, %{
+          event_type: :claim_expired,
+          board_id: ctx.board.id,
+          task_id: expired_task.id
+        })
+
+      for row <- [released_row, expired_row] do
+        assert row |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+      end
+
+      archive!(released)
+      archive!(expired_task)
+
+      for row <- [released_row, expired_row] do
+        refute row |> loaded() |> Sources.notification_open?(DateTime.utc_now())
+      end
     end
 
     test "is false for any other event type", ctx do

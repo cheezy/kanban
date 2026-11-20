@@ -47,6 +47,12 @@ Each save that changes something records an `organization_policy_updated`
 audit event with the Organization, the org-admin, and the old and new values
 of the fields that changed.
 
+A save that changes nothing writes nothing. The page still shows "Security
+policy saved.", but the stored policy keeps its `updated_by_id` and
+`updated_at`, so they still name the last org-admin who changed a field and
+when. No audit event or telemetry is recorded. An Organization with no saved
+policy gets no row from a save that keeps every default.
+
 The notification privacy setting is stored as `hide_titles_in_notifications`.
 Organizations that existed before it was added keep titles in their
 notifications until an org-admin turns it on.

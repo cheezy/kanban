@@ -277,6 +277,27 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "data-review-detail-header"
     end
 
+    test "a legacy file list separated by newlines or semicolons lists each file (D454)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/has_diff.ex\nlib/b.ex; ./lib/c.ex lib/has_diff.ex",
+          changed_files: [%{"path" => "lib/has_diff.ex", "diff" => "@@ -0,0 +1 @@\n+x\n"}]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      paths =
+        ~r/data-review-diff-panel-file-path="([^"]+)"/
+        |> Regex.scan(html, capture: :all_but_first)
+        |> Enum.map(fn [path] -> path end)
+        |> Enum.uniq()
+
+      assert paths == ["lib/has_diff.ex", "lib/b.ex", "lib/c.ex"]
+    end
+
     test "mixed-payload edge case: task with diff data for some files, missing for others",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
@@ -1263,30 +1284,34 @@ defmodule KanbanWeb.ReviewLiveTest do
   describe "request_changes authorization (D138)" do
     setup [:register_and_log_in_user]
 
-    test "a read-only board member cannot request changes and no review fields are written",
+    test "a read-only board member sees no decision buttons and a forged decision is refused",
          %{conn: conn, user: reader} do
       owner = Kanban.AccountsFixtures.user_fixture()
       board = board_fixture(owner)
       review_column = column_fixture(board, %{name: "Review", position: 1})
       _doing = column_fixture(board, %{name: "Doing", position: 2})
+      _done = column_fixture(board, %{name: "Done", position: 3})
       {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
       task = pending_task!(review_column, %{identifier: "W305"})
 
-      {:ok, view, _html} = live(conn, ~p"/review")
+      {:ok, view, html} = live(conn, ~p"/review")
 
-      view
-      |> element("[data-review-detail-header-request-changes]")
-      |> render_click()
-
-      html =
-        view
-        |> form("[data-review-request-changes-form]", review: %{notes: "let me in"})
-        |> render_submit()
-
-      # The context rejects the write, so the LiveView surfaces the error flash
-      # and the task stays in the queue.
-      assert html =~ "Unable to request changes on task."
+      # The review is visible, but not the buttons that would be refused.
       assert html =~ "data-review-queue-item-id=\"#{task.id}\""
+      assert html =~ "data-review-detail-header-read-only"
+      refute has_element?(view, "[data-review-detail-header-approve]")
+      refute has_element?(view, "[data-review-detail-header-request-changes]")
+
+      # Events sent without the buttons: the form stays shut, and the
+      # decisions are refused by Kanban.Reviews.
+      render_click(view, "request_changes", %{})
+      refute has_element?(view, "[data-review-request-changes-form]")
+
+      assert render_click(view, "submit_request_changes", %{"review" => %{"notes" => "let me in"}}) =~
+               "Unable to request changes on task."
+
+      assert render_click(view, "approve", %{}) =~ "Unable to approve task."
+      assert has_element?(view, "[data-review-queue-item-id=\"#{task.id}\"]")
 
       # Nothing was persisted — the transaction rolled back.
       reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
@@ -1294,6 +1319,65 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert reloaded.review_notes == nil
       assert reloaded.reviewed_by_id == nil
       assert reloaded.reviewed_at == nil
+      assert reloaded.column_id == review_column.id
+    end
+
+    test "a member with modify access sees both buttons and no read-only note",
+         %{conn: conn, user: modifier} do
+      owner = Kanban.AccountsFixtures.user_fixture()
+      board = board_fixture(owner)
+      review_column = column_fixture(board, %{name: "Review", position: 1})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, modifier, :modify, owner)
+      _task = pending_task!(review_column, %{identifier: "W306"})
+
+      {:ok, view, html} = live(conn, ~p"/review")
+
+      assert has_element?(view, "[data-review-detail-header-approve]")
+      assert has_element?(view, "[data-review-detail-header-request-changes]")
+      refute html =~ "data-review-detail-header-read-only"
+    end
+  end
+
+  describe "archived tasks" do
+    setup [:register_and_log_in_user]
+
+    defp archive!(task),
+      do:
+        task
+        |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second))
+        |> Kanban.Repo.update!()
+
+    test "an archived task still in Review is not listed", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      kept = pending_task!(column, %{identifier: "W901"})
+      archived = column |> pending_task!(%{identifier: "W902"}) |> archive!()
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      assert html =~ "data-review-queue-item-id=\"#{kept.id}\""
+      refute html =~ "data-review-queue-item-id=\"#{archived.id}\""
+    end
+
+    test "approving or requesting changes on a task archived after the page loaded is refused",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{identifier: "W903"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+      archive!(task)
+
+      assert view |> element("[data-review-detail-header-approve]") |> render_click() =~
+               "Unable to approve task."
+
+      view |> element("[data-review-detail-header-request-changes]") |> render_click()
+
+      assert view
+             |> form("[data-review-request-changes-form]", review: %{notes: "Fix it"})
+             |> render_submit() =~ "Unable to request changes on task."
+
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
+      assert reloaded.review_status == nil
+      assert reloaded.column_id == column.id
     end
   end
 

@@ -167,6 +167,22 @@ defmodule Kanban.Notifications.ClaimExpiryWorkerTest do
       assert [%Task{id: id}] = Notifications.list_recently_expired_claims(ctx.now, 2 * 60 * 60)
       assert id == expired.id
     end
+
+    test "finds an expired claim in a Doing column named in another case or padded", ctx do
+      expired = claimed_task(ctx, "Doing", 15)
+
+      for name <- [" doing ", "DOING", "\tDoing\n"] do
+        ctx.cols["Doing"] |> Ecto.Changeset.change(name: name) |> Repo.update!()
+
+        assert [%Task{id: id}] =
+                 Notifications.list_recently_expired_claims(ctx.now, 2 * 60 * 60)
+
+        assert id == expired.id
+      end
+
+      ctx.cols["Doing"] |> Ecto.Changeset.change(name: "Doing soon") |> Repo.update!()
+      assert Notifications.list_recently_expired_claims(ctx.now, 2 * 60 * 60) == []
+    end
   end
 
   describe "claim_expired telemetry" do

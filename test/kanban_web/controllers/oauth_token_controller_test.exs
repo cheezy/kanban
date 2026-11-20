@@ -531,38 +531,38 @@ defmodule KanbanWeb.OAuthTokenControllerRateLimitTest do
   defp random_ip, do: {10, :rand.uniform(255), :rand.uniform(255), :rand.uniform(255)}
 
   test "rate limits repeated token requests per IP", %{ip: ip} do
-    params = %{
-      "grant_type" => "refresh_token",
-      "client_id" => "stride-ios",
-      "refresh_token" => "x"
-    }
-
-    for _attempt <- 1..2 do
-      assert %{"error" => "invalid_grant"} =
-               ip |> from_ip() |> post(~p"/oauth/token", params) |> json_response(400)
+    # A different token each time, so only the IP ceiling is reached.
+    params = fn n ->
+      %{"grant_type" => "refresh_token", "client_id" => "stride-ios", "refresh_token" => "x#{n}"}
     end
 
-    conn = ip |> from_ip() |> post(~p"/oauth/token", params)
+    for attempt <- 1..2 do
+      assert %{"error" => "invalid_grant"} =
+               ip |> from_ip() |> post(~p"/oauth/token", params.(attempt)) |> json_response(400)
+    end
+
+    conn = ip |> from_ip() |> post(~p"/oauth/token", params.(3))
 
     assert %{"error" => "rate_limited"} = json_response(conn, 429)
     assert [retry_after] = get_resp_header(conn, "retry-after")
     assert String.to_integer(retry_after) > 0
     assert get_resp_header(conn, "cache-control") == ["no-store"]
 
-    revoke = %{"token" => "x", "client_id" => "stride-ios"}
+    revoke = fn n -> %{"token" => "revoke-#{n}", "client_id" => "stride-ios"} end
 
-    for _attempt <- 1..2,
-        do: assert(ip |> from_ip() |> post(~p"/oauth/revoke", revoke) |> json_response(200))
+    for attempt <- 1..2 do
+      assert ip |> from_ip() |> post(~p"/oauth/revoke", revoke.(attempt)) |> json_response(200)
+    end
 
     assert %{"error" => "rate_limited"} =
-             ip |> from_ip() |> post(~p"/oauth/revoke", revoke) |> json_response(429)
+             ip |> from_ip() |> post(~p"/oauth/revoke", revoke.(3)) |> json_response(429)
 
     # Another address is not affected.
     assert %{"error" => "invalid_grant"} =
-             random_ip() |> from_ip() |> post(~p"/oauth/token", params) |> json_response(400)
+             random_ip() |> from_ip() |> post(~p"/oauth/token", params.(4)) |> json_response(400)
   end
 
-  test "rate limits refresh and revoke per device across addresses" do
+  test "rate limits refresh and revoke per presented token across addresses" do
     {_device, issued} = device_with_tokens_fixture(user_scope_fixture())
 
     refresh = fn token ->
@@ -575,17 +575,100 @@ defmodule KanbanWeb.OAuthTokenControllerRateLimitTest do
              |> post(~p"/oauth/token", refresh.(issued.refresh_token))
              |> json_response(200)
 
-    # A new token of the same device, from another address: still the same
-    # device's budget.
+    # The used token again, from another address: its budget is spent, so it
+    # is refused before it is looked at.
     assert %{"error" => "rate_limited"} =
              random_ip()
              |> from_ip()
-             |> post(~p"/oauth/token", refresh.(rotated))
+             |> post(~p"/oauth/token", refresh.(issued.refresh_token))
              |> json_response(429)
+
+    # The device's new token has a budget of its own.
+    assert %{"refresh_token" => _next} =
+             random_ip()
+             |> from_ip()
+             |> post(~p"/oauth/token", refresh.(rotated))
+             |> json_response(200)
 
     revoke = %{"token" => rotated, "client_id" => "stride-ios"}
 
     assert %{"error" => "rate_limited"} =
              random_ip() |> from_ip() |> post(~p"/oauth/revoke", revoke) |> json_response(429)
+  end
+
+  describe "an unknown and a revoked refresh token" do
+    setup do
+      Application.put_env(:kanban, Kanban.RateLimit,
+        enabled: true,
+        oauth_token: %{scale_ms: 60_000, ip_limit: 1_000},
+        oauth_revoke: %{scale_ms: 60_000, ip_limit: 1_000},
+        oauth_device: %{scale_ms: 60_000, id_limit: 3}
+      )
+
+      scope = user_scope_fixture()
+      {device, issued} = device_with_tokens_fixture(scope)
+      {:ok, _revoked} = Kanban.Devices.revoke_device(scope, device)
+
+      # A fresh token of the same shape that was never issued, so only
+      # whether it was ever real differs.
+      unknown = Kanban.Devices.DeviceToken.generate("sdrt")
+      assert String.length(unknown) == String.length(issued.refresh_token)
+
+      %{revoked: issued.refresh_token, unknown: unknown}
+    end
+
+    test "answer refresh attempts identically, the 429 at the limit included", %{
+      ip: ip,
+      revoked: revoked,
+      unknown: unknown
+    } do
+      refresh = fn token ->
+        %{"grant_type" => "refresh_token", "client_id" => "stride-ios", "refresh_token" => token}
+      end
+
+      for attempt <- 1..5 do
+        unknown_conn = ip |> from_ip() |> post(~p"/oauth/token", refresh.(unknown))
+        revoked_conn = ip |> from_ip() |> post(~p"/oauth/token", refresh.(revoked))
+
+        assert observable(unknown_conn) == observable(revoked_conn)
+        assert_retry_after_alike(unknown_conn, revoked_conn)
+        assert unknown_conn.status == if(attempt <= 3, do: 400, else: 429)
+      end
+    end
+
+    test "answer revoke attempts identically, the 429 at the limit included", %{
+      ip: ip,
+      revoked: revoked,
+      unknown: unknown
+    } do
+      revoke = fn token -> %{"token" => token, "client_id" => "stride-ios"} end
+
+      for attempt <- 1..5 do
+        unknown_conn = ip |> from_ip() |> post(~p"/oauth/revoke", revoke.(unknown))
+        revoked_conn = ip |> from_ip() |> post(~p"/oauth/revoke", revoke.(revoked))
+
+        assert observable(unknown_conn) == observable(revoked_conn)
+        assert_retry_after_alike(unknown_conn, revoked_conn)
+        assert unknown_conn.status == if(attempt <= 3, do: 200, else: 429)
+      end
+    end
+  end
+
+  # Everything a client sees except the per-request id and the retry-after
+  # count, which reads the clock and is compared by assert_retry_after_alike/2.
+  defp observable(conn) do
+    headers =
+      conn.resp_headers
+      |> Enum.reject(fn {name, _value} -> name in ["x-request-id", "retry-after"] end)
+      |> Enum.sort()
+
+    {conn.status, headers, conn.resp_body}
+  end
+
+  defp assert_retry_after_alike(left, right) do
+    case {get_resp_header(left, "retry-after"), get_resp_header(right, "retry-after")} do
+      {[], []} -> :ok
+      {[a], [b]} -> assert abs(String.to_integer(a) - String.to_integer(b)) <= 1
+    end
   end
 end

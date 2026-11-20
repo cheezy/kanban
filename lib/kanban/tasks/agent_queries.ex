@@ -9,6 +9,7 @@ defmodule Kanban.Tasks.AgentQueries do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Columns
   alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -71,7 +72,8 @@ defmodule Kanban.Tasks.AgentQueries do
   Gets the next task for an AI agent to work on.
 
   Returns the next available task from the "Ready" column using optimized filtering:
-  1. Tasks in "Ready" column (indexed lookup)
+  1. Tasks in "Ready" column (the board's columns by index, the name matched as
+     `Kanban.Columns.named?/2` matches it: case and surrounding whitespace ignored)
   2. Agent has all required capabilities (array operation)
   3. All dependencies completed (subquery check)
   4. No key_file conflicts with tasks in "Doing" or "Review" (JSONB comparison)
@@ -108,8 +110,9 @@ defmodule Kanban.Tasks.AgentQueries do
     conflicting_task_ids =
       from(t in Task,
         join: c in Column,
+        as: :column,
         on: t.column_id == c.id,
-        where: c.name in ["Doing", "Review"],
+        where: ^Columns.name_matches(:column, ["Doing", "Review"]),
         where: c.board_id == ^board_id,
         where: t.status == :in_progress,
         where: is_nil(t.archived_at),
@@ -123,8 +126,9 @@ defmodule Kanban.Tasks.AgentQueries do
     query =
       from(t in Task,
         join: c in Column,
+        as: :column,
         on: t.column_id == c.id,
-        where: c.name == "Ready",
+        where: ^Columns.name_matches(:column, "Ready"),
         where: c.board_id == ^board_id,
         where: t.type in [:work, :defect],
         where: t.human_task == false,
@@ -197,10 +201,11 @@ defmodule Kanban.Tasks.AgentQueries do
     query =
       from(t in Task,
         join: c in Column,
+        as: :column,
         on: t.column_id == c.id,
         where: t.identifier == ^identifier,
         where: c.board_id == ^board_id,
-        where: c.name == "Ready",
+        where: ^Columns.name_matches(:column, "Ready"),
         where: t.type in [:work, :defect],
         where: t.human_task == false,
         where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),

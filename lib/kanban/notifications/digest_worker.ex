@@ -21,6 +21,11 @@ defmodule Kanban.Notifications.DigestWorker do
   which is preferable to emailing it twice. The stable `Message-ID` covers
   a mailer that accepted the email but reported an error.
 
+  The digest renders in the recipient's stored `locale`, mapped by
+  `Kanban.Locales.resolve/1`, or English when they never chose one, with
+  `Gettext.with_locale/3` around the build only, so one job's locale never
+  reaches another.
+
   Failures are logged — and returned to Oban — as a bounded failure kind
   plus the user id, never the address, names or the raw adapter reason.
   """
@@ -32,6 +37,7 @@ defmodule Kanban.Notifications.DigestWorker do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Locales
   alias Kanban.Mailer
   alias Kanban.Notifications.Digest
   alias Kanban.Notifications.DigestRecipients
@@ -107,7 +113,12 @@ defmodule Kanban.Notifications.DigestWorker do
   end
 
   defp deliver(record, user, digest, week) do
-    case user |> DigestEmail.build(digest, week) |> Mailer.deliver() do
+    email =
+      Gettext.with_locale(KanbanWeb.Gettext, Locales.resolve(user.locale), fn ->
+        DigestEmail.build(user, digest, week)
+      end)
+
+    case Mailer.deliver(email) do
       {:ok, _metadata} ->
         stamp_emailed(record)
         NotificationTelemetry.digest_sent(user.id, week)

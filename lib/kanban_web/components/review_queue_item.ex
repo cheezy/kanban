@@ -22,7 +22,17 @@ defmodule KanbanWeb.ReviewQueueItem do
   alias KanbanWeb.ReviewReportHelpers
   alias KanbanWeb.TaskTokens
 
-  @accents ~w(stride-orange st-ready st-doing stride-violet st-backlog st-blocked)
+  # The board chip's fill, picked by board id; its 8.5px initials are
+  # var(--surface) on it, so each fill must reach 4.5:1 against --surface in
+  # both themes. The brand -ink tokens keep the orange and violet hues: the
+  # plain --stride-orange and --stride-violet are graphical accents and only
+  # reach 3.31:1 and 4.15:1 under white text in light mode.
+  @accents ~w(stride-orange-ink st-ready st-doing stride-violet-ink st-backlog st-blocked)
+
+  @doc false
+  # The chip fill tokens, for the contrast test.
+  @spec chip_accents() :: [String.t()]
+  def chip_accents, do: @accents
 
   @doc """
   Renders one queue row.

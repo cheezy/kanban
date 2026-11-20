@@ -6,7 +6,8 @@ defmodule KanbanWeb.API.Me.ReviewController do
 
   `GET /api/me/reviews` (W2758, design §7.5) is the review queue: only the
   `review` items of `GET /api/me/decisions`, in the same order, from
-  `Kanban.Decisions.review_queue/2`. It checks the person's plan only: a
+  `Kanban.Decisions.review_queue/2`, with each item's actions for the
+  requesting device's class. It checks the person's plan only: a
   board outside the plan never contributes a review item.
 
   It runs behind the `:device_api` pipeline, so `:current_scope` and
@@ -25,7 +26,11 @@ defmodule KanbanWeb.API.Me.ReviewController do
   one file's highlighted diff and inline notes, from
   `Kanban.Reviews.mobile_review_file/2`, after the same checks as the detail.
   `index` is the file's `index` in the detail; one that is not a
-  non-negative integer, or names no file of this task, answers 404.
+  non-negative integer, or names no file of this task, answers 404. The app
+  sends the detail's `files_version` as the `files_version` query parameter:
+  when the task's file list has changed since, so the index may name another
+  file now, it answers 409 `files_changed` with the current version instead
+  of a diff.
 
   The app approves a review in two requests (W2754, design §6.6, §7.5),
   both run by `Kanban.Reviews.Approval`:
@@ -72,10 +77,11 @@ defmodule KanbanWeb.API.Me.ReviewController do
   action_fallback KanbanWeb.API.Me.FallbackController
 
   def index(conn, _params) do
-    %{current_scope: scope} = conn.assigns
+    %{current_scope: scope, current_device: device} = conn.assigns
 
     with :ok <- Plans.check_user(scope, :mobile_app, surface: :controller) do
-      render(conn, :index, items: Decisions.review_queue(scope, source: :api))
+      items = Decisions.review_queue(scope, source: :api, device_class: device.device_class)
+      render(conn, :index, items: items)
     end
   end
 
@@ -87,15 +93,22 @@ defmodule KanbanWeb.API.Me.ReviewController do
     end
   end
 
-  def file(conn, %{"task_id" => task_id, "index" => index}) do
+  def file(conn, %{"task_id" => task_id, "index" => index} = params) do
     %{current_scope: scope} = conn.assigns
 
     with {:ok, task} <- fetch_reviewable(scope, task_id),
          {:ok, index} <- parse_index(index),
-         {:ok, file} <- Reviews.mobile_review_file(task, index) do
+         {:ok, file} <- Reviews.mobile_review_file(task, index, files_version(params)) do
       render(conn, :file_diff, file: file)
     end
   end
+
+  # The detail's files_version, sent back as a query parameter; a missing or
+  # empty one skips the stale-index check.
+  defp files_version(%{"files_version" => version}) when is_binary(version) and version != "",
+    do: version
+
+  defp files_version(_params), do: nil
 
   def approval_challenge(conn, %{"task_id" => task_id}) do
     %{current_scope: scope, current_device: device} = conn.assigns

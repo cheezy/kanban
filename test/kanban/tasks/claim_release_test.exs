@@ -90,6 +90,17 @@ defmodule Kanban.Tasks.ClaimReleaseTest do
     assert [%Task{id: ^here_id}] = ClaimRelease.release(ctx.agent.id, query)
   end
 
+  test "returns a claimed task to a Ready column named in another case or padded", ctx do
+    ready =
+      ctx.board |> column("Ready") |> Ecto.Changeset.change(name: " READY ") |> Repo.update!()
+
+    task = claimed_task(ctx.board, ctx.agent)
+
+    assert [%Task{id: id}] = ClaimRelease.release(ctx.agent.id, [ctx.board.id])
+    assert id == task.id
+    assert Repo.get!(Task, task.id).column_id == ready.id
+  end
+
   test "leaves a claimed task on a board without a Ready column where it is", ctx do
     board = board_fixture(ctx.owner)
     doing = column_fixture(board, %{name: "Doing"})

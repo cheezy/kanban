@@ -159,10 +159,44 @@ defmodule KanbanWeb.UserLive.PushSettingsComponents do
     """
   end
 
+  @doc """
+  The value the mode select shows for a push settings view: the stored mode
+  while the eight switches still match its preset, else the mode whose preset
+  they match, else `"custom"`, so a switch changed on its own is never shown
+  under a preset it no longer follows.
+  """
+  @spec mode_value(PushSettings.view()) :: String.t()
+  def mode_value(%{mode: mode, switches: switches}) when is_map(switches) do
+    current = Map.take(switches, PushSettings.push_events())
+
+    case Enum.find([mode | PushSettings.modes()], &(PushSettings.preset(&1) == current)) do
+      nil -> "custom"
+      matched -> Atom.to_string(matched)
+    end
+  end
+
+  @doc """
+  The mode select's options: the presets, plus a disabled "Custom" entry
+  while `value` is `"custom"`, so it can be shown selected but never chosen.
+  """
+  @spec mode_options(String.t()) :: [{String.t(), String.t()} | keyword()]
+  def mode_options(value) do
+    presets = [
+      {gettext("Decisions only (Recommended)"), "decisions"},
+      {gettext("Every event"), "every"}
+    ]
+
+    if value == "custom",
+      do: presets ++ [[key: gettext("Custom"), value: "custom", disabled: true]],
+      else: presets
+  end
+
   @doc "The mode preset card: one select that sets the eight Push switches."
   attr :push, :map, required: true
 
   def push_mode_card(assigns) do
+    assigns = assign(assigns, :mode_value, mode_value(assigns.push))
+
     ~H"""
     <.settings_card
       id="push-mode"
@@ -186,11 +220,8 @@ defmodule KanbanWeb.UserLive.PushSettingsComponents do
           id="push-mode-select"
           name="mode"
           label={gettext("Notify me")}
-          value={Atom.to_string(@push.mode)}
-          options={[
-            {gettext("Decisions only (Recommended)"), "decisions"},
-            {gettext("Every event"), "every"}
-          ]}
+          value={@mode_value}
+          options={mode_options(@mode_value)}
         />
       </form>
     </.settings_card>

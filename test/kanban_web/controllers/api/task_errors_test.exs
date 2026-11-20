@@ -23,6 +23,10 @@ defmodule KanbanWeb.API.TaskErrorsTest do
       assert TaskErrors.mark_reviewed_error(:invalid_review_status) ==
                {"Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'",
                 :invalid_review_status}
+
+      assert TaskErrors.mark_reviewed_error(:column_not_found) ==
+               {"The board has no Done or Doing column for the reviewed task to move to",
+                :column_not_found}
     end
 
     test "falls back for an unknown reason without leaking the reason detail" do

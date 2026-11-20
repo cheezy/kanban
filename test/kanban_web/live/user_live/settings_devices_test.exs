@@ -116,6 +116,35 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
     assert has_element?(view, "#device-revoke-#{device.id}", "Widerrufen")
   end
 
+  test "the list sits in the themed, width-aware settings column and a long name wraps", %{
+    conn: conn,
+    scope: scope
+  } do
+    long_name = String.duplicate("Ada", 40)
+    device = device_fixture(scope, %{name: long_name}, @t0)
+    view = open_devices(conn)
+
+    # .stride-screen defines the ink and line tokens the rows use in both
+    # themes; the @container lets the rows switch layout by the column's width
+    assert has_element?(view, ~s(.stride-screen [class*="@container"] #device-list))
+    assert has_element?(view, ~s(#device-#{device.id}[class*="@md:flex-row"]))
+    assert has_element?(view, ~s(#device-name-#{device.id}[style*="overflow-wrap: anywhere"]))
+    assert has_element?(view, "#device-name-#{device.id}", long_name)
+  end
+
+  test "the empty state renders in German", %{conn: conn} do
+    {:ok, view, _html} =
+      conn
+      |> Plug.Conn.put_session(:locale, "de")
+      |> live(~p"/users/settings?section=devices")
+
+    assert has_element?(
+             view,
+             "#device-list-empty",
+             "Mit Ihrem Konto sind keine Telefone oder Tablets angemeldet."
+           )
+  end
+
   test "a device revoked elsewhere leaves the list at once and is revoked once", %{
     conn: conn,
     scope: scope,
@@ -164,9 +193,15 @@ defmodule KanbanWeb.UserLive.SettingsDevicesTest do
   } do
     device = device_fixture(scope)
     {:ok, view, _html} = live(conn, ~p"/users/settings")
+    :ok = Devices.subscribe_devices(scope)
 
     {:ok, _} = Devices.revoke_device(scope, device)
 
+    # The page is subscribed to the same topic, so it received this message
+    # before revoke_device/2 returned; the render below runs after its
+    # handle_info/2, while the Devices section is not rendered.
+    device_id = device.id
+    assert_receive {:device_revoked, ^device_id}
     refute render(view) =~ "device-list"
     view |> element("#settings-tab-devices") |> render_click()
     assert has_element?(view, "#device-list-empty")

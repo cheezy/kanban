@@ -29,6 +29,11 @@ defmodule Kanban.Reviews.RequestChanges do
   a review decided or resubmitted since the checks ran answers 409, a device
   revoked since is `:revoked`, and a retry with the same key replays the
   first result rather than requesting changes twice.
+
+  The transaction is wrapped in `Kanban.Telemetry.AfterCommit.after_commit/1`,
+  so the review telemetry, the audit event's telemetry and log line, the
+  completer's notification and the webhooks `request_changes_review/3` causes
+  wait for this commit and are dropped when it rolls back.
   """
 
   alias Kanban.Accounts.Scope

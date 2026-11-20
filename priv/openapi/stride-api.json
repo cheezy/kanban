@@ -1819,7 +1819,7 @@
       "post": {
         "operationId": "oauthToken",
         "summary": "Exchange an authorization code, or rotate a refresh token",
-        "description": "The token endpoint of device sign-in. `grant_type=authorization_code` redeems the one-time code from `GET /oauth/authorize` with its PKCE verifier, creates the device from the details the app sends and returns its first tokens. `grant_type=refresh_token` rotates: the refresh token sent is used up and a new pair is returned. Presenting a refresh token that was already used revokes the device. Refresh is refused for a disabled user, a revoked device, or a user past their Organization's two-factor grace period. Access tokens last one hour. Rate limited per IP, and refresh also per device. Only the body is read: a parameter in the query string is ignored, so a code, verifier or token put in the URL counts as missing. Every response is `cache-control: no-store`.",
+        "description": "The token endpoint of device sign-in. `grant_type=authorization_code` redeems the one-time code from `GET /oauth/authorize` with its PKCE verifier, creates the device from the details the app sends and returns its first tokens. `grant_type=refresh_token` rotates: the refresh token sent is used up and a new pair is returned. Presenting a refresh token that was already used, or an authorization code that was already redeemed, revokes the device. Refresh is refused for a disabled user, a revoked device, or a user past their Organization's two-factor grace period, unless the device was allowed from a web session signed in through that Organization's single sign-on and it is still the user's Organization, checked again at each refresh, as the web exempts such a session. Access tokens last one hour. Rate limited per IP, and refresh also per presented refresh token, counted the same whether the token is unknown, revoked or live, so the limit never tells which tokens were real. Only the body is read: a parameter in the query string is ignored, so a code, verifier or token put in the URL counts as missing. Every response is `cache-control: no-store`.",
         "tags": [
           "OAuth"
         ],
@@ -1871,7 +1871,7 @@
       "post": {
         "operationId": "oauthRevoke",
         "summary": "Sign a device out by its refresh token",
-        "description": "Token revocation (RFC 7009). Revokes the device the refresh token belongs to and expires all of its tokens. The token travels only in the body: a query-string parameter is ignored, and an Authorization header is never read. Answers 200 with an empty object whether or not the token named a live device (RFC 7009 §2.2). Rate limited per IP and per device.",
+        "description": "Token revocation (RFC 7009). Revokes the device the refresh token belongs to and expires all of its tokens. The token travels only in the body: a query-string parameter is ignored, and an Authorization header is never read. Answers 200 with an empty object whether or not the token named a live device (RFC 7009 §2.2). Rate limited per IP and per presented token, counted the same whether the token is unknown, revoked or live.",
         "tags": [
           "OAuth"
         ],
@@ -1946,6 +1946,11 @@
                   "$ref": "#/components/schemas/MeResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -1992,6 +1997,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/UserDeviceList"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2050,6 +2060,11 @@
                   "$ref": "#/components/schemas/UserDeviceResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -2068,6 +2083,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ValidationError"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2098,7 +2118,12 @@
         ],
         "responses": {
           "204": {
-            "description": "The device is signed out."
+            "description": "The device is signed out.",
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -2148,7 +2173,12 @@
         ],
         "responses": {
           "204": {
-            "description": "The device is revoked."
+            "description": "The device is revoked.",
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -2166,6 +2196,11 @@
                 "example": {
                   "error": "Not Found"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2208,6 +2243,11 @@
                   "$ref": "#/components/schemas/NotificationSettingsResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -2228,6 +2268,11 @@
                   "feature": "mobile_app",
                   "message": "The Stride app is available to boards in an Organization."
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2278,6 +2323,11 @@
                   "$ref": "#/components/schemas/NotificationSettingsResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -2299,6 +2349,11 @@
                   "message": "The Stride app is available to boards in an Organization."
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "406": {
@@ -2311,6 +2366,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ValidationError"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2350,6 +2410,11 @@
                   "$ref": "#/components/schemas/DecisionListResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -2370,6 +2435,11 @@
                   "feature": "mobile_app",
                   "message": "The Stride app is available to boards in an Organization."
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2412,6 +2482,11 @@
                   "$ref": "#/components/schemas/ReviewQueueResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiCacheControl"
+              }
             }
           },
           "400": {
@@ -2432,6 +2507,11 @@
                   "feature": "mobile_app",
                   "message": "The Stride app is available to boards in an Organization."
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2484,6 +2564,11 @@
                   "$ref": "#/components/schemas/ReviewDetailResponse"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiCacheControl"
+              }
             }
           },
           "400": {
@@ -2505,6 +2590,11 @@
                   "message": "The Stride app is available to boards in an Organization."
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "404": {
@@ -2517,6 +2607,11 @@
                 "example": {
                   "error": "Not Found"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2536,7 +2631,7 @@
       "get": {
         "operationId": "getMyReviewFile",
         "summary": "One file's highlighted diff for the app's flagged-file screen",
-        "description": "One changed file of a pending review: its path, language, additions, deletions, whether its diff was cut at the cap, its flag and the reason, the diff's lines highlighted on the server, and the reviewer issues that name the file as inline notes, each anchored to its line when the issue has one that is in the diff. index is the file's index in the review detail's files (its position in the stored changed files); the app fetches one file per request, never all of them. The same access and plan checks as GET /api/me/reviews/{task_id} run first, so an index only ever reaches the task's own diffs. A span's text is text with a class, never HTML. A resubmit, or an agent replacing the stored files in place, can make an index name another file, so compare path (and review_requested_at) with the detail row the app opened and reload the detail when they differ. A path stored twice is one file, as in the detail: its counts are summed and lines holds each of its diffs. Takes a device access token only. Human-readable reference: docs/api/me_review_file.md.",
+        "description": "One changed file of a pending review: its path, language, additions, deletions, whether its diff was cut at the cap, its flag and the reason, the diff's lines highlighted on the server, and the reviewer issues that name the file as inline notes, each anchored to its line when the issue has one that is in the diff. index is the file's index in the review detail's files (its position in the stored changed files); the app fetches one file per request, never all of them. The same access and plan checks as GET /api/me/reviews/{task_id} run first, so an index only ever reaches the task's own diffs. A span's text is text with a class, never HTML. A resubmit, or an agent replacing the stored files in place, can make an index name another file, so send the detail's files_version with the index: when the file list has changed since, the answer is 409 files_changed with the current version, and the app reloads the detail. A path stored twice is one file, as in the detail: its counts are summed and lines holds each of its diffs. Takes a device access token only. Human-readable reference: docs/api/me_review_file.md.",
         "tags": [
           "Mobile"
         ],
@@ -2567,6 +2662,15 @@
             }
           },
           {
+            "name": "files_version",
+            "in": "query",
+            "required": false,
+            "description": "The review detail's files_version. When it is given and the task's file list has changed since, the answer is 409 files_changed. Leaving it out skips the check.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "$ref": "#/components/parameters/StrideApp"
           }
         ],
@@ -2578,6 +2682,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/ReviewFileDiffResponse"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiCacheControl"
               }
             }
           },
@@ -2600,6 +2709,11 @@
                   "message": "The Stride app is available to boards in an Organization."
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "404": {
@@ -2613,10 +2727,35 @@
                   "error": "Not Found"
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "406": {
             "$ref": "#/components/responses/NotAcceptable"
+          },
+          "409": {
+            "description": "The files_version sent is not the task's current one: its file list changed since the detail was loaded, so the index may name another file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilesChanged"
+                },
+                "example": {
+                  "error": "files_changed",
+                  "message": "This task's changed files changed since the review was loaded. Reload the review.",
+                  "files_version": "q2l9v0ZsB3m7xQ1a"
+                }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
+            }
           },
           "426": {
             "$ref": "#/components/responses/AppUpdateRequired"
@@ -2687,6 +2826,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -2708,6 +2852,11 @@
                   "message": "The Stride app is available to boards in an Organization."
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "404": {
@@ -2720,6 +2869,11 @@
                 "example": {
                   "error": "Not Found"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2766,6 +2920,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "422": {
@@ -2780,6 +2939,7 @@
                   "message": "This change is too large to approve on a phone. Approve it on a tablet or on the web.",
                   "size": {
                     "files": 14,
+                    "files_unknown": false,
                     "changed_lines": 652,
                     "truncated": false
                   },
@@ -2788,6 +2948,11 @@
                     "max_changed_lines": 500
                   }
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2864,6 +3029,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -2885,6 +3055,11 @@
                   "message": "The Stride app is available to boards in an Organization."
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "404": {
@@ -2897,6 +3072,11 @@
                 "example": {
                   "error": "Not Found"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -2943,6 +3123,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "422": {
@@ -2970,6 +3155,7 @@
                       "message": "This change is too large to approve on a phone. Approve it on a tablet or on the web.",
                       "size": {
                         "files": 14,
+                        "files_unknown": false,
                         "changed_lines": 652,
                         "truncated": false
                       },
@@ -2995,6 +3181,11 @@
                     }
                   }
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -3070,6 +3261,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "400": {
@@ -3091,6 +3287,11 @@
                   "message": "The Stride app is available to boards in an Organization."
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "404": {
@@ -3103,6 +3304,11 @@
                 "example": {
                   "error": "Not Found"
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -3149,6 +3355,11 @@
                   }
                 }
               }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
+              }
             }
           },
           "422": {
@@ -3165,6 +3376,11 @@
                     ]
                   }
                 }
+              }
+            },
+            "headers": {
+              "cache-control": {
+                "$ref": "#/components/headers/PersonApiNoStore"
               }
             }
           },
@@ -3189,7 +3405,7 @@
       "deviceAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Device access token for the Stride mobile apps, sent as `Authorization: Bearer <token>`. It is issued by POST /oauth/token, lasts one hour and is renewed with the refresh token. It is accepted only on /api/me/* operations, and every operation that requires bearerAuth refuses it with 401 (the public operations, which declare `security: []`, check no token at all); an agent API token is refused on /api/me/* the same way. An unknown, expired or refresh token, a revoked device and a disabled account all answer 401 with `{\"error\": \"Invalid access token\"}`."
+        "description": "Device access token for the Stride mobile apps, sent as `Authorization: Bearer <token>`. It is issued by POST /oauth/token, lasts one hour and is renewed with the refresh token. It is accepted only on /api/me/* operations, and every operation that requires bearerAuth refuses it with 401 (the public operations, which declare `security: []`, check no token at all); an agent API token is refused on /api/me/* the same way. An unknown, expired or refresh token, a revoked device and a disabled account all answer 401 with `{\"error\": \"Invalid access token\"}`. Every /api/me response, errors and these refusals included, is `cache-control: private, no-store`, except a response that carries an `ETag` (the review reads), which is `private, max-age=0, must-revalidate`. An access token that has only expired gets the same 401 but is not counted toward the per-IP failure limit agent tokens share; an unknown or malformed token is."
       }
     },
     "parameters": {
@@ -6084,6 +6300,7 @@
           "exploratory",
           "behaviour_matrix",
           "files",
+          "files_version",
           "size",
           "approvable_here",
           "approvable_here_reason",
@@ -6145,6 +6362,10 @@
             "items": {
               "$ref": "#/components/schemas/ReviewFile"
             }
+          },
+          "files_version": {
+            "type": "string",
+            "description": "The version of the task's file list, which a file's index points into. It changes whenever the stored changed files are reordered, renamed, added, removed or their diffs change. Send it as files_version with GET /api/me/reviews/{task_id}/files/{index}, which answers 409 files_changed when the list has changed since."
           },
           "size": {
             "$ref": "#/components/schemas/ReviewSize"
@@ -6568,7 +6789,8 @@
           "flag_reason",
           "lines",
           "notes",
-          "review_requested_at"
+          "review_requested_at",
+          "files_version"
         ],
         "properties": {
           "index": {
@@ -6649,6 +6871,10 @@
             ],
             "format": "date-time",
             "description": "When the task last entered Review, as in the review detail. Stored files can be replaced without it changing, so compare path with the detail row too."
+          },
+          "files_version": {
+            "type": "string",
+            "description": "The task's files_version now, as the review detail returns it."
           }
         }
       },
@@ -6766,18 +6992,48 @@
           }
         }
       },
+      "FilesChanged": {
+        "type": "object",
+        "description": "The task's file list changed since the files_version the app sent, so the index may name another file now. Reload the review detail.",
+        "required": [
+          "error",
+          "message",
+          "files_version"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "files_changed"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "files_version": {
+            "type": "string",
+            "description": "The current files_version."
+          }
+        }
+      },
       "ReviewSize": {
         "type": "object",
         "description": "The change's size, as the large-change guard counts it.",
         "required": [
           "files",
+          "files_unknown",
           "changed_lines",
           "truncated",
           "large_change"
         ],
         "properties": {
           "files": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Distinct changed files, counted as files lists them (paths normalized); 0 when files_unknown is true."
+          },
+          "files_unknown": {
+            "type": "boolean",
+            "description": "True when the task stored no diffs and recorded its changed files as a count (such as 14 files) rather than paths, so the change cannot be shown to be small: a phone may not approve it."
           },
           "changed_lines": {
             "type": "integer",
@@ -6789,7 +7045,7 @@
           },
           "large_change": {
             "type": "boolean",
-            "description": "More than the phone limits in GET /api/me, or a diff cut at the cap."
+            "description": "More than the phone limits in GET /api/me, files that are unknown, or a diff cut at the cap."
           }
         }
       },
@@ -7048,12 +7304,16 @@
             "type": "object",
             "required": [
               "files",
+              "files_unknown",
               "changed_lines",
               "truncated"
             ],
             "properties": {
               "files": {
                 "type": "integer"
+              },
+              "files_unknown": {
+                "type": "boolean"
               },
               "changed_lines": {
                 "type": "integer"
@@ -7125,7 +7385,9 @@
           },
           "reason": {
             "type": "string",
+            "description": "column_not_found when the board has no Done column (no column named Done, ignoring case and surrounding whitespace).",
             "enum": [
+              "column_not_found",
               "invalid_column",
               "review_not_performed",
               "invalid_review_status"
@@ -7338,11 +7600,11 @@
                 "open_backlog"
               ]
             },
-            "description": "The actions the server lets this person take. An app ignores an action it does not know."
+            "description": "The actions the server lets this person take, on the device asking. A phone is not offered approve on a review whose change is too large to approve on a phone, so approve is present exactly when GET /api/me/reviews/{task_id} answers approvable_here true for the same device; a tablet keeps it. An app ignores an action it does not know."
           },
           "web_url": {
             "type": "string",
-            "description": "The absolute URL of the item on the web."
+            "description": "The absolute URL of the item on the web. For a task, its edit page when the person can write to the board, else the board itself, which a read-only member can open."
           },
           "holds_up": {
             "type": [
@@ -7589,6 +7851,25 @@
           "type": "string",
           "enum": [
             "no-store"
+          ]
+        }
+      },
+      "PersonApiNoStore": {
+        "description": "Always `private, no-store`: no person-API response is ever cached (decided 2026-11-19).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "private, no-store"
+          ]
+        }
+      },
+      "PersonApiCacheControl": {
+        "description": "`private, max-age=0, must-revalidate` when the response carries an `ETag`, so the app may keep it and revalidate it with `If-None-Match`; `private, no-store` otherwise (decided 2026-11-19).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "private, no-store",
+            "private, max-age=0, must-revalidate"
           ]
         }
       }

@@ -12,6 +12,7 @@ defmodule KanbanWeb.OAuthAuthorizeTest do
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
   alias Kanban.Repo
+  alias KanbanWeb.UserAuth.OrganizationTwoFactorGate
 
   @redirect_uri "com.stridelikeaboss.app:/oauth/callback"
 
@@ -373,6 +374,44 @@ defmodule KanbanWeb.OAuthAuthorizeTest do
       assert redirected_to(conn) == path
     end
 
+    test "a request too long to come back to after signing in is a 400, not a 500", %{
+      conn: conn
+    } do
+      # A valid request: a 255-character Japanese device name and a 255-character
+      # state percent-encode to more than the session cookie can carry back.
+      params =
+        valid_params(%{
+          "device_name" => String.duplicate("日", 255),
+          "state" => String.duplicate("%", 255)
+        })
+
+      conn = get(conn, authorize_path(params))
+
+      html = html_response(conn, 400)
+      assert html =~ "This sign-in request isn&#39;t valid"
+      assert get_session(conn, :user_return_to) == nil
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      assert get_resp_header(conn, "referrer-policy") == ["no-referrer"]
+
+      assert get_resp_header(conn, "set-cookie")
+             |> Enum.map(&byte_size/1)
+             |> Enum.all?(&(&1 <= 4096))
+
+      assert code_count() == 0
+    end
+
+    test "a signed-in person may send the same long request", %{conn: conn} do
+      %{conn: conn} = register_and_log_in_user(%{conn: conn})
+
+      params =
+        valid_params(%{
+          "device_name" => String.duplicate("日", 255),
+          "state" => String.duplicate("%", 255)
+        })
+
+      assert conn |> get(authorize_path(params)) |> html_response(200) =~ "日日日"
+    end
+
     test "the session expiring before Allow issues no code", %{conn: conn} do
       conn = post(conn, ~p"/oauth/authorize", Map.put(valid_params(), "decision", "allow"))
 
@@ -400,7 +439,116 @@ defmodule KanbanWeb.OAuthAuthorizeTest do
       from(m in OrganizationMember, where: m.organization_id == ^org.id)
       |> Repo.update_all(set: [inserted_at: past])
 
-      %{member: member}
+      %{member: member, org: org}
+    end
+
+    defp allow_code(conn) do
+      conn = post(conn, ~p"/oauth/authorize", Map.put(valid_params(), "decision", "allow"))
+      code = callback_query(conn)["code"]
+      {code, Repo.get_by!(AuthorizationCode, code_hash: DeviceToken.hash_token(code))}
+    end
+
+    defp exchange_and_refresh(code) do
+      tokens =
+        build_conn()
+        |> post(~p"/oauth/token", %{
+          "grant_type" => "authorization_code",
+          "client_id" => "stride-ios",
+          "code" => code,
+          "code_verifier" => valid_code_verifier(),
+          "redirect_uri" => @redirect_uri,
+          "platform" => "ios",
+          "device_class" => "phone",
+          "approval_public_key" => valid_approval_public_key()
+        })
+        |> json_response(200)
+
+      build_conn()
+      |> post(~p"/oauth/token", %{
+        "grant_type" => "refresh_token",
+        "client_id" => "stride-ios",
+        "refresh_token" => tokens["refresh_token"]
+      })
+    end
+
+    test "an overdue member signed in through their Organization's SSO allows a device that keeps refreshing",
+         %{conn: conn, member: member, org: org} do
+      conn =
+        conn
+        |> log_in_user(member)
+        |> Plug.Conn.put_session(OrganizationTwoFactorGate.sso_session_key(), org.id)
+
+      {code, stored} = allow_code(conn)
+      assert stored.sso_organization_id == org.id
+
+      assert %{"access_token" => _} = code |> exchange_and_refresh() |> json_response(200)
+    end
+
+    test "an SSO marker in the request params is never recorded", %{conn: conn} do
+      # A member of no Organization reaches Allow without any mark.
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      conn =
+        post(
+          conn,
+          ~p"/oauth/authorize",
+          valid_params(%{"decision" => "allow", "sso_authenticated" => "1"})
+        )
+
+      code = callback_query(conn)["code"]
+      stored = Repo.get_by!(AuthorizationCode, code_hash: DeviceToken.hash_token(code))
+      assert stored.sso_organization_id == nil
+    end
+
+    test "a password sign-in before the deadline allows a device refused once it passes", %{
+      conn: conn,
+      member: member,
+      org: org
+    } do
+      # Back in grace: the requirement started just now.
+      now = DateTime.utc_now(:second)
+
+      from(p in SecurityPolicy, where: p.organization_id == ^org.id)
+      |> Repo.update_all(set: [two_factor_enforced_at: now])
+
+      from(m in OrganizationMember, where: m.organization_id == ^org.id)
+      |> Repo.update_all(set: [inserted_at: now])
+
+      {code, stored} = conn |> log_in_user(member) |> allow_code()
+      assert stored.sso_organization_id == nil
+
+      tokens =
+        build_conn()
+        |> post(~p"/oauth/token", %{
+          "grant_type" => "authorization_code",
+          "client_id" => "stride-ios",
+          "code" => code,
+          "code_verifier" => valid_code_verifier(),
+          "redirect_uri" => @redirect_uri,
+          "platform" => "ios",
+          "device_class" => "phone",
+          "approval_public_key" => valid_approval_public_key()
+        })
+        |> json_response(200)
+
+      # The grace period ends.
+      past = DateTime.add(now, -30 * @day, :second)
+
+      from(p in SecurityPolicy, where: p.organization_id == ^org.id)
+      |> Repo.update_all(set: [two_factor_enforced_at: past])
+
+      from(m in OrganizationMember, where: m.organization_id == ^org.id)
+      |> Repo.update_all(set: [inserted_at: past])
+
+      assert %{"error" => "invalid_grant"} =
+               build_conn()
+               |> post(~p"/oauth/token", %{
+                 "grant_type" => "refresh_token",
+                 "client_id" => "stride-ios",
+                 "refresh_token" => tokens["refresh_token"]
+               })
+               |> json_response(400)
     end
 
     test "an Organization member overdue on two-factor is sent to enroll", %{

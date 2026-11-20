@@ -165,6 +165,108 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
     end
   end
 
+  describe "call/2 once an address has failed too often" do
+    setup do
+      original = Application.get_env(:kanban, Kanban.RateLimit)
+      Application.put_env(:kanban, Kanban.RateLimit, enabled: true)
+      on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
+
+      attach_telemetry(@auth_failed)
+      ip = {10, :rand.uniform(255), :rand.uniform(255), :rand.uniform(255)}
+      %{ip: ip}
+    end
+
+    defp from_ip(ip, header_value),
+      do: call_with(%{build_conn() | remote_ip: ip}, header_value)
+
+    test "answers 429 with retry-after, even for a live token, and emits rate_limited", %{
+      ip: ip,
+      access_token: token
+    } do
+      # :api_token allows 20 failed authentications a minute per address.
+      for _ <- 1..20 do
+        assert from_ip(ip, "Bearer sdat_wrong").status == 401
+      end
+
+      conn = from_ip(ip, "Bearer " <> token)
+
+      assert json_response(conn, 429) == %{"error" => "Too many requests"}
+      assert [retry_after] = get_resp_header(conn, "retry-after")
+      assert String.to_integer(retry_after) in 1..61
+      refute_authenticated(conn)
+
+      assert_received {:telemetry_event, @auth_failed, %{count: 1},
+                       %{reason: "rate_limited", path: "/", method: "GET"}}
+
+      # Another address is unaffected.
+      refute from_ip({10, 0, 0, 1}, "Bearer " <> token).halted
+    end
+
+    test "expired device tokens never lock an address's live agent token out", %{
+      ip: ip,
+      scope: scope,
+      access_token: device_token
+    } do
+      {_device, expired} =
+        device_with_tokens_fixture(scope, %{}, DateTime.add(DateTime.utc_now(), -2, :hour))
+
+      {:ok, {_api_token, agent_token}} =
+        ApiTokens.create_api_token(scope.user, ai_optimized_board_fixture(scope.user), %{
+          name: "Agent"
+        })
+
+      # More than the 20 failures a minute :api_token allows an address.
+      for _ <- 1..30 do
+        conn = from_ip(ip, "Bearer " <> expired.access_token)
+        assert json_response(conn, 401) == %{"error" => "Invalid access token"}
+
+        assert_received {:telemetry_event, @auth_failed, %{count: 1},
+                         %{reason: "device_token_invalid"}}
+      end
+
+      agent_conn =
+        %{build_conn() | remote_ip: ip}
+        |> put_req_header("authorization", "Bearer " <> agent_token)
+        |> KanbanWeb.Plugs.AuthenticateApiToken.call([])
+
+      refute agent_conn.halted
+      refute from_ip(ip, "Bearer " <> device_token).halted
+    end
+
+    test "unknown and malformed tokens still count toward the limit", %{
+      ip: ip,
+      access_token: token
+    } do
+      for n <- 1..20 do
+        header = if rem(n, 2) == 0, do: "Bearer sdat_unknown#{n}", else: "Bearer"
+        assert from_ip(ip, header).status == 401
+      end
+
+      assert from_ip(ip, "Bearer " <> token).status == 429
+    end
+
+    test "an expired token's 401 is the same as an unknown token's", %{ip: ip, scope: scope} do
+      {_device, expired} =
+        device_with_tokens_fixture(scope, %{}, DateTime.add(DateTime.utc_now(), -2, :hour))
+
+      unknown = Kanban.Devices.DeviceToken.generate("sdat")
+      expired_conn = from_ip(ip, "Bearer " <> expired.access_token)
+      unknown_conn = from_ip(ip, "Bearer " <> unknown)
+
+      observable = fn conn ->
+        headers = conn.resp_headers |> List.keydelete("x-request-id", 0) |> Enum.sort()
+        {conn.status, conn.halted, headers, conn.resp_body}
+      end
+
+      assert observable.(expired_conn) == observable.(unknown_conn)
+
+      for _ <- 1..2 do
+        assert_received {:telemetry_event, @auth_failed, %{count: 1},
+                         %{reason: "device_token_invalid"}}
+      end
+    end
+  end
+
   # The plug has authenticated the request; the device changes before the
   # action's response is sent.
   defp authenticated(method, token) do
@@ -190,6 +292,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
       assert json_response(conn, 401) == %{"error" => "Invalid access token"}
       refute conn.resp_body =~ "secret"
       assert get_resp_header(conn, "etag") == []
+      assert get_resp_header(conn, "cache-control") == ["private, no-store"]
     end
 
     test "a GET answers 401 when the user is disabled meanwhile", %{scope: scope} = ctx do

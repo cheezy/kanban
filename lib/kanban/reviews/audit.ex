@@ -24,9 +24,9 @@ defmodule Kanban.Reviews.Audit do
   called by `Kanban.Reviews.Approval`.
 
   `Kanban.Reviews` calls `record/4` inside the review transaction, so a
-  rolled-back or refused review leaves no row. The task edit form sets a
-  verdict without `Kanban.Reviews`, so it calls `record_change/3` once its
-  save has committed, and writes the same events.
+  rolled-back or refused review leaves no row. The task edit form never sets
+  a verdict (it drops the review fields it is sent), so every review event
+  comes from here.
   """
 
   import Ecto.Query, warn: false
@@ -101,29 +101,6 @@ defmodule Kanban.Reviews.Audit do
   def record(:changes_requested, %Task{} = task, reviewer, context) do
     AuditLog.event(:review_changes_requested, metadata(task, reviewer, context))
   end
-
-  @doc """
-  Writes the audit event for a verdict set outside `Kanban.Reviews`: the
-  Review Status field of the task edit form. `stored` is the task as it was
-  before the save and `saved` the task the save returned; call it once the
-  save has committed.
-
-  Writes `:review_approved` or `:review_changes_requested` only when the
-  saved `review_status` is `:approved` or `:changes_requested` and differs
-  from the stored one, so a save that leaves the verdict alone writes no
-  row. A form review is always `via: :web`, with no device and no approval
-  key. Returns `:ok`.
-  """
-  @spec record_change(Task.t(), Task.t(), %{id: integer()}) :: :ok
-  def record_change(%Task{review_status: status}, %Task{review_status: status}, _reviewer),
-    do: :ok
-
-  def record_change(%Task{}, %Task{review_status: status} = saved, reviewer)
-      when status in [:approved, :changes_requested] do
-    record(status, Repo.preload(saved, :column), reviewer, context([via: :web], reviewer))
-  end
-
-  def record_change(%Task{}, %Task{}, _reviewer), do: :ok
 
   @doc """
   Writes the `:approval_signature_rejected` event for an app approval of

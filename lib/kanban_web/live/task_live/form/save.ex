@@ -14,12 +14,20 @@ defmodule KanbanWeb.TaskLive.Form.Save do
     4. checks every relational field against the board (`RelationalScopes`)
        and, for a new task, that the column is on the board;
     5. creates the task (refusing at a WIP limit) or updates it, with the
-       identifier, review attribution and completion time set by the server;
+       identifier and completion time set by the server;
     6. writes the labels, stores staged attachments for a new task
        (`AttachmentStaging`), tells the board, flashes and patches back.
 
   Every result is `{:noreply, socket}` for the component to return. A refusal
   re-renders the form with a changeset error and `:error_message`.
+
+  The form never decides a review (D2): `review_status`, `reviewed_at`,
+  `reviewed_by_id` and `review_notes` are dropped from every submission
+  before anything else runs (`drop_review_fields/1`). A verdict goes through `Kanban.Reviews`,
+  which writes the audit row and telemetry, sends the notifications, refuses
+  archived or read-only tasks and moves the task to Done. The agent and API
+  paths that set a review status or review notes do not pass through this
+  module.
   """
   use Gettext, backend: KanbanWeb.Gettext
 
@@ -27,7 +35,6 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   import Phoenix.LiveView, only: [push_patch: 2, put_flash: 3]
 
   alias Kanban.Columns
-  alias Kanban.Reviews.Audit
   alias Kanban.Tasks
   alias KanbanWeb.TaskLive.Form.AttachmentStaging
   alias KanbanWeb.TaskLive.Form.LabelSelection
@@ -45,7 +52,7 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   @spec save(Phoenix.LiveView.Socket.t(), map()) :: {:noreply, Phoenix.LiveView.Socket.t()}
   def save(socket, task_params) do
     if modify_authorized?(socket) do
-      do_save_task(socket, task_params)
+      do_save_task(socket, drop_review_fields(task_params))
     else
       {:noreply,
        put_flash(
@@ -168,7 +175,6 @@ defmodule KanbanWeb.TaskLive.Form.Save do
 
     case save_task_update(socket, task_params) do
       {:ok, task} ->
-        audit_review_change(socket, task)
         finish_task_update(socket, task, cascade_count)
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -195,15 +201,6 @@ defmodule KanbanWeb.TaskLive.Form.Save do
     Tasks.update_task(socket.assigns.task, task_params, actor: current_user(socket))
   end
 
-  # The Review Status field sets a verdict without Kanban.Reviews, so the
-  # save writes the same review audit event the /review queue does.
-  defp audit_review_change(socket, saved) do
-    case current_user(socket) do
-      nil -> :ok
-      user -> Audit.record_change(socket.assigns.task, saved, user)
-    end
-  end
-
   defp current_user(socket) do
     case Map.get(socket.assigns, :current_scope) do
       %{user: user} -> user
@@ -215,15 +212,9 @@ defmodule KanbanWeb.TaskLive.Form.Save do
   # save carrying another task's identifier would give two tasks one
   # identifier, which no database index prevents (D354).
   defp prepare_task_update_params(socket, task_params) do
-    task_params = Map.drop(task_params, ["identifier", :identifier])
-
-    task_params =
-      case Map.get(socket.assigns, :current_scope) do
-        %{user: user} -> maybe_add_review_metadata(task_params, user)
-        _ -> task_params
-      end
-
-    maybe_add_completed_at(task_params, socket.assigns.task)
+    task_params
+    |> Map.drop(["identifier", :identifier])
+    |> maybe_add_completed_at(socket.assigns.task)
   end
 
   defp create_task_in_column(socket, column, task_params) do
@@ -266,29 +257,21 @@ defmodule KanbanWeb.TaskLive.Form.Save do
      |> assign_form(changeset)}
   end
 
-  # W403: review attribution and completion timestamps are server-owned audit
-  # fields. The previous Map.put_new / Map.has_key? pattern let a board member
-  # forge them via a crafted form payload (CWE-639). Now we ALWAYS overwrite
-  # those keys with server values when the status transition fires, and we
-  # drop any client-supplied version up front so even non-transition saves do
-  # not let a malicious client persist forged values. Exposed via @doc false so
-  # the regression tests in form_component_test.exs can exercise the logic
-  # directly without the full LiveView submit roundtrip.
-  @doc false
-  def maybe_add_review_metadata(task_params, current_user) do
-    # Strip any client-supplied review attribution unconditionally — the server
-    # is the only authority for who reviewed and when.
-    task_params = Map.drop(task_params, ["reviewed_at", "reviewed_by_id"])
-    review_status = task_params["review_status"]
+  @review_field_keys ~w(review_status reviewed_at reviewed_by_id review_notes) ++
+                       ~w(review_status reviewed_at reviewed_by_id review_notes)a
 
-    if review_status && review_status != "" && review_status != "pending" do
-      task_params
-      |> Map.put("reviewed_at", DateTime.utc_now() |> DateTime.truncate(:second))
-      |> Map.put("reviewed_by_id", current_user.id)
-    else
-      task_params
-    end
-  end
+  @doc """
+  Drops the review verdict, its attribution and the reviewer's notes
+  (`review_status`, `reviewed_at`, `reviewed_by_id`, `review_notes`, as
+  string or atom keys) from form params, so neither the form's changeset nor
+  its save can set them (D2). The form shows the notes read-only; they are
+  written with the verdict, by `Kanban.Reviews` or the agent API. It
+  supersedes W403's server-stamped attribution: with no verdict accepted
+  from the form there is nothing to attribute.
+  """
+  @spec drop_review_fields(map()) :: map()
+  def drop_review_fields(task_params) when is_map(task_params),
+    do: Map.drop(task_params, @review_field_keys)
 
   @doc false
   def maybe_add_completed_at(task_params, task) do

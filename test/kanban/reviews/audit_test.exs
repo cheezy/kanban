@@ -3,7 +3,6 @@ defmodule Kanban.Reviews.AuditTest do
 
   alias Kanban.Devices.Device
   alias Kanban.Reviews.Audit
-  alias Kanban.Tasks.Task
 
   @reviewer %{id: 7}
 
@@ -70,24 +69,6 @@ defmodule Kanban.Reviews.AuditTest do
     test "keeps only via and device_class" do
       context = Audit.context([device: device()], @reviewer)
       assert Audit.telemetry_metadata(context) == %{via: :ios, device_class: :phone}
-    end
-  end
-
-  describe "record_change/3 without a new verdict" do
-    # These clauses return before any query, so they need no database.
-    test "an unchanged verdict writes nothing" do
-      for status <- [nil, :pending, :approved, :changes_requested, :rejected] do
-        task = %Task{review_status: status}
-        assert Audit.record_change(task, task, @reviewer) == :ok
-      end
-    end
-
-    test "a verdict cleared, reset to pending or set to rejected writes nothing" do
-      stored = %Task{review_status: :approved}
-
-      for status <- [nil, :pending, :rejected] do
-        assert Audit.record_change(stored, %Task{review_status: status}, @reviewer) == :ok
-      end
     end
   end
 end

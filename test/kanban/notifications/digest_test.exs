@@ -102,6 +102,14 @@ defmodule Kanban.Notifications.DigestTest do
       assert [%{name: "Main board", done_this_week: 2, goals_completed: 1}] = digest.boards
     end
 
+    test "ignores tasks still in a Review column named in another case or padded", ctx do
+      ctx.cols["Review"] |> Ecto.Changeset.change(name: " REVIEW ") |> Repo.update!()
+      completed(ctx.cols["Done"], ~U[2026-10-30 10:00:00Z])
+      completed(ctx.cols["Review"], ~U[2026-10-30 10:00:00Z])
+
+      assert %{tasks_done: 1} = build(ctx.user)
+    end
+
     test "reports open, doing and review counts per board", ctx do
       task_fixture(ctx.cols["Backlog"])
       task_fixture(ctx.cols["Ready"])

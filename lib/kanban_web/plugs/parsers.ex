@@ -33,6 +33,12 @@ defmodule KanbanWeb.Plugs.Parsers do
   response there carries both, the errors raised before the controller
   included.
 
+  The person API paths (`/api/me` and everything under it) are marked
+  `cache-control: private, no-store` before parsing, so a parse failure
+  there, or an `/api/me` path no route matches, is never cached either; the
+  router's `:device_api` pipeline then sets the header of every response it
+  sends (`KanbanWeb.Plugs.DeviceApiCacheControl`).
+
   One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
   raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
   `-32700` after authentication — see `parse_api/2`.
@@ -42,7 +48,22 @@ defmodule KanbanWeb.Plugs.Parsers do
   @impl Plug
   def init(opts), do: Plug.Parsers.init(opts)
 
+  # The person API (/api/me/*) is no-store (decided 2026-11-19): the router's
+  # :device_api pipeline sets it on every response it sends
+  # (KanbanWeb.Plugs.DeviceApiCacheControl), and setting it here, before
+  # parsing, covers a parse failure and an unmatched /api/me path, which never
+  # reach that pipeline. The json pin works as for /api below.
   @impl Plug
+  def call(%Plug.Conn{path_info: ["api", "me" | _]} = conn, opts) do
+    conn |> device_api_no_store() |> Plug.Parsers.call(opts)
+  catch
+    kind, reason ->
+      conn
+      |> device_api_no_store()
+      |> Phoenix.Controller.put_format("json")
+      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
+  end
+
   def call(%Plug.Conn{path_info: ["api" | _]} = conn, opts) do
     parse_api(conn, opts)
   catch
@@ -101,6 +122,9 @@ defmodule KanbanWeb.Plugs.Parsers do
     |> Plug.Conn.put_resp_header("cache-control", "no-store")
     |> Plug.Conn.put_resp_header("pragma", "no-cache")
   end
+
+  defp device_api_no_store(conn),
+    do: Plug.Conn.put_resp_header(conn, "cache-control", "private, no-store")
 
   # W2231: a malformed JSON body on POST /api/mcp must be answered with a
   # JSON-RPC -32700 Parse error, and only AFTER authentication (an

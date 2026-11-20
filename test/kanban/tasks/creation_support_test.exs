@@ -14,6 +14,15 @@ defmodule Kanban.Tasks.CreationSupportTest do
 
     test "any other column gives a plain task in that column" do
       assert CreationSupport.new_task(%{id: 5, name: "Doing"}) == %Task{column_id: 5}
+      assert CreationSupport.new_task(%{id: 6, name: "Reviewed"}) == %Task{column_id: 6}
+      assert CreationSupport.new_task(%{id: 7}) == %Task{column_id: 7}
+    end
+
+    test "a Review column named in another case or padded starts the wait too" do
+      for name <- [" review ", "REVIEW", "\tReview\n"] do
+        assert %Task{column_id: 4, review_requested_at: %DateTime{}} =
+                 CreationSupport.new_task(%{id: 4, name: name})
+      end
     end
   end
 

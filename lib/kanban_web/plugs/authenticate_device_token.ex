@@ -50,6 +50,22 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
   `[:kanban, :api, :auth_failed]` with reason `missing_token`,
   `device_token_invalid` or `rate_limited`. The header and the token are never
   logged.
+
+  One failure is not counted toward that limit (decided 2026-11-19): a
+  device access token Stride recognises, on a device still signed in, that
+  has only passed its `expires_at` (`Kanban.Devices.authenticate_access_token/2`).
+  Every app sends one each hour before it refreshes, and many phones behind
+  one address would otherwise lock that address's agents out. It answers the
+  same `401 {"error": "Invalid access token"}` with the same headers, writes
+  the same audit row and emits the same telemetry reason, after the same one
+  read, so the response still never says the token was real. An unknown or
+  malformed token is counted.
+
+  ## Caching
+
+  Every response here, a refusal included, is `cache-control: private,
+  no-store`, set by `KanbanWeb.Plugs.DeviceApiCacheControl`, which runs
+  before this plug in the `:device_api` pipeline.
   """
 
   import Plug.Conn
@@ -73,16 +89,19 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
 
   defp authenticate(conn) do
     with {:ok, token} <- extract_token(conn),
-         {:ok, device} <- Devices.fetch_by_access_token(token) do
+         {:ok, device} <- Devices.authenticate_access_token(token) do
       conn
       |> assign(:current_scope, scope_for(device.user))
       |> assign(:current_device, Devices.touch_last_seen(device))
       |> recheck_before_read_is_sent(device)
     else
-      {:error, :missing_token} -> halt_missing_token(conn)
-      {:error, :invalid_token} -> halt_invalid_token(conn)
+      {:error, reason} -> halt_failed(conn, reason)
     end
   end
+
+  defp halt_failed(conn, :missing_token), do: halt_missing_token(conn)
+  defp halt_failed(conn, :expired_token), do: halt_invalid_token(conn, :not_counted)
+  defp halt_failed(conn, :invalid_token), do: halt_invalid_token(conn, :counted)
 
   # A read builds its response from data the device was allowed to see when
   # the token was checked. Checking the device again just before the response
@@ -106,11 +125,13 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
   defp recheck_before_read_is_sent(conn, _device), do: conn
 
   # The body a revoked device's token gets, so the app handles both the same
-  # way. Headers the action set for the refused body are dropped with it.
+  # way. Headers the action set for the refused body are dropped with it; with
+  # the etag gone, KanbanWeb.Plugs.DeviceApiCacheControl, whose callback runs
+  # after this one, sends the refusal as no-store.
   defp refuse_revoked_in_flight(conn) do
     conn
     |> delete_resp_header("etag")
-    |> put_resp_header("cache-control", "max-age=0, private, must-revalidate")
+    |> put_resp_header("cache-control", "private, no-store")
     |> put_resp_content_type("application/json")
     |> resp(:unauthorized, Jason.encode!(%{error: "Invalid access token"}))
   end
@@ -146,8 +167,16 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
     |> halt()
   end
 
-  defp halt_invalid_token(conn) do
-    record_failure(conn, :device_token_invalid)
+  # A recognised token that has only expired (:not_counted) is what every app
+  # sends once an hour before it refreshes, so it is left out of the per-IP
+  # failure count that agent tokens share; phones behind one office address
+  # would otherwise lock that address's agents out. It still gets the same
+  # 401, audit row and telemetry reason as any invalid token, so the response
+  # does not say the token was ever real. An unknown or malformed token, or
+  # one of a revoked device or a disabled user, is counted.
+  defp halt_invalid_token(conn, counting) do
+    if counting == :counted, do: count_failure(conn)
+    audit_failure(conn, :device_token_invalid)
     emit_auth_failed_telemetry(conn, "device_token_invalid")
 
     conn
@@ -157,9 +186,14 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
   end
 
   defp record_failure(conn, reason) do
-    RateLimit.record_failure(:api_token, ip: conn.remote_ip)
-    Kanban.AuditLog.event(:api_token_auth_failed, ip: conn.remote_ip, reason: reason)
+    count_failure(conn)
+    audit_failure(conn, reason)
   end
+
+  defp count_failure(conn), do: RateLimit.record_failure(:api_token, ip: conn.remote_ip)
+
+  defp audit_failure(conn, reason),
+    do: Kanban.AuditLog.event(:api_token_auth_failed, ip: conn.remote_ip, reason: reason)
 
   defp halt_rate_limited(conn, retry_after_ms) do
     emit_auth_failed_telemetry(conn, "rate_limited")

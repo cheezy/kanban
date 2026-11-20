@@ -11,6 +11,7 @@ defmodule KanbanWeb.API.Me.ReviewRequestChangesTest do
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.AuditLog
@@ -316,6 +317,93 @@ defmodule KanbanWeb.API.Me.ReviewRequestChangesTest do
              }
 
       assert undecided?(task)
+    end
+  end
+
+  describe "exactly once: one audit row and one event per decision (W2754)" do
+    @decision_events [
+      [:kanban, :task, :review_approved],
+      [:kanban, :audit, :review_approved],
+      [:kanban, :task, :review_changes_requested],
+      [:kanban, :audit, :review_changes_requested]
+    ]
+
+    # Every decision event this test received, in order.
+    defp drain_events(acc \\ []) do
+      receive do
+        {:telemetry_event, event, _measurements, %{task_id: _}} -> drain_events([event | acc])
+      after
+        0 -> Enum.reverse(acc)
+      end
+    end
+
+    test "an approval retried with its key, then without one, emits each event once", ctx do
+      attach_telemetry(@decision_events)
+      task = pending_task!(ctx.review)
+      signed = signed_approval(ctx.phone, task.id)
+
+      first = ctx.phone |> approve(task.id, signed, @key) |> json_response(200)
+      assert ctx.phone |> approve(task.id, signed, @key) |> json_response(200) == first
+
+      assert %{"error" => "already_decided"} =
+               ctx.phone |> approve(task.id, signed, nil) |> json_response(409)
+
+      assert drain_events() == [
+               [:kanban, :audit, :review_approved],
+               [:kanban, :task, :review_approved]
+             ]
+
+      assert [_one] = rows(:review_approved)
+    end
+
+    test "a request for changes retried with its key emits each event once", ctx do
+      attach_telemetry(@decision_events)
+      task = pending_task!(ctx.review)
+
+      first = ctx.phone |> request_changes(task.id, body(), @key) |> json_response(200)
+      assert ctx.phone |> request_changes(task.id, body(), @key) |> json_response(200) == first
+
+      assert %{"error" => "already_decided"} =
+               ctx.phone |> request_changes(task.id, body(), nil) |> json_response(409)
+
+      assert drain_events() == [
+               [:kanban, :audit, :review_changes_requested],
+               [:kanban, :task, :review_changes_requested]
+             ]
+
+      assert [_one] = rows(:review_changes_requested)
+    end
+
+    test "two parallel requests with one key emit each event once", ctx do
+      attach_telemetry(@decision_events)
+      task = pending_task!(ctx.review)
+
+      1..2
+      |> Enum.map(fn _n ->
+        Elixir.Task.async(fn -> request_changes(ctx.phone, task.id, body(), @key).status end)
+      end)
+      |> Enum.map(&Elixir.Task.await(&1, 10_000))
+
+      assert Enum.sort(drain_events()) ==
+               Enum.sort([
+                 [:kanban, :audit, :review_changes_requested],
+                 [:kanban, :task, :review_changes_requested]
+               ])
+
+      assert [_one] = rows(:review_changes_requested)
+    end
+
+    test "a decision the commit refuses emits no decision event", ctx do
+      attach_telemetry(@decision_events)
+      task = pending_task!(ctx.review)
+      signed = signed_approval(ctx.phone, task.id)
+      task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert ctx.phone |> approve(task.id, signed, @key) |> json_response(404)
+      assert ctx.phone |> request_changes(task.id, body(), nil) |> json_response(404)
+
+      assert drain_events() == []
+      assert rows(:review_approved) == []
     end
   end
 

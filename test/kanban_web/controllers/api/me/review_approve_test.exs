@@ -476,6 +476,100 @@ defmodule KanbanWeb.API.Me.ReviewApproveTest do
       end
     end
 
+    test "rights lost between challenge and approve: removed from the board or the task moved",
+         ctx do
+      owner = user_fixture()
+      shared = board_fixture(owner)
+      shared_review = column_fixture(shared, %{name: "Review", position: 1})
+      _shared_done = column_fixture(shared, %{name: "Done", position: 2})
+      {:ok, _} = Boards.add_user_to_board(shared, ctx.user, :modify, owner)
+      removed = pending_task!(shared_review)
+      removed_data = challenge!(ctx.phone, removed.id)
+      {:ok, _} = Boards.remove_user_from_board(shared, ctx.user, owner)
+
+      doing = column_fixture(ctx.board, %{name: "Doing", position: 3})
+      moved = pending_task!(ctx.review)
+      moved_data = challenge!(ctx.phone, moved.id)
+      moved |> Ecto.Changeset.change(column_id: doing.id) |> Repo.update!()
+
+      # Removed from the board: the task is no longer theirs to see.
+      assert ctx.phone
+             |> approve(removed.id, signed(ctx.phone, removed_data))
+             |> json_response(404) == %{"error" => "Not Found"}
+
+      # Pulled out of Review: still visible, no longer pending, so the state
+      # check answers 409 with the task as it is now.
+      assert %{"error" => "already_decided", "review" => %{"review_status" => nil}} =
+               ctx.phone |> approve(moved.id, signed(ctx.phone, moved_data)) |> json_response(409)
+
+      for task <- [removed, moved] do
+        stored = Repo.get!(Task, task.id)
+        assert stored.review_status in [nil, :pending]
+        assert stored.reviewed_at == nil
+      end
+
+      assert Repo.get!(Task, moved.id).column_id == doing.id
+      assert rows(:review_approved) == []
+    end
+
+    test "a board with no Done column answers 422 approval_failed column_not_found", ctx do
+      bare = board_fixture(ctx.user)
+      bare_review = column_fixture(bare, %{name: "Review", position: 1})
+      task = pending_task!(bare_review)
+      data = challenge!(ctx.phone, task.id)
+
+      assert ctx.phone |> approve(task.id, signed(ctx.phone, data)) |> json_response(422) == %{
+               "error" => "approval_failed",
+               "reason" => "column_not_found"
+             }
+
+      stored = Repo.get!(Task, task.id)
+      assert stored.review_status in [nil, :pending]
+      assert stored.column_id == bare_review.id
+      assert rows(:review_approved) == []
+
+      # A Done column spelled another way is found.
+      done = column_fixture(bare, %{name: " DONE", position: 2})
+      data = challenge!(ctx.phone, task.id)
+      assert ctx.phone |> approve(task.id, signed(ctx.phone, data)) |> json_response(200)
+      assert Repo.get!(Task, task.id).column_id == done.id
+    end
+
+    test "a phone is refused a change it cannot count or that is over 10 files (D454)", ctx do
+      eleven = Enum.map_join(1..11, "\n", &"lib/f#{&1}.ex")
+
+      for listed <- [
+            eleven,
+            "lib/a.ex; lib/b.ex lib/c.ex\nlib/d.ex lib/e.ex lib/f.ex lib/g.ex lib/h.ex lib/i.ex lib/j.ex lib/k.ex",
+            "14 files"
+          ] do
+        task = pending_task!(ctx.review, %{actual_files_changed: listed})
+
+        detail =
+          build_conn()
+          |> put_req_header("authorization", "Bearer " <> ctx.phone.token)
+          |> get("/api/me/reviews/#{task.id}")
+          |> json_response(200)
+          |> Map.fetch!("data")
+
+        assert detail["approvable_here"] == false, "expected #{inspect(listed)} not approvable"
+
+        assert %{"error" => "too_large_for_phone"} =
+                 ctx.phone |> challenge(task.id) |> json_response(422)
+
+        assert %{"error" => "too_large_for_phone"} =
+                 ctx.phone
+                 |> approve(task.id, %{"review_requested_at" => "2026-11-18T09:30:00Z"})
+                 |> json_response(422)
+      end
+
+      # Ten files, one of them listed twice under another spelling, is ten.
+      ten = Enum.map_join(1..10, "\n", &"lib/f#{&1}.ex") <> "\n./lib/f1.ex"
+      task = pending_task!(ctx.review, %{actual_files_changed: ten})
+      data = challenge!(ctx.phone, task.id)
+      assert ctx.phone |> approve(task.id, signed(ctx.phone, data)) |> json_response(200)
+    end
+
     test "a task the person cannot see and ids that are not one are 404", ctx do
       owner = user_fixture()
       hidden_board = board_fixture(owner)

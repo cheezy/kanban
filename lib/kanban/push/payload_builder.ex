@@ -20,8 +20,10 @@ defmodule Kanban.Push.PayloadBuilder do
   ## Locale
 
   The text is rendered in the device's locale, never the account's:
-  `locale/1` takes the primary subtag of the device's locale (`"ja-JP"` is
-  `"ja"`) and falls back to `"en"` for one Stride is not translated into.
+  `locale/1` maps the device's language tag through `Kanban.Locales.resolve/1`
+  (D4): an exact translated locale, else the tag's base language (`"de-AT"`
+  is `"de"`, `"pt-BR"` is `"pt"`, `"zh-Hant-TW"` is `"zh"`), else `"en"`
+  (`"ko"`).
 
   ## Collapse id, route and data
 
@@ -39,10 +41,10 @@ defmodule Kanban.Push.PayloadBuilder do
   use Gettext, backend: KanbanWeb.Gettext
 
   alias Kanban.Devices.Device
+  alias Kanban.Locales
   alias Kanban.Notifications.Notification
   alias Kanban.Push.Payload
 
-  @default_locale "en"
   @title_max 160
   @summary_collapse_id "quiet_hours_summary"
 
@@ -129,21 +131,12 @@ defmodule Kanban.Push.PayloadBuilder do
   end
 
   @doc """
-  The Gettext locale for `device`: the primary subtag of its locale when
-  Stride is translated into it, else `"en"`.
+  The Gettext locale for `device`, from its language tag by
+  `Kanban.Locales.resolve/1`: the exact translated locale, else the tag's
+  base language, else `"en"`. A device with no locale is `"en"`.
   """
   @spec locale(Device.t()) :: String.t()
-  def locale(%Device{locale: locale}) when is_binary(locale) do
-    primary =
-      locale
-      |> String.split(["-", "_"], parts: 2)
-      |> hd()
-      |> String.downcase()
-
-    if primary in Gettext.known_locales(KanbanWeb.Gettext), do: primary, else: @default_locale
-  end
-
-  def locale(%Device{}), do: @default_locale
+  def locale(%Device{locale: locale}), do: Locales.resolve(locale)
 
   @doc """
   The decision id a decision event's push is about, as `Kanban.Decisions`

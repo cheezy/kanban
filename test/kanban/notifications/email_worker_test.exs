@@ -8,6 +8,8 @@ defmodule Kanban.Notifications.EmailWorkerTest do
   import Kanban.TelemetryHelpers
   import Swoosh.TestAssertions
 
+  alias Kanban.Accounts
+  alias Kanban.Accounts.User
   alias Kanban.Boards
   alias Kanban.Notifications
   alias Kanban.Notifications.EmailWorker
@@ -254,6 +256,75 @@ defmodule Kanban.Notifications.EmailWorkerTest do
 
       assert :ok = run_job(n)
       refute_email_sent()
+    end
+  end
+
+  describe "the recipient's locale" do
+    defp with_stored_locale(user, locale) do
+      User |> where(id: ^user.id) |> Repo.update_all(set: [locale: locale])
+      user
+    end
+
+    test "a German user's email is German, subject and body" do
+      {:ok, user} = Accounts.update_user_locale(user_fixture(), "de")
+      n = notification_fixture(user, %{title: "Aus Alpha entfernt"})
+
+      assert :ok = run_job(n)
+
+      assert_email_sent(fn email ->
+        assert email.subject == "[Stride] Ihr Board-Zugriff wurde geändert"
+        assert email.html_body =~ "Ihr Board-Zugriff wurde geändert"
+        assert email.html_body =~ "In Stride ansehen"
+        refute email.text_body =~ "View in Stride"
+        assert email.text_body =~ "In Stride ansehen"
+      end)
+    end
+
+    test "a regional tag falls back to its base language and an unknown one to English" do
+      for {locale, subject, view} <- [
+            {"pt-BR", "[Stride] Seu acesso ao quadro mudou", "Ver no Stride"},
+            {"de_AT", "[Stride] Ihr Board-Zugriff wurde geändert", "In Stride ansehen"},
+            {"ko", "[Stride] Your board access changed", "View in Stride"},
+            {nil, "[Stride] Your board access changed", "View in Stride"}
+          ] do
+        user = with_stored_locale(user_fixture(), locale)
+        n = notification_fixture(user)
+
+        assert :ok = run_job(n)
+
+        assert_email_sent(fn email ->
+          assert email.subject == subject
+          assert email.text_body =~ view
+        end)
+      end
+    end
+
+    test "two recipients of one notify each get their own language, and no locale leaks" do
+      {:ok, german} = Accounts.update_user_locale(user_fixture(), "de")
+      english = user_fixture()
+      {:ok, french} = Accounts.update_user_locale(user_fixture(), "fr")
+
+      {:ok, notifications} =
+        Notifications.notify(:board_access_changed, [german, english, french], %{
+          title: "Access changed"
+        })
+
+      by_user = Map.new(notifications, &{&1.user_id, &1})
+
+      for {user, subject} <- [
+            {german, "[Stride] Ihr Board-Zugriff wurde geändert"},
+            {english, "[Stride] Your board access changed"},
+            {french, "[Stride] Votre accès au tableau a changé"}
+          ] do
+        assert :ok = run_job(by_user[user.id])
+
+        assert_email_sent(fn email ->
+          assert email.to == [{"", user.email}]
+          assert email.subject == subject
+        end)
+      end
+
+      assert Gettext.get_locale(KanbanWeb.Gettext) == "en"
     end
   end
 

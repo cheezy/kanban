@@ -28,6 +28,7 @@ defmodule Kanban.Notifications.Digest do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Boards
+  alias Kanban.Columns
   alias Kanban.Columns.Column
   alias Kanban.Plans
   alias Kanban.Repo
@@ -175,8 +176,9 @@ defmodule Kanban.Notifications.Digest do
 
   defp completed_query(board_ids, from, to) do
     Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids and c.name != @review_column)
+    |> join(:inner, [t], c in Column, as: :column, on: c.id == t.column_id)
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where(^dynamic(not (^Columns.name_matches(:column, @review_column))))
     |> where([t], t.completed_at >= ^from and t.completed_at < ^to)
     |> group_by([t, c], [c.board_id, t.type])
     |> select([t, c], {c.board_id, t.type, count(t.id)})

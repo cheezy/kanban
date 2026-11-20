@@ -237,6 +237,26 @@ defmodule Kanban.Tasks.GoalsTest do
       assert Tasks.get_task!(active_child.id).column_id == ready.id
       assert Tasks.get_task!(archived_child.id).column_id == backlog.id
     end
+
+    test "finds Backlog and Ready columns named in another case or padded", %{user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: " backlog "})
+      ready = column_fixture(board, %{name: "READY"})
+
+      goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
+      child = task_fixture(backlog, %{title: "Child", parent_id: goal.id})
+
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+      assert Tasks.get_task!(child.id).column_id == ready.id
+    end
+
+    test "answers column_not_found on a board without a Ready column", %{user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
+
+      assert Tasks.promote_goal_to_ready(goal, board.id) == {:error, :column_not_found}
+    end
   end
 
   # D357: promotion and goal-follows-children moves write with update_all,

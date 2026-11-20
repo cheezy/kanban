@@ -69,8 +69,14 @@ defmodule Kanban.Organizations.SecurityPolicies do
   Saves `attrs` onto the actor's own Organization's policy.
 
   Returns `{:error, :unauthorized}`, writing nothing, unless `actor` is an
-  enabled org-admin, read from the database. A save that changes no field
-  records no audit event.
+  enabled org-admin, read from the database.
+
+  A save that changes no field is a no-op (D5): nothing is written, so
+  `updated_by_id` still names the last admin who changed something and
+  `updated_at` keeps its time, and no audit event or telemetry is recorded.
+  It returns `{:ok, policy}` with the stored policy (or the unsaved defaults
+  when the Organization has no row), so the page shows its saved flash as for
+  any other save.
   """
   @spec update_policy(User.t(), map()) ::
           {:ok, SecurityPolicy.t()} | {:error, :unauthorized} | {:error, Ecto.Changeset.t()}
@@ -86,20 +92,32 @@ defmodule Kanban.Organizations.SecurityPolicies do
     Repo.transact(fn ->
       policy = locked_policy(organization_id)
       old = Map.take(policy, SecurityPolicy.editable_fields())
+      changeset = SecurityPolicy.changeset(policy, attrs, DateTime.utc_now())
 
-      policy
-      |> SecurityPolicy.changeset(attrs, DateTime.utc_now())
-      |> Ecto.Changeset.put_change(:updated_by_id, actor.id)
-      |> Repo.insert_or_update()
-      |> case do
-        {:ok, saved} ->
-          start_grace_for_members(saved, policy.two_factor_enforced_at)
-          {:ok, {saved, old}}
-
-        {:error, changeset} ->
-          {:error, changeset}
-      end
+      if unchanged?(changeset),
+        do: {:ok, {policy, old}},
+        else: write_policy(changeset, policy, old, actor)
     end)
+  end
+
+  # A valid changeset with no changes would only restamp updated_by_id and
+  # updated_at (D5). The editable fields and two_factor_enforced_at are the
+  # only fields the changeset can change.
+  defp unchanged?(%Ecto.Changeset{valid?: true, changes: changes}), do: map_size(changes) == 0
+  defp unchanged?(%Ecto.Changeset{}), do: false
+
+  defp write_policy(changeset, policy, old, actor) do
+    changeset
+    |> Ecto.Changeset.put_change(:updated_by_id, actor.id)
+    |> Repo.insert_or_update()
+    |> case do
+      {:ok, saved} ->
+        start_grace_for_members(saved, policy.two_factor_enforced_at)
+        {:ok, {saved, old}}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   # A new two_factor_enforced_at starts every current member's grace now, so

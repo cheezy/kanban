@@ -8,8 +8,11 @@ defmodule KanbanWeb.ReviewLive do
   the reviewer scans the queue on the left and inspects the selected
   task on the right.
 
-  All read data flows through `Kanban.Reviews.list_pending_reviews/1` and
-  `Kanban.Reviews.queue_stats/1`; the approve and request-changes
+  All read data flows through `Kanban.Reviews.list_pending_reviews/1`,
+  `Kanban.Reviews.queue_stats/1` and `Kanban.Reviews.reviewable_board_ids/2`,
+  which says on which boards the viewer may decide reviews: a read-only
+  member sees the review without the Approve and Request changes buttons,
+  and `Kanban.Reviews` refuses the decision anyway. The approve and request-changes
   mutations route through `Kanban.Reviews.approve_review/3` and
   `Kanban.Reviews.request_changes_review/3`. No Ecto queries live in
   this module — the LiveView is a thin binding layer between the context
@@ -18,6 +21,7 @@ defmodule KanbanWeb.ReviewLive do
   use KanbanWeb, :live_view
 
   alias Kanban.Reviews
+  alias Kanban.Reviews.MobileGuard
   alias Kanban.Tasks.ChangedFilesAudit
   alias Kanban.Tasks.Task
   alias KanbanWeb.AcceptanceChecklist
@@ -101,9 +105,13 @@ defmodule KanbanWeb.ReviewLive do
     end
   end
 
+  # The button is only shown where the viewer may decide the review; the
+  # form stays shut for anyone else, and the decision itself is refused by
+  # Kanban.Reviews either way.
   @impl true
   def handle_event("request_changes", _params, socket) do
-    {:noreply, assign(socket, :request_changes_open?, true)}
+    %{reviewable_board_ids: board_ids, selected: selected} = socket.assigns
+    {:noreply, assign(socket, :request_changes_open?, can_review?(board_ids, selected))}
   end
 
   @impl true
@@ -284,6 +292,7 @@ defmodule KanbanWeb.ReviewLive do
 
     socket
     |> assign(:pending, pending)
+    |> assign(:reviewable_board_ids, Reviews.reviewable_board_ids(scope, pending))
     |> assign(:stats, stats)
     |> assign(:selected, List.first(pending))
     |> ReviewReportPanel.track_view(List.first(pending))
@@ -317,6 +326,14 @@ defmodule KanbanWeb.ReviewLive do
   defp find_pending_by_id(pending, id) when is_list(pending) do
     Enum.find(pending, fn task -> to_string(task.id) == to_string(id) end)
   end
+
+  # Whether the viewer may approve or request changes on `task`: write access
+  # to its board, worked out once per board when the queue loads.
+  # Used in review_live.html.heex (analyzer does not scan HEEx files).
+  defp can_review?(board_ids, %Task{column: %{board_id: board_id}}),
+    do: MapSet.member?(board_ids, board_id)
+
+  defp can_review?(_board_ids, _task), do: false
 
   # Used in review_live.html.heex (analyzer does not scan HEEx files).
   defp selected?(nil, _item), do: false
@@ -393,7 +410,7 @@ defmodule KanbanWeb.ReviewLive do
 
   # Source of truth for the diff-panel file list. Unions the schema-1.0
   # `changed_files` jsonb array (`[%{"path", "diff", "diff_url"}]`) with
-  # the legacy comma-separated `actual_files_changed` string — paths from
+  # the legacy `actual_files_changed` string — paths from
   # `changed_files` come first (they have rich diff data), legacy-only
   # paths are appended afterwards so the panel still lists them even
   # when the new plugin omitted them from the structured payload.
@@ -410,11 +427,21 @@ defmodule KanbanWeb.ReviewLive do
   defp parse_files(nil), do: []
   defp parse_files(""), do: []
 
+  # The list is read as the app reads it (MobileGuard.listed_files/1: comma,
+  # semicolon, whitespace or newline separated, one entry per normalized
+  # path), so /review and the app list the same files (D454). Text that is
+  # not a list of paths, such as "14 files", is shown as written.
   defp parse_files(text) when is_binary(text) do
-    text
-    |> String.split(",", trim: true)
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
+    case MobileGuard.listed_files(text) do
+      {:ok, paths} ->
+        paths
+
+      :unknown ->
+        text
+        |> String.split(",", trim: true)
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+    end
   end
 
   defp parse_files(_), do: []

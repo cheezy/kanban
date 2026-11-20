@@ -391,6 +391,41 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
       assert has_element?(view, ~s(#push-mode-select option[value="every"][selected]))
     end
 
+    test "switches that match no preset show Custom, not the stored preset",
+         %{conn: conn, scope: scope} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      refute has_element?(view, ~s(#push-mode-select option[value="custom"]))
+
+      view
+      |> element("#push-mentioned")
+      |> render_change(%{"event_type" => "mentioned", "push" => "true"})
+
+      # the stored mode is still decisions, but the switches no longer follow it
+      assert Notifications.get_push_settings(scope).mode == :decisions
+
+      assert has_element?(
+               view,
+               ~s(#push-mode-select option[value="custom"][selected][disabled]),
+               "Custom"
+             )
+
+      refute has_element?(view, ~s(#push-mode-select option[value="decisions"][selected]))
+
+      # choosing a preset applies it and Custom goes away
+      view |> element("#push-mode-form") |> render_change(%{"mode" => "decisions"})
+      assert has_element?(view, ~s(#push-mode-select option[value="decisions"][selected]))
+      refute has_element?(view, ~s(#push-mode-select option[value="custom"]))
+
+      # turning every switch on one by one reads as Every event
+      for type <- PushSettings.update_events() do
+        view
+        |> element("#push-#{type}")
+        |> render_change(%{"event_type" => Atom.to_string(type), "push" => "true"})
+      end
+
+      assert has_element?(view, ~s(#push-mode-select option[value="every"][selected]))
+    end
+
     test "an unknown mode is reported, not saved", %{conn: conn, user: user} do
       {:ok, view, _html} = live(conn, ~p"/users/notifications")
 

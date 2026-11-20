@@ -12,8 +12,9 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   in the `List-Unsubscribe` / `List-Unsubscribe-Post` headers (RFC 8058),
   built by `KanbanWeb.Emails.EmailHelpers`.
 
-  Emails render in the calling process's Gettext locale; Oban jobs run with
-  the default locale.
+  The email renders in the calling process's Gettext locale.
+  `Kanban.Notifications.EmailWorker` sets it to the recipient's stored
+  locale (through `Kanban.Locales.resolve/1`) around the build.
   """
 
   use Gettext, backend: KanbanWeb.Gettext

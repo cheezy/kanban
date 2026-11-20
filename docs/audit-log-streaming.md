@@ -233,6 +233,10 @@ actions. Changes to audit streaming itself, every action whose name starts
 with `audit_stream_`, are always sent and can't be left out, so a tool
 always sees a destination being changed, paused, skipped or deleted.
 
+The destination page lists the left-out actions under **Excluded actions**
+by the same names the form shows, in the viewer's language and sorted by
+name. An action Stride no longer has a name for is shown as it is stored.
+
 ### Changing the filters re-sends the waiting batch
 
 A change to **Leave out these actions** or to **Include email and IP

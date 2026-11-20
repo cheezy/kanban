@@ -52,6 +52,11 @@ defmodule Kanban.AuditLog do
   credential can never reach the log, the telemetry bus or the table even if a
   caller passes one by mistake.
 
+  Inside `Kanban.Telemetry.AfterCommit.after_commit/1` the telemetry event
+  and the log line wait for that transaction to commit and are dropped when
+  it rolls back, as the stored row is; everywhere else they are emitted
+  straight away.
+
   Persistence never crashes the caller: if the insert fails (database
   unavailable, constraint violation) the failure is logged and `event/2` still
   returns `:ok`. Inside an open transaction the insert runs under a savepoint,
@@ -85,6 +90,7 @@ defmodule Kanban.AuditLog do
   alias Kanban.AuditLog.Redaction
   alias Kanban.AuditLog.SignedExport
   alias Kanban.Repo
+  alias Kanban.Telemetry.AfterCommit
 
   require Logger
 
@@ -112,8 +118,13 @@ defmodule Kanban.AuditLog do
   def event(action, metadata \\ []) when is_atom(action) and is_list(metadata) do
     clean = sanitize(metadata)
 
-    emit_telemetry(action, clean)
-    Logger.info("security_audit", [audit_event: action] ++ clean)
+    # Held back while Kanban.Telemetry.AfterCommit.after_commit/1 runs, so an
+    # event written inside a transaction that rolls back (its row goes with
+    # it) never reaches the telemetry bus or the log. Straight away otherwise.
+    AfterCommit.defer(fn ->
+      emit_telemetry(action, clean)
+      Logger.info("security_audit", [audit_event: action] ++ clean)
+    end)
 
     persist(action, clean)
 

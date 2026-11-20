@@ -31,6 +31,39 @@ defmodule KanbanWeb.UserLive.PushSettingsComponentsTest do
     end
   end
 
+  describe "mode_value/1" do
+    defp mode_value(mode, switches),
+      do: %{mode: mode, switches: switches} |> view() |> PushSettingsComponents.mode_value()
+
+    test "is the stored mode while the switches follow its preset" do
+      assert mode_value(:decisions, PushSettings.preset(:decisions)) == "decisions"
+      assert mode_value(:every, PushSettings.preset(:every)) == "every"
+    end
+
+    test "is the preset the switches match when the stored mode's no longer does" do
+      assert mode_value(:decisions, PushSettings.preset(:every)) == "every"
+      assert mode_value(:every, PushSettings.preset(:decisions)) == "decisions"
+    end
+
+    test "is custom when the switches match no preset" do
+      one_update_on = :decisions |> PushSettings.preset() |> Map.put(:mentioned, true)
+      one_decision_off = :every |> PushSettings.preset() |> Map.put(:review_requested, false)
+
+      assert mode_value(:decisions, one_update_on) == "custom"
+      assert mode_value(:every, one_decision_off) == "custom"
+    end
+  end
+
+  describe "mode_options/1" do
+    test "lists the two presets, and a disabled Custom entry only for custom" do
+      values = "decisions" |> PushSettingsComponents.mode_options() |> Enum.map(&elem(&1, 1))
+      assert values == ["decisions", "every"]
+
+      assert [_decisions, _every, custom] = PushSettingsComponents.mode_options("custom")
+      assert custom == [key: "Custom", value: "custom", disabled: true]
+    end
+  end
+
   describe "zone_options/2" do
     test "lists the curated zones sorted, with readable labels" do
       options = PushSettingsComponents.zone_options(nil, nil)

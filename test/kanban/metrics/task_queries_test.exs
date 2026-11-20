@@ -272,6 +272,15 @@ defmodule Kanban.Metrics.TaskQueriesTest do
       refute is_nil(row.completed_at)
     end
 
+    test "returns goals sitting in a Done column that is padded", %{board: board} do
+      done_column = column_fixture(board, %{name: " DONE\t"})
+      goal = task_fixture(done_column, %{type: :goal})
+      _elsewhere = task_fixture(column_fixture(board, %{name: "Done soon"}), %{type: :goal})
+
+      assert [row] = TaskQueries.get_completed_goals(board.id, time_range: :all_time)
+      assert row.identifier == goal.identifier
+    end
+
     test "excludes non-goal tasks", %{column: column} do
       task = task_fixture(column)
       {:ok, _} = complete_task(task)

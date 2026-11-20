@@ -241,6 +241,81 @@ defmodule Kanban.Push.PushWorkerTest do
       assert_received {:telemetry_event, @sent, _, %{event_type: :claim_expired}}
     end
 
+    test "a late push for a release a newer, read notification replaced is held as resolved",
+         ctx do
+      ios_device!(ctx)
+      task = task_fixture(ctx.cols["Ready"])
+
+      notify = fn ->
+        {:ok, [n]} =
+          Notifications.notify(:task_unclaimed, [ctx.owner], %{
+            title: "#{task.identifier}: #{task.title}",
+            board_id: ctx.board.id,
+            task_id: task.id
+          })
+
+        n
+      end
+
+      older = notify.()
+      newer = notify.()
+
+      older
+      |> Ecto.Changeset.change(inserted_at: DateTime.add(newer.inserted_at, -60))
+      |> Repo.update!()
+
+      {:ok, _} = Notifications.mark_read(ctx.scope, newer.id)
+      assert ctx.scope |> Decisions.build() |> Enum.filter(&(&1.kind == :released)) == []
+
+      assert :ok = perform(older)
+
+      assert_received {:telemetry_event, @held, _,
+                       %{event_type: :task_unclaimed, reason: :resolved}}
+
+      refute_received {:telemetry_event, @sent, _, _}
+    end
+
+    test "push-only released and expired decisions on an archived task are held as resolved",
+         ctx do
+      ios_device!(ctx)
+      now = DateTime.truncate(DateTime.utc_now(), :second)
+      released = task_fixture(ctx.cols["Ready"])
+
+      expired =
+        ctx.cols["Doing"]
+        |> task_fixture()
+        |> Ecto.Changeset.change(%{
+          status: :in_progress,
+          assigned_to_id: ctx.owner.id,
+          claimed_at: DateTime.add(now, -7200),
+          claim_expires_at: DateTime.add(now, -3600)
+        })
+        |> Repo.update!()
+
+      rows =
+        for {event, task} <- [task_unclaimed: released, claim_expired: expired] do
+          {:ok, _} =
+            Notifications.update_preference(ctx.scope, event, %{in_app: false, email: false})
+
+          {:ok, [n]} =
+            Notifications.notify(event, [ctx.owner], %{
+              title: "#{task.identifier}: #{task.title}",
+              board_id: ctx.board.id,
+              task_id: task.id
+            })
+
+          task |> Ecto.Changeset.change(archived_at: now) |> Repo.update!()
+          {event, n}
+        end
+
+      for {event, n} <- rows do
+        assert :ok = perform(n)
+        assert_received {:telemetry_event, @held, _, %{event_type: ^event, reason: :resolved}}
+      end
+
+      refute_received {:telemetry_event, @sent, _, _}
+    end
+
     test "a review ranked below the 100-item cap is still sent", ctx do
       ios_device!(ctx)
       tasks = for _ <- 1..101, do: pending_review!(ctx)

@@ -1034,8 +1034,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert File.read!("lib/kanban_web/live/user_live/login.ex") =~
                ~s|gettext("Keep me signed in on this device")|
 
-      # Only the announcement and audit streaming emails render in the
-      # account's language. A file whose every with_locale call pins "en" (the
+      # The announcement, audit streaming, notification and weekly digest
+      # emails render in the account's language. A file whose every with_locale call pins "en" (the
       # audit stream payload, whose labels are English whatever the locale)
       # renders in no account's language, so it is left out. The guide's
       # section is about emails, so the push payload builder, which renders in
@@ -1053,14 +1053,23 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
       assert with_locale == [
                "lib/kanban/notifications/announcement_worker.ex",
-               "lib/kanban/notifications/audit_stream_email_worker.ex"
+               "lib/kanban/notifications/audit_stream_email_worker.ex",
+               "lib/kanban/notifications/digest_worker.ex",
+               "lib/kanban/notifications/email_worker.ex"
              ]
 
       assert content =~ "service announcements"
       assert content =~ "audit log streaming emails an organization's admins get"
+      assert content =~ "the task notification emails"
+      assert content =~ "and the weekly digest"
 
       audit_worker = File.read!("lib/kanban/notifications/audit_stream_email_worker.ex")
       assert audit_worker =~ "AnnouncementWorker.locale_for(user)"
+
+      for worker <- ~w(email_worker digest_worker) do
+        assert File.read!("lib/kanban/notifications/#{worker}.ex") =~
+                 "Gettext.with_locale(KanbanWeb.Gettext, Locales.resolve(user.locale), fn ->"
+      end
 
       # The English emails it names are ones Stride sends.
       notifier = File.read!("lib/kanban/accounts/user_notifier.ex")
@@ -1253,7 +1262,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert content =~ "a goal with no tasks stays in the column it was created in"
       assert target =~ "if children_data == [] do\n      :error"
       assert content =~ "When a goal in **Backlog** has tasks in **Backlog** too"
-      assert goals =~ ~s|Enum.find(columns, fn col -> col.name == "Backlog" end)|
+      assert goals =~ ~s|Enum.find(columns, &Columns.named?(&1, "Backlog"))|
       assert goals =~ ~s|t.type == :goal and MapSet.member?(backlog_child_parent_ids, t.id)|
 
       # The goal page: members only, and no assign control.
@@ -2926,7 +2935,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert context =~
                "t.assigned_to_id == ^user_id and is_nil(t.archived_at) and t.status != :completed"
 
-      assert context =~ ~s|c.name) != "done"|
+      assert context =~ ~s|c.name, ^Columns.trimmed_whitespace()) != "done"|
       assert my_work =~ "aren't completed or archived"
       assert my_work =~ "Anything in a Done column is left out."
 
@@ -3860,9 +3869,10 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert content =~ "`POST /api/tasks/batch`"
 
       assert File.read!("lib/kanban_web/controllers/api/task_creation.ex") =~
-               ~s|Enum.find(columns, &(&1.name == "Backlog")) \|\||
+               ~s|Enum.find(columns, &Columns.named?(&1, "Backlog")) \|\||
 
-      assert File.read!("lib/kanban/tasks/agent_queries.ex") =~ ~s(where: c.name == "Ready")
+      assert File.read!("lib/kanban/tasks/agent_queries.ex") =~
+               ~s|where: ^Columns.name_matches(:column, "Ready")|
 
       assert File.read!("lib/kanban_web/components/goal_card.ex") =~
                ~s|gettext("Promote children to Ready")|

@@ -18,6 +18,7 @@ defmodule Kanban.Tasks.MyWork do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Columns
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -79,7 +80,11 @@ defmodule Kanban.Tasks.MyWork do
   # filter alone would keep listing it. Only the known name "Done" puts a column
   # in the :done stage (`Kanban.Columns.Stage`), so the name decides here too.
   defp exclude_done_columns(query) do
-    where(query, [_t, c], fragment("lower(btrim(?, E' \\t\\n\\r\\f'))", c.name) != "done")
+    where(
+      query,
+      [_t, c],
+      fragment("lower(btrim(?, ?))", c.name, ^Columns.trimmed_whitespace()) != "done"
+    )
   end
 
   # Bindings: task, column, accessible board id (from BoardScope), board. Priority is a

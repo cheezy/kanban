@@ -26,6 +26,7 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
 
   alias Kanban.AuditStream.Adapters.SplunkHec
   alias Kanban.AuditStream.Destination
+  alias KanbanWeb.AuditLogActions
   alias KanbanWeb.LocalTime
   alias KanbanWeb.OrgLive.AuditStreamingRow
   alias KanbanWeb.OrgLive.AuditStreamKinds
@@ -112,6 +113,18 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationView do
   end
 
   defp rotate_again_at(%Destination{}, _now), do: nil
+
+  @doc """
+  The excluded actions as the page lists them: each one's translated label,
+  as the form's picker shows it, sorted by label. An action with no label,
+  such as one an older release stored, is shown as its raw name.
+  """
+  @spec excluded_action_labels([String.t()]) :: [String.t()]
+  def excluded_action_labels(actions) when is_list(actions) do
+    actions
+    |> Enum.map(&AuditLogActions.action_label/1)
+    |> Enum.sort()
+  end
 
   @doc """
   Which batch actions the page offers: `%{retry: boolean, skip: boolean}`.

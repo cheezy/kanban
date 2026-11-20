@@ -2869,82 +2869,10 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
-  describe "maybe_add_review_metadata" do
-    test "adds reviewed_at and reviewed_by_id when review_status changes" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test"})
-
-      # Add user to current_scope for review metadata
-      scope = %{user: user}
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            task: task,
-            board: board,
-            action: :edit_task,
-            patch: "/boards/#{board.id}",
-            current_scope: scope
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      task_params = %{
-        "title" => "Test",
-        "review_status" => "approved"
-      }
-
-      {:noreply, _updated_socket} =
-        FormComponent.handle_event("save", %{"task" => task_params}, socket)
-
-      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
-      assert updated_task.review_status == :approved
-      assert updated_task.reviewed_by_id == user.id
-      assert updated_task.reviewed_at
-    end
-
-    test "does not add review metadata when review_status is pending" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test"})
-
-      scope = %{user: user}
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            task: task,
-            board: board,
-            action: :edit_task,
-            patch: "/boards/#{board.id}",
-            current_scope: scope
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      task_params = %{
-        "title" => "Test",
-        "review_status" => "pending"
-      }
-
-      {:noreply, _updated_socket} =
-        FormComponent.handle_event("save", %{"task" => task_params}, socket)
-
-      updated_task = Kanban.Repo.get!(Tasks.Task, task.id)
-      refute updated_task.reviewed_by_id
-      refute updated_task.reviewed_at
-    end
-  end
-
-  describe "review audit events from the Review Status field" do
-    defp save_review_status(user, board, task, review_status) do
+  # D2: the form shows the review status read-only and never decides one; a
+  # verdict goes through Kanban.Reviews.
+  describe "the review status cannot be set from the form" do
+    defp save_with_params(user, board, task, params) do
       {:ok, socket} =
         FormComponent.update(
           %{
@@ -2958,66 +2886,345 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         )
 
       socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-      params = %{"title" => task.title, "review_status" => review_status}
-
-      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => params}, socket)
-      Kanban.Repo.get!(Tasks.Task, task.id)
+      {:noreply, socket} = FormComponent.handle_event("save", %{"task" => params}, socket)
+      {socket, Kanban.Repo.get!(Tasks.Task, task.id)}
     end
 
-    defp form_review_rows(action),
-      do: Kanban.AuditLog.list_events([action: action], order: :asc)
+    defp review_rows do
+      Kanban.AuditLog.list_events([action: :review_approved], order: :asc) ++
+        Kanban.AuditLog.list_events([action: :review_changes_requested], order: :asc)
+    end
 
     setup do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "Review"})
-      %{user: user, board: board, task: task_fixture(column, %{title: "Secret form title"})}
+
+      task =
+        task_fixture(column, %{
+          title: "Awaiting review",
+          needs_review: true,
+          review_status: :pending
+        })
+
+      %{user: user, board: board, column: column, task: task}
     end
 
-    test "approving writes review_approved with via web",
+    test "a forged verdict and attribution are dropped and the rest of the edit saves",
          %{user: user, board: board, task: task} do
-      assert %{review_status: :approved} = save_review_status(user, board, task, "approved")
+      forger = user_fixture()
 
-      assert [event] = form_review_rows(:review_approved)
-      assert event.actor_user_id == user.id
+      for verdict <- ~w(approved changes_requested rejected) do
+        {socket, saved} =
+          save_with_params(user, board, task, %{
+            "title" => "Renamed while in review",
+            "review_status" => verdict,
+            "reviewed_at" => "1999-01-01T00:00:00Z",
+            "reviewed_by_id" => Integer.to_string(forger.id)
+          })
 
-      assert %{
-               "user_id" => user_id,
-               "task_id" => task_id,
-               "board_id" => board_id,
-               "via" => "web",
-               "approval_key" => false
-             } = event.metadata
+        assert socket.assigns.flash["info"] == "Task updated successfully"
+        assert saved.title == "Renamed while in review"
+        assert saved.review_status == :pending
+        assert saved.reviewed_at == nil
+        assert saved.reviewed_by_id == nil
+        assert saved.column_id == task.column_id
+      end
 
-      assert {user_id, task_id, board_id} == {user.id, task.id, board.id}
-      refute inspect(event) =~ "Secret form title"
-      assert form_review_rows(:review_changes_requested) == []
+      assert review_rows() == []
     end
 
-    test "requesting changes writes review_changes_requested without approval_key",
-         %{user: user, board: board, task: task} do
-      save_review_status(user, board, task, "changes_requested")
+    test "a forged verdict on a new task is dropped", %{user: user, board: board, column: column} do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: %Tasks.Task{column_id: column.id},
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
 
-      assert [%{metadata: metadata}] = form_review_rows(:review_changes_requested)
-      assert metadata["via"] == "web"
-      refute Map.has_key?(metadata, "approval_key")
-      assert form_review_rows(:review_approved) == []
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      params = %{
+        "title" => "Born approved",
+        "review_status" => "approved",
+        "reviewed_at" => "1999-01-01T00:00:00Z",
+        "reviewed_by_id" => Integer.to_string(user.id)
+      }
+
+      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => params}, socket)
+
+      created = Kanban.Repo.get_by!(Tasks.Task, title: "Born approved")
+      assert created.review_status == nil
+      assert created.reviewed_by_id == nil
+      assert created.reviewed_at == nil
+      assert review_rows() == []
     end
 
-    test "saving the same verdict again writes no second row",
-         %{user: user, board: board, task: task} do
-      approved = save_review_status(user, board, task, "approved")
-      save_review_status(user, board, approved, "approved")
+    test "forged review notes are dropped on edit and the rest of the edit saves",
+         %{user: user, board: board, column: column} do
+      task =
+        task_fixture(column, %{
+          title: "Reviewed once",
+          needs_review: true,
+          review_status: :pending,
+          review_notes: "The reviewer's own words"
+        })
 
-      assert [_one] = form_review_rows(:review_approved)
+      {socket, saved} =
+        save_with_params(user, board, task, %{
+          "title" => "Renamed after review",
+          "review_notes" => "Rewritten by an editor"
+        })
+
+      assert socket.assigns.flash["info"] == "Task updated successfully"
+      assert saved.title == "Renamed after review"
+      assert saved.review_notes == "The reviewer's own words"
     end
 
-    test "pending and rejected write no review row", %{user: user, board: board, task: task} do
-      pending = save_review_status(user, board, task, "pending")
-      assert %{review_status: :rejected} = save_review_status(user, board, pending, "rejected")
+    test "forged review notes on a new task are dropped",
+         %{user: user, board: board, column: column} do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: %Tasks.Task{column_id: column.id},
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
 
-      assert form_review_rows(:review_approved) == []
-      assert form_review_rows(:review_changes_requested) == []
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+      params = %{"title" => "Born with notes", "review_notes" => "Pre-approved, trust me"}
+      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => params}, socket)
+
+      created = Kanban.Repo.get_by!(Tasks.Task, title: "Born with notes")
+      assert created.review_notes == nil
+    end
+
+    test "validate never casts the review notes", %{user: user, board: board, task: task} do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}",
+            current_scope: %{user: user}
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "x", "review_notes" => "forged"}},
+          socket
+        )
+
+      refute Map.has_key?(socket.assigns.form.source.changes, :review_notes)
+    end
+
+    test "validate never casts the verdict", %{user: user, board: board, task: task} do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}",
+            current_scope: %{user: user}
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      {:noreply, socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "x", "review_status" => "approved"}},
+          socket
+        )
+
+      refute Map.has_key?(socket.assigns.form.source.changes, :review_status)
+      assert Ecto.Changeset.get_field(socket.assigns.form.source, :review_status) == :pending
+    end
+
+    test "drop_review_fields/1 drops the verdict and attribution under string or atom keys" do
+      params = %{
+        "title" => "Kept",
+        "review_status" => "approved",
+        "reviewed_at" => "1999-01-01T00:00:00Z",
+        "reviewed_by_id" => 999,
+        :review_status => :approved,
+        :reviewed_at => ~U[1999-01-01 00:00:00Z],
+        :reviewed_by_id => 999,
+        "review_notes" => "forged notes",
+        :review_notes => "forged notes",
+        "description" => "kept too"
+      }
+
+      assert Save.drop_review_fields(params) == %{
+               "title" => "Kept",
+               "description" => "kept too"
+             }
+
+      assert Save.drop_review_fields(%{}) == %{}
+    end
+  end
+
+  describe "the read-only Review Status field" do
+    setup :register_and_log_in_user
+
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      review = Kanban.Columns.get_column_by_name(board.id, "Review")
+
+      task =
+        task_fixture(review, %{
+          title: "Needs a verdict",
+          needs_review: true,
+          review_status: :pending
+        })
+
+      %{board: board, task: task}
+    end
+
+    test "shows the status as text with a link to the review queue, not a select",
+         %{conn: conn, board: board, task: task} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      assert has_element?(view, "[data-review-status-readonly]", "Review Status")
+
+      assert has_element?(
+               view,
+               ~s([data-review-status-readonly] [data-review-status="pending"]),
+               "Pending"
+             )
+
+      assert has_element?(
+               view,
+               ~s([data-review-status-readonly] a[href="/review"]),
+               "Open the review queue"
+             )
+
+      refute has_element?(view, ~s(select[name="task[review_status]"]))
+      refute has_element?(view, ~s([name="task[review_status]"]))
+    end
+
+    test "a forged review_status submitted with the form changes nothing",
+         %{conn: conn, board: board, task: task} do
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      view
+      |> element("#task-form")
+      |> render_submit(%{"task" => %{"title" => "Still waiting", "review_status" => "approved"}})
+
+      saved = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert saved.title == "Still waiting"
+      assert saved.review_status == :pending
+      assert saved.reviewed_by_id == nil
+      assert saved.column_id == task.column_id
+      assert Kanban.AuditLog.list_events(action: :review_approved) == []
+    end
+  end
+
+  describe "the read-only Review Notes field" do
+    setup :register_and_log_in_user
+
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      review = Kanban.Columns.get_column_by_name(board.id, "Review")
+      %{board: board, review: review}
+    end
+
+    test "shows the notes as escaped text with line breaks kept, not a textarea",
+         %{conn: conn, user: user, board: board, review: review} do
+      notes = "Line one <script>alert(1)</script>\nLine two"
+
+      task =
+        task_fixture(review, %{
+          title: "Reviewed with notes",
+          needs_review: true,
+          review_status: :changes_requested,
+          reviewed_by_id: user.id,
+          reviewed_at: DateTime.utc_now(:second),
+          review_notes: notes
+        })
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      assert has_element?(view, "[data-review-notes-readonly]", "Review Notes")
+      assert has_element?(view, "[data-review-notes-readonly] [data-review-notes]", "Line two")
+
+      notes_html = view |> element("[data-review-notes]") |> render()
+      # No whitespace around the notes: pre-wrap would render it.
+      assert notes_html =~ ~r/>Line one &lt;script&gt;alert\(1\)&lt;\/script&gt;\nLine two<\/p>/
+      assert notes_html =~ "white-space: pre-wrap"
+      assert notes_html =~ "overflow-wrap: anywhere"
+      refute html =~ "<script>alert(1)</script>"
+
+      refute has_element?(view, ~s(textarea[name="task[review_notes]"]))
+      refute has_element?(view, ~s([name="task[review_notes]"]))
+    end
+
+    test "hides the block when the task has no notes", %{conn: conn, board: board, review: review} do
+      for notes <- [nil, "", "   \n  "] do
+        task =
+          task_fixture(review, %{
+            title: "Pending without notes",
+            needs_review: true,
+            review_status: :pending,
+            review_notes: notes
+          })
+
+        {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+        assert has_element?(view, "[data-review-status-readonly]")
+        refute has_element?(view, "[data-review-notes-readonly]")
+        refute has_element?(view, ~s([name="task[review_notes]"]))
+      end
+    end
+
+    test "forged review notes submitted with the form change nothing",
+         %{conn: conn, user: user, board: board, review: review} do
+      task =
+        task_fixture(review, %{
+          title: "Reviewed",
+          needs_review: true,
+          review_status: :changes_requested,
+          reviewed_by_id: user.id,
+          reviewed_at: DateTime.utc_now(:second),
+          review_notes: "Add tests"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      view
+      |> element("#task-form")
+      |> render_submit(%{"task" => %{"title" => "Tests added", "review_notes" => "All fine"}})
+
+      saved = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert saved.title == "Tests added"
+      assert saved.review_notes == "Add tests"
+    end
+  end
+
+  describe "review_notes_present?/1" do
+    test "is true only for a string with non-whitespace content" do
+      assert FormComponent.review_notes_present?(%{review_notes: "LGTM"})
+      assert FormComponent.review_notes_present?(%{review_notes: "  x  "})
+      refute FormComponent.review_notes_present?(%{review_notes: nil})
+      refute FormComponent.review_notes_present?(%{review_notes: ""})
+      refute FormComponent.review_notes_present?(%{review_notes: " \n\t "})
+      refute FormComponent.review_notes_present?(%{})
     end
   end
 
@@ -3926,50 +4133,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
-  describe "W403 server-side attribution overrides for review_metadata and completed_at" do
-    test "maybe_add_review_metadata strips client-supplied reviewed_at and reviewed_by_id" do
-      current_user = %{id: 42}
-
-      params = %{
-        "review_status" => "approved",
-        "reviewed_at" => "1999-01-01T00:00:00Z",
-        "reviewed_by_id" => 999
-      }
-
-      result = Save.maybe_add_review_metadata(params, current_user)
-
-      refute result["reviewed_at"] == "1999-01-01T00:00:00Z"
-      refute result["reviewed_by_id"] == 999
-      assert result["reviewed_by_id"] == 42
-      assert %DateTime{} = result["reviewed_at"]
-    end
-
-    test "maybe_add_review_metadata does not add metadata when status is pending" do
-      current_user = %{id: 42}
-      params = %{"review_status" => "pending"}
-
-      result = Save.maybe_add_review_metadata(params, current_user)
-
-      refute Map.has_key?(result, "reviewed_at")
-      refute Map.has_key?(result, "reviewed_by_id")
-    end
-
-    test "maybe_add_review_metadata strips forged metadata even when review_status is empty" do
-      current_user = %{id: 42}
-
-      params = %{
-        "review_status" => "",
-        "reviewed_at" => "1999-01-01T00:00:00Z",
-        "reviewed_by_id" => 999
-      }
-
-      result = Save.maybe_add_review_metadata(params, current_user)
-
-      # Forged values must NOT survive even when the transition does not fire.
-      refute Map.has_key?(result, "reviewed_at")
-      refute Map.has_key?(result, "reviewed_by_id")
-    end
-
+  describe "W403 server-side attribution overrides for completed_at" do
     test "maybe_add_completed_at strips client-supplied completed_at and sets server value" do
       task = %{completed_at: nil}
 

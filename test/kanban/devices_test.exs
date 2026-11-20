@@ -249,6 +249,40 @@ defmodule Kanban.DevicesTest do
     end
   end
 
+  describe "authenticate_access_token/2" do
+    test "tells a token that only expired apart from every other refusal", %{scope: scope} do
+      {device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
+
+      assert {:ok, %Device{id: id}} = Devices.authenticate_access_token(issued.access_token, @t0)
+      assert id == device.id
+      assert {:ok, _} = Devices.authenticate_access_token(issued.access_token, at(3599))
+
+      for seconds <- [3600, 3601, 86_400] do
+        assert Devices.authenticate_access_token(issued.access_token, at(seconds)) ==
+                 {:error, :expired_token}
+      end
+
+      for token <- [DeviceToken.generate("sdat"), issued.refresh_token, "", nil, 42] do
+        assert Devices.authenticate_access_token(token, @t0) == {:error, :invalid_token}
+      end
+    end
+
+    test "an expired token of a revoked device or a disabled user is invalid", %{scope: scope} do
+      {device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
+      {:ok, _} = Devices.revoke_device(scope, device, at(10))
+
+      assert Devices.authenticate_access_token(issued.access_token, at(3601)) ==
+               {:error, :invalid_token}
+
+      other_scope = user_scope_fixture()
+      {_device, other} = device_with_tokens_fixture(other_scope, %{}, @t0)
+      disable(other_scope.user)
+
+      assert Devices.authenticate_access_token(other.access_token, at(3601)) ==
+               {:error, :invalid_token}
+    end
+  end
+
   describe "rotate_refresh_token/2" do
     test "rotates the refresh token and refuses the old one", %{scope: scope} do
       {device, first} = device_with_tokens_fixture(scope, %{}, @t0)
@@ -1186,12 +1220,12 @@ defmodule Kanban.DevicesTest do
     end
   end
 
-  describe "revoke_by_refresh_token/2 and device_id_for_refresh_token/1" do
+  describe "revoke_by_refresh_token/2" do
     test "revokes the device by its refresh token, as its own user", %{scope: scope} do
       {device, issued} = device_with_tokens_fixture(scope, %{}, @t0)
 
-      assert Devices.device_id_for_refresh_token(issued.refresh_token) == device.id
       assert {:ok, revoked} = Devices.revoke_by_refresh_token(issued.refresh_token, at(10))
+      assert revoked.id == device.id
       assert revoked.revoked_at == at(10)
       assert revoked.revoked_by_id == scope.user.id
 
@@ -1227,8 +1261,6 @@ defmodule Kanban.DevicesTest do
                {:error, :invalid_token}
 
       assert is_nil(Repo.get!(Device, device.id).revoked_at)
-      assert Devices.device_id_for_refresh_token(issued.access_token) == nil
-      assert Devices.device_id_for_refresh_token(%{}) == nil
     end
   end
 
@@ -1618,6 +1650,12 @@ defmodule Kanban.DevicesRotationRaceTest do
     # The fixture device from setup plus the one the winner created.
     user_devices = from(d in Device, where: d.user_id == ^user.id)
     assert Repo.aggregate(user_devices, :count) == 2
+
+    # The loser presented a used code: a replay, which revokes the device the
+    # winner created (RFC 6749 §4.1.2), and leaves the setup device alone.
+    [{:ok, issued}] = Enum.filter(results, &match?({:ok, _}, &1))
+    assert %DateTime{} = Repo.get!(Device, issued.device.id).revoked_at
+    assert is_nil(Repo.get!(Device, ctx.device.id).revoked_at)
   end
 
   test "two devices registering one new push token at once both succeed and it moves",

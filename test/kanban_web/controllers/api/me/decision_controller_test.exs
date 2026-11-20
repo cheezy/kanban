@@ -35,7 +35,7 @@ defmodule KanbanWeb.API.Me.DecisionControllerTest do
     {_phone, phone} = device_with_tokens_fixture(scope, %{device_class: :phone})
     board = ai_optimized_board_fixture(user)
 
-    %{user: user, board: board, cols: columns(board), phone: phone.access_token}
+    %{user: user, scope: scope, board: board, cols: columns(board), phone: phone.access_token}
   end
 
   defp columns(board), do: board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
@@ -202,6 +202,45 @@ defmodule KanbanWeb.API.Me.DecisionControllerTest do
 
       assert %{"data" => %{"items" => [item]}} = decisions(ctx.phone)
       assert item["actions"] == ["open_on_web"]
+    end
+
+    test "a phone's review item agrees with approvable_here", ctx do
+      files = Enum.map_join(1..11, ", ", &"lib/file_#{&1}.ex")
+
+      large =
+        ctx.cols["Review"]
+        |> pending_task!()
+        |> Ecto.Changeset.change(actual_files_changed: files)
+        |> Repo.update!()
+
+      small = pending_task!(ctx.cols["Review"])
+      {_tablet, tablet} = device_with_tokens_fixture(ctx.scope, %{device_class: :tablet})
+
+      for {token, task} <- [{ctx.phone, large}, {ctx.phone, small}, {tablet.access_token, large}] do
+        detail = token |> api_get("/api/me/reviews/#{task.id}") |> json_response(200)
+        approvable = detail["data"]["approvable_here"]
+        assert is_boolean(approvable)
+
+        for list <- [decisions(token)["data"]["items"], reviews(token)["data"]] do
+          item = Enum.find(list, &(&1["task_id"] == task.id))
+          assert "approve" in item["actions"] == approvable
+        end
+      end
+
+      refute ctx.phone
+             |> api_get("/api/me/reviews/#{large.id}")
+             |> json_response(200)
+             |> get_in(["data", "approvable_here"])
+    end
+
+    test "a read-only member's link opens the board", ctx do
+      other = user_fixture()
+      shared = ai_optimized_board_fixture(other)
+      {:ok, _} = Boards.add_user_to_board(shared, ctx.user, :read_only, other)
+      pending_task!(columns(shared)["Review"])
+
+      assert %{"data" => %{"items" => [item]}} = decisions(ctx.phone)
+      assert item["web_url"] == KanbanWeb.Endpoint.url() <> "/boards/#{shared.id}"
     end
 
     test "matches the documented schemas", ctx do

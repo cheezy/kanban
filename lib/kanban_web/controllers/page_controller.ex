@@ -89,8 +89,9 @@ defmodule KanbanWeb.PageController do
   end
 
   # A signed-in user's choice is also stored on the account, so the service
-  # announcement email (Kanban.Notifications.AnnouncementWorker) can use it;
-  # other emails still render in the default locale. An unsupported locale is
+  # announcement, audit-stream, notification and weekly digest emails can use
+  # it; the account emails (Kanban.Accounts.UserNotifier) still render in the
+  # default locale. An unsupported locale is
   # refused there and changes nothing, exactly as the session plug ignores it.
   # Signed out, the choice is marked in the session instead, and sign-in saves
   # it (KanbanWeb.UserAuth.SessionLocale). A signed-in choice leaves no mark, so

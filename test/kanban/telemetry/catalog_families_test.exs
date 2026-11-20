@@ -7,6 +7,7 @@ defmodule Kanban.Telemetry.CatalogFamiliesTest do
 
   alias Kanban.Telemetry.Catalog
 
+  alias Kanban.Telemetry.Catalog.ApiEvents
   alias Kanban.Telemetry.Catalog.AttachmentEvents
   alias Kanban.Telemetry.Catalog.AuditStreamEvents
   alias Kanban.Telemetry.Catalog.BoardEvents
@@ -20,13 +21,18 @@ defmodule Kanban.Telemetry.CatalogFamiliesTest do
   alias Kanban.Telemetry.Catalog.PlanEvents
   alias Kanban.Telemetry.Catalog.PushEvents
   alias Kanban.Telemetry.Catalog.ReviewEvents
+  alias Kanban.Telemetry.Catalog.ReviewPanelEvents
   alias Kanban.Telemetry.Catalog.TargetEvents
   alias Kanban.Telemetry.Catalog.TaskEvents
+  alias Kanban.Telemetry.Catalog.TaskLifecycleEvents
   alias Kanban.Telemetry.Catalog.UserEvents
 
   # In the order lib/kanban/telemetry/catalog.ex concatenates them after
   # @core_events.
   @families [
+    ApiEvents,
+    TaskLifecycleEvents,
+    ReviewPanelEvents,
     BoardEvents,
     TaskEvents,
     UserEvents,

@@ -30,7 +30,9 @@ code outside `lib/kanban/telemetry.ex` calls `:telemetry.execute/3` or
 
 `Kanban.Telemetry.Catalog` (`lib/kanban/telemetry/catalog.ex`) is the single
 list of events. It is plain data, so metrics definitions, documentation and
-tests can be generated from it:
+tests can be generated from it. It holds a few events of its own and joins
+the lists of the family modules in `lib/kanban/telemetry/catalog/`, each
+holding one area's events; nothing but the catalog calls a family module:
 
 - `Kanban.Telemetry.Catalog.events/0` returns every entry.
 - `Kanban.Telemetry.Catalog.fetch/1` looks one up by name.
@@ -455,10 +457,10 @@ rolled-back change emits nothing. Every event measures `count: 1`;
   `android` and `device_class` is `phone` or `tablet`, `nil` on the web. They
   extend the one event each review already emits; there is no second event
   per approval. The same review also writes a `:review_approved` or
-  `:review_changes_requested` audit event (`Kanban.Reviews.Audit`). A
-  verdict set in the task edit form's Review Status field writes the same
-  audit event, with `via: web`, once the save has committed; it emits no
-  review telemetry event.
+  `:review_changes_requested` audit event (`Kanban.Reviews.Audit`). The
+  task edit form cannot set a verdict: its Review Status field is read-only
+  and its save drops `review_status`, so every verdict comes through
+  `Kanban.Reviews`.
 - **An approval's events report only a committed approval.** The approval
   completes the task inside `Kanban.Reviews`' transaction, so
   `task.completed` is held back with the goal events by
@@ -1003,8 +1005,9 @@ sign-in and revocation events. They are declared in
   `DELETE /api/me/devices/current` or `POST /oauth/revoke`), `:user` (the
   person revoked it through `DELETE /api/me/devices/:id` or on
   `/users/settings`), `:org_admin` (an Organization admin revoked it from the
-  org console's Members section) or `:reuse_detected` (an old refresh token
-  was presented again). `reason` is its only tag. Neither carries the
+  org console's Members section) or `:reuse_detected` (an old refresh token,
+  or an authorization code that was already redeemed, was presented again).
+  `reason` is its only tag. Neither carries the
   device's name, a token, a user or an id: the `:device_signed_in` and
   `:device_revoked` audit rows record who and which device, so neither event
   is persisted. A device that is already revoked emits nothing.
@@ -1190,9 +1193,15 @@ raise.
 
 ## Adding an event
 
-1. Add an entry to the list in `Kanban.Telemetry.Catalog`, with every field,
-   following the naming rule and declaring no forbidden key. Choose its
-   `metrics` and `persist` as described in [Metrics](#metrics). A
+1. Add an entry to the family module its area belongs to, with every field,
+   following the naming rule and declaring no forbidden key; an event no
+   family fits goes in the list in `Kanban.Telemetry.Catalog` itself. Choose
+   its `metrics` and `persist` as described in [Metrics](#metrics). The legacy
+   API token and request, task lifecycle and web review screen events are in
+   `Kanban.Telemetry.Catalog.ApiEvents`,
+   `Kanban.Telemetry.Catalog.TaskLifecycleEvents` and
+   `Kanban.Telemetry.Catalog.ReviewPanelEvents`; those names are never changed
+   and those modules take no new events. A
    board, membership or column event is an entry in
    `Kanban.Telemetry.Catalog.BoardEvents`. A new API or
    audit action is a new tuple in `@api_actions` or `@audit_actions` in
@@ -1601,7 +1610,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :audit_stream_cursors_reseeded]` | event, legacy | `count` | `user_id`, `organization_id`, `destinations` | An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set. |
 | `[:kanban, :audit, :device_signed_in]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `platform`, `device_class`, `app_version` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported. |
 | `[:kanban, :audit, :device_refresh_reuse_detected]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id` | A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens. |
-| `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was. |
+| `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again). user_id is who revoked it, or the device's owner on a reuse_detected row; device_user_id is whose device it was. |
 | `[:kanban, :audit, :review_approved]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `approval_key`, `files`, `changed_lines` | A reviewer approved a task, on the web or in the app. via is web, ios or android; device_id, device_class and app_version are set only for the app; approval_key is true when the device's approval signature was verified; files and changed_lines are the change size. Review notes and titles are never recorded. |
 | `[:kanban, :audit, :review_changes_requested]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `files`, `changed_lines` | A reviewer requested changes to a task, on the web or in the app. The same fields as review_approved, without approval_key. The review notes are never recorded. |
 | `[:kanban, :audit, :approval_signature_rejected]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `board_id`, `device_id`, `device_class`, `reason` | An approval made in the app was refused at its signature check. reason is missing (no nonce or signature), invalid (the nonce was not issued to this device for this review, or the signature does not verify), expired or reused. The nonce and the signature are never recorded. |
@@ -1648,7 +1657,7 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :device, :signed_in]` | event | `count` | `platform`, `device_class` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform is ios or android, device_class phone or tablet; never the device's name. |
-| `[:kanban, :device, :revoked]` | event | `count` | `platform`, `reason` | A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin or :reuse_detected. Never the device's name or an id. |
+| `[:kanban, :device, :revoked]` | event | `count` | `platform`, `reason` | A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin or :reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again). Never the device's name or an id. |
 
 ### Domain `digest`
 

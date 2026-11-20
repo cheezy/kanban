@@ -34,10 +34,13 @@ defmodule Kanban.Reviews.MobileReviewFile do
       whether a diff line with that new-side number is in `lines`; a note
       that is not anchored belongs to the file as a whole, as does one
       whose line is beyond the diff;
-    * `review_requested_at`. A resubmit, or an agent replacing
-      `changed_files` in place, can make the same index name another file,
-      so the app compares this `path` (and `review_requested_at`) with the
-      detail row it opened and reloads the detail when they differ.
+    * `review_requested_at`, and `files_version` (`files_version/1`), the
+      version of the file list the index points into. A resubmit, or an
+      agent replacing `changed_files` in place (which leaves
+      `review_requested_at` as it was), can make the same index name another
+      file. Each change to the list changes `files_version`, so the app sends
+      the detail's `files_version` with the index (`build/4`) and is answered
+      `{:error, {:files_changed, current}}` instead of another file's diff.
 
   Pure apart from `highlight`, which is passed in: the context passes
   `Kanban.Reviews.DiffHighlighter.highlight/4`, whose cache is keyed on the
@@ -75,15 +78,32 @@ defmodule Kanban.Reviews.MobileReviewFile do
           flag_reason: :issue | :security | nil,
           lines: [DiffHighlighter.line()],
           notes: [note()],
-          review_requested_at: DateTime.t() | nil
+          review_requested_at: DateTime.t() | nil,
+          files_version: String.t()
         }
 
   @doc """
   The file at `index` of `task`'s `changed_files`, as the moduledoc
   describes, or `{:error, :not_found}`.
+
+  `expected_version` is the `files_version/1` the caller read the index
+  from, or `nil` to skip the check. When it is given and the list has changed
+  since, the answer is `{:error, {:files_changed, current_version}}`, whatever
+  the index, because the index no longer says which file was meant.
   """
-  @spec build(Task.t(), non_neg_integer(), highlight()) :: {:ok, t()} | {:error, :not_found}
-  def build(%Task{changed_files: [_ | _] = entries} = task, index, highlight)
+  @spec build(Task.t(), non_neg_integer(), highlight(), String.t() | nil) ::
+          {:ok, t()} | {:error, :not_found | {:files_changed, String.t()}}
+  def build(task, index, highlight, expected_version \\ nil)
+
+  def build(%Task{} = task, index, highlight, expected_version)
+      when is_binary(expected_version) do
+    case files_version(task) do
+      ^expected_version -> build(task, index, highlight, nil)
+      current -> {:error, {:files_changed, current}}
+    end
+  end
+
+  def build(%Task{changed_files: [_ | _] = entries} = task, index, highlight, nil)
       when is_integer(index) and index >= 0 and is_function(highlight, 4) do
     with %{} = entry <- Enum.at(entries, index),
          path when is_binary(path) <- entry_path(entry) do
@@ -93,7 +113,44 @@ defmodule Kanban.Reviews.MobileReviewFile do
     end
   end
 
-  def build(%Task{}, _index, _highlight), do: {:error, :not_found}
+  def build(%Task{}, _index, _highlight, nil), do: {:error, :not_found}
+
+  @doc """
+  The version of `task`'s file list: a short opaque string that changes
+  whenever the list the detail's `index` points into changes. It is taken
+  over every stored `changed_files` entry, in order: its path exactly as
+  stored and a hash of its diff, so a reorder, a rename, an added or removed
+  entry and a changed diff all give a new version. A task with no stored
+  diffs is versioned by its `actual_files_changed`. The same task always
+  gives the same version.
+  """
+  @spec files_version(Task.t()) :: String.t()
+  def files_version(%Task{} = task) do
+    material =
+      case task.changed_files do
+        [_ | _] = entries -> {:changed_files, Enum.map(entries, &version_entry/1)}
+        _none -> {:actual_files_changed, task.actual_files_changed}
+      end
+
+    :sha256
+    |> :crypto.hash(:erlang.term_to_binary(material))
+    |> binary_part(0, 12)
+    |> Base.url_encode64(padding: false)
+  end
+
+  defp version_entry(entry) when is_map(entry) do
+    path = entry_value(entry, :path)
+
+    diff =
+      case entry_diff(entry) do
+        nil -> nil
+        text -> :crypto.hash(:sha256, text)
+      end
+
+    {if(is_binary(path), do: path), diff}
+  end
+
+  defp version_entry(_entry), do: :not_a_map
 
   defp file(task, index, entry, path, highlight) do
     entries = same_path_entries(task.changed_files, index, entry, path)
@@ -117,7 +174,8 @@ defmodule Kanban.Reviews.MobileReviewFile do
       file_count: length(rows),
       flagged: row.flagged,
       flag_reason: row.flag_reason,
-      review_requested_at: task.review_requested_at
+      review_requested_at: task.review_requested_at,
+      files_version: files_version(task)
     }
   end
 

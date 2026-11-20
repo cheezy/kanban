@@ -48,6 +48,7 @@ defmodule Kanban.Reviews.MobileGuardTest do
 
       assert size_of(both_at_limit) == %{
                files: 10,
+               files_unknown: false,
                changed_lines: 500,
                truncated: false
              }
@@ -59,14 +60,14 @@ defmodule Kanban.Reviews.MobileGuardTest do
       capped = added(3) <> "\n" <> Backfill.truncation_marker() <> "\n"
       size = size_of([entry("a.ex", capped)])
 
-      assert size == %{files: 1, changed_lines: 3, truncated: true}
+      assert size == %{files: 1, files_unknown: false, changed_lines: 3, truncated: true}
       assert large?([entry("a.ex", capped)])
       refute large?([entry("a.ex", added(3))])
     end
 
     test "falls back to actual_files_changed when changed_files is empty" do
       size = size_of([], "a.ex, b.ex,,  a.ex , ")
-      assert size == %{files: 2, changed_lines: 0, truncated: false}
+      assert size == %{files: 2, files_unknown: false, changed_lines: 0, truncated: false}
 
       eleven = Enum.map_join(1..11, ",", &"f#{&1}.ex")
       assert large?([], eleven)
@@ -74,7 +75,7 @@ defmodule Kanban.Reviews.MobileGuardTest do
     end
 
     test "a task with no files and no diffs is not large" do
-      empty = %{files: 0, changed_lines: 0, truncated: false}
+      empty = %{files: 0, files_unknown: false, changed_lines: 0, truncated: false}
 
       assert size_of([]) == empty
       assert MobileGuard.size(%Task{changed_files: nil, actual_files_changed: nil}) == empty
@@ -82,9 +83,69 @@ defmodule Kanban.Reviews.MobileGuardTest do
       refute large?([])
     end
 
+    test "counts newline, semicolon and space separated actual_files_changed" do
+      eleven = Enum.map(1..11, &"lib/f#{&1}.ex")
+
+      for separator <- ["\n", ";", " ", "\r\n", "\t", " ; ", ",\n"] do
+        text = Enum.join(eleven, separator)
+        assert size_of([], text).files == 11, "separator #{inspect(separator)}"
+        assert large?([], text)
+      end
+
+      ten = Enum.map_join(1..10, "\n", &"lib/f#{&1}.ex")
+      assert size_of([], ten).files == 10
+      refute large?([], ten)
+    end
+
+    test "treats a bare count in actual_files_changed as a large change on a phone" do
+      for text <- ["14", "14 files", "files: 14", "(3)", "lib/a.ex and 13 more"] do
+        size = size_of([], text)
+
+        assert size.files_unknown, inspect(text)
+        assert size.files == 0
+        assert large?([], text)
+        assert [] |> task(text) |> MobileGuard.check(:phone) == {:error, :too_large_for_phone}
+        assert [] |> task(text) |> MobileGuard.check(:tablet) == :ok
+      end
+
+      # A path that merely contains digits is a path.
+      refute size_of([], "lib/v2.ex, priv/2024/a.sql").files_unknown
+    end
+
+    test "counts respelled paths once, matching the review detail's file list" do
+      respelled = [
+        "lib/a.ex",
+        "./lib/a.ex",
+        "lib/a.ex:40",
+        "lib/a.ex ",
+        "lib\\a.ex",
+        "lib//a.ex",
+        "lib/a.ex#L3"
+      ]
+
+      entries = Enum.map(respelled, &entry(&1, "+x"))
+      assert size_of(entries).files == 1
+      assert size_of([], Enum.join(respelled, ",")).files == 1
+
+      ten_and_one_respelling = files(10) ++ [entry("./lib/file_1.ex", "+one")]
+      assert size_of(ten_and_one_respelling).files == 10
+      refute large?(ten_and_one_respelling)
+
+      task = task(ten_and_one_respelling, nil)
+      rows = Kanban.Reviews.MobileReview.files(task)
+      assert MobileGuard.size(task).files == length(rows)
+    end
+
     test "accepts a size map" do
       refute MobileGuard.large_change?(%{files: 10, changed_lines: 500, truncated: false})
       assert MobileGuard.large_change?(%{files: 0, changed_lines: 0, truncated: true})
+
+      assert MobileGuard.large_change?(%{
+               files: 0,
+               files_unknown: true,
+               changed_lines: 0,
+               truncated: false
+             })
     end
   end
 
@@ -125,8 +186,19 @@ defmodule Kanban.Reviews.MobileGuardTest do
     end
 
     test "counts CRLF diffs and a concatenated multi-run patch" do
-      diff = "--- a/a.ex\r\n+++ b/a.ex\r\n+x\r\n-y\r\n--- a/a.ex\r\n+++ b/a.ex\r\n+z\r\n"
-      assert size_of([entry("a.ex", diff)]).changed_lines == 3
+      # Two runs, each with its own header pair, which never count.
+      multi_run = "--- a/a.ex\r\n+++ b/a.ex\r\n+x\r\n-y\r\n--- a/a.ex\r\n+++ b/a.ex\r\n+z\r\n"
+      assert size_of([entry("a.ex", multi_run)]).changed_lines == 3
+
+      # A CRLF hunk whose blank context line is "\r\n": read as a context
+      # line it closes the hunk, so the header pair after it is skipped. Were
+      # the "\r" kept, the hunk would stay open and the pair would count.
+      crlf_hunk = "@@ -1,2 +1,2 @@\r\n\r\n-a\r\n+b\r\n--- a/b.ex\r\n+++ b/b.ex\r\n"
+      assert size_of([entry("a.ex", crlf_hunk)]).changed_lines == 2
+
+      # The truncation marker on a CRLF last line still marks the diff cut.
+      capped = "+x\r\n" <> Backfill.truncation_marker() <> "\r\n"
+      assert size_of([entry("a.ex", capped)]).truncated
     end
 
     test "nil, binary-placeholder and non-string diffs count no lines" do
@@ -137,12 +209,17 @@ defmodule Kanban.Reviews.MobileGuardTest do
         %{"path" => "d.ex"}
       ]
 
-      assert size_of(entries) == %{files: 4, changed_lines: 0, truncated: false}
+      assert size_of(entries) == %{
+               files: 4,
+               files_unknown: false,
+               changed_lines: 0,
+               truncated: false
+             }
     end
 
     test "counts lines only from the stored diffs, never from actual_files_changed" do
       size = size_of([entry("a.ex", "+x")], "a.ex,b.ex,c.ex")
-      assert size == %{files: 1, changed_lines: 1, truncated: false}
+      assert size == %{files: 1, files_unknown: false, changed_lines: 1, truncated: false}
     end
 
     test "atom-keyed entries are read too, and duplicate or blank paths count once or not at all" do
@@ -154,7 +231,12 @@ defmodule Kanban.Reviews.MobileGuardTest do
         :not_a_map
       ]
 
-      assert size_of(entries) == %{files: 1, changed_lines: 3, truncated: false}
+      assert size_of(entries) == %{
+               files: 1,
+               files_unknown: false,
+               changed_lines: 3,
+               truncated: false
+             }
     end
 
     test "only a marker on the last non-empty line marks a diff truncated" do
@@ -177,6 +259,22 @@ defmodule Kanban.Reviews.MobileGuardTest do
       capped = added(2) <> "\n" <> Backfill.truncation_marker()
 
       assert MobileGuard.diff_stats(capped) == %{additions: 2, deletions: 0, truncated: true}
+    end
+  end
+
+  describe "listed_files/1 and normalize_file/1" do
+    test "split on every separator, normalize and keep the first spelling's order" do
+      assert MobileGuard.listed_files("b.ex\n./a.ex; b.ex:3 a.ex") == {:ok, ["b.ex", "a.ex"]}
+      assert MobileGuard.listed_files("12 files") == :unknown
+      assert MobileGuard.listed_files(nil) == {:ok, []}
+      assert MobileGuard.listed_files(" , ;\n") == {:ok, []}
+    end
+
+    test "normalize_file/1 gives one spelling per file" do
+      assert MobileGuard.normalize_file(" .\\lib\\a.ex:12:3 ") == "lib/a.ex"
+      assert MobileGuard.normalize_file("lib/./b//c.ex#L9") == "lib/b/c.ex"
+      assert MobileGuard.normalize_file("   ") == nil
+      assert MobileGuard.normalize_file(7) == nil
     end
   end
 

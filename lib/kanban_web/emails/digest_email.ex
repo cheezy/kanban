@@ -12,6 +12,11 @@ defmodule KanbanWeb.Emails.DigestEmail do
   link (for `:weekly_digest`) in the footer and the `List-Unsubscribe`
   headers. The `Message-ID` is stable per user and ISO week, so a resend
   collapses into the first copy in mail clients.
+
+  The email renders in the calling process's Gettext locale, which
+  `Kanban.Notifications.DigestWorker` sets to the recipient's stored locale
+  around the build; the summary dates come from `KanbanWeb.LocalTime` in
+  that locale's pattern.
   """
 
   use Gettext, backend: KanbanWeb.Gettext
@@ -22,6 +27,7 @@ defmodule KanbanWeb.Emails.DigestEmail do
   alias Kanban.Accounts.User
   alias Kanban.Notifications.Digest
   alias KanbanWeb.Emails.EmailHelpers
+  alias KanbanWeb.LocalTime
 
   # dark-mode-ignore: email HTML cannot use the app's CSS variables
   @cell_style "padding:6px 8px;border-bottom:1px solid #d4d4d8;text-align:left"
@@ -62,8 +68,8 @@ defmodule KanbanWeb.Emails.DigestEmail do
 
   defp period(digest) do
     gettext("Summary for %{start} – %{end} (UTC)",
-      start: Date.to_iso8601(digest.window_start),
-      end: Date.to_iso8601(digest.window_end)
+      start: LocalTime.format(digest.window_start, :short_date),
+      end: LocalTime.format(digest.window_end, :short_date)
     )
   end
 

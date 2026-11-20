@@ -125,9 +125,23 @@ defmodule KanbanWeb.API.Me.Idempotent do
   defp bound(%Plug.Conn{body_params: params}, action) do
     @bound_fields
     |> Map.fetch!(action)
-    |> Enum.map(&Map.get(params, &1))
+    |> Enum.map(&(params |> Map.get(&1) |> bound_value()))
     |> Jason.encode!()
   end
+
+  # What a bound field contributes to the key's hash. A value a JSON or form
+  # body can carry (a string, number, boolean, nil, or a map or list of them)
+  # is bound as sent. A struct, such as the `%Plug.Upload{}` of a multipart
+  # file part, cannot be encoded, so it is bound by its kind alone: neither
+  # decision accepts anything but a string there, so the request is refused
+  # with the same 422 as without a key, and nothing is ever stored under it.
+  defp bound_value(%module{}), do: %{"unencodable" => inspect(module)}
+
+  defp bound_value(map) when is_map(map),
+    do: Map.new(map, fn {field, value} -> {field, bound_value(value)} end)
+
+  defp bound_value(list) when is_list(list), do: Enum.map(list, &bound_value/1)
+  defp bound_value(value), do: value
 
   defp bad_key, do: {:error, {:bad_request, @bad_key_message}}
 end

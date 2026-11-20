@@ -209,7 +209,7 @@ approve
   {
     "error": "too_large_for_phone",
     "message": "This change is too large to approve on a phone. Approve it on a tablet or on the web.",
-    "size": { "files": 14, "changed_lines": 652, "truncated": false },
+    "size": { "files": 14, "files_unknown": false, "changed_lines": 652, "truncated": false },
     "limits": { "max_files": 10, "max_changed_lines": 500 }
   }
   ```
@@ -230,7 +230,8 @@ approve
   ```
 
 - `422 {"error": "approval_failed", "reason": "..."}` when the approval itself
-  cannot be made, for example when the board has no Done column. `reason` is
+  cannot be made. `reason` is `column_not_found` when the board has no Done
+  column (no column named Done, ignoring case and surrounding whitespace), or
   `invalid_column`, `review_not_performed` or `invalid_review_status`.
 - `429 {"error": "rate_limited", "message": "..."}`, with a `retry-after`
   header in seconds, when this device has sent more than 20 challenge,

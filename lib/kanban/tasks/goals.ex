@@ -157,6 +157,10 @@ defmodule Kanban.Tasks.Goals do
 
   @doc """
   Moves a goal and all of its children that are in the Backlog column to the Ready column.
+
+  Both columns are found as `Kanban.Columns.get_column_by_name/2` finds them
+  (case and surrounding whitespace ignored); a board missing either answers
+  `{:error, :column_not_found}`.
   """
   def promote_goal_to_ready(%Task{type: :goal} = goal, board_id) do
     with {:ok, backlog_column} <- find_column_by_name(board_id, "Backlog"),
@@ -410,9 +414,11 @@ defmodule Kanban.Tasks.Goals do
     |> History.create_move_history(old_column.name, target_column.name)
   end
 
+  # Matched as `Kanban.Columns.named?/2` matches a name: case and surrounding
+  # whitespace ignored, the lowest-positioned match when names repeat.
   defp find_column_by_name(board_id, name) do
-    from(c in Column, where: c.board_id == ^board_id and c.name == ^name)
-    |> Repo.one()
+    board_id
+    |> Columns.get_column_by_name(name)
     |> case do
       nil -> {:error, :column_not_found}
       column -> {:ok, column}

@@ -3,7 +3,8 @@ defmodule Kanban.Notifications.Recipients do
   Decides who receives an event and through which channels.
 
   `resolve/4` drops `nil` entries and duplicates, drops users who are not
-  current members of the event's board (when one is named), and applies each
+  current members of the event's board (when one is named) or, for an event
+  with no board, ids with no user row, and applies each
   remaining user's preference for the event type — their saved row, else the
   default passed in. In-app, email and push are independent: a user is kept
   when any channel is on, and dropped only when all three are off. A user
@@ -12,11 +13,15 @@ defmodule Kanban.Notifications.Recipients do
 
   Membership rows are read with `FOR SHARE` locks, so when this runs inside
   the notify transaction a concurrent board removal waits for it instead of
-  committing between the check and the insert.
+  committing between the check and the insert. With no board, the users'
+  own rows are read with `FOR KEY SHARE`, so a user deleted meanwhile waits
+  for the insert instead of failing it; an ordinary update to the user is
+  not held up.
   """
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
   alias Kanban.Notifications.Preference
   alias Kanban.Repo
@@ -63,12 +68,22 @@ defmodule Kanban.Notifications.Recipients do
     }
   end
 
-  # nil means "no board named": the changeset decides whether a board-less
-  # row is valid for the event type.
-  defp member?(nil, _user_id), do: true
+  # With no board named, the ids that have a user row: an unknown id is
+  # dropped, as the board path drops a non-member, instead of failing every
+  # recipient's row on its foreign key. The changeset still decides whether a
+  # board-less row is valid for the event type.
   defp member?(members, user_id), do: MapSet.member?(members, user_id)
 
-  defp board_members(nil, _ids), do: nil
+  defp board_members(_board_id, []), do: MapSet.new()
+
+  defp board_members(nil, ids) do
+    User
+    |> where([u], u.id in ^ids)
+    |> select([u], u.id)
+    |> lock("FOR KEY SHARE")
+    |> Repo.all()
+    |> MapSet.new()
+  end
 
   defp board_members(board_id, ids) do
     BoardUser

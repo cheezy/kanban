@@ -11,6 +11,13 @@ defmodule Kanban.Devices.Device do
   `revoked_by_id` names the person who revoked it: `nil` when Stride revoked
   it, and cleared when the revoker's account is deleted. Revoking also clears
   `push_token`, so the same phone can sign in again as a new device.
+
+  `sso_organization_id` is the Organization whose single sign-on signed in
+  the web session that allowed this device's sign-in, copied from its
+  authorization code, or `nil` for a password sign-in. It is never cast: the
+  code exchange sets it (`Kanban.Devices.Issuance.create_device/4`), and a
+  refresh reads it against the member's current Organization
+  (`Kanban.Devices.SsoExemption`).
   """
   use Ecto.Schema
 
@@ -19,6 +26,7 @@ defmodule Kanban.Devices.Device do
   alias Kanban.Accounts.User
   alias Kanban.ChangesetText
   alias Kanban.Devices.ApprovalKey
+  alias Kanban.Organizations.Organization
 
   @client_ids ~w(stride-ios stride-android)
 
@@ -100,6 +108,7 @@ defmodule Kanban.Devices.Device do
 
     belongs_to :user, User
     belongs_to :revoked_by, User
+    belongs_to :sso_organization, Organization
 
     timestamps(type: :utc_datetime)
   end

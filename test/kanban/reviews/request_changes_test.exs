@@ -80,9 +80,33 @@ defmodule Kanban.Reviews.RequestChangesTest do
     assert [_one] = rows()
   end
 
-  test "blank notes are :review_notes_required and store nothing", ctx do
+  # Reviews.request_changes_review/3 refuses notes that String.trim/1 empties,
+  # so these cases are ones only RequestChanges' own check refuses: a
+  # zero-width space and a combining mark survive String.trim/1, and with a
+  # revoked device a check made at the commit would answer :revoked first.
+  # Either way the answer proves the notes were refused before the commit.
+  test "blank or invisible notes are :review_notes_required before the commit and store nothing",
+       ctx do
     task = pending_task!(ctx.review)
     key = key(ctx.phone, task)
+
+    for notes <- [" ", "\u200B", "\u200B \u2060", "\u0301"] do
+      assert {:error, :review_notes_required} =
+               RequestChanges.request_changes(
+                 ctx.scope,
+                 ctx.phone,
+                 task.id,
+                 %{@params | "notes" => notes},
+                 idempotency: key
+               ),
+             "notes #{inspect(notes)}"
+    end
+
+    assert Nonces.find_replay(key) == :none
+    assert rows() == []
+    assert Repo.get!(Task, task.id).review_status in [nil, :pending]
+
+    ctx.phone |> Ecto.Changeset.change(revoked_at: DateTime.utc_now(:second)) |> Repo.update!()
 
     assert {:error, :review_notes_required} =
              RequestChanges.request_changes(
@@ -92,9 +116,6 @@ defmodule Kanban.Reviews.RequestChangesTest do
                %{@params | "notes" => " "},
                idempotency: key
              )
-
-    assert Nonces.find_replay(key) == :none
-    assert rows() == []
   end
 
   test "a device revoked before the commit is :revoked and stores nothing", ctx do

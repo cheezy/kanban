@@ -139,6 +139,18 @@ defmodule Kanban.Tasks.MyWorkTest do
       assert MyWork.list_assigned_tasks(scope) == []
     end
 
+    test "matches a Done column name padded with Unicode whitespace", %{
+      user: user,
+      scope: scope,
+      board: board
+    } do
+      done = column_fixture(board, %{name: "\u3000Done\v"})
+      task = assigned_task(done, user)
+      set_status(task, :blocked)
+
+      assert MyWork.list_assigned_tasks(scope) == []
+    end
+
     test "includes goal-type tasks assigned to the user", %{
       user: user,
       scope: scope,

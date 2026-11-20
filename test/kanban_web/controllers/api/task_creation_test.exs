@@ -36,6 +36,15 @@ defmodule KanbanWeb.API.TaskCreationTest do
       assert TaskCreation.get_default_column_id(board) == ready.id
     end
 
+    test "finds Backlog and Ready named with other case and padding", %{board: board} do
+      column_fixture(board, %{name: "Ideas"})
+      ready = column_fixture(board, %{name: " ready\t"})
+      assert TaskCreation.get_default_column_id(board) == ready.id
+
+      backlog = column_fixture(board, %{name: "\u3000BACKLOG "})
+      assert TaskCreation.get_default_column_id(board) == backlog.id
+    end
+
     test "falls back to the board's first column when it has neither", %{board: board} do
       first = column_fixture(board, %{name: "Ideas"})
       column_fixture(board, %{name: "Doing"})

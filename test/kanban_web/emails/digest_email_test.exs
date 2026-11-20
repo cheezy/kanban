@@ -56,6 +56,17 @@ defmodule KanbanWeb.Emails.DigestEmailTest do
 
   defp base, do: KanbanWeb.Endpoint.url()
 
+  test "renders in the calling process's locale, dates included" do
+    email = Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> build() end)
+
+    assert email.subject == "[Stride] Ihre wöchentliche Zusammenfassung"
+
+    for body <- [email.html_body, email.text_body] do
+      assert body =~ "Zusammenfassung für 27. Okt. 2026 – 2. Nov. 2026 (UTC)"
+      assert body =~ "Erledigte Aufgaben: 6"
+    end
+  end
+
   test "addresses the user with a fixed subject and both bodies" do
     email = build()
 
@@ -64,7 +75,7 @@ defmodule KanbanWeb.Emails.DigestEmailTest do
     assert email.subject == "[Stride] Your weekly digest"
 
     for body <- [email.html_body, email.text_body] do
-      assert body =~ "Summary for 2026-10-27 – 2026-11-02 (UTC)"
+      assert body =~ "Summary for Oct 27, 2026 – Nov 2, 2026 (UTC)"
       assert body =~ "Tasks done: 6"
       assert body =~ "Goals completed: 1"
       assert body =~ "Waiting for review: 2"

@@ -13,12 +13,22 @@ defmodule KanbanWeb.OAuthController do
 
   Both routes run in the `:browser` pipeline behind `:require_authenticated_user`
   and the Organization two-factor gate, so the person signs in exactly as on the
-  web. The page is shown even to a browser that is already signed in: without
+  web. Ahead of the log-in gate, `KanbanWeb.Plugs.OAuthReturnTo` refuses a
+  signed-out request too long to come back to after signing in, with this
+  page's 400 (`refuse/1`). The page is shown even to a browser that is already signed in: without
   it, a link someone else sent could deliver a code to an app that isn't the
   person's. A request that fails any check is refused with a 400 page and is
   never redirected to the app, and the app is reached only through
   `Kanban.Devices.Clients.callback_uri/1`, so a redirect target never comes
   from a parameter. The code itself is never logged or stored in plain text.
+
+  Allow hands the session's single sign-on mark
+  (`KanbanWeb.UserAuth.OrganizationTwoFactorGate.sso_session_key/0`) to the
+  code, which records it only when it names the person's own Organization,
+  the session the two-factor gate exempts. The device the code signs in
+  then carries that exemption to its refreshes
+  (`Kanban.Devices.SsoExemption`). Only the server-written session value is
+  read, never a request parameter.
   """
 
   use KanbanWeb, :controller
@@ -26,6 +36,7 @@ defmodule KanbanWeb.OAuthController do
   alias Kanban.Devices
   alias Kanban.Devices.Clients
   alias KanbanWeb.Plugs.CspNonce
+  alias KanbanWeb.UserAuth.OrganizationTwoFactorGate
 
   plug :harden_response
 
@@ -43,7 +54,9 @@ defmodule KanbanWeb.OAuthController do
          {:ok, %{code: code}} <-
            Devices.create_authorization_code(
              conn.assigns.current_scope,
-             Clients.code_attrs(request)
+             Clients.code_attrs(request),
+             DateTime.utc_now(),
+             sso_mark: get_session(conn, OrganizationTwoFactorGate.sso_session_key())
            ) do
       redirect(conn, external: Clients.callback_uri(code: code, state: request.state))
     else
@@ -64,6 +77,21 @@ defmodule KanbanWeb.OAuthController do
   end
 
   def confirm(conn, _params), do: render_invalid(conn)
+
+  @doc """
+  Answers a sign-in request with this page's `400` and halts, for a plug
+  that refuses one before the controller runs
+  (`KanbanWeb.Plugs.OAuthReturnTo`). The response carries the same
+  hardening headers as every other answer of this page.
+  """
+  @spec refuse(Plug.Conn.t()) :: Plug.Conn.t()
+  def refuse(conn) do
+    conn
+    |> put_view(html: KanbanWeb.OAuthHTML)
+    |> harden_response([])
+    |> render_invalid()
+    |> halt()
+  end
 
   # The confirmation form posts its fields in the body and nothing in the URL,
   # so a confirm POST carrying a query string did not come from the page:

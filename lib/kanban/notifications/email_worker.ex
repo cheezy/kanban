@@ -22,6 +22,12 @@ defmodule Kanban.Notifications.EmailWorker do
   board left its Organization or before the user left theirs, delivers
   nothing; the notification row itself is kept.
 
+  The email, subject and body alike, renders in the recipient's stored
+  `locale`, mapped by `Kanban.Locales.resolve/1` (the exact translated
+  locale, else its base language, else English), or English when they never
+  chose one. The locale is set with `Gettext.with_locale/3` around the build
+  only, so it never outlives the job or leaks into the next one.
+
   Delivery is at-least-once: the email is sent before `emailed_at` is
   stamped, so a crash between the two can resend on retry (the stable
   `Message-ID` lets mail clients collapse the duplicate). Stamping first
@@ -42,6 +48,7 @@ defmodule Kanban.Notifications.EmailWorker do
 
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
+  alias Kanban.Locales
   alias Kanban.Mailer
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
@@ -143,7 +150,12 @@ defmodule Kanban.Notifications.EmailWorker do
   end
 
   defp deliver(notification, user) do
-    case notification |> NotificationEmail.build(user) |> Mailer.deliver() do
+    email =
+      Gettext.with_locale(KanbanWeb.Gettext, Locales.resolve(user.locale), fn ->
+        NotificationEmail.build(notification, user)
+      end)
+
+    case Mailer.deliver(email) do
       {:ok, _metadata} ->
         stamp_emailed(notification)
         NotificationTelemetry.email_sent(notification)

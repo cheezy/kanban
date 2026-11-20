@@ -87,22 +87,29 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
     )
   end
 
+  # Both columns a completion can reach are found before anything moves, as
+  # `Kanban.Columns.named?/2` matches a name (case and surrounding whitespace
+  # ignored), so a board missing either answers `{:error, :column_not_found}`
+  # instead of leaving the task in Review and crashing on the way to Done.
   defp do_complete_task(task, user, params, board, board_id, agent_name) do
-    review_column = Support.get_column_by_name(board_id, "Review")
+    with {:ok, review_column} <- workflow_column(board_id, "Review"),
+         {:ok, done_column} <- workflow_column(board_id, "Done"),
+         {:ok, updated_task} <- move_to_review(task, user, params, review_column) do
+      handle_successful_completion(
+        task,
+        updated_task,
+        user,
+        %{board: board, review: review_column, done: done_column},
+        params,
+        agent_name
+      )
+    end
+  end
 
-    case move_to_review(task, user, params, review_column) do
-      {:ok, updated_task} ->
-        handle_successful_completion(
-          task,
-          updated_task,
-          user,
-          %{board: board, review: review_column},
-          params,
-          agent_name
-        )
-
-      {:error, changeset} ->
-        {:error, changeset}
+  defp workflow_column(board_id, name) do
+    case Kanban.Columns.get_column_by_name(board_id, name) do
+      nil -> {:error, :column_not_found}
+      column -> {:ok, column}
     end
   end
 
@@ -144,13 +151,12 @@ defmodule Kanban.Tasks.AgentWorkflow.Completion do
 
       {:ok, updated_task, hooks}
     else
-      auto_move_to_done(updated_task, user, board, agent_name)
+      auto_move_to_done(updated_task, user, board, columns.done, agent_name)
     end
   end
 
-  defp auto_move_to_done(updated_task, user, board, agent_name) do
+  defp auto_move_to_done(updated_task, user, board, done_column, agent_name) do
     board_id = board.id
-    done_column = Support.get_column_by_name(board_id, "Done")
 
     case run_auto_done_transaction(updated_task, done_column) do
       {:ok, {last_child_tag, completed_goal_id}} ->

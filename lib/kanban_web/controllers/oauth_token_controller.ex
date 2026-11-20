@@ -70,7 +70,7 @@ defmodule KanbanWeb.OAuthTokenController do
     with :ok <- RateLimit.check(:oauth_revoke, ip: conn.remote_ip),
          {:ok, token} <- required(params, "token"),
          :ok <- client(params),
-         :ok <- device_rate_limit(token) do
+         :ok <- token_rate_limit(token) do
       _revoked_or_unknown = Devices.revoke_by_refresh_token(token, now(), ip: conn.remote_ip)
       json(conn, %{})
     else
@@ -95,7 +95,7 @@ defmodule KanbanWeb.OAuthTokenController do
 
   defp grant(conn, "refresh_token", params) do
     with {:ok, refresh_token} <- required(params, "refresh_token"),
-         :ok <- device_rate_limit(refresh_token) do
+         :ok <- token_rate_limit(refresh_token) do
       at = now()
 
       refresh_token
@@ -162,11 +162,20 @@ defmodule KanbanWeb.OAuthTokenController do
     end
   end
 
-  defp device_rate_limit(refresh_token) do
-    case Devices.device_id_for_refresh_token(refresh_token) do
-      nil -> :ok
-      device_id -> RateLimit.check(:oauth_device, identity: "device:#{device_id}")
-    end
+  # Every presented refresh token is counted, keyed on a short digest of the
+  # token itself and never on whether it names a device, so an unknown, a
+  # revoked and a live token reach the limit after the same number of
+  # attempts and get the same 429: the limit cannot tell a guesser which
+  # tokens were ever real. No IP is passed, so one token is limited however
+  # many addresses present it; the :oauth_token and :oauth_revoke ceilings
+  # count per IP. Nothing is looked up before the check. The token itself
+  # never reaches the rate limiter.
+  defp token_rate_limit(refresh_token),
+    do: RateLimit.check(:oauth_device, identity: token_identity(refresh_token))
+
+  defp token_identity(refresh_token) do
+    digest = :crypto.hash(:sha256, refresh_token) |> Base.encode16(case: :lower)
+    "token:" <> binary_part(digest, 0, 16)
   end
 
   # Field names only, never the values sent.

@@ -91,6 +91,23 @@ defmodule KanbanWeb.OrgLive.AuditStreamDestinationViewTest do
     end)
   end
 
+  test "excluded_action_labels shows the picker's labels, sorted, and unknown names raw" do
+    assert AuditStreamDestinationView.excluded_action_labels([]) == []
+
+    assert AuditStreamDestinationView.excluded_action_labels([
+             "sso_login",
+             "retired_action",
+             "org_member_added"
+           ]) == ["Organization member added", "Single sign-on login", "retired_action"]
+
+    picker =
+      Map.new(AuditStreamKinds.excludable_options(), fn {label, action} -> {action, label} end)
+
+    for {action, label} <- picker do
+      assert AuditStreamDestinationView.excluded_action_labels([action]) == [label]
+    end
+  end
+
   test "the credential never reaches the view" do
     view = %{"header_name" => "Authorization"} |> https() |> AuditStreamDestinationView.to_view()
 

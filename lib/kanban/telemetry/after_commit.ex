@@ -19,7 +19,16 @@ defmodule Kanban.Telemetry.AfterCommit do
   Only the transaction `after_commit/1` wraps is waited for. When that
   transaction is itself nested inside an outer `Repo.transaction/1`, its
   `{:ok, _}` flushes the events even though the outer transaction can still
-  roll back; no caller does that today.
+  roll back, unless the outer transaction is wrapped in `after_commit/1` too:
+  then the flushed emits join the outer queue (see `after_commit/1`). A caller
+  that runs a deferring change inside its own transaction therefore wraps that
+  transaction, as `Kanban.Reviews.Approval` and
+  `Kanban.Reviews.RequestChanges` do around `Kanban.Reviews.approve_review/3`
+  and `Kanban.Reviews.request_changes_review/3`.
+
+  `defer/2` takes any zero-arity function, not only a telemetry emit:
+  `Kanban.AuditLog.event/2` defers its telemetry and log line, and
+  `Kanban.Reviews.ReviewCommit` defers a review's notification and webhooks.
   """
 
   @held_key {__MODULE__, :held}

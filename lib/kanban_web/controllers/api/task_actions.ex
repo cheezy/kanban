@@ -209,6 +209,9 @@ defmodule KanbanWeb.API.TaskActions do
   defp complete_result({:error, %Ecto.Changeset{} = changeset}, _conn, _params),
     do: {:error, changeset}
 
+  defp complete_result({:error, :column_not_found}, _conn, _params),
+    do: {:error, :column_not_found}
+
   defp put_completed_by_agent(params, %{agent_model: nil}, agent_name),
     do: Map.put(params, "completed_by_agent", agent_name)
 

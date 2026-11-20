@@ -161,6 +161,31 @@ defmodule Kanban.Notifications.DigestWorkerTest do
       assert user |> Scope.for_user() |> Notifications.unread_count() == 0
     end
 
+    test "renders each recipient's digest in their own stored locale" do
+      %{user: german} = active_user()
+      {:ok, german} = Kanban.Accounts.update_user_locale(german, "de")
+      %{user: brazilian} = active_user()
+      User |> where(id: ^brazilian.id) |> Repo.update_all(set: [locale: "pt-BR"])
+      %{user: korean} = active_user()
+      User |> where(id: ^korean.id) |> Repo.update_all(set: [locale: "ko"])
+
+      for {user, subject, period} <- [
+            {german, "[Stride] Ihre wöchentliche Zusammenfassung", "Zusammenfassung für"},
+            {brazilian, "[Stride] Seu resumo semanal", "Resumo de"},
+            {korean, "[Stride] Your weekly digest", "Summary for"}
+          ] do
+        assert :ok = run_digest(user)
+
+        assert_email_sent(fn email ->
+          assert email.to == [{"", user.email}]
+          assert email.subject == subject
+          assert email.text_body =~ period
+        end)
+      end
+
+      assert Gettext.get_locale(KanbanWeb.Gettext) == "en"
+    end
+
     test "a second run for the same week sends nothing; another week sends again" do
       %{user: user} = active_user()
 

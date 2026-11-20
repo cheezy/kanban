@@ -109,10 +109,11 @@
             task={@selected}
             on_approve="approve"
             on_request_changes="request_changes"
+            can_review={can_review?(@reviewable_board_ids, @selected)}
           />
 
           <form
-            :if={@request_changes_open?}
+            :if={@request_changes_open? and can_review?(@reviewable_board_ids, @selected)}
             id="review-request-changes-form"
             data-review-request-changes-form
             phx-submit="submit_request_changes"

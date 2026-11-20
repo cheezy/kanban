@@ -137,6 +137,15 @@ defmodule Kanban.ReviewsTest do
       assert result.id == task.id
     end
 
+    test "lists a task in a Review column named with other case and padding", %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: " review\u3000", position: 1})
+      task = pending_task!(column)
+
+      assert [%{id: id}] = Reviews.list_pending_reviews()
+      assert id == task.id
+    end
+
     test "treats explicit :pending review_status the same as nil", %{column: column} do
       task = pending_task!(column, %{review_status: :pending})
 
@@ -536,25 +545,29 @@ defmodule Kanban.ReviewsTest do
       assert {:error, :not_authorized} = Reviews.approve_review(nil, task)
     end
 
-    test "rolls back the review-field write when the workflow step raises",
+    test "a board with no Done column answers :column_not_found and rolls the review back",
          %{column: column, user: user} do
-      # No Done column on this board. AgentWorkflow.mark_reviewed/2 raises a
-      # BadMapError when its position helper can't find one. The outer
-      # Repo.transaction/1 catches the raise and rolls back the savepoint, so
-      # the review-field write must not persist.
+      # No Done column on this board: the workflow step refuses, and the outer
+      # Repo.transaction/1 rolls the review-field write back with no audit row.
       task = pending_task!(column)
       scope = Scope.for_user(user)
 
-      try do
-        Reviews.approve_review(scope, task)
-      rescue
-        _ -> :ok
-      end
+      assert {:error, :column_not_found} = Reviews.approve_review(scope, task)
 
       reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
       assert reloaded.review_status == nil
       assert reloaded.reviewed_at == nil
       assert reloaded.reviewed_by_id == nil
+      assert AuditLog.list_events(action: :review_approved) == []
+    end
+
+    test "finds the Done column whatever its case and surrounding whitespace",
+         %{column: column, user: user, board: board} do
+      done = column_fixture(board, %{name: "  done ", position: 2})
+      task = pending_task!(column)
+
+      assert {:ok, _approved} = user |> Scope.for_user() |> Reviews.approve_review(task)
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).column_id == done.id
     end
   end
 
@@ -1293,6 +1306,160 @@ defmodule Kanban.ReviewsTest do
                       %{via: :android, device_class: :tablet}}
 
       refute_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], _, _}
+    end
+  end
+
+  describe "archived tasks" do
+    setup %{board: board} do
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      :ok
+    end
+
+    defp archive!(task),
+      do: task |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+    test "are left out of the queue, the lookup and the header counts",
+         %{column: column, user: user} do
+      scope = Scope.for_user(user)
+      kept = pending_task!(column)
+      archived = column |> pending_task!() |> archive!()
+
+      assert [scope: scope] |> Reviews.list_pending_reviews() |> Enum.map(& &1.id) == [kept.id]
+      assert Enum.map(Reviews.list_pending_reviews(), & &1.id) == [kept.id]
+      assert {:error, :not_found} = Reviews.get_pending_review(scope, archived.id)
+      assert %{count: 1} = Reviews.queue_stats(scope: scope)
+    end
+
+    test "cannot be approved or sent back for changes, even from a stale task",
+         %{column: column, user: user} do
+      scope = Scope.for_user(user)
+      task = pending_task!(column)
+      archive!(task)
+
+      # `task` is the copy loaded before the archive, as a stale /review page holds.
+      assert {:error, :not_found} = Reviews.approve_review(scope, task)
+
+      assert {:error, :not_found} =
+               Reviews.request_changes_review(scope, task, review_notes: "Fix it")
+
+      reloaded = Repo.reload!(task)
+      assert reloaded.review_status == nil
+      assert reloaded.column_id == column.id
+      assert AuditLog.list_events(action: :review_approved) == []
+      assert AuditLog.list_events(action: :review_changes_requested) == []
+    end
+  end
+
+  describe "can_review?/2 and reviewable_board_ids/2" do
+    test "are true only where the user can write to the board",
+         %{column: column, board: board, user: owner} do
+      task = column |> pending_task!() |> Repo.preload(:column)
+      reader = user_fixture()
+      modifier = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+      {:ok, _} = Boards.add_user_to_board(board, modifier, :modify, owner)
+
+      owner_scope = Scope.for_user(owner)
+      reader_scope = Scope.for_user(reader)
+      stranger_scope = Scope.for_user(user_fixture())
+
+      assert Reviews.can_review?(owner_scope, task)
+      assert modifier |> Scope.for_user() |> Reviews.can_review?(task)
+      refute Reviews.can_review?(reader_scope, task)
+      refute Reviews.can_review?(stranger_scope, task)
+      refute Reviews.can_review?(nil, task)
+
+      assert Reviews.reviewable_board_ids(owner_scope, [task, task]) == MapSet.new([board.id])
+      assert Reviews.reviewable_board_ids(reader_scope, [task]) == MapSet.new()
+      assert Reviews.reviewable_board_ids(nil, [task]) == MapSet.new()
+    end
+  end
+
+  describe "a review inside a caller's transaction that rolls back" do
+    setup %{board: board, user: owner} do
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      completer = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, completer, :modify, owner)
+      %{completer: completer}
+    end
+
+    @after_commit_events [
+      [:kanban, :task, :completed],
+      [:kanban, :task, :review_approved],
+      [:kanban, :task, :review_changes_requested],
+      [:kanban, :audit, :review_approved],
+      [:kanban, :audit, :review_changes_requested]
+    ]
+
+    # As Kanban.Reviews.Approval and RequestChanges run it: the caller's own
+    # transaction, wrapped in AfterCommit.after_commit/1, rolls back after the
+    # review returned {:ok, _}.
+    defp rolled_back(fun) do
+      Kanban.Telemetry.AfterCommit.after_commit(fn ->
+        Repo.transaction(fn ->
+          {:ok, _task} = fun.()
+          Repo.rollback(:caller_rolled_back)
+        end)
+      end)
+    end
+
+    test "an approval emits nothing and notifies nobody",
+         %{column: column, user: user, completer: completer} do
+      task = pending_task!(column, %{completed_by_id: completer.id})
+      attach_telemetry(@after_commit_events)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Kanban.Notifications.topic(completer.id))
+
+      assert {:error, :caller_rolled_back} =
+               rolled_back(fn -> user |> Scope.for_user() |> Reviews.approve_review(task) end)
+
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+      refute_received {_notification_message, %Notification{}}
+      assert Repo.reload!(task).review_status == nil
+      assert AuditLog.list_events(action: :review_approved) == []
+      assert reviewed_rows() == []
+
+      # The same approval committed emits each event and writes one row.
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+      assert_receive {:telemetry_event, [:kanban, :task, :review_approved], _, _}
+      assert_receive {:telemetry_event, [:kanban, :audit, :review_approved], _, _}
+      assert [_one] = AuditLog.list_events(action: :review_approved)
+    end
+
+    test "a request for changes emits nothing", %{column: column, user: user} do
+      task = pending_task!(column)
+      attach_telemetry(@after_commit_events)
+
+      assert {:error, :caller_rolled_back} =
+               rolled_back(fn ->
+                 user
+                 |> Scope.for_user()
+                 |> Reviews.request_changes_review(task, review_notes: "x")
+               end)
+
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+      assert Repo.reload!(task).review_status == nil
+    end
+
+    test "once the caller commits, the audit event fires after the commit, then the review event",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      attach_in_order([[:kanban, :audit, :review_approved], [:kanban, :task, :review_approved]])
+
+      assert {:ok, _} =
+               Kanban.Telemetry.AfterCommit.after_commit(fn ->
+                 Repo.transaction(fn ->
+                   {:ok, approved} = user |> Scope.for_user() |> Reviews.approve_review(task)
+                   approved
+                 end)
+               end)
+
+      assert [
+               {[:kanban, :audit, :review_approved], %{task_id: audit_id}, false},
+               {[:kanban, :task, :review_approved], %{task_id: review_id}, false}
+             ] = received_in_order()
+
+      assert audit_id == task.id
+      assert review_id == task.id
     end
   end
 end

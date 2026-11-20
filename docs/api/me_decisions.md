@@ -54,7 +54,7 @@ from a board stops seeing its items on the next request.
           "first_failed_note": null
         },
         "actions": ["open_review", "approve", "request_changes", "open_on_web"],
-        "web_url": "https://www.stridelikeaboss.com/boards/55/tasks/8601",
+        "web_url": "https://www.stridelikeaboss.com/boards/55/tasks/8601/edit",
         "holds_up": 2,
         "held_identifiers": ["W2759", "W2760"]
       }
@@ -77,7 +77,7 @@ does not know.
   | Kind | What waits | `details` |
   |---|---|---|
   | `review` | a task pending review | `verdicts` (the section pills, each `section` and `status`) and `first_failed_note` |
-  | `released` | a task an agent released back to Ready | `reason` (the release notification's text) and `notification_id` |
+  | `released` | a task an agent released back to Ready that no one has claimed since; any later claim clears it for good, even one that expires or is released without a new notification | `reason` (the release notification's text) and `notification_id` |
   | `claim_expired` | a claim that expired while the task was in Doing | `claimed_at` and `expired_at` |
   | `hook_failed` | a goal whose `after_goal` hook failed | `exit_code` and `duration_ms`, never the hook's output |
   | `ready_empty` | a board with no Ready task, Backlog work and an idle agent | `idle_agents` and `backlog_count` |
@@ -89,7 +89,16 @@ does not know.
 - `actions` are the actions the server lets this person take on the item:
   `open_review`, `approve`, `request_changes`, `open_on_web`, `reply`,
   `move_to_backlog`, `view_attempt` and `open_backlog`. A read-only member is
-  offered only `open_on_web` on a review.
+  offered only `open_on_web` on a review. The actions are for the device
+  asking: a phone is not offered `approve` on a review whose change is too
+  large to approve on a phone (more than 10 files, more than 500 changed lines,
+  or a diff cut at the stored cap), so a review item offers `approve` exactly
+  when [GET /api/me/reviews/:task_id](me_reviews.md) answers
+  `approvable_here: true` for the same device. A tablet keeps `approve` on
+  any change. `request_changes` is never limited by size.
+- `web_url` is where the item opens on the web. For a task it is the task's
+  edit page when the person can write to the board, and the board itself for
+  a read-only member, since the edit page refuses them.
 - `holds_up` is how many unfinished tasks wait on the item, directly or
   through a chain, `null` for `ready_empty`, and `held_identifiers` names up
   to 5 of them, the nearest first.

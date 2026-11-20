@@ -18,6 +18,22 @@ defmodule Kanban.Push.LogRedactionTest do
     :public_key.pem_encode([{:PrivateKeyInfo, der, :not_encrypted}])
   end
 
+  # A key in the shape of an Apple .p8 file: three 64-character base64 lines
+  # and a last line of 8. The body is random bytes made here.
+  defp p8_shaped_pem do
+    body = 150 |> :crypto.strong_rand_bytes() |> Base.encode64()
+    lines = for <<chunk::binary-size(64) <- body>>, do: chunk
+    short = binary_part(body, 192, 8)
+
+    pem =
+      Enum.join(
+        ["-----BEGIN PRIVATE KEY-----"] ++ lines ++ [short, "-----END PRIVATE KEY-----", ""],
+        "\n"
+      )
+
+    {pem, short}
+  end
+
   defp event(level, msg), do: %{level: level, msg: msg, meta: %{}}
 
   describe "fragments/1" do
@@ -40,6 +56,17 @@ defmodule Kanban.Push.LogRedactionTest do
     test "is empty for anything that is not a key" do
       assert LogRedaction.fragments(nil) == []
       assert LogRedaction.fragments("short") == []
+    end
+
+    test "never makes a fragment of a short line on its own" do
+      {key, short} = p8_shaped_pem()
+      fragments = LogRedaction.fragments(key)
+
+      assert byte_size(short) == 8
+      refute short in fragments
+      assert Enum.all?(fragments, &(byte_size(&1) >= 16))
+      assert Enum.any?(fragments, &String.ends_with?(&1, "\n" <> short))
+      assert Enum.any?(fragments, &String.ends_with?(&1, "\\n" <> short))
     end
 
     test "nothing is configured in test, so nothing would be redacted" do
@@ -90,6 +117,34 @@ defmodule Kanban.Push.LogRedactionTest do
       refute inspect(redacted, limit: :infinity, printable_limit: :infinity) =~ hd(fragments)
       assert [%URI{}, charlist, [_ | :tail], {:state, _}] = redacted
       assert is_list(charlist)
+    end
+
+    test "redacts a short last key line wherever the key is logged" do
+      {key, short} = p8_shaped_pem()
+      fragments = LogRedaction.fragments(key)
+
+      logged = [
+        {:string, "Start Call: Pigeon.Dispatcher.start_link(#{inspect(key: key)})"},
+        {:string, "key=" <> key},
+        {:string, "key=" <> String.replace(key, "\n", "")},
+        {:report, %{offender: [mfargs: {Pigeon.DispatcherWorker, :start_link, [[key: key]]}]}}
+      ]
+
+      for msg <- logged do
+        %{msg: redacted} = :error |> event(msg) |> LogRedaction.filter(fragments)
+        text = inspect(redacted, limit: :infinity, printable_limit: :infinity)
+
+        refute text =~ short, "the short last line survived in #{inspect(elem(msg, 0))}"
+        assert text =~ @redacted
+      end
+    end
+
+    test "leaves a short key line alone inside ordinary text" do
+      {key, short} = p8_shaped_pem()
+      fragments = LogRedaction.fragments(key)
+      ordinary = event(:error, {:string, "request #{short} failed"})
+
+      assert LogRedaction.filter(ordinary, fragments) == ordinary
     end
 
     test "leaves info and debug events alone", %{key: key, fragments: fragments} do

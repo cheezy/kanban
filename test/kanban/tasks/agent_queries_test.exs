@@ -422,6 +422,84 @@ defmodule Kanban.Tasks.AgentQueriesTest do
     end
   end
 
+  describe "column names match loosely" do
+    setup do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      cols = board |> Kanban.Columns.list_columns() |> Map.new(&{&1.name, &1})
+
+      rename = fn name, new_name ->
+        cols[name] |> Ecto.Changeset.change(name: new_name) |> Repo.update!()
+      end
+
+      %{
+        user: user,
+        board: board,
+        ready: rename.("Ready", "READY"),
+        doing: rename.("Doing", " doing "),
+        review: rename.("Review", "\treview\n")
+      }
+    end
+
+    defp open_task!(column, user, attrs \\ %{}) do
+      {:ok, task} =
+        Tasks.create_task(
+          column,
+          Map.merge(%{"title" => "T", "status" => "open", "created_by_id" => user.id}, attrs)
+        )
+
+      task
+    end
+
+    test "get_next_task finds a task in a Ready column named in another case", ctx do
+      task = open_task!(ctx.ready, ctx.user)
+
+      assert AgentQueries.get_next_task([], ctx.board.id).id == task.id
+    end
+
+    test "get_specific_task_for_claim finds a task in a Ready column named in another case",
+         ctx do
+      task = open_task!(ctx.ready, ctx.user)
+
+      assert AgentQueries.get_specific_task_for_claim(task.identifier, [], ctx.board.id).id ==
+               task.id
+    end
+
+    test "a key-file conflict counts in Doing and Review columns padded or cased differently",
+         ctx do
+      key_files = [%{"file_path" => "lib/kanban/shared.ex", "position" => 0}]
+      blocked = open_task!(ctx.ready, ctx.user, %{"key_files" => key_files})
+
+      for column <- [ctx.doing, ctx.review] do
+        wip = open_task!(column, ctx.user, %{"key_files" => key_files})
+
+        {1, _} =
+          from(t in Task, where: t.id == ^wip.id)
+          |> Repo.update_all(set: [status: :in_progress])
+
+        assert AgentQueries.get_next_task([], ctx.board.id) == nil
+
+        {1, _} =
+          from(t in Task, where: t.id == ^wip.id)
+          |> Repo.update_all(set: [status: :completed])
+      end
+
+      assert AgentQueries.get_next_task([], ctx.board.id).id == blocked.id
+    end
+
+    test "the full claim moves a task from READY to the doing column and back", ctx do
+      task = open_task!(ctx.ready, ctx.user)
+
+      assert {:ok, claimed, _hook} =
+               Tasks.claim_next_task([], ctx.user, ctx.board.id, task.identifier)
+
+      assert claimed.column_id == ctx.doing.id
+
+      assert {:ok, unclaimed} = Tasks.unclaim_task(claimed, ctx.user, nil)
+      assert unclaimed.column_id == ctx.ready.id
+    end
+  end
+
   describe "get_next_task/2 priority ordering" do
     setup do
       user = user_fixture()

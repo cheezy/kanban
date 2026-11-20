@@ -115,6 +115,12 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
              |> LazyHTML.query(~s(a#settings-notifications-link[aria-current="page"]))
              |> Enum.count() == 1
 
+      # the Notifications page now holds the Push switches too
+      assert doc
+             |> LazyHTML.query("a#settings-notifications-link")
+             |> LazyHTML.text()
+             |> String.contains?("in-app · email · push")
+
       # menu links carry the phone tap height the panel CSS gives buttons
       assert doc |> LazyHTML.query(~s(a#settings-profile-link[class*="min-h-11"])) |> Enum.count() ==
                1

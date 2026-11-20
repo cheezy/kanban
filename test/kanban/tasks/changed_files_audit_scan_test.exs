@@ -67,6 +67,14 @@ defmodule Kanban.Tasks.ChangedFilesAuditScanTest do
     assert board_id == board.id
   end
 
+  test "scans a Review column named in another case or padded", %{review: review} do
+    review = review |> Ecto.Changeset.change(name: " review\n") |> Repo.update!()
+    task = task_in(review, %{actual_files_changed: "lib/a.ex", changed_files: []})
+
+    assert [%{id: id}] = ChangedFilesAudit.scan_missing_diffs()
+    assert id == task.id
+  end
+
   test "ignores a review task that already has a diff", %{review: review, ref: ref} do
     task_in(review, %{
       actual_files_changed: "lib/a.ex",

@@ -460,6 +460,17 @@ defmodule Kanban.Push.SummaryWorkerTest do
         Notifications.update_push_settings(ctx.scope, attrs, via: :ios, feature: :notifications)
     end
 
+    # Marks an enqueued job as running, as Oban does when it starts it;
+    # perform_job/2 then runs its code without touching the row.
+    defp running!(job_id) do
+      {1, _} =
+        Oban.Job
+        |> where([j], j.id == ^job_id)
+        |> Repo.update_all(set: [state: "executing", attempted_at: DateTime.utc_now()])
+
+      :ok
+    end
+
     # Quiet hours from an hour ago to an hour from now in London, entered
     # while they hold, so no stamp is set.
     defp quiet_now!(ctx) do
@@ -569,6 +580,57 @@ defmodule Kanban.Push.SummaryWorkerTest do
       for job <- jobs, do: assert(:ok = perform_job(SummaryWorker, job.args))
       assert_received {:pushed, _, _}
       refute_received {:pushed, _, _}
+    end
+
+    test "a change made while the one-person summary is being sent sends no second one", ctx do
+      ios_device!(ctx)
+      pending_review!(ctx)
+      quiet_now!(ctx)
+      change!(ctx, %{"quiet_hours_enabled" => false})
+      assert [%Oban.Job{id: job_id, args: args}] = all_enqueued(worker: SummaryWorker)
+      running!(job_id)
+      test_pid = self()
+
+      # The period ended ten seconds ago and the job read its clock five
+      # seconds ago, so the change below comes seconds after the job's claim.
+      ago = &(DateTime.utc_now() |> DateTime.add(-&1) |> DateTime.to_iso8601())
+      args = Map.merge(args, %{"ended_at" => ago.(10), "now" => ago.(5)})
+
+      # The change lands while the job, having taken its period, is sending.
+      expect(APNsMock, :send, fn %Device{id: id}, payload ->
+        change!(ctx, %{"quiet_hours_enabled" => true, "time_zone" => "Pacific/Auckland"})
+        send(test_pid, {:pushed, id, payload})
+        :ok
+      end)
+
+      assert :ok = perform_job(SummaryWorker, args)
+      assert_received {:pushed, _, _}
+
+      for job <- all_enqueued(worker: SummaryWorker),
+          do: assert(:ok = perform_job(SummaryWorker, job.args))
+
+      refute_received {:pushed, _, _}
+    end
+
+    test "a change made before a running one-person job takes its period keeps the summary",
+         ctx do
+      ios_device!(ctx)
+      pending_review!(ctx)
+      quiet_now!(ctx)
+      change!(ctx, %{"quiet_hours_enabled" => false})
+      assert [%Oban.Job{id: job_id, args: args}] = all_enqueued(worker: SummaryWorker)
+      running!(job_id)
+
+      # Back on outside quiet hours while the job has started but not yet
+      # taken its period: no second job, and no stamp that would take it.
+      change!(ctx, %{"quiet_hours_enabled" => true, "time_zone" => "Pacific/Auckland"})
+      assert last_summary_at(ctx) == nil
+      # all_enqueued/1 lists queued jobs only, so the running job is not in it.
+      assert all_enqueued(worker: SummaryWorker) == []
+
+      expect_sends(1)
+      assert :ok = perform_job(SummaryWorker, args)
+      assert_received {:pushed, _, _}
     end
 
     test "a change before the next run keeps an ended period's summary", ctx do

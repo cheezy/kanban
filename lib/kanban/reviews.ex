@@ -8,6 +8,9 @@ defmodule Kanban.Reviews do
     * `review_status` is `nil` or `:pending` (both are treated as "no
       decision yet" by the Task schema)
     * its `Column` is named `"Review"`
+    * it is not archived (`archived_at` is `nil`): an archived task left in
+      Review is off every queue, and approving it or requesting changes on it
+      is refused with `:not_found`
 
   `completed_at` is intentionally **not** part of this filter — a task in
   the Review column is not yet completed; `completed_at` only gets stamped
@@ -32,25 +35,29 @@ defmodule Kanban.Reviews do
   on the task BEFORE invoking the workflow transition, because
   `mark_reviewed/2` reads `task.review_status` to decide the destination
   column. Both calls run inside an outer `Repo.transaction/1` so a
-  workflow-step failure rolls back the review-field write. Once the
-  transaction commits, `Kanban.Notifications.Events.task_reviewed/2` tells
-  the task's completer the outcome; a rolled-back review notifies nobody.
-  The telemetry an approval causes inside the transaction, its
-  `[:kanban, :task, :completed]` and goal events such as
-  `[:kanban, :goal, :completed]`, is held back until that commit too
-  (`Kanban.Telemetry.AfterCommit.after_commit/1`) and dropped if it rolls back.
-  Once it has committed, `[:kanban, :task, :completed]` is emitted first, then
-  the goal events in the order the approval caused them, then
-  `[:kanban, :task, :review_approved]`. A request for changes moves nothing,
-  so it emits only `[:kanban, :task, :review_changes_requested]`, after its
-  commit. Both review events carry `via` and `device_class`, and each review
-  emits exactly one of them.
+  workflow-step failure rolls back the review-field write
+  (`Kanban.Reviews.ReviewCommit`). Only the scope's user with write access to
+  the task's board may decide it (`can_review?/2`); a read-only member is
+  refused with `:not_authorized`.
+
+  Nothing a review causes outside the database happens before its commit
+  (`Kanban.Telemetry.AfterCommit`): its `[:kanban, :task, :completed]` and
+  goal events such as `[:kanban, :goal, :completed]`, the audit event's
+  `[:kanban, :audit, *]` telemetry and `security_audit` log line, the
+  completer's notification (`Kanban.Notifications.Events.task_reviewed/2`),
+  the webhooks and `[:kanban, :task, :review_approved]` or
+  `[:kanban, :task, :review_changes_requested]`. A rolled-back review emits and
+  sends none of them, including when the review runs inside a caller's own
+  transaction that is wrapped in `AfterCommit.after_commit/1`, as the app's
+  decisions are. Once it has committed, `[:kanban, :task, :completed]` is
+  emitted first, then the goal events in the order the approval caused them,
+  then the audit event, then the review event. Both review events carry `via`
+  and `device_class`, and each review emits exactly one of them.
 
   Every committed review, web or app, also writes one audit event —
   `:review_approved` or `:review_changes_requested` — as the last write inside
   the same transaction, so a refused or rolled-back review leaves no row
-  (`Kanban.Reviews.Audit`). Its `[:kanban, :audit, *]` telemetry copy fires
-  then, before the commit and before the review telemetry above. Callers say
+  (`Kanban.Reviews.Audit`). Callers say
   where the review was made through `opts`: `:via` (`:web`, `:ios` or
   `:android`), `:device` (the `Kanban.Devices.Device`, for an app review) and,
   on an approval, `:approval_key` (`true` when the device's approval
@@ -60,19 +67,15 @@ defmodule Kanban.Reviews do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.Scope
-  alias Kanban.Notifications.Events
+  alias Kanban.Columns
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
-  alias Kanban.Reviews.Audit
   alias Kanban.Reviews.DiffHighlighter
   alias Kanban.Reviews.MobileGuard
   alias Kanban.Reviews.MobileReview
   alias Kanban.Reviews.MobileReviewFile
-  alias Kanban.Tasks.AgentWorkflow
-  alias Kanban.Tasks.Broadcaster
+  alias Kanban.Reviews.ReviewCommit
   alias Kanban.Tasks.Task
-  alias Kanban.Tasks.TaskTelemetry
-  alias Kanban.Telemetry.AfterCommit
 
   @review_column_name "Review"
 
@@ -160,11 +163,43 @@ defmodule Kanban.Reviews do
   @spec get_reviewable_task(Scope.t(), integer()) :: {:ok, Task.t()} | {:error, :not_found}
   def get_reviewable_task(%Scope{} = scope, id) do
     with {:ok, %Task{archived_at: nil} = task} <- get_pending_review(scope, id),
-         :ok <- authorize_review_write(task, scope_user(scope)) do
+         :ok <- authorize_review(task, scope_user(scope)) do
       {:ok, Repo.preload(task, :parent)}
     else
       _ -> {:error, :not_found}
     end
+  end
+
+  @doc """
+  Whether the scope's user may decide `task`'s review (approve it or request
+  changes): they can write to its board, the check `approve_review/3` and
+  `request_changes_review/3` run again inside their transaction. `task` needs
+  its `:column` loaded. A read-only member, or no user, is `false`.
+  """
+  @spec can_review?(Scope.t() | nil, Task.t()) :: boolean()
+  def can_review?(scope, %Task{column: %{board_id: board_id}}),
+    do: ReviewCommit.authorized?(board_id, scope_user(scope))
+
+  def can_review?(_scope, _task), do: false
+
+  @doc """
+  The ids of the boards among `tasks`' (each with its `:column` loaded) on
+  which the scope's user may decide reviews, as a set, checking each board
+  once. `/review` uses it to offer Approve and Request changes only where
+  they would be accepted.
+  """
+  @spec reviewable_board_ids(Scope.t() | nil, [Task.t()]) :: MapSet.t(integer())
+  def reviewable_board_ids(scope, tasks) when is_list(tasks) do
+    user = scope_user(scope)
+
+    tasks
+    |> Enum.flat_map(fn
+      %Task{column: %{board_id: board_id}} -> [board_id]
+      _task -> []
+    end)
+    |> Enum.uniq()
+    |> Enum.filter(&ReviewCommit.authorized?(&1, user))
+    |> MapSet.new()
   end
 
   @doc """
@@ -182,13 +217,15 @@ defmodule Kanban.Reviews do
   flagged-file screen (`GET /api/me/reviews/:task_id/files/:index`, W2753):
   `index` is its position in `changed_files`, and its diff is highlighted by
   `Kanban.Reviews.DiffHighlighter.highlight/4`. Returns `{:error, :not_found}`
-  for an index that names no file of this task
-  (`Kanban.Reviews.MobileReview.file/3`).
+  for an index that names no file of this task, and
+  `{:error, {:files_changed, current_version}}` when `files_version` (the
+  detail's, sent back by the app) no longer matches the task's file list
+  (`Kanban.Reviews.MobileReviewFile.build/4`); `nil` skips that check.
   """
-  @spec mobile_review_file(Task.t(), non_neg_integer()) ::
-          {:ok, MobileReviewFile.t()} | {:error, :not_found}
-  def mobile_review_file(%Task{} = task, index) do
-    MobileReview.file(task, index, &DiffHighlighter.highlight/4)
+  @spec mobile_review_file(Task.t(), non_neg_integer(), String.t() | nil) ::
+          {:ok, MobileReviewFile.t()} | {:error, :not_found | {:files_changed, String.t()}}
+  def mobile_review_file(%Task{} = task, index, files_version \\ nil) do
+    MobileReview.file(task, index, &DiffHighlighter.highlight/4, files_version)
   end
 
   @doc """
@@ -232,10 +269,10 @@ defmodule Kanban.Reviews do
       join: c in assoc(t, :column),
       as: :column,
       where:
-        t.needs_review == true and
-          (is_nil(t.review_status) or t.review_status == :pending) and
-          c.name == ^@review_column_name
+        t.needs_review == true and is_nil(t.archived_at) and
+          (is_nil(t.review_status) or t.review_status == :pending)
     )
+    |> where(^Columns.name_matches(:column, @review_column_name))
   end
 
   # --- queue_stats helpers ---------------------------------------------------
@@ -284,7 +321,8 @@ defmodule Kanban.Reviews do
   workflow-step failure rolls back the review-field update. The completion
   telemetry is held back until that transaction commits, so a rolled-back or
   refused approval emits no `[:kanban, :task, :completed]`, no goal events and
-  no `[:kanban, :task, :review_approved]`. A committed approval writes one
+  no `[:kanban, :task, :review_approved]`, no audit telemetry, no
+  notification and no webhook. A committed approval writes one
   `:review_approved` audit event inside the same transaction.
 
   `opts` says where the approval was made: `:via` (`:web`, `:ios` or
@@ -293,10 +331,13 @@ defmodule Kanban.Reviews do
   signature). See `Kanban.Reviews.Audit.context/2`.
 
   Returns `{:ok, task}` on success or `{:error, reason}` where `reason` is
-  one of: `:not_found` (task is missing or on an inaccessible board),
-  `:not_authorized` (user has read-only board access),
-  `:review_not_performed`, `:invalid_column`, `:invalid_review_status`,
-  or an `Ecto.Changeset.t/0` for validation failures.
+  one of: `:not_found` (task is missing, archived, no longer pending, or on
+  an inaccessible board), `:not_authorized` (user has read-only board
+  access), `:column_not_found` (the board has no Done column: one named
+  "Done", ignoring case and surrounding whitespace, as
+  `Kanban.Columns.named?/2` compares), `:review_not_performed`,
+  `:invalid_column`, `:invalid_review_status`, or an `Ecto.Changeset.t/0`
+  for validation failures.
   """
   @spec approve_review(Scope.t() | nil, Task.t(), keyword()) ::
           {:ok, Task.t()} | {:error, atom() | Ecto.Changeset.t()}
@@ -367,128 +408,14 @@ defmodule Kanban.Reviews do
 
   defp perform_review(scope, %Task{} = task, base_attrs, opts) do
     case scope_user(scope) do
-      nil ->
-        {:error, :not_authorized}
-
-      user ->
-        context = Audit.context(opts, user)
-
-        scope
-        |> run_review_transaction(task, user, base_attrs, opts, context)
-        |> notify_reviewed(user, Keyword.get(opts, :move_after_review?, true))
-        |> TaskTelemetry.reviewed(
-          base_attrs.review_status,
-          user,
-          Audit.telemetry_metadata(context)
-        )
+      nil -> {:error, :not_authorized}
+      user -> ReviewCommit.perform(scope, task, user, base_attrs, opts)
     end
   end
 
-  # Runs after Repo.transaction/1 has returned, so a rolled-back review
-  # never notifies. When the review also moved the task, its webhook event
-  # was held back inside the transaction (`webhook: false` below) and is
-  # emitted here, before task.reviewed.
-  defp notify_reviewed({:ok, task} = result, reviewer, moved?) do
-    Events.task_reviewed(task, reviewer)
-    emit_reviewed_webhooks(task, moved?)
-    result
+  defp authorize_review(%Task{column: %{board_id: board_id}}, user) do
+    if ReviewCommit.authorized?(board_id, user), do: :ok, else: {:error, :not_authorized}
   end
-
-  defp notify_reviewed(error, _reviewer, _moved?), do: error
-
-  defp emit_reviewed_webhooks(task, moved?) do
-    case Repo.preload(task, :column) do
-      %Task{column: %{board_id: board_id}} = task ->
-        if moved?, do: Broadcaster.emit_webhook(task, moved_event(task), board_id)
-        Broadcaster.emit_webhook(task, :task_reviewed, board_id)
-
-      _no_column ->
-        :ok
-    end
-  end
-
-  defp moved_event(%Task{review_status: :approved}), do: :task_completed
-  defp moved_event(%Task{}), do: :task_returned_to_doing
-
-  defp run_review_transaction(scope, task, user, base_attrs, opts, context) do
-    # Telemetry the approval causes (task.completed, task.unblocked,
-    # goal.completed, goal.grace_window_scheduled) is held back until this
-    # transaction commits.
-    AfterCommit.after_commit(fn ->
-      Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts, context) end)
-    end)
-  end
-
-  # The task row is locked first, so two reviews of one task run one after the
-  # other: the second reads the task once the first has committed, finds it no
-  # longer pending and is refused with `:not_found`. The audit row is the last
-  # write, so any refusal rolls back before it and a committed review always
-  # has exactly one row. `fetched` is the fresh record with its column, which
-  # the row's board id and change size read.
-  defp commit_review!(scope, task, user, base_attrs, opts, context) do
-    with :ok <- lock_task_row(task.id),
-         {:ok, fetched} <- get_pending_review(scope, task.id),
-         :ok <- authorize_review_write(fetched, user),
-         {:ok, final} <- write_review(task, user, base_attrs, opts),
-         :ok <- Audit.record(base_attrs.review_status, fetched, user, context) do
-      final
-    else
-      {:error, reason} -> Repo.rollback(reason)
-    end
-  end
-
-  defp lock_task_row(task_id) do
-    query = from(t in Task, where: t.id == ^task_id, lock: "FOR UPDATE", select: t.id)
-
-    case Repo.one(query) do
-      nil -> {:error, :not_found}
-      _id -> :ok
-    end
-  end
-
-  # `get_pending_review/2` is membership-scoped (it lists every board member's
-  # queue, read-only included), so it must not double as the write gate. The
-  # request-changes path sets `move_after_review?: false` and never reaches
-  # `AgentWorkflow.mark_reviewed/2`, where board-write access is otherwise
-  # enforced — so we re-run the same check here, inside the transaction, to
-  # close the read-only->write escalation (D138). The check runs before any
-  # review field is persisted, so an unauthorized caller rolls back cleanly.
-  defp authorize_review_write(%Task{column: %{board_id: board_id}}, user) do
-    if AgentWorkflow.authorized_reviewer?(board_id, user) do
-      :ok
-    else
-      {:error, :not_authorized}
-    end
-  end
-
-  defp write_review(task, user, base_attrs, opts) do
-    with {:ok, prepared} <- persist_review_fields(task, user, base_attrs) do
-      maybe_mark_reviewed(prepared, user, opts)
-    end
-  end
-
-  defp maybe_mark_reviewed(task, user, opts) do
-    if Keyword.get(opts, :move_after_review?, true) do
-      normalize_workflow(AgentWorkflow.mark_reviewed(task, user, webhook: false))
-    else
-      {:ok, task}
-    end
-  end
-
-  defp persist_review_fields(task, user, base_attrs) do
-    attrs =
-      base_attrs
-      |> Map.put(:reviewed_at, DateTime.utc_now() |> DateTime.truncate(:second))
-      |> Map.put(:reviewed_by_id, user.id)
-
-    task
-    |> Task.changeset(attrs)
-    |> Repo.update()
-  end
-
-  defp normalize_workflow({:ok, task, _after_review_hook}), do: {:ok, task}
-  defp normalize_workflow({:ok, task}), do: {:ok, task}
-  defp normalize_workflow({:error, _} = err), do: err
 
   defp scope_user(%Scope{user: %{id: _} = user}), do: user
   defp scope_user(_), do: nil

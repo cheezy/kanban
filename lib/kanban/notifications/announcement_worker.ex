@@ -28,6 +28,7 @@ defmodule Kanban.Notifications.AnnouncementWorker do
     ]
 
   alias Kanban.Accounts.User
+  alias Kanban.Locales
   alias Kanban.Mailer
   alias Kanban.Notifications.Announcement
   alias Kanban.Notifications.EmailWorker
@@ -35,8 +36,6 @@ defmodule Kanban.Notifications.AnnouncementWorker do
   alias KanbanWeb.Emails.AnnouncementEmail
 
   require Logger
-
-  @default_locale "en"
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"user_id" => user_id, "key" => key}})
@@ -52,15 +51,12 @@ defmodule Kanban.Notifications.AnnouncementWorker do
   end
 
   @doc """
-  The locale an announcement for `user` renders in: their stored choice when
-  the app still supports it, else English.
+  The locale an announcement for `user` renders in: their stored choice
+  mapped by `Kanban.Locales.resolve/1` (the exact translated locale, else its
+  base language, else English), or English when they never chose one.
   """
   @spec locale_for(User.t()) :: String.t()
-  def locale_for(%User{locale: locale}) when is_binary(locale) do
-    if locale in Gettext.known_locales(KanbanWeb.Gettext), do: locale, else: @default_locale
-  end
-
-  def locale_for(%User{}), do: @default_locale
+  def locale_for(%User{locale: locale}), do: Locales.resolve(locale)
 
   defp fetch_key(key) do
     if key in Announcement.keys(), do: {:ok, key}, else: {:skip, :unknown_announcement}

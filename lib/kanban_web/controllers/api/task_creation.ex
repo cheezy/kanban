@@ -240,8 +240,8 @@ defmodule KanbanWeb.API.TaskCreation do
   defp default_column([]), do: nil
 
   defp default_column([first | _] = columns) do
-    Enum.find(columns, &(&1.name == "Backlog")) ||
-      Enum.find(columns, &(&1.name == "Ready")) ||
+    Enum.find(columns, &Columns.named?(&1, "Backlog")) ||
+      Enum.find(columns, &Columns.named?(&1, "Ready")) ||
       first
   end
 

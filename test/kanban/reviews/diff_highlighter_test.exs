@@ -211,6 +211,16 @@ defmodule Kanban.Reviews.DiffHighlighterTest do
       assert lines |> Enum.map(&text/1) |> Enum.at(1) == "-- not a header"
     end
 
+    test "a diff with no hunk header is shown as one hunk without numbers" do
+      assert "+<div>\n+  x\n-old\n same\n" |> DiffHighlighter.lines("a.heex") |> shape() ==
+               [{:add, nil, nil}, {:add, nil, nil}, {:del, nil, nil}, {:ctx, nil, nil}]
+
+      headed = "diff --git a/b.ex b/b.ex\nindex 1..2 100644\n--- a/b.ex\n+++ b/b.ex\n+x\n"
+      assert headed |> DiffHighlighter.lines("b.ex") |> shape() == [{:add, nil, nil}]
+
+      assert DiffHighlighter.lines("Binary files a/c.png and b/c.png differ\n", "c.png") == []
+    end
+
     test "headers of a following file are dropped once a hunk's counts are spent" do
       diff = "@@ -1 +1 @@\n-a\n+b\ndiff --git a/y b/y\n--- a/y\n+++ b/y\n"
 

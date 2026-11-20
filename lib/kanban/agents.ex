@@ -46,6 +46,7 @@ defmodule Kanban.Agents do
   alias Kanban.Agents.Metrics
   alias Kanban.Agents.Queries
   alias Kanban.Agents.Roster
+  alias Kanban.Columns
   alias Kanban.Tasks.Task
 
   @default_event_limit 50
@@ -53,7 +54,8 @@ defmodule Kanban.Agents do
   # Board column names that drive an agent's derived status. A task's
   # `:in_progress` status spans both Doing and Review, so status is inferred
   # from the column name instead. These mirror the default column names seeded
-  # in `Kanban.Boards`.
+  # in `Kanban.Boards`, and match as `Kanban.Columns.named?/2` does (case and
+  # surrounding spaces ignored), as the claim and decision rules do.
   @doing_column "Doing"
   @review_column "Review"
 
@@ -406,12 +408,7 @@ defmodule Kanban.Agents do
   # here is `:waiting`). Shared by Roster's status/stuck classification.
   def in_review?(task), do: in_column?(task, @review_column)
 
-  defp in_column?(task, column_name) do
-    case task.column do
-      %{name: ^column_name} -> true
-      _ -> false
-    end
-  end
+  defp in_column?(task, column_name), do: Columns.named?(task.column, column_name)
 
   @doc false
   # Delegated to `Kanban.Timezone`, the single source of truth for the local

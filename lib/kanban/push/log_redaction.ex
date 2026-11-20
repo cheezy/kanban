@@ -9,7 +9,10 @@ defmodule Kanban.Push.LogRedaction do
   primary filter that replaces every line of either private key's body with
   `#{inspect("[REDACTED push credential]")}` in each warning-or-worse event,
   whether the event is still a report term or has already been translated to
-  a string.
+  a string. A body line shorter than 16 characters, such as the last line of
+  an Apple `.p8` key, is replaced together with the line next to it, so it is
+  redacted wherever the key is logged but never on its own inside ordinary
+  text (`fragments/1`).
 
   It installs nothing when no push credentials are configured, which is
   always the case in dev and test. See docs/push-notifications.md.
@@ -22,8 +25,9 @@ defmodule Kanban.Push.LogRedaction do
   @redacted "[REDACTED push credential]"
   @levels [:warning, :error, :critical, :alert, :emergency]
 
-  # A key-body line shorter than this is not distinctive enough to redact on
-  # its own; base64 PEM lines are 64 characters, the last one usually shorter.
+  # A fragment shorter than this is not distinctive enough to redact on its
+  # own; base64 PEM lines are 64 characters, the last one often far shorter,
+  # so a short line is redacted joined to a neighbouring line (fragments/1).
   @min_fragment 16
 
   @doc """
@@ -63,19 +67,61 @@ defmodule Kanban.Push.LogRedaction do
   end
 
   @doc """
-  The body lines of a PEM private key: the base64 lines between its
-  `-----BEGIN` and `-----END` lines, each at least #{@min_fragment} characters.
+  The fragments that redact every body line of a PEM private key, the base64
+  lines between its `-----BEGIN` and `-----END` lines.
+
+  A body line of at least #{@min_fragment} characters is a fragment on its
+  own. A shorter one, such as the last line of an Apple `.p8` key, is too
+  short to redact wherever it appears, because ordinary text could hold it,
+  so it is redacted together with the line before it and the line after it
+  (an armour line included), joined as a log can show them: by a line break,
+  by an escaped `\\n` as `inspect/1` prints one, or by nothing. Wherever the
+  key itself is logged, the short line sits next to its neighbour and is
+  redacted with it.
   """
   @spec fragments(term()) :: [String.t()]
   def fragments(pem) when is_binary(pem) do
-    pem
-    |> String.replace("\\n", "\n")
-    |> String.split(["\r\n", "\n"])
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(String.starts_with?(&1, "-----") or byte_size(&1) < @min_fragment))
+    lines =
+      pem
+      |> String.replace("\\n", "\n")
+      |> String.split(["\r\n", "\n"])
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    lines
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {line, index} -> line_fragments(line, index, lines) end)
+    |> Enum.uniq()
   end
 
   def fragments(_not_a_key), do: []
+
+  # How a log can join two lines of a key: a newline or CRLF as stored, the
+  # same escaped as `inspect/1` prints them, or nothing once the line breaks
+  # are stripped.
+  @separators ["\n", "\r\n", "\\n", "\\r\\n", ""]
+
+  defp line_fragments("-----" <> _armour, _index, _lines), do: []
+
+  defp line_fragments(line, _index, _lines) when byte_size(line) >= @min_fragment, do: [line]
+
+  defp line_fragments(line, index, lines) do
+    for separator <- @separators,
+        fragment <-
+          joined(neighbour(lines, index - 1), line, neighbour(lines, index + 1), separator),
+        byte_size(fragment) >= @min_fragment,
+        do: fragment
+  end
+
+  defp neighbour(_lines, index) when index < 0, do: nil
+  defp neighbour(lines, index), do: Enum.at(lines, index)
+
+  # The short line joined to the line before it and to the line after it.
+  defp joined(before, line, following, separator) do
+    for {first, second} <- [{before, line}, {line, following}],
+        is_binary(first) and is_binary(second),
+        do: first <> separator <> second
+  end
 
   @doc """
   The `:logger` filter: returns the event with every fragment redacted when

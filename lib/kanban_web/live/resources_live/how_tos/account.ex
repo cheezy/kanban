@@ -225,7 +225,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
           %{
             title: "Which Emails Use Your Language",
             content:
-              "Stride's service announcements, the emails about changes to Stride itself, are sent in the language saved to your account. So are the audit log streaming emails an organization's admins get about its streaming destinations. Other emails, such as task notifications, digests, account confirmation and password reset emails, are in English for now.",
+              "Stride's service announcements, the emails about changes to Stride itself, are sent in the language saved to your account. So are the audit log streaming emails an organization's admins get about its streaming destinations, the task notification emails, such as a review request or an assignment, and the weekly digest. Only the account confirmation and password reset emails are in English for now.",
             image: nil
           },
           %{

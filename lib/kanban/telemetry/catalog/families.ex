@@ -222,7 +222,7 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:device_refresh_reuse_detected, [:user_id, :organization_id, :device_id],
      "A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens."},
     {:device_revoked, [:user_id, :organization_id, :device_id, :device_user_id, :reason],
-     "A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token was presented again). user_id is who revoked it, device_user_id whose device it was."},
+     "A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it) or reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again). user_id is who revoked it, or the device's owner on a reuse_detected row; device_user_id is whose device it was."},
     {:review_approved,
      [
        :user_id,

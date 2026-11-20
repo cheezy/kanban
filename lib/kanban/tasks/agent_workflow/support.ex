@@ -14,11 +14,9 @@ defmodule Kanban.Tasks.AgentWorkflow.Support do
   functions perform the authorization checks.
   """
 
-  import Ecto.Query, only: [from: 2]
-
   alias Kanban.AfterGoal
   alias Kanban.Boards
-  alias Kanban.Columns.Column
+  alias Kanban.Columns
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Dependencies
@@ -40,11 +38,10 @@ defmodule Kanban.Tasks.AgentWorkflow.Support do
     Boards.get_user_access(board_id, user_id) in [:owner, :modify]
   end
 
+  # Matched as `Kanban.Columns.named?/2` matches a name (case and surrounding
+  # whitespace ignored), the lowest-positioned match when names repeat.
   @doc false
-  def get_column_by_name(board_id, name) do
-    from(c in Column, where: c.board_id == ^board_id and c.name == ^name)
-    |> Repo.one()
-  end
+  def get_column_by_name(board_id, name), do: Columns.get_column_by_name(board_id, name)
 
   @doc false
   def finalize_completion(task, user, board_id, _done_column, opts \\ []) do

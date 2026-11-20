@@ -12,6 +12,7 @@ defmodule KanbanWeb.BoardLive.Goals do
   also uses (through `KanbanWeb.BoardLive.Show`).
   """
 
+  alias Kanban.Columns
   alias Kanban.Tasks
   alias KanbanWeb.BoardLive.ColumnActions
 
@@ -123,7 +124,7 @@ defmodule KanbanWeb.BoardLive.Goals do
 
   @doc "Returns the MapSet of backlog goal ids that have backlog children."
   def compute_backlog_promotable_goals(columns, tasks_by_column) do
-    case Enum.find(columns, fn col -> col.name == "Backlog" end) do
+    case Enum.find(columns, &Columns.named?(&1, "Backlog")) do
       nil -> MapSet.new()
       backlog_col -> promotable_goal_ids(Map.get(tasks_by_column, backlog_col.id, []))
     end

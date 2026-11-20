@@ -342,6 +342,29 @@ defmodule Kanban.NotificationsTest do
       end
     end
 
+    test "a board-less notify drops an id with no user and still notifies the others" do
+      valid = user_fixture()
+      missing = %{id: (Repo.aggregate(Kanban.Accounts.User, :max, :id) || 0) + 100_000}
+
+      attrs = fn ->
+        %{
+          title: "Q4 launch",
+          url_path: "/targets/977",
+          metadata: %{"status" => "at_risk", "target_date" => "2026-12-01"},
+          dedupe_key: "target:#{System.unique_integer([:positive])}"
+        }
+      end
+
+      for recipients <- [[valid, missing], [missing, valid]] do
+        assert {:ok, [%Notification{user_id: user_id, board_id: nil}]} =
+                 Notifications.notify(:target_status_changed, recipients, attrs.())
+
+        assert user_id == valid.id
+      end
+
+      assert {:ok, []} = Notifications.notify(:target_status_changed, [missing], attrs.())
+    end
+
     test "rejects board-scoped url paths and task metadata on board-less notifications" do
       user = user_fixture()
 

@@ -1106,7 +1106,6 @@ msgid "Agent"
 msgstr "Agente"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #: lib/kanban_web/notification_labels.ex
 #: lib/kanban_web/review_report_helpers/tokens.ex
 #, elixir-autogen, elixir-format
@@ -1142,7 +1141,6 @@ msgid "Cannot reorder columns on AI optimized boards"
 msgstr "Não é possível reordenar colunas em quadros otimizados para IA"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #, elixir-autogen, elixir-format
 msgid "Changes Requested"
 msgstr "Mudanças solicitadas"
@@ -1375,7 +1373,6 @@ msgstr "Padrões a seguir"
 #: lib/kanban_web/components/acceptance_checklist.ex
 #: lib/kanban_web/live/board_live/webhook_views.ex
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #: lib/kanban_web/live/workspace_live/exports.ex
 #, elixir-autogen, elixir-format
 msgid "Pending"
@@ -1394,7 +1391,6 @@ msgstr "Armadilhas"
 
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex
 #: lib/kanban_web/live/task_live/components/review_status_section.ex
-#: lib/kanban_web/live/task_live/form_component.html.heex
 #, elixir-autogen, elixir-format
 msgid "Rejected"
 msgstr "Rejeitada"
@@ -1442,11 +1438,6 @@ msgstr "Selecionar"
 #, elixir-autogen, elixir-format
 msgid "Select complexity"
 msgstr "Selecionar complexidade"
-
-#: lib/kanban_web/live/task_live/form_component.html.heex
-#, elixir-autogen, elixir-format
-msgid "Select status"
-msgstr "Selecionar status"
 
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex
 #: lib/kanban_web/live/task_live/form_component.html.heex
@@ -8840,11 +8831,6 @@ msgstr "Tipo de notificação desconhecido."
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "Você é adicionado ou removido de um quadro, ou seu acesso muda."
 
-#: lib/kanban_web/live/user_live/settings_components.ex
-#, elixir-autogen, elixir-format
-msgid "in-app · email"
-msgstr "app · e-mail"
-
 #: lib/kanban_web/emails/digest_email.ex
 #, elixir-autogen, elixir-format
 msgid "%{count} d"
@@ -8876,6 +8862,7 @@ msgid "Oldest pending reviews"
 msgstr "Revisões pendentes mais antigas"
 
 #: lib/kanban_web/emails/digest_email.ex
+#: lib/kanban_web/live/task_live/form_component.html.heex
 #, elixir-autogen, elixir-format
 msgid "Open the review queue"
 msgstr "Abrir a fila de revisão"
@@ -15734,3 +15721,28 @@ msgid "%{count} thing waited overnight"
 msgid_plural "%{count} things waited overnight"
 msgstr[0] "%{count} item esperou durante a noite"
 msgstr[1] "%{count} itens esperaram durante a noite"
+
+#: lib/kanban_web/live/user_live/push_settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "Custom"
+msgstr "Personalizado"
+
+#: lib/kanban_web/components/review_detail_header.ex
+#, elixir-autogen, elixir-format
+msgid "Read-only access: you can view this review but not decide it."
+msgstr "Acesso somente leitura: você pode ver esta revisão, mas não decidi-la."
+
+#: lib/kanban_web/live/user_live/settings_components.ex
+#, elixir-autogen, elixir-format
+msgid "in-app · email · push"
+msgstr "app · e-mail · push"
+
+#: lib/kanban_web/live/task_live/components/review_status_section.ex
+#, elixir-autogen, elixir-format
+msgid "Not reviewed"
+msgstr "Não revisado"
+
+#: lib/kanban_web/live/task_live/form_component.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reviews are decided in the review queue, not in this form."
+msgstr "As revisões são decididas na fila de revisão, não neste formulário."

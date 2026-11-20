@@ -120,6 +120,25 @@ defmodule Kanban.Push.PayloadTest do
       assert PayloadBuilder.locale(%Device{locale: nil}) == "en"
     end
 
+    # D4: a device's region tag falls back to its base language, and a
+    # language Stride is not translated into falls back to English.
+    test "a push for a de-AT device is German and one for a ko device is English" do
+      n = notification(:review_requested)
+
+      build_for = fn tag ->
+        build(n, context(locale: PayloadBuilder.locale(%Device{locale: tag})))
+      end
+
+      german = build(n, context(locale: "de"))
+      english = build(n, context(locale: "en"))
+
+      assert german.title != english.title
+      assert build_for.("de-AT") == german
+      assert build_for.("de_at") == german
+      assert build_for.("ko") == english
+      assert build_for.("ko").title == "W2701 is ready for review"
+    end
+
     test "translates the counts in every locale" do
       n = notification(:review_requested)
 

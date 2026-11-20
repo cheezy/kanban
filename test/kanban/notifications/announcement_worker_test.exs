@@ -237,6 +237,9 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
       assert AnnouncementWorker.locale_for(%User{locale: "xx"}) == "en"
       assert AnnouncementWorker.locale_for(%User{locale: nil}) == "en"
       assert AnnouncementWorker.locale_for(%User{locale: "ja"}) == "ja"
+      # D4: a region tag falls back to its base language.
+      assert AnnouncementWorker.locale_for(%User{locale: "de-AT"}) == "de"
+      assert AnnouncementWorker.locale_for(%User{locale: "ko"}) == "en"
     end
 
     test "skips a user disabled between the fan-out and the send" do

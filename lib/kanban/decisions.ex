@@ -10,17 +10,15 @@ defmodule Kanban.Decisions do
   | Kind | Source | Clears when |
   |---|---|---|
   | `:review` | pending reviews on the person's boards, from the `/review` query (`Kanban.Reviews.list_pending_reviews/1`) | the review is decided, or the task leaves Review |
-  | `:released` | the person's newest unread `task_unclaimed` notification per task, while the task is open in Ready | the task is claimed or moved out of Ready, archived, or the notification is read |
+  | `:released` | the person's newest unread `task_unclaimed` notification per task, while the task is open in Ready and has not been claimed since (`Kanban.Tasks.TaskClaim`) | the task is claimed (and stays cleared however that claim ends), moved out of Ready, archived, or the notification is read |
   | `:claim_expired` | the person's newest `claim_expired` notification per task, sent at or after the current claim's expiry, while the task is still in Doing | the task is claimed again, moved, completed or archived |
   | `:hook_failed` | goals whose last `after_goal` attempt failed: any recorded attempt whose `exit_code` is not `0`, as `Kanban.Tasks.report_after_goal/2` decides | a later attempt succeeds |
   | `:ready_empty` | boards the person can write to with no Ready task, at least one Backlog task, and an agent that worked on the board in the last 24 hours and is idle on every board the person can see | a task reaches Ready, or no agent is idle |
 
-  Two limits follow from what is stored. A `:released` item for an
-  earlier release comes back when a later claim ends without a
-  `task_unclaimed` notification (`Kanban.Tasks.ClaimRelease`, or a move
-  back to Ready), because no claim history is kept to tell the two apart.
-  And an agent busy only on boards the person cannot see counts as idle,
-  since those boards are never read for this person.
+  One limit follows from what the person may see, and is kept on purpose:
+  an agent busy only on boards the person cannot see counts as idle, since
+  those boards are never read for this person: reading them would tell the
+  person about work on boards they have no access to.
 
   ## Scope
 
@@ -45,8 +43,14 @@ defmodule Kanban.Decisions do
       `expired_at` for an expired claim, `exit_code` and `duration_ms` for a
       failed hook (never its output), `idle_agents` and `backlog_count` for an
       empty Ready column
-    * `:actions` - the actions the server lets this person take, as atoms
-    * `:web_url` - the absolute URL of the item on the web
+    * `:actions` - the actions the server lets this person take, as atoms,
+      on the device asking: with `device_class: :phone`, a review whose change
+      `Kanban.Reviews.MobileGuard` finds too large for a phone has no
+      `:approve`, as the review detail's `approvable_here` says; a tablet and
+      the web (`nil`, the default) keep it
+    * `:web_url` - the absolute URL of the item on the web: for a task, its
+      edit page when the person can write to the board, else the board, which
+      a read-only member can open
     * `:holds_up` - how many tasks the item holds up (`nil` for `:ready_empty`,
       which carries its idle agents in `:details` instead)
     * `:held_identifiers` - the identifiers of up to 5 of those tasks, the
@@ -82,6 +86,13 @@ defmodule Kanban.Decisions do
       can access (`Kanban.Agents.fleet_health/1`), dormant agents left out.
       Like the `:ready_empty` idle check, this reads every board the person
       can access, including boards outside the plan.
+
+  ## Options
+
+    * `:source` - `:api` (the default), `:channel` or `:push`; see Telemetry
+    * `:device_class` - `:phone`, `:tablet` or `nil` (the web, the default),
+      the class of the device the items are for; see `:actions` above. Any
+      other value raises `ArgumentError`.
 
   ## Telemetry
 
@@ -130,11 +141,14 @@ defmodule Kanban.Decisions do
           agents_working: non_neg_integer()
         }
 
-  @type option :: {:source, :api | :channel | :push}
+  @type option ::
+          {:source, :api | :channel | :push}
+          | {:device_class, Kanban.Reviews.MobileGuard.device_class()}
 
   @max_items 100
   @shown_held 5
   @telemetry_sources [:api, :channel, :push]
+  @device_classes [nil, :phone, :tablet]
 
   @sources [
     &Sources.review/1,
@@ -191,8 +205,9 @@ defmodule Kanban.Decisions do
   # the cap) and how long the whole build took, the summary included.
   defp timed(scope, opts, fun) do
     source = source!(opts)
+    device_class = device_class!(opts)
     started = System.monotonic_time()
-    {ranked, held_up} = ranked(scope)
+    {ranked, held_up} = ranked(scope, device_class)
     result = fun.(ranked, held_up)
 
     Kanban.Telemetry.emit(
@@ -215,16 +230,27 @@ defmodule Kanban.Decisions do
     end
   end
 
-  # Every item, ordered but not capped, and the number of distinct tasks they
-  # hold up, so the summary can count past both caps.
-  defp ranked(%Scope{user: %User{} = user} = scope) do
-    case unlocked_boards(user) do
-      [] -> {[], 0}
-      boards -> scope |> Sources.context(user, boards) |> collect() |> rank()
+  defp device_class!(opts) do
+    case Keyword.get(opts, :device_class) do
+      device_class when device_class in @device_classes ->
+        device_class
+
+      other ->
+        raise ArgumentError,
+              "unknown device class #{inspect(other)}, expected one of #{inspect(@device_classes)}"
     end
   end
 
-  defp ranked(_scope), do: {[], 0}
+  # Every item, ordered but not capped, and the number of distinct tasks they
+  # hold up, so the summary can count past both caps.
+  defp ranked(%Scope{user: %User{} = user} = scope, device_class) do
+    case unlocked_boards(user) do
+      [] -> {[], 0}
+      boards -> scope |> Sources.context(user, boards, device_class) |> collect() |> rank()
+    end
+  end
+
+  defp ranked(_scope, _device_class), do: {[], 0}
 
   defp capped(ranked), do: Enum.take(ranked, @max_items)
 
@@ -287,8 +313,21 @@ defmodule Kanban.Decisions do
     Map.merge(item, %{holds_up: length(all), held_identifiers: Enum.take(all, @shown_held)})
   end
 
-  defp sort_key(item) do
-    {ready_empty_rank(item.kind), -(item.holds_up || 0), since_key(item.since), item.id}
+  # Ties on the time fall back to the item id with its trailing number read as
+  # a number, so "review:task:999999" sorts before "review:task:1000000" as
+  # the web queue's integer ids do.
+  @doc false
+  def sort_key(item) do
+    {ready_empty_rank(item.kind), -(item.holds_up || 0), since_key(item.since), id_key(item.id)}
+  end
+
+  defp id_key(id) do
+    {prefix, [last]} = id |> String.split(":") |> Enum.split(-1)
+
+    case Integer.parse(last) do
+      {number, ""} -> {prefix, number, ""}
+      _not_a_number -> {prefix, 0, last}
+    end
   end
 
   defp ready_empty_rank(:ready_empty), do: 1
