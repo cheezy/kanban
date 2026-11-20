@@ -15,8 +15,9 @@ defmodule Kanban.Reviews.ReviewCommit do
   Everything the review causes outside the database waits for the commit:
   the completion and goal telemetry the move emits, the audit event's
   telemetry and log line (`Kanban.AuditLog.event/2` defers them), the
-  completer's notification, the webhooks and the review telemetry all go
-  through `Kanban.Telemetry.AfterCommit`. A caller that runs the review inside
+  completer's notification, the webhooks, the review telemetry and the
+  first-action count (`Kanban.Decisions.ActedOn.reviewed/3`, read from the
+  locked task) all go through `Kanban.Telemetry.AfterCommit`. A caller that runs the review inside
   its own transaction, as the app's approval and request for changes do
   (`Kanban.Reviews.Approval`, `Kanban.Reviews.RequestChanges`), wraps that
   transaction in `AfterCommit.after_commit/1`, so all of it waits for the
@@ -25,6 +26,7 @@ defmodule Kanban.Reviews.ReviewCommit do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Decisions.ActedOn
   alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Reviews
@@ -121,11 +123,17 @@ defmodule Kanban.Reviews.ReviewCommit do
          {:ok, fetched} <- Reviews.get_pending_review(scope, task.id),
          :ok <- authorize_write(fetched, user),
          {:ok, final} <- write_review(task, user, base_attrs, opts),
-         :ok <- Audit.record(base_attrs.review_status, fetched, user, context) do
+         :ok <- record(base_attrs.review_status, fetched, user, context) do
       final
     else
       {:error, reason} -> Repo.rollback(reason)
     end
+  end
+
+  # The audit row, then the first-action count, which waits for the commit.
+  defp record(status, fetched, user, context) do
+    with :ok <- Audit.record(status, fetched, user, context),
+         do: ActedOn.reviewed(fetched, status, context.via)
   end
 
   defp lock_task_row(task_id) do

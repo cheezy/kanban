@@ -1,8 +1,9 @@
 defmodule Kanban.Telemetry.Catalog.DecisionEvents do
   @moduledoc """
   The decisions events in `Kanban.Telemetry.Catalog`
-  (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.4, §16), emitted by
-  `Kanban.Decisions` each time it builds the decisions waiting on a person.
+  (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §7.4, §16): `built`,
+  emitted by `Kanban.Decisions` each time it builds the decisions waiting on
+  a person, and `acted_on`, emitted when a person first acts on one.
 
   `built` measures `count`, the items waiting before the 100-item cap, and
   `duration`, in native time units. Its only metadata is `source`, the fixed
@@ -16,6 +17,21 @@ defmodule Kanban.Telemetry.Catalog.DecisionEvents do
   the `Kanban.Decisions` context.
 
   It is not persisted: a signed-in device can cause it at will.
+
+  `acted_on` is emitted by `Kanban.Decisions.ActedOn` the first time a
+  person acts on a decision, on the web or in the app (§16, §23). It
+  measures `count: 1` and `wait_seconds`, the whole seconds from the
+  decision's `since` to the action, never below 0. Its metadata is the
+  decision's `kind`, the `action` (`:approve`, `:request_changes`, `:move`,
+  `:promote` or `:reply`), `via` (`:web`, `:ios` or `:android`), and the
+  `task_id` and `board_id`; `task_id` is left out for `:ready_empty`, which
+  has no task. Its tags are `kind` and `via`, never an id. Its domain is the
+  singular `:decision`, as the naming rule prefers.
+
+  It is persisted: it fires at most once per decision, a `decision_actions`
+  row decides which action was first, and only a signed-in person acting on
+  a decision an agent caused can cause it.
+
   `Kanban.Telemetry.Catalog` appends these entries to its own list; nothing
   else should call this module.
   """
@@ -33,6 +49,19 @@ defmodule Kanban.Telemetry.Catalog.DecisionEvents do
       metrics: [sum: :count, summary: :duration],
       persist: false,
       tags: [:source]
+    },
+    %{
+      name: [:kanban, :decision, :acted_on],
+      kind: :event,
+      domain: :decision,
+      measurements: [:count, :wait_seconds],
+      metadata: [:kind, :action, :via, :task_id, :board_id],
+      description:
+        "A person first acted on a decision, on the web or in the app. wait_seconds is the whole seconds from the decision's since to the action, never below 0; action is :approve, :request_changes, :move, :promote or :reply; via is :web, :ios or :android; task_id is left out for ready_empty.",
+      legacy: false,
+      metrics: [summary: :wait_seconds, counter: :count],
+      persist: true,
+      tags: [:kind, :via]
     }
   ]
 

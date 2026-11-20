@@ -1794,6 +1794,36 @@ defmodule KanbanWeb.BoardLive.ShowTest do
              end)
     end
 
+    test "a goal promote that fills an empty Ready column emits acted_on", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      columns = board |> Kanban.Columns.list_columns() |> Map.new(&{&1.name, &1})
+
+      {:ok, %{goal: goal}} =
+        Kanban.Tasks.create_goal_with_tasks(columns["Backlog"], %{title: "Test Goal"}, [
+          %{title: "Child Task 1"}
+        ])
+
+      # An agent that finished work an hour ago and holds nothing now is idle.
+      {:ok, _} =
+        columns["Done"]
+        |> task_fixture()
+        |> Kanban.Tasks.update_task(%{
+          completed_by_agent: "Claude",
+          completed_at: DateTime.add(DateTime.utc_now(), -3600),
+          status: :completed
+        })
+
+      attach_telemetry([:kanban, :decision, :acted_on])
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+      render_hook(show_live, "promote_goal_to_ready", %{"id" => to_string(goal.id)})
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], %{count: 1}, metadata}
+      assert metadata == %{kind: :ready_empty, action: :promote, via: :web, board_id: board.id}
+    end
+
     test "shows error when promoting a non-goal task", %{conn: conn, user: user} do
       board = ai_optimized_board_fixture(user)
       backlog = Kanban.Columns.list_columns(board) |> Enum.find(&(&1.name == "Backlog"))

@@ -141,6 +141,14 @@ with the number of items waiting, the build's duration and `source: :api`; see
 the [telemetry guide](../telemetry.md#decisions-events). A refused request
 (`401` or `403`) builds nothing and emits nothing.
 
+The first time a person acts on a decision, from the app or the web, the
+action emits `[:kanban, :decision, :acted_on]` with how long the decision
+waited: an approval or request for changes on a review, a move to Backlog of
+a released task or an expired claim, a promote that fills an empty Ready
+column, or a reply on a released task or a failed goal. A later action on the
+same decision emits nothing; see the
+[telemetry guide](../telemetry.md#decision-events).
+
 ## Errors
 
 - `401 {"error": "Invalid access token"}` for a missing, expired or revoked

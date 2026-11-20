@@ -15,6 +15,7 @@ defmodule KanbanWeb.BoardLive.TaskActions do
   import Phoenix.LiveView, only: [put_flash: 3, push_event: 3, stream: 3, stream: 4]
 
   alias Kanban.Columns
+  alias Kanban.Decisions
   alias Kanban.Tasks
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.Show
@@ -78,7 +79,7 @@ defmodule KanbanWeb.BoardLive.TaskActions do
   defp do_handle_task_move(socket, task, new_column, new_position) do
     require Logger
 
-    case Tasks.move_task(task, new_column, new_position) do
+    case tracked_move(socket, task, new_column, new_position) do
       {:ok, _task} ->
         handle_task_move_success(socket)
 
@@ -96,6 +97,22 @@ defmodule KanbanWeb.BoardLive.TaskActions do
         |> push_event("move_failed", %{})
         |> BoardState.reload_board_columns()
     end
+  end
+
+  # A drag or the Move to Ready arrow is a person's move, counted as the
+  # first action on any decision it resolves (Kanban.Decisions.acted_on/3).
+  defp tracked_move(socket, task, new_column, new_position) do
+    Decisions.acted_on(
+      socket.assigns.current_scope,
+      [
+        action: :move,
+        via: :web,
+        board_id: socket.assigns.board.id,
+        task_ids: [task.id],
+        into_ready: Columns.named?(new_column, "Ready")
+      ],
+      fn -> Tasks.move_task(task, new_column, new_position) end
+    )
   end
 
   defp handle_task_move_success(socket) do
@@ -229,7 +246,7 @@ defmodule KanbanWeb.BoardLive.TaskActions do
   end
 
   def do_promote_goal(socket, goal) do
-    case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
+    case tracked_promote_goal(socket, goal) do
       {:ok, count} ->
         columns = Columns.list_columns(socket.assigns.board)
 
@@ -254,6 +271,17 @@ defmodule KanbanWeb.BoardLive.TaskActions do
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to move goal to Ready"))}
     end
+  end
+
+  # Promoting a goal moves its Backlog children into Ready, a person's move
+  # counted as the first action on an empty Ready column it fills.
+  defp tracked_promote_goal(socket, goal) do
+    board_id = socket.assigns.board.id
+    act = [action: :move, via: :web, board_id: board_id, into_ready: true]
+
+    Decisions.acted_on(socket.assigns.current_scope, act, fn ->
+      Tasks.promote_goal_to_ready(goal, board_id)
+    end)
   end
 
   def lookup_viewable_task(socket, id) do

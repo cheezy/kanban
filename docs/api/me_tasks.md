@@ -111,6 +111,13 @@ notified exactly as a comment written on the web.
 `201 Created` with the comment, in the shape `GET /api/me/tasks/:id` gives
 it, under `data`.
 
+A reply on a released task or a failed goal is the person's first action on
+that decision, unless someone already acted on it, and emits
+`[:kanban, :decision, :acted_on]` with `action: :reply`, as does a move to
+Backlog of a released task or an expired claim, with `action: :move`; `via`
+is the device's platform
+([telemetry guide](../telemetry.md#decision-events)).
+
 ### Check order
 
 1. the person's plan (`403 plan_required`);

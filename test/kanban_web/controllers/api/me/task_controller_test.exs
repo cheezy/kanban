@@ -13,6 +13,7 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
 
   alias Kanban.ApiTokens
@@ -601,6 +602,51 @@ defmodule KanbanWeb.API.Me.TaskControllerTest do
 
       assert token |> comment(task.id, %{content: ""}) |> json_response(422) ==
                %{"errors" => %{"content" => ["can't be blank"]}}
+    end
+  end
+
+  describe "first action on a decision" do
+    setup do
+      attach_telemetry([:kanban, :decision, :acted_on])
+      :ok
+    end
+
+    defp released_task!(ctx) do
+      task = task_fixture(ctx.cols["Ready"])
+      {:ok, claimed, _hook} = Tasks.claim_next_task([], ctx.user, ctx.board.id, task.identifier)
+      {:ok, released} = Tasks.unclaim_task(claimed, ctx.user, "Needs a decision")
+      released
+    end
+
+    test "a reply on a released task emits acted_on via the device's platform", ctx do
+      task = released_task!(ctx)
+
+      assert ctx.phone |> comment(task.id, %{content: "On it"}) |> json_response(201)
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], %{count: 1},
+                      %{kind: :released, action: :reply, via: :ios, task_id: task_id}}
+
+      assert task_id == task.id
+
+      assert ctx.phone |> comment(task.id, %{content: "Again"}) |> json_response(201)
+      refute_receive {:telemetry_event, [:kanban, :decision, :acted_on], _, _}
+    end
+
+    test "a move to Backlog of a released task emits acted_on with action move", ctx do
+      task = released_task!(ctx)
+
+      assert %{"data" => %{"moved" => true}} =
+               ctx.phone |> move(task.id) |> json_response(200)
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], _,
+                      %{kind: :released, action: :move, via: :ios}}
+    end
+
+    test "a reply on a task that is no decision emits nothing", ctx do
+      task = task_fixture(ctx.cols["Backlog"])
+
+      assert ctx.phone |> comment(task.id, %{content: "Hello"}) |> json_response(201)
+      refute_receive {:telemetry_event, [:kanban, :decision, :acted_on], _, _}
     end
   end
 

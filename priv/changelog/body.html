@@ -86,6 +86,18 @@
               both files list no apps. See
               <code>docs/universal-links.md</code>.
             </li>
+            <li>
+              <strong>Time to act on decisions is measured.</strong> The
+              first time someone approves or asks for changes on a review,
+              moves a released or expired task, fills an empty Ready column,
+              or replies on a released task or a failed goal, from the Stride
+              app or the web, Stride now records how long that decision
+              waited. Only the first action on each decision counts, and
+              actions by agents never do. Operators see it as the
+              <code>[:kanban, :decision, :acted_on]</code> telemetry event,
+              stored with the other metrics; see
+              <code>docs/telemetry.md</code>.
+            </li>
           </ul>
         </div>
 

@@ -33,6 +33,7 @@ defmodule KanbanWeb.API.Me.TaskController do
   use KanbanWeb, :controller
 
   alias Kanban.Boards
+  alias Kanban.Decisions
   alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.API.Me.CaptureParams
@@ -59,7 +60,7 @@ defmodule KanbanWeb.API.Me.TaskController do
     result =
       with :ok <- check_user(scope),
            {:ok, task, _board} <- task_for(scope, id, :read),
-           {:ok, comment} <- create_comment(scope, task, conn.body_params) do
+           {:ok, comment} <- create_comment(conn, task) do
         conn
         |> put_status(:created)
         |> render(:comment, comment: %{comment | author: scope.user})
@@ -73,7 +74,7 @@ defmodule KanbanWeb.API.Me.TaskController do
 
     with :ok <- check_user(scope),
          {:ok, task, board} <- task_for(scope, id, :write),
-         {:ok, result} <- Tasks.move_to_backlog(scope, board, task) do
+         {:ok, result} <- move_task_to_backlog(conn, board, task) do
       render(conn, :moved, result: result)
     end
   end
@@ -126,11 +127,32 @@ defmodule KanbanWeb.API.Me.TaskController do
   # Only content is read from the body. A refusal the comment policy makes
   # after the lookup (the person removed from the board in between) is a 404,
   # as is a task deleted in between.
-  defp create_comment(scope, task, body_params) do
-    case Tasks.create_comment(scope, task, %{"content" => Map.get(body_params, "content")}) do
+  #
+  # A reply and a move to Backlog are a person's actions, counted as the
+  # first action on any decision they resolve (Kanban.Decisions.acted_on/3).
+  defp create_comment(conn, task) do
+    %{current_scope: scope, current_device: device} = conn.assigns
+    attrs = %{"content" => Map.get(conn.body_params, "content")}
+    act = [action: :reply, via: device.platform, task_id: task.id]
+
+    case Decisions.acted_on(scope, act, fn -> Tasks.create_comment(scope, task, attrs) end) do
       {:error, :unauthorized} -> {:error, :not_found}
       result -> result
     end
+  end
+
+  defp move_task_to_backlog(conn, board, task) do
+    %{current_scope: scope, current_device: device} = conn.assigns
+
+    act = [
+      action: :move,
+      via: device.platform,
+      board_id: board.id,
+      task_ids: [task.id],
+      into_ready: false
+    ]
+
+    Decisions.acted_on(scope, act, fn -> Tasks.move_to_backlog(scope, board, task) end)
   end
 
   defp require_access(_board, :read), do: :ok

@@ -52,6 +52,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   use KanbanWeb, :live_component
 
   alias Kanban.Attachments
+  alias Kanban.Decisions
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
@@ -127,8 +128,13 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
 
   @impl true
   def handle_event("add_comment", %{"task_comment" => params}, socket) when is_map(params) do
-    socket.assigns.current_scope
-    |> Tasks.create_comment(task_ref(socket), params)
+    scope = socket.assigns.current_scope
+    # A reply is a person's action, counted as the first action on a released
+    # task or a failed goal it answers (Kanban.Decisions.acted_on/3).
+    act = [action: :reply, via: :web, task_id: socket.assigns.task_id]
+
+    scope
+    |> Decisions.acted_on(act, fn -> Tasks.create_comment(scope, task_ref(socket), params) end)
     |> handle_create_result(socket)
   end
 

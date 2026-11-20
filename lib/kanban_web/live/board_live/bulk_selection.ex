@@ -34,6 +34,8 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   import Phoenix.Component, only: [assign: 3, update: 3]
   import Phoenix.LiveView, only: [push_event: 3, put_flash: 3, stream: 3]
 
+  alias Kanban.Columns
+  alias Kanban.Decisions
   alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.BoardLive.Authorization
@@ -232,7 +234,7 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
 
     run(
       socket,
-      &Tasks.bulk_move_tasks(&1, &2, &3, column_id),
+      &tracked_bulk_move(&1, &2, &3, {column_id, column}),
       %{column_id: column_id},
       &moved_message(&1, column_name)
     )
@@ -279,6 +281,24 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   end
 
   defp selection_event(_event, _params, socket), do: {:noreply, socket}
+
+  # A bulk move is a person's move, counted as the first action on any
+  # decision it resolves (Kanban.Decisions.acted_on/3). `column` is nil when
+  # the chosen column is not among the board's columns; the move itself
+  # decides what to do with `column_id`.
+  defp tracked_bulk_move(scope, board, task_ids, {column_id, column}) do
+    act = [
+      action: :move,
+      via: :web,
+      board_id: board.id,
+      task_ids: task_ids,
+      into_ready: column != nil and Columns.named?(column, "Ready")
+    ]
+
+    Decisions.acted_on(scope, act, fn ->
+      Tasks.bulk_move_tasks(scope, board, task_ids, column_id)
+    end)
+  end
 
   # Runs a bulk action over the server-held selection and reports the result.
   defp run(socket, action, context, success_message) do

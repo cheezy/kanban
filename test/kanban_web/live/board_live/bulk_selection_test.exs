@@ -42,6 +42,29 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
   @refused [:kanban, :plan, :feature_refused]
   @locked_flash "Bulk actions are available to organizations. Nothing was changed."
 
+  describe "bulk move as the first action on a decision" do
+    test "moving a released task out of Ready emits acted_on via web", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+      columns = board |> Kanban.Columns.list_columns() |> Map.new(&{&1.name, &1})
+      task = task_fixture(columns["Ready"])
+      {:ok, claimed, _hook} = Tasks.claim_next_task([], user, board.id, task.identifier)
+      {:ok, _released} = Tasks.unclaim_task(claimed, user, "Needs a decision")
+      attach_telemetry([:kanban, :decision, :acted_on])
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      enter_selection(view)
+      select(view, task)
+      render_hook(view, "bulk_move", %{"column_id" => to_string(columns["Backlog"].id)})
+
+      assert reload(task).column_id == columns["Backlog"].id
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], %{count: 1},
+                      %{kind: :released, action: :move, via: :web, task_id: task_id}}
+
+      assert task_id == task.id
+    end
+  end
+
   defp set_workspace(%Board{id: id} = board, workspace_id) do
     {1, _} =
       Board |> where([b], b.id == ^id) |> Repo.update_all(set: [workspace_id: workspace_id])

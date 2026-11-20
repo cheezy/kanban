@@ -200,6 +200,11 @@ on the web is, and emits the same `[:kanban, :task, :moved]` event, so an open
 board on the web updates card by card. Nothing is broadcast when a promote is
 refused.
 
+A promote that fills a `ready_empty` decision's empty Ready column is the
+person's first action on it, and emits `[:kanban, :decision, :acted_on]`
+with `action: :promote` and the device's platform as `via`
+([telemetry guide](../telemetry.md#decision-events)).
+
 ### Check order
 
 1. the person's plan (`403 plan_required`);

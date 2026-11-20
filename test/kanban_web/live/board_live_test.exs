@@ -1577,6 +1577,32 @@ defmodule KanbanWeb.BoardLiveTest do
       refute has_element?(other_viewer, arrow_selector(task))
     end
 
+    test "the Ready arrow that fills an empty Ready column is the first action on it", %{
+      conn: conn,
+      user: user
+    } do
+      Kanban.TelemetryHelpers.attach_telemetry([:kanban, :decision, :acted_on])
+      %{board: board, backlog: backlog} = backlog_ready_board(user)
+      task = task_fixture(backlog, %{title: "Promote me"})
+
+      # An agent that finished work an hour ago and holds nothing now is idle.
+      {:ok, _} =
+        board
+        |> column_fixture(%{name: "Done"})
+        |> task_fixture()
+        |> Kanban.Tasks.update_task(%{
+          completed_by_agent: "Claude",
+          completed_at: DateTime.add(DateTime.utc_now(), -3600),
+          status: :completed
+        })
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+      capture_log(fn -> show_live |> element(arrow_selector(task)) |> render_click() end)
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], %{count: 1}, metadata}
+      assert metadata == %{kind: :ready_empty, action: :promote, via: :web, board_id: board.id}
+    end
+
     test "after a move, focus is sent to the next Backlog arrow, else the previous one", %{
       conn: conn,
       user: user

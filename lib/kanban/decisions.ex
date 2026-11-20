@@ -103,6 +103,10 @@ defmodule Kanban.Decisions do
   `:push` (`Kanban.Push.PushWorker`).
   Any other source raises `ArgumentError`, because it is a metric tag.
 
+  A person's first action on a decision, on the web or in the app, emits
+  `[:kanban, :decision, :acted_on]` through `acted_on/3`
+  (`Kanban.Decisions.ActedOn`, which has the rules).
+
   ## Cost
 
   A fixed number of queries whatever the number of tasks: the boards, the
@@ -116,6 +120,7 @@ defmodule Kanban.Decisions do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Agents
+  alias Kanban.Decisions.ActedOn
   alias Kanban.Decisions.HoldsUp
   alias Kanban.Decisions.Sources
   alias Kanban.Plans
@@ -312,6 +317,14 @@ defmodule Kanban.Decisions do
   defp with_holds_up(item, all) do
     Map.merge(item, %{holds_up: length(all), held_identifiers: Enum.take(all, @shown_held)})
   end
+
+  @doc """
+  Runs `fun`, a person's move or reply on the web or in the app, and counts
+  it as the first action on each decision it resolves
+  (`Kanban.Decisions.ActedOn.track/3`). Returns `fun`'s result unchanged.
+  """
+  @spec acted_on(Scope.t() | nil, ActedOn.act(), (-> result)) :: result when result: term()
+  defdelegate acted_on(scope, act, fun), to: ActedOn, as: :track
 
   # Ties on the time fall back to the item id with its trailing number read as
   # a number, so "review:task:999999" sorts before "review:task:1000000" as

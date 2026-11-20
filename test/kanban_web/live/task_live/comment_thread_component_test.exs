@@ -33,6 +33,41 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
     :ok
   end
 
+  describe "a reply as the first action on a decision" do
+    test "a web reply on a released task emits acted_on via web" do
+      Kanban.TelemetryHelpers.attach_telemetry([:kanban, :decision, :acted_on])
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      ready = Kanban.Columns.get_column_by_name(board.id, "Ready")
+      task = task_fixture(ready)
+
+      {:ok, claimed, _hook} = Tasks.claim_next_task([], owner, board.id, task.identifier)
+      {:ok, _released} = Tasks.unclaim_task(claimed, owner, "Needs a decision")
+
+      {:ok, socket} =
+        CommentThreadComponent.update(
+          %{
+            id: CommentThreadComponent.dom_id(:form, task.id),
+            task_id: task.id,
+            current_scope: Scope.for_user(owner)
+          },
+          %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}, flash: %{}}}
+        )
+
+      {:noreply, _socket} =
+        CommentThreadComponent.handle_event(
+          "add_comment",
+          %{"task_comment" => %{"content" => "On it"}},
+          socket
+        )
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], %{count: 1},
+                      %{kind: :released, action: :reply, via: :web, task_id: task_id}}
+
+      assert task_id == task.id
+    end
+  end
+
   describe "update/2 and handle_event/3" do
     setup do
       owner = user_fixture()

@@ -13,6 +13,7 @@ defmodule KanbanWeb.API.Me.BoardControllerTest do
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
 
   alias Kanban.ApiTokens
@@ -327,6 +328,33 @@ defmodule KanbanWeb.API.Me.BoardControllerTest do
                  "error" => "Not Found"
                }
       end
+    end
+  end
+
+  describe "promote as the first action on an empty Ready column" do
+    test "a promote that fills an empty Ready column emits acted_on without task_id", ctx do
+      attach_telemetry([:kanban, :decision, :acted_on])
+      task = task_fixture(ctx.cols["Backlog"])
+
+      {:ok, _} =
+        ctx.cols["Done"]
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Claude",
+          completed_at: DateTime.add(DateTime.utc_now(), -3600),
+          status: :completed
+        })
+
+      assert ctx.phone |> promote(ctx.board.id, %{task_ids: [task.id]}) |> json_response(200)
+
+      assert_receive {:telemetry_event, [:kanban, :decision, :acted_on], %{count: 1}, metadata}
+
+      assert metadata == %{
+               kind: :ready_empty,
+               action: :promote,
+               via: :ios,
+               board_id: ctx.board.id
+             }
     end
   end
 

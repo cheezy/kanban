@@ -82,7 +82,8 @@ defmodule Kanban.TelemetryTest do
     :source
   ]
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
-  @particles ~w(out in up off down)
+  # "on" covers decision.acted_on.
+  @particles ~w(out in up off down on)
   # Irregular past tenses that do not end in "ed" (notification.read, digest.sent,
   # goal.reassignment_undone, decisions.built, push.held).
   @irregular_past ~w(read sent undone built held)
@@ -591,7 +592,7 @@ defmodule Kanban.TelemetryTest do
     assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
   end
 
-  # A past-tense verb ("archived") or phrasal verb ("logged_out"): the last
+  # A past-tense verb ("archived") or phrasal verb ("logged_out", "acted_on"): the last
   # word ends in "ed" or is an irregular past tense ("read", "sent"), or it is
   # a particle that follows a word ending in "ed". A past-tense verb may also
   # name a destination after "to" ("promoted_to_ready").

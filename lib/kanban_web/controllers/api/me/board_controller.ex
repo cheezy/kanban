@@ -33,6 +33,7 @@ defmodule KanbanWeb.API.Me.BoardController do
 
   alias Kanban.Boards
   alias Kanban.Columns
+  alias Kanban.Decisions
   alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.API.Me.PageParams
@@ -66,7 +67,7 @@ defmodule KanbanWeb.API.Me.BoardController do
 
     with :ok <- check_user(scope),
          {:ok, board} <- board_for(scope, id, :write),
-         {:ok, result} <- promote_body(scope, board, conn.body_params) do
+         {:ok, result} <- promote_body(conn, board) do
       render(conn, :promoted, result: result)
     end
   end
@@ -112,10 +113,24 @@ defmodule KanbanWeb.API.Me.BoardController do
     end
   end
 
-  # Only task_ids and needs_review are read from the body.
-  defp promote_body(scope, board, body_params) do
-    with {:ok, task_ids, needs_review} <- PromoteParams.cast(body_params) do
-      Tasks.promote_to_ready(scope, board, task_ids, needs_review: needs_review)
+  # Only task_ids and needs_review are read from the body. A promotion is a
+  # person's move into Ready, counted as the first action on the board's
+  # empty Ready column when it fills it (Kanban.Decisions.acted_on/3).
+  defp promote_body(conn, board) do
+    %{current_scope: scope, current_device: device} = conn.assigns
+
+    with {:ok, task_ids, needs_review} <- PromoteParams.cast(conn.body_params) do
+      act = [
+        action: :move,
+        via: device.platform,
+        board_id: board.id,
+        task_ids: task_ids,
+        into_ready: true
+      ]
+
+      Decisions.acted_on(scope, act, fn ->
+        Tasks.promote_to_ready(scope, board, task_ids, needs_review: needs_review)
+      end)
     end
   end
 

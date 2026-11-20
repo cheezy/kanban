@@ -1057,9 +1057,48 @@ W2758 added the event the app's Now screen and review queue emit
   a user, a board, a task or an item.
 - **The domain is plural.** The event is named after the `Kanban.Decisions`
   context, as the design names it, rather than the singular noun the naming
-  rule prefers.
+  rule prefers. [`[:kanban, :decision, :acted_on]`](#decision-events) uses the
+  singular.
 - **It is not persisted.** A signed-in device can cause it at will, so it is
   charted live only.
+
+### Decision events
+
+W2773 added the event that measures how long a decision waits before a person
+acts on it, the measure the native apps are judged by
+(`docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md` §16, §23). It is declared in
+`Kanban.Telemetry.Catalog.DecisionEvents`
+(`lib/kanban/telemetry/catalog/decision_events.ex`) and emitted by
+`Kanban.Decisions.ActedOn`.
+
+| Event | Measurements | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :decision, :acted_on]` | `count`, `wait_seconds` | `kind`, `action`, `via`, `task_id`, `board_id` | `Kanban.Decisions.acted_on/3` and the review path, once the action commits |
+
+- **What it carries.** `count` is `1`. `wait_seconds` is the whole seconds
+  from the decision's `since`, as `Kanban.Decisions` lists it, to the action,
+  never below 0. `kind` is the decision kind; `action` is `:approve` or
+  `:request_changes` for a review, `:move` for a released task or an expired
+  claim taken off the list, `:promote` for a move into Ready that fills an
+  empty Ready column (`:ready_empty`), and `:reply` for a comment on a
+  released task or a failed goal. `via` is `:web`, `:ios` or `:android`.
+  `task_id` is left out for `:ready_empty`, which has no task.
+- **First action only.** The first counted action records the decision's id
+  and `since` in `decision_actions`, whose unique index lets exactly one
+  action in. A later action on the same decision, by anyone, emits nothing,
+  and of two first actions at once one emits. A decision that comes back
+  starts waiting at a new `since` and counts again.
+- **People only.** Only the web's LiveViews, the app's `/api/me` controllers
+  and the review path pass a `via`. An agent's action never emits, and
+  neither does a person's action on a decision an agent already resolved.
+- **Not counted.** Moving a task in Review or a failed goal, which is not one
+  of their decision's actions, and a reorder that leaves a decision in place.
+- **The domain is singular.** Unlike `[:kanban, :decisions, :built]`, it
+  follows the naming rule's singular noun.
+- **Its tags are `kind` and `via`.** `action` is not an allowed tag, and an id
+  never is.
+- **It is persisted.** It fires at most once per decision, only for a signed-in
+  person, so its first metric, `wait_seconds`, is stored in `metrics_events`.
 
 ### Push events
 
@@ -1353,7 +1392,10 @@ Stored today:
   streaming destination's oldest undelivered audit event. The streaming sweep
   (`Kanban.AuditStream.Scheduler`, since W2711) emits it at most once every
   15 minutes per enabled destination, so a growing lag shows in the metrics
-  history.
+  history;
+- since W2773, `decision.acted_on.wait_seconds`, how long a decision waited
+  before a person first acted on it, at most once per decision (see
+  [Decision events](#decision-events)).
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
@@ -1672,6 +1714,12 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :column, :updated]` | event | `count` | `board_id`, `column_id`, `actor_user_id`, `fields` | A board owner changed a column. fields lists the changed field names, never their values. |
 | `[:kanban, :column, :deleted]` | event | `count` | `board_id`, `column_id`, `actor_user_id` | A column was deleted, along with its tasks. |
 | `[:kanban, :column, :reordered]` | event | `count`, `column_count` | `board_id`, `actor_user_id` | A board's columns were reordered. column_count is the number of column ids given. |
+
+### Domain `decision`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :decision, :acted_on]` | event | `count`, `wait_seconds` | `kind`, `action`, `via`, `task_id`, `board_id` | A person first acted on a decision, on the web or in the app. wait_seconds is the whole seconds from the decision's since to the action, never below 0; action is :approve, :request_changes, :move, :promote or :reply; via is :web, :ios or :android; task_id is left out for ready_empty. |
 
 ### Domain `decisions`
 
