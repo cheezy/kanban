@@ -86,7 +86,13 @@ defmodule KanbanWeb.SeoControllerTest do
     test "sitemap.xml lists every public page and every published how-to with absolute URLs",
          %{conn: conn} do
       how_to_paths = Enum.map(HowToData.all_how_tos(), &("/resources/" <> &1.id))
-      expected = absolute(@page_paths ++ ["/issue", "/resources"] ++ how_to_paths)
+
+      expected =
+        absolute(
+          @page_paths ++
+            ["/issue", "/resources"] ++ KanbanWeb.Docs.sitemap_paths() ++ how_to_paths
+        )
+
       locs = sitemap_locs(conn)
 
       assert Enum.sort(locs) == Enum.sort(expected)

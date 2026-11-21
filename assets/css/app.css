@@ -1918,6 +1918,145 @@
 }
 
 /* ============================================================
+   W2898: the published guides at /docs/:slug. KanbanWeb.Docs.Renderer
+   renders each guide's markdown to plain HTML (no classes), so the prose
+   is styled here, scoped to .stride-docs-prose inside .stride-marketing,
+   with theme tokens only so it reads in light and dark mode. Wide tables
+   and code blocks scroll sideways instead of widening a phone viewport.
+   ============================================================ */
+.stride-docs-prose {
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+.stride-docs-prose h1,
+.stride-docs-prose h2,
+.stride-docs-prose h3,
+.stride-docs-prose h4,
+.stride-docs-prose h5,
+.stride-docs-prose h6 {
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 96px;
+}
+.stride-docs-prose h1 { font-size: 2.25rem; margin: 0 0 1.5rem; }
+.stride-docs-prose h2 {
+  font-size: 1.5rem;
+  margin: 2.75rem 0 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.stride-docs-prose h3 { font-size: 1.2rem; margin: 2rem 0 0.75rem; }
+.stride-docs-prose h4,
+.stride-docs-prose h5,
+.stride-docs-prose h6 { font-size: 1rem; margin: 1.5rem 0 0.5rem; }
+.stride-docs-prose h1 .anchor,
+.stride-docs-prose h2 .anchor,
+.stride-docs-prose h3 .anchor,
+.stride-docs-prose h4 .anchor,
+.stride-docs-prose h5 .anchor,
+.stride-docs-prose h6 .anchor {
+  margin-left: 0.4rem;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.stride-docs-prose .anchor::before { content: "#"; color: var(--ink-3); }
+.stride-docs-prose :is(h1, h2, h3, h4, h5, h6):hover .anchor,
+.stride-docs-prose .anchor:focus-visible { opacity: 1; }
+.stride-docs-prose p,
+.stride-docs-prose ul,
+.stride-docs-prose ol,
+.stride-docs-prose blockquote,
+.stride-docs-prose pre,
+.stride-docs-prose table { margin: 0 0 1.1rem; }
+.stride-docs-prose ul { list-style: disc; padding-left: 1.5rem; }
+.stride-docs-prose ol { list-style: decimal; padding-left: 1.5rem; }
+.stride-docs-prose li { margin: 0.25rem 0; }
+.stride-docs-prose li > ul,
+.stride-docs-prose li > ol { margin: 0.25rem 0 0; }
+.stride-docs-prose strong { color: var(--ink); font-weight: 600; }
+.stride-docs-prose a {
+  color: var(--stride-orange-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.stride-docs-prose hr { border: 0; border-top: 1px solid var(--line); margin: 2rem 0; }
+.stride-docs-prose blockquote {
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 3px solid var(--line-strong);
+  color: var(--ink-2);
+}
+.stride-docs-prose code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.875em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.stride-docs-prose pre {
+  overflow-x: auto;
+  padding: 1rem 1.1rem;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  line-height: 1.55;
+}
+.stride-docs-prose pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.85rem;
+  overflow-wrap: normal;
+  white-space: pre;
+}
+.stride-docs-prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.stride-docs-prose th,
+.stride-docs-prose td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.stride-docs-prose th { color: var(--ink); font-weight: 600; background: var(--surface-2); }
+
+/* The /docs index cards and the guide's "On this page" links. */
+.stride-docs-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.stride-docs-card:hover,
+.stride-docs-card:focus-visible {
+  border-color: var(--stride-orange);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.25);
+}
+.stride-docs-card:focus-visible,
+.stride-docs-toc-link:focus-visible {
+  outline: 2px solid var(--stride-orange);
+  outline-offset: 2px;
+}
+.stride-docs-toc-link {
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.stride-docs-toc-link:hover { color: var(--stride-orange-ink); }
+
+/* ============================================================
    W1387: auth + settings form controls meet the 44px minimum touch
    target on phones. The auth LiveViews and settings page style their
    raw <input>/<button> elements with inline heights (36px / 40px /

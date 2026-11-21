@@ -16004,3 +16004,58 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Stride releases"
 msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "API reference"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All documentation"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Breadcrumb"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Documentation"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Everything you need to put AI coding agents to work on a Stride board: setting them up, the workflow they follow, the hooks they run and the API they call."
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Guides"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Guides for running AI coding agents on Stride: getting started, the agent workflow, hooks, MCP, authentication and the REST API reference."
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "On this page"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride documentation"
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "The guides are written in English."
+msgstr ""
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "View this page on GitHub"
+msgstr ""

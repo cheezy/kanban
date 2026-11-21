@@ -1,0 +1,645 @@
+# POST /api/tasks/batch
+
+Create multiple goals with nested child tasks in a single API call. This endpoint allows agents to efficiently upload an entire project structure with multiple goals and their associated tasks.
+
+## Authentication
+
+Requires a valid API token in the Authorization header:
+
+```bash
+Authorization: Bearer <your_api_token>
+```
+
+## Request
+
+**Method:** POST
+**Endpoint:** `/api/tasks/batch`
+**Content-Type:** application/json
+
+### Request Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `goals` | array | Yes | Array of goal objects, each with the same structure as [POST /api/tasks](post_tasks.md) |
+
+Each goal object in the `goals` array should follow the same format as a single goal creation in the [POST /api/tasks](post_tasks.md) endpoint, including:
+
+- All basic fields (title, description, type, priority, complexity)
+- Planning & context fields (why, what, where_context)
+- Implementation guidance (acceptance_criteria, verification_steps)
+- Child tasks array (`tasks`)
+- `labels` — label names on this board, on the goal and on each child task (see [Labels](#labels))
+- All other optional fields
+
+See the [POST /api/tasks documentation](post_tasks.md) for complete field descriptions.
+
+### Request Body Example
+
+#### Create multiple goals with child tasks
+
+```json
+{
+  "goals": [
+    {
+      "title": "User Authentication System",
+      "description": "Implement complete user authentication with JWT tokens",
+      "type": "goal",
+      "priority": "high",
+      "complexity": "large",
+      "why": "Users need secure authentication to access the platform",
+      "what": "JWT-based authentication with login, logout, and token refresh",
+      "where_context": "lib/kanban_web/controllers/auth/, lib/kanban/accounts/",
+      "tasks": [
+        {
+          "title": "Create user database schema",
+          "description": "Add users table with email, password_hash, and timestamps",
+          "type": "work",
+          "priority": "high",
+          "complexity": "small"
+        },
+        {
+          "title": "Implement JWT token generation",
+          "description": "Add functions to generate and validate JWT tokens",
+          "type": "work",
+          "priority": "high",
+          "complexity": "medium",
+          "dependencies": [0]
+        },
+        {
+          "title": "Create login endpoint",
+          "description": "POST /api/auth/login endpoint with email/password",
+          "type": "work",
+          "priority": "high",
+          "complexity": "medium",
+          "dependencies": [0, 1]
+        }
+      ]
+    },
+    {
+      "title": "User Profile Management",
+      "description": "Allow users to view and edit their profiles",
+      "type": "goal",
+      "priority": "medium",
+      "complexity": "medium",
+      "why": "Users need to manage their personal information",
+      "what": "Profile viewing and editing with avatar upload",
+      "where_context": "lib/kanban_web/live/profile_live/",
+      "tasks": [
+        {
+          "title": "Create profile schema",
+          "description": "Add profile fields to users table",
+          "type": "work",
+          "priority": "medium",
+          "complexity": "small"
+        },
+        {
+          "title": "Build profile view page",
+          "description": "LiveView page to display user profile",
+          "type": "work",
+          "priority": "medium",
+          "complexity": "medium",
+          "dependencies": [0]
+        },
+        {
+          "title": "Add profile edit form",
+          "description": "Form to edit profile with validation",
+          "type": "work",
+          "priority": "medium",
+          "complexity": "medium",
+          "dependencies": [0, 1]
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Minimal example
+
+```json
+{
+  "goals": [
+    {
+      "title": "Setup Project Infrastructure",
+      "type": "goal",
+      "tasks": [
+        {
+          "title": "Setup CI/CD pipeline",
+          "type": "work"
+        },
+        {
+          "title": "Configure deployment",
+          "type": "work",
+          "dependencies": ["W1"]
+        }
+      ]
+    },
+    {
+      "title": "Add Documentation",
+      "type": "goal",
+      "tasks": [
+        {
+          "title": "Write API documentation",
+          "type": "work"
+        },
+        {
+          "title": "Create user guide",
+          "type": "work"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Response
+
+### Success (201 Created)
+
+Returns all created goals with their child tasks:
+
+```json
+{
+  "success": true,
+  "total": 2,
+  "goals": [
+    {
+      "goal": {
+        "id": 100,
+        "identifier": "G1",
+        "title": "User Authentication System",
+        "description": "Implement complete user authentication with JWT tokens",
+        "status": "open",
+        "priority": "high",
+        "complexity": "large",
+        "type": "goal",
+        "created_by_id": 1,
+        "created_by_agent": "ai_agent:claude-sonnet-4-5",
+        "column_id": 5,
+        "inserted_at": "2025-01-02T10:00:00Z",
+        "updated_at": "2025-01-02T10:00:00Z"
+      },
+      "child_tasks": [
+        {
+          "id": 101,
+          "identifier": "W1",
+          "title": "Create user database schema",
+          "status": "open",
+          "priority": "high",
+          "complexity": "small",
+          "column_id": 5,
+          "dependencies": []
+        },
+        {
+          "id": 102,
+          "identifier": "W2",
+          "title": "Implement JWT token generation",
+          "status": "blocked",
+          "priority": "high",
+          "complexity": "medium",
+          "column_id": 5,
+          "dependencies": ["W1"]
+        },
+        {
+          "id": 103,
+          "identifier": "W3",
+          "title": "Create login endpoint",
+          "status": "blocked",
+          "priority": "high",
+          "complexity": "medium",
+          "column_id": 5,
+          "dependencies": ["W1", "W2"]
+        }
+      ]
+    },
+    {
+      "goal": {
+        "id": 104,
+        "identifier": "G2",
+        "title": "User Profile Management",
+        "description": "Allow users to view and edit their profiles",
+        "status": "blocked",
+        "priority": "medium",
+        "complexity": "medium",
+        "type": "goal",
+        "created_by_id": 1,
+        "created_by_agent": "ai_agent:claude-sonnet-4-5",
+        "column_id": 5,
+        "inserted_at": "2025-01-02T10:00:01Z",
+        "updated_at": "2025-01-02T10:00:01Z"
+      },
+      "child_tasks": [
+        {
+          "id": 105,
+          "identifier": "W4",
+          "title": "Create profile schema",
+          "status": "open",
+          "priority": "medium",
+          "complexity": "small",
+          "column_id": 5,
+          "dependencies": []
+        },
+        {
+          "id": 106,
+          "identifier": "W5",
+          "title": "Build profile view page",
+          "status": "blocked",
+          "priority": "medium",
+          "complexity": "medium",
+          "column_id": 5,
+          "dependencies": ["W4"]
+        },
+        {
+          "id": 107,
+          "identifier": "W6",
+          "title": "Add profile edit form",
+          "status": "blocked",
+          "priority": "medium",
+          "complexity": "medium",
+          "column_id": 5,
+          "dependencies": ["W4", "W5"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Each `child_tasks` entry is the compact task summary plus `column_id`, the
+column the child was placed in: always its goal's column.
+
+When paid plans are enforced and the board is not in an Organization's
+workspace, `telemetry_event` and `metrics_to_track` on any goal or child task
+are accepted but not stored, and the 201 response adds a top-level `warnings`
+list naming them, beside `success`, `goals` and `total`. See
+[Warnings in POST /api/tasks](post_tasks.md#warnings).
+
+### Forbidden (403)
+
+The token's user does not have owner or modify access to the board. This is
+checked before any goal is created:
+
+```json
+{
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+A batch never gets a 403 for a column, because it ignores every `column_id` it
+is sent (see [Default Values](#default-values)).
+
+### Not Found (404)
+
+The board has no column to put the goals in. Every goal goes to the board's
+default column, which the server picks itself, so this happens only on a board
+with no columns at all (D452). Nothing is created:
+
+```json
+{
+  "error": "Column not found"
+}
+```
+
+### Unprocessable Entity (422)
+
+Validation error in one of the goals (here, the goal's own title is blank):
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "title": ["can't be blank"]
+  }
+}
+```
+
+Invalid child task type (for example `"bug"`, `"task"` or `"Work"`) in the goal
+at index 1:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "type": ["is invalid"]
+  }
+}
+```
+
+`index` is the position of the failing **goal** in `goals`; the position of the
+failing child inside that goal's `tasks` is not reported. `details` carries the
+errors of the first record that failed (the goal, or one child), and the value
+you sent is not echoed back. A `null`, empty or whitespace-only child type
+reports `"type": ["can't be blank"]`. The failing goal and all of its children are rolled back together;
+goals before `index` stay created (see [Goal Creation Order](#goal-creation-order)).
+
+A child task of type `goal` in the goal at index 1. Stride has two levels: a
+goal contains work and defect tasks and never another goal, so that goal is
+refused before any identifier is assigned:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "type": ["must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"]
+  }
+}
+```
+
+As with any other failure, goals before `index` stay created and nothing from
+the refused goal is written. A child with a non-empty `tasks` list of its own is
+refused the same way, with `details.tasks` instead of `details.type`, because
+tasks nest one level only; its inner list is never silently dropped.
+
+A `security_considerations` entry shaped like a real credential, on the goal at
+index 1 or on one of its children. The error names the entry by its 1-based
+position in that record's list and never echoes the value. Like the other
+failures above, the refused goal and all of its children are rolled back and
+goals before `index` stay created:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "security_considerations": ["entry 1 looks like it contains a credential; remove the secret value and describe the risk in words"]
+  }
+}
+```
+
+The formats checked, and the prose that passes, are listed under
+[Security Considerations Format](post_tasks.md#security-considerations-format).
+
+An unknown label name, or a malformed `labels` value, on the goal at index 1
+or on one of its children. Unlike the failures above, labels are checked for
+**the whole batch before the first goal is created**, so this 422 creates **no
+goal at all** — not even the goals before `index`. A child's error is prefixed
+with its 0-based position in that goal's `tasks`:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "labels": ["tasks[0] unknown labels: \"Secret\""]
+  }
+}
+```
+
+Column WIP limits are not checked by this endpoint. Every entry creates a
+`goal`, goals are exempt from WIP limits, and child tasks are not checked
+against the target column's limit when they are created, so a full column never
+rejects a batch and a batch can take a column past its limit. Once created, the
+child tasks count toward the limit like any other `work` or `defect` task. To
+have a single `work` or `defect` task checked against a WIP limit, create it
+with [POST /api/tasks](post_tasks.md#unprocessable-entity-422), which returns a
+422 when the column is full.
+
+## Behavior
+
+### Goal Creation Order
+
+- Goals are created in the order they appear in the `goals` array
+- If any goal fails to create, the operation stops and returns an error
+- Previously created goals in the batch are **not** rolled back
+- Label errors are the exception: they are checked for the whole batch first, so a label error creates no goal (see [Labels](#labels))
+- The error response includes the index of the failed goal
+
+### Labels
+
+`labels` works on every goal and on every child task exactly as on
+[POST /api/tasks](post_tasks.md#labels): an array of label names, matched
+case-insensitively against the token's board, never creating a label. The
+difference is when it is checked. Every goal's and every child's labels are
+resolved before the first goal is created, so a batch with any unknown label
+name returns 422 for the first goal that has one and **creates nothing** — the
+[Goal Creation Order](#goal-creation-order) rule that earlier goals stay created
+does not apply to label errors. A name that exists only on another board is
+reported in the same words as one that exists nowhere. The 201 response keeps
+its compact goal and child shapes; read a task's labels with
+[GET /api/tasks/:id](get_tasks_id.md).
+
+### Dependency Handling
+
+**⚠️ CRITICAL: Use INDEX-BASED dependencies for tasks within a goal!**
+
+**How it works:**
+
+- Use **0-based array indices** to reference tasks within the same goal
+- Index 0 = first task, index 1 = second task, etc.
+- The system automatically converts indices to actual task identifiers (W47, W48, etc.) during creation
+- Result stored in database has human-readable identifiers
+- A string identifier must name a task already on the board (including the
+  children of goals created earlier in the same batch) or a child of the same
+  goal; an identifier with no task there refuses that goal with 422
+
+**Example - Index-based dependencies:**
+
+```json
+{
+  "title": "User Authentication",
+  "tasks": [
+    {"title": "Create schema", "type": "work"},                        // index 0
+    {"title": "Add endpoints", "type": "work", "dependencies": [0]},   // depends on index 0
+    {"title": "Add tests", "type": "work", "dependencies": [0, 1]}     // depends on indices 0 and 1
+  ]
+}
+```
+
+**After creation, stored as:**
+
+```json
+{
+  "tasks": [
+    {"identifier": "W47", "title": "Create schema", "dependencies": []},
+    {"identifier": "W48", "title": "Add endpoints", "dependencies": ["W47"]},
+    {"identifier": "W49", "title": "Add tests", "dependencies": ["W47", "W48"]}
+  ]
+}
+```
+
+**You can also mix indices with existing task identifiers:**
+
+```json
+{
+  "title": "Feature Extension",
+  "tasks": [
+    {"title": "New component", "type": "work"},
+    {"title": "Integration", "type": "work", "dependencies": [0, "W23"]}  // index 0 + existing task W23
+  ]
+}
+```
+
+**What DOES NOT work:**
+
+- ❌ **Cross-goal dependencies in batch**: Cannot reference tasks from other goals in the same batch
+  - Identifiers are assigned during creation, so you can't predict them
+  - Solution: Create goals separately or add dependencies after creation
+
+**For cross-goal dependencies:**
+
+1. **Create goals separately** - Create first goal, get identifiers, then create second goal with correct dependencies
+2. **Add after creation** - Create all goals, then use `PATCH /api/tasks/:id` to add cross-goal dependencies
+3. **Don't use dependencies** - If goals are independent
+
+**Tasks with incomplete dependencies are automatically marked as `blocked`**
+
+### Default Values
+
+- All goals are created in the default column: the board's Backlog column, or Ready when the board has no Backlog, or else the board's first column
+- **Note:** Any `column_id` specified in goal objects is ignored - all goals use the default column
+- A `column_id` on a child task is ignored too: every child is created in its
+  goal's column, on the token's board
+- A goal's own `type` is ignored: every entry in `goals` is created as a goal,
+  even if it sends `"type": "work"` or an unrecognised value such as `"bug"`
+- A child task's `type` defaults to `work` when omitted, and otherwise must be
+  exactly `work` or `defect` (lowercase, no surrounding whitespace). `goal` is
+  never valid for a child, because a goal cannot contain another goal; it
+  returns the nested-goal 422 shown above, and any other value returns the
+  invalid-type 422. See [Task Type Values](post_tasks.md#task-type-values)
+- Every goal gets its own `G` identifier and every child its own `W` or `D`
+  identifier, unique on the board across all goals in the batch
+- `priority` defaults to `medium`
+- `complexity` defaults to `small`
+- `needs_review` defaults to `false` (auto-complete without human review)
+- Agent model from API token is automatically recorded as `created_by_agent`
+
+### Agent Attribution (`agent_name`)
+
+A **top-level** `agent_name` (a sibling of `goals`, not nested inside a goal)
+applies to every goal in the batch, and child tasks inherit `created_by_agent`
+from their goal:
+
+```json
+{
+  "agent_name": "Claude Sonnet 4.5",
+  "goals": [ ... ]
+}
+```
+
+Per-goal resolution follows the same order as `POST /api/tasks` (see that
+endpoint's *created_by_agent Resolution Order*): explicit
+`created_by_agent` on the goal → token `agent_model` (`ai_agent:<model>`) →
+top-level `agent_name` → the token's remembered `last_agent_name` → unset.
+
+### Telemetry
+
+The endpoint emits two types of telemetry events:
+1. `[:kanban, :api, :goal_created]` - For each goal created (with `batch: true`)
+2. `[:kanban, :api, :batch_goals_created]` - Once for the entire batch (with `total_goals` count)
+
+## Use Cases
+
+- **Project initialization**: Create entire project structure in one call
+- **Sprint planning**: Upload all goals and tasks for a sprint
+- **Agent workflow**: Allow AI agents to plan and create complex task hierarchies
+- **Bulk import**: Import tasks from external systems
+- **Template instantiation**: Create task sets from predefined templates
+
+## Example Usage
+
+### Create multiple goals
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "goals": [
+      {
+        "title": "User Authentication",
+        "type": "goal",
+        "priority": "high",
+        "tasks": [
+          {"title": "Create user schema", "type": "work"},
+          {"title": "Add login endpoint", "type": "work", "dependencies": [0]}
+        ]
+      },
+      {
+        "title": "User Profile",
+        "type": "goal",
+        "priority": "medium",
+        "tasks": [
+          {"title": "Profile view", "type": "work"},
+          {"title": "Profile edit", "type": "work"}
+        ]
+      }
+    ]
+  }' \
+  https://www.stridelikeaboss.com/api/tasks/batch
+```
+
+## Error Handling
+
+### Partial Success
+
+If the 3rd goal in a batch of 5 fails:
+- Goals 1 and 2 are successfully created
+- Goal 3 fails with an error
+- Goals 4 and 5 are **not** created
+- The response indicates the failure at index 2 (0-indexed)
+
+A label error is not a partial success: labels are checked for every goal
+before any is created, so it creates nothing and the whole batch can be resent
+once the names are fixed.
+
+To continue after an error:
+1. Note the failed index from the error response
+2. Fix the validation errors in that goal
+3. Create a new batch with only the remaining goals (from the failed index onward)
+
+### Common Validation Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `title: ["can't be blank"]` | Missing title | Add title to goal or task |
+| `type: ["is invalid"]` | Invalid child task type (case variants such as `Work` and names such as `bug` or `task` are invalid) | Use exactly `work` or `defect` |
+| `type: ["must be 'work' or 'defect' for a task inside a goal; ..."]` | A child task has type `goal`; goals cannot be nested | Create the inner goal as its own entry in `goals` and give it its own `tasks` |
+| `tasks: ["must be empty for a task inside a goal; ..."]` | A child task carries its own non-empty `tasks` list | Flatten the inner tasks into the goal's `tasks`, or make them their own goal |
+| `type: ["can't be blank"]` | Child task sent `"type": null` or an empty/whitespace-only string | Omit `type` (defaults to `work`) or send a valid value |
+| `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
+| `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |
+| `dependencies: ["must be an array"]` | Wrong type | Use array of strings |
+| `dependencies: ["lists tasks that are not on this board: ..."]` | A goal or child names an identifier with no task on this board | Use the identifier of a task on this board, or an index for a sibling in the same goal |
+| `security_considerations: ["entry N looks like it contains a credential; ..."]` | Entry N of a goal's or child's `security_considerations` carries a real-looking token or key | Remove the secret value and describe the risk in words |
+| `labels: ["unknown labels: ..."]` | A goal or child names a label this board does not have (nothing in the batch is created) | Use an existing label name, or create the label in the board settings first |
+
+## Performance Considerations
+
+- **Database transactions**: Each goal is created in its own transaction for isolation
+- **Sequential processing**: Goals are created one at a time in order
+- **Partial success**: If creation fails mid-batch, successfully created goals remain in the system
+- **WIP limits**: The batch is not checked against column WIP limits; goals are exempt, and child tasks are not checked when created but count toward the limit afterwards
+
+For best performance:
+
+- Keep batches reasonably sized (typically 5-20 goals)
+- Monitor batch creation progress via telemetry events
+- Handle partial failures by resuming from the failed index
+
+## Notes
+
+- All goals in the batch must belong to the board associated with your API token
+- Goals are created in the default column (cannot specify different columns per goal)
+- The batch operation is **not atomic** - partial success is possible
+- Task identifiers (W1, W2, G1, etc.) are assigned sequentially during creation
+- The `created_by_agent` field is automatically set from your API token
+- Dependencies are validated goal by goal, inside each goal's own transaction, as that goal and its children are created. A goal whose dependencies fail validation is not created, the batch stops there, and the goals created before it remain
+- Circular dependencies are prevented by the system
+- Each child task is linked to the goal it is nested under: the server sets the
+  child's `parent_id` to that goal's id. The batch endpoint always creates new
+  goals, so it cannot add a task to a goal that already exists, and a
+  client-sent `parent_id` (or `parent_goal`) on a goal or child is ignored; see
+  the note under
+  [POST /api/tasks — Task Scheduling & Dependencies](post_tasks.md#task-scheduling--dependencies)
+
+## See Also
+
+- [POST /api/tasks](post_tasks.md) - Create a single task or goal
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
+- [GET /api/tasks/:id/tree](get_tasks_id_tree.md) - Get goal with all child tasks
+- [PATCH /api/tasks/:id](patch_tasks_id.md) - Update a task

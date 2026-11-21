@@ -1,0 +1,753 @@
+# GET /api/tasks
+
+List the tasks on the board. By default every non-archived task is returned in
+one response; opt-in [cursor pagination and filters](#pagination-and-filters)
+narrow the result to one page and, optionally, to tasks matching a status, type,
+priority, assignee, parent goal or update time.
+
+## Authentication
+
+Requires a valid API token in the Authorization header:
+
+```bash
+Authorization: Bearer <your_api_token>
+```
+
+## Request
+
+**Method:** GET
+**Endpoint:** `/api/tasks`
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `column_id` | integer | No | Filter tasks by column ID. If omitted, returns all tasks from all columns. Combines with every filter below. A whole number outside the signed 64-bit range returns 404, the same as a column that does not exist. |
+| `label` | string | No | Only tasks carrying the label with this **name** on the token's board, matched case-insensitively with surrounding whitespace ignored, plus goals with at least one non-archived child that carries it — the same rule as the board's label filter. Works in both modes and combines with every other filter. A name the board has no label for returns an empty `data` list, not an error. See [Filtering by label](#filtering-by-label). |
+| `response_view` | string | No | `slim` returns a compact summary row per task instead of the full object. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. Works in both modes. |
+| `limit` | integer | No | **Paginated mode.** Page size, `1`–`200`. Default `50`. |
+| `cursor` | string | No | **Paginated mode.** Opaque cursor from a previous page's `meta.next_cursor`. Omit for the first page. |
+| `status` | string | No | **Paginated mode.** One of `open`, `in_progress`, `completed`, `blocked`. |
+| `type` | string | No | **Paginated mode.** One of `work`, `defect`, `goal`. |
+| `priority` | string | No | **Paginated mode.** One of `low`, `medium`, `high`, `critical`. |
+| `assigned_to_id` | integer | No | **Paginated mode.** Only tasks assigned to this user ID. |
+| `parent` | string | No | **Paginated mode.** A goal identifier on this board, such as `G12`. Returns that goal's child tasks. |
+| `updated_since` | string | No | **Paginated mode.** ISO 8601 datetime, such as `2026-01-31T12:00:00Z`. Returns only tasks whose `updated_at` is at or after it (inclusive, compared to the whole second). For syncing, take the value from server time and use the full view — see [Incremental sync](#incremental-sync). |
+
+The parameters marked **Paginated mode** are opt-in: when **none** of them is
+present the endpoint returns the unpaginated response described next, exactly
+as it always has. When **any** of them is present — even with an empty value —
+the response is paginated and carries a `meta` block. See
+[Pagination and filters](#pagination-and-filters).
+
+## Response
+
+### Success (200 OK)
+
+Returns an array of tasks:
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "identifier": "W21",
+      "title": "Implement authentication",
+      "description": "Add JWT authentication to the API",
+      "acceptance_criteria": "Users can log in with email/password\nJWT tokens are generated correctly",
+      "status": "in_progress",
+      "priority": "high",
+      "complexity": "medium",
+      "needs_review": true,
+      "type": "work",
+      "column_id": 6,
+      "assigned_to_id": 5,
+      "parent_id": null,
+      "estimated_files": "3",
+      "why": "Users need secure authentication",
+      "what": "JWT-based login system",
+      "where_context": "Authentication module",
+      "patterns_to_follow": "Follow existing controller patterns",
+      "database_changes": null,
+      "validation_rules": null,
+      "telemetry_event": null,
+      "metrics_to_track": null,
+      "logging_requirements": null,
+      "error_user_message": null,
+      "error_on_failure": null,
+      "key_files": [
+        {
+          "file_path": "lib/kanban_web/controllers/auth_controller.ex",
+          "note": "Main authentication logic",
+          "position": 0
+        }
+      ],
+      "verification_steps": [
+        {
+          "step_type": "command",
+          "step_text": "mix test test/kanban_web/controllers/auth_controller_test.exs",
+          "expected_result": "All tests pass",
+          "position": 0
+        }
+      ],
+      "labels": [
+        {
+          "name": "Security",
+          "color": "red"
+        }
+      ],
+      "technology_requirements": null,
+      "pitfalls": null,
+      "out_of_scope": null,
+      "security_considerations": ["Hash passwords with bcrypt"],
+      "testing_strategy": null,
+      "integration_points": null,
+      "created_by_id": 1,
+      "created_by_agent": null,
+      "completed_at": null,
+      "completed_by_id": null,
+      "completed_by_agent": null,
+      "completion_summary": null,
+      "dependencies": [],
+      "claimed_at": "2025-12-28T10:30:00Z",
+      "claim_expires_at": "2025-12-28T11:30:00Z",
+      "required_capabilities": ["code_generation"],
+      "actual_complexity": null,
+      "actual_files_changed": null,
+      "time_spent_minutes": null,
+      "review_status": null,
+      "review_notes": null,
+      "review_report": null,
+      "reviewed_at": null,
+      "reviewed_by_id": null,
+      "inserted_at": "2025-12-28T10:00:00",
+      "updated_at": "2025-12-28T11:00:00"
+    },
+    {
+      "id": 124,
+      "identifier": "W22",
+      "title": "Fix login bug",
+      "description": "Users can't log in with special characters",
+      "acceptance_criteria": null,
+      "status": "open",
+      "priority": "medium",
+      "complexity": "small",
+      "needs_review": true,
+      "type": "work",
+      "column_id": 5,
+      "assigned_to_id": null,
+      "parent_id": null,
+      "key_files": [],
+      "verification_steps": [],
+      "dependencies": [],
+      "required_capabilities": [],
+      "claimed_at": null,
+      "claim_expires_at": null,
+      "inserted_at": "2025-12-28T12:00:00",
+      "updated_at": "2025-12-28T12:00:00"
+    }
+  ]
+}
+```
+
+## Selecting the response view
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `response_view` | `slim` | absent (full) | `slim` returns a compact summary row per task instead of the full object. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. |
+
+Only the exact lowercase string `slim` opts in.
+
+**Why you would want it.** A board-wide list of full task objects is the
+largest response this API produces, and almost none of its content is read when
+the caller is listing rather than reading. Fetch the compact rows to find the
+task you want, then [GET /api/tasks/:id](get_tasks_id.md) for its detail —
+that endpoint is always full-fidelity and is unaffected by `response_view`.
+
+**What never changes.** `response_view` changes only the shape of each row, not
+which rows are returned: the board scoping and the underlying query are
+identical under both views, so the slim view can only narrow a row, never widen
+it or surface a task the full view withheld. The summary keys are a strict
+subset of the full row's. The 400 and 403 responses are identical under both
+views, because the view is applied only at render.
+
+### Success (200 OK) — `?response_view=slim`
+
+Each row carries exactly these eleven keys:
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "identifier": "W21",
+      "title": "Implement authentication",
+      "type": "work",
+      "status": "in_progress",
+      "priority": "high",
+      "complexity": "medium",
+      "parent_id": null,
+      "dependencies": [],
+      "claim_expires_at": "2025-12-28T11:30:00Z",
+      "created_by_agent": "ai_agent:claude-sonnet-4-5"
+    }
+  ]
+}
+```
+
+`dependencies` renders as `[]` rather than `null` when unset, matching the same
+summary shape returned by
+[GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) and
+[GET /api/tasks/:id/dependents](get_tasks_id_dependents.md).
+
+## Pagination and filters
+
+**Opt-in.** Sending any of `limit`, `cursor`, `status`, `type`, `priority`,
+`assigned_to_id`, `parent` or `updated_since` switches the endpoint into
+paginated mode. `column_id`, `label` and `response_view` on their own do
+**not** — they keep the unpaginated response, which is unchanged: no `meta`
+key, same rows, same order. A page key sent with an empty value (`?limit=`) still opts in, and
+is then rejected with a `400` rather than silently ignored.
+
+**How paging works.**
+
+- Pages are ordered by task `id` ascending. (The unpaginated response is
+  ordered by column position, then task position.)
+- Each page carries `meta.next_cursor`. Pass it back as `cursor` to get the next
+  page; keep the same filters. When `meta.next_cursor` is `null` you have the
+  last page.
+- The cursor is opaque — do not build or parse it. It is keyset-based, so a task
+  created while you are paging never causes a row to be skipped or returned
+  twice; it simply appears on a later page.
+- Archived tasks are excluded, as in the unpaginated response.
+
+**How filters combine.** Every filter you send is applied together (AND), and
+they also combine with `column_id`:
+
+- `status`, `type` and `priority` take exactly one value each (no comma lists),
+  matched case-sensitively against the values in the parameter table.
+- `assigned_to_id` matches the task's assignee.
+- `parent` takes a goal identifier on **this** board (identifiers are numbered
+  per board). An identifier that is unknown, or that names a task that is not
+  a goal, returns an empty `data` list — not an error.
+- `updated_since` is inclusive. A value with an offset (`Z`, `+02:00`) is
+  converted to UTC; a value with no offset is read as UTC. `updated_at` is
+  stored to the whole second, so the comparison is made at whole-second
+  precision: any fractional part of the bound is dropped (`12:00:00.5Z`
+  behaves as `12:00:00Z`). Every task updated during that second is therefore
+  returned — including one updated a moment *before* `.5` — so the bound never
+  excludes an update made within its own second, at the cost of occasionally
+  returning a task you already have. Treat results as upserts keyed by `id`.
+  A bare date such as `2026-01-31` is rejected — include a time.
+
+- `label` takes one label name; see [Filtering by label](#filtering-by-label).
+
+**Board scoping.** Every page is scoped to the token's board. A cursor, a
+`parent` identifier or a `column_id` taken from another board can never return
+that board's tasks.
+
+### Filtering by label
+
+`label` narrows either response — unpaginated or paginated — to the tasks that
+carry one label, and it combines (AND) with `column_id` and every other filter.
+
+- The value is a label **name**, not an id: the API never exposes label ids.
+  It is matched case-insensitively against the token's board's labels, and
+  surrounding whitespace is ignored, so `?label=bug` and `?label=%20Bug%20` both
+  match a label named `Bug`.
+- A goal is included when at least one of its non-archived children carries
+  the label, even if the goal itself does not, so a matching child is never
+  listed without its goal. This is the same rule the board's filter bar uses,
+  so the API and the board show the same tasks for the same label.
+- Only this board's labels are consulted. A name the board has no label for —
+  whether or not another board has one — returns an empty `data` list, never an
+  error, so the response does not reveal other boards' labels.
+- A blank value, a value longer than 40 characters, or an array or map shape
+  such as `label[]=Bug` returns `400`; see [Bad Request (400)](#bad-request-400).
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?label=Bug&status=open&limit=50"
+```
+
+### Incremental sync
+
+To fetch only what changed since your last sync, run a *pass*: request
+`updated_since=<bound>` with a `limit`, follow `meta.next_cursor` until it is
+`null`, and apply every row as an upsert keyed by `id`. Choosing the bound is
+where a sync silently drifts, so follow all five rules — each one closes a gap
+the API's verified behaviour opens:
+
+1. **Server time, never your own clock.** The bound is compared with the
+   server-stamped `updated_at`. A client clock running ahead of the server
+   skips every task updated inside the gap, with no error.
+2. **The bound must reach back to before the previous pass began.** Pages are
+   an `id`-ascending keyset, so a task updated mid-pass whose `id` the cursor
+   has already passed is not returned again in that pass. A bound taken *after*
+   the last page (the "time of my last poll") is later than that update and
+   skips it for good; a bound no later than the moment the previous pass
+   began — its *first* page, not its last — always catches it next time.
+3. **Overlap, then de-duplicate by `id`.** The API has no dedicated server-time
+   field — `meta` carries only `next_cursor` and `limit` — so the practical
+   source of server time is the `updated_at` values themselves. Keep a
+   *watermark*: the highest `updated_at` seen in the last completed pass (keep
+   the previous watermark when a pass returns nothing). Send the watermark
+   *minus* an overlap window longer than one full paging pass, plus a safety
+   margin; that is what puts the bound before the previous pass began (rule 2).
+   Rows near the bound come back again by design — `updated_since` is inclusive
+   and floored to the whole second, and the overlap re-reads everything inside
+   the window — so expect duplicates and upsert them; never rely on there being
+   none.
+4. **Sync with the full view.** `updated_at` is in the full task object only.
+   `response_view=slim` rows have no `updated_at` (the slim row is the fixed
+   summary shown above), so a slim pass cannot produce the next watermark.
+   `updated_at` is rendered in UTC with no offset and no fractional part
+   (`"2026-01-31T12:00:00"`). **Parse it as UTC explicitly before subtracting
+   the overlap** — for example by appending `Z` — because many language
+   defaults treat an offset-less value as *local* time — JavaScript's `Date`
+   does so on parsing, and Python's naive `datetime` does so as soon as it is
+   converted with `timestamp()` or `astimezone()` — which shifts the bound by
+   the local UTC offset. Send the result with an explicit `Z`. (A value sent back with no
+   offset is read as UTC, so an unmodified `updated_at` round-trips safely.)
+5. **Reconcile periodically — archived and deleted tasks never reach an
+   incremental pass.** Archiving a task updates its `updated_at`, but archived
+   tasks are excluded from every paginated response, so an incremental pass
+   never reports an archival; a deleted task is likewise never returned.
+   Either way the task simply stops appearing.
+
+   Run an occasional full pass without `updated_since`: upsert every row it
+   returns and drop any local task it no longer returns.
+
+Board moves and reorders *do* reach an incremental pass. Dragging a task to
+another column, the column moves the server makes on its own (promoting tasks
+to Ready, moving a goal to follow its child tasks) and reordering tasks within
+a column all update `updated_at` — on the moved task and on every neighbour
+whose `position` shifts to make room or close the gap — so the next pass
+returns them with their new `column_id`, `position` and `status`. All the rows
+one move changes share the same `updated_at`. A move that changes nothing (a
+task dropped back where it was) leaves `updated_at` as it was.
+
+### Success (200 OK) — paginated
+
+```bash
+curl -H "Authorization: Bearer <your_api_token>" \
+  "https://www.stridelikeaboss.com/api/tasks?limit=2&status=open"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "identifier": "W21",
+      "title": "Implement authentication",
+      "status": "open",
+      "...": "every other field of the full task object, as above"
+    },
+    {
+      "id": 130,
+      "identifier": "W24",
+      "title": "Add rate limiting",
+      "status": "open",
+      "...": "every other field of the full task object, as above"
+    }
+  ],
+  "meta": {
+    "next_cursor": "MTMw",
+    "limit": 2
+  }
+}
+```
+
+The next page is `?limit=2&status=open&cursor=MTMw`. On the last page
+`next_cursor` is `null`:
+
+```json
+{
+  "data": [ { "id": 131, "identifier": "W25", "...": "..." } ],
+  "meta": { "next_cursor": null, "limit": 2 }
+}
+```
+
+With `response_view=slim` each row is the compact summary row shown above, and
+the `meta` block is identical:
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "identifier": "W21",
+      "title": "Implement authentication",
+      "type": "work",
+      "status": "open",
+      "priority": "high",
+      "complexity": "medium",
+      "parent_id": null,
+      "dependencies": [],
+      "claim_expires_at": null,
+      "created_by_agent": "ai_agent:claude-sonnet-4-5"
+    }
+  ],
+  "meta": { "next_cursor": "MTIz", "limit": 1 }
+}
+```
+
+### `meta` fields (paginated mode only)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `meta.next_cursor` | string or null | Cursor for the next page. `null` when this is the last page. |
+| `meta.limit` | integer | The page size applied to this request (`50` when `limit` was not sent). |
+
+### Bad Request (400)
+
+Every paginated-mode parameter is validated before any data is read. An invalid
+value returns `400` with an `error` message naming the parameter, plus
+`documentation` and `getting_started` links. The first invalid parameter is
+reported, checked in the order `limit`, `cursor`, `status`, `type`, `priority`,
+`assigned_to_id`, `parent`, `updated_since`, `label`, then `column_id` (outside
+paginated mode, `label` is likewise checked before `column_id`):
+
+| Cause | `error` |
+|---|---|
+| `limit` is empty, not an integer, below 1 or above 200 | `Invalid limit: must be an integer between 1 and 200` |
+| `cursor` is not one this API issued | `Invalid cursor: use the meta.next_cursor value from a previous page` |
+| `status` is not one of the listed values | `Invalid status: must be one of open, in_progress, completed, blocked` |
+| `type` is not one of the listed values | `Invalid type: must be one of work, defect, goal` |
+| `priority` is not one of the listed values | `Invalid priority: must be one of low, medium, high, critical` |
+| `assigned_to_id` is not a positive integer | `Invalid assigned_to_id: must be a positive integer` |
+| `parent` is empty or longer than 255 bytes (UTF-8) | `Invalid parent: must be a goal identifier such as G12` |
+| `updated_since` is not an ISO 8601 datetime (including a bare date) | `Invalid updated_since: must be an ISO 8601 datetime such as 2026-01-31T12:00:00Z` |
+| `label` is empty, blank, longer than 40 characters, or an array or map shape (both modes) | `Invalid label: must be a label name of 1 to 40 characters` |
+| `column_id` is not an integer (both modes) | `Invalid column_id: must be an integer` |
+
+```json
+{
+  "error": "Invalid limit: must be an integer between 1 and 200",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+Array or map shapes such as `limit[]=5` are rejected the same way.
+
+### Forbidden (403)
+
+Your token is a board token, and the user who created it no longer has access
+to the token's board. Every read checks this again on every request, so a board
+token stops reading once its user is removed from the board, or stops being an
+org-admin of (or leaves) the Organization their access came from. Any access is
+enough to read, read-only included. See [Token Scope](../AUTHENTICATION.md#token-scope).
+
+```json
+{
+  "error": "Not authorized — board membership required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+### Not Found (404)
+
+`column_id` names a column that does not exist or belongs to another board. The
+two cases are deliberately indistinguishable, in both modes:
+
+```json
+{
+  "error": "Column not found"
+}
+```
+
+Before 2026-10-21 this body said `Task not found`. The status was 404 then too.
+Through MCP, `stride_list_tasks` reports it with `error_code`
+`column_not_found`.
+
+A `column_id` that is a whole number outside the signed 64-bit range (below
+`-9223372036854775808` or above `9223372036854775807`) gets this same 404 in both
+modes. It is a valid integer, so it is not the 400 above. A `column_id` that is
+not an integer at all, such as `abc`, still gets the 400. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
+
+## Response Field Descriptions
+
+### Core Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Unique numeric task ID |
+| `identifier` | string | Human-readable identifier (W21, G10, etc.) |
+| `title` | string | Task title |
+| `description` | string | Detailed description of the task |
+| `acceptance_criteria` | string | Specific, testable conditions for completion (newline-separated) |
+| `status` | string | Current status: `open`, `in_progress`, `completed`, `blocked` |
+| `priority` | string | Priority level: `low`, `medium`, `high`, `critical` |
+| `complexity` | string | Estimated complexity: `small`, `medium`, `large` |
+| `needs_review` | boolean | Whether task requires human review before completion |
+| `type` | string | Type: `work`, `defect` or `goal` |
+| `column_id` | integer | Current column ID |
+| `assigned_to_id` | integer | User ID assigned to task (null if unclaimed) |
+| `parent_id` | integer | ID of parent goal (null if no parent) |
+
+### Planning & Context Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `estimated_files` | string | Estimated number of files to modify, as free text such as `"3"` or `"5+"` |
+| `why` | string | Why this task matters - business justification |
+| `what` | string | What needs to be done - concise summary |
+| `where_context` | string | Where in the codebase this work happens |
+| `patterns_to_follow` | string | Specific coding patterns to replicate (newline-separated) |
+| `database_changes` | string | Database schema changes required |
+| `validation_rules` | string | Input validation requirements |
+| `technology_requirements` | array | Specific libraries or technologies to use (array of strings) |
+| `pitfalls` | array | Common mistakes to avoid (array of strings) |
+| `out_of_scope` | array | What NOT to include in this task (array of strings) |
+
+### Implementation Guidance Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `key_files` | array | Files that will be modified (prevents conflicts) - see structure below |
+| `verification_steps` | array | Commands to run to verify success - see structure below |
+| `labels` | array | The task's labels, each `{name, color}`, ordered by name ignoring case - see structure below. Present in the full object only, not in `response_view=slim` rows |
+| `security_considerations` | array | Security concerns or requirements (array of strings) |
+| `testing_strategy` | object | Overall testing approach (JSON object) |
+| `integration_points` | object | Systems or APIs this touches (JSON object) |
+
+### Observability Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `telemetry_event` | string | Telemetry events to emit |
+| `metrics_to_track` | string | Metrics to instrument |
+| `logging_requirements` | string | What to log for debugging |
+| `error_user_message` | string | User-facing error messages |
+| `error_on_failure` | string | How to handle failures |
+
+### Tracking & Metadata Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `created_by_id` | integer | User ID who created the task |
+| `created_by_agent` | string | Agent that created the task (e.g., `ai_agent:claude-sonnet-4-5`) |
+| `completed_at` | string | When task was completed (ISO 8601, null if not completed) |
+| `completed_by_id` | integer | User ID who completed the task |
+| `completed_by_agent` | string | Agent that completed the task |
+| `completion_summary` | string | Summary of work done upon completion |
+| `dependencies` | array | Identifiers of the tasks that must be completed first, as strings such as `"W15"` (not numeric IDs) |
+| `claimed_at` | string | When task was claimed (ISO 8601, null if unclaimed) |
+| `claim_expires_at` | string | When claim expires (ISO 8601, null if unclaimed) |
+| `required_capabilities` | array | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
+
+### Estimation & Actuals Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `actual_complexity` | string | Actual complexity after completion |
+| `actual_files_changed` | string | Actual number of files modified, as free text such as `"4"` |
+| `time_spent_minutes` | integer | Time spent on task in minutes |
+
+### Review Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `review_status` | string | Review decision: `pending`, `approved`, `changes_requested`, `rejected` (null if no review has been recorded; `pending` means the review is not finished) |
+| `review_notes` | string | Reviewer's notes and feedback |
+| `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
+| `reviewed_at` | string | When review was completed (ISO 8601) |
+| `reviewed_by_id` | integer | User ID who reviewed the task |
+
+### Timestamp Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `inserted_at` | string | When task was created (ISO 8601) |
+| `updated_at` | string | When task was last updated (ISO 8601, UTC, whole seconds, rendered with no offset, such as `2026-01-31T12:00:00`). The watermark for [Incremental sync](#incremental-sync). Present in the full object only, not in `response_view=slim` rows. Board moves and reorders update it too, on the moved task and on every neighbour whose `position` shifts; a move that changes nothing leaves it as it was |
+
+### Nested Object Structures
+
+#### `key_files` Array
+
+Each item in the `key_files` array has:
+
+```json
+{
+  "file_path": "lib/path/to/file.ex",  // Relative path from project root
+  "note": "Why this file is modified",  // Context for the change
+  "position": 0                          // Order of modification (0-indexed)
+}
+```
+
+#### `verification_steps` Array
+
+Each item in the `verification_steps` array has:
+
+```json
+{
+  "step_type": "command",                     // Type: "command" or "manual"
+  "step_text": "mix test path/to/test.exs",  // The command or instruction
+  "expected_result": "All tests pass",        // What success looks like
+  "position": 0                               // Order of execution (0-indexed)
+}
+```
+
+#### `labels` Array
+
+Each item in the `labels` array has:
+
+```json
+{
+  "name": "Bug",   // The label's name on this board (1 to 40 characters)
+  "color": "red"   // One of gray, red, orange, yellow, green, teal, blue, purple, pink
+}
+```
+
+Labels are set by name on [POST /api/tasks](post_tasks.md#labels) and
+[PATCH /api/tasks/:id](patch_tasks_id.md#labels), and are managed (created,
+renamed, deleted) in the board settings, not through the API.
+
+## Example Usage
+
+### Get all tasks
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  https://www.stridelikeaboss.com/api/tasks
+```
+
+### Get tasks in a specific column
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  https://www.stridelikeaboss.com/api/tasks?column_id=5
+```
+
+### Page through open high-priority work, 50 at a time
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?status=open&priority=high&type=work&limit=50"
+# then repeat with &cursor=<meta.next_cursor> until next_cursor is null
+```
+
+### Fetch only tasks changed since the last sync
+
+```bash
+# bound = last pass's highest updated_at minus an overlap longer than one pass
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?updated_since=2026-01-31T11:55:00Z&limit=100"
+# then repeat with &cursor=<meta.next_cursor> until next_cursor is null,
+# upserting rows by id
+```
+
+Use the full view for a sync. Adding `response_view=slim` still filters
+correctly, but slim rows carry no `updated_at`, so the response cannot give you
+the next watermark. See [Incremental sync](#incremental-sync).
+
+### List the tasks with a label
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?label=Bug"
+```
+
+### List a goal's child tasks
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?parent=G12&limit=200"
+```
+
+## Use Cases
+
+- Get overview of all tasks on the board
+- Filter tasks by column (e.g., see all tasks in Ready)
+- Find tasks by status, type, priority, assignee, parent goal or label (server-side filters)
+- Sync incrementally with `updated_since` and cursor pagination, using the full view and a server-time watermark with overlap (see [Incremental sync](#incremental-sync))
+- Build dashboards or reports
+- Monitor task progress
+
+## Typical Column IDs
+
+Column IDs vary by board, but typical columns are:
+
+- Backlog - Unprioritized tasks
+- Ready - Prioritized and ready to claim
+- Doing - Currently being worked on
+- Review - Completed and awaiting review
+- Done - Fully completed tasks
+
+Use the web UI or inspect responses to find column IDs for your board.
+
+## Notes
+
+- Returns all tasks across all columns if no `column_id` is provided
+- Without page keys, tasks are ordered by column position then task position; in paginated mode, by `id` ascending
+- Includes both regular tasks and goals
+- A child task carries its goal's numeric ID in `parent_id` and nothing else
+  about the goal; fetch the goal with [GET /api/tasks/:id](get_tasks_id.md) for
+  its details
+- The `dependencies` array lists the identifiers (such as `W15`) of the tasks
+  that must be completed first
+
+## Filtering and Sorting
+
+Server-side filters cover `column_id`, `status`, `type`, `priority`,
+`assigned_to_id`, `parent`, `updated_since` and `label` — see
+[Pagination and filters](#pagination-and-filters) and
+[Filtering by label](#filtering-by-label). Prefer them on large boards:
+the unpaginated response returns every task on the board in one body.
+
+The API does not sort beyond the fixed orders described above, and some
+criteria have no server-side filter (for example "unassigned" or required
+capabilities). For those:
+
+1. Fetch the tasks (narrowed with server-side filters where you can)
+2. Filter client-side by:
+   - Assignment (`assigned_to_id` null or not)
+   - Required capabilities
+3. Sort client-side by:
+   - Priority (critical → low)
+   - Creation date (`inserted_at`)
+   - Complexity
+   - Identifier
+
+## Example Client-Side Filtering
+
+```javascript
+// Get all tasks
+const response = await fetch('/api/tasks', {
+  headers: {'Authorization': 'Bearer stride_dev_abc123...'}
+});
+const {data: tasks} = await response.json();
+
+// Filter for high priority unassigned tasks
+const availableTasks = tasks.filter(t =>
+  t.priority === 'high' &&
+  t.assigned_to_id === null &&
+  t.status === 'open'
+);
+
+// Sort by priority then date
+availableTasks.sort((a, b) => {
+  const priorityOrder = {critical: 0, high: 1, medium: 2, low: 3};
+  if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+    return priorityOrder[a.priority] - priorityOrder[b.priority];
+  }
+  return new Date(a.inserted_at) - new Date(b.inserted_at);
+});
+```
+
+## See Also
+
+- [GET /api/tasks/next](get_tasks_next.md) - Get next available task (pre-filtered by capabilities)
+- [GET /api/tasks/:id](get_tasks_id.md) - Get specific task details
+- [POST /api/tasks/claim](post_tasks_claim.md) - Claim a task to start working

@@ -374,6 +374,22 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "developer guides content" do
+    test "every /docs link in a how-to names a guide /docs publishes" do
+      links =
+        for guide <- HowToData.all_how_tos(),
+            step <- guide.steps,
+            [_, slug] <- Regex.scan(~r{\]\(/docs/([^)#]+)}, Map.get(step, :content) || ""),
+            do: {guide.id, slug}
+
+      assert {"setting-up-hooks", "agent-hook-execution-guide"} in links
+      assert {"connecting-an-mcp-client", "mcp"} in links
+
+      for {id, slug} <- links do
+        assert {:ok, _page} = KanbanWeb.Docs.fetch(slug),
+               "the how-to #{id} links to /docs/#{slug}, which /docs does not publish"
+      end
+    end
+
     test "all 6 developer guides exist" do
       developer_guides =
         HowToData.all_how_tos()
@@ -3423,6 +3439,10 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
           "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/" <> path ->
             assert File.exists?(path), "#{link} names a file the repo doesn't have"
+
+          "/docs/" <> slug ->
+            assert {:ok, _page} = KanbanWeb.Docs.fetch(slug),
+                   "#{link} names a guide /docs does not publish"
 
           other ->
             flunk("#{other} is neither a Resources guide nor a doc in the repo")

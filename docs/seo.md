@@ -158,7 +158,11 @@ links alone.
 pages in `SeoXML.public_paths/0` (the `@public_paths` attribute in
 [`seo_xml.ex`](../lib/kanban_web/controllers/seo_xml.ex)) and one
 `/resources/<id>` page per how-to from
-`KanbanWeb.ResourcesLive.HowToData.all_how_tos/0`. Every `<loc>` comes from
+`KanbanWeb.ResourcesLive.HowToData.all_how_tos/0`. `public_paths/0` also
+includes `/docs` and one `/docs/<slug>` per published guide, from
+`KanbanWeb.Docs.sitemap_paths/0`, so a guide added to that allow-list reaches
+the sitemap with no further step ([Publishing Guides on the Site](docs-site.md)).
+Every `<loc>` comes from
 `canonical_url/1`, so it matches the canonical the page renders, and is
 XML-escaped.
 
@@ -289,6 +293,11 @@ These run as part of `mix test`:
   covers the default and per-page images.
 - [`test/kanban_web/components/structured_data_test.exs`](../test/kanban_web/components/structured_data_test.exs)
   covers the JSON-LD blocks and their escaping.
+
+- [`test/kanban_web/controllers/docs_controller_test.exs`](../test/kanban_web/controllers/docs_controller_test.exs)
+  and [`test/kanban_web/docs_test.exs`](../test/kanban_web/docs_test.exs)
+  cover the published guides at `/docs`: their titles and descriptions, the
+  allow-list, and that every link on every guide resolves.
 
 So a new public `PageController` page needs a `seo/1` clause, an entry in the
 noindex test's public list and an entry in `@public_paths`. A new public

@@ -1,0 +1,67 @@
+<main class="min-h-screen" data-docs-index>
+  <div class="max-w-5xl mx-auto px-6 py-16">
+    <div class="text-center mb-14">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-base-content mb-4"
+        style="overflow-wrap: break-word; hyphens: auto;"
+      >
+        {gettext("Documentation")}
+      </h1>
+      <p class="text-lg max-w-2xl mx-auto" style="color: var(--ink-2);">
+        {gettext(
+          "Everything you need to put AI coding agents to work on a Stride board: setting them up, the workflow they follow, the hooks they run and the API they call."
+        )}
+      </p>
+      <p class="text-sm max-w-2xl mx-auto mt-3" style="color: var(--ink-3);">
+        {gettext("The guides are written in English.")}
+      </p>
+    </div>
+
+    <section id="guides" class="mb-14" aria-labelledby="guides-heading">
+      <h2 id="guides-heading" class="text-2xl font-bold text-base-content mb-6">
+        {gettext("Guides")}
+      </h2>
+      <ul class="grid grid-cols-1 md:grid-cols-2 gap-4" role="list">
+        <li :for={page <- @guides}>
+          <.link
+            href={~p"/docs/#{page.slug}"}
+            class="stride-docs-card block h-full rounded-2xl p-6"
+            data-docs-link={page.slug}
+          >
+            <span class="block text-lg font-semibold" style="color: var(--ink);">
+              {page.title}
+            </span>
+            <span class="block text-sm mt-2 leading-relaxed" style="color: var(--ink-2);">
+              {page.description}
+            </span>
+          </.link>
+        </li>
+      </ul>
+    </section>
+
+    <section id="api-reference" aria-labelledby="api-reference-heading">
+      <h2 id="api-reference-heading" class="text-2xl font-bold text-base-content mb-6">
+        {gettext("API reference")}
+      </h2>
+      <ul class="grid grid-cols-1 md:grid-cols-2 gap-3" role="list">
+        <li :for={page <- @api_pages}>
+          <.link
+            href={~p"/docs/#{page.slug}"}
+            class="stride-docs-card block h-full rounded-xl px-5 py-4"
+            data-docs-link={page.slug}
+          >
+            <span
+              class="block text-sm font-semibold font-mono"
+              style="color: var(--ink); overflow-wrap: anywhere;"
+            >
+              {page.title}
+            </span>
+            <span class="block text-xs mt-1 leading-relaxed" style="color: var(--ink-2);">
+              {page.description}
+            </span>
+          </.link>
+        </li>
+      </ul>
+    </section>
+  </div>
+</main>

@@ -16000,3 +16000,58 @@ msgstr "Stride %{version}"
 #, elixir-autogen, elixir-format
 msgid "Stride releases"
 msgstr "Stride 版本发布"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "API reference"
+msgstr "API 参考"
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All documentation"
+msgstr "全部文档"
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Breadcrumb"
+msgstr "面包屑导航"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Documentation"
+msgstr "文档"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Everything you need to put AI coding agents to work on a Stride board: setting them up, the workflow they follow, the hooks they run and the API they call."
+msgstr "让 AI 编程代理在 Stride 看板上工作所需的一切：如何设置、它们遵循的工作流、运行的钩子以及调用的 API。"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Guides"
+msgstr "指南"
+
+#: lib/kanban_web/controllers/docs_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Guides for running AI coding agents on Stride: getting started, the agent workflow, hooks, MCP, authentication and the REST API reference."
+msgstr "在 Stride 上运行 AI 编程代理的指南：入门、代理工作流、钩子、MCP、身份验证以及 REST API 参考。"
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "On this page"
+msgstr "本页内容"
+
+#: lib/kanban_web/controllers/docs_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride documentation"
+msgstr "Stride 文档"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "The guides are written in English."
+msgstr "指南以英文撰写。"
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "View this page on GitHub"
+msgstr "在 GitHub 上查看此页面"

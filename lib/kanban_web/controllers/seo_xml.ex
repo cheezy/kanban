@@ -3,7 +3,8 @@ defmodule KanbanWeb.SeoXML do
   Builds the body of `/sitemap.xml` (W2891), which `KanbanWeb.SeoController`
   serves.
 
-  The sitemap lists the public marketing pages in `public_paths/0` and one
+  The sitemap lists the public marketing pages and the published guides
+  (`KanbanWeb.Docs.sitemap_paths/0`) in `public_paths/0`, and one
   `/resources/<id>` page per how-to in
   `KanbanWeb.ResourcesLive.HowToData.all_how_tos/0`. Every `<loc>` is built by
   `KanbanWeb.SeoComponents.canonical_url/1`, so it is absolute and matches the
@@ -22,6 +23,7 @@ defmodule KanbanWeb.SeoXML do
   name, so a new public LiveView page must be added here by hand.
   """
 
+  alias KanbanWeb.Docs
   alias KanbanWeb.ResourcesLive.HowToData
   alias KanbanWeb.SeoComponents
 
@@ -43,10 +45,11 @@ defmodule KanbanWeb.SeoXML do
   )
 
   @doc """
-  The public pages the sitemap lists, apart from the how-tos.
+  The public pages the sitemap lists, apart from the how-tos: the marketing
+  pages, then `/docs` and every published guide.
   """
   @spec public_paths() :: [String.t()]
-  def public_paths, do: @public_paths
+  def public_paths, do: @public_paths ++ Docs.sitemap_paths()
 
   @doc """
   Renders the sitemap for `how_tos`, which defaults to every how-to.
@@ -71,7 +74,7 @@ defmodule KanbanWeb.SeoXML do
     ])
   end
 
-  defp paths(how_tos), do: @public_paths ++ Enum.map(how_tos, &("/resources/" <> &1.id))
+  defp paths(how_tos), do: public_paths() ++ Enum.map(how_tos, &("/resources/" <> &1.id))
 
   # Plug.HTML escapes & < > " and ', which covers every character XML
   # reserves in text.

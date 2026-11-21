@@ -177,6 +177,10 @@ defmodule KanbanWeb.Router do
     get "/terms", PageController, :terms
     get "/workflows", PageController, :workflows
     get "/changelog", PageController, :changelog
+    # The published guides (W2898); the slug is only looked up in the
+    # KanbanWeb.Docs allow-list.
+    get "/docs", DocsController, :index
+    get "/docs/:slug", DocsController, :show
     post "/locale/:locale", PageController, :set_locale
   end
 

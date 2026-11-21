@@ -948,6 +948,6 @@ Completing a task with valid hook results but a missing `explorer_result` or `re
 
 ## See Also
 
-- [API Documentation](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md) - Complete API reference
-- [AI Workflow Guide](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md) - Agent workflow patterns
-- [Task Writing Guide](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md) - How to write effective tasks
+- [API Documentation](api/README.md) - Complete API reference
+- [AI Workflow Guide](AI-WORKFLOW.md) - Agent workflow patterns
+- [Task Writing Guide](TASK-WRITING-GUIDE.md) - How to write effective tasks

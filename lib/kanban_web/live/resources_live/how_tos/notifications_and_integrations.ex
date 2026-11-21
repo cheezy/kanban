@@ -175,7 +175,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.NotificationsAndIntegrations do
           %{
             title: "Checking the Connection",
             content:
-              "In Claude Code, run `/mcp`: Stride should be connected with seven tools.\n\nOther clients work if they speak Streamable HTTP and can send an `Authorization` header. The server answers each POST with JSON and offers no event stream, so a client that needs one won't connect. The [MCP reference](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/MCP.md) has the details.",
+              "In Claude Code, run `/mcp`: Stride should be connected with seven tools.\n\nOther clients work if they speak Streamable HTTP and can send an `Authorization` header. The server answers each POST with JSON and offers no event stream, so a client that needs one won't connect. The [MCP reference](/docs/mcp) has the details.",
             image: nil
           }
         ]

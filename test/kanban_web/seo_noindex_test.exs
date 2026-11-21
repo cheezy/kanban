@@ -68,6 +68,8 @@ defmodule KanbanWeb.SeoNoindexTest do
     "/issue",
     "/resources",
     "/resources/:id",
+    "/docs",
+    "/docs/:slug",
     "/users/register",
     "/users/log-in"
   ]
@@ -241,7 +243,11 @@ defmodule KanbanWeb.SeoNoindexTest do
 
     test "every public route stays indexable" do
       for path <- @public_paths do
-        concrete = String.replace(path, ":id", "creating-your-first-board")
+        concrete =
+          path
+          |> String.replace(":id", "creating-your-first-board")
+          |> String.replace(":slug", "mcp")
+
         conn = get(build_conn(), concrete)
 
         assert robots(conn) == [], "#{path} renders a robots tag"

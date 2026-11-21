@@ -1,0 +1,69 @@
+<main class="min-h-screen" data-docs-page={@page.slug}>
+  <div class="max-w-6xl mx-auto px-6 py-12">
+    <nav class="mb-8 text-sm" aria-label={gettext("Breadcrumb")}>
+      <.link
+        href={~p"/docs"}
+        class="inline-flex items-center gap-1 font-medium"
+        style="color: var(--stride-orange-ink); text-decoration: none;"
+      >
+        <.icon name="hero-arrow-left" class="h-3.5 w-3.5" />
+        {gettext("All documentation")}
+      </.link>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-12">
+      <article class="stride-docs-prose min-w-0" lang="en">
+        <%!-- Safe to render raw: KanbanWeb.Docs.Renderer renders committed,
+              allow-listed markdown with raw HTML escaped (render: [escape: true])
+              and every link rewritten to a site path, GitHub or http(s)/mailto. --%>
+        {Phoenix.HTML.raw(@page.html)}
+      </article>
+
+      <aside class="hidden lg:block" aria-label={gettext("On this page")}>
+        <div class="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
+          <p
+            :if={length(@page.toc) > 1}
+            class="text-xs font-semibold uppercase tracking-wide mb-3"
+            style="color: var(--ink-3);"
+          >
+            {gettext("On this page")}
+          </p>
+          <ul :if={length(@page.toc) > 1} class="space-y-2 text-sm mb-8" role="list" lang="en">
+            <li :for={entry <- @page.toc}>
+              <a
+                href={"#" <> entry.id}
+                class="stride-docs-toc-link block leading-snug"
+                style="overflow-wrap: anywhere;"
+              >
+                {entry.text}
+              </a>
+            </li>
+          </ul>
+          <a
+            href={github_source_url(@page)}
+            class="inline-flex items-center gap-1 text-sm font-medium"
+            style="color: var(--stride-orange-ink);"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {gettext("View this page on GitHub")}
+            <.icon name="hero-arrow-top-right-on-square" class="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </aside>
+    </div>
+
+    <p class="lg:hidden mt-12 text-sm">
+      <a
+        href={github_source_url(@page)}
+        class="inline-flex items-center gap-1 font-medium"
+        style="color: var(--stride-orange-ink);"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {gettext("View this page on GitHub")}
+        <.icon name="hero-arrow-top-right-on-square" class="h-3.5 w-3.5" />
+      </a>
+    </p>
+  </div>
+</main>

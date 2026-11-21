@@ -1,0 +1,1051 @@
+# POST /api/tasks
+
+Create a new task or goal with nested child tasks.
+
+## Authentication
+
+Requires a valid API token in the Authorization header:
+
+```bash
+Authorization: Bearer <your_api_token>
+```
+
+## Request
+
+**Method:** POST
+**Endpoint:** `/api/tasks`
+**Content-Type:** application/json
+
+### Request Body Parameters
+
+#### Basic Fields
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.title` | string | Yes | Clear, specific task title |
+| `task.description` | string | **Strongly Recommended** | Detailed description with WHY, WHAT, and WHERE |
+| `task.type` | string | **Strongly Recommended** | Type: `work` (new features), `defect` (bug fixes) or `goal` (a goal with nested `tasks`). Exact lowercase values only; omitted defaults to `work`, and any other value returns 422 (see [Task Type Values](#task-type-values)). Exception: when `task.tasks` is non-empty the request always creates a goal and this top-level value is ignored; each child's `type` is still validated and must be `work` or `defect`, because a goal cannot contain another goal |
+| `task.priority` | string | No | Priority: `low`, `medium`, `high`, `critical` (default: `medium`) |
+| `task.complexity` | string | **Strongly Recommended** | Complexity: `small`, `medium`, `large` (default: `small`) |
+| `task.needs_review` | boolean | No | Whether task requires human review (default: `false`) |
+| `task.labels` | array | No | Label **names** on this board to attach, e.g. `["Bug", "backend"]`, matched case-insensitively. Labels must already exist on the board; an unknown name returns 422 and nothing is created (see [Labels](#labels)). Each child under `task.tasks` may carry its own `labels` |
+
+#### Task Scheduling & Dependencies
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.key_files` | array | **CRITICAL** | Files that will be modified - prevents conflicts (see format below) |
+| `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`), or use 0-based indices for tasks within the same goal (e.g., `[0, 1]` - see Dependency Handling below). Each identifier must name a task on this board (or a child of the same goal); otherwise the request is refused with 422 `dependencies: ["lists tasks that are not on this board: W900"]` and nothing is created |
+
+**A single create cannot attach a task to an existing goal.** There is no
+`parent_goal` parameter, and `parent_id` is read-only:
+
+- A client-sent `parent_id` is stripped before the task is created and logged as
+  a mass-assignment attempt. It is forbidden because it would let a client link
+  a task under any goal, including one on another board, and inherit that
+  goal's assignee.
+- A `parent_goal` key is dropped like any other unrecognised key, with no log
+  line.
+
+Either way the request still returns `201` and the new task has
+`parent_id: null`. The only ways to put work under a goal are nested `tasks` on
+a goal create (see [Goal Creation with Nested Tasks](#goal-creation-with-nested-tasks))
+or [`POST /api/tasks/batch`](post_tasks_batch.md); both create the goal and its
+children together. `parent_id` is set by the server during that goal creation and
+a task cannot be reparented via the API — ask a human to change the parent goal
+in the board UI.
+
+#### Planning & Context
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.why` | string | **Strongly Recommended** | Why this task matters - business justification |
+| `task.what` | string | **Strongly Recommended** | What needs to be done - concise summary |
+| `task.where_context` | string | **Strongly Recommended** | Where in the codebase this work happens |
+| `task.estimated_files` | string | **Strongly Recommended** | Estimated number of files to modify as a number or range (e.g., '2', '3-5', '5+') |
+
+#### Implementation Guidance
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.acceptance_criteria` | string | **Strongly Recommended** | Specific, testable conditions for "done" (newline-separated) |
+| `task.verification_steps` | array | **Strongly Recommended** | Array of step objects with `step_type` (`command` or `manual`), `step_text` and `position`, plus an optional `expected_result` (see [Verification Steps Format](#verification-steps-format)) |
+| `task.patterns_to_follow` | string | No | Specific coding patterns to replicate (newline-separated) |
+| `task.database_changes` | string | No | Database schema changes required (migrations, tables, columns) |
+| `task.validation_rules` | string | No | Input validation requirements (constraints, formats, rules) |
+| `task.technology_requirements` | array | No | Required technologies or libraries (array of strings) |
+| `task.pitfalls` | array | No | Common mistakes to avoid (array of strings) |
+| `task.out_of_scope` | array | No | What NOT to include in this task (array of strings) |
+
+#### Observability & Error Handling
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.telemetry_event` | string | No | Telemetry events to emit (event names and metadata). Stored only on a board in an Organization; see [Warnings](#warnings) |
+| `task.metrics_to_track` | string | No | Metrics to instrument (counters, gauges, histograms). Stored only on a board in an Organization; see [Warnings](#warnings) |
+| `task.logging_requirements` | string | No | What to log for debugging (log levels, context data) |
+| `task.error_user_message` | string | No | User-facing error messages to display |
+| `task.error_on_failure` | string | No | How to handle failures (retry logic, fallbacks, cleanup) |
+
+#### Quality & Security
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.security_considerations` | array | **Strongly Recommended** | Security concerns, vulnerabilities to avoid, or security requirements (array of strings - see format below). An entry shaped like a real credential is rejected with a 422 |
+| `task.testing_strategy` | object | **Strongly Recommended** | Overall testing approach (JSON object - see format below) |
+| `task.integration_points` | object | No | Systems or APIs this touches (JSON object) |
+
+#### Agent & System Fields
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
+| `task.column_id` | integer | No | Column ID where task should be created. Omitted, the task goes to the board's column named Backlog; a board with no Backlog uses its Ready column, and a board with neither uses its first column. Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Column not found` (`Task not found` before 2026-10-21), and so does a whole number outside the signed 64-bit range. Omitted on a board with no columns at all, it also returns 404 `Column not found` and nothing is created. |
+| `task.tasks` | array | No | Array of child task objects (for goals only). Each child's `type` must be `work` or `defect`; a child of type `goal` returns 422, and so does a child with a non-empty `tasks` list of its own (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
+| `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
+
+#### created_by_agent Resolution Order
+
+The server records who created each task in the create-only `created_by_agent`
+field (it is rejected on PATCH so attribution history stays immutable). At
+create time the value is resolved from the first available source:
+
+1. An explicit `task.created_by_agent` in the payload (always wins)
+2. The API token's `agent_model`, recorded as `ai_agent:<model>`
+3. The request's top-level `agent_name` parameter, when it is a usable name
+4. The token's remembered `last_agent_name` — stamped automatically whenever a
+   claim, complete, create, or comment request carries a usable `agent_name`.
+   A usable name is valid UTF-8, contains no NUL, has at least one visible
+   character (whitespace and invisible format characters such as zero-width
+   or bidi controls do not count), and is not the `"Unknown"` placeholder
+5. Otherwise the task is created unattributed (`created_by_agent` is `null`)
+   and the agents page renders its created row with the neutral `?` avatar
+
+#### Key Files Format
+
+The `key_files` array should contain objects with the following structure:
+
+```json
+"key_files": [
+  {
+    "file_path": "lib/path/to/file.ex",  // Required: relative path from project root
+    "note": "Why this file is modified",  // Optional: context
+    "position": 0                          // Required: order of modification (0-indexed)
+  }
+]
+```
+
+**Why key_files is CRITICAL:**
+
+- Prevents merge conflicts - only one task can modify a file at a time
+- `GET /api/tasks/next` and a claim without an `identifier` skip a Ready task whose key_files overlap a task in progress in Doing or Review
+- If Task A is working on `lib/auth.ex`, Task B listing the same file is not offered until Task A completes. A claim that names Task B with `identifier` does not run this check
+
+#### Verification Steps Format
+
+The `verification_steps` array MUST contain **objects** with the following structure:
+
+```json
+"verification_steps": [
+  {
+    "step_type": "command",                    // Required: "command" or "manual"
+    "step_text": "mix test test/auth_test.exs", // Required: command or instruction
+    "expected_result": "All tests pass",       // Optional: what success looks like
+    "position": 0                              // Required: execution order (0-indexed)
+  },
+  {
+    "step_type": "manual",
+    "step_text": "Navigate to /login and verify special characters work in password field",
+    "expected_result": "Can login with password containing &, %, #",
+    "position": 1
+  }
+]
+```
+
+**⚠️ CRITICAL**: Each element in the `verification_steps` array MUST be an **object** (not a string, not an empty array).
+
+**Valid:**
+- `"verification_steps": [{"step_type": "command", "step_text": "mix test", "position": 0}]`
+- `"verification_steps": []` (empty array is valid but not useful)
+
+**Invalid (will cause error):**
+- `"verification_steps": ["mix test"]` (array of strings)
+- `"verification_steps": "mix test"` (string instead of array)
+
+#### Testing Strategy Format
+
+The `testing_strategy` object describes the overall testing approach for the task. This is a flexible JSON object that can contain any relevant testing information. Common fields include:
+
+```json
+"testing_strategy": {
+  "unit_tests": "Test each function in isolation with ExUnit",
+  "integration_tests": "Test auth flow end-to-end in controller tests",
+  "property_tests": "Use StreamData to verify password encoding with random special characters",
+  "coverage_target": "100% for auth module",
+  "test_data": "Create fixtures for valid/invalid passwords",
+  "mocking": "Mock external email service for password reset tests",
+  "edge_cases": [
+    "Empty password",
+    "Password with unicode characters",
+    "Password exceeding max length"
+  ],
+  "performance_tests": "Login should complete in <100ms for 95th percentile"
+}
+```
+
+**Common fields (all optional):**
+
+- `unit_tests` (string) - Approach for unit testing individual functions
+- `integration_tests` (string) - How to test component interactions
+- `property_tests` (string) - Property-based testing strategy (e.g., StreamData)
+- `coverage_target` (string) - Target code coverage percentage or scope
+- `test_data` (string) - Test fixtures or data setup approach
+- `mocking` (string) - What external dependencies to mock and how
+- `edge_cases` (array) - Specific edge cases that must be tested
+- `performance_tests` (string) - Performance criteria or benchmarks
+- `manual_tests` (string) - Manual testing procedures beyond automated tests
+
+**Why testing_strategy is valuable:**
+
+- Provides clear testing expectations beyond verification steps
+- Helps agents understand the testing philosophy for this task
+- Specifies coverage targets and edge cases upfront
+- Documents mocking/stubbing requirements
+- Can be more comprehensive than `verification_steps` which focuses on commands
+
+**When to use testing_strategy vs verification_steps:**
+
+- `testing_strategy` - Overall testing approach, coverage goals, edge cases to consider
+- `verification_steps` - Specific commands to run and manual steps to verify completion
+
+Use both for comprehensive guidance: `testing_strategy` tells the agent *how to think about testing*, while `verification_steps` tells them *what commands to run*.
+
+#### Security Considerations Format
+
+The `security_considerations` array specifies security concerns, potential vulnerabilities, and security requirements for the task. This is an array of strings, each describing a specific security aspect to address.
+
+```json
+"security_considerations": [
+  "Validate and sanitize all user input to prevent XSS attacks",
+  "Use parameterized queries to prevent SQL injection",
+  "Hash passwords with bcrypt (cost factor 12+)",
+  "Implement rate limiting on login endpoint (max 5 attempts per minute)",
+  "Ensure authentication tokens expire after 24 hours",
+  "Never log sensitive data (passwords, tokens, credit cards)",
+  "Use HTTPS only for all authentication endpoints",
+  "Implement CSRF protection for state-changing operations"
+]
+```
+
+**Common security considerations by category:**
+
+**Input Validation & Sanitization:**
+- "Validate and sanitize user input to prevent XSS"
+- "Escape HTML in user-generated content"
+- "Validate file uploads (type, size, content)"
+- "Reject invalid email formats and special characters"
+
+**Authentication & Authorization:**
+- "Hash passwords with bcrypt (cost factor 12+)"
+- "Implement secure password reset flow with time-limited tokens"
+- "Verify user authorization before allowing access"
+- "Use secure session management"
+- "Implement multi-factor authentication"
+
+**Data Protection:**
+- "Never log passwords, tokens, or sensitive data"
+- "Encrypt sensitive data at rest"
+- "Use HTTPS/TLS for all data transmission"
+- "Implement proper access controls on sensitive resources"
+
+**Injection Prevention:**
+- "Use parameterized queries to prevent SQL injection"
+- "Validate and sanitize all database inputs"
+- "Prevent command injection in system calls"
+- "Escape user input in dynamic queries"
+
+**Rate Limiting & DoS Prevention:**
+- "Implement rate limiting (5 requests per minute per IP)"
+- "Add CAPTCHA after failed login attempts"
+- "Limit file upload sizes"
+- "Implement request throttling"
+
+**CSRF & Session Security:**
+- "Implement CSRF token validation"
+- "Set secure cookie flags (HttpOnly, Secure, SameSite)"
+- "Invalidate sessions on logout"
+- "Rotate session tokens after privilege changes"
+
+**Credential-shaped entries are rejected.** Security-review agents echo each
+consideration verbatim into the review result Stride stores and shows on the
+Review queue, so an entry must never carry a real secret. An entry that matches
+a concrete credential format is refused with a
+[422](#unprocessable-entity-422) and nothing is stored. The formats are a Stride
+API token, `Bearer` followed by a token, a PEM or PGP private key header, a
+JWT, a `user:password@` segment in a URL, GitHub, OpenAI-style, AWS and Slack
+keys, and a `password=`/`secret=`/`api_key=`-style assignment of a long opaque
+value. Describe the risk in words instead.
+
+Prose about credentials is accepted, because the check matches token formats
+rather than words: "API tokens are never logged" and the redaction sentinel
+`[REDACTED — row text embedded a credential]` both pass, and so does a short
+placeholder such as `stride_dev_abc123`. Two non-secret shapes are refused
+anyway, because loosening the patterns to admit them would also admit real
+tokens: `bearer` followed by one unbroken word of 20 or more characters, and an
+`auth_token:`-style label followed by a long unbroken value such as a file
+path. Reword either one.
+
+**Why security_considerations is valuable:**
+
+- **Prevents vulnerabilities** - Explicitly reminds agents of security risks
+- **OWASP awareness** - Addresses common security issues (SQL injection, XSS, CSRF, etc.)
+- **Compliance** - Ensures security best practices are followed
+- **Code review** - Provides security checklist for reviewers
+- **Reduces risk** - Makes security a first-class concern, not an afterthought
+
+**When to include security_considerations:**
+
+- **Always** for tasks involving:
+  - User authentication or authorization
+  - User input or file uploads
+  - Database operations with user data
+  - API endpoints accepting external data
+  - Payment or financial transactions
+  - Personal or sensitive data handling
+  - Session or token management
+
+#### Labels
+
+`task.labels` attaches existing board labels to the new task by **name**:
+
+```json
+{
+  "task": {
+    "title": "Fix login redirect loop",
+    "type": "defect",
+    "labels": ["Bug", "auth"]
+  }
+}
+```
+
+- Names are matched case-insensitively against the labels of the token's
+  board, with surrounding whitespace ignored. Duplicates, including case
+  variants such as `"bug"` and `"BUG"`, attach the label once.
+- Each name must be a string of 1 to 40 characters, and `labels` must be an
+  array. Send `[]` (or omit the field) for no labels; `null` is rejected.
+- Labels are **never created** by the API. Create, rename and delete labels in
+  the board settings; the API only attaches labels that already exist.
+- Every name is checked before anything is written. If any name is not a label
+  on this board, the request returns 422 naming every unknown name and **no
+  task is created** — for a goal, neither the goal nor any child. A name that
+  exists only on another board is reported in exactly the same words as one
+  that exists nowhere.
+- A goal's own `labels` apply to the goal; each child task in `task.tasks` can
+  carry its own `labels`, which are checked the same way.
+- The response's `data.labels` lists the attached labels as `{name, color}`,
+  ordered by name ignoring case. Goal-creation responses keep their compact
+  shapes; fetch a task with [GET /api/tasks/:id](get_tasks_id.md) to read its
+  labels.
+
+### Request Body Examples
+
+#### Create a detailed task (recommended approach)
+
+```json
+{
+  "task": {
+    "title": "Fix login bug with special characters in password",
+    "type": "defect",
+    "description": "Users cannot log in when their password contains special characters like & or %.",
+    "why": "Users cannot authenticate when using strong passwords with special characters, blocking access to their accounts",
+    "what": "Fix password encoding in login form to properly handle special characters",
+    "where_context": "Authentication controller and login form validation",
+    "priority": "high",
+    "complexity": "small",
+    "estimated_files": "2",
+    "needs_review": true,
+    "key_files": [
+      {
+        "file_path": "lib/kanban_web/controllers/auth_controller.ex",
+        "note": "Fix password encoding before validation",
+        "position": 0
+      },
+      {
+        "file_path": "test/kanban_web/controllers/auth_controller_test.exs",
+        "note": "Add test for special characters",
+        "position": 1
+      }
+    ],
+    "acceptance_criteria": "Users can log in with passwords containing &, %, #, and @ characters\nPassword validation works correctly with special chars\nNo regression in normal password login",
+    "verification_steps": [
+      {
+        "step_type": "command",
+        "step_text": "mix test test/kanban_web/controllers/auth_controller_test.exs",
+        "expected_result": "All tests pass",
+        "position": 0
+      },
+      {
+        "step_type": "manual",
+        "step_text": "Create user with password 'Test&Pass%123' and login",
+        "expected_result": "Login succeeds with special characters in password",
+        "position": 1
+      }
+    ],
+    "database_changes": null,
+    "validation_rules": "Password must be URL-encoded before transmission to server",
+    "testing_strategy": {
+      "unit_tests": "Test password encoding function with various special characters",
+      "integration_tests": "Test full login flow with passwords containing &, %, #, @",
+      "edge_cases": [
+        "Password with only special characters",
+        "Password with unicode characters",
+        "Empty password",
+        "Very long password with special chars"
+      ],
+      "coverage_target": "100% for modified auth functions"
+    },
+    "required_capabilities": ["code_generation", "testing"]
+  }
+}
+```
+
+#### Create a minimal task (not recommended - lacks context)
+
+```json
+{
+  "task": {
+    "title": "Fix login bug",
+    "description": "Users can't log in with special characters in password",
+    "priority": "high",
+    "complexity": "small"
+  }
+}
+```
+
+**Note:** While the minimal example above is valid, it lacks critical information that would help an agent (or developer) implement it efficiently. Always prefer the detailed approach.
+
+#### Create a goal with detailed child tasks
+
+```json
+{
+  "task": {
+    "title": "Implement user authentication system",
+    "description": "Complete authentication system with JWT tokens, password hashing, and session management.",
+    "why": "Application needs secure user authentication to protect user data and restrict access",
+    "what": "Complete authentication system with JWT tokens, password hashing, and session management",
+    "where_context": "New auth module and controllers",
+    "type": "goal",
+    "priority": "critical",
+    "complexity": "large",
+    "estimated_files": "10+",
+    "tasks": [
+      {
+        "title": "Create database schema for users",
+        "type": "work",
+        "description": "Add users table with email, password_hash, and metadata fields.",
+        "why": "Need secure storage for user credentials and authentication data",
+        "what": "Add users table with email, password_hash, and metadata fields",
+        "where_context": "New migration and User schema module",
+        "priority": "critical",
+        "complexity": "medium",
+        "estimated_files": "2",
+        "key_files": [
+          {
+            "file_path": "priv/repo/migrations/*_create_users.exs",
+            "note": "Create users table migration",
+            "position": 0
+          },
+          {
+            "file_path": "lib/kanban/accounts/user.ex",
+            "note": "User schema with validations",
+            "position": 1
+          }
+        ],
+        "acceptance_criteria": "Migration creates users table with email, password_hash, inserted_at, updated_at\nEmail has unique constraint\nSchema validates email format and password length",
+        "verification_steps": [
+          {
+            "step_type": "command",
+            "step_text": "mix ecto.migrate",
+            "expected_result": "Migration runs successfully",
+            "position": 0
+          },
+          {
+            "step_type": "command",
+            "step_text": "mix test test/kanban/accounts/user_test.exs",
+            "expected_result": "All tests pass",
+            "position": 1
+          }
+        ],
+        "required_capabilities": ["code_generation"]
+      },
+      {
+        "title": "Implement JWT token generation and validation",
+        "type": "work",
+        "description": "Add JWT library, create token generation and validation functions.",
+        "why": "Need secure token-based authentication for stateless API access",
+        "what": "Add JWT library, create token generation and validation functions",
+        "where_context": "Auth context module",
+        "priority": "critical",
+        "complexity": "medium",
+        "estimated_files": "2-3",
+        "dependencies": [0],
+        "key_files": [
+          {
+            "file_path": "lib/kanban/accounts/auth.ex",
+            "note": "Token generation and validation logic",
+            "position": 0
+          },
+          {
+            "file_path": "mix.exs",
+            "note": "Add joken dependency",
+            "position": 1
+          }
+        ],
+        "acceptance_criteria": "generate_token/1 creates valid JWT with user_id claim\nverify_token/1 validates token signature and expiry\nTokens expire after 24 hours\nInvalid tokens return error tuple",
+        "verification_steps": [
+          {
+            "step_type": "command",
+            "step_text": "mix test test/kanban/accounts/auth_test.exs",
+            "expected_result": "All tests pass",
+            "position": 0
+          }
+        ],
+        "technology_requirements": ["Joken library"],
+        "database_changes": null,
+        "validation_rules": "Tokens must use HS256 algorithm and expire after 24 hours",
+        "security_considerations": [
+          "Store JWT secret in environment variable, never in code",
+          "Use HS256 algorithm for token signing",
+          "Ensure tokens expire after 24 hours"
+        ],
+        "testing_strategy": {
+          "unit_tests": "Test token generation and validation functions independently",
+          "integration_tests": "Not needed - covered by auth controller tests",
+          "edge_cases": [
+            "Expired token",
+            "Invalid signature",
+            "Missing user_id claim",
+            "Malformed token string"
+          ],
+          "coverage_target": "100% for token module"
+        },
+        "required_capabilities": ["code_generation"]
+      },
+      {
+        "title": "Write comprehensive authentication tests",
+        "type": "work",
+        "description": "Test suite covering all auth flows and edge cases.",
+        "why": "Ensure auth system is secure and reliable before deploying to production",
+        "what": "Test suite covering all auth flows and edge cases",
+        "where_context": "Test files for auth modules",
+        "priority": "high",
+        "complexity": "medium",
+        "estimated_files": "3-4",
+        "dependencies": [1],
+        "key_files": [
+          {
+            "file_path": "test/kanban/accounts/auth_test.exs",
+            "note": "Auth context tests",
+            "position": 0
+          },
+          {
+            "file_path": "test/kanban/accounts/user_test.exs",
+            "note": "User schema tests",
+            "position": 1
+          }
+        ],
+        "acceptance_criteria": "100% code coverage for auth module\nAll happy path scenarios tested\nAll error cases tested\nTests run in < 1 second",
+        "verification_steps": [
+          {
+            "step_type": "command",
+            "step_text": "mix test test/kanban/accounts/",
+            "expected_result": "All tests pass",
+            "position": 0
+          },
+          {
+            "step_type": "command",
+            "step_text": "mix test --cover --export-coverage default",
+            "expected_result": "Coverage report generated",
+            "position": 1
+          },
+          {
+            "step_type": "command",
+            "step_text": "mix test.coverage",
+            "expected_result": "100% coverage for auth module",
+            "position": 2
+          }
+        ],
+        "required_capabilities": ["testing"]
+      }
+    ]
+  }
+}
+```
+
+## Response
+
+### Success - Simple Task (201 Created)
+
+```json
+{
+  "data": {
+    "id": 124,
+    "identifier": "W22",
+    "title": "Fix login bug",
+    "description": "Users can't log in with special characters in password",
+    "status": "open",
+    "priority": "high",
+    "complexity": "small",
+    "needs_review": true,
+    "type": "work",
+    "column_id": 5,
+    "created_by_id": 5,
+    "created_by_agent": "ai_agent:claude-sonnet-4-5",
+    "required_capabilities": ["code_generation"],
+    "labels": [
+      {"name": "Bug", "color": "red"}
+    ],
+    "inserted_at": "2025-12-28T13:00:00Z",
+    "updated_at": "2025-12-28T13:00:00Z"
+  },
+  "current_skills_version": "1.0"
+}
+```
+
+### Success - Goal with Child Tasks (201 Created)
+
+```json
+{
+  "goal": {
+    "id": 125,
+    "identifier": "G10",
+    "title": "Implement user authentication system",
+    "description": "Complete authentication system with JWT tokens",
+    "status": "open",
+    "priority": "critical",
+    "complexity": "large",
+    "type": "goal",
+    "column_id": 5,
+    "created_by_agent": "ai_agent:claude-sonnet-4-5",
+    "inserted_at": "2025-12-28T13:00:00Z"
+  },
+  "child_tasks": [
+    {
+      "id": 126,
+      "identifier": "W23",
+      "title": "Create database schema for users",
+      "status": "open",
+      "priority": "critical",
+      "complexity": "medium",
+      "column_id": 5,
+      "dependencies": []
+    },
+    {
+      "id": 127,
+      "identifier": "W24",
+      "title": "Implement JWT token generation",
+      "status": "blocked",
+      "priority": "critical",
+      "complexity": "medium",
+      "column_id": 5,
+      "dependencies": ["W23"]
+    },
+    {
+      "id": 128,
+      "identifier": "W25",
+      "title": "Write authentication tests",
+      "status": "blocked",
+      "priority": "high",
+      "complexity": "medium",
+      "column_id": 5,
+      "dependencies": ["W24"]
+    }
+  ]
+}
+```
+
+Each `child_tasks` entry is the compact task summary plus `column_id`, the
+column the child was placed in. A goal's children are always placed in the
+goal's column, so it equals the goal's `column_id`.
+
+### Warnings
+
+`telemetry_event` and `metrics_to_track` are paid fields. When paid plans are
+enforced and the token's board is not in an Organization's workspace, the
+request still succeeds with its normal status, but those fields are not
+stored, on the task or on any child task. The response then carries a
+top-level `warnings` list with one message naming the fields that were
+dropped. The message never repeats the values you sent. A request that sends
+neither field gets no `warnings` key. For a goal, `warnings` sits beside
+`goal` and `child_tasks`.
+
+```json
+{
+  "data": { "id": 123, "identifier": "W22", "title": "Add metrics dashboard" },
+  "warnings": [
+    "telemetry_event, metrics_to_track need a board in an Organization and were not stored."
+  ],
+  "current_skills_version": "1.0"
+}
+```
+
+### Unauthorized (401)
+
+The token is missing or invalid. See
+[401 for a missing or invalid token](README.md#401-for-a-missing-or-invalid-token).
+
+### Forbidden (403)
+
+The token's user does not have owner or modify access to the board. This is
+checked before anything is created:
+
+```json
+{
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+### Not Found (404)
+
+`task.column_id` names a column that does not exist or belongs to another
+board, or it is omitted on a board with no columns at all (D452). The cases are
+deliberately indistinguishable, and nothing is created:
+
+```json
+{
+  "error": "Column not found"
+}
+```
+
+Before 2026-10-21 this body read `Task not found`.
+
+A `task.column_id` that is a whole number outside the signed 64-bit range (below
+`-9223372036854775808` or above `9223372036854775807`) gets this same 404, whether
+it is sent as a JSON number or as a string. It is never a 500. A `column_id`
+that is not an integer at all, such as `"abc"`, gets a 400 with
+`Invalid column_id: must be an integer` instead. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
+
+### Unprocessable Entity (422)
+
+Validation errors:
+
+```json
+{
+  "errors": {
+    "title": ["can't be blank"],
+    "priority": ["is invalid"]
+  }
+}
+```
+
+Unrecognised task type (for example `"bug"`, `"task"`, `"Work"` or `42`). The
+value you sent is not echoed back, and nothing is persisted:
+
+```json
+{
+  "errors": {
+    "type": ["is invalid"]
+  },
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+}
+```
+
+An explicit `"type": null`, or an empty or whitespace-only string, returns
+`"type": ["can't be blank"]` instead. When the
+invalid type is on a nested child task, the same 422 is returned and neither the
+goal nor any child is created.
+
+A nested child task of type `goal`. Stride has two levels: a goal contains work
+and defect tasks and never another goal, so the request is refused before any
+identifier is assigned and neither the goal nor any child is created:
+
+```json
+{
+  "errors": {
+    "type": ["must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"]
+  },
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+}
+```
+
+A nested child task with a non-empty `tasks` list of its own. Tasks nest one
+level only, so the request is refused the same way instead of silently dropping
+the inner list, and nothing is created. An empty `tasks` list on a child is
+accepted:
+
+```json
+{
+  "errors": {
+    "tasks": ["must be empty for a task inside a goal; tasks cannot be nested more than one level"]
+  }
+}
+```
+
+The response also carries the usual `documentation` link.
+
+A `security_considerations` entry shaped like a real credential (see
+[Security Considerations Format](#security-considerations-format)). The error
+names the entry by its 1-based position and never echoes the value, and nothing
+is stored. When the entry is on a nested child task, the same 422 is returned
+and neither the goal nor any child is created:
+
+```json
+{
+  "errors": {
+    "security_considerations": ["entry 2 looks like it contains a credential; remove the secret value and describe the risk in words"]
+  }
+}
+```
+
+The response also carries the usual `documentation` link.
+
+An unknown label name (see [Labels](#labels)). Every unknown name is listed,
+including one that exists only on another board, and nothing is created. An
+unknown name on a nested child is prefixed with that child's 0-based index in
+`task.tasks`:
+
+```json
+{
+  "errors": {
+    "labels": [
+      "unknown labels: \"Nope\"",
+      "tasks[1] unknown labels: \"Secret\""
+    ]
+  }
+}
+```
+
+A `labels` value that is not an array of 1 to 40 character names (for example
+`"Bug"`, `[1]`, `[""]` or `null`) returns `"labels": ["must be an array of
+label names, each 1 to 40 characters"]` the same way. Both responses also
+carry the usual `documentation` link.
+
+WIP limit reached. A `work` or `defect` task whose target column (Backlog by
+default) already holds as many non-archived `work` and `defect` tasks as the
+column's WIP limit allows is rejected, and nothing is persisted. The message is
+fixed: it never echoes your title, type or column. A WIP limit of `0` means
+unlimited, so such a column never returns this error:
+
+```json
+{
+  "error": "WIP limit reached for this column — work and defect tasks cannot be added until a slot frees up",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/post_tasks.md#unprocessable-entity-422",
+  "common_causes": [
+    "The target column (Backlog by default) already holds as many work and defect tasks as its WIP limit allows",
+    "WIP limits count only non-archived work and defect tasks; goals are never counted or blocked",
+    "Wait for a task to leave the column, archive one, or ask a board owner to raise the column's WIP limit (0 means unlimited)"
+  ]
+}
+```
+
+WIP limits apply only to `work` and `defect` tasks created on their own. A
+`goal` is never counted or blocked, and creating a goal with nested child tasks
+does not check the limit either: the goal is exempt and its children are not
+checked against the limit when they are created, so a goal-with-tasks request
+into a full column still returns 201 and can take the column past its limit.
+Once created, those children count toward the limit like any other `work` or
+`defect` task, so a later single create into that column can get this 422.
+The check runs after board write access and the column lookup, so a 403 or 404
+is returned before any WIP rejection. To act on this error, wait for a task to
+leave the column or ask a board owner to raise the limit; retrying immediately
+returns the same 422.
+
+## Notes
+
+### Task Creation
+
+- A task sent without `task.column_id` is created in the board's Backlog column, or in Ready when the board has no Backlog, or else in the board's first column
+- The `created_by_id` is automatically set to your user ID
+- If your API token has an `agent_model`, it's recorded as `created_by_agent`
+- Task identifiers are automatically generated (e.g., W22, G10)
+- `labels` attaches existing board labels by name; it never creates a label (see [Labels](#labels))
+
+### Goal Creation with Nested Tasks
+
+- Set `type: "goal"` to create a goal
+- Include a `tasks` array to create child tasks atomically
+- When `tasks` is non-empty the request always creates a goal: the top-level
+  `type` is ignored, but every child's `type` is validated (see
+  [Task Type Values](#task-type-values))
+- Each child must be `work` or `defect`. Goals are never nested: a child of type
+  `goal` returns 422 and nothing is created
+- Tasks nest one level only: a child with a non-empty `tasks` list of its own
+  returns 422 and nothing is created
+- All tasks are created in a single database transaction (all-or-nothing)
+- Column WIP limits are not checked when a goal and its children are created,
+  so a full target column does not reject a goal-with-tasks request; once
+  created, the children count toward the column's limit like any other task
+- Child tasks are automatically linked to the parent goal: the server sets each
+  child's `parent_id` to the new goal's id. Nested creation here, or the same
+  nesting in [`POST /api/tasks/batch`](post_tasks_batch.md), is the only way a
+  task gets a parent through the API (see the note under
+  [Task Scheduling & Dependencies](#task-scheduling--dependencies))
+- Child tasks are always created in the goal's column, on the goal's board. A
+  `column_id` on a child task is ignored, so a child can never be placed in
+  another column or on another board
+- Child tasks can have dependencies on each other using index-based references
+- The goal gets a `G` identifier, work children get `W` identifiers and defect
+  children get `D` identifiers; each identifier is unique on the board
+
+### Dependency Handling for Child Tasks
+
+**⚠️ CRITICAL: Use INDEX-BASED dependencies for tasks within a goal!**
+
+When creating a goal with child tasks, you cannot use task identifiers like `"W1"` in dependencies because those identifiers haven't been assigned yet. Instead, use **0-based array indices**:
+
+**How it works:**
+
+- Use **0-based array indices** to reference tasks within the same goal
+- Index 0 = first task, index 1 = second task, etc.
+- The system automatically converts indices to actual task identifiers during creation
+- Result stored in database has human-readable identifiers
+- A string identifier must name a task already on the board or one of the goal's
+  own children; an identifier with no task there refuses the whole goal with 422
+
+**Example:**
+
+```json
+{
+  "task": {
+    "title": "User Authentication",
+    "type": "goal",
+    "tasks": [
+      {"title": "Create schema", "type": "work"},                        // index 0
+      {"title": "Add endpoints", "type": "work", "dependencies": [0]},   // depends on index 0
+      {"title": "Add tests", "type": "work", "dependencies": [0, 1]}     // depends on indices 0 and 1
+    ]
+  }
+}
+```
+
+**After creation, stored in database as:**
+
+```json
+{
+  "goal": {"identifier": "G1", "title": "User Authentication"},
+  "child_tasks": [
+    {"identifier": "W47", "title": "Create schema", "dependencies": []},
+    {"identifier": "W48", "title": "Add endpoints", "dependencies": ["W47"]},
+    {"identifier": "W49", "title": "Add tests", "dependencies": ["W47", "W48"]}
+  ]
+}
+```
+
+**You can also mix indices with existing task identifiers:**
+
+```json
+{
+  "task": {
+    "title": "Feature Extension",
+    "type": "goal",
+    "tasks": [
+      {"title": "New component", "type": "work"},
+      {"title": "Integration", "type": "work", "dependencies": [0, "W23"]}  // index 0 + existing task W23
+    ]
+  }
+}
+```
+
+**For standalone tasks (not in a goal):**
+
+Use existing task identifiers directly:
+
+```json
+{
+  "task": {
+    "title": "Standalone task",
+    "type": "work",
+    "dependencies": ["W23", "W24"]  // Use actual identifiers for existing tasks
+  }
+}
+```
+
+### Capabilities
+
+- Required capabilities filter which agents can claim the task
+- Valid capabilities are the 16 values in [Standard Capabilities](../AGENT-CAPABILITIES.md#standard-capabilities), for example `code_generation`, `code_review`, `devops`, `documentation` and `testing`. Any other value, such as `review` or `deployment`, is rejected with a 422 and nothing is created
+- If not specified, any agent can claim the task
+- Agents specify their capabilities in their API token configuration
+
+### Task Type Values
+
+- `work` - New functionality or an enhancement (default when `type` is omitted)
+- `defect` - A bug fix
+- `goal` - A goal; nest its child tasks under `tasks`. A goal is always
+  top-level: it can never be the child of another goal, so `goal` is not a valid
+  type for a nested child task
+
+The match is exact: values are lowercase with no surrounding whitespace, so
+`Work`, `WORK` and `" work"` are rejected, as are mistaken names such as `bug`,
+`task` or `epic`, `null`, an empty or whitespace-only string, numbers, arrays
+and objects. A rejected type returns the 422 shown under
+[Unprocessable Entity (422)](#unprocessable-entity-422) and creates nothing. To
+get the `work` default, omit the `type` key entirely.
+
+WIP limits apply only to `work` and `defect`, and only when one is created on
+its own; a goal and the children nested under it are never checked. A request
+with an invalid type is never counted against a WIP limit; it is rejected for
+its type. See [Unprocessable Entity (422)](#unprocessable-entity-422) for the
+WIP response body.
+
+### Priority Values
+
+- `low` - Nice to have
+- `medium` - Normal priority (default)
+- `high` - Important
+- `critical` - Urgent, must be done ASAP
+
+### Complexity Values
+
+- `small` - Less than 1 hour (default)
+- `medium` - 1-2 hours
+- `large` - More than 2 hours
+
+## Example Usage
+
+### Create a simple task
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": {
+      "title": "Fix login bug",
+      "description": "Users cannot log in with special characters",
+      "priority": "high",
+      "complexity": "small"
+    }
+  }' \
+  https://www.stridelikeaboss.com/api/tasks
+```
+
+### Create a goal with child tasks
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": {
+      "title": "Implement authentication",
+      "type": "goal",
+      "priority": "critical",
+      "tasks": [
+        {"title": "Create user schema", "complexity": "medium"},
+        {"title": "Implement JWT tokens", "complexity": "medium"},
+        {"title": "Write tests", "complexity": "medium"}
+      ]
+    }
+  }' \
+  https://www.stridelikeaboss.com/api/tasks
+```
+
+## See Also
+
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
+- [GET /api/tasks/:id](get_tasks_id.md) - Get task details
+- [POST /api/tasks/claim](post_tasks_claim.md) - Claim a task to start working

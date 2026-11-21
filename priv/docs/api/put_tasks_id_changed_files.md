@@ -1,0 +1,286 @@
+# PUT /api/tasks/:id/changed_files
+
+Upload the per-file diff snapshot for a task. This is the **sole writer** for `tasks.changed_files`; the completion endpoint never stores a `changed_files` value it receives in its body, though it still validates one (see the Notes below).
+
+The endpoint is intentionally separate from completion: it lets the agent's hook upload a diff snapshot independently of the completion request, and protects the snapshot from being clobbered by a stale `changed_files: []` in a late-arriving completion body.
+
+The diff encoding rules — truncation marker, binary placeholder, 500-line cap — are defined once in [docs/diff-contract.md](../diff-contract.md). This page is a *contract* doc; do not duplicate encoding rules here.
+
+## Authentication
+
+Requires a valid API token in the Authorization header:
+
+```bash
+Authorization: Bearer <your_api_token>
+```
+
+## Request
+
+**Method:** PUT
+**Endpoint:** `/api/tasks/:id/changed_files`
+**Content-Type:** application/json
+
+### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Task ID (numeric) or task identifier (e.g., `"W777"`). A numeric ID outside the signed 64-bit range (below -9223372036854775808 or above 9223372036854775807) returns 404, the same as an ID that names no task. |
+
+### Request Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `changed_files` | array | Yes | Array of per-file diff entries. An empty array (`[]`) is a valid explicit-clear value. See [diff-contract.md](../diff-contract.md) for the per-entry shape. |
+
+### Per-Entry Shape
+
+Each element of `changed_files` is an object:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `path` | string | Yes | Non-empty repo-relative file path. |
+| `diff` | string | No | Unified-patch text. Capped per [diff-contract.md](../diff-contract.md). Binary files use the `"[binary file — no diff captured]"` placeholder. |
+
+### Request Body Example
+
+```json
+{
+  "changed_files": [
+    {
+      "path": "lib/foo.ex",
+      "diff": "@@ -1,3 +1,4 @@\n defmodule Foo do\n+  @moduledoc \"hello\"\n   def bar, do: :ok\n end\n"
+    },
+    {
+      "path": "assets/logo.png",
+      "diff": "[binary file — no diff captured]"
+    }
+  ]
+}
+```
+
+To explicitly clear the snapshot:
+
+```json
+{ "changed_files": [] }
+```
+
+## Authorization
+
+The token's user must have owner or modify access to the board. This is checked
+before the task is looked up, so a caller without it gets the same 403 whether
+the task exists and whatever state it is in. A user with that access is either
+the task's assignee or a reviewer who may upload the snapshot, including after
+a `changes_requested` review, without re-claiming.
+
+## Selecting the response view
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `response_view` | `slim` | absent (full) | `slim` returns a compact acknowledgement instead of echoing the uploaded snapshot back. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. |
+
+Only the exact lowercase string `slim` opts in; `SLIM`, `" slim"`, `true`, `1` and
+`yes` all resolve to the full view. The parameter changes only what is echoed —
+never what is stored. The snapshot is persisted identically under both views and
+is always served in full by `GET /api/tasks/:id`.
+
+`response_view` may be sent **either as a query-string parameter or as a
+top-level key in the JSON request body** — Phoenix merges the two into the same
+params map, and the endpoint reads it from there:
+
+```json
+{ "response_view": "slim", "changed_files": [ ... ] }
+```
+
+The one exception is the bare top-level JSON array payload shape, which has no
+room for a sibling key; there the query string is the only channel.
+
+Opting in is worthwhile because the full response echoes the diff you just
+uploaded — up to 500 lines per file — straight back to the caller.
+
+## Response
+
+### Success (200 OK) — default (full) view
+
+Returns the updated task. The persisted snapshot appears under `data.changed_files`.
+
+```json
+{
+  "data": {
+    "id": 2819,
+    "identifier": "W777",
+    "title": "...",
+    "status": "in_progress",
+    "column_id": 128,
+    "changed_files": [
+      {
+        "path": "lib/foo.ex",
+        "diff": "@@ -1,3 +1,4 @@\n defmodule Foo do\n+  @moduledoc \"hello\"\n   def bar, do: :ok\n end\n"
+      },
+      {
+        "path": "assets/logo.png",
+        "diff": "[binary file — no diff captured]"
+      }
+    ]
+  },
+  "current_skills_version": "1.0"
+}
+```
+
+The task is not transitioned. `status` and `column_id` are unchanged by this endpoint.
+
+### Success (200 OK) — `?response_view=slim`
+
+Returns an acknowledgement carrying the task's identity and status fields.
+`changed_files` is **omitted from the response only** — it is still persisted,
+and `GET /api/tasks/:id` still returns it in full.
+
+The slim envelope is a bare `{"data": {...}}` — it also omits the top-level
+`current_skills_version` key that the full view carries, matching the other
+compact views in this API (`GET /api/tasks`, `.../tree`, `.../after_goal_status`
+all omit it too).
+
+```json
+{
+  "data": {
+    "id": 2819,
+    "identifier": "W777",
+    "title": "...",
+    "status": "in_progress",
+    "parent_id": 2800,
+    "needs_review": true,
+    "review_status": null,
+    "complexity": "small",
+    "priority": "high"
+  }
+}
+```
+
+Authorization is unaffected: the view is selected after the write is authorized,
+so an unauthorized caller receives the same 403 under either view.
+
+### Unauthorized (401)
+
+The `Authorization` header is missing, or does not start with `Bearer `:
+
+```json
+{ "error": "Missing or invalid Authorization header" }
+```
+
+The token is empty or unknown, was revoked or expired, or its user is disabled:
+
+```json
+{ "error": "Invalid API token" }
+```
+
+### Forbidden (403)
+
+The token's user no longer has owner or modify access to the board:
+
+```json
+{
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+This is checked before the task is looked up, so the response is the same
+whether the task exists and whatever state it is in. A task on another board is a 404, never a 403.
+
+### Not Found (404)
+
+The task ID or identifier does not match any task the caller can see.
+
+```json
+{ "error": "Task not found" }
+```
+
+A numeric ID outside the signed 64-bit range, such as `9223372036854775808`, gets
+this same 404 and body. It is never a 500, and it cannot be told apart from an ID
+that names no task or a task on another board. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
+
+### Unprocessable Entity (422)
+
+Validation failed. The envelope matches the [completion endpoint's validation envelope](patch_tasks_id_complete.md#completion-validation-format-g65) — same `error`, `failures`, and `required_format` keys — scoped here to `changed_files` only.
+
+```json
+{
+  "error": "completion validation failed",
+  "failures": [
+    {
+      "field": "changed_files",
+      "errors": [
+        { "field": "changed_file_path", "message": "changed_files[0] must have a non-empty string \"path\"" }
+      ]
+    }
+  ],
+  "required_format": {
+    "changed_files": [
+      {
+        "path": "lib/foo.ex",
+        "diff": "Unified-patch text — see docs/diff-contract.md"
+      },
+      {
+        "path": "assets/logo.png",
+        "diff": "[binary file — no diff captured]"
+      }
+    ]
+  },
+  "documentation": "..."
+}
+```
+
+The validation rules are owned by `Kanban.Tasks.CompletionValidation.validate_changed_files/1` — the same validator the completion endpoint uses for shape-checking. Plugins that already conform to that contract require no change.
+
+## Example Usage
+
+### Upload a snapshot for a claimed task
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "changed_files": [
+      { "path": "lib/foo.ex", "diff": "@@ -1 +1 @@\n-old\n+new" }
+    ]
+  }' \
+  $STRIDE_API_URL/api/tasks/W777/changed_files
+```
+
+### Clear the snapshot
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"changed_files": []}' \
+  $STRIDE_API_URL/api/tasks/W777/changed_files
+```
+
+### Re-upload after a `changes_requested` review
+
+After a `changes_requested` review, a caller with owner or modify access to the board — the original assignee or a reviewer — can re-upload an updated snapshot without re-claiming, whatever column the task is in:
+
+```bash
+curl -X PUT \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @snapshot.json \
+  $STRIDE_API_URL/api/tasks/W777/changed_files
+```
+
+## Notes
+
+- **The PUT endpoint is the only writer.** The completion endpoint at `PATCH /api/tasks/:id/complete` no longer mutates `tasks.changed_files`. Sending `changed_files` in the completion body is tolerated for backwards compatibility and never stored, but it is still validated: a malformed value is rejected with `422` in strict mode, the production default, and logged as a warning in grace mode. See [patch_tasks_id_complete.md](patch_tasks_id_complete.md) for the migration note.
+- **Last-write-wins.** Repeated PUTs overwrite. The empty list (`[]`) is a legitimate explicit-clear value.
+- **No status transition.** This endpoint does not move the task between columns or change `status`. Use the completion endpoint for that.
+- **Race-safe.** Because the completion endpoint cannot write the field, an agent's completion request finishing after the hook's PUT cannot clobber the snapshot.
+- **Validation is reused.** The 422 envelope and per-entry shape come from `Kanban.Tasks.CompletionValidation.validate_changed_files/1` — the same validator used by the completion gate.
+
+## See Also
+
+- [PATCH /api/tasks/:id/complete](patch_tasks_id_complete.md) — Mark task complete (does NOT write `changed_files` after the W778 change)
+- [Diff Contract](../diff-contract.md) — Authoritative encoding rules (truncation marker, binary placeholder, 500-line cap)
+- [POST /api/tasks/claim](post_tasks_claim.md) — Claim a task before uploading a snapshot for it

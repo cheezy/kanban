@@ -16066,3 +16066,58 @@ msgstr "Stride %{version}"
 #, elixir-autogen, elixir-format
 msgid "Stride releases"
 msgstr "Versões do Stride"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "API reference"
+msgstr "Referência da API"
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All documentation"
+msgstr "Toda a documentação"
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Breadcrumb"
+msgstr "Trilha de navegação"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Documentation"
+msgstr "Documentação"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Everything you need to put AI coding agents to work on a Stride board: setting them up, the workflow they follow, the hooks they run and the API they call."
+msgstr "Tudo o que você precisa para colocar agentes de programação com IA para trabalhar em um quadro do Stride: a configuração, o fluxo que seguem, os hooks que executam e a API que chamam."
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Guides"
+msgstr "Guias"
+
+#: lib/kanban_web/controllers/docs_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Guides for running AI coding agents on Stride: getting started, the agent workflow, hooks, MCP, authentication and the REST API reference."
+msgstr "Guias para usar agentes de programação com IA no Stride: primeiros passos, fluxo do agente, hooks, MCP, autenticação e referência da API REST."
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "On this page"
+msgstr "Nesta página"
+
+#: lib/kanban_web/controllers/docs_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride documentation"
+msgstr "Documentação do Stride"
+
+#: lib/kanban_web/controllers/docs_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "The guides are written in English."
+msgstr "Os guias estão escritos em inglês."
+
+#: lib/kanban_web/controllers/docs_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "View this page on GitHub"
+msgstr "Ver esta página no GitHub"

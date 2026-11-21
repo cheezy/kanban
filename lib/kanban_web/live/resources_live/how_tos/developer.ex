@@ -55,7 +55,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Developer do
           %{
             title: "Learn More",
             content:
-              "For comprehensive details on hook execution, including platform-specific examples (Unix/Linux, Windows, macOS), advanced patterns, debugging tips, and best practices, see the complete [Agent Hook Execution Guide](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md).\n\nThis guide covers:\n\n- Platform-specific hook implementations\n- Complete workflow examples\n- Error handling strategies\n- Security best practices\n- Debugging and troubleshooting",
+              "For comprehensive details on hook execution, including platform-specific examples (Unix/Linux, Windows, macOS), advanced patterns, debugging tips, and best practices, see the complete [Agent Hook Execution Guide](/docs/agent-hook-execution-guide).\n\nThis guide covers:\n\n- Platform-specific hook implementations\n- Complete workflow examples\n- Error handling strategies\n- Security best practices\n- Debugging and troubleshooting",
             image: nil
           }
         ]

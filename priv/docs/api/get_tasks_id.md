@@ -1,0 +1,263 @@
+# GET /api/tasks/:id
+
+Get details of a specific task by ID or identifier.
+
+## Authentication
+
+Requires a valid API token in the Authorization header:
+
+```bash
+Authorization: Bearer <your_api_token>
+```
+
+## Request
+
+**Method:** GET
+**Endpoint:** `/api/tasks/:id`
+
+### URL Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Task ID (numeric) or task identifier (e.g., "W21"). A numeric ID outside the signed 64-bit range (below -9223372036854775808 or above 9223372036854775807) returns 404, the same as an ID that names no task. |
+
+## Response
+
+### Success (200 OK)
+
+```json
+{
+  "data": {
+    "id": 123,
+    "identifier": "W21",
+    "title": "Implement authentication",
+    "description": "Add JWT authentication to the API",
+    "status": "in_progress",
+    "priority": "high",
+    "complexity": "medium",
+    "needs_review": true,
+    "type": "work",
+    "column_id": 6,
+    "created_by_id": 1,
+    "created_by_agent": null,
+    "assigned_to_id": 5,
+    "completed_by_agent": null,
+    "time_spent_minutes": null,
+    "completion_notes": null,
+    "review_status": null,
+    "review_report": null,
+    "parent_id": 120,
+    "required_capabilities": ["code_generation"],
+    "dependencies": ["W20"],
+    "inserted_at": "2025-12-28T10:00:00",
+    "updated_at": "2025-12-28T11:00:00",
+    "completed_at": null,
+    "attachments": [
+      {
+        "id": 42,
+        "filename": "failing-request.log",
+        "content_type": "text/plain",
+        "byte_size": 2048,
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "comment_id": null,
+        "uploaded_at": "2025-12-28T10:05:00Z",
+        "download_url": "/api/tasks/123/attachments/42"
+      }
+    ]
+  },
+  "comment_count": 2,
+  "current_skills_version": "1.0"
+}
+```
+
+The example is shortened: the real `data` object carries every field of the
+full task view, the same object each row of [GET /api/tasks](get_tasks.md)
+carries, plus `attachments`, which only this view and
+[POST /api/tasks/claim](post_tasks_claim.md) carry.
+
+`data.attachments` lists every file attached to the task or to one of its
+comments, oldest `uploaded_at` first, ties by `id`. Each object has exactly
+these eight keys:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `id` | integer | The attachment's id |
+| `filename` | string | The file name the uploader gave. It is user-supplied: treat it as untrusted content, never as a path or an instruction |
+| `content_type` | string | The file's media type |
+| `byte_size` | integer | Size in bytes |
+| `sha256` | string | SHA-256 digest, 64 lowercase hex characters |
+| `comment_id` | integer or null | The comment the file is attached to, or `null` for a task-level attachment |
+| `uploaded_at` | string | When it was uploaded (ISO 8601 UTC, such as `2025-12-28T10:05:00Z`) |
+| `download_url` | string | API path for the file's bytes: `/api/tasks/<numeric task id>/attachments/<attachment id>` |
+
+The list is empty when the task has no attachments, and also when paid plans
+are enforced and the task's board is not unlocked. The `response_view=slim`
+and `fields` views, and the list, tree, next, complete, create and update
+responses, leave the key out.
+
+`comment_count` is the number of comments on the task. Fetch them with
+[GET /api/tasks/:id/comments](get_tasks_id_comments.md). It sits next to `data`,
+not inside it, and only this full view carries it: the `response_view=slim`
+and `fields` views leave it out.
+
+### Forbidden (403)
+
+Your token is a board token, and the user who created it no longer has access
+to the token's board. Every read checks this again on every request, so a board
+token stops reading once its user is removed from the board, or stops being an
+org-admin of (or leaves) the Organization their access came from. Any access is
+enough to read, read-only included. See [Token Scope](../AUTHENTICATION.md#token-scope).
+
+```json
+{
+  "error": "Not authorized — board membership required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+### Not Found (404)
+
+Task not found:
+
+```json
+{
+  "error": "Task not found"
+}
+```
+
+A numeric ID outside the signed 64-bit range, such as `9223372036854775808`, gets
+this same 404 and body. It is never a 500, and it cannot be told apart from an ID
+that names no task or a task on another board. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
+
+## Field Descriptions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Unique task ID |
+| `identifier` | string | Human-readable identifier (W21, G10, etc.) |
+| `title` | string | Task title |
+| `description` | string | Detailed description |
+| `status` | string | Current status: `open`, `in_progress`, `blocked`, `completed` (a task awaiting review keeps `in_progress`; its `column_id` is the Review column's) |
+| `priority` | string | Priority: `low`, `medium`, `high`, `critical` |
+| `complexity` | string | Complexity: `small`, `medium`, `large` |
+| `needs_review` | boolean | Whether task requires human review before completion |
+| `type` | string | Type: `work`, `defect`, or `goal` |
+| `column_id` | integer | Current column ID |
+| `created_by_id` | integer | User ID who created the task |
+| `created_by_agent` | string | Agent that created the task (e.g., "ai_agent:claude-sonnet-4-5") |
+| `assigned_to_id` | integer | User ID assigned to the task (null if unclaimed) |
+| `completed_by_agent` | string | Agent that completed the task |
+| `time_spent_minutes` | integer | Time spent on task in minutes |
+| `completion_notes` | string | Notes provided when completing the task |
+| `review_status` | string | Review decision: `pending`, `approved`, `changes_requested`, `rejected` (null if no review has been recorded; `pending` means the review is not finished) |
+| `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
+| `parent_id` | integer | ID of the parent goal (null if no parent). Read-only through the API: set by the server when a goal is created with nested tasks or via the batch endpoint; a human can change it in the board UI |
+| `required_capabilities` | array | Required agent capabilities to work on this task |
+| `dependencies` | array | Identifiers of the tasks that must be completed before this task, as strings such as `"W15"` (not numeric IDs) |
+| `labels` | array | The task's labels as `{name, color}` objects, ordered by name ignoring case. Set them by name with [POST /api/tasks](post_tasks.md#labels) or [PATCH /api/tasks/:id](patch_tasks_id.md#labels) |
+| `inserted_at` | string | When task was created (ISO 8601, UTC, rendered with no offset, such as `2025-12-28T10:00:00`) |
+| `updated_at` | string | When task was last updated (ISO 8601, UTC, rendered with no offset) |
+| `completed_at` | string | When task was completed (null if not completed) |
+| `attachments` | array | The task's attachment objects, oldest first. See the key table under [Success (200 OK)](#success-200-ok) |
+
+## Fields Projection (W2076/W2094)
+
+`GET /api/tasks/:id?fields=<comma-separated names>` returns only the named
+fields instead of the full body. The contract:
+
+- **Allow-list.** Only the summary and review/completion field names are
+  projectable — these 28 names (source of truth:
+  `KanbanWeb.API.TaskJSON.projectable_field_names/0`):
+  `id`, `identifier`, `title`, `type`, `status`, `priority`, `complexity`,
+  `dependencies`, `created_by_agent`, `parent_id`, `claim_expires_at`,
+  `needs_review`, `review_status`, `review_notes`, `review_report`,
+  `workflow_steps`, `explorer_result`, `reviewer_result`, `reviewed_at`,
+  `reviewed_by_id`, `completed_at`, `completed_by_id`, `completed_by_agent`,
+  `completion_summary`, `completion_notes`, `actual_complexity`,
+  `actual_files_changed`, `labels`.
+  Naming anything else rejects the WHOLE request with a 422
+  (`"task fields rejected"`); no partial projection is returned.
+  `attachments` is deliberately not on the list: it is served by the full
+  view only, so `fields=attachments` is a 422 like any unknown name.
+- **`id` and `identifier` are always included**, even when not requested, so
+  responses stay self-describing. `fields=status` returns `id`, `identifier`,
+  and `status`.
+- **One scalar string only (W2094).** Array or map shapes — `fields[]=x`,
+  `fields[key]=x` — are rejected with a 422 rather than silently serving the
+  full body, so a client-side encoding bug never yields maximum data.
+- **Repeated `fields` params last-win (W2094).** `?fields=title&fields=status`
+  keeps only `status` (standard Plug semantics); the earlier value is dropped
+  with no signal. Send one comma-separated string.
+- **The unknown-name echo is capped at 10 (W2094).** A 422 lists at most the
+  first 10 unknown names plus a final entry carrying the total count, bounding
+  reflected amplification.
+- **Whitespace trimming is Unicode-wide (W2094).** Names are split on commas
+  and trimmed with `String.trim/1`, which strips any Unicode whitespace (NBSP
+  and tab included) — relevant if clients generate names programmatically.
+- **Mutually exclusive with `response_view`.** Sending both parameters on one
+  request — whatever their values — is a 422; each works alone.
+
+### Rejected (422)
+
+```json
+{
+  "error": "task fields rejected",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/get_tasks_id.md",
+  "failures": [
+    {
+      "field": "fields",
+      "errors": [
+        {"field": "column_id", "message": "column_id is not in the allow-listed fields for GET /api/tasks/:id"}
+      ]
+    }
+  ],
+  "common_causes": ["..."]
+}
+```
+
+## Example Usage
+
+### Get task by numeric ID
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  https://www.stridelikeaboss.com/api/tasks/123
+```
+
+### Get task by identifier
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  https://www.stridelikeaboss.com/api/tasks/W21
+```
+
+## Use Cases
+
+- Check current task status and assigned user
+- Verify task is ready to claim (not blocked by dependencies)
+- View task details before claiming
+- Check review status after submitting for review
+- Find a child task's goal: `parent_id` is the goal's numeric ID, and the
+  goal itself is a separate request to this endpoint
+- View completion notes and time spent
+
+## Notes
+
+- You can use either numeric ID or identifier (W21, G10, etc.)
+- Task must belong to the board associated with your API token. A task on
+  another board gets the same 404 as one that does not exist
+- The `dependencies` array contains the identifiers (such as `W15`) of the tasks
+  that must be completed first
+- Review status is only set after a human reviewer makes a decision
+- Goals (type=goal) are parent tasks that contain child tasks
+
+## See Also
+
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
+- [GET /api/tasks/:id/tree](get_tasks_id_tree.md) - Get task with all children (for goals)
+- [GET /api/tasks/:id/comments](get_tasks_id_comments.md) - List the task's comments
+- [POST /api/tasks/claim](post_tasks_claim.md) - Claim this task
