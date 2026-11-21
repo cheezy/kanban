@@ -182,8 +182,8 @@ includes `/docs` and one `/docs/<slug>` per published guide, from
 the sitemap with no further step ([Publishing Guides on the Site](docs-site.md)).
 It also includes `/integrations` and one `/integrations/<runtime>` page per
 agent runtime, from `KanbanWeb.Integrations.sitemap_paths/0`
-([Agent Integration Pages](integrations-pages.md)), and one
-`/compare/<competitor>` page per comparison, from
+([Agent Integration Pages](integrations-pages.md)), and the `/compare` index
+with one `/compare/<competitor>` page per comparison, from
 `KanbanWeb.Comparisons.sitemap_paths/0` ([Comparison Pages](compare-pages.md)).
 Every `<loc>` comes from
 `canonical_url/1`, so it matches the canonical the page renders, and is
@@ -390,8 +390,9 @@ These run as part of `mix test`:
   cover the agent runtime pages at `/integrations`: their titles and
   descriptions in every locale, the runtime list, and the install commands.
 - [`test/kanban_web/controllers/compare_controller_test.exs`](../test/kanban_web/controllers/compare_controller_test.exs)
-  covers the comparison pages at `/compare`: their titles and descriptions in
-  every locale, the last-reviewed date, and a source link for every claim.
+  covers the comparison pages: the `/compare` index, their titles and
+  descriptions in every locale, the last-reviewed date, and a source link for
+  every claim.
 
 So a new public `PageController` page needs a `seo/1` clause, an entry in the
 noindex test's public list and an entry in `@public_paths`. A new public

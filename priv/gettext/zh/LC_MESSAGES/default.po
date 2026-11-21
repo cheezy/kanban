@@ -16693,7 +16693,7 @@ msgstr "来源："
 msgid "Spotted something out of date?"
 msgstr "发现过时的内容了吗？"
 
-#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/compare_html/index.html.heex
 #: lib/kanban_web/controllers/compare_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride vs %{name}"
@@ -16783,3 +16783,38 @@ msgstr "你的团队采用 Scrum 或看板。Jira 提供看板以及用于规划
 #, elixir-autogen, elixir-format
 msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
 msgstr "你的工作已经在 GitHub 的 issue 和拉取请求中。项目由它们构成，更改会双向同步。"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#, elixir-autogen, elixir-format
+msgid "Compare"
+msgstr "对比"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Compare Stride"
+msgstr "Stride 对比"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Each page sets out where Stride fits for work done by AI coding agents and where the other tool is the better choice, with a source for every claim about it."
+msgstr "每个页面都说明 Stride 在 AI 编程智能体工作中适用的场景，以及另一款工具更合适的场景，并为关于它的每条说法注明出处。"
+
+#: lib/kanban_web/controllers/compare_controller.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride compares with GitHub Projects, Linear and Jira for work done by AI coding agents, with a source for every claim about the other product."
+msgstr "Stride 与 GitHub Projects、Linear 和 Jira 在 AI 编程智能体工作中的对比，关于其他产品的每条说法都注明出处。"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the comparison"
+msgstr "阅读对比"
+
+#: lib/kanban_web/controllers/compare_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride compared with GitHub Projects, Linear and Jira"
+msgstr "Stride 与 GitHub Projects、Linear 和 Jira 对比"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Where Stride fits for AI agent work, and where %{name} is the better choice."
+msgstr "Stride 在 AI 智能体工作中适用的场景，以及 %{name} 更合适的场景。"

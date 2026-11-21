@@ -16690,7 +16690,7 @@ msgstr "出典："
 msgid "Spotted something out of date?"
 msgstr "古い情報を見つけましたか？"
 
-#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/compare_html/index.html.heex
 #: lib/kanban_web/controllers/compare_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride vs %{name}"
@@ -16780,3 +16780,38 @@ msgstr "チームがスクラムやカンバンで動いている場合。Jira �
 #, elixir-autogen, elixir-format
 msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
 msgstr "作業がすでに GitHub の Issue とプルリクエストにある場合。プロジェクトはそれらから作られ、変更は双方向に同期されます。"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#, elixir-autogen, elixir-format
+msgid "Compare"
+msgstr "比較"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Compare Stride"
+msgstr "Stride を比較"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Each page sets out where Stride fits for work done by AI coding agents and where the other tool is the better choice, with a source for every claim about it."
+msgstr "各ページでは、AI コーディングエージェントの作業で Stride が向いている場面と、他のツールのほうが適している場面を、そのツールに関するすべての記述の出典とともに説明します。"
+
+#: lib/kanban_web/controllers/compare_controller.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride compares with GitHub Projects, Linear and Jira for work done by AI coding agents, with a source for every claim about the other product."
+msgstr "AI コーディングエージェントの作業における Stride と GitHub Projects、Linear、Jira の比較。他製品に関するすべての記述に出典を示しています。"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the comparison"
+msgstr "比較を読む"
+
+#: lib/kanban_web/controllers/compare_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride compared with GitHub Projects, Linear and Jira"
+msgstr "Stride と GitHub Projects、Linear、Jira の比較"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Where Stride fits for AI agent work, and where %{name} is the better choice."
+msgstr "AI エージェントの作業で Stride が向いている場面と、%{name} のほうが適している場面。"

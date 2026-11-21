@@ -1,0 +1,41 @@
+<main class="min-h-screen" data-compare-index>
+  <div class="max-w-5xl mx-auto px-6 py-16">
+    <div class="text-center mb-14">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-base-content mb-4"
+        style="overflow-wrap: break-word; hyphens: auto;"
+      >
+        {gettext("Compare Stride")}
+      </h1>
+      <p class="text-lg max-w-2xl mx-auto" style="color: var(--ink-2);">
+        {gettext(
+          "Each page sets out where Stride fits for work done by AI coding agents and where the other tool is the better choice, with a source for every claim about it."
+        )}
+      </p>
+    </div>
+
+    <ul class="grid grid-cols-1 md:grid-cols-3 gap-4" role="list">
+      <li :for={comparison <- @comparisons}>
+        <.link
+          href={~p"/compare/#{comparison.slug}"}
+          class="stride-docs-card block h-full rounded-2xl p-6"
+          data-compare-index-link={comparison.slug}
+        >
+          <span class="block text-lg font-semibold" style="color: var(--ink);">
+            {gettext("Stride vs %{name}", name: comparison.competitor)}
+          </span>
+          <span class="block text-sm mt-2 leading-relaxed" style="color: var(--ink-2);">
+            {KanbanWeb.Comparisons.summary(comparison)}
+          </span>
+          <span
+            class="inline-flex items-center gap-1 text-sm font-medium mt-4"
+            style="color: var(--stride-orange-ink);"
+          >
+            {gettext("Read the comparison")}
+            <.icon name="hero-arrow-right" class="h-3.5 w-3.5" />
+          </span>
+        </.link>
+      </li>
+    </ul>
+  </div>
+</main>

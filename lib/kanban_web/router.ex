@@ -187,8 +187,9 @@ defmodule KanbanWeb.Router do
     # the KanbanWeb.Integrations list.
     get "/integrations", IntegrationsController, :index
     get "/integrations/:runtime", IntegrationsController, :show
-    # One page per comparison (W2901); the competitor is only looked up in
-    # the KanbanWeb.Comparisons list.
+    # The comparisons index and one page per comparison (W2901); the
+    # competitor is only looked up in the KanbanWeb.Comparisons list.
+    get "/compare", CompareController, :index
     get "/compare/:competitor", CompareController, :show
     post "/locale/:locale", PageController, :set_locale
   end

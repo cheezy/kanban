@@ -16759,7 +16759,7 @@ msgstr "Fonte:"
 msgid "Spotted something out of date?"
 msgstr "Encontrou algo desatualizado?"
 
-#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/compare_html/index.html.heex
 #: lib/kanban_web/controllers/compare_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride vs %{name}"
@@ -16849,3 +16849,38 @@ msgstr "Sua equipe usa Scrum ou Kanban. O Jira tem quadros Kanban e backlogs de 
 #, elixir-autogen, elixir-format
 msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
 msgstr "Seu trabalho já está em issues e pull requests do GitHub. Um projeto é montado a partir deles, e as alterações são sincronizadas nos dois sentidos."
+
+#: lib/kanban_web/components/marketing_closing.ex
+#, elixir-autogen, elixir-format
+msgid "Compare"
+msgstr "Comparar"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Compare Stride"
+msgstr "Compare o Stride"
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Each page sets out where Stride fits for work done by AI coding agents and where the other tool is the better choice, with a source for every claim about it."
+msgstr "Cada página mostra onde o Stride se encaixa no trabalho de agentes de programação com IA e onde a outra ferramenta é a melhor escolha, com uma fonte para cada afirmação sobre ela."
+
+#: lib/kanban_web/controllers/compare_controller.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride compares with GitHub Projects, Linear and Jira for work done by AI coding agents, with a source for every claim about the other product."
+msgstr "Como o Stride se compara ao GitHub Projects, Linear e Jira no trabalho de agentes de programação com IA, com uma fonte para cada afirmação."
+
+#: lib/kanban_web/controllers/compare_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the comparison"
+msgstr "Ler a comparação"
+
+#: lib/kanban_web/controllers/compare_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride compared with GitHub Projects, Linear and Jira"
+msgstr "Stride comparado com GitHub Projects, Linear e Jira"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Where Stride fits for AI agent work, and where %{name} is the better choice."
+msgstr "Onde o Stride se encaixa no trabalho de agentes de IA e onde o %{name} é a melhor escolha."

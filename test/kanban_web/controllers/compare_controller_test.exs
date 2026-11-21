@@ -33,6 +33,44 @@ defmodule KanbanWeb.CompareControllerTest do
 
   defp sources(%Comparison{better_choice: claims}), do: Enum.flat_map(claims, & &1.sources)
 
+  describe "GET /compare" do
+    test "/compare lists every comparison under the marketing layout", %{conn: conn} do
+      html = conn |> get(~p"/compare") |> html_response(200)
+
+      assert count(html, ".stride-marketing main[data-compare-index]") == 1
+
+      assert attrs(html, "a[data-compare-index-link]", "href") ==
+               Enum.map(Comparisons.slugs(), &"/compare/#{&1}")
+
+      for comparison <- Comparisons.all() do
+        assert html =~ "Stride vs #{comparison.competitor}"
+        assert html =~ Comparisons.summary(comparison)
+      end
+    end
+
+    test "/compare has its own title and a description of the right length in every locale" do
+      for locale <- @locales do
+        html = build_conn() |> in_locale(locale) |> get(~p"/compare") |> html_response(200)
+
+        [title] = texts(html, "title")
+        [description] = attrs(html, "meta[name=description]", "content")
+
+        assert title =~ "GitHub Projects"
+        refute title in Enum.map(Comparisons.all(), &Comparisons.page_title/1)
+        assert String.length(description) <= 160, "#{locale}: #{description}"
+        assert attrs(html, "a[data-compare-index-link]", "href") |> length() == 3
+      end
+    end
+
+    test "Comparisons.summary/1 names the other product in every locale" do
+      for locale <- @locales, comparison <- Comparisons.all() do
+        Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+          assert Comparisons.summary(comparison) =~ comparison.competitor
+        end)
+      end
+    end
+  end
+
   describe "GET /compare/:competitor" do
     test "/compare/:slug renders each comparison with its last-reviewed date and sources",
          %{conn: conn} do
@@ -133,16 +171,12 @@ defmodule KanbanWeb.CompareControllerTest do
   end
 
   describe "the footer" do
-    test "the footer links each comparison page", %{conn: conn} do
+    test "the footer links the /compare index from every comparison page", %{conn: conn} do
       for path <- ["/" | Comparisons.sitemap_paths()] do
         html = conn |> get(path) |> html_response(200)
 
-        for slug <- Comparisons.slugs() do
-          assert attrs(html, "footer a[data-compare-link='#{slug}']", "href") == [
-                   "/compare/#{slug}"
-                 ],
-                 "#{path} does not link /compare/#{slug} from its footer"
-        end
+        assert attrs(html, "footer a[data-compare-link]", "href") == ["/compare"],
+               "#{path} does not link /compare from its footer"
       end
     end
   end
@@ -154,8 +188,10 @@ defmodule KanbanWeb.CompareControllerTest do
       end
 
       assert Comparisons.fetch("trello") == :error
-      assert Comparisons.slugs() == Enum.map(Comparisons.footer_links(), &elem(&1, 0))
-      assert Comparisons.sitemap_paths() == Enum.map(Comparisons.slugs(), &("/compare/" <> &1))
+      assert Comparisons.slugs() == Enum.map(Comparisons.all(), & &1.slug)
+
+      assert Comparisons.sitemap_paths() ==
+               ["/compare" | Enum.map(Comparisons.slugs(), &("/compare/" <> &1))]
     end
 
     test "CompareHTML.display_url/1 drops the scheme and issues_url/0 points at GitHub" do

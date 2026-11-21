@@ -1,7 +1,8 @@
 defmodule KanbanWeb.Comparisons do
   @moduledoc """
-  The comparison pages published at `/compare/:competitor` (W2901): Stride
-  against GitHub Projects, Linear and Jira for work done by AI coding agents.
+  The comparison pages published at `/compare/:competitor` (W2901) and
+  listed on the `/compare` index: Stride against GitHub Projects, Linear and
+  Jira for work done by AI coding agents.
 
   Each comparison says where Stride fits and where the other product is the
   better choice. Every statement about the other product is a `Claim` with
@@ -64,23 +65,16 @@ defmodule KanbanWeb.Comparisons do
   @about_projects @github_docs <> "/learning-about-projects/about-projects"
 
   @doc """
-  Every comparison, in the order the footer lists them.
+  Every comparison, in the order the `/compare` index lists them.
   """
   @spec all() :: [Comparison.t()]
   def all, do: [github_projects(), linear(), jira()]
 
   @doc """
-  The slugs of every comparison, in footer order.
+  The slugs of every comparison, in index order.
   """
   @spec slugs() :: [String.t()]
   def slugs, do: @slugs
-
-  @doc """
-  `{slug, product name}` for every comparison, in footer order. Builds no
-  claims, so the footer can call it on every page.
-  """
-  @spec footer_links() :: [{String.t(), String.t()}]
-  def footer_links, do: @competitors
 
   @doc """
   Looks a comparison up by its slug. Anything that is not one of `slugs/0`
@@ -91,10 +85,22 @@ defmodule KanbanWeb.Comparisons do
   def fetch(_slug), do: :error
 
   @doc """
-  The paths `/sitemap.xml` lists for the comparisons. There is no index page.
+  The paths `/sitemap.xml` lists for the comparisons: the `/compare` index,
+  then every comparison page.
   """
   @spec sitemap_paths() :: [String.t()]
-  def sitemap_paths, do: Enum.map(@slugs, &("/compare/" <> &1))
+  def sitemap_paths, do: ["/compare" | Enum.map(@slugs, &("/compare/" <> &1))]
+
+  @doc """
+  The one-line summary of a comparison on the `/compare` index. It names
+  the other product and makes no claim about it.
+  """
+  @spec summary(Comparison.t()) :: String.t()
+  def summary(%Comparison{competitor: name}),
+    do:
+      gettext("Where Stride fits for AI agent work, and where %{name} is the better choice.",
+        name: name
+      )
 
   @doc """
   The `<title>` of a comparison's page.
