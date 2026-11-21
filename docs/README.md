@@ -146,6 +146,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Dark Mode Contract](dark-mode-contract.md) — Theme tokens, prohibited patterns and the dark-mode scanner.
 - [Local Dates and Times](local-time.md) — How every page formats an absolute date or time in the viewer's zone and language, and how to add a style or locale.
 - [Dates and Times](dates-and-times.md) — The rule that every shown date or time goes through `KanbanWeb.LocalTime`, the guard test that enforces it, and its allow-list.
+- [Search and Social Tags](seo.md) — How a page sets its title, description and noindex, how canonical, robots.txt and the sitemap work per host, the Open Graph image, and how structured data is escaped.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.
 - [Organizing Tailwind CSS](TAILWIND_ORGANIZATION.md) — Keeping Tailwind classes readable in HEEx templates with function components.
