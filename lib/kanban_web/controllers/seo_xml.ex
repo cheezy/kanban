@@ -4,8 +4,9 @@ defmodule KanbanWeb.SeoXML do
   serves.
 
   The sitemap lists the public marketing pages, the published guides
-  (`KanbanWeb.Docs.sitemap_paths/0`) and the agent runtime pages
-  (`KanbanWeb.Integrations.sitemap_paths/0`) in `public_paths/0`, and one
+  (`KanbanWeb.Docs.sitemap_paths/0`), the agent runtime pages
+  (`KanbanWeb.Integrations.sitemap_paths/0`) and the comparison pages
+  (`KanbanWeb.Comparisons.sitemap_paths/0`) in `public_paths/0`, and one
   `/resources/<id>` page per how-to in
   `KanbanWeb.ResourcesLive.HowToData.all_how_tos/0`. Every `<loc>` is built by
   `KanbanWeb.SeoComponents.canonical_url/1`, so it is absolute and matches the
@@ -24,6 +25,7 @@ defmodule KanbanWeb.SeoXML do
   name, so a new public LiveView page must be added here by hand.
   """
 
+  alias KanbanWeb.Comparisons
   alias KanbanWeb.Docs
   alias KanbanWeb.Integrations
   alias KanbanWeb.ResourcesLive.HowToData
@@ -50,10 +52,13 @@ defmodule KanbanWeb.SeoXML do
   @doc """
   The public pages the sitemap lists, apart from the how-tos: the marketing
   pages, then `/docs` and every published guide, then `/integrations` and
-  every runtime page.
+  every runtime page, then every `/compare/<competitor>` page.
   """
   @spec public_paths() :: [String.t()]
-  def public_paths, do: @public_paths ++ Docs.sitemap_paths() ++ Integrations.sitemap_paths()
+  def public_paths do
+    @public_paths ++
+      Docs.sitemap_paths() ++ Integrations.sitemap_paths() ++ Comparisons.sitemap_paths()
+  end
 
   @doc """
   Renders the sitemap for `how_tos`, which defaults to every how-to.

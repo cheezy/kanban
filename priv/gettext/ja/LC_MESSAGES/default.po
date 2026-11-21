@@ -16624,3 +16624,159 @@ msgstr "Strideの新しいバージョンがリリースされるとメールが
 #, elixir-autogen, elixir-format
 msgid "You're subscribed"
 msgstr "登録が完了しました"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "A task that needs a person moves to Review when the agent finishes, and waits there until someone approves it."
+msgstr "人の確認が必要なタスクは、エージェントが作業を終えると Review に移り、誰かが承認するまでそこで待機します。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Agents connect through a REST API or an MCP server, and Stride has plugins for Claude Code, Codex CLI, Gemini CLI, GitHub Copilot, OpenCode and Pi."
+msgstr "エージェントは REST API または MCP サーバーで接続します。Stride には Claude Code、Codex CLI、Gemini CLI、GitHub Copilot、OpenCode、Pi 向けのプラグインがあります。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "An agent claims a task from the Ready column before it starts, and the claim expires after 60 minutes."
+msgstr "エージェントは作業を始める前に Ready 列のタスクを引き受けます。引き受けは 60 分で期限切れになります。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "This page sets out where Stride fits for work done by AI coding agents, and where %{name} is the better choice."
+msgstr "このページでは、AI コーディングエージェントの作業で Stride が向いている場面と、%{name} のほうが適している場面をまとめます。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Each point comes from %{name}'s own documentation, linked below it."
+msgstr "各項目は %{name} 自身のドキュメントに基づいており、その下にリンクがあります。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Hooks you write in .stride.md run on the agent's own machine before work starts, after it is done, and around review, so your tests and checks gate every task."
+msgstr ".stride.md に書いたフックは、作業の開始前、完了後、レビューの前後にエージェント自身のマシンで実行されるため、テストやチェックがすべてのタスクの関門になります。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride and %{name} compare for work done by AI coding agents: where each one fits, with a source for every claim about %{name}."
+msgstr "AI コーディングエージェントの作業で Stride と %{name} を比較。それぞれが向く場面を、%{name} に関するすべての記述の出典付きで紹介します。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Last reviewed"
+msgstr "最終確認日"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Open an issue on GitHub"
+msgstr "GitHub で Issue を作成する"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Product names belong to their owners."
+msgstr "製品名は各所有者に帰属します。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Products change. Every claim on this page was checked against its source on the date shown above. If one has gone stale, tell us and we will fix it."
+msgstr "製品は変わります。このページの記述はすべて、上に示した日付に出典と照合しました。古くなったものがあればお知らせください。修正します。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Source:"
+msgstr "出典："
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Spotted something out of date?"
+msgstr "古い情報を見つけましたか？"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Stride vs %{name}"
+msgstr "Stride と %{name} の比較"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Stride vs %{name} for AI agent work"
+msgstr "AI エージェントの作業における Stride と %{name} の比較"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Tasks carry what an agent needs to work without guessing: key files, patterns to follow, pitfalls, acceptance criteria, a testing strategy and verification steps."
+msgstr "タスクには、エージェントが推測せずに作業するために必要な情報が含まれます。主要ファイル、従うべきパターン、落とし穴、受け入れ基準、テスト戦略、検証手順です。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "When an agent asks for its next task, Stride skips a Ready task whose key files overlap a task already in Doing or Review."
+msgstr "エージェントが次のタスクを求めると、Stride は主要ファイルが Doing または Review にあるタスクと重なる Ready のタスクを飛ばします。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where %{name} is the better choice"
+msgstr "%{name} のほうが適している場面"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where Stride fits"
+msgstr "Stride が向いている場面"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You automate across your work. Automation rules are built from triggers, conditions and actions."
+msgstr "作業全体を自動化したい場合。自動化ルールはトリガー、条件、アクションで構成されます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You automate with GitHub's own tools. Built-in workflows update fields as items change, and GitHub Actions and the GraphQL API cover the rest."
+msgstr "GitHub 自身のツールで自動化したい場合。組み込みワークフローが項目の変化に応じてフィールドを更新し、それ以外は GitHub Actions と GraphQL API で対応できます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You need several views of the same work: table, board and roadmap layouts, with custom fields such as text, number, date, single select and iteration."
+msgstr "同じ作業を複数のビューで見たい場合。テーブル、ボード、ロードマップのレイアウトがあり、テキスト、数値、日付、単一選択、イテレーションなどのカスタムフィールドを使えます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You need workflows shaped to your process. A workflow is a set of statuses and transitions that admins can edit."
+msgstr "プロセスに合わせたワークフローが必要な場合。ワークフローはステータスと遷移の集まりで、管理者が編集できます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You plan in cycles and projects. Cycles are repeating, time-boxed periods in which unfinished issues usually roll over, and projects group issues toward an outcome."
+msgstr "サイクルとプロジェクトで計画したい場合。サイクルは繰り返す期間で、未完了の Issue は通常次へ持ち越されます。プロジェクトは成果に向けて Issue をまとめます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want agents across Atlassian's tools. Work items can be assigned to Rovo agents, to agents your team builds or to third-party agents, and an agent can start when an item reaches a status."
+msgstr "Atlassian のツール全体でエージェントを使いたい場合。作業項目は Rovo エージェント、チームが作ったエージェント、サードパーティのエージェントに割り当てられ、項目が特定のステータスになったときにエージェントを開始させることもできます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want agents inside your team's tracker. You can delegate an issue to an agent while a person stays its assignee and stays responsible for it."
+msgstr "チームのトラッカーの中でエージェントを使いたい場合。担当者を人のままにして責任も人が持ったまま、Issue をエージェントに委任できます。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want an agent that works inside GitHub. Assigning an issue to Copilot starts a session that opens a pull request and asks you to review it."
+msgstr "GitHub の中で動くエージェントが欲しい場合。Issue を Copilot に割り当てるとセッションが始まり、プルリクエストを作成してあなたにレビューを依頼します。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want issue status to follow your pull requests. With the GitHub integration, an issue moves to in progress when its pull request opens and to done when it merges."
+msgstr "Issue のステータスをプルリクエストに連動させたい場合。GitHub 連携では、プルリクエストが開かれると Issue は進行中に、マージされると完了に移ります。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want to build your own integration or agent. Linear has a public GraphQL API, and an agent API for agents that take delegated issues."
+msgstr "独自の連携やエージェントを作りたい場合。Linear には公開 GraphQL API と、委任された Issue を引き受けるエージェント向けのエージェント API があります。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Your team runs Scrum or Kanban. Jira has Kanban boards, and Scrum backlogs in which you plan sprints."
+msgstr "チームがスクラムやカンバンで動いている場合。Jira にはカンバンボードと、スプリントを計画するスクラムのバックログがあります。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
+msgstr "作業がすでに GitHub の Issue とプルリクエストにある場合。プロジェクトはそれらから作られ、変更は双方向に同期されます。"

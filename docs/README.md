@@ -152,6 +152,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Demo Board](demo-board.md) — The public read-only `/demo` board that replays agents working tasks: how the replay runs, how to change its script and translate its text, and why it can change nothing.
 - [Publishing Guides on the Site](docs-site.md) — Which guides are published at `/docs`, how they are copied, rendered and link-rewritten, and how to publish another one.
 - [Agent Integration Pages](integrations-pages.md) — The `/integrations` page for each agent runtime, where its install commands come from, the test that checks them against the plugin READMEs, and how to update one.
+- [Comparison Pages](compare-pages.md) — The `/compare` pages that set Stride against GitHub Projects, Linear and Jira, the sourcing rule every claim about another product follows, and how to refresh or add a comparison.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.
 - [Organizing Tailwind CSS](TAILWIND_ORGANIZATION.md) — Keeping Tailwind classes readable in HEEx templates with function components.

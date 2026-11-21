@@ -16627,3 +16627,159 @@ msgstr "Stride 发布新版本时您会收到一封邮件。每封邮件都附�
 #, elixir-autogen, elixir-format
 msgid "You're subscribed"
 msgstr "订阅成功"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "A task that needs a person moves to Review when the agent finishes, and waits there until someone approves it."
+msgstr "需要人工处理的任务会在代理完成后移到 Review，并在那里等待，直到有人批准。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Agents connect through a REST API or an MCP server, and Stride has plugins for Claude Code, Codex CLI, Gemini CLI, GitHub Copilot, OpenCode and Pi."
+msgstr "代理通过 REST API 或 MCP 服务器连接，Stride 为 Claude Code、Codex CLI、Gemini CLI、GitHub Copilot、OpenCode 和 Pi 提供插件。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "An agent claims a task from the Ready column before it starts, and the claim expires after 60 minutes."
+msgstr "代理在开始前从 Ready 列认领任务，认领在 60 分钟后过期。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "This page sets out where Stride fits for work done by AI coding agents, and where %{name} is the better choice."
+msgstr "本页说明在 AI 编程代理的工作中 Stride 适合哪些场景，以及哪些场景下 %{name} 是更好的选择。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Each point comes from %{name}'s own documentation, linked below it."
+msgstr "每一点都来自 %{name} 自己的文档，链接在其下方。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Hooks you write in .stride.md run on the agent's own machine before work starts, after it is done, and around review, so your tests and checks gate every task."
+msgstr "你在 .stride.md 中编写的钩子会在代理自己的机器上运行：开始工作前、完成后以及审查前后，让你的测试和检查把关每个任务。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride and %{name} compare for work done by AI coding agents: where each one fits, with a source for every claim about %{name}."
+msgstr "在 AI 编程代理的工作中比较 Stride 与 %{name}：各自适合的场景，以及关于 %{name} 的每条说法的来源。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Last reviewed"
+msgstr "最近审核"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Open an issue on GitHub"
+msgstr "在 GitHub 上提交 issue"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Product names belong to their owners."
+msgstr "产品名称归其各自所有者所有。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Products change. Every claim on this page was checked against its source on the date shown above. If one has gone stale, tell us and we will fix it."
+msgstr "产品会变化。本页的每条说法都已在上方所示日期与其来源核对。如有过时内容，请告诉我们，我们会修正。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Source:"
+msgstr "来源："
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Spotted something out of date?"
+msgstr "发现过时的内容了吗？"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Stride vs %{name}"
+msgstr "Stride 与 %{name} 对比"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Stride vs %{name} for AI agent work"
+msgstr "Stride 与 %{name}：AI 代理工作对比"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Tasks carry what an agent needs to work without guessing: key files, patterns to follow, pitfalls, acceptance criteria, a testing strategy and verification steps."
+msgstr "任务包含代理无需猜测即可工作所需的信息：关键文件、要遵循的模式、陷阱、验收标准、测试策略和验证步骤。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "When an agent asks for its next task, Stride skips a Ready task whose key files overlap a task already in Doing or Review."
+msgstr "当代理请求下一个任务时，Stride 会跳过关键文件与 Doing 或 Review 中任务重叠的 Ready 任务。"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where %{name} is the better choice"
+msgstr "%{name} 更合适的场景"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where Stride fits"
+msgstr "Stride 适合的场景"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You automate across your work. Automation rules are built from triggers, conditions and actions."
+msgstr "你需要在整个工作中实现自动化。自动化规则由触发器、条件和操作组成。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You automate with GitHub's own tools. Built-in workflows update fields as items change, and GitHub Actions and the GraphQL API cover the rest."
+msgstr "你使用 GitHub 自己的工具实现自动化。内置工作流会在条目变化时更新字段，其余由 GitHub Actions 和 GraphQL API 完成。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You need several views of the same work: table, board and roadmap layouts, with custom fields such as text, number, date, single select and iteration."
+msgstr "你需要同一工作的多种视图：表格、看板和路线图布局，以及文本、数字、日期、单选和迭代等自定义字段。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You need workflows shaped to your process. A workflow is a set of statuses and transitions that admins can edit."
+msgstr "你需要贴合自身流程的工作流。工作流是一组状态和转换，管理员可以编辑。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You plan in cycles and projects. Cycles are repeating, time-boxed periods in which unfinished issues usually roll over, and projects group issues toward an outcome."
+msgstr "你按周期和项目来规划。周期是重复的限时阶段，未完成的 issue 通常会顺延，项目则围绕一个成果组织 issue。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want agents across Atlassian's tools. Work items can be assigned to Rovo agents, to agents your team builds or to third-party agents, and an agent can start when an item reaches a status."
+msgstr "你希望在 Atlassian 的工具中使用代理。工作项可以分配给 Rovo 代理、团队自建的代理或第三方代理，并且可以在工作项进入某个状态时启动代理。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want agents inside your team's tracker. You can delegate an issue to an agent while a person stays its assignee and stays responsible for it."
+msgstr "你希望在团队的跟踪工具中使用代理。你可以把 issue 委派给代理，同时由一个人继续担任经办人并对其负责。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want an agent that works inside GitHub. Assigning an issue to Copilot starts a session that opens a pull request and asks you to review it."
+msgstr "你希望代理直接在 GitHub 中工作。把 issue 分配给 Copilot 会启动一个会话，它会创建拉取请求并请你审查。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want issue status to follow your pull requests. With the GitHub integration, an issue moves to in progress when its pull request opens and to done when it merges."
+msgstr "你希望 issue 状态跟随拉取请求变化。借助 GitHub 集成，拉取请求打开时 issue 变为进行中，合并时变为已完成。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want to build your own integration or agent. Linear has a public GraphQL API, and an agent API for agents that take delegated issues."
+msgstr "你想构建自己的集成或代理。Linear 提供公开的 GraphQL API，以及供接收委派 issue 的代理使用的代理 API。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Your team runs Scrum or Kanban. Jira has Kanban boards, and Scrum backlogs in which you plan sprints."
+msgstr "你的团队采用 Scrum 或看板。Jira 提供看板以及用于规划冲刺的 Scrum 待办列表。"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
+msgstr "你的工作已经在 GitHub 的 issue 和拉取请求中。项目由它们构成，更改会双向同步。"

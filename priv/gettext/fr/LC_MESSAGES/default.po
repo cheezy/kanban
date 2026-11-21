@@ -16670,3 +16670,159 @@ msgstr "Vous recevrez un e-mail à chaque nouvelle version de Stride. Chaque e-m
 #, elixir-autogen, elixir-format
 msgid "You're subscribed"
 msgstr "Vous êtes abonné"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "A task that needs a person moves to Review when the agent finishes, and waits there until someone approves it."
+msgstr "Une tâche qui a besoin d'une personne passe en Review quand l'agent a terminé, et y attend jusqu'à ce que quelqu'un l'approuve."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Agents connect through a REST API or an MCP server, and Stride has plugins for Claude Code, Codex CLI, Gemini CLI, GitHub Copilot, OpenCode and Pi."
+msgstr "Les agents se connectent par une API REST ou un serveur MCP, et Stride propose des plugins pour Claude Code, Codex CLI, Gemini CLI, GitHub Copilot, OpenCode et Pi."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "An agent claims a task from the Ready column before it starts, and the claim expires after 60 minutes."
+msgstr "Un agent prend une tâche dans la colonne Ready avant de commencer, et cette prise en charge expire au bout de 60 minutes."
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "This page sets out where Stride fits for work done by AI coding agents, and where %{name} is the better choice."
+msgstr "Cette page explique où Stride a sa place pour le travail des agents de code IA, et où %{name} est le meilleur choix."
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Each point comes from %{name}'s own documentation, linked below it."
+msgstr "Chaque point provient de la documentation de %{name}, liée juste en dessous."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Hooks you write in .stride.md run on the agent's own machine before work starts, after it is done, and around review, so your tests and checks gate every task."
+msgstr "Les hooks que vous écrivez dans .stride.md s'exécutent sur la machine de l'agent avant le début du travail, une fois celui-ci terminé et autour de la revue : vos tests et contrôles encadrent chaque tâche."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "How Stride and %{name} compare for work done by AI coding agents: where each one fits, with a source for every claim about %{name}."
+msgstr "Stride et %{name} comparés pour les agents de code IA : la place de chacun, avec une source pour chaque affirmation sur %{name}."
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Last reviewed"
+msgstr "Dernière vérification"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Open an issue on GitHub"
+msgstr "Ouvrez une issue sur GitHub"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Product names belong to their owners."
+msgstr "Les noms de produits appartiennent à leurs propriétaires."
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Products change. Every claim on this page was checked against its source on the date shown above. If one has gone stale, tell us and we will fix it."
+msgstr "Les produits évoluent. Chaque affirmation de cette page a été vérifiée auprès de sa source à la date indiquée plus haut. Si l'une d'elles n'est plus à jour, dites-le-nous et nous la corrigerons."
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Source:"
+msgstr "Source :"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Spotted something out of date?"
+msgstr "Vous avez repéré une information dépassée ?"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Stride vs %{name}"
+msgstr "Stride ou %{name}"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Stride vs %{name} for AI agent work"
+msgstr "Stride ou %{name} pour le travail des agents IA"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Tasks carry what an agent needs to work without guessing: key files, patterns to follow, pitfalls, acceptance criteria, a testing strategy and verification steps."
+msgstr "Les tâches contiennent ce dont un agent a besoin pour travailler sans deviner : fichiers clés, modèles à suivre, pièges, critères d'acceptation, stratégie de test et étapes de vérification."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "When an agent asks for its next task, Stride skips a Ready task whose key files overlap a task already in Doing or Review."
+msgstr "Quand un agent demande sa tâche suivante, Stride ignore une tâche de Ready dont les fichiers clés recoupent ceux d'une tâche déjà en Doing ou en Review."
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where %{name} is the better choice"
+msgstr "Où %{name} est le meilleur choix"
+
+#: lib/kanban_web/controllers/compare_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where Stride fits"
+msgstr "Où Stride a sa place"
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You automate across your work. Automation rules are built from triggers, conditions and actions."
+msgstr "Vous automatisez l'ensemble de votre travail. Les règles d'automatisation se composent de déclencheurs, de conditions et d'actions."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You automate with GitHub's own tools. Built-in workflows update fields as items change, and GitHub Actions and the GraphQL API cover the rest."
+msgstr "Vous automatisez avec les outils de GitHub. Les workflows intégrés mettent à jour les champs quand les éléments changent, et GitHub Actions et l'API GraphQL couvrent le reste."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You need several views of the same work: table, board and roadmap layouts, with custom fields such as text, number, date, single select and iteration."
+msgstr "Vous avez besoin de plusieurs vues du même travail : dispositions en tableau, en board et en feuille de route, avec des champs personnalisés comme texte, nombre, date, sélection unique et itération."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You need workflows shaped to your process. A workflow is a set of statuses and transitions that admins can edit."
+msgstr "Vous avez besoin de workflows adaptés à votre processus. Un workflow est un ensemble de statuts et de transitions que les administrateurs peuvent modifier."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You plan in cycles and projects. Cycles are repeating, time-boxed periods in which unfinished issues usually roll over, and projects group issues toward an outcome."
+msgstr "Vous planifiez en cycles et en projets. Les cycles sont des périodes récurrentes et limitées dans le temps où les issues inachevées sont en général reportées, et les projets regroupent des issues autour d'un résultat."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want agents across Atlassian's tools. Work items can be assigned to Rovo agents, to agents your team builds or to third-party agents, and an agent can start when an item reaches a status."
+msgstr "Vous voulez des agents dans les outils d'Atlassian. Les éléments de travail peuvent être assignés à des agents Rovo, à des agents créés par votre équipe ou à des agents tiers, et un agent peut démarrer quand un élément atteint un statut."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want agents inside your team's tracker. You can delegate an issue to an agent while a person stays its assignee and stays responsible for it."
+msgstr "Vous voulez des agents dans l'outil de suivi de votre équipe. Vous pouvez déléguer une issue à un agent tandis qu'une personne en reste l'assignée et la responsable."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want an agent that works inside GitHub. Assigning an issue to Copilot starts a session that opens a pull request and asks you to review it."
+msgstr "Vous voulez un agent qui travaille dans GitHub. Assigner une issue à Copilot lance une session qui ouvre une pull request et vous demande de la relire."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want issue status to follow your pull requests. With the GitHub integration, an issue moves to in progress when its pull request opens and to done when it merges."
+msgstr "Vous voulez que le statut des issues suive vos pull requests. Avec l'intégration GitHub, une issue passe en cours à l'ouverture de sa pull request et à terminée lors de sa fusion."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "You want to build your own integration or agent. Linear has a public GraphQL API, and an agent API for agents that take delegated issues."
+msgstr "Vous voulez créer votre propre intégration ou votre propre agent. Linear propose une API GraphQL publique, et une API d'agents pour les agents qui prennent des issues déléguées."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Your team runs Scrum or Kanban. Jira has Kanban boards, and Scrum backlogs in which you plan sprints."
+msgstr "Votre équipe pratique Scrum ou Kanban. Jira propose des tableaux Kanban et des backlogs Scrum dans lesquels vous planifiez les sprints."
+
+#: lib/kanban_web/comparisons.ex
+#, elixir-autogen, elixir-format
+msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
+msgstr "Votre travail se trouve déjà dans des issues et des pull requests GitHub. Un projet se construit à partir d'eux, et les modifications se synchronisent dans les deux sens."

@@ -1063,6 +1063,40 @@ defmodule KanbanWeb.MarketingComponentsTest do
     end
   end
 
+  describe "the comparison links (W2901)" do
+    test "the footer renders one same-tab link per comparison between Docs and Privacy" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      for {slug, name} <- KanbanWeb.Comparisons.footer_links() do
+        path = "/compare/#{slug}"
+
+        assert href_count(html, path) == 1
+        assert html =~ "Stride vs #{name}"
+        refute html =~ ~s|href="#{path}" target="_blank"|
+        assert :binary.match(html, ~s|href="#{path}"|) > :binary.match(html, ~s|href="/docs"|)
+        assert :binary.match(html, ~s|href="#{path}"|) < :binary.match(html, ~s|href="/privacy"|)
+      end
+    end
+
+    test "the comparison link text is translated" do
+      Gettext.put_locale(KanbanWeb.Gettext, "ja")
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      assert html =~ "Stride と Linear の比較"
+    end
+  end
+
   # Count the occurrences of `href="<path>"` in the rendered HTML. Useful for
   # checks like "the desktop nav has Workflows but the mobile menu does too"
   # — by comparing counts, the desktop-only gating can be asserted without a

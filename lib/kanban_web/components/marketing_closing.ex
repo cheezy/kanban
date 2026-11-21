@@ -93,8 +93,8 @@ defmodule KanbanWeb.MarketingClosing do
 
   @doc """
   Renders the landing-page footer: logo + wordmark + domain + copyright on
-  the left, right-aligned links on the right: Integrations, Docs, Privacy,
-  Security, Blog and GitHub.
+  the left, right-aligned links on the right: Integrations, Docs, one link
+  per comparison page, Privacy, Security, Blog and GitHub.
 
   Based on lines ~374-391 of `landing.jsx`, whose links are Privacy,
   Security, Status and GitHub. It departs from the design in these ways:
@@ -102,6 +102,9 @@ defmodule KanbanWeb.MarketingClosing do
     * The Integrations link comes first; the design does not have it and
       W2899 added it. The Docs link follows it; W2904 added it so the
       `/docs` guides are reachable from every marketing page.
+    * One "Stride vs …" link per `KanbanWeb.Comparisons` page follows the
+      Docs link; the design does not have them and W2901 added them. They
+      open in the same tab.
     * The Blog link sits between Security and GitHub; the design does not
       have it and W2895 added it.
     * There is no Status link (the design's line ~390), as there is no
@@ -148,6 +151,14 @@ defmodule KanbanWeb.MarketingClosing do
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {gettext("Docs")}
+        </.link>
+        <.link
+          :for={{slug, name} <- KanbanWeb.Comparisons.footer_links()}
+          href={~p"/compare/#{slug}"}
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          data-compare-link={slug}
+        >
+          {gettext("Stride vs %{name}", name: name)}
         </.link>
         <.link
           href={~p"/privacy"}

@@ -97,7 +97,8 @@ defmodule KanbanWeb.SeoControllerTest do
           @page_paths ++
             ["/issue", "/resources", "/demo"] ++
             KanbanWeb.Docs.sitemap_paths() ++
-            KanbanWeb.Integrations.sitemap_paths() ++ how_to_paths
+            KanbanWeb.Integrations.sitemap_paths() ++
+            KanbanWeb.Comparisons.sitemap_paths() ++ how_to_paths
         )
 
       locs = sitemap_locs(conn)

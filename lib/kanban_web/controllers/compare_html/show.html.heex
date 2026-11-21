@@ -1,0 +1,104 @@
+<main class="min-h-screen" data-compare-page={@comparison.slug}>
+  <div class="max-w-3xl mx-auto px-6 py-12">
+    <header class="mb-12">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-base-content mb-4"
+        style="overflow-wrap: break-word; hyphens: auto;"
+        data-compare-heading
+      >
+        {gettext("Stride vs %{name}", name: @comparison.competitor)}
+      </h1>
+      <p class="text-lg leading-relaxed" style="color: var(--ink-2);">
+        {gettext(
+          "This page sets out where Stride fits for work done by AI coding agents, and where %{name} is the better choice.",
+          name: @comparison.competitor
+        )}
+      </p>
+      <p class="text-sm mt-3" style="color: var(--ink-3);">
+        {gettext("Last reviewed")}
+        <.local_time value={@comparison.last_reviewed} style={:date} data-last-reviewed />
+      </p>
+    </header>
+
+    <section id="where-stride-fits" class="mb-12" aria-labelledby="where-stride-fits-heading">
+      <h2 id="where-stride-fits-heading" class="text-2xl font-bold text-base-content mb-4">
+        {gettext("Where Stride fits")}
+      </h2>
+      <ul class="space-y-3" role="list" data-stride-fits>
+        <li
+          :for={point <- @stride_fits}
+          class="flex gap-2 leading-relaxed"
+          style="color: var(--ink-2);"
+        >
+          <span
+            class="shrink-0 mt-0.5"
+            style="color: var(--stride-orange-ink);"
+            aria-hidden="true"
+          >
+            <.icon name="hero-check" class="h-5 w-5" />
+          </span>
+          <span>{point}</span>
+        </li>
+      </ul>
+    </section>
+
+    <section
+      id="where-competitor-fits"
+      class="mb-12"
+      aria-labelledby="where-competitor-fits-heading"
+    >
+      <h2 id="where-competitor-fits-heading" class="text-2xl font-bold text-base-content mb-2">
+        {gettext("Where %{name} is the better choice", name: @comparison.competitor)}
+      </h2>
+      <p class="text-sm mb-6" style="color: var(--ink-3);">
+        {gettext("Each point comes from %{name}'s own documentation, linked below it.",
+          name: @comparison.competitor
+        )}
+      </p>
+      <ul class="space-y-6" role="list">
+        <li :for={claim <- @comparison.better_choice} data-claim>
+          <p class="leading-relaxed text-base-content">{claim.text}</p>
+          <p class="text-sm mt-1" style="color: var(--ink-3);">
+            {gettext("Source:")}
+            <span :for={url <- claim.sources} class="mr-3 inline-block">
+              <a
+                href={url}
+                class="font-medium"
+                style="color: var(--stride-orange-ink); overflow-wrap: anywhere;"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-source-link
+              >
+                {display_url(url)}
+              </a>
+            </span>
+          </p>
+        </li>
+      </ul>
+    </section>
+
+    <section id="corrections" aria-labelledby="corrections-heading">
+      <h2 id="corrections-heading" class="text-xl font-bold text-base-content mb-2">
+        {gettext("Spotted something out of date?")}
+      </h2>
+      <p class="leading-relaxed" style="color: var(--ink-2);">
+        {gettext(
+          "Products change. Every claim on this page was checked against its source on the date shown above. If one has gone stale, tell us and we will fix it."
+        )}
+        <a
+          href={issues_url()}
+          class="font-medium"
+          style="color: var(--stride-orange-ink);"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-corrections-link
+        >
+          {gettext("Open an issue on GitHub")}
+        </a>
+      </p>
+      <p class="text-sm mt-4" style="color: var(--ink-3);">
+        {gettext("Product names belong to their owners.")}
+      </p>
+    </section>
+  </div>
+</main>
