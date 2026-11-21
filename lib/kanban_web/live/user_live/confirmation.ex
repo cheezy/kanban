@@ -278,13 +278,23 @@ defmodule KanbanWeb.UserLive.Confirmation do
           <div style="font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); margin-bottom: 4px;">
             {gettext("Workflow plugin")}
           </div>
-          <span style="display: flex; gap: 8px; align-items: flex-start;">
-            <code
-              id={"workflow-command-#{@agent.key}"}
-              style="flex: 1; padding: 6px 10px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"
-            >{@agent.workflow_command}</code>
-            <.copy_button id={"workflow-copy-#{@agent.key}"} value={@agent.workflow_command} />
-          </span>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div :for={{step, index} <- Enum.with_index(@agent.workflow_steps)}>
+              <div
+                :if={length(@agent.workflow_steps) > 1}
+                style="font-size: 11.5px; color: var(--ink-3); margin-bottom: 4px; text-wrap: pretty;"
+              >
+                {step.title}
+              </div>
+              <span style="display: flex; gap: 8px; align-items: flex-start;">
+                <code
+                  id={"workflow-command-#{@agent.key}-#{index}"}
+                  style="flex: 1; padding: 6px 10px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); font-family: var(--font-mono); font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"
+                >{step.command}</code>
+                <.copy_button id={"workflow-copy-#{@agent.key}-#{index}"} value={step.command} />
+              </span>
+            </div>
+          </div>
           <div style="margin-top: 4px; font-size: 11.5px; color: var(--ink-3); text-wrap: pretty;">
             <.link
               href={@agent.workflow_url}

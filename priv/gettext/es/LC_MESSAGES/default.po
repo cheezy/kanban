@@ -13203,11 +13203,6 @@ msgstr "Se instala desde el marketplace de plugins de Stride."
 
 #: lib/kanban_web/controllers/page_html.ex
 #, elixir-autogen, elixir-format
-msgid "Install straight from the plugin's repository."
-msgstr "Se instala directamente desde el repositorio del plugin."
-
-#: lib/kanban_web/controllers/page_html.ex
-#, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr "Se instala con el script de instalación del repositorio del plugin."
 
@@ -16405,3 +16400,13 @@ msgstr "Las instalaciones por script copian el hook, pero Codex no lo carga desd
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr "Blog"
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Codex."
+msgstr "Se instala desde el marketplace de Stride para Codex."
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Copilot."
+msgstr "Se instala desde el marketplace de Stride para Copilot."

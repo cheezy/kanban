@@ -13139,11 +13139,6 @@ msgstr "从 Stride 插件市场安装。"
 
 #: lib/kanban_web/controllers/page_html.ex
 #, elixir-autogen, elixir-format
-msgid "Install straight from the plugin's repository."
-msgstr "直接从插件的代码仓库安装。"
-
-#: lib/kanban_web/controllers/page_html.ex
-#, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr "使用插件代码仓库中的安装脚本安装。"
 
@@ -16317,3 +16312,13 @@ msgstr "脚本安装会复制该钩子，但 Codex 不会从那里加载它：�
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr "博客"
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Codex."
+msgstr "从适用于 Codex 的 Stride 市场安装。"
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Copilot."
+msgstr "从适用于 Copilot 的 Stride 市场安装。"

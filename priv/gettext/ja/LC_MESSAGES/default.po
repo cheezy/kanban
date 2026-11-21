@@ -13136,11 +13136,6 @@ msgstr "Stride プラグインマーケットプレイスからインストー�
 
 #: lib/kanban_web/controllers/page_html.ex
 #, elixir-autogen, elixir-format
-msgid "Install straight from the plugin's repository."
-msgstr "プラグインのリポジトリから直接インストールします。"
-
-#: lib/kanban_web/controllers/page_html.ex
-#, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr "プラグインのリポジトリにあるセットアップスクリプトでインストールします。"
 
@@ -16314,3 +16309,13 @@ msgstr "スクリプトでのインストールはフックをコピーします
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr "ブログ"
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Codex."
+msgstr "Codex 用の Stride マーケットプレイスからインストールします。"
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Copilot."
+msgstr "Copilot 用の Stride マーケットプレイスからインストールします。"

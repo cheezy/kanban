@@ -193,18 +193,19 @@ defmodule KanbanWeb.PageHTML do
   Returns the agent runtimes the `/workflows` page lists as having a Stride
   plugin, in the order of `KanbanWeb.OnboardingPlugins.agents/0`.
 
-  Each entry carries the runtime's `key`, its product `name`, the plugin's
-  public repository `url` (taken from the onboarding registry, so the page and
-  onboarding cannot drift apart) and a translated line saying how it installs.
+  Each entry carries the runtime's `key`, its product `name`, the `url` of the
+  marketplace or repository onboarding installs from (taken from the onboarding
+  registry, so the page and onboarding cannot drift apart) and a translated
+  line saying how it installs.
   It is a function rather than a module attribute so the copy is translated
   for each request's locale.
   """
   def workflow_runtimes do
     install = %{
       "claude_code" => gettext("Install from the Stride plugin marketplace."),
-      "copilot" => gettext("Install straight from the plugin's repository."),
+      "copilot" => gettext("Install from the Stride marketplace for Copilot."),
       "gemini" => gettext("Install as a Gemini CLI extension."),
-      "codex" => gettext("Install with the setup script in the plugin's repository."),
+      "codex" => gettext("Install from the Stride marketplace for Codex."),
       "opencode" => gettext("Add the plugin to your opencode.json."),
       "pi" => gettext("Install with the setup script in the plugin's repository.")
     }

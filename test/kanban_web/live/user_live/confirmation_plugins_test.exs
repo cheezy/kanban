@@ -53,8 +53,18 @@ defmodule KanbanWeb.UserLive.ConfirmationPluginsTest do
       for agent <- OnboardingPlugins.agents() do
         html = lv |> element(~s{button[phx-value-agent="#{agent.key}"]}) |> render_click()
 
-        assert html =~ rendered(agent.workflow_command),
-               "#{agent.key}: workflow command is missing from the rendered panel"
+        for {step, index} <- Enum.with_index(agent.workflow_steps) do
+          assert html =~ rendered(step.command),
+                 "#{agent.key}: workflow command #{index} is missing from the rendered panel"
+
+          assert has_element?(lv, "#workflow-copy-#{agent.key}-#{index}"),
+                 "#{agent.key}: workflow command #{index} has no copy button"
+        end
+
+        # A title shows only when the install takes more than one block.
+        for step <- agent.workflow_steps, length(agent.workflow_steps) > 1 do
+          assert html =~ rendered(step.title), "#{agent.key}: step title missing"
+        end
 
         assert html =~ rendered(agent.workflow_url),
                "#{agent.key}: workflow URL is missing from the rendered panel"

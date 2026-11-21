@@ -82,5 +82,9 @@ Claim only what the plugin's README says it does, and link only to the
 official Stride repositories and marketplaces. The catalog test fails on any
 other link.
 
-`KanbanWeb.OnboardingPlugins` is a separate list, used by the onboarding
-screens. It is not generated from this one.
+`KanbanWeb.OnboardingPlugins`, used by the onboarding screens, reads its
+workflow-plugin install commands and their titles from these install steps.
+Its `@install_blocks` names the steps it shows by position, so when you add,
+remove or reorder a runtime's steps, check that map too;
+`test/kanban_web/onboarding_plugins_test.exs` pins what each agent shows. Its
+ideation-plugin commands are not in this catalog and are kept in that module.

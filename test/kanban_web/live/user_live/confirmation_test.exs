@@ -232,19 +232,21 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
              )
 
       assert html =~ "Installs through the Stride marketplace."
-      assert has_element?(lv, "#workflow-copy-claude_code")
+      assert has_element?(lv, "#workflow-copy-claude_code-0")
       assert has_element?(lv, "#ideation-copy-claude_code")
     end
 
     test "selecting a tab swaps the panel to that agent's commands", %{lv: lv} do
       html = lv |> element(~s{button[phx-value-agent="copilot"]}) |> render_click()
 
-      assert html =~ "copilot plugin install https://github.com/cheezy/stride-copilot"
+      assert html =~ "copilot plugin marketplace add cheezy/stride-copilot-marketplace"
+      assert html =~ "copilot plugin install stride-copilot"
       assert html =~ "copilot plugin install https://github.com/cheezy/stride-copilot-ideation"
+      assert html =~ "Installs through the Stride marketplace."
 
       assert has_element?(
                lv,
-               ~s{a[href="https://github.com/cheezy/stride-copilot"][target="_blank"]}
+               ~s{a[href="https://github.com/cheezy/stride-copilot-marketplace"][target="_blank"]}
              )
 
       # The default agent's command is no longer in the DOM (only the selected panel renders).
@@ -261,6 +263,31 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       refute html =~ "Installs through the Stride marketplace."
       assert html =~ "No separate ideation plugin yet."
       refute has_element?(lv, "#ideation-copy-pi")
+    end
+
+    test "Codex shows its marketplace install, not the setup script", %{lv: lv} do
+      html = lv |> element(~s{button[phx-value-agent="codex"]}) |> render_click()
+
+      assert html =~ "codex plugin marketplace add cheezy/stride-codex-marketplace"
+      assert html =~ "codex plugin install stride-codex"
+      refute html =~ "stride-codex/main/install.sh"
+      assert html =~ "Installs through the Stride marketplace."
+      assert has_element?(lv, "#workflow-copy-codex-0")
+      refute has_element?(lv, "#workflow-copy-codex-1")
+    end
+
+    test "OpenCode shows both install blocks, each titled and with its own copy button", %{
+      lv: lv
+    } do
+      html = lv |> element(~s{button[phx-value-agent="opencode"]}) |> render_click()
+
+      assert html =~ "github:cheezy/stride-opencode"
+      assert html =~ "cp -R /tmp/stride-opencode/skills/. .opencode/skills/"
+      refute html =~ "Add to opencode.json:"
+      assert html =~ "Add the plugin to opencode.json, in your project or in ~/.config/opencode/"
+      assert html =~ "Copy the skills, subagents and commands into your project"
+      assert has_element?(lv, "#workflow-copy-opencode-0")
+      assert has_element?(lv, "#workflow-copy-opencode-1")
     end
 
     test "leaves the selection unchanged when given an unknown agent key", %{lv: lv} do

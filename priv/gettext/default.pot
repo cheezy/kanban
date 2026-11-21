@@ -13119,11 +13119,6 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html.ex
 #, elixir-autogen, elixir-format
-msgid "Install straight from the plugin's repository."
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html.ex
-#, elixir-autogen, elixir-format
 msgid "Install with the setup script in the plugin's repository."
 msgstr ""
 
@@ -16320,4 +16315,14 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex
 #, elixir-autogen, elixir-format
 msgid "Blog"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Codex."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html.ex
+#, elixir-autogen, elixir-format
+msgid "Install from the Stride marketplace for Copilot."
 msgstr ""
