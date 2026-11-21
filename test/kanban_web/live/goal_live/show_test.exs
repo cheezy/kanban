@@ -229,6 +229,47 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       assert html =~ "1/3"
     end
 
+    test "counts Ready, In flight and Blocked from the columns the children sit in",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      backlog_col = column_fixture(board, %{name: "Backlog"})
+      ready_col = column_fixture(board, %{name: "Ready"})
+      doing_col = column_fixture(board, %{name: "Doing"})
+      review_col = column_fixture(board, %{name: "Review"})
+      done_col = column_fixture(board, %{name: "Done"})
+
+      {:ok, %{goal: goal, child_tasks: [ready, doing, review, blocked, done, _backlog]}} =
+        Tasks.create_goal_with_tasks(
+          backlog_col,
+          %{"title" => "Column counts Goal", "created_by_id" => user.id},
+          Enum.map(
+            1..6,
+            &%{"title" => "Child #{&1}", "type" => "work", "created_by_id" => user.id}
+          )
+        )
+
+      # A task in Ready is :open; Doing and Review hold :open and :in_progress
+      # tasks alike, so neither the Ready nor the in-flight count can come
+      # from Task.status.
+      move = fn task, column, attrs ->
+        from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+        |> Kanban.Repo.update_all(set: [column_id: column.id] ++ attrs)
+      end
+
+      move.(ready, ready_col, status: :open)
+      move.(doing, doing_col, status: :open)
+      move.(review, review_col, status: :in_progress)
+      move.(blocked, backlog_col, status: :blocked)
+      move.(done, done_col, status: :completed, completed_at: DateTime.utc_now())
+
+      {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
+
+      assert sidebar_value(html, "Ready") == "1"
+      assert sidebar_value(html, "In flight") == "2"
+      assert sidebar_value(html, "Blocked") == "1"
+      assert sidebar_value(html, "Done / total") == "1/6"
+    end
+
     test "renders Contributors count from the goal + children authors",
          %{conn: conn, user: user} do
       board = board_fixture(user)
@@ -896,6 +937,17 @@ defmodule KanbanWeb.GoalLive.ShowTest do
     |> Kanban.Repo.update_all(set: [inserted_at: at])
 
     {board, goal}
+  end
+
+  # The value shown beside a sidebar metric label: the span that follows the
+  # label's span in the same metric row.
+  defp sidebar_value(html, label) do
+    html
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query("[data-goal-sidebar] span")
+    |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.find_value(fn [name, value] -> if name == label, do: value end)
   end
 
   defp sidebar_metrics(overrides) do

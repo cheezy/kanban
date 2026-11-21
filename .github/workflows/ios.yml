@@ -1,0 +1,151 @@
+name: iOS CI
+
+# Builds and tests the iOS and iPadOS app in mobile/ios (design:
+# docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md, section 15.1). It runs on
+# changes to the app, to the files both apps share and to the API contract,
+# so a contract change starts this workflow and android.yml together. The
+# Elixir workflow is independent of it: neither waits on the other.
+#
+# Until Phase 1b commits mobile/ios/project.yml there is no project to build.
+# The `project` job checks for it with hashFiles, and every macOS job is
+# skipped when it is missing, so the workflow passes without spending macOS
+# minutes. hashFiles cannot be used in a job-level `if`, which is why the
+# check is a step in its own job.
+#
+# The workflow uses no secrets, so a pull request from a fork runs it the same
+# way as a branch in this repository. Signing arrives with the app releases.
+on:
+  push:
+    branches: [ "main", "release" ]
+    paths:
+      - "mobile/ios/**"
+      - "mobile/shared/**"
+      - "priv/openapi/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "mobile/ios/**"
+      - "mobile/shared/**"
+      - "priv/openapi/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request cancels its older run. A run on main or
+# release is never cancelled once it has started, though GitHub still drops
+# an older run that is waiting in the same group when a newer one queues.
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Pinned toolchain. The runner image, the Xcode version, the simulator OS and
+# XcodeGen change only by editing these values. Xcode 26.6 is installed on the
+# macos-26 image with the iOS 26.5 simulators named below.
+env:
+  XCODE_VERSION: "26.6"
+  SIMULATOR_OS: "26.5"
+  XCODEGEN_VERSION: "2.47.0"
+  XCODEGEN_SHA256: "6ef12a3ef5327c2c713397f46d9160550f8b1cdc5c925cd884d65c77c9f696cd"
+  PROJECT: mobile/ios/Stride.xcodeproj
+  SCHEME: Stride
+
+jobs:
+  project:
+    name: Check for the iOS project
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Look for mobile/ios/project.yml
+        id: check
+        run: |
+          present="${{ hashFiles('mobile/ios/project.yml') != '' }}"
+          echo "present=$present" >> "$GITHUB_OUTPUT"
+          if [ "$present" = "true" ]; then
+            echo "mobile/ios/project.yml found; building the app."
+          else
+            echo "mobile/ios/project.yml not found; the iOS jobs are skipped until Phase 1b adds the project."
+          fi
+
+  test:
+    name: Build and test (${{ matrix.device }})
+    needs: project
+    if: needs.project.outputs.present == 'true'
+    runs-on: macos-26
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Swift Testing runs once, on the iPhone. Snapshot tests and XCUITest
+          # run on one iPhone and one iPad simulator.
+          - device: iPhone 17
+            unit_tests: true
+          - device: iPad (A16)
+            unit_tests: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Selects the pinned Xcode for every later step, rather than the image's
+      # default, which moves when the image is updated.
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          echo "DEVELOPER_DIR=/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" >> "$GITHUB_ENV"
+          "/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer/usr/bin/xcodebuild" -version
+
+      - name: Install XcodeGen
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip"
+          echo "${XCODEGEN_SHA256}  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+
+      - name: Generate the project
+        run: xcodegen generate --spec mobile/ios/project.yml
+
+      - name: Build
+        run: |
+          xcodebuild build-for-testing \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${SIMULATOR_OS}" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData"
+
+      - name: Swift Testing
+        if: matrix.unit_tests
+        run: |
+          xcodebuild test-without-building \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${SIMULATOR_OS}" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -only-testing:StrideTests \
+            -skip-testing:StrideTests/SnapshotTests
+
+      - name: Snapshot tests
+        run: |
+          xcodebuild test-without-building \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${SIMULATOR_OS}" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -only-testing:StrideTests/SnapshotTests
+
+      - name: XCUITest
+        run: |
+          xcodebuild test-without-building \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${SIMULATOR_OS}" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -only-testing:StrideUITests

@@ -1,0 +1,157 @@
+name: Android CI
+
+# Builds and tests the Android app in mobile/android (design:
+# docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md, section 15.1). It runs on
+# changes to the app, to the files both apps share and to the API contract,
+# so a contract change starts this workflow and ios.yml together. The Elixir
+# workflow is independent of it: neither waits on the other.
+#
+# Until Phase 1c commits mobile/android/settings.gradle.kts there is no
+# project to build. The `project` job checks for it with hashFiles, and the
+# build and emulator jobs are skipped when it is missing, so the workflow
+# passes. hashFiles cannot be used in a job-level `if`, which is why the check
+# is a step in its own job.
+#
+# The workflow uses no secrets, so a pull request from a fork runs it the same
+# way as a branch in this repository. Signing arrives with the app releases.
+on:
+  push:
+    branches: [ "main", "release" ]
+    paths:
+      - "mobile/android/**"
+      - "mobile/shared/**"
+      - "priv/openapi/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "mobile/android/**"
+      - "mobile/shared/**"
+      - "priv/openapi/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a pull request cancels its older run. A run on main or
+# release is never cancelled once it has started, though GitHub still drops
+# an older run that is waiting in the same group when a newer one queues.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Pinned toolchain. The JDK and the emulator image change only by editing
+# these values. The Android Gradle Plugin is pinned in the version catalog,
+# mobile/android/gradle/libs.versions.toml, as `agp = "X.Y.Z"`; the build job
+# fails when that entry is missing or is not an exact version. The Gradle
+# version is pinned by the committed wrapper, which setup-gradle validates.
+env:
+  JAVA_DISTRIBUTION: temurin
+  JAVA_VERSION: "17"
+  EMULATOR_API_LEVEL: "35"
+  EMULATOR_TARGET: google_apis
+  EMULATOR_ARCH: x86_64
+  EMULATOR_PROFILE: pixel_7
+
+jobs:
+  project:
+    name: Check for the Android project
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Look for mobile/android/settings.gradle.kts
+        id: check
+        run: |
+          present="${{ hashFiles('mobile/android/settings.gradle.kts') != '' }}"
+          echo "present=$present" >> "$GITHUB_OUTPUT"
+          if [ "$present" = "true" ]; then
+            echo "mobile/android/settings.gradle.kts found; building the app."
+          else
+            echo "mobile/android/settings.gradle.kts not found; the Android jobs are skipped until Phase 1c adds the project."
+          fi
+
+  build:
+    name: Build, lint and unit tests
+    needs: project
+    if: needs.project.outputs.present == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile/android
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up the JDK
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Check the Android Gradle Plugin is pinned
+        run: |
+          agp="$(sed -nE 's/^agp[[:space:]]*=[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?)"[[:space:]]*$/\1/p' gradle/libs.versions.toml)"
+          if [ -z "$agp" ]; then
+            echo "::error file=mobile/android/gradle/libs.versions.toml::pin the Android Gradle Plugin to an exact version as agp = \"X.Y.Z\""
+            exit 1
+          fi
+          echo "Android Gradle Plugin $agp"
+
+      - name: Gradle build
+        run: ./gradlew assembleDebug
+
+      - name: ktlint
+        run: ./gradlew ktlintCheck
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      # Roborazzi screenshot tests, compared with the recorded images.
+      - name: Screenshot tests
+        run: ./gradlew verifyRoborazziDebug
+
+  instrumented:
+    name: Instrumented UI tests
+    needs: project
+    if: needs.project.outputs.present == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up the JDK
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      # Lets the emulator use hardware acceleration on the Linux runner.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Instrumented tests on an emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ env.EMULATOR_API_LEVEL }}
+          target: ${{ env.EMULATOR_TARGET }}
+          arch: ${{ env.EMULATOR_ARCH }}
+          profile: ${{ env.EMULATOR_PROFILE }}
+          working-directory: mobile/android
+          script: ./gradlew connectedDebugAndroidTest

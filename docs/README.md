@@ -186,6 +186,7 @@ Stride plugin for the tool instead, as Multi-Agent Instructions describes.
 - [Import from Jira: Implementation Design](plans/IMPORT-FROM-JIRA-DESIGN.md) — Design for bringing a team's existing Jira work into Stride, with not-started epics rewritten by an agent and checked for coverage, written 2026-10-28 and revised 2026-10-30.
 - [Native Mobile Apps, Phase 1: Implementation Design](plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md) — Design for the first release of the iOS, iPadOS and Android apps and the backend they need: device sign-in, the decisions inbox, review over the API with a phone size limit, and push, written 2026-11-11.
 - [Retention and Legal Hold: Implementation Design](plans/RETENTION-AND-LEGAL-HOLD-DESIGN.md) — Design for how long an Organization keeps archived tasks and for holding them when a legal matter requires it, written 2026-11-10.
+- [Search visibility: our plan compared with Ahrefs and Umami](plans/SEARCH-VISIBILITY-GAP-ANALYSIS.md) — Comparison of goals G559 and G560 with what Ahrefs sells and what Umami measures, with the gaps in the plan and what closing each would take, written 2026-11-21.
 - [Teams and Google Chat Webhooks Evaluation](plans/TEAMS-AND-GOOGLE-CHAT-WEBHOOKS-EVALUATION.md) — Research into Microsoft Teams and Google Chat webhook support.
 
 ### Ideation requirements

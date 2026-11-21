@@ -28,3 +28,19 @@ accessibility and dark mode rules.
 - **Regenerate after changing a source.** After changing the API contract (`priv/openapi/stride-api.json`), the tokens (`assets/css/app.css`) or the strings (`priv/gettext/*/LC_MESSAGES/mobile.po`), run the matching generator (`mix mobile.api`, `mix mobile.tokens` or `mix mobile.strings`) and commit the copies in the same task. Never edit a generated copy by hand: a test fails when a copy is stale. The generators and their staleness tests are added by later tasks of the native apps goal; until one exists, say so in the task rather than writing the copy by hand. The Elixir CI workflow skips a change confined to `mobile/`, so run the staleness tests locally before committing one.
 - **One task can span the API and both apps.** When an API change affects an app, change the contract, the server and both apps together rather than leaving one app behind.
 - **Never commit signing material or machine paths.** Keystores, `.p8` and `.p12` keys, provisioning profiles and `local.properties` are ignored by `.gitignore`; keep it that way.
+
+## CI
+
+Each app has its own workflow, separate from the Elixir one:
+[ios.yml](../.github/workflows/ios.yml) runs on macOS and
+[android.yml](../.github/workflows/android.yml) on Linux. Each runs when its
+app, `shared/` or the API contract (`priv/openapi/`) changes, so a contract
+change runs both. Each workflow pins its toolchain at the top of the file.
+
+Each one is skipped until its project exists: `ios.yml` looks for
+`ios/project.yml` and `android.yml` for `android/settings.gradle.kts`, and
+reports its build jobs as skipped while the file is missing. The workflows use
+no secrets, so pull requests from forks run them too. The names each workflow
+relies on are in [ios/CLAUDE.md](ios/CLAUDE.md) and
+[android/CLAUDE.md](android/CLAUDE.md); change a workflow when you change one
+of those names.

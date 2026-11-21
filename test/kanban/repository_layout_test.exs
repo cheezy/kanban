@@ -141,4 +141,96 @@ defmodule Kanban.RepositoryLayoutTest do
       end
     end
   end
+
+  # The app workflows from section 15.1 of the design (W2775). Each one runs on
+  # its own app, the shared files and the API contract, skips its jobs until
+  # its project file exists, needs no secrets and pins every action it uses.
+  describe "app workflows" do
+    test "elixir.yml does not wait on the app workflows" do
+      workflow = read!(".github/workflows/elixir.yml")
+
+      for name <- ["ios.yml", "android.yml", "workflow_run", "iOS CI", "Android CI"] do
+        refute workflow =~ name, "elixir.yml refers to #{name}"
+      end
+    end
+
+    for {file, app, project} <- [
+          {"ios.yml", "mobile/ios", "mobile/ios/project.yml"},
+          {"android.yml", "mobile/android", "mobile/android/settings.gradle.kts"}
+        ] do
+      @workflow_path ".github/workflows/#{file}"
+      @app_dir app
+      @project_file project
+
+      test "#{file} runs on #{app}, mobile/shared and the API contract" do
+        workflow = read!(@workflow_path)
+
+        for event <- ["push", "pull_request"] do
+          paths = trigger_paths(workflow, event)
+
+          for path <- ["#{@app_dir}/**", "mobile/shared/**", "priv/openapi/**", @workflow_path] do
+            assert path in paths, "#{@workflow_path} #{event} trigger does not run on #{path}"
+          end
+        end
+      end
+
+      test "#{file} runs pull requests from forks without secrets" do
+        workflow = read!(@workflow_path)
+
+        assert workflow =~ "\n  pull_request:\n"
+        assert workflow =~ "\npermissions:\n  contents: read\n"
+        refute workflow =~ "pull_request_target"
+        refute workflow =~ ~r/secrets\./, "#{@workflow_path} reads a secret"
+      end
+
+      test "#{file} skips every build job until #{project} exists" do
+        workflow = read!(@workflow_path)
+        guarded = "    needs: project\n    if: needs.project.outputs.present == 'true'\n"
+
+        assert workflow =~ "present=\"${{ hashFiles('#{@project_file}') != '' }}\""
+
+        jobs = job_names(workflow)
+        assert "project" in jobs and length(jobs) > 1
+
+        for job <- jobs, job != "project" do
+          assert job_body(workflow, job) =~ guarded,
+                 "#{@workflow_path} job #{job} is not skipped when #{@project_file} is missing"
+        end
+      end
+
+      test "#{file} pins every action to a commit" do
+        uses =
+          Regex.scan(~r/^\s+(?:- )?uses: (\S+)(.*)$/m, read!(@workflow_path),
+            capture: :all_but_first
+          )
+
+        assert uses != []
+
+        for [action, comment] <- uses do
+          assert action =~ ~r/@[0-9a-f]{40}$/,
+                 "#{@workflow_path} does not pin #{action} to a commit"
+
+          assert comment =~ ~r/^ # v\d/,
+                 "#{@workflow_path} gives no version comment for #{action}"
+        end
+      end
+    end
+  end
+
+  # The quoted list items under one trigger event, which are its `paths`.
+  defp trigger_paths(workflow, event) do
+    [triggers | _] = String.split(workflow, "\njobs:")
+    [_, block] = Regex.run(~r/\n  #{event}:\n((?:    .*\n)*)/, triggers)
+    ~r/^      - "([^"]+)"$/m |> Regex.scan(block, capture: :all_but_first) |> List.flatten()
+  end
+
+  defp job_names(workflow) do
+    [_, jobs] = String.split(workflow, "\njobs:\n", parts: 2)
+    ~r/^  ([a-z_-]+):$/m |> Regex.scan(jobs, capture: :all_but_first) |> List.flatten()
+  end
+
+  defp job_body(workflow, job) do
+    [_, after_job] = String.split(workflow, "\n  #{job}:\n", parts: 2)
+    after_job |> String.split(~r/\n  [a-z_-]+:\n/, parts: 2) |> hd()
+  end
 end

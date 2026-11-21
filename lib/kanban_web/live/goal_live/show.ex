@@ -399,27 +399,42 @@ defmodule KanbanWeb.GoalLive.Show do
     |> Map.merge(SidebarVelocity.build(goal, children))
   end
 
+  # Ready, in-flight and backlog come from the column a child sits in, the
+  # same buckets the hierarchy sections use: `Task.status` has no :ready or
+  # :review value, so a task in the Ready column is :open and one in Review
+  # may be :open or :in_progress. Blocked children are counted on their own
+  # row rather than in their column's bucket, and done stays the children
+  # whose status is :completed.
   defp sidebar_counts(children, contributor_count) do
-    statuses = Enum.frequencies_by(children, &Map.get(&1, :status, :open))
-    backlog = Map.get(statuses, :backlog, 0) + Map.get(statuses, :open, 0)
-    ready = Map.get(statuses, :ready, 0)
-    in_flight = Map.get(statuses, :in_progress, 0) + Map.get(statuses, :review, 0)
-    blocked = Map.get(statuses, :blocked, 0)
-    done = Map.get(statuses, :completed, 0)
-    total = length(children)
-    percent = if total > 0, do: round(done / total * 100), else: 0
+    {blocked_children, unblocked} =
+      Enum.split_with(children, &(Map.get(&1, :status) == :blocked))
 
-    %{
-      percent: percent,
+    done = Enum.count(children, &(Map.get(&1, :status) == :completed))
+    total = length(children)
+
+    unblocked
+    |> column_bucket_counts()
+    |> Map.merge(%{
+      percent: completion_percent(done, total),
       done: done,
       total: total,
-      in_flight: in_flight,
-      ready: ready,
-      backlog: backlog,
-      blocked: blocked,
+      blocked: length(blocked_children),
       contributor_count: contributor_count
+    })
+  end
+
+  defp column_bucket_counts(children) do
+    buckets = Enum.frequencies_by(children, &bucket_for/1)
+
+    %{
+      backlog: Map.get(buckets, :backlog, 0),
+      ready: Map.get(buckets, :ready, 0),
+      in_flight: Map.get(buckets, :in_progress, 0) + Map.get(buckets, :review, 0)
     }
   end
+
+  defp completion_percent(_done, 0), do: 0
+  defp completion_percent(done, total), do: round(done / total * 100)
 
   defp sidebar_time_metrics(goal, children) do
     completed = Enum.filter(children, &(Map.get(&1, :status) == :completed))

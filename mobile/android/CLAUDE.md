@@ -12,3 +12,4 @@ has the platform choices behind them.
 - **Regenerate after changing a source.** After the API contract changes, regenerate the Kotlin client with `mix mobile.api`; after the tokens or strings change, run `mix mobile.tokens` or `mix mobile.strings`. Never edit generated files by hand.
 - **Never commit build output or machine paths.** `build/`, `.gradle/` and `local.properties` are ignored.
 - **Never commit signing material.** Keystores (`.jks`, `.keystore`) stay out of the repository.
+- **Keep the names CI uses.** [android.yml](../../.github/workflows/android.yml) runs `assembleDebug`, `ktlintCheck`, `testDebugUnitTest`, `verifyRoborazziDebug` and, on an emulator, `connectedDebugAndroidTest` through the committed Gradle wrapper. Pin the Android Gradle Plugin in `gradle/libs.versions.toml` as `agp = "X.Y.Z"`, an exact version: the build job fails without it. The JDK and the emulator image are pinned in the workflow's `env` block; change them there.
