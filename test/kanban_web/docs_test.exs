@@ -20,6 +20,7 @@ defmodule KanbanWeb.DocsTest do
     "docs/api/post_tasks_batch.md" => "api-post-tasks-batch",
     "docs/api" => "api"
   }
+  @directories MapSet.new(["lib/kanban", ".github", "docs/v1.2", "priv/static"])
 
   describe "catalog" do
     test "every slug is unique and a flat lower-case slug" do
@@ -129,7 +130,7 @@ defmodule KanbanWeb.DocsTest do
     end
   end
 
-  describe "Links.rewrite/3" do
+  describe "Links.rewrite/4" do
     test "keeps same-page anchors and http, https and mailto links" do
       for url <- [
             "#claiming-a-task",
@@ -165,12 +166,57 @@ defmodule KanbanWeb.DocsTest do
         {"me_boards.md#list", "docs/api/README.md", "/blob/main/docs/api/me_boards.md#list"},
         {"../plans/X.md", "docs/api/README.md", "/blob/main/docs/plans/X.md"},
         {"../lib/kanban", "docs/AI-WORKFLOW.md", "/tree/main/lib/kanban"},
+        {"../lib/kanban/", "docs/AI-WORKFLOW.md", "/tree/main/lib/kanban"},
         {"../../lib/kanban/tasks.ex", "docs/api/README.md", "/blob/main/lib/kanban/tasks.ex"},
         {"My%20Doc.md", "docs/MCP.md", "/blob/main/docs/My%20Doc.md"}
       ]
 
       for {url, from, path} <- cases do
-        assert Links.rewrite(url, from, @published) == {:ok, @github <> path}, url
+        assert Links.rewrite(url, from, @published, @directories) == {:ok, @github <> path}, url
+      end
+    end
+
+    test "picks tree or blob from the repository's directories, not from the name" do
+      cases = [
+        # Files with no extension are files.
+        {"../Makefile", "/blob/main/Makefile"},
+        {"../LICENSE", "/blob/main/LICENSE"},
+        {"../../lib/kanban/README", "/blob/main/lib/kanban/README"},
+        # Directories with a dot in their name are directories.
+        {"../.github", "/tree/main/.github"},
+        {"v1.2", "/tree/main/docs/v1.2"},
+        {"../priv/static/", "/tree/main/priv/static"},
+        # A dotted path that is not a listed directory is a file.
+        {"../.formatter.exs", "/blob/main/.formatter.exs"},
+        {"../priv/static.txt", "/blob/main/priv/static.txt"}
+      ]
+
+      for {url, path} <- cases do
+        from =
+          if String.starts_with?(url, "../../"), do: "docs/api/README.md", else: "docs/MCP.md"
+
+        assert Links.rewrite(url, from, @published, @directories) == {:ok, @github <> path}, url
+      end
+    end
+
+    test "without the directories, every unpublished path is a blob" do
+      assert Links.rewrite("../lib/kanban", "docs/MCP.md", @published) ==
+               {:ok, @github <> "/blob/main/lib/kanban"}
+    end
+
+    test "keeps a relative link's query string and anchor" do
+      cases = [
+        {"MCP.md?plain=1#tools", "docs/AI-WORKFLOW.md", "/docs/mcp?plain=1#tools"},
+        {"api/?tab=x", "docs/AI-WORKFLOW.md", "/docs/api?tab=x"},
+        {"../CHANGELOG.md?plain=1#L10", "docs/AI-WORKFLOW.md",
+         @github <> "/blob/main/CHANGELOG.md?plain=1#L10"},
+        {"../Makefile?plain=1", "docs/MCP.md", @github <> "/blob/main/Makefile?plain=1"},
+        {"../.github?a=1&b=2#top", "docs/MCP.md", @github <> "/tree/main/.github?a=1&b=2#top"},
+        {"../lib/kanban#x", "docs/MCP.md", @github <> "/tree/main/lib/kanban#x"}
+      ]
+
+      for {url, from, expected} <- cases do
+        assert Links.rewrite(url, from, @published, @directories) == {:ok, expected}, url
       end
     end
 
@@ -197,7 +243,7 @@ defmodule KanbanWeb.DocsTest do
     end
   end
 
-  describe "Renderer.render/3" do
+  describe "Renderer.render/4" do
     test "renders headings with GitHub ids, a title and a table of contents" do
       rendered =
         Renderer.render(
@@ -255,6 +301,34 @@ defmodule KanbanWeb.DocsTest do
       assert html =~ " far odd "
       refute html =~ "evil.example"
       refute html =~ "user:7"
+    end
+
+    test "passes the directories to the link rewriter and keeps query strings" do
+      %{html: html} =
+        Renderer.render(
+          "# T\n\n[dir](../.github) [file](../LICENSE?plain=1#L3)\n",
+          "docs/MCP.md",
+          @published,
+          @directories
+        )
+
+      assert html =~ ~s(<a href="#{@github}/tree/main/.github">dir</a>)
+      assert html =~ ~s(<a href="#{@github}/blob/main/LICENSE?plain=1#L3">file</a>)
+    end
+
+    test "every listed directory is a directory in the repository that a guide links to" do
+      tree_links =
+        for page <- Docs.pages(),
+            [_, path] <- Regex.scan(~r{href="#{@github}/tree/main/([^"?#]+)}, page.html),
+            into: MapSet.new(),
+            do: URI.decode(path)
+
+      for directory <- Docs.directories() do
+        assert File.dir?(directory), "#{directory} in KanbanWeb.Docs @directories is no directory"
+
+        assert MapSet.member?(tree_links, directory),
+               "no published guide links to #{directory}; remove it from @directories"
+      end
     end
 
     test "leaves link-like text inside code alone" do

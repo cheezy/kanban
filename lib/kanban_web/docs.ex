@@ -247,6 +247,15 @@ defmodule KanbanWeb.Docs do
   # directory itself, which guides link to as `api/`.
   @published @catalog |> Map.new(&{&1.source, &1.slug}) |> Map.put("docs/api", "api")
 
+  # The unpublished repository directories the guides link to, so the link
+  # rewriter sends them to GitHub's `tree` view; every other unpublished path
+  # gets `blob`. The release build has no docs/, test/ or root files to look
+  # at, so this is written down rather than read from disk. The docs
+  # controller test fails when a guide links to a directory missing here, and
+  # test/kanban_web/docs_test.exs when an entry is no longer a linked
+  # directory. No guide links to one today.
+  @directories MapSet.new([])
+
   for %{source: source} <- @catalog do
     @external_resource Path.expand("../../priv/" <> source, __DIR__)
   end
@@ -255,7 +264,7 @@ defmodule KanbanWeb.Docs do
             # The path comes from the allow-list above, never from a request.
             # sobelow_skip ["Traversal.FileModule"]
             markdown = ("../../priv/" <> entry.source) |> Path.expand(__DIR__) |> File.read!()
-            rendered = Renderer.render(markdown, entry.source, @published)
+            rendered = Renderer.render(markdown, entry.source, @published, @directories)
 
             prefix = if entry.group == :api, do: "Stride API: ", else: ""
 
@@ -296,6 +305,13 @@ defmodule KanbanWeb.Docs do
   """
   @spec published() :: %{String.t() => String.t()}
   def published, do: @published
+
+  @doc """
+  The unpublished repository directories the guides link to, which the link
+  rewriter sends to GitHub's `tree` view.
+  """
+  @spec directories() :: MapSet.t(String.t())
+  def directories, do: @directories
 
   @doc """
   The paths `/sitemap.xml` lists for the docs: the index and every page.

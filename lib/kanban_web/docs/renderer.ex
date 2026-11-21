@@ -3,13 +3,13 @@ defmodule KanbanWeb.Docs.Renderer do
   Renders one published guide's markdown to HTML (W2898).
 
   The markdown is parsed with MDEx, every link is passed through
-  `KanbanWeb.Docs.Links.rewrite/3`, and the document is rendered with raw HTML
+  `KanbanWeb.Docs.Links.rewrite/4`, and the document is rendered with raw HTML
   escaped (`render: [escape: true]`), never with `unsafe: true`, so a guide can
   never inject markup or script into the page. Tables, autolinks and
   strikethrough are on, as on GitHub, and every heading gets the id GitHub
   gives it (`header_id_prefix: ""`), so `#anchor` links keep working.
 
-  `KanbanWeb.Docs` calls `render/3` at compile time. It raises, failing the
+  `KanbanWeb.Docs` calls `render/4` at compile time. It raises, failing the
   build rather than publishing a broken page, when a guide has no level-one
   heading or contains an image, which the site's Content Security Policy would
   block.
@@ -33,38 +33,39 @@ defmodule KanbanWeb.Docs.Renderer do
 
   @doc """
   Renders `markdown`, the guide at repository path `source`, with links
-  rewritten against `published` (see `KanbanWeb.Docs.Links`).
+  rewritten against `published` and `directories` (see
+  `KanbanWeb.Docs.Links`).
 
   Returns the HTML, the plain text of the first level-one heading as the
   title, and one table-of-contents entry per section: per level-two heading,
   or per level-three heading when the guide has fewer than two level-two
   headings.
   """
-  @spec render(String.t(), String.t(), Links.published()) :: rendered()
-  def render(markdown, source, published) do
+  @spec render(String.t(), String.t(), Links.published(), Links.directories()) :: rendered()
+  def render(markdown, source, published, directories \\ MapSet.new()) do
     document =
       markdown
       |> MDEx.parse_document!(@options)
-      |> MDEx.traverse_and_update(&rewrite_node(&1, source, published))
+      |> MDEx.traverse_and_update(&rewrite_node(&1, source, {published, directories}))
 
     html = MDEx.to_html!(document, @options)
 
     %{html: html, title: title!(document, source), toc: toc!(document, html, source)}
   end
 
-  defp rewrite_node(%MDEx.Link{url: url} = link, source, published) do
-    case Links.rewrite(url, source, published) do
+  defp rewrite_node(%MDEx.Link{url: url} = link, source, {published, directories}) do
+    case Links.rewrite(url, source, published, directories) do
       {:ok, rewritten} -> %{link | url: rewritten}
       :drop -> %MDEx.Text{literal: plain_text(link)}
     end
   end
 
-  defp rewrite_node(%MDEx.Image{url: url}, source, _published) do
+  defp rewrite_node(%MDEx.Image{url: url}, source, _repo) do
     raise ArgumentError,
           "#{source} contains an image (#{url}); the docs pages do not publish images"
   end
 
-  defp rewrite_node(node, _source, _published), do: node
+  defp rewrite_node(node, _source, _repo), do: node
 
   defp title!(document, source) do
     case document |> headings() |> Enum.find(&(&1.level == 1)) do

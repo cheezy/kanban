@@ -59,8 +59,23 @@ maps each one when the guide is rendered:
 | no path, only a query string such as `?tab=1` | unchanged |
 | another published guide, such as `api/post_tasks_claim.md#errors` | `/docs/api-post-tasks-claim#errors` |
 | `api/` or `api/README.md` | `/docs/api` |
-| any other file or directory in the repository | its GitHub `blob` or `tree` URL |
+| a directory listed in `@directories` in `KanbanWeb.Docs` | its GitHub `tree` URL |
+| any other file in the repository | its GitHub `blob` URL |
 | any other scheme, a `//host` link, or a path above the repository root | the link text, with no link |
+
+A rewritten link keeps its query string and its anchor, so
+`../CHANGELOG.md?plain=1#L10` becomes the GitHub `blob` URL of `CHANGELOG.md`
+with `?plain=1#L10` after it.
+
+Whether a path is a directory is never guessed from its name: `Makefile` and
+`LICENSE` are files, and a directory such as `.github` has a dot in its name.
+The guides are rendered when the app is compiled, and the release build has no
+`docs/`, `test/` or root files to look at, so the directories the guides link
+to are listed by hand in `@directories`. When a guide starts linking to an
+unpublished directory, add its repository path there (no trailing slash).
+`test/kanban_web/controllers/docs_controller_test.exs` fails until you do, and
+`test/kanban_web/docs_test.exs` fails when an entry is no longer a directory a
+guide links to.
 
 ## Publishing another guide or changing one
 

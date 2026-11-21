@@ -175,7 +175,7 @@ defmodule KanbanWeb.DocsControllerTest do
   end
 
   defp check_link(@github <> rest = href, slug, _page_ids, published) do
-    case Regex.run(~r{^/(blob|tree)/main/([^#]+)}, rest) do
+    case Regex.run(~r{^/(blob|tree)/main/([^#?]+)}, rest) do
       [_, kind, encoded] ->
         check_github_path(kind, URI.decode(encoded), href, slug, published)
 
@@ -198,7 +198,13 @@ defmodule KanbanWeb.DocsControllerTest do
 
   defp check_github_path(kind, path, href, slug, published) do
     exists = if kind == "blob", do: File.regular?(path), else: File.dir?(path)
-    assert exists, "/docs/#{slug} links to #{href}, which names no #{kind} in the repo"
+
+    assert exists,
+           "/docs/#{slug} links to #{href}, which names no #{kind} in the repo" <>
+             if(kind == "blob" and File.dir?(path),
+               do: ". It is a directory: add #{path} to @directories in KanbanWeb.Docs",
+               else: ""
+             )
 
     # The page's own "View this page on GitHub" link is the one GitHub link to
     # a published file.
