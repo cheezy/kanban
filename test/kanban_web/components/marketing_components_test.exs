@@ -1063,8 +1063,8 @@ defmodule KanbanWeb.MarketingComponentsTest do
     end
   end
 
-  describe "the Compare link (W2901)" do
-    test "the footer renders one same-tab Compare link between Docs and Privacy" do
+  describe "the comparison pages (W2901)" do
+    test "the footer does not link the comparison pages while they are under review" do
       assigns = %{}
 
       html =
@@ -1072,39 +1072,13 @@ defmodule KanbanWeb.MarketingComponentsTest do
         <KanbanWeb.MarketingClosing.marketing_footer />
         """)
 
-      assert href_count(html, "/compare") == 1
-      assert html =~ "Compare"
-      refute html =~ ~s|href="/compare" target="_blank"|
-      assert :binary.match(html, ~s|href="/compare"|) > :binary.match(html, ~s|href="/docs"|)
-      assert :binary.match(html, ~s|href="/compare"|) < :binary.match(html, ~s|href="/privacy"|)
-    end
-
-    test "the footer links no single comparison page" do
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <KanbanWeb.MarketingClosing.marketing_footer />
-        """)
+      assert href_count(html, "/compare") == 0
 
       for slug <- KanbanWeb.Comparisons.slugs() do
         assert href_count(html, "/compare/#{slug}") == 0
       end
 
       refute html =~ "Stride vs"
-    end
-
-    test "the Compare link text is translated" do
-      Gettext.put_locale(KanbanWeb.Gettext, "ja")
-      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
-      assigns = %{}
-
-      html =
-        rendered_to_string(~H"""
-        <KanbanWeb.MarketingClosing.marketing_footer />
-        """)
-
-      assert html =~ "比較"
     end
   end
 

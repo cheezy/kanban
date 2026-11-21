@@ -16784,11 +16784,6 @@ msgstr "你的团队采用 Scrum 或看板。Jira 提供看板以及用于规划
 msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
 msgstr "你的工作已经在 GitHub 的 issue 和拉取请求中。项目由它们构成，更改会双向同步。"
 
-#: lib/kanban_web/components/marketing_closing.ex
-#, elixir-autogen, elixir-format
-msgid "Compare"
-msgstr "对比"
-
 #: lib/kanban_web/controllers/compare_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Compare Stride"

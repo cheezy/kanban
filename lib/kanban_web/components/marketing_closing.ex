@@ -93,8 +93,8 @@ defmodule KanbanWeb.MarketingClosing do
 
   @doc """
   Renders the landing-page footer: logo + wordmark + domain + copyright on
-  the left, right-aligned links on the right: Integrations, Docs, Compare,
-  Privacy, Security, Blog and GitHub.
+  the left, right-aligned links on the right: Integrations, Docs, Privacy,
+  Security, Blog and GitHub.
 
   Based on lines ~374-391 of `landing.jsx`, whose links are Privacy,
   Security, Status and GitHub. It departs from the design in these ways:
@@ -102,10 +102,9 @@ defmodule KanbanWeb.MarketingClosing do
     * The Integrations link comes first; the design does not have it and
       W2899 added it. The Docs link follows it; W2904 added it so the
       `/docs` guides are reachable from every marketing page.
-    * The Compare link follows the Docs link and opens the `/compare` index
-      in the same tab; the design does not have it. W2901 added the
-      comparison pages, and one link stands in for all of them so the row
-      stays short enough to fit.
+    * It does not link the `/compare` comparison pages (W2901) while their
+      content is under review. The pages are still served and listed in the
+      sitemap.
     * The Blog link sits between Security and GitHub; the design does not
       have it and W2895 added it.
     * There is no Status link (the design's line ~390), as there is no
@@ -152,13 +151,6 @@ defmodule KanbanWeb.MarketingClosing do
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {gettext("Docs")}
-        </.link>
-        <.link
-          href={~p"/compare"}
-          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          data-compare-link
-        >
-          {gettext("Compare")}
         </.link>
         <.link
           href={~p"/privacy"}

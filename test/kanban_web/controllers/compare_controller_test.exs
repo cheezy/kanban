@@ -171,12 +171,12 @@ defmodule KanbanWeb.CompareControllerTest do
   end
 
   describe "the footer" do
-    test "the footer links the /compare index from every comparison page", %{conn: conn} do
+    test "no footer links a comparison page while they are under review", %{conn: conn} do
       for path <- ["/" | Comparisons.sitemap_paths()] do
         html = conn |> get(path) |> html_response(200)
 
-        assert attrs(html, "footer a[data-compare-link]", "href") == ["/compare"],
-               "#{path} does not link /compare from its footer"
+        assert attrs(html, "footer a[href^='/compare']", "href") == [],
+               "#{path} links a comparison page from its footer"
       end
     end
   end

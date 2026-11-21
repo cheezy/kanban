@@ -16781,11 +16781,6 @@ msgstr "チームがスクラムやカンバンで動いている場合。Jira �
 msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
 msgstr "作業がすでに GitHub の Issue とプルリクエストにある場合。プロジェクトはそれらから作られ、変更は双方向に同期されます。"
 
-#: lib/kanban_web/components/marketing_closing.ex
-#, elixir-autogen, elixir-format
-msgid "Compare"
-msgstr "比較"
-
 #: lib/kanban_web/controllers/compare_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Compare Stride"

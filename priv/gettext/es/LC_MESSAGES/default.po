@@ -16872,11 +16872,6 @@ msgstr "Tu equipo trabaja con Scrum o Kanban. Jira tiene tableros Kanban y backl
 msgid "Your work already lives in GitHub issues and pull requests. A project is built from them, and changes sync both ways."
 msgstr "Tu trabajo ya vive en incidencias y pull requests de GitHub. Un proyecto se construye a partir de ellos y los cambios se sincronizan en ambos sentidos."
 
-#: lib/kanban_web/components/marketing_closing.ex
-#, elixir-autogen, elixir-format
-msgid "Compare"
-msgstr "Comparar"
-
 #: lib/kanban_web/controllers/compare_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Compare Stride"

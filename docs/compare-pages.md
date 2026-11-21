@@ -12,9 +12,11 @@ the other product is the better choice, shows the date the page was last
 reviewed, and links a source for every claim about the other product.
 
 The `/compare` index lists every comparison, with a one-line summary from
-`KanbanWeb.Comparisons.summary/1`. The marketing footer has one Compare link
-to that index, not one link per comparison, so the footer row stays short
-enough to fit.
+`KanbanWeb.Comparisons.summary/1`. While the content is under review, no
+page links the comparisons: the marketing footer has no Compare link. The
+pages are still served and listed in the sitemap. When the review is done,
+add one Compare link to the `/compare` index in the footer, not one link per
+comparison, so the footer row stays short enough to fit.
 
 Developers distrust one-sided comparison pages, so these pages only work if
 they are honest. The sourcing rule below exists for that reason.
@@ -74,7 +76,6 @@ least one source.
 2. Translate the new text, as in step 4 above.
 3. Run the comparison tests, the [SEO](seo.md) guard tests and
    `test/kanban_web/components/marketing_components_test.exs`. The sitemap
-   and the `/compare` index pick the new page up from the list, and the
-   footer's Compare link needs no change. The noindex check covers the
-   `/compare` and `/compare/:competitor` routes as a whole, so it needs no
-   change either.
+   and the `/compare` index pick the new page up from the list. The noindex
+   check covers the `/compare` and `/compare/:competitor` routes as a whole,
+   so it needs no change.
