@@ -13220,11 +13220,6 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex
 #, elixir-autogen, elixir-format
-msgid "$12 CAD"
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex
-#, elixir-autogen, elixir-format
 msgid "For teams that need more."
 msgstr ""
 
@@ -15976,4 +15971,14 @@ msgstr ""
 #: lib/kanban_web/components/seo_components.ex
 #, elixir-autogen, elixir-format
 msgid "The Stride logo beside the words: Kanban for humans and AI agents"
+msgstr ""
+
+#: lib/kanban_web/pricing.ex
+#, elixir-autogen, elixir-format
+msgid "$%{amount} CAD"
+msgstr ""
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Audit log streaming and signed exports"
 msgstr ""

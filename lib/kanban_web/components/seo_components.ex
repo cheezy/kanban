@@ -21,6 +21,11 @@ defmodule KanbanWeb.SeoComponents do
   `og_image` assign. Both are absolute URLs, because link-preview crawlers
   ignore relative ones.
 
+  `structured_data/1` renders a schema.org JSON-LD block. Pages call it from
+  their own template rather than the layout: the home page passes an
+  `Organization` and the pricing page a `SoftwareApplication`, both built in
+  `KanbanWeb.PageHTML`.
+
   Note that live navigation inside one `live_session` does not re-render the
   root layout, so the canonical keeps the path of the first full page load
   until the next full load. Crawlers always do full loads.
@@ -193,6 +198,40 @@ defmodule KanbanWeb.SeoComponents do
   """
   def request_path(%Plug.Conn{request_path: path}), do: path
   def request_path(_conn), do: nil
+
+  @doc """
+  Renders a schema.org JSON-LD block in a `<script type="application/ld+json">`
+  tag.
+
+  `data` must be a map built in code, never request params. It is encoded by
+  `encode_json_ld/1`, which escapes every `<` and `/`, so no value can close
+  the script element or open a comment, and only that encoded string is
+  emitted unescaped. A browser does not decode HTML entities inside a script
+  element, which is why the JSON is escaped rather than the HTML.
+
+  Pass the request's CSP nonce as `nonce` (usually `assigns[:csp_nonce]`); a
+  component cannot read its caller's assigns. The policy is never loosened for
+  this block.
+  """
+  attr :data, :map, required: true, doc: "the schema.org map, built in code"
+  attr :nonce, :string, default: nil, doc: "the request CSP nonce"
+
+  def structured_data(assigns) do
+    assigns = assign(assigns, :json, encode_json_ld(assigns.data))
+
+    ~H"""
+    <script type="application/ld+json" nonce={@nonce}>
+      <%= raw(@json) %>
+    </script>
+    """
+  end
+
+  @doc """
+  Encodes a map as JSON that is safe inside a `<script>` element: `<` becomes
+  `\\u003C` and `/` becomes `\\/`, both of which decode back to the same
+  string.
+  """
+  def encode_json_ld(data) when is_map(data), do: Jason.encode!(data, escape: :html_safe)
 
   defp assign_og_image(assigns) do
     case assigns.og_image |> present() |> og_image_url() do

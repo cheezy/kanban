@@ -3,6 +3,7 @@
 <%!-- The other marketing pages each open their own <main>; the home page
       needs one too, or its sections sit outside every landmark. --%>
 <main>
+  <.structured_data data={home_structured_data()} nonce={assigns[:csp_nonce]} />
   <.marketing_hero current_scope={@current_scope} has_boards={@has_boards} />
   <.marketing_belief_band />
   <.marketing_how_it_works />

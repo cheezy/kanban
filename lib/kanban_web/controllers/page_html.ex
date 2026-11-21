@@ -9,8 +9,81 @@ defmodule KanbanWeb.PageHTML do
   import KanbanWeb.HitMeComponents
   import KanbanWeb.MarketingClosing
   import KanbanWeb.MarketingComponents
+  import KanbanWeb.SeoComponents, only: [structured_data: 1]
+
+  alias KanbanWeb.Pricing
+  alias KanbanWeb.SeoComponents
 
   embed_templates "page_html/*"
+
+  @schema_context "https://schema.org"
+  @logo_path "/images/logos/abstract-s-motion.svg"
+
+  @doc """
+  The Organization plan's price text on the pricing page, from
+  `KanbanWeb.Pricing` so it matches the page's structured data.
+  """
+  def organization_price_label, do: :organization |> Pricing.plan!() |> Pricing.price_label()
+
+  @doc """
+  The schema.org `Organization` the home page renders as JSON-LD: the brand
+  name, the site URL, the logo and the public GitHub repository. Values are
+  English literals and absolute URLs, never request data.
+  """
+  def home_structured_data do
+    %{
+      "@context" => @schema_context,
+      "@type" => "Organization",
+      "name" => "Stride",
+      "url" => SeoComponents.canonical_url("/"),
+      "logo" => SeoComponents.og_image_url(@logo_path),
+      "sameAs" => [github_url()]
+    }
+  end
+
+  @doc """
+  The schema.org `SoftwareApplication` the pricing page renders as JSON-LD,
+  with one `Offer` per fixed-price plan from `KanbanWeb.Pricing`. A plan priced
+  on request is left out. There is deliberately no rating or review.
+  """
+  def pricing_structured_data(plans \\ Pricing.plans()) do
+    %{
+      "@context" => @schema_context,
+      "@type" => "SoftwareApplication",
+      "name" => "Stride",
+      "applicationCategory" => "BusinessApplication",
+      "operatingSystem" => "Web",
+      "url" => SeoComponents.canonical_url("/"),
+      "offers" => plans |> Pricing.fixed_price_plans() |> Enum.map(&offer/1)
+    }
+  end
+
+  defp offer(plan) do
+    %{
+      "@type" => "Offer",
+      "name" => plan.name,
+      "price" => Integer.to_string(plan.amount),
+      "priceCurrency" => plan.currency,
+      "url" => SeoComponents.canonical_url("/pricing")
+    }
+    |> put_unit_price(plan)
+  end
+
+  defp put_unit_price(offer, %{unit: :user_month} = plan) do
+    Map.put(offer, "priceSpecification", %{
+      "@type" => "UnitPriceSpecification",
+      "price" => Integer.to_string(plan.amount),
+      "priceCurrency" => plan.currency,
+      "billingDuration" => "P1M",
+      "referenceQuantity" => %{
+        "@type" => "QuantitativeValue",
+        "value" => 1,
+        "unitText" => "user"
+      }
+    })
+  end
+
+  defp put_unit_price(offer, _plan), do: offer
 
   @changelog_body_path Path.expand("../../../priv/changelog/body.html", __DIR__)
   @external_resource @changelog_body_path

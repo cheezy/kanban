@@ -13259,11 +13259,6 @@ msgstr "Apportez n'importe quel agent — Claude, Gemini, OpenCode, Codex, le v�
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex
 #, elixir-autogen, elixir-format
-msgid "$12 CAD"
-msgstr "12 $ CA"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex
-#, elixir-autogen, elixir-format
 msgid "For teams that need more."
 msgstr "Pour les équipes qui ont besoin de plus."
 
@@ -16016,3 +16011,13 @@ msgstr "Stride : kanban pour les humains et les agents IA"
 #, elixir-autogen, elixir-format
 msgid "The Stride logo beside the words: Kanban for humans and AI agents"
 msgstr "Le logo Stride à côté des mots : Kanban pour les humains et les agents IA"
+
+#: lib/kanban_web/pricing.ex
+#, elixir-autogen, elixir-format
+msgid "$%{amount} CAD"
+msgstr "%{amount} $ CA"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Audit log streaming and signed exports"
+msgstr "Diffusion du journal d'audit et exports signés"

@@ -1,4 +1,5 @@
 <main class="min-h-screen">
+  <.structured_data data={pricing_structured_data()} nonce={assigns[:csp_nonce]} />
   <div class="max-w-6xl mx-auto px-6 py-16">
     <div class="text-center mb-14">
       <h1 class="text-4xl md:text-5xl font-bold text-base-content mb-4">
@@ -81,7 +82,7 @@
             {gettext("For teams that need more.")}
           </p>
           <p id="organization-price" class="mt-4 flex flex-wrap items-baseline gap-x-2">
-            <span class="text-4xl font-bold text-base-content">{gettext("$12 CAD")}</span>
+            <span class="text-4xl font-bold text-base-content">{organization_price_label()}</span>
             <span style="color: var(--ink-2);">{gettext("per user / month")}</span>
           </p>
           <p id="organization-price-limit" class="mt-1 text-sm" style="color: var(--ink-2);">

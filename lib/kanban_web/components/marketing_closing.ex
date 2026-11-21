@@ -13,6 +13,14 @@ defmodule KanbanWeb.MarketingClosing do
   """
   use KanbanWeb, :html
 
+  @github_url "https://github.com/cheezy/kanban"
+
+  @doc """
+  The public GitHub repository, linked from the footer and named as `sameAs`
+  in the home page's Organization structured data.
+  """
+  def github_url, do: @github_url
+
   @doc """
   Renders the lower CTA section: large two-line headline with orange emphasis on
   "approving them.", sub-copy, and a single centered dark "Start now" CTA
@@ -113,7 +121,7 @@ defmodule KanbanWeb.MarketingClosing do
           {gettext("Security")}
         </.link>
         <.link
-          href="https://github.com/cheezy/kanban"
+          href={github_url()}
           target="_blank"
           rel="noopener noreferrer"
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"

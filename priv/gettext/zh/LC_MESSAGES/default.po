@@ -13240,11 +13240,6 @@ msgstr "带上任何代理 — Claude、Gemini、OpenCode、Codex 或您自己�
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex
 #, elixir-autogen, elixir-format
-msgid "$12 CAD"
-msgstr "12 加元"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex
-#, elixir-autogen, elixir-format
 msgid "For teams that need more."
 msgstr "适合需要更多功能的团队。"
 
@@ -15973,3 +15968,13 @@ msgstr "Stride：面向人与 AI 代理的看板"
 #, elixir-autogen, elixir-format
 msgid "The Stride logo beside the words: Kanban for humans and AI agents"
 msgstr "Stride 标志，旁边写着：面向人类和 AI 智能体的看板"
+
+#: lib/kanban_web/pricing.ex
+#, elixir-autogen, elixir-format
+msgid "$%{amount} CAD"
+msgstr "%{amount} 加元"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Audit log streaming and signed exports"
+msgstr "审计日志流式传输和签名导出"
