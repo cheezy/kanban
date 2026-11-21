@@ -88,7 +88,13 @@ defmodule KanbanWeb.PageController do
   # test/kanban_web/controllers/page_controller_seo_test.exs walks every GET
   # route on this controller and fails when one lacks a clause here, or when
   # two pages share a title or a description.
-  defp seo(:home),
+  @doc """
+  The `page_title` and `meta_description` of a public page, in the current
+  locale. `KanbanWeb.LlmsTxt` reuses the descriptions, so `/llms.txt` says
+  what each page says about itself.
+  """
+  @spec seo(atom()) :: [page_title: String.t(), meta_description: String.t()]
+  def seo(:home),
     do: [
       page_title: gettext("Stride: kanban for people and AI agents"),
       meta_description:
@@ -97,7 +103,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:about),
+  def seo(:about),
     do: [
       page_title: gettext("About Stride"),
       meta_description:
@@ -106,7 +112,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:acceptable_use),
+  def seo(:acceptable_use),
     do: [
       page_title: gettext("Acceptable Use Policy"),
       meta_description:
@@ -115,7 +121,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:hit_me),
+  def seo(:hit_me),
     do: [
       page_title: gettext("Half-day AI proof-of-concept sessions"),
       meta_description:
@@ -124,7 +130,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:pricing),
+  def seo(:pricing),
     do: [
       page_title: gettext("Pricing"),
       meta_description:
@@ -133,7 +139,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:privacy),
+  def seo(:privacy),
     do: [
       page_title: gettext("Privacy Policy"),
       meta_description:
@@ -142,7 +148,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:product),
+  def seo(:product),
     do: [
       page_title: gettext("Product"),
       meta_description:
@@ -151,7 +157,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:security),
+  def seo(:security),
     do: [
       page_title: gettext("Security"),
       meta_description:
@@ -160,7 +166,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:terms),
+  def seo(:terms),
     do: [
       page_title: gettext("Terms of Service"),
       meta_description:
@@ -169,7 +175,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:workflows),
+  def seo(:workflows),
     do: [
       page_title: gettext("Workflows"),
       meta_description:
@@ -178,7 +184,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:tango),
+  def seo(:tango),
     do: [
       page_title: gettext("The People Behind This App"),
       meta_description:
@@ -187,7 +193,7 @@ defmodule KanbanWeb.PageController do
         )
     ]
 
-  defp seo(:changelog),
+  def seo(:changelog),
     do: [
       page_title: gettext("Changelog"),
       meta_description:

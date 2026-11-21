@@ -132,8 +132,8 @@ A LiveView can also assign `noindex: true` for one state, as
 pipeline, which fetches no session and sets no cookie. Its body depends on the
 host, so that no copy of the site is indexed as a duplicate of the real one.
 
-It allows crawling, disallows `/api/` and names the sitemap only when both of
-these hold:
+It allows crawling, disallows `/api/`, names the AI crawlers in their own
+groups and names the sitemap only when both of these hold:
 
 - the deployment is indexable. `config/runtime.exs` sets
   `config :kanban, KanbanWeb.SeoController, indexable: true` only when the
@@ -144,9 +144,27 @@ these hold:
   `KanbanWeb.Endpoint.url/0` (`www.stridelikeaboss.com` in production). The
   match is exact and ignores case.
 
-Everywhere else it is `Disallow: /`. That covers the review app, the
-`kanban-prod.fly.dev` origin and dev. `SEO_INDEXABLE` changes only
-`robots.txt`, not a page's robots meta tag.
+Everywhere else it is `Disallow: /` for every crawler, AI crawlers included.
+That covers the review app, the `kanban-prod.fly.dev` origin and dev.
+`SEO_INDEXABLE` changes only `robots.txt`, not a page's robots meta tag.
+
+The bodies are built by
+[`KanbanWeb.RobotsTxt`](../lib/kanban_web/robots_txt.ex), which also holds the
+AI crawler policy. `@ai_crawlers` is the one list of AI crawlers it names:
+`GPTBot`, `ClaudeBot`, `PerplexityBot` and `Google-Extended`.
+`@ai_crawler_policy` says whether they may crawl, and it is `:allow`. On the
+canonical host each AI crawler gets its own `User-agent` group, because a
+crawler that matches a named group ignores the `*` group, and a comment above
+the groups states the policy:
+
+- `:allow` gives each AI crawler the rules every crawler has,
+  `Disallow: /api/`, plus `Allow: /api/agent/onboarding` and
+  `Allow: /api/openapi.json`. Those are the two public API documents
+  [llms.txt](#llmstxt) links.
+- `:disallow` gives each AI crawler `Disallow: /`.
+
+To change the policy or add a crawler, edit those two attributes. The test
+fails until it agrees with them.
 
 `robots.txt` does not disallow the noindex pages. A crawler sees a page's
 noindex only by fetching it, so a disallowed page could still be listed from
@@ -201,6 +219,33 @@ Every URL comes from `canonical_url/1`, so it is absolute.
 The changelog page advertises the feed by setting `:feed_path` and
 `:feed_title` in its `seo(:changelog)` clause. No other page sets them, so no
 other page links a feed. The feed is not in the sitemap, which lists pages.
+
+## llms.txt
+
+`/llms.txt` summarises Stride for AI assistants, following the llms.txt
+convention: an H1 with the name, a blockquote summary, a paragraph of detail,
+then `##` sections of Markdown links, the last one named `Optional`.
+`KanbanWeb.SeoController` serves it as `text/plain` through the same `:seo`
+pipeline as `robots.txt`, and
+[`KanbanWeb.LlmsTxt`](../lib/kanban_web/llms_txt.ex) builds it.
+
+It links only pages that exist, so it never links one that has not shipped:
+
+- the guides and the API reference, from the `KanbanWeb.Docs` allow-list
+- the runtime pages, from `KanbanWeb.Integrations.all/0`
+- the public, unauthenticated API documents `/api/agent/onboarding` and
+  `/api/openapi.json`, and never an authenticated API path
+- a fixed list of public pages, whose descriptions come from
+  `KanbanWeb.PageController.seo/1`, and the plan prices from
+  `KanbanWeb.Pricing.plans/0`
+- the release feed at `/changelog/feed.xml`
+
+Every link comes from `canonical_url/1`, so it is absolute and points at the
+canonical site whatever host served the file. The file is the same on every
+host; on a host that is not indexable, `robots.txt` already disallows it. It
+is in English in every locale, like the guides it links. Before you add a
+sentence to it about what Stride does, check that the README, the docs or the
+pricing say so.
 
 ## The Open Graph image
 
@@ -263,7 +308,7 @@ page locale is.
 Never put a token, a session value, an email address or other personal data in
 a meta tag, the structured data, the sitemap or a log line. Every value in
 them is public and cached by crawlers, and the same holds for the changelog
-feed. That is why the canonical drops the query string and why a token path
+feed and `llms.txt`. That is why the canonical drops the query string and why a token path
 gets no canonical at all.
 
 ## The guard tests
@@ -288,6 +333,11 @@ These run as part of `mix test`:
 - [`test/kanban_web/controllers/seo_controller_test.exs`](../test/kanban_web/controllers/seo_controller_test.exs)
   covers `robots.txt` per host and fails until a new `PageController` page is
   in the sitemap.
+- [`test/kanban_web/controllers/llms_txt_test.exs`](../test/kanban_web/controllers/llms_txt_test.exs)
+  covers `/llms.txt` and the AI crawler groups in `robots.txt`. It fails when a
+  link in `llms.txt` is not absolute or does not answer 200, when it links an
+  authenticated API path, and when the groups do not follow `@ai_crawlers` and
+  `@ai_crawler_policy`.
 - [`test/kanban_web/controllers/changelog_feed_test.exs`](../test/kanban_web/controllers/changelog_feed_test.exs)
   covers the changelog parse, the feed's Atom shape and escaping, and the
   `rel="alternate"` link. It fails when the page and the feed list different

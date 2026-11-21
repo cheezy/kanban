@@ -146,7 +146,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Dark Mode Contract](dark-mode-contract.md) — Theme tokens, prohibited patterns and the dark-mode scanner.
 - [Local Dates and Times](local-time.md) — How every page formats an absolute date or time in the viewer's zone and language, and how to add a style or locale.
 - [Dates and Times](dates-and-times.md) — The rule that every shown date or time goes through `KanbanWeb.LocalTime`, the guard test that enforces it, and its allow-list.
-- [Search and Social Tags](seo.md) — How a page sets its title, description and noindex, how canonical, robots.txt and the sitemap work per host, the Open Graph image, and how structured data is escaped.
+- [Search and Social Tags](seo.md) — How a page sets its title, description and noindex, how canonical, robots.txt and its AI crawler policy, the sitemap and llms.txt work, the Open Graph image, and how structured data is escaped.
 - [Publishing Guides on the Site](docs-site.md) — Which guides are published at `/docs`, how they are copied, rendered and link-rewritten, and how to publish another one.
 - [Agent Integration Pages](integrations-pages.md) — The `/integrations` page for each agent runtime, where its install commands come from, the test that checks them against the plugin READMEs, and how to update one.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.

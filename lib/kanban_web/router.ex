@@ -160,6 +160,8 @@ defmodule KanbanWeb.Router do
     # The Atom feed of releases (W2896). Under :seo, not :browser, whose
     # accepts plug would refuse an Accept of application/atom+xml.
     get "/changelog/feed.xml", SeoController, :changelog_feed
+    # The llms.txt summary for AI assistants (W2900).
+    get "/llms.txt", SeoController, :llms_txt
   end
 
   scope "/", KanbanWeb do

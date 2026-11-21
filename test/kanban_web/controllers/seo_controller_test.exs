@@ -1,11 +1,13 @@
 defmodule KanbanWeb.SeoControllerTest do
   @moduledoc """
-  Guards /robots.txt per host and /sitemap.xml (W2891).
+  Guards /robots.txt per host and /sitemap.xml (W2891), and the headers
+  /llms.txt shares with them (W2900).
   """
   use KanbanWeb.ConnCase, async: true
 
   alias KanbanWeb.Endpoint
   alias KanbanWeb.ResourcesLive.HowToData
+  alias KanbanWeb.RobotsTxt
   alias KanbanWeb.SeoController
   alias KanbanWeb.SeoXML
   alias KanbanWeb.TokenPaths
@@ -45,8 +47,11 @@ defmodule KanbanWeb.SeoControllerTest do
          %{conn: conn} do
       conn = conn |> canonical() |> get(~p"/robots.txt")
 
-      assert response(conn, 200) ==
-               "User-agent: *\nDisallow: /api/\n\nSitemap: #{Endpoint.url()}/sitemap.xml\n"
+      body = response(conn, 200)
+
+      assert String.starts_with?(body, "User-agent: *\nDisallow: /api/\n\n")
+      assert String.ends_with?(body, "\n\nSitemap: #{Endpoint.url()}/sitemap.xml\n")
+      assert body == RobotsTxt.canonical()
 
       assert response_content_type(conn, :text) =~ "text/plain"
     end
@@ -144,8 +149,9 @@ defmodule KanbanWeb.SeoControllerTest do
   end
 
   describe "HEAD, caching and the static file" do
-    test "HEAD /robots.txt and HEAD /sitemap.xml answer 200 with no body", %{conn: conn} do
-      for path <- ["/robots.txt", "/sitemap.xml"] do
+    test "HEAD /robots.txt, HEAD /sitemap.xml and HEAD /llms.txt answer 200 with no body",
+         %{conn: conn} do
+      for path <- ["/robots.txt", "/sitemap.xml", "/llms.txt"] do
         conn = head(conn, path)
 
         assert response(conn, 200) == ""
@@ -154,13 +160,13 @@ defmodule KanbanWeb.SeoControllerTest do
     end
 
     test "the response sets no cookie", %{conn: conn} do
-      for path <- [~p"/robots.txt", ~p"/sitemap.xml"] do
+      for path <- [~p"/robots.txt", ~p"/sitemap.xml", ~p"/llms.txt"] do
         assert get_resp_header(get(conn, path), "set-cookie") == []
       end
     end
 
     test "the responses carry a content security policy that allows nothing", %{conn: conn} do
-      for path <- [~p"/robots.txt", ~p"/sitemap.xml"] do
+      for path <- [~p"/robots.txt", ~p"/sitemap.xml", ~p"/llms.txt"] do
         assert get_resp_header(get(conn, path), "content-security-policy") ==
                  ["default-src 'none'; frame-ancestors 'none'"]
       end
