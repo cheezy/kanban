@@ -264,6 +264,31 @@ relative image. A page's own image carries no width, height or alt, since
 those describe the default image. A value it cannot make absolute, such as a
 protocol-relative `//host/...`, falls back to the default.
 
+Each how-to, each `/docs` page and each `/integrations` runtime page has its
+own image showing the page's title on the Stride background, so a shared link
+says what it points at. `KanbanWeb.OgImages.pages/0` lists them,
+`KanbanWeb.OgImages.svg/1` fills `priv/og/template.svg` with one page's escaped
+title, wrapped onto at most three lines, and `KanbanWeb.OgImages.path/2` gives
+the `/images/og/<kind>/<slug>.png` path that `ResourcesLive.Show`,
+`DocsController.show` and `IntegrationsController.show` assign. Every other
+page, the three index pages included, keeps the default. The images are in
+English only, one per page, whatever the visitor's locale.
+
+The PNGs are generated once and committed under `priv/static/images/og/how-to`,
+`docs` and `integrations`; nothing is drawn at request time. Regenerate them
+after adding, renaming or retitling a how-to, a docs page or a runtime, or
+after changing the template:
+
+```bash
+MIX_ENV=test mix kanban.og_images
+```
+
+The task needs `rsvg-convert` from librsvg (`brew install librsvg`, or
+`apt-get install librsvg2-bin`) and stops with a message naming librsvg when it
+is missing. Commit the PNGs it writes and keep each one under 80 KB, since every
+image ships in every release. `test/kanban_web/og_images_test.exs` fails when a
+page has no committed 1200x630 image.
+
 ## Structured data
 
 `SeoComponents.structured_data/1` renders a schema.org JSON-LD block. A page
@@ -345,6 +370,12 @@ These run as part of `mix test`:
   releases, or when an entry links to an `id` the page does not have.
 - [`test/kanban_web/controllers/og_image_test.exs`](../test/kanban_web/controllers/og_image_test.exs)
   covers the default and per-page images.
+- [`test/kanban_web/og_images_test.exs`](../test/kanban_web/og_images_test.exs)
+  covers the per-page image list, the title escaping and wrapping, and fails
+  when a how-to, docs page or runtime has no committed image.
+- [`test/mix/tasks/kanban/og_images_test.exs`](../test/mix/tasks/kanban/og_images_test.exs)
+  covers `mix kanban.og_images`, with the converter stubbed so it runs without
+  librsvg.
 - [`test/kanban_web/components/structured_data_test.exs`](../test/kanban_web/components/structured_data_test.exs)
   covers the JSON-LD blocks and their escaping.
 

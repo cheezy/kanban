@@ -1076,4 +1076,29 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert Show.format_tag("developer") == "Developer"
     end
   end
+
+  describe "link-preview image (W2904)" do
+    defp og_image(conn, path) do
+      conn
+      |> get(path)
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query(~s(head meta[property="og:image"]))
+      |> LazyHTML.attribute("content")
+    end
+
+    test "a how-to page sets og:image to its own image", %{conn: conn} do
+      [image] = og_image(conn, ~p"/resources/creating-your-first-board")
+
+      assert image =~ "/images/og/how-to/creating-your-first-board"
+      assert image =~ ~r/\.png(\?.*)?\z/
+    end
+
+    test "an unknown guide and the index keep the default image", %{conn: conn} do
+      for path <- [~p"/resources/nonexistent-guide", ~p"/resources"] do
+        [image] = og_image(conn, path)
+        assert image =~ "/images/og/stride-og"
+      end
+    end
+  end
 end

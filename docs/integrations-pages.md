@@ -76,7 +76,9 @@ its README's install section as a fixture and add the repository to the
 section map in `KanbanWeb.PluginReadme`. The sitemap, the index and the footer
 link pick the runtime up with no further step. Then update the runtime count in
 the tests that pin it, and the index page's meta description, which names every
-runtime.
+runtime. Finally, generate its link-preview image with
+`MIX_ENV=test mix kanban.og_images` and commit the PNG; see "The Open Graph
+image" in [Search and Social Tags](seo.md).
 
 Claim only what the plugin's README says it does, and link only to the
 official Stride repositories and marketplaces. The catalog test fails on any

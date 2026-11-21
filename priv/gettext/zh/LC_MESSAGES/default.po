@@ -5779,16 +5779,6 @@ msgstr "为什么、做什么、在哪里、验收标准、测试策略、安全
 msgid "A few features"
 msgstr "一些功能"
 
-#: lib/kanban_web/components/marketing_components.ex
-#, elixir-autogen, elixir-format
-msgid "Free for you and your teams · self-hosting options available"
-msgstr "对你和你的团队免费 · 支持自托管"
-
-#: lib/kanban_web/components/marketing_closing.ex
-#, elixir-autogen, elixir-format
-msgid "Free for you and your teams. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
-msgstr "对你和你的团队免费。任意 agent 都可以接入 — Claude、Copilot、Gemini、Codex、OpenCode,或你自己的。"
-
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
@@ -5813,11 +5803,6 @@ msgstr "Stride 看板视图"
 #, elixir-autogen, elixir-format
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "在你的项目文件夹里放一个 .stride.md,为你的 agent 获取一个 API token,然后观察循环在你自己的机器上运行。"
-
-#: lib/kanban_web/controllers/page_html/product.html.heex
-#, elixir-autogen, elixir-format
-msgid "Free for you and your teams."
-msgstr "对你和你的团队免费。"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex
 #, elixir-autogen, elixir-format
@@ -16002,6 +15987,7 @@ msgid "Stride releases"
 msgstr "Stride 版本发布"
 
 #: lib/kanban_web/controllers/docs_html/index.html.heex
+#: lib/kanban_web/live/resources_live/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "API reference"
 msgstr "API 参考"
@@ -16019,6 +16005,7 @@ msgstr "面包屑导航"
 
 #: lib/kanban_web/controllers/docs_html/index.html.heex
 #: lib/kanban_web/controllers/integrations_html/show.html.heex
+#: lib/kanban_web/live/resources_live/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Documentation"
 msgstr "文档"
@@ -16461,3 +16448,39 @@ msgstr "失败"
 msgctxt "hook result"
 msgid "passed"
 msgstr "通过"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Free for individuals and small teams · free to self-host"
+msgstr "个人和小团队免费 · 可免费自托管"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex
+#, elixir-autogen, elixir-format
+msgid "Free for individuals and small teams, and free to self-host."
+msgstr "个人和小团队免费，也可免费自托管。"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#, elixir-autogen, elixir-format
+msgid "Free for individuals and small teams, and free to self-host. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
+msgstr "个人和小团队免费，也可免费自托管。任意 agent 都可以接入 — Claude、Copilot、Gemini、Codex、OpenCode,或你自己的。"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "See pricing →"
+msgstr "查看定价 →"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Docs"
+msgstr "文档"
+
+#: lib/kanban_web/live/resources_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Guides for connecting your AI agents, hooks and MCP, and the REST API reference."
+msgstr "连接 AI 智能体、钩子和 MCP 的指南，以及 REST API 参考。"
+
+#: lib/kanban_web/live/resources_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the guides"
+msgstr "阅读指南"

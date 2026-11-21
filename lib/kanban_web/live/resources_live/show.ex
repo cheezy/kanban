@@ -9,6 +9,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
 
   import KanbanWeb.ResourcesLive.Components
 
+  alias KanbanWeb.OgImages
   alias KanbanWeb.ResourcesLive.HowToData
   alias KanbanWeb.ResourcesLive.Seo
 
@@ -32,6 +33,7 @@ defmodule KanbanWeb.ResourcesLive.Show do
     socket
     |> assign(:page_title, how_to.title)
     |> assign(:meta_description, Seo.how_to_meta_description(how_to))
+    |> assign(:og_image, OgImages.path(:how_to, how_to.id))
     |> assign(:how_to, how_to)
     |> assign(:prev_how_to, prev_how_to)
     |> assign(:next_how_to, next_how_to)

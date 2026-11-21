@@ -5791,16 +5791,6 @@ msgstr "Por qué, qué, dónde, criterios de aceptación, estrategia de pruebas,
 msgid "A few features"
 msgstr "Algunas funciones"
 
-#: lib/kanban_web/components/marketing_components.ex
-#, elixir-autogen, elixir-format
-msgid "Free for you and your teams · self-hosting options available"
-msgstr "Gratis para ti y tu equipo · opciones de autoalojamiento disponibles"
-
-#: lib/kanban_web/components/marketing_closing.ex
-#, elixir-autogen, elixir-format
-msgid "Free for you and your teams. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
-msgstr "Gratis para ti y tu equipo. Trae cualquier agente — Claude, Copilot, Gemini, Codex, OpenCode o el tuyo propio."
-
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Every surface is built so humans and agents can both work the board without one getting in the other's way. Here is what each piece looks like."
@@ -5825,11 +5815,6 @@ msgstr "Vista de tableros de Stride"
 #, elixir-autogen, elixir-format
 msgid "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
 msgstr "Coloca un .stride.md en la carpeta de tu proyecto, obtén un token de API para tu agente y observa cómo el ciclo se ejecuta en tu propia máquina."
-
-#: lib/kanban_web/controllers/page_html/product.html.heex
-#, elixir-autogen, elixir-format
-msgid "Free for you and your teams."
-msgstr "Gratis para ti y tu equipo."
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex
 #, elixir-autogen, elixir-format
@@ -16090,6 +16075,7 @@ msgid "Stride releases"
 msgstr "Versiones de Stride"
 
 #: lib/kanban_web/controllers/docs_html/index.html.heex
+#: lib/kanban_web/live/resources_live/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "API reference"
 msgstr "Referencia de la API"
@@ -16107,6 +16093,7 @@ msgstr "Ruta de navegación"
 
 #: lib/kanban_web/controllers/docs_html/index.html.heex
 #: lib/kanban_web/controllers/integrations_html/show.html.heex
+#: lib/kanban_web/live/resources_live/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Documentation"
 msgstr "Documentación"
@@ -16549,3 +16536,39 @@ msgstr "fallido"
 msgctxt "hook result"
 msgid "passed"
 msgstr "superado"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Free for individuals and small teams · free to self-host"
+msgstr "Gratis para personas y equipos pequeños · gratis para autoalojar"
+
+#: lib/kanban_web/controllers/page_html/product.html.heex
+#, elixir-autogen, elixir-format
+msgid "Free for individuals and small teams, and free to self-host."
+msgstr "Gratis para personas y equipos pequeños, y gratis para autoalojar."
+
+#: lib/kanban_web/components/marketing_closing.ex
+#, elixir-autogen, elixir-format
+msgid "Free for individuals and small teams, and free to self-host. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
+msgstr "Gratis para personas y equipos pequeños, y gratis para autoalojar. Trae cualquier agente — Claude, Copilot, Gemini, Codex, OpenCode o el tuyo propio."
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "See pricing →"
+msgstr "Ver precios →"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Docs"
+msgstr "Docs"
+
+#: lib/kanban_web/live/resources_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Guides for connecting your AI agents, hooks and MCP, and the REST API reference."
+msgstr "Guías para conectar tus agentes de IA, hooks y MCP, y la referencia de la API REST."
+
+#: lib/kanban_web/live/resources_live/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the guides"
+msgstr "Leer las guías"

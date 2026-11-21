@@ -84,6 +84,9 @@ guide links to.
    `cp docs/MCP.md priv/docs/MCP.md`.
 3. For a new guide, add an entry to `@catalog` with a lower-case hyphenated
    slug and a unique English description of 70 to 160 characters.
+4. For a new guide, or a changed title, regenerate the link-preview images
+   with `MIX_ENV=test mix kanban.og_images` and commit the PNG it writes; see
+   "The Open Graph image" in [Search and Social Tags](seo.md).
 
 `test/kanban_web/docs_test.exs` fails when a copy under `priv/docs` differs
 from its source in `docs/`, and prints the `cp` command for each stale file. It

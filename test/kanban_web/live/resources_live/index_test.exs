@@ -374,4 +374,36 @@ defmodule KanbanWeb.ResourcesLive.IndexTest do
       assert Index.format_tag("api-authentication-guide") == "API Authentication Guide"
     end
   end
+
+  describe "Documentation card (W2904)" do
+    test "the Resources page shows a Documentation card linking to /docs and /docs#api-reference",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/resources")
+
+      assert has_element?(view, "[data-docs-card] h2", "Documentation")
+      assert has_element?(view, ~s([data-docs-card] a[href="/docs"]), "Read the guides")
+
+      assert has_element?(
+               view,
+               ~s([data-docs-card] a[href="/docs#api-reference"]),
+               "API reference"
+             )
+
+      # The card comes before the search bar and the guide grid.
+      html = render(view)
+      assert :binary.match(html, "data-docs-card") < :binary.match(html, ~s(name="query"))
+    end
+
+    test "the Documentation card text renders translated under a non-English locale",
+         %{conn: conn} do
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> live(~p"/resources")
+
+      assert has_element?(view, "[data-docs-card] h2", "Dokumentation")
+      assert has_element?(view, ~s([data-docs-card] a[href="/docs"]), "Anleitungen lesen")
+      assert has_element?(view, "[data-docs-card] p", "REST-API-Referenz")
+    end
+  end
 end

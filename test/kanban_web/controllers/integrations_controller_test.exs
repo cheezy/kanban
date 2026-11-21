@@ -186,4 +186,32 @@ defmodule KanbanWeb.IntegrationsControllerTest do
       assert hrefs(html, "footer a[href='/integrations']") != []
     end
   end
+
+  describe "link-preview image (W2904)" do
+    defp og_image(conn) do
+      conn
+      |> html_response(200)
+      |> query(~s(head meta[property="og:image"]))
+      |> LazyHTML.attribute("content")
+    end
+
+    test "a runtime page sets og:image to its own image", %{conn: conn} do
+      for slug <- Integrations.slugs() do
+        [image] = conn |> get(~p"/integrations/#{slug}") |> og_image()
+        assert image =~ "/images/og/integrations/#{slug}"
+      end
+    end
+
+    test "a French visitor shares the same English image", %{conn: conn} do
+      [english] = conn |> get(~p"/integrations/codex") |> og_image()
+      [french] = conn |> in_locale("fr") |> get(~p"/integrations/codex") |> og_image()
+
+      assert french == english
+    end
+
+    test "the integrations index keeps the default image", %{conn: conn} do
+      [image] = conn |> get(~p"/integrations") |> og_image()
+      assert image =~ "/images/og/stride-og"
+    end
+  end
 end

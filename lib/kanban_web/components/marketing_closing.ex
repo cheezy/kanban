@@ -63,7 +63,7 @@ defmodule KanbanWeb.MarketingClosing do
       </h2>
       <p style="margin: 14px auto 0; font-size: 15px; color: var(--ink-2); max-width: 540px;">
         {gettext(
-          "Free for you and your teams. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
+          "Free for individuals and small teams, and free to self-host. Bring any agent — Claude, Copilot, Gemini, Codex, OpenCode, your own."
         )}
       </p>
       <div class="flex flex-col md:flex-row md:justify-center gap-3 mt-5 md:mt-[22px]">
@@ -93,14 +93,15 @@ defmodule KanbanWeb.MarketingClosing do
 
   @doc """
   Renders the landing-page footer: logo + wordmark + domain + copyright on
-  the left, right-aligned links on the right: Integrations, Privacy,
+  the left, right-aligned links on the right: Integrations, Docs, Privacy,
   Security, Blog and GitHub.
 
   Based on lines ~374-391 of `landing.jsx`, whose links are Privacy,
   Security, Status and GitHub. It departs from the design in these ways:
 
     * The Integrations link comes first; the design does not have it and
-      W2899 added it.
+      W2899 added it. The Docs link follows it; W2904 added it so the
+      `/docs` guides are reachable from every marketing page.
     * The Blog link sits between Security and GitHub; the design does not
       have it and W2895 added it.
     * There is no Status link (the design's line ~390), as there is no
@@ -139,6 +140,14 @@ defmodule KanbanWeb.MarketingClosing do
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {gettext("Integrations")}
+        </.link>
+        <.link
+          href={~p"/docs"}
+          target="_blank"
+          rel="noopener"
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {gettext("Docs")}
         </.link>
         <.link
           href={~p"/privacy"}

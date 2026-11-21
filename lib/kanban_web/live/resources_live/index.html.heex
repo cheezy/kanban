@@ -21,6 +21,54 @@
     </header>
 
     <div class="px-7 pt-[18px] pb-7 flex flex-col gap-[18px]">
+      <section
+        data-docs-card
+        class="p-[18px] flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6"
+        style={[
+          "background: var(--surface);",
+          "border: 1px solid var(--line);",
+          "border-radius: var(--r-lg);",
+          "box-shadow: var(--shadow-sm);"
+        ]}
+      >
+        <div class="flex items-start gap-3 flex-1 min-w-0">
+          <span class="shrink-0 mt-0.5 flex" style="color: var(--stride-orange-ink);">
+            <.icon name="hero-book-open" class="h-5 w-5" />
+          </span>
+          <div class="flex flex-col gap-1 min-w-0">
+            <h2
+              class="m-0 text-[14px] font-semibold tracking-tight"
+              style="color: var(--ink);"
+            >
+              {gettext("Documentation")}
+            </h2>
+            <p class="m-0 text-[12.5px]" style="color: var(--ink-2);">
+              {gettext(
+                "Guides for connecting your AI agents, hooks and MCP, and the REST API reference."
+              )}
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 pl-8 sm:pl-0">
+          <.link
+            href={~p"/docs"}
+            class="inline-flex items-center gap-1 text-[12.5px] font-medium no-underline hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style="color: var(--stride-orange-ink);"
+          >
+            {gettext("Read the guides")}
+            <.icon name="hero-arrow-right" class="h-3 w-3" />
+          </.link>
+          <.link
+            href={~p"/docs" <> "#api-reference"}
+            class="inline-flex items-center gap-1 text-[12.5px] font-medium no-underline hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style="color: var(--stride-orange-ink);"
+          >
+            {gettext("API reference")}
+            <.icon name="hero-arrow-right" class="h-3 w-3" />
+          </.link>
+        </div>
+      </section>
+
       <div class="flex flex-col gap-[14px]">
         <.search_bar value={@search_query} />
 

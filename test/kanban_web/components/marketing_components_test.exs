@@ -432,7 +432,25 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "Stride is an AI-native work management system"
 
       # Microcopy trust signal
-      assert html =~ "Free for you and your teams · self-hosting options available"
+      assert html =~ "Free for individuals and small teams · free to self-host"
+      refute html =~ "Free for you and your teams"
+    end
+
+    test "the trust line links to the pricing page" do
+      assigns = %{current_scope: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_hero current_scope={@current_scope} />
+        """)
+
+      link =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query(~s|a[href="/pricing"]|)
+
+      assert Enum.count(link) == 1
+      assert link |> LazyHTML.text() |> String.trim() == "See pricing →"
     end
 
     test "unauthenticated CTA is Start now and links to /users/register" do
@@ -820,7 +838,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "color: var(--stride-orange-ink);"
 
       # Sub-copy
-      assert html =~ "Free for you and your teams"
+      assert html =~ "Free for individuals and small teams, and free to self-host."
       assert html =~ "Bring any agent"
     end
 
@@ -988,6 +1006,60 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # The legal links stay in the same tab
       refute html =~ ~s|href="/privacy" target="_blank"|
       refute html =~ ~s|href="/security" target="_blank"|
+    end
+  end
+
+  describe "the Docs links (W2904)" do
+    test "the footer renders a Docs link to /docs that opens in a new tab like Integrations" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      assert html =~ ~s|href="/docs" target="_blank" rel="noopener"|
+      assert html =~ "Docs"
+      assert href_count(html, "/docs") == 1
+
+      # Beside Integrations, before the legal links
+      assert :binary.match(html, ~s|href="/docs"|) > :binary.match(html, ~s|href="/integrations"|)
+      assert :binary.match(html, ~s|href="/docs"|) < :binary.match(html, ~s|href="/privacy"|)
+    end
+
+    test "the mobile menu renders a Docs link to /docs after Resources and the desktop nav does not" do
+      for scope <- [nil, %{user: %{email: "member@example.com", type: :member}}] do
+        assigns = %{current_scope: scope}
+
+        html =
+          rendered_to_string(~H"""
+          <MarketingComponents.marketing_nav current_scope={@current_scope} />
+          """)
+
+        # Mobile menu only: the desktop nav keeps its six items.
+        assert href_count(html, "/docs") == 1
+        refute html =~ ~s|href="/docs" target="_blank"|
+
+        [{docs_at, _}] = :binary.matches(html, ~s|href="/docs"|)
+        {resources_at, _} = html |> :binary.matches(~s|href="/resources"|) |> List.last()
+        {about_at, _} = html |> :binary.matches(~s|href="/about"|) |> List.last()
+
+        assert resources_at < docs_at
+        assert docs_at < about_at
+      end
+    end
+
+    test "the Docs link text is translated" do
+      Gettext.put_locale(KanbanWeb.Gettext, "de")
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      assert html =~ "Doku"
     end
   end
 

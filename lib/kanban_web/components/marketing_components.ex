@@ -296,6 +296,12 @@ defmodule KanbanWeb.MarketingComponents do
       {gettext("Resources")}
     </.link>
     <.link
+      href={~p"/docs"}
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("Docs")}
+    </.link>
+    <.link
       href={~p"/about"}
       class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
     >
@@ -479,7 +485,14 @@ defmodule KanbanWeb.MarketingComponents do
           style="color: var(--ink-3);"
         >
           <.icon name="hero-check" class="w-2.5 h-2.5" />
-          {gettext("Free for you and your teams · self-hosting options available")}
+          {gettext("Free for individuals and small teams · free to self-host")} ·
+          <.link
+            navigate={~p"/pricing"}
+            class="underline underline-offset-2 hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style="color: var(--ink-2);"
+          >
+            {gettext("See pricing →")}
+          </.link>
         </span>
       </div>
 

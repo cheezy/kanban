@@ -10,6 +10,7 @@ defmodule KanbanWeb.IntegrationsController do
   use KanbanWeb, :controller
 
   alias KanbanWeb.Integrations
+  alias KanbanWeb.OgImages
 
   plug :put_root_layout, [html: {KanbanWeb.Layouts, :marketing}] when action in [:index, :show]
 
@@ -30,7 +31,8 @@ defmodule KanbanWeb.IntegrationsController do
         render(conn, :show,
           runtime: runtime,
           page_title: Integrations.page_title(runtime),
-          meta_description: Integrations.meta_description(runtime)
+          meta_description: Integrations.meta_description(runtime),
+          og_image: OgImages.path(:integrations, runtime.slug)
         )
 
       :error ->

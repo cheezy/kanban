@@ -9,6 +9,7 @@ defmodule KanbanWeb.DocsController do
   use KanbanWeb, :controller
 
   alias KanbanWeb.Docs
+  alias KanbanWeb.OgImages
 
   plug :put_root_layout, [html: {KanbanWeb.Layouts, :marketing}] when action in [:index, :show]
 
@@ -30,7 +31,8 @@ defmodule KanbanWeb.DocsController do
         render(conn, :show,
           page: page,
           page_title: page.page_title,
-          meta_description: page.description
+          meta_description: page.description,
+          og_image: OgImages.path(:docs, page.slug)
         )
 
       :error ->

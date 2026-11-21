@@ -213,4 +213,27 @@ defmodule KanbanWeb.DocsControllerTest do
     refute MapSet.member?(published, path) and path != page.source,
            "/docs/#{slug} sends #{href} to GitHub"
   end
+
+  describe "link-preview image (W2904)" do
+    defp og_image(conn, path) do
+      conn
+      |> get(path)
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query(~s(head meta[property="og:image"]))
+      |> LazyHTML.attribute("content")
+    end
+
+    test "a docs guide sets og:image to its own image", %{conn: conn} do
+      for slug <- ["ai-workflow", "api-get-boards"] do
+        [image] = og_image(conn, ~p"/docs/#{slug}")
+        assert image =~ "/images/og/docs/#{slug}"
+      end
+    end
+
+    test "the docs index keeps the default image", %{conn: conn} do
+      [image] = og_image(conn, ~p"/docs")
+      assert image =~ "/images/og/stride-og"
+    end
+  end
 end
