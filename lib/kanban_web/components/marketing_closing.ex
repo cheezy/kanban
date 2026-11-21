@@ -4,8 +4,9 @@ defmodule KanbanWeb.MarketingClosing do
   and the footer. Lives in its own module so the parent
   `KanbanWeb.MarketingComponents` stays under the 500-line guideline.
 
-  Mirrors lines ~347-391 of
-  `design_handoff_stride/design_source/screens/landing.jsx`.
+  Based on the CTA and footer at lines ~347-391 of
+  `design_handoff_stride/design_source/screens/landing.jsx`. Neither is an
+  exact copy: each component's doc lists where it departs from the design.
 
   Render inside the `.stride-marketing` CSS scope so the design tokens
   (`--ink`, `--ink-2`, `--ink-3`, `--line`, `--stride-orange`,
@@ -35,7 +36,8 @@ defmodule KanbanWeb.MarketingClosing do
   "approving them.", sub-copy, and a single centered dark "Start now" CTA
   (swaps to "Go to my boards" when the user is signed in).
 
-  Mirrors lines ~347-371 of `landing.jsx`.
+  Based on lines ~347-371 of `landing.jsx`, with its own sub-copy and one
+  CTA where the design has two buttons ("Start free" and "Talk to a human").
 
   ## Examples
 
@@ -90,12 +92,23 @@ defmodule KanbanWeb.MarketingClosing do
   end
 
   @doc """
-  Renders the landing-page footer: gradient logo + wordmark + domain +
-  copyright on the left, right-aligned links on the right: the agent
-  integrations (W2899), then the legal and GitHub links.
+  Renders the landing-page footer: logo + wordmark + domain + copyright on
+  the left, right-aligned links on the right: Integrations, Privacy,
+  Security, Blog and GitHub.
 
-  Follows lines ~374-391 of `landing.jsx`, apart from the Integrations link,
-  which the design does not have and W2899 added.
+  Based on lines ~374-391 of `landing.jsx`, whose links are Privacy,
+  Security, Status and GitHub. It departs from the design in these ways:
+
+    * The Integrations link comes first; the design does not have it and
+      W2899 added it.
+    * The Blog link sits between Security and GitHub; the design does not
+      have it and W2895 added it.
+    * There is no Status link (the design's line ~390), as there is no
+      status page.
+    * The logo is the `abstract-s-motion.svg` image, not the design's
+      orange-to-violet "S" tile.
+    * Below `md` it stacks into a column and the links wrap; the design is
+      one desktop row.
 
   ## Examples
 
