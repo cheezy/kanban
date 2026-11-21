@@ -4426,6 +4426,7 @@ msgstr "Zielfortschritt nach Status der Unterelemente"
 msgid "unassigned"
 msgstr "Nicht zugewiesen"
 
+#: lib/kanban_web/live/goal_live/live_updates.ex
 #: lib/kanban_web/live/goal_live/show.ex
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
@@ -16071,3 +16072,8 @@ msgstr "%{amount} CAD"
 #, elixir-autogen, elixir-format
 msgid "Audit log streaming and signed exports"
 msgstr "Audit-Protokoll-Streaming und signierte Exporte"
+
+#: lib/kanban_web/live/goal_live/live_updates.ex
+#, elixir-autogen, elixir-format
+msgid "This goal was deleted."
+msgstr "Dieses Ziel wurde gelöscht."

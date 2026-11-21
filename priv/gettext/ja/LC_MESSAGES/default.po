@@ -4419,6 +4419,7 @@ msgstr "子要素の状態別ゴール進捗"
 msgid "unassigned"
 msgstr "未割り当て"
 
+#: lib/kanban_web/live/goal_live/live_updates.ex
 #: lib/kanban_web/live/goal_live/show.ex
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
@@ -15975,3 +15976,8 @@ msgstr "%{amount}カナダドル"
 #, elixir-autogen, elixir-format
 msgid "Audit log streaming and signed exports"
 msgstr "監査ログのストリーミングと署名付きエクスポート"
+
+#: lib/kanban_web/live/goal_live/live_updates.ex
+#, elixir-autogen, elixir-format
+msgid "This goal was deleted."
+msgstr "このゴールは削除されました。"

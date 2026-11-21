@@ -4419,6 +4419,7 @@ msgstr "按子项状态显示的目标进度"
 msgid "unassigned"
 msgstr "未分配"
 
+#: lib/kanban_web/live/goal_live/live_updates.ex
 #: lib/kanban_web/live/goal_live/show.ex
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
@@ -15978,3 +15979,8 @@ msgstr "%{amount} 加元"
 #, elixir-autogen, elixir-format
 msgid "Audit log streaming and signed exports"
 msgstr "审计日志流式传输和签名导出"
+
+#: lib/kanban_web/live/goal_live/live_updates.ex
+#, elixir-autogen, elixir-format
+msgid "This goal was deleted."
+msgstr "此目标已被删除。"

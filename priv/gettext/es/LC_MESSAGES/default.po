@@ -4426,6 +4426,7 @@ msgstr "Progreso del objetivo por estado de hijos"
 msgid "unassigned"
 msgstr "sin asignar"
 
+#: lib/kanban_web/live/goal_live/live_updates.ex
 #: lib/kanban_web/live/goal_live/show.ex
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
@@ -16066,3 +16067,8 @@ msgstr "%{amount} CAD"
 #, elixir-autogen, elixir-format
 msgid "Audit log streaming and signed exports"
 msgstr "Transmisión del registro de auditoría y exportaciones firmadas"
+
+#: lib/kanban_web/live/goal_live/live_updates.ex
+#, elixir-autogen, elixir-format
+msgid "This goal was deleted."
+msgstr "Este objetivo se eliminó."

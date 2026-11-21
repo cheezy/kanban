@@ -921,4 +921,357 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       overrides
     )
   end
+
+  describe "live updates (D457)" do
+    setup [:register_and_log_in_user, :live_goal]
+
+    test "a child moved to another column moves to that section without a reload", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      assert child_in_section?(view, :backlog, ctx.child)
+      trace_refreshes(view)
+
+      {:ok, _moved} = Tasks.move_task(ctx.child, ctx.doing, 0)
+
+      await_refresh(view)
+      assert child_in_section?(view, :in_progress, ctx.child)
+      refute child_in_section?(view, :backlog, ctx.child)
+    end
+
+    test "a new child task of the goal appears without a reload", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      assert "board:#{ctx.board.id}" in Registry.keys(Kanban.PubSub, view.pid)
+      trace_refreshes(view)
+
+      {:ok, added} =
+        Tasks.create_task(ctx.backlog, %{
+          "title" => "D457 Added Child",
+          "type" => "work",
+          "parent_id" => ctx.goal.id,
+          "created_by_id" => ctx.user.id
+        })
+
+      html = await_refresh(view)
+      assert html =~ "D457 Added Child"
+      assert child_in_section?(view, :backlog, added)
+    end
+
+    test "the goal's own change updates the progress header", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      {:ok, _goal} = Tasks.update_task(ctx.goal, %{title: "D457 Renamed Goal"})
+
+      await_refresh(view)
+      assert has_element?(view, "[data-goal-progress-header] h1", "D457 Renamed Goal")
+    end
+
+    test "every surface agrees after a reload", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      assert has_element?(view, "[data-goal-progress-header]", "0 of 1 complete")
+      trace_refreshes(view)
+
+      {:ok, _moved} = Tasks.move_task(ctx.child, ctx.done, 0)
+
+      await_refresh(view)
+      assert has_element?(view, "[data-goal-progress-header]", "1 of 1 complete")
+      assert has_element?(view, "[data-goal-progress-header]", "100%")
+      assert child_in_section?(view, :completed, ctx.child)
+      assert has_element?(view, "[data-goal-sidebar]", "1/1")
+      refute has_element?(view, "[data-goal-sidebar]", "0/1")
+      activity_before = view |> element("[data-goal-activity]") |> render()
+
+      {:ok, _goal} = ctx.goal.id |> Tasks.get_task!() |> Tasks.update_task(%{priority: :critical})
+
+      await_refresh(view)
+      refute view |> element("[data-goal-activity]") |> render() == activity_before
+    end
+
+    test "two viewers of the same goal page both update", ctx do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+
+      {:ok, owner_view, _html} = live(ctx.conn, goal_path(ctx))
+      {:ok, member_view, _html} = live(log_in_user(build_conn(), member), goal_path(ctx))
+      trace_refreshes(owner_view)
+      trace_refreshes(member_view)
+
+      {:ok, _moved} = Tasks.move_task(ctx.child, ctx.doing, 0)
+
+      for view <- [owner_view, member_view] do
+        await_refresh(view)
+        assert child_in_section?(view, :in_progress, ctx.child)
+      end
+    end
+
+    test "a change to a task outside the goal does not reload the goal", ctx do
+      outsider =
+        task_fixture(ctx.backlog, %{title: "D457 Outsider", created_by_id: ctx.user.id})
+
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      {:ok, _moved} = Tasks.move_task(outsider, ctx.doing, 0)
+      {:ok, _updated} = Tasks.update_task(outsider, %{title: "D457 Outsider Renamed"})
+
+      refute_refresh(view)
+      refute render(view) =~ "D457 Outsider"
+    end
+
+    test "deleting the goal redirects to the board with a translated flash", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+
+      {:ok, _deleted} = ctx.goal.id |> Tasks.get_task!() |> Tasks.delete_task()
+
+      board_path = ~p"/boards/#{ctx.board}"
+      assert %{"info" => "This goal was deleted."} = assert_redirect(view, board_path, 1_000)
+
+      for locale <- ~w(de es fr ja pt zh) do
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            Gettext.gettext(KanbanWeb.Gettext, "This goal was deleted.")
+          end)
+
+        refute translated == "This goal was deleted.", "no #{locale} translation"
+      end
+    end
+
+    test "deleting the goal's last child, which deletes the goal, redirects to the board", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+
+      {:ok, _deleted} = ctx.child.id |> Tasks.get_task!() |> Tasks.delete_task()
+
+      assert %{"info" => "This goal was deleted."} =
+               assert_redirect(view, ~p"/boards/#{ctx.board}", 1_000)
+    end
+
+    test "deleting the last child shows the empty state", ctx do
+      {:ok, archived} =
+        Tasks.create_task(ctx.backlog, %{
+          "title" => "D457 Archived Child",
+          "type" => "work",
+          "parent_id" => ctx.goal.id,
+          "created_by_id" => ctx.user.id
+        })
+
+      {:ok, _archived} = Tasks.archive_task(archived)
+
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      refute render(view) =~ "This goal has no children yet."
+      trace_refreshes(view)
+
+      {:ok, _deleted} = ctx.child.id |> Tasks.get_task!() |> Tasks.delete_task()
+
+      html = await_refresh(view)
+      assert html =~ "This goal has no children yet."
+      refute has_element?(view, "[data-goal-child-row]")
+    end
+
+    test "an archived child leaves the page without a reload", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      {:ok, _archived} = ctx.child.id |> Tasks.get_task!() |> Tasks.archive_task()
+
+      html = await_refresh(view)
+      assert html =~ "This goal has no children yet."
+    end
+
+    test "a child moved to another goal leaves this goal's page", ctx do
+      {:ok, %{goal: other_goal}} =
+        Tasks.create_goal_with_tasks(
+          ctx.backlog,
+          %{"title" => "D457 Other Goal", "created_by_id" => ctx.user.id},
+          [%{"title" => "D457 Other Child", "type" => "work", "created_by_id" => ctx.user.id}]
+        )
+
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^ctx.child.id)
+      |> Kanban.Repo.update_all(set: [parent_id: other_goal.id])
+
+      send(view.pid, {Kanban.Tasks, :task_updated, %{ctx.child | parent_id: other_goal.id}})
+
+      await_refresh(view)
+      refute has_element?(view, "[data-goal-child-row]")
+    end
+
+    test "a burst of child events reloads once and shows the final state", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^ctx.child.id)
+      |> Kanban.Repo.update_all(set: [column_id: ctx.done.id])
+
+      for event <- [:task_claimed, :task_updated, :task_moved, :task_completed, :task_updated] do
+        send(view.pid, {Kanban.Tasks, event, ctx.child})
+      end
+
+      send(view.pid, {:task_completed, ctx.child})
+
+      await_refresh(view)
+      refute_refresh(view)
+      assert child_in_section?(view, :completed, ctx.child)
+    end
+
+    test "both broadcast shapes, {Kanban.Tasks, event, task} and {event, task}, refresh the page",
+         ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      move_quietly(ctx.child, ctx.doing)
+      send(view.pid, {Kanban.Tasks, :task_moved, ctx.child})
+      await_refresh(view)
+      assert child_in_section?(view, :in_progress, ctx.child)
+
+      for {event, column} <- [
+            task_moved_to_review: ctx.review,
+            task_returned_to_doing: ctx.doing,
+            task_completed: ctx.done,
+            task_updated: ctx.backlog
+          ] do
+        move_quietly(ctx.child, column)
+        send(view.pid, {event, ctx.child})
+        await_refresh(view)
+        assert child_in_section?(view, section_for(column), ctx.child), "#{event}"
+      end
+    end
+
+    test "a column change reloads the sections", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      send(view.pid, {Kanban.Columns, :columns_changed, ctx.board.id})
+
+      await_refresh(view)
+      assert child_in_section?(view, :backlog, ctx.child)
+    end
+
+    test "unrelated board messages (labels, comments, agents) are ignored without crashing",
+         ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      for message <- [
+            {Kanban.Labels, :labels_changed, ctx.board.id},
+            {Kanban.Tasks.Comments, :comment_changed,
+             %{task_id: ctx.child.id, board_id: ctx.board.id}},
+            {Kanban.Attachments, :attachment_changed,
+             %{task_id: ctx.child.id, board_id: ctx.board.id}},
+            {:field_visibility_updated, %{}},
+            {:agent_activity, %{board_id: ctx.board.id}},
+            {Kanban.Tasks, :task_updated, %{board_id: ctx.board.id}},
+            :something_unexpected
+          ] do
+        send(view.pid, message)
+      end
+
+      refute_refresh(view)
+      assert render(view) =~ ctx.child.identifier
+    end
+
+    test "a member change that keeps access reloads the page", ctx do
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      trace_refreshes(view)
+
+      send(view.pid, {Kanban.Boards, :members_changed, ctx.board.id})
+
+      await_refresh(view)
+      assert render(view) =~ ctx.child.identifier
+    end
+
+    test "a user removed from the board is redirected to /boards", ctx do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+      member_conn = log_in_user(build_conn(), member)
+
+      {:ok, view, _html} = live(member_conn, goal_path(ctx))
+
+      {:ok, _} = Kanban.Boards.remove_user_from_board(ctx.board, member, ctx.user)
+
+      assert %{"error" => "Goal not found"} = assert_redirect(view, ~p"/boards", 1_000)
+    end
+
+    test "the static render does not subscribe; the connected mount does", ctx do
+      conn = get(ctx.conn, goal_path(ctx))
+      assert html_response(conn, 200) =~ "data-goal-show"
+      refute "board:#{ctx.board.id}" in Registry.keys(Kanban.PubSub, self())
+
+      {:ok, view, _html} = live(ctx.conn, goal_path(ctx))
+      assert "board:#{ctx.board.id}" in Registry.keys(Kanban.PubSub, view.pid)
+    end
+  end
+
+  describe "LiveUpdates.affects_goal?/2" do
+    alias KanbanWeb.GoalLive.LiveUpdates
+
+    test "affects_goal?/2 is true for the goal and its children only" do
+      view = %{goal: %{id: 10}, children: [%{id: 11}, %{id: 12}]}
+
+      assert LiveUpdates.affects_goal?(view, %{id: 10, parent_id: nil})
+      assert LiveUpdates.affects_goal?(view, %{id: 13, parent_id: 10})
+      assert LiveUpdates.affects_goal?(view, %{id: 11, parent_id: 99})
+      refute LiveUpdates.affects_goal?(view, %{id: 20, parent_id: nil})
+      refute LiveUpdates.affects_goal?(view, %{id: 21, parent_id: 99})
+      refute LiveUpdates.affects_goal?(view, %{task_id: 11, board_id: 1})
+      refute LiveUpdates.affects_goal?(view, 11)
+      refute LiveUpdates.affects_goal?(%{}, %{id: 10, parent_id: nil})
+    end
+  end
+
+  defp live_goal(%{user: user}) do
+    board = board_fixture(user)
+    backlog = column_fixture(board, %{name: "Backlog"})
+    doing = column_fixture(board, %{name: "Doing"})
+    review = column_fixture(board, %{name: "Review"})
+    done = column_fixture(board, %{name: "Done"})
+
+    {:ok, %{goal: goal, child_tasks: [child]}} =
+      Tasks.create_goal_with_tasks(
+        backlog,
+        %{"title" => "D457 Live Goal", "created_by_id" => user.id},
+        [%{"title" => "D457 Child", "type" => "work", "created_by_id" => user.id}]
+      )
+
+    %{
+      board: board,
+      backlog: backlog,
+      doing: doing,
+      review: review,
+      done: done,
+      goal: goal,
+      child: child
+    }
+  end
+
+  defp goal_path(ctx), do: ~p"/boards/#{ctx.board}/goals/#{ctx.goal.id}"
+
+  defp child_in_section?(view, section, child),
+    do: has_element?(view, "[data-goal-section=#{section}] [data-goal-child-row]", child.title)
+
+  defp section_for(%{name: "Backlog"}), do: :backlog
+  defp section_for(%{name: "Doing"}), do: :in_progress
+  defp section_for(%{name: "Review"}), do: :review
+  defp section_for(%{name: "Done"}), do: :completed
+
+  # Moves a child without broadcasting, so the test sends the broadcast itself.
+  defp move_quietly(child, column) do
+    from(t in Kanban.Tasks.Task, where: t.id == ^child.id)
+    |> Kanban.Repo.update_all(set: [column_id: column.id])
+  end
+
+  # The reload is a :refresh_goal message the view sends itself. Tracing what
+  # the view receives lets a test wait for exactly that reload and count it.
+  defp trace_refreshes(view), do: :erlang.trace(view.pid, true, [:receive])
+
+  defp await_refresh(view) do
+    pid = view.pid
+    assert_receive {:trace, ^pid, :receive, :refresh_goal}, 1_000
+    render(view)
+  end
+
+  defp refute_refresh(view) do
+    pid = view.pid
+    refute_receive {:trace, ^pid, :receive, :refresh_goal}, 300
+  end
 end

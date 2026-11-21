@@ -4426,6 +4426,7 @@ msgstr "Progresso da meta por status dos filhos"
 msgid "unassigned"
 msgstr "não atribuído"
 
+#: lib/kanban_web/live/goal_live/live_updates.ex
 #: lib/kanban_web/live/goal_live/show.ex
 #, elixir-autogen, elixir-format
 msgid "Goal not found"
@@ -16044,3 +16045,8 @@ msgstr "CA$ %{amount}"
 #, elixir-autogen, elixir-format
 msgid "Audit log streaming and signed exports"
 msgstr "Streaming do log de auditoria e exportações assinadas"
+
+#: lib/kanban_web/live/goal_live/live_updates.ex
+#, elixir-autogen, elixir-format
+msgid "This goal was deleted."
+msgstr "Esta meta foi excluída."

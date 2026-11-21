@@ -11,6 +11,10 @@ defmodule KanbanWeb.GoalLive.Show do
   type-mismatched access redirects back to `/boards` with a flash —
   matching the contract that `BoardLive.Show.handle_board_not_found/1`
   uses for every other scope-protected board route.
+
+  Once connected, the page follows its board's PubSub topic through
+  `KanbanWeb.GoalLive.LiveUpdates` and reloads when the goal or one of its
+  children changes (D457).
   """
   use KanbanWeb, :live_view
 
@@ -18,6 +22,7 @@ defmodule KanbanWeb.GoalLive.Show do
   alias Kanban.Tasks
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.GoalChildRow
+  alias KanbanWeb.GoalLive.LiveUpdates
   alias KanbanWeb.GoalLive.SidebarVelocity
   alias KanbanWeb.GoalProgressHeader
   alias KanbanWeb.GoalSidebar
@@ -32,14 +37,15 @@ defmodule KanbanWeb.GoalLive.Show do
 
   @impl true
   def mount(%{"id" => board_id, "goal_id" => goal_id}, _session, socket) do
-    user = socket.assigns.current_scope.user
+    case load_goal_view(socket, board_id, goal_id) do
+      {:ok, board, goal, children} ->
+        {:ok,
+         socket
+         |> LiveUpdates.subscribe(board.id)
+         |> assign_goal_view(board, goal, children)}
 
-    with {:ok, board} <- Boards.get_board(board_id, user),
-         {:ok, goal} <- fetch_goal(goal_id, board.id) do
-      children = Tasks.list_children_for_goal(user, goal.id)
-      {:ok, assign_goal_view(socket, board, goal, children)}
-    else
-      _ -> {:ok, redirect_not_found(socket)}
+      {:error, _reason} ->
+        {:ok, redirect_not_found(socket)}
     end
   end
 
@@ -49,6 +55,44 @@ defmodule KanbanWeb.GoalLive.Show do
      push_navigate(socket,
        to: ~p"/boards/#{socket.assigns.board}/tasks/#{id}/edit"
      )}
+  end
+
+  # Board-topic messages go to LiveUpdates, which schedules :refresh_goal for
+  # the ones that change this goal and ignores the rest.
+  @impl true
+  def handle_info(:refresh_goal, socket),
+    do: {:noreply, socket |> LiveUpdates.refreshed() |> reload_goal_view()}
+
+  def handle_info(message, socket), do: {:noreply, LiveUpdates.handle(message, socket)}
+
+  # The reload repeats mount's own lookups, access check included, so it
+  # never renders anything from a broadcast payload.
+  defp reload_goal_view(%{assigns: %{goal_gone?: true}} = socket), do: socket
+
+  defp reload_goal_view(socket) do
+    %{board: board, goal: goal} = socket.assigns
+
+    case load_goal_view(socket, board.id, goal.id) do
+      {:ok, board, goal, children} -> assign_goal_view(socket, board, goal, children)
+      {:error, :board} -> LiveUpdates.access_lost(socket)
+      {:error, :goal} -> LiveUpdates.goal_deleted(socket)
+    end
+  end
+
+  defp load_goal_view(socket, board_id, goal_id) do
+    user = socket.assigns.current_scope.user
+
+    case Boards.get_board(board_id, user) do
+      {:ok, board} -> load_goal(user, board, goal_id)
+      {:error, _reason} -> {:error, :board}
+    end
+  end
+
+  defp load_goal(user, board, goal_id) do
+    case fetch_goal(goal_id, board.id) do
+      {:ok, goal} -> {:ok, board, goal, Tasks.list_children_for_goal(user, goal.id)}
+      :error -> {:error, :goal}
+    end
   end
 
   defp assign_goal_view(socket, board, goal, children) do
@@ -164,7 +208,7 @@ defmodule KanbanWeb.GoalLive.Show do
                 "border-radius: 8px; overflow: hidden;"
               ]}
             >
-              <div :for={{status, items} <- @status_sections}>
+              <div :for={{status, items} <- @status_sections} data-goal-section={status}>
                 <div style={[
                   "padding: 7px 14px; display: flex; align-items: center; gap: 8px;",
                   "background: var(--surface-sunken);",
