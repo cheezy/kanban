@@ -16308,3 +16308,9 @@ msgstr "手順はプラグインの README を参照"
 #, elixir-autogen, elixir-format
 msgid "The script installs copy the hook, but Codex does not load it from there: register it once by hand. The marketplace install needs no extra step."
 msgstr "スクリプトでのインストールはフックをコピーしますが、Codex はそこからフックを読み込みません。一度だけ手動で登録してください。マーケットプレイスからのインストールでは追加の手順は不要です。"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Blog"
+msgstr "ブログ"

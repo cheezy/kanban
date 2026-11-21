@@ -15,6 +15,7 @@ defmodule KanbanWeb.MarketingComponents do
 
   import KanbanWeb.MarketingMiniBoard
 
+  alias KanbanWeb.MarketingClosing
   alias KanbanWeb.NavComponents
 
   @doc """
@@ -82,6 +83,14 @@ defmodule KanbanWeb.MarketingComponents do
         </.link>
         <.link href={~p"/about"} class="hover:opacity-70 transition-opacity">
           {gettext("About")}
+        </.link>
+        <.link
+          href={MarketingClosing.blog_url()}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:opacity-70 transition-opacity"
+        >
+          {gettext("Blog")}
         </.link>
       </div>
 
@@ -291,6 +300,14 @@ defmodule KanbanWeb.MarketingComponents do
       class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
     >
       {gettext("About")}
+    </.link>
+    <.link
+      href={MarketingClosing.blog_url()}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+    >
+      {gettext("Blog")}
     </.link>
 
     <hr class="my-2" style="border-color: var(--line);" />

@@ -850,6 +850,94 @@ defmodule KanbanWeb.MarketingComponentsTest do
     end
   end
 
+  describe "the Blog link (W2895)" do
+    @blog_url "https://cheezyworld.ca/tags/stride/"
+
+    test "MarketingClosing.blog_url/0 returns the one configured blog URL" do
+      assert KanbanWeb.MarketingClosing.blog_url() == @blog_url
+    end
+
+    test "the desktop nav and the mobile menu each render a Blog link to the Stride tag page" do
+      assigns = %{current_scope: nil}
+
+      document =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+        |> LazyHTML.from_fragment()
+
+      desktop = LazyHTML.query(document, "nav > div.lg\\:flex a[href='#{@blog_url}']")
+      mobile = LazyHTML.query(document, "#marketing-mobile-menu a[href='#{@blog_url}']")
+
+      assert Enum.count(desktop) == 1
+      assert Enum.count(mobile) == 1
+      assert LazyHTML.text(desktop) =~ "Blog"
+      assert LazyHTML.text(mobile) =~ "Blog"
+    end
+
+    test "the footer renders a Blog link to the Stride tag page" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      assert href_count(html, @blog_url) == 1
+
+      assert html
+             |> LazyHTML.from_fragment()
+             |> LazyHTML.query("footer a[href='#{@blog_url}']")
+             |> LazyHTML.text() =~ "Blog"
+    end
+
+    test "every Blog link opens in a new tab with rel noopener noreferrer" do
+      assigns = %{current_scope: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      links = html |> LazyHTML.from_fragment() |> LazyHTML.query("a[href='#{@blog_url}']")
+
+      assert Enum.count(links) == 3
+      assert LazyHTML.attribute(links, "target") == ["_blank", "_blank", "_blank"]
+
+      assert LazyHTML.attribute(links, "rel") ==
+               ["noopener noreferrer", "noopener noreferrer", "noopener noreferrer"]
+    end
+
+    test "the Blog link text renders translated under a non-English locale" do
+      Gettext.put_locale(KanbanWeb.Gettext, "ja")
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+
+      assigns = %{current_scope: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      texts =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("a[href='#{@blog_url}']")
+        |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+
+      assert texts == ["ブログ", "ブログ", "ブログ"]
+    end
+
+    test "docs/blog/README.md says the folder is a drafting area and where posts are published" do
+      readme = "../../../docs/blog/README.md" |> Path.expand(__DIR__) |> File.read!()
+
+      assert readme =~ "drafting area"
+      assert readme =~ "Posts: " <> KanbanWeb.MarketingClosing.blog_url()
+    end
+  end
+
   describe "marketing_footer/1" do
     test "renders the Stride logo, wordmark, domain, copyright, the integrations link and the legal links" do
       assigns = %{}

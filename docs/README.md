@@ -17,7 +17,9 @@ under the audience it is written for, with one line saying what it is for.
   `test/kanban/docs_index_test.exs` fails until every doc under `docs/` is
   listed here.
 - Folders that `.gitignore` excludes under `docs/` (today `docs/blog/`) hold
-  local drafts. They are not committed, so they are not listed here.
+  local drafts. They are not committed, so they are not listed here. The one
+  exception is `docs/blog/README.md`, force-added so the repository says where
+  the posts are published (https://cheezyworld.ca/tags/stride/).
 
 ## End users (board owners and members)
 

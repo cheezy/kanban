@@ -21,6 +21,15 @@ defmodule KanbanWeb.MarketingClosing do
   """
   def github_url, do: @github_url
 
+  @blog_url "https://cheezyworld.ca/tags/stride/"
+
+  @doc """
+  The Stride tag page on the blog where the Stride posts are published, linked
+  from the marketing nav, the mobile marketing menu and the footer. It is an
+  external site, so it is not listed in the sitemap or named as `sameAs`.
+  """
+  def blog_url, do: @blog_url
+
   @doc """
   Renders the lower CTA section: large two-line headline with orange emphasis on
   "approving them.", sub-copy, and a single centered dark "Start now" CTA
@@ -127,6 +136,14 @@ defmodule KanbanWeb.MarketingClosing do
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {gettext("Security")}
+        </.link>
+        <.link
+          href={blog_url()}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {gettext("Blog")}
         </.link>
         <.link
           href={github_url()}

@@ -16311,3 +16311,9 @@ msgstr "在插件的 README 中查看做法"
 #, elixir-autogen, elixir-format
 msgid "The script installs copy the hook, but Codex does not load it from there: register it once by hand. The marketplace install needs no extra step."
 msgstr "脚本安装会复制该钩子，但 Codex 不会从那里加载它：请手动注册一次。通过插件市场安装则无需额外步骤。"
+
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Blog"
+msgstr "博客"
