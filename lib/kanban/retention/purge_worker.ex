@@ -26,6 +26,10 @@ defmodule Kanban.Retention.PurgeWorker do
        replay-cache assertion IDs whose `expires_at` has passed, through
        `Kanban.SSO.SAMLLogin.purge_expired/2`. An assertion ID is kept until
        its assertion has expired, so removing it cannot re-open a replay.
+    5. **Unconfirmed release-list signups** (W2905), always: pending
+       subscribers whose confirmation link has expired, with their consent
+       record and tokens, through `Kanban.Subscribers.purge_unconfirmed/2`.
+       The confirmation email promises an unconfirmed address is not added.
 
   Settings are read at run time from
 
@@ -48,8 +52,9 @@ defmodule Kanban.Retention.PurgeWorker do
   logged and named in `failed_steps`, and the remaining steps still run.
 
   Each run records one `retention_purge` audit event with the rows removed per
-  Organization, for site-level events, for archived tasks and for SAML
-  sign-in state (`saml_count`), and the ids of the Organizations whose purge
+  Organization, for site-level events, for archived tasks, for SAML
+  sign-in state (`saml_count`) and for unconfirmed release-list signups
+  (`release_signup_count`), and the ids of the Organizations whose purge
   was skipped for a held lease (`audit_stream_skipped`).
   """
 
@@ -62,6 +67,7 @@ defmodule Kanban.Retention.PurgeWorker do
   alias Kanban.AuditStream
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.SSO.SAMLLogin
+  alias Kanban.Subscribers
 
   require Logger
 
@@ -90,7 +96,8 @@ defmodule Kanban.Retention.PurgeWorker do
       organization_counts: purge_organizations(now, batch_size),
       site_count: purge_site(settings, now, batch_size),
       archived_task_count: purge_archived(settings, now, batch_size),
-      saml_count: purge_saml(now, batch_size)
+      saml_count: purge_saml(now, batch_size),
+      release_signup_count: purge_release_signups(now, batch_size)
     ]
   end
 
@@ -190,6 +197,15 @@ defmodule Kanban.Retention.PurgeWorker do
     end
   end
 
+  defp purge_release_signups(now, batch_size) do
+    case run_step(:release_signups, fn ->
+           {:ok, Subscribers.purge_unconfirmed(now, batch_size)}
+         end) do
+      {:ok, removed} -> {removed, []}
+      :error -> {nil, ["release_signups"]}
+    end
+  end
+
   # `keep_alive` runs before each batch: it renews the audit stream leases
   # an Organization's purge holds.
   defp purge_audit(organization_id, cutoff, batch_size, keep_alive \\ &no_op/0, removed \\ 0) do
@@ -285,6 +301,7 @@ defmodule Kanban.Retention.PurgeWorker do
       "retention purge: organizations=#{map_size(result.organization_counts)} " <>
         "site=#{inspect(result.site_count)} archived_tasks=#{inspect(result.archived_task_count)} " <>
         "saml=#{inspect(result.saml_count)} " <>
+        "release_signups=#{inspect(result.release_signup_count)} " <>
         "audit_stream_skipped=#{length(result.audit_stream_skipped)} " <>
         "failed=#{length(result.failed_steps)}"
     )

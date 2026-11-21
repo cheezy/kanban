@@ -1056,13 +1056,17 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       # renders in no account's language, so it is left out. The guide's
       # section is about emails, so the push payload builder and the person
       # API's fallback controller (W2760), which render in each device's
-      # language rather than the account's, are left out too.
+      # language rather than the account's, are left out too. So is the
+      # release list's confirmation email (W2905), which renders in the
+      # language the visitor signed up in: a subscriber need not have an
+      # account at all.
       with_locale =
         Path.wildcard("lib/**/*.ex")
         |> Enum.reject(
           &(&1 in [
               "lib/kanban/push/payload_builder.ex",
-              "lib/kanban_web/controllers/api/me/fallback_controller.ex"
+              "lib/kanban_web/controllers/api/me/fallback_controller.ex",
+              "lib/kanban/subscribers/notifier.ex"
             ])
         )
         |> Enum.filter(&(File.read!(&1) =~ "Gettext.with_locale"))

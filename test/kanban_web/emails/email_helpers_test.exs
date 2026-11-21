@@ -54,6 +54,13 @@ defmodule KanbanWeb.Emails.EmailHelpersTest do
     assert email.headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
   end
 
+  test "put_list_unsubscribe_headers/2 points the RFC 8058 headers at one URL" do
+    email = EmailHelpers.put_list_unsubscribe_headers(Swoosh.Email.new(), "https://x.test/o?t=1")
+
+    assert email.headers["List-Unsubscribe"] == "<https://x.test/o?t=1>"
+    assert email.headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
+  end
+
   describe "footers" do
     setup do
       %{urls: %{unsubscribe: ~s(/u?token="a"), one_click: "/o", preferences: "/p"}}

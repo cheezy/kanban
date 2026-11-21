@@ -3,7 +3,8 @@ defmodule Kanban.RateLimit do
   Rate-limiting policy for abuse-prone authentication surfaces, the org-admin
   audit log export, audit stream test events, email invitations, the
   locked-feature click metric, the audit rows of refused API board gates,
-  API attachment downloads, and the device sign-in token endpoints.
+  API attachment downloads, the device sign-in token endpoints, and the
+  release announcement signup.
 
   Wraps the low-level `Kanban.RateLimiter` (Hammer/ETS) with per-surface
   thresholds and a two-key strategy: every check is evaluated against both a
@@ -38,6 +39,7 @@ defmodule Kanban.RateLimit do
     * `:oauth_revoke` — 1 min / — / 30      (IP-only, per request)
     * `:oauth_device` — 1 min / 10 / —      (identity-only, per request)
     * `:review_approval` — 1 min / 20 / —   (identity-only, per request)
+    * `:release_signup` — 1 h / — / 10      (IP-only, per signup)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -145,13 +147,20 @@ defmodule Kanban.RateLimit do
   an audit row, so a signed-in device cannot write either without bound. An
   approval takes two requests, so the limit allows ten a minute.
 
+  `:release_signup` counts signups to the release announcement list
+  (`POST /releases/subscribe`, `Kanban.Subscribers.subscribe/2`) per IP, with
+  `check/2` before the address is validated or looked up, so the form cannot
+  be used to mail-bomb strangers with confirmation emails or to probe the
+  list. There is no identity: counting per address would reveal which
+  addresses were tried before.
+
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
       `:audit_stream_test`, `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`,
       `:attachment_download`, `:oauth_token`, `:oauth_revoke`,
-      `:oauth_device`, `:review_approval`).
+      `:oauth_device`, `:review_approval`, `:release_signup`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
       `:scim`)
@@ -185,7 +194,8 @@ defmodule Kanban.RateLimit do
     oauth_token: %{scale_ms: 60_000, ip_limit: 60},
     oauth_revoke: %{scale_ms: 60_000, ip_limit: 30},
     oauth_device: %{scale_ms: 60_000, id_limit: 10},
-    review_approval: %{scale_ms: 60_000, id_limit: 20}
+    review_approval: %{scale_ms: 60_000, id_limit: 20},
+    release_signup: %{scale_ms: 3_600_000, ip_limit: 10}
   }
 
   @type surface ::
@@ -209,6 +219,7 @@ defmodule Kanban.RateLimit do
           | :oauth_revoke
           | :oauth_device
           | :review_approval
+          | :release_signup
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 

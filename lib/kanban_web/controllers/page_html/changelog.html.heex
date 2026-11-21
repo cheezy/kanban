@@ -49,6 +49,9 @@
         )}
       </p>
 
+      <%!-- An <aside>, not a <section>: [data-changelog] section is the release list. --%>
+      <.release_signup_form />
+
       {Phoenix.HTML.raw(changelog_body())}
 
       <div

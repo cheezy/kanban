@@ -208,6 +208,10 @@ defmodule Kanban.RateLimitTest do
       assert RateLimit.__limits__(:oauth_device) == %{scale_ms: 60_000, id_limit: 10}
     end
 
+    test ":release_signup is IP-only, 10 signups an hour" do
+      assert RateLimit.__limits__(:release_signup) == %{scale_ms: 3_600_000, ip_limit: 10}
+    end
+
     test ":review_approval is identity-only, 20 requests a minute per device" do
       assert RateLimit.__limits__(:review_approval) == %{scale_ms: 60_000, id_limit: 20}
     end

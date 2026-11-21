@@ -117,10 +117,11 @@ defmodule Kanban.Telemetry.Catalog.Families do
        :site_count,
        :archived_task_count,
        :saml_count,
+       :release_signup_count,
        :failed_steps,
        :audit_stream_skipped
      ],
-     "The daily retention job ran. organization_counts maps each Organization id with a retention period to the audit events removed; site_count (audit events with no Organization) and archived_task_count are nil when that purge is not configured; saml_count is the expired SAML requests and assertion IDs removed; failed_steps names any step that failed; audit_stream_skipped lists the Organization ids whose audit purge was skipped for the day because a streaming destination's lease could not be taken."},
+     "The daily retention job ran. organization_counts maps each Organization id with a retention period to the audit events removed; site_count (audit events with no Organization) and archived_task_count are nil when that purge is not configured; saml_count is the expired SAML requests and assertion IDs removed; release_signup_count is the unconfirmed release-list signups removed; failed_steps names any step that failed; audit_stream_skipped lists the Organization ids whose audit purge was skipped for the day because a streaming destination's lease could not be taken."},
     {:user_deleted, [:user_id, :member_user_id],
      "A site admin deleted an account. user_id is the site admin, member_user_id the deleted account."},
     {:user_delete_refused, [:user_id, :member_user_id, :reason],

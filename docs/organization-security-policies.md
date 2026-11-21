@@ -198,8 +198,9 @@ config :kanban, Kanban.Retention.PurgeWorker,
 
 Each run records one `retention_purge` audit event with the rows removed per
 Organization (`organization_counts`), for site events (`site_count`), for
-archived tasks (`archived_task_count`) and for expired SAML sign-in state
-(`saml_count`), plus `failed_steps` and `audit_stream_skipped`. A count is
+archived tasks (`archived_task_count`), for expired SAML sign-in state
+(`saml_count`) and for unconfirmed release-list signups
+(`release_signup_count`), plus `failed_steps` and `audit_stream_skipped`. A count is
 `nil` when its step did not run.
 
 ## After deploying

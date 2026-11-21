@@ -5,7 +5,7 @@
         {gettext("Privacy Policy")}
       </h1>
       <p class="text-sm text-base-content opacity-80 mb-10">
-        {gettext("Last updated: %{date}", date: gettext("October 21, 2026"))}
+        {gettext("Last updated: %{date}", date: gettext("November 21, 2026"))}
       </p>
 
       <div class="prose prose-lg max-w-none">
@@ -66,6 +66,20 @@
                 ),
                 gettext(
                   "If your Organization also manages accounts from its identity provider (SCIM), that provider can create, update and disable your account."
+                )
+              ])}
+            </li>
+            <li id="privacy-release-announcements">
+              <strong>{gettext("Release announcement list")}</strong>
+              {KanbanWeb.Sentences.join([
+                gettext(
+                  " — if you sign up for release announcements on the changelog, we store your email address, your language, the consent wording you agreed to and when, and whether and when you confirmed the address."
+                ),
+                gettext(
+                  "We use it only to email you when a new version of Stride is released, and only after you confirm the address from the email we send. An account never joins the list by itself."
+                ),
+                gettext(
+                  "Every email has an unsubscribe link, and unsubscribing deletes your address from the list at once."
                 )
               ])}
             </li>

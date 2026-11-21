@@ -237,7 +237,7 @@ defmodule KanbanWeb.PageControllerTest do
   for {path, localized, english} <- [
         {"/terms", "21. Oktober 2026", "October 21, 2026"},
         {"/acceptable-use", "11. Juni 2026", "June 11, 2026"},
-        {"/privacy", "21. Oktober 2026", "October 21, 2026"},
+        {"/privacy", "21. November 2026", "November 21, 2026"},
         {"/security", "14. Mai 2026", "May 14, 2026"}
       ] do
     test "GET #{path} shows the Last updated date with a German month under de", %{conn: conn} do
@@ -314,15 +314,20 @@ defmodule KanbanWeb.PageControllerTest do
     ]
   }
 
-  # Each new list item keeps the "<strong>label</strong> — body" structure under
-  # every locale, with both the label and the body translated.
+  # Each new list item, the release announcement list (W2905) included, keeps
+  # the "<strong>label</strong> — body" structure under every locale, with
+  # both the label and the body translated.
   @privacy_organization_labels %{
-    "de" => {"Organisationsinformationen", "Single Sign-On"},
-    "es" => {"Información de la organización", "Inicio de sesión único"},
-    "fr" => {"Informations sur l'organisation", "Authentification unique"},
-    "ja" => {"組織の情報", "シングルサインオン"},
-    "pt" => {"Informações da organização", "Login único"},
-    "zh" => {"组织信息", "单点登录"}
+    "de" => {"Organisationsinformationen", "Single Sign-On", "Liste für Release-Ankündigungen"},
+    "es" =>
+      {"Información de la organización", "Inicio de sesión único",
+       "Lista de anuncios de versiones"},
+    "fr" =>
+      {"Informations sur l'organisation", "Authentification unique",
+       "Liste des annonces de version"},
+    "ja" => {"組織の情報", "シングルサインオン", "リリースのお知らせリスト"},
+    "pt" => {"Informações da organização", "Login único", "Lista de anúncios de versões"},
+    "zh" => {"组织信息", "单点登录", "版本发布通知列表"}
   }
 
   for {locale, expected} <- @privacy_organization_translations do
@@ -345,11 +350,13 @@ defmodule KanbanWeb.PageControllerTest do
       refute text =~ "if your company has an Organization on Stride"
       refute text =~ "if your Organization enables single sign-on"
 
-      {org_label, sso_label} = Map.fetch!(@privacy_organization_labels, unquote(locale))
+      {org_label, sso_label, release_label} =
+        Map.fetch!(@privacy_organization_labels, unquote(locale))
 
       for {id, label, english} <- [
             {"privacy-organization-information", org_label, "Organization information"},
-            {"privacy-single-sign-on", sso_label, "Single sign-on"}
+            {"privacy-single-sign-on", sso_label, "Single sign-on"},
+            {"privacy-release-announcements", release_label, "Release announcement list"}
           ] do
         item = LazyHTML.query(document, "main section li##{id}")
 
@@ -396,6 +403,26 @@ defmodule KanbanWeb.PageControllerTest do
 
       assert body =~
                "if your Organization enables single sign-on (SSO), we process the identity details"
+    end
+
+    test "describes the release announcement list: what it stores, double opt-in and unsubscribing",
+         %{conn: conn} do
+      document = conn |> get(~p"/privacy") |> html_response(200) |> LazyHTML.from_document()
+      item = LazyHTML.query(document, "main section li#privacy-release-announcements")
+
+      assert item |> LazyHTML.query("strong") |> LazyHTML.text() |> String.trim() ==
+               "Release announcement list"
+
+      text = item |> LazyHTML.text() |> String.replace(~r/\s+/u, " ")
+
+      assert text =~
+               "we store your email address, your language, the consent wording you agreed to and when, and whether and when you confirmed the address."
+
+      assert text =~ "only after you confirm the address from the email we send"
+      assert text =~ "An account never joins the list by itself."
+
+      assert text =~
+               "Every email has an unsubscribe link, and unsubscribing deletes your address from the list at once."
     end
 
     test "retention refers to Organization agreements, not billing, and keeps self-service deletion",

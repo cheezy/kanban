@@ -476,6 +476,26 @@ defmodule Kanban.Retention.PurgeWorkerTest do
     end
   end
 
+  describe "unconfirmed release-list signups" do
+    test "removes pending subscribers whose confirmation link expired and records the count" do
+      old = ~U[2020-01-01 00:00:00Z]
+
+      {:ok, stale} =
+        Kanban.Repo.insert(%Kanban.Subscribers.Subscriber{
+          email: "stale-#{System.unique_integer([:positive])}@example.test",
+          locale: "en",
+          consent_text: "consent",
+          consented_at: old
+        })
+
+      assert :ok = run()
+
+      assert Kanban.Repo.get(Kanban.Subscribers.Subscriber, stale.id) == nil
+      assert hd(purge_events()).metadata["release_signup_count"] == 1
+      assert hd(purge_events()).metadata["failed_steps"] == []
+    end
+  end
+
   describe "expired SAML sign-in state" do
     test "removes expired SAML requests and assertion IDs in batches and keeps live ones" do
       put_config(batch_size: 2)

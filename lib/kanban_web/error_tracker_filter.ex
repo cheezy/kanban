@@ -12,6 +12,11 @@ defmodule KanbanWeb.ErrorTrackerFilter do
       `/notifications/unsubscribe` routes, and can also appear in a `Referer`
       header pointing back at one of those pages, so the query string, the
       `token` param and such a Referer are redacted.
+    * The release announcement list's routes under `/releases/` carry a
+      confirmation or unsubscribe token as `?token=`, and its signup posts an
+      email address as `subscriber[email]`, so on those routes the query
+      string, the `token` param, the `subscriber` param and any Referer
+      pointing back at one of them are redacted.
     * A token in the path (`KanbanWeb.TokenPaths`: an invitation link,
       password reset or a confirmation) appears in the request path, the
       LiveView URI, the `token` param and any Referer pointing at one of those
@@ -37,6 +42,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
 
   @redacted "[REDACTED]"
   @unsubscribe_path "/notifications/unsubscribe"
+  @releases_prefix "/releases/"
   @token_locations ["request.path", "live_view.uri"]
   @token_params ["request.params", "live_view.params"]
   @oauth_paths ["/oauth/token", "/oauth/revoke"]
@@ -46,6 +52,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   def sanitize(context) when is_map(context) do
     context
     |> redact_unsubscribe_request()
+    |> redact_releases_request()
     |> redact_token_path_request()
     |> redact_secret_headers()
     |> redact_event_params()
@@ -84,6 +91,22 @@ defmodule KanbanWeb.ErrorTrackerFilter do
 
   defp redact_unsubscribe_request(context), do: context
 
+  defp redact_releases_request(%{"request.path" => @releases_prefix <> _} = context) do
+    context
+    |> Map.put("request.query", @redacted)
+    |> Map.update("request.params", nil, &redact_releases_params/1)
+  end
+
+  defp redact_releases_request(context), do: context
+
+  defp redact_releases_params(%{} = params) do
+    params
+    |> redact_token_param()
+    |> Map.replace("subscriber", @redacted)
+  end
+
+  defp redact_releases_params(params), do: params
+
   defp redact_token_path_request(context) do
     if Enum.any?(@token_locations, &TokenPaths.token_path?(context[&1])) do
       context
@@ -107,7 +130,7 @@ defmodule KanbanWeb.ErrorTrackerFilter do
   defp redact_secret_headers(context), do: context
 
   defp redact_header({"referer", value}) when is_binary(value) do
-    if String.contains?(value, @unsubscribe_path),
+    if String.contains?(value, @unsubscribe_path) or String.contains?(value, @releases_prefix),
       do: {"referer", @redacted},
       else: {"referer", TokenPaths.redact(value, @redacted)}
   end

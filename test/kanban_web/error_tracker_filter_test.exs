@@ -45,6 +45,45 @@ defmodule KanbanWeb.ErrorTrackerFilterTest do
     assert sanitized["request.query"] == ""
   end
 
+  test "redacts the query string, token and email on release list routes" do
+    for path <- ["/releases/confirm", "/releases/unsubscribe/one-click", "/releases/subscribe"] do
+      context = %{
+        "request.path" => path,
+        "request.query" => "token=secret",
+        "request.params" => %{
+          "token" => "secret",
+          "subscriber" => %{"email" => "someone@example.test"},
+          "List-Unsubscribe" => "One-Click"
+        }
+      }
+
+      sanitized = ErrorTrackerFilter.sanitize(context)
+
+      assert sanitized["request.query"] == "[REDACTED]"
+
+      assert sanitized["request.params"] == %{
+               "token" => "[REDACTED]",
+               "subscriber" => "[REDACTED]",
+               "List-Unsubscribe" => "One-Click"
+             }
+    end
+  end
+
+  test "leaves release list params without a token or email as they are" do
+    context = %{"request.path" => "/releases/subscribe", "request.params" => %{"a" => "b"}}
+
+    assert ErrorTrackerFilter.sanitize(context)["request.params"] == %{"a" => "b"}
+  end
+
+  test "redacts a referer pointing at a release list page on any route" do
+    context = %{
+      "request.path" => "/changelog",
+      "request.headers" => %{"referer" => "https://example.com/releases/confirm?token=secret"}
+    }
+
+    assert ErrorTrackerFilter.sanitize(context)["request.headers"]["referer"] == "[REDACTED]"
+  end
+
   @token "YYHYRh-CDCDHBiQ10ok1WyGWd7CSEv1bArGfNI8wqIQ"
 
   test "redacts an invitation token from the request path, params and referer" do

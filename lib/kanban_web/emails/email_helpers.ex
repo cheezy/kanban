@@ -76,9 +76,18 @@ defmodule KanbanWeb.Emails.EmailHelpers do
 
   @doc "Adds the RFC 8058 one-click `List-Unsubscribe` headers."
   @spec put_unsubscribe_headers(Swoosh.Email.t(), urls()) :: Swoosh.Email.t()
-  def put_unsubscribe_headers(email, urls) do
+  def put_unsubscribe_headers(email, urls),
+    do: put_list_unsubscribe_headers(email, urls.one_click)
+
+  @doc """
+  Adds the RFC 8058 one-click `List-Unsubscribe` headers pointing at
+  `one_click_url`, for an email whose links are not notification links (the
+  release list's, `KanbanWeb.Emails.SubscriberConfirmationEmail`).
+  """
+  @spec put_list_unsubscribe_headers(Swoosh.Email.t(), String.t()) :: Swoosh.Email.t()
+  def put_list_unsubscribe_headers(email, one_click_url) do
     email
-    |> header("List-Unsubscribe", "<" <> urls.one_click <> ">")
+    |> header("List-Unsubscribe", "<" <> one_click_url <> ">")
     |> header("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
   end
 

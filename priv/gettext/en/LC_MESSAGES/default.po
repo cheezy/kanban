@@ -8553,6 +8553,8 @@ msgid "The unsubscribe link is invalid or has expired. Sign in to manage which e
 msgstr ""
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex
+#: lib/kanban_web/controllers/subscriber_controller.ex
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "This link is no longer valid"
 msgstr ""
@@ -8563,6 +8565,8 @@ msgid "Unclaimed tasks"
 msgstr ""
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe"
 msgstr ""
@@ -8589,6 +8593,7 @@ msgid "You will stop receiving emails about: %{category}."
 msgstr ""
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "You're unsubscribed"
 msgstr ""
@@ -12341,7 +12346,6 @@ msgstr ""
 msgid "May 14, 2026"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex
 #: lib/kanban_web/controllers/page_html/terms.html.heex
 #, elixir-autogen, elixir-format
 msgid "October 21, 2026"
@@ -15722,6 +15726,7 @@ msgstr ""
 msgid "Deleted account (#%{id})"
 msgstr ""
 
+#: lib/kanban_web/components/release_signup_form.ex
 #: lib/kanban_web/live/admin/feature_flag_live/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Email address"
@@ -16487,4 +16492,142 @@ msgstr ""
 #: lib/kanban_web/live/resources_live/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Read the guides"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid " — if you sign up for release announcements on the changelog, we store your email address, your language, the consent wording you agreed to and when, and whether and when you confirmed the address."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html.ex
+#, elixir-autogen, elixir-format
+msgid "Back to the changelog"
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
+#, elixir-autogen, elixir-format
+msgid "Confirm subscription"
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Confirm to receive an email when a new version of Stride is released."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_controller.ex
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
+#, elixir-autogen, elixir-format
+msgid "Confirm your subscription"
+msgstr ""
+
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
+#, elixir-autogen, elixir-format
+msgid "Confirm your subscription to Stride release announcements"
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Enter a valid email address to subscribe."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "Every email has an unsubscribe link, and unsubscribing deletes your address from the list at once."
+msgstr ""
+
+#: lib/kanban_web/components/release_signup_form.ex
+#, elixir-autogen, elixir-format
+msgid "Get release announcements"
+msgstr ""
+
+#: lib/kanban_web/components/release_signup_form.ex
+#, elixir-autogen, elixir-format
+msgid "I agree to receive an email from Stride when a new version is released. I can unsubscribe at any time with the link in every email."
+msgstr ""
+
+#: lib/kanban_web/components/release_signup_form.ex
+#, elixir-autogen, elixir-format
+msgid "Leave your email address and we will send you a short note when a new version of Stride is released. We will first email you a link to confirm."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "November 21, 2026"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "Release announcement list"
+msgstr ""
+
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
+#, elixir-autogen, elixir-format
+msgid "Someone asked to receive Stride release announcements at this address. Confirm to start receiving an email when a new version of Stride is released."
+msgstr ""
+
+#: lib/kanban_web/components/release_signup_form.ex
+#, elixir-autogen, elixir-format
+msgid "Subscribe"
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Thanks! Check your inbox: if this address is not on the list yet, we have sent it a link to confirm your subscription."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "The link is invalid, has expired or was already used. You can sign up again on the changelog."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "This address has been removed from the release announcement list."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "This address will be removed from the list at once."
+msgstr ""
+
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
+#, elixir-autogen, elixir-format
+msgid "This link expires in 7 days. If you did not ask for this, ignore this email and this address will not be added."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Too many signups from your network. Try again later."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from release announcements"
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from release announcements?"
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "We use it only to email you when a new version of Stride is released, and only after you confirm the address from the email we send. An account never joins the list by itself."
+msgstr ""
+
+#: lib/kanban_web/emails/subscriber_confirmation_email.ex
+#, elixir-autogen, elixir-format
+msgid "You are receiving this email because this address was entered in the release announcement signup on the Stride changelog."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "You will receive an email when a new version of Stride is released. Every email has a link to unsubscribe."
+msgstr ""
+
+#: lib/kanban_web/controllers/subscriber_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "You're subscribed"
 msgstr ""

@@ -224,6 +224,28 @@ defmodule KanbanWeb.Router do
     post "/unsubscribe/one-click", NotificationUnsubscribeController, :one_click
   end
 
+  # The release announcement list (W2905). Like the notification unsubscribe
+  # routes these are public, and the ?token= query parameter is the only
+  # credential. The signup is POST-only, so a GET subscribes no one. Confirm
+  # and unsubscribe GETs only render a confirmation (mail scanners prefetch
+  # links); their forms POST through :browser, keeping CSRF protection.
+  scope "/releases", KanbanWeb do
+    pipe_through :browser
+
+    post "/subscribe", SubscriberController, :create
+    get "/confirm", SubscriberController, :confirm_show
+    post "/confirm", SubscriberController, :confirm
+    get "/unsubscribe", SubscriberController, :unsubscribe_show
+    post "/unsubscribe", SubscriberController, :unsubscribe
+    get "/unsubscribe/one-click", SubscriberController, :one_click_show
+  end
+
+  scope "/releases", KanbanWeb do
+    pipe_through :one_click_unsubscribe
+
+    post "/unsubscribe/one-click", SubscriberController, :one_click
+  end
+
   # SAML assertion consumer service (W2246). The identity provider's browser
   # POST is cross-site and carries no CSRF token, and a SameSite=Lax session
   # cookie is not sent with it, so this pipeline skips protect_from_forgery

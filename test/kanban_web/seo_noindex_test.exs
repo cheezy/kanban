@@ -80,7 +80,10 @@ defmodule KanbanWeb.SeoNoindexTest do
   # Noindex through a controller plug rather than the pipeline.
   @controller_noindex_paths [
     "/notifications/unsubscribe",
-    "/notifications/unsubscribe/one-click"
+    "/notifications/unsubscribe/one-click",
+    "/releases/confirm",
+    "/releases/unsubscribe",
+    "/releases/unsubscribe/one-click"
   ]
 
   defp robots(conn, status \\ 200) do
@@ -301,6 +304,43 @@ defmodule KanbanWeb.SeoNoindexTest do
         })
 
       assert_noindex(get(build_conn(), authorize_path(too_long)), 400)
+    end
+  end
+
+  describe "release announcement list pages" do
+    test "the confirm and unsubscribe pages render robots noindex, valid token or not" do
+      email = "noindex-#{System.unique_integer([:positive])}@example.test"
+
+      :ok =
+        Kanban.Subscribers.subscribe(email, ip: {127, 0, 0, 1}, locale: "en", consent_text: "ok")
+
+      {confirm, unsubscribe} =
+        receive do
+          {:email, %{text_body: body}} ->
+            [confirm] =
+              Regex.run(~r{/releases/confirm\?token=([A-Za-z0-9_-]+)}, body,
+                capture: :all_but_first
+              )
+
+            [unsubscribe] =
+              Regex.run(~r{/releases/unsubscribe\?token=([A-Za-z0-9_-]+)}, body,
+                capture: :all_but_first
+              )
+
+            {confirm, unsubscribe}
+        end
+
+      assert_noindex(get(build_conn(), ~p"/releases/confirm?#{[token: confirm]}"))
+      assert_noindex(get(build_conn(), ~p"/releases/unsubscribe?#{[token: unsubscribe]}"))
+
+      # A browser opening the one-click URL is redirected to the unsubscribe
+      # page; the redirect itself still carries the noindex header.
+      one_click = get(build_conn(), ~p"/releases/unsubscribe/one-click?#{[token: unsubscribe]}")
+      assert redirected_to(one_click) == ~p"/releases/unsubscribe?#{[token: unsubscribe]}"
+      assert x_robots(one_click) == @noindex
+
+      assert_noindex(get(build_conn(), ~p"/releases/confirm?#{[token: "nope"]}"), 400)
+      assert_noindex(get(build_conn(), ~p"/releases/unsubscribe?#{[token: "nope"]}"), 400)
     end
   end
 
