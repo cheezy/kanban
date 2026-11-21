@@ -5378,6 +5378,7 @@ msgstr "次に同意します:"
 msgid "Keep me signed in on this device"
 msgstr "このデバイスでサインインを維持"
 
+#: lib/kanban_web/controllers/integrations_html/index.html.heex
 #: lib/kanban_web/live/user_live/login.ex
 #, elixir-autogen, elixir-format
 msgid "New to Stride?"
@@ -9885,6 +9886,8 @@ msgstr "汎用 Webhook"
 
 #: lib/kanban_web/components/board_tabs.ex
 #: lib/kanban_web/components/locked_feature.ex
+#: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/integrations_html/index.html.heex
 #: lib/kanban_web/live/board_live/board_state.ex
 #: lib/kanban_web/live/board_live/show.html.heex
 #, elixir-autogen, elixir-format
@@ -16009,11 +16012,13 @@ msgid "All documentation"
 msgstr "ドキュメント一覧"
 
 #: lib/kanban_web/controllers/docs_html/show.html.heex
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Breadcrumb"
 msgstr "パンくずリスト"
 
 #: lib/kanban_web/controllers/docs_html/index.html.heex
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
 #, elixir-autogen, elixir-format
 msgid "Documentation"
 msgstr "ドキュメント"
@@ -16052,3 +16057,254 @@ msgstr "ガイドは英語で書かれています。"
 #, elixir-autogen, elixir-format
 msgid "View this page on GitHub"
 msgstr "このページを GitHub で見る"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "A Gemini CLI extension with Stride skills, custom agents and automatic hooks."
+msgstr "Stride のスキル、カスタムエージェント、自動フックを備えた Gemini CLI 拡張機能。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "A GitHub Copilot CLI plugin with Stride skills, custom agents and automatic hooks."
+msgstr "Stride のスキル、カスタムエージェント、自動フックを備えた GitHub Copilot CLI プラグイン。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "A hook that records loop state and downloads a claimed task's attachments. The agent runs your .stride.md commands itself."
+msgstr "ループの状態を記録し、引き受けたタスクの添付ファイルをダウンロードするフック。.stride.md のコマンドはエージェント自身が実行します。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "A subagent-dispatch extension that runs the explorer, the reviewer and the other agents in their own context."
+msgstr "エクスプローラー、レビュアー、その他のエージェントをそれぞれ独立したコンテキストで実行する subagent-dispatch 拡張機能。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Add the Stride marketplace for Copilot and install the plugin"
+msgstr "Copilot 用の Stride マーケットプレイスを追加し、プラグインをインストールします"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Add the plugin to opencode.json, in your project or in ~/.config/opencode/"
+msgstr "プロジェクトまたは ~/.config/opencode/ の opencode.json にプラグインを追加します"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Agents that explore the code, review the change and diagnose failing hooks: %{names}."
+msgstr "コードを調べ、変更をレビューし、失敗したフックを診断するエージェント: %{names}。"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All integrations"
+msgstr "すべての連携"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "An OpenCode plugin that runs your hooks, plus Stride skills, subagents and commands."
+msgstr "フックを実行する OpenCode プラグインと、Stride のスキル、サブエージェント、コマンド。"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Ask the agent to work it, for example: “Use the stride-workflow skill to claim and work the next Stride task.”"
+msgstr "エージェントに作業を依頼します。例: 「Use the stride-workflow skill to claim and work the next Stride task.」"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Ask your agent to fetch the onboarding endpoint and follow its instructions. It writes .stride_auth.md and .stride.md in your project and asks you for the token."
+msgstr "エージェントにオンボーディングエンドポイントを取得させ、その指示に従わせます。エージェントがプロジェクトに .stride_auth.md と .stride.md を作成し、トークンを尋ねます。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Copy the skills, subagents and commands into your project"
+msgstr "スキル、サブエージェント、コマンドをプロジェクトにコピーします"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Create an AI Optimized board and generate an API token on its Tokens tab."
+msgstr "AI 最適化ボードを作成し、その「APIトークン」タブで API トークンを生成します。"
+
+#: lib/kanban_web/controllers/integrations_html.ex
+#, elixir-autogen, elixir-format
+msgid "Extension index"
+msgstr "拡張機能インデックス"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Gemini CLI has no marketplace of its own and installs extensions straight from GitHub. This index lists every Stride extension and its install command."
+msgstr "Gemini CLI には独自のマーケットプレイスがなく、拡張機能は GitHub から直接インストールします。このインデックスには各 Stride 拡張機能とそのインストールコマンドが載っています。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "In Claude Code, add the Stride marketplace and install the plugin"
+msgstr "Claude Code で Stride マーケットプレイスを追加し、プラグインをインストールします"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Install"
+msgstr "インストール"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Install Stride for %{name}: the command to run, what the plugin adds to your agent, and how to have it claim its first task on a Stride board."
+msgstr "%{name} 向け Stride のインストール: 実行するコマンド、プラグインがエージェントに追加する機能、Stride ボードで最初のタスクを引き受けさせる方法。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Install globally, for every project"
+msgstr "すべてのプロジェクト向けにグローバルにインストールします"
+
+#: lib/kanban_web/controllers/integrations_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Install steps"
+msgstr "インストール手順"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Install the extension from GitHub"
+msgstr "GitHub から拡張機能をインストールします"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Lifecycle skills, led by the stride-workflow orchestrator, that take a task from claim to completion."
+msgstr "stride-workflow オーケストレーターを中心に、タスクを引き受けから完了まで進めるライフサイクルスキル。"
+
+#: lib/kanban_web/controllers/integrations_html.ex
+#, elixir-autogen, elixir-format
+msgid "Marketplace"
+msgstr "マーケットプレイス"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Move a small task from Backlog to Ready. Agents only claim tasks in Ready."
+msgstr "小さなタスクを Backlog から Ready に移動します。エージェントは Ready のタスクだけを引き受けます。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "On Windows, in PowerShell"
+msgstr "Windows の PowerShell で"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Or add the Stride marketplace for Codex"
+msgstr "または Codex 用の Stride マーケットプレイスを追加します"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Or install into the current project only"
+msgstr "または現在のプロジェクトにのみインストールします"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Or install straight from the repository"
+msgstr "またはリポジトリから直接インストールします"
+
+#: lib/kanban_web/controllers/integrations_html.ex
+#, elixir-autogen, elixir-format
+msgid "Preview"
+msgstr "プレビュー"
+
+#: lib/kanban_web/controllers/integrations_html/index.html.heex
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read the getting-started guide"
+msgstr "入門ガイドを読む"
+
+#: lib/kanban_web/controllers/integrations_html.ex
+#, elixir-autogen, elixir-format
+msgid "Repository"
+msgstr "リポジトリ"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Runs your .stride.md hook commands automatically at each step of a task."
+msgstr "タスクの各ステップで .stride.md のフックコマンドを自動的に実行します。"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Stride for %{name}"
+msgstr "%{name} 向け Stride"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Stride for %{name}: install steps"
+msgstr "%{name} 向け Stride: インストール手順"
+
+#: lib/kanban_web/controllers/integrations_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride integrations for AI coding agents"
+msgstr "AI コーディングエージェント向けの Stride 連携"
+
+#: lib/kanban_web/controllers/integrations_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride plugins for Claude Code, Codex CLI, Gemini CLI, GitHub Copilot, OpenCode and Pi: what each one adds and the command that installs it."
+msgstr "Claude Code、Codex CLI、Gemini CLI、GitHub Copilot、OpenCode、Pi 向けの Stride プラグイン: それぞれの機能とインストールコマンド。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Stride skills and agents for OpenAI's Codex CLI."
+msgstr "OpenAI の Codex CLI 向けの Stride スキルとエージェント。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Stride skills for Pi, with extensions for hooks and subagents."
+msgstr "フックとサブエージェント用の拡張機能を備えた、Pi 向けの Stride スキル。"
+
+#: lib/kanban_web/controllers/integrations_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Stride works with the coding agent you already use. Pick yours to see what its plugin adds, how to install it and how to run your first task."
+msgstr "Stride は、いま使っているコーディングエージェントで動きます。お使いのものを選ぶと、プラグインの機能、インストール方法、最初のタスクの進め方がわかります。"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "The commands are copied from the plugin's README. Run them as written."
+msgstr "コマンドはプラグインの README からそのまま写したものです。書かれたとおりに実行してください。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "The original Stride plugin, with automatic hooks, subagents and slash commands."
+msgstr "自動フック、サブエージェント、スラッシュコマンドを備えた、元祖 Stride プラグイン。"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "The plugin's README on GitHub"
+msgstr "GitHub 上のプラグインの README"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Then install the plugin from it"
+msgstr "次に、そこからプラグインをインストールします"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "This plugin is in preview, so its commands and behaviour may still change."
+msgstr "このプラグインはプレビュー版のため、コマンドや動作が変わる可能性があります。"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "Two commands that create tasks and goals: %{commands}."
+msgstr "タスクとゴールを作成する 2 つのコマンド: %{commands}。"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "What it adds"
+msgstr "追加される機能"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Where to get it"
+msgstr "入手先"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Your first task"
+msgstr "最初のタスク"
+
+#: lib/kanban_web/controllers/integrations_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Read how in the plugin's README"
+msgstr "手順はプラグインの README を参照"
+
+#: lib/kanban_web/integrations.ex
+#, elixir-autogen, elixir-format
+msgid "The script installs copy the hook, but Codex does not load it from there: register it once by hand. The marketplace install needs no extra step."
+msgstr "スクリプトでのインストールはフックをコピーしますが、Codex はそこからフックを読み込みません。一度だけ手動で登録してください。マーケットプレイスからのインストールでは追加の手順は不要です。"

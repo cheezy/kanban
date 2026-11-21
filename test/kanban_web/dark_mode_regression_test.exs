@@ -33,6 +33,9 @@ defmodule KanbanWeb.DarkModeRegressionTest do
     "/docs",
     "/docs/mcp",
     "/docs/api",
+    "/integrations",
+    "/integrations/codex",
+    "/integrations/opencode",
     "/users/log-in",
     "/users/register",
     "/users/forgot-password"

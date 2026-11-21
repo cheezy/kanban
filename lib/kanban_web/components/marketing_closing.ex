@@ -82,9 +82,11 @@ defmodule KanbanWeb.MarketingClosing do
 
   @doc """
   Renders the landing-page footer: gradient logo + wordmark + domain +
-  copyright on the left, right-aligned legal links on the right.
+  copyright on the left, right-aligned links on the right: the agent
+  integrations (W2899), then the legal and GitHub links.
 
-  Mirrors lines ~374-391 of `landing.jsx`.
+  Follows lines ~374-391 of `landing.jsx`, apart from the Integrations link,
+  which the design does not have and W2899 added.
 
   ## Examples
 
@@ -108,6 +110,12 @@ defmodule KanbanWeb.MarketingClosing do
       <span class="md:inline">© 2026</span>
       <span class="hidden md:inline flex-1"></span>
       <div class="flex flex-wrap gap-4 md:gap-7">
+        <.link
+          href={~p"/integrations"}
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {gettext("Integrations")}
+        </.link>
         <.link
           href={~p"/privacy"}
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"

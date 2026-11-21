@@ -162,6 +162,9 @@ pages in `SeoXML.public_paths/0` (the `@public_paths` attribute in
 includes `/docs` and one `/docs/<slug>` per published guide, from
 `KanbanWeb.Docs.sitemap_paths/0`, so a guide added to that allow-list reaches
 the sitemap with no further step ([Publishing Guides on the Site](docs-site.md)).
+It also includes `/integrations` and one `/integrations/<runtime>` page per
+agent runtime, from `KanbanWeb.Integrations.sitemap_paths/0`
+([Agent Integration Pages](integrations-pages.md)).
 Every `<loc>` comes from
 `canonical_url/1`, so it matches the canonical the page renders, and is
 XML-escaped.
@@ -298,6 +301,10 @@ These run as part of `mix test`:
   and [`test/kanban_web/docs_test.exs`](../test/kanban_web/docs_test.exs)
   cover the published guides at `/docs`: their titles and descriptions, the
   allow-list, and that every link on every guide resolves.
+- [`test/kanban_web/controllers/integrations_controller_test.exs`](../test/kanban_web/controllers/integrations_controller_test.exs)
+  and [`test/kanban_web/integrations_test.exs`](../test/kanban_web/integrations_test.exs)
+  cover the agent runtime pages at `/integrations`: their titles and
+  descriptions in every locale, the runtime list, and the install commands.
 
 So a new public `PageController` page needs a `seo/1` clause, an entry in the
 noindex test's public list and an entry in `@public_paths`. A new public

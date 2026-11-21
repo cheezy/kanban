@@ -148,6 +148,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Dates and Times](dates-and-times.md) — The rule that every shown date or time goes through `KanbanWeb.LocalTime`, the guard test that enforces it, and its allow-list.
 - [Search and Social Tags](seo.md) — How a page sets its title, description and noindex, how canonical, robots.txt and the sitemap work per host, the Open Graph image, and how structured data is escaped.
 - [Publishing Guides on the Site](docs-site.md) — Which guides are published at `/docs`, how they are copied, rendered and link-rewritten, and how to publish another one.
+- [Agent Integration Pages](integrations-pages.md) — The `/integrations` page for each agent runtime, where its install commands come from, the test that checks them against the plugin READMEs, and how to update one.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.
 - [Organizing Tailwind CSS](TAILWIND_ORGANIZATION.md) — Keeping Tailwind classes readable in HEEx templates with function components.

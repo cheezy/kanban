@@ -851,7 +851,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
   end
 
   describe "marketing_footer/1" do
-    test "renders the Stride logo, wordmark, domain, copyright, and 4 legal links" do
+    test "renders the Stride logo, wordmark, domain, copyright, the integrations link and the legal links" do
       assigns = %{}
 
       html =
@@ -867,7 +867,9 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ "StrideLikeABoss.com"
       assert html =~ "© 2026"
 
-      # Legal links
+      # The agent integrations (W2899), then the legal links
+      assert html =~ ~s|href="/integrations"|
+      assert html =~ "Integrations"
       assert html =~ "Privacy"
       assert html =~ "Security"
       assert html =~ "GitHub"

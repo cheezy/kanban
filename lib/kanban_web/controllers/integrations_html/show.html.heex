@@ -1,0 +1,172 @@
+<main class="min-h-screen" data-integration-page={@runtime.slug}>
+  <div class="max-w-3xl mx-auto px-6 py-12">
+    <nav class="mb-8 text-sm" aria-label={gettext("Breadcrumb")}>
+      <.link
+        href={~p"/integrations"}
+        class="inline-flex items-center gap-1 font-medium"
+        style="color: var(--stride-orange-ink); text-decoration: none;"
+      >
+        <.icon name="hero-arrow-left" class="h-3.5 w-3.5" />
+        {gettext("All integrations")}
+      </.link>
+    </nav>
+
+    <header class="mb-12">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-base-content mb-4 flex flex-wrap items-center gap-3"
+        style="overflow-wrap: break-word; hyphens: auto;"
+      >
+        {gettext("Stride for %{name}", name: @runtime.name)}
+        <.preview_badge preview={@runtime.preview} />
+      </h1>
+      <p class="text-lg" style="color: var(--ink-2);">{@runtime.tagline}</p>
+      <p :if={@runtime.preview} class="text-sm mt-3" style="color: var(--ink-3);">
+        {gettext("This plugin is in preview, so its commands and behaviour may still change.")}
+      </p>
+    </header>
+
+    <section id="what-it-adds" class="mb-12" aria-labelledby="what-it-adds-heading">
+      <h2 id="what-it-adds-heading" class="text-2xl font-bold text-base-content mb-4">
+        {gettext("What it adds")}
+      </h2>
+      <ul class="space-y-2" role="list" data-capabilities>
+        <li
+          :for={capability <- @runtime.capabilities}
+          class="flex gap-2 leading-relaxed"
+          style="color: var(--ink-2);"
+        >
+          <span
+            class="shrink-0 mt-0.5"
+            style="color: var(--stride-orange-ink);"
+            aria-hidden="true"
+          >
+            <.icon name="hero-check" class="h-5 w-5" />
+          </span>
+          <span>{capability}</span>
+        </li>
+      </ul>
+    </section>
+
+    <section id="install" class="mb-12" aria-labelledby="install-heading">
+      <h2 id="install-heading" class="text-2xl font-bold text-base-content mb-2">
+        {gettext("Install")}
+      </h2>
+      <p class="text-sm mb-6" style="color: var(--ink-3);">
+        {gettext("The commands are copied from the plugin's README. Run them as written.")}
+      </p>
+      <ol class="space-y-6" role="list">
+        <li :for={step <- @runtime.install} data-install-step>
+          <p class="font-medium text-base-content mb-2">{step.title}</p>
+          <div class="stride-docs-prose">
+            <pre translate="no"><code class={"language-" <> step.lang} data-install-command>{step.command}</code></pre>
+          </div>
+        </li>
+      </ol>
+      <p
+        :if={@runtime.install_note}
+        class="mt-6 text-sm leading-relaxed"
+        style="color: var(--ink-2);"
+        data-install-note
+      >
+        {@runtime.install_note}
+        <a
+          href={@runtime.install_note_url}
+          class="font-medium"
+          style="color: var(--stride-orange-ink);"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-install-note-link
+        >
+          {gettext("Read how in the plugin's README")}
+        </a>
+      </p>
+    </section>
+
+    <section id="where-to-get-it" class="mb-12" aria-labelledby="where-to-get-it-heading">
+      <h2 id="where-to-get-it-heading" class="text-2xl font-bold text-base-content mb-4">
+        {gettext("Where to get it")}
+      </h2>
+      <dl class="space-y-3">
+        <div>
+          <dt class="text-sm font-semibold" style="color: var(--ink-3);">
+            {listing_label(@runtime.listing_kind)}
+          </dt>
+          <dd>
+            <a
+              href={@runtime.listing_url}
+              class="font-medium"
+              style="color: var(--stride-orange-ink); overflow-wrap: anywhere;"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-listing-link
+            >
+              {display_url(@runtime.listing_url)}
+            </a>
+          </dd>
+          <dd
+            :if={@runtime.listing_kind == :extension_index}
+            class="text-sm mt-1"
+            style="color: var(--ink-3);"
+          >
+            {gettext(
+              "Gemini CLI has no marketplace of its own and installs extensions straight from GitHub. This index lists every Stride extension and its install command."
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-semibold" style="color: var(--ink-3);">
+            {gettext("Documentation")}
+          </dt>
+          <dd>
+            <a
+              href={@runtime.docs_url}
+              class="font-medium"
+              style="color: var(--stride-orange-ink);"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-docs-link
+            >
+              {gettext("The plugin's README on GitHub")}
+            </a>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <section id="first-task" aria-labelledby="first-task-heading">
+      <h2 id="first-task-heading" class="text-2xl font-bold text-base-content mb-4">
+        {gettext("Your first task")}
+      </h2>
+      <ol class="list-decimal pl-6 space-y-3 leading-relaxed" style="color: var(--ink-2);">
+        <li>
+          {gettext("Create an AI Optimized board and generate an API token on its Tokens tab.")}
+        </li>
+        <li>
+          {gettext(
+            "Ask your agent to fetch the onboarding endpoint and follow its instructions. It writes .stride_auth.md and .stride.md in your project and asks you for the token."
+          )}
+          <div class="stride-docs-prose mt-2">
+            <pre translate="no"><code>{url(~p"/api/agent/onboarding")}</code></pre>
+          </div>
+        </li>
+        <li>
+          {gettext("Move a small task from Backlog to Ready. Agents only claim tasks in Ready.")}
+        </li>
+        <li>
+          {gettext(
+            "Ask the agent to work it, for example: “Use the stride-workflow skill to claim and work the next Stride task.”"
+          )}
+        </li>
+      </ol>
+      <p class="mt-6" style="color: var(--ink-2);">
+        <.link
+          href={~p"/docs/getting-started-with-ai"}
+          class="font-medium"
+          style="color: var(--stride-orange-ink);"
+        >
+          {gettext("Read the getting-started guide")}
+        </.link>
+      </p>
+    </section>
+  </div>
+</main>

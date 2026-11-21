@@ -181,6 +181,10 @@ defmodule KanbanWeb.Router do
     # KanbanWeb.Docs allow-list.
     get "/docs", DocsController, :index
     get "/docs/:slug", DocsController, :show
+    # One page per agent runtime (W2899); the runtime is only looked up in
+    # the KanbanWeb.Integrations list.
+    get "/integrations", IntegrationsController, :index
+    get "/integrations/:runtime", IntegrationsController, :show
     post "/locale/:locale", PageController, :set_locale
   end
 

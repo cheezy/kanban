@@ -70,6 +70,8 @@ defmodule KanbanWeb.SeoNoindexTest do
     "/resources/:id",
     "/docs",
     "/docs/:slug",
+    "/integrations",
+    "/integrations/:runtime",
     "/users/register",
     "/users/log-in"
   ]
@@ -247,6 +249,7 @@ defmodule KanbanWeb.SeoNoindexTest do
           path
           |> String.replace(":id", "creating-your-first-board")
           |> String.replace(":slug", "mcp")
+          |> String.replace(":runtime", "codex")
 
         conn = get(build_conn(), concrete)
 

@@ -90,7 +90,9 @@ defmodule KanbanWeb.SeoControllerTest do
       expected =
         absolute(
           @page_paths ++
-            ["/issue", "/resources"] ++ KanbanWeb.Docs.sitemap_paths() ++ how_to_paths
+            ["/issue", "/resources"] ++
+            KanbanWeb.Docs.sitemap_paths() ++
+            KanbanWeb.Integrations.sitemap_paths() ++ how_to_paths
         )
 
       locs = sitemap_locs(conn)
