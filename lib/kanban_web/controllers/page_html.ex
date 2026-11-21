@@ -87,17 +87,25 @@ defmodule KanbanWeb.PageHTML do
 
   @changelog_body_path Path.expand("../../../priv/changelog/body.html", __DIR__)
   @external_resource @changelog_body_path
-  @changelog_body File.read!(@changelog_body_path)
+  @changelog @changelog_body_path |> File.read!() |> KanbanWeb.Changelog.parse()
 
   @doc """
   Returns the rendered HTML body of the changelog page (the per-release
-  `<section>` elements), stored verbatim in `priv/changelog/body.html`.
+  `<section>` elements), stored in `priv/changelog/body.html` and given one
+  `id` per release section by `KanbanWeb.Changelog.parse/1`.
 
   The body is developer-facing release notes — kept out of HEEX so it does not
   generate hundreds of fragmented gettext msgids that would never be
   translated. Mirrors the data-as-content pattern used by `HowToData`.
   """
-  def changelog_body, do: @changelog_body
+  def changelog_body, do: @changelog.body
+
+  @doc """
+  Returns the dated releases of the changelog, newest first, from the same
+  parse as `changelog_body/0`. `/changelog/feed.xml` is built from them.
+  """
+  @spec changelog_releases() :: [KanbanWeb.Changelog.release()]
+  def changelog_releases, do: @changelog.releases
 
   @mcp_snippet String.trim_trailing(~S"""
                export STRIDE_URL="https://your-stride-host"

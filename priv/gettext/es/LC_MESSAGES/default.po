@@ -16072,3 +16072,19 @@ msgstr "Transmisión del registro de auditoría y exportaciones firmadas"
 #, elixir-autogen, elixir-format
 msgid "This goal was deleted."
 msgstr "Este objetivo se eliminó."
+
+#: lib/kanban_web/changelog_feed.ex
+#, elixir-autogen, elixir-format
+msgid "Release notes for each new version of Stride."
+msgstr "Notas de la versión de cada nueva versión de Stride."
+
+#: lib/kanban_web/changelog_feed.ex
+#, elixir-autogen, elixir-format
+msgid "Stride %{version}"
+msgstr "Stride %{version}"
+
+#: lib/kanban_web/changelog_feed.ex
+#: lib/kanban_web/controllers/page_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride releases"
+msgstr "Versiones de Stride"

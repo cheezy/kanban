@@ -28,10 +28,12 @@ The three root layouts (`root`, `app_chrome` and `marketing`, in
   path={request_path(assigns[:conn])}
   locale={Gettext.get_locale(KanbanWeb.Gettext)}
   og_image={assigns[:og_image]}
+  feed_path={assigns[:feed_path]}
+  feed_title={assigns[:feed_title]}
 />
 ```
 
-So a page controls its tags through four assigns, and never by writing a
+So a page controls its tags through six assigns, and never by writing a
 `<meta>` tag itself:
 
 | Assign | What it sets | When it is absent |
@@ -40,6 +42,8 @@ So a page controls its tags through four assigns, and never by writing a
 | `:meta_description` | `description`, `og:description` and `twitter:description` | `SeoComponents.default_description/0` |
 | `:noindex` | `<meta name="robots" content="noindex, nofollow">`, only when exactly `true` | The page is indexable |
 | `:og_image` | `og:image` and `twitter:image` | The default image |
+| `:feed_path` | `<link rel="alternate" type="application/atom+xml">`, with an absolute `href` built like the canonical | No feed link |
+| `:feed_title` | The `title` of that feed link | The link has no title |
 
 Every page also gets `og:type`, `og:site_name`, `og:locale`, a
 `summary_large_image` Twitter card and a light and a dark `theme-color`.
@@ -164,6 +168,33 @@ one is listed. A public LiveView page is not derived, so nothing fails if you
 forget it. Leave out account pages such as log-in and register, and never list
 a token, account, board, admin or API path.
 
+## The changelog feed
+
+`/changelog/feed.xml` is an Atom feed of releases, so a feed reader learns
+when a new one ships. `KanbanWeb.SeoController` serves it through the same
+`:seo` pipeline as the sitemap, as `application/atom+xml`. It is not on
+`:browser`, whose `accepts` plug would refuse a reader that asks for
+`application/atom+xml`.
+
+The page and the feed share one source. `KanbanWeb.PageHTML` parses
+`priv/changelog/body.html` once, at compile time, with
+[`KanbanWeb.Changelog`](../lib/kanban_web/changelog.ex). The parse gives each
+release section an `id` such as `release-3-2-0`, so the release file itself
+never carries one. `PageHTML.changelog_body/0` is the page and
+`PageHTML.changelog_releases/0` is the feed's list: every section headed
+`[X.Y.Z] - YYYY-MM-DD`, newest first. `[Unreleased]` has not shipped and an
+undated version has no date for an entry, so neither is in the feed.
+
+[`KanbanWeb.ChangelogFeed`](../lib/kanban_web/changelog_feed.ex) builds one
+entry per release, linking to `/changelog#release-X-Y-Z`. Each entry carries
+the release notes as `<content type="html">`, without their `class` and
+`style` attributes and XML-escaped, so a note cannot add markup to the feed.
+Every URL comes from `canonical_url/1`, so it is absolute.
+
+The changelog page advertises the feed by setting `:feed_path` and
+`:feed_title` in its `seo(:changelog)` clause. No other page sets them, so no
+other page links a feed. The feed is not in the sitemap, which lists pages.
+
 ## The Open Graph image
 
 The default link-preview image is the 1200x630 PNG at
@@ -224,8 +255,9 @@ page locale is.
 
 Never put a token, a session value, an email address or other personal data in
 a meta tag, the structured data, the sitemap or a log line. Every value in
-them is public and cached by crawlers. That is why the canonical drops the
-query string and why a token path gets no canonical at all.
+them is public and cached by crawlers, and the same holds for the changelog
+feed. That is why the canonical drops the query string and why a token path
+gets no canonical at all.
 
 ## The guard tests
 
@@ -249,6 +281,10 @@ These run as part of `mix test`:
 - [`test/kanban_web/controllers/seo_controller_test.exs`](../test/kanban_web/controllers/seo_controller_test.exs)
   covers `robots.txt` per host and fails until a new `PageController` page is
   in the sitemap.
+- [`test/kanban_web/controllers/changelog_feed_test.exs`](../test/kanban_web/controllers/changelog_feed_test.exs)
+  covers the changelog parse, the feed's Atom shape and escaping, and the
+  `rel="alternate"` link. It fails when the page and the feed list different
+  releases, or when an entry links to an `id` the page does not have.
 - [`test/kanban_web/controllers/og_image_test.exs`](../test/kanban_web/controllers/og_image_test.exs)
   covers the default and per-page images.
 - [`test/kanban_web/components/structured_data_test.exs`](../test/kanban_web/components/structured_data_test.exs)

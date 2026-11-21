@@ -14,6 +14,8 @@
       path={request_path(assigns[:conn])}
       locale={Gettext.get_locale(KanbanWeb.Gettext)}
       og_image={assigns[:og_image]}
+      feed_path={assigns[:feed_path]}
+      feed_title={assigns[:feed_title]}
     />
     <link rel="icon" type="image/svg+xml" href={~p"/images/favicon.svg"} />
     <link rel="icon" type="image/svg+xml" sizes="16x16" href={~p"/images/favicon-16x16.svg"} />

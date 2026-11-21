@@ -193,7 +193,9 @@ defmodule KanbanWeb.PageController do
       meta_description:
         gettext(
           "Release notes for Stride: the new features, improvements and fixes in each release, with the newest release listed first."
-        )
+        ),
+      feed_path: ~p"/changelog/feed.xml",
+      feed_title: gettext("Stride releases")
     ]
 
   def set_locale(conn, %{"locale" => locale}) do

@@ -62,6 +62,8 @@ defmodule KanbanWeb.SeoComponents do
   A blank `title` falls back to "Stride" and a blank `description` to
   `default_description/0`. The robots tag is emitted only when `noindex` is
   exactly `true`. Canonical and `og:url` are left out when `path` is `nil`.
+  A `rel="alternate"` Atom link is emitted only when `feed_path` is set, with
+  its `href` made absolute the same way as the canonical URL.
 
   A page's own `og_image` is made absolute (see `og_image_url/1`) and carries
   no width, height or alt, since those describe the default image only. A
@@ -85,6 +87,14 @@ defmodule KanbanWeb.SeoComponents do
     default: nil,
     doc: "the Gettext locale; nil uses the current Gettext locale"
 
+  attr :feed_path, :string,
+    default: nil,
+    doc: "the path of the page's Atom feed, usually assigns[:feed_path]; nil emits no feed link"
+
+  attr :feed_title, :string,
+    default: nil,
+    doc: "the title of the feed link, usually assigns[:feed_title]"
+
   def seo_head(assigns) do
     description = present(assigns.description) || default_description()
 
@@ -93,6 +103,7 @@ defmodule KanbanWeb.SeoComponents do
       |> assign(:resolved_title, present(assigns.title) || gettext("Stride"))
       |> assign(:resolved_description, description)
       |> assign(:canonical_url, canonical_url(assigns.path))
+      |> assign(:feed_url, canonical_url(assigns.feed_path))
       |> assign(:og_locale, og_locale(assigns.locale || Gettext.get_locale(KanbanWeb.Gettext)))
       |> assign_og_image()
       |> assign(:theme_light, @theme_color_light)
@@ -102,6 +113,13 @@ defmodule KanbanWeb.SeoComponents do
     <meta name="description" content={@resolved_description} />
     <link :if={@canonical_url} rel="canonical" href={@canonical_url} />
     <meta :if={@noindex == true} name="robots" content="noindex, nofollow" />
+    <link
+      :if={@feed_url}
+      rel="alternate"
+      type="application/atom+xml"
+      title={@feed_title}
+      href={@feed_url}
+    />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Stride" />
     <meta property="og:title" content={@resolved_title} />

@@ -1,6 +1,7 @@
 defmodule KanbanWeb.SeoController do
   @moduledoc """
-  Serves `/robots.txt` and `/sitemap.xml` (W2891).
+  Serves `/robots.txt` and `/sitemap.xml` (W2891), and the Atom feed of
+  releases at `/changelog/feed.xml` (W2896).
 
   `robots.txt` allows crawling, disallows `/api/` and names the sitemap only
   when both of these hold:
@@ -17,12 +18,15 @@ defmodule KanbanWeb.SeoController do
   no copy is indexed as a duplicate of the real site. The Host header is only
   compared, never written into a response.
 
-  Both go through the router's `:seo` pipeline, which fetches no session and
-  sets no cookie. The sitemap body comes from `KanbanWeb.SeoXML`.
+  All three go through the router's `:seo` pipeline, which fetches no session
+  and sets no cookie. The sitemap body comes from `KanbanWeb.SeoXML` and the
+  feed body from `KanbanWeb.ChangelogFeed`.
   """
   use KanbanWeb, :controller
 
+  alias KanbanWeb.ChangelogFeed
   alias KanbanWeb.Endpoint
+  alias KanbanWeb.PageHTML
   alias KanbanWeb.SeoXML
 
   # An hour: crawlers fetch these rarely, and a new page is seen the same day.
@@ -49,6 +53,17 @@ defmodule KanbanWeb.SeoController do
     |> put_resp_content_type("application/xml")
     |> put_resp_header("cache-control", @cache_control)
     |> send_resp(:ok, SeoXML.sitemap())
+  end
+
+  # The body is the Atom feed from `ChangelogFeed.atom/1`, which escapes every
+  # value, release notes included, sent as application/atom+xml, not HTML.
+  @spec changelog_feed(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  # sobelow_skip ["XSS.SendResp"]
+  def changelog_feed(conn, _params) do
+    conn
+    |> put_resp_content_type("application/atom+xml")
+    |> put_resp_header("cache-control", @cache_control)
+    |> send_resp(:ok, ChangelogFeed.atom(PageHTML.changelog_releases()))
   end
 
   defp canonical_robots do
