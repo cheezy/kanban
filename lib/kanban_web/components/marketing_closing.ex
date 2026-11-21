@@ -134,6 +134,8 @@ defmodule KanbanWeb.MarketingClosing do
       <div class="flex flex-wrap gap-4 md:gap-7">
         <.link
           href={~p"/integrations"}
+          target="_blank"
+          rel="noopener"
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {gettext("Integrations")}

@@ -40,6 +40,11 @@ npm-debug.log
 .mcp.json
 
 TOKENS
+# TOKENS stays unanchored, like .stride_auth.md below, but macOS checkouts
+# ignore case, so it also matched every tokens/ or Tokens/ source folder in the
+# native apps, mobile/shared/tokens/ included. Re-include those folders only: a
+# file named TOKENS inside one is still ignored.
+!/mobile/**/tokens/
 
 # .stride_auth.md is deliberately NOT anchored. It carries API tokens, so it
 # must stay ignored wherever it appears -- a stray nested copy being invisible
@@ -61,11 +66,66 @@ TOKENS
 /.stride-dirty-baseline
 .exploratory/
 priv/repo/seed_metrics_data.exs
-package.json
-package-lock.json
-node_modules
 
-stride/
+# The root npm files are anchored so they no longer hide package files at any
+# depth: the native apps under mobile/ may carry their own, and those must show
+# up in `git status`. assets/node_modules stays ignored by /assets/node_modules/
+# above. The dark-mode audit tool installs its own packages, which the old
+# unanchored lines ignored, so they are named here to keep that behaviour.
+/package.json
+/package-lock.json
+/node_modules
+/tools/dark-mode-audit/package.json
+/tools/dark-mode-audit/package-lock.json
+/tools/dark-mode-audit/node_modules/
+
+# Native app build output (docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md
+# section 14). The Xcode project is generated from mobile/ios/project.yml, so
+# the .xcodeproj is build output too. Xcode's build folder is matched only at
+# mobile/ios/build/, so a source folder named Build/ deeper down is not lost on
+# a macOS checkout, which ignores case.
+/mobile/ios/build/
+/mobile/ios/**/.build/
+/mobile/ios/**/DerivedData/
+/mobile/ios/**/xcuserdata/
+/mobile/ios/**/*.xcuserstate
+/mobile/ios/**/*.xcodeproj
+/mobile/android/**/build/
+/mobile/android/**/.gradle/
+/mobile/android/**/.kotlin/
+/mobile/android/**/.idea/
+/mobile/android/**/.cxx/
+/mobile/android/**/captures/
+/mobile/**/*.ipa
+/mobile/**/*.dSYM.zip
+/mobile/**/*.xcarchive
+/mobile/**/*.apk
+/mobile/**/*.aab
+/mobile/**/fastlane/report.xml
+/mobile/**/fastlane/test_output/
+
+# Signing keys, their passwords and machine-local SDK paths are deliberately
+# NOT anchored, for the reason given beside .stride_auth.md: a stray copy
+# anywhere must stay ignored rather than become committable. The extensions are
+# matched in any case, because a case-sensitive checkout (Linux CI) would
+# otherwise commit upload.JKS or AuthKey.P8. fastlane keeps its secrets in .env
+# files and its App Store Connect and Play service-account keys in JSON files.
+local.properties
+keystore.properties
+key.properties
+*.[kK][eE][yY][sS][tT][oO][rR][eE]
+*.[jJ][kK][sS]
+*.[pP]8
+*.[pP]12
+*.[pP][eE][mM]
+*.[cC][eE][rR]
+*.[mM][oO][bB][iI][lL][eE][pP][rR][oO][vV][iI][sS][iI][oO][nN]
+/mobile/**/fastlane/.env*
+/mobile/**/fastlane/*.json
+
+# The stride plugin checkout is anchored: macOS checkouts ignore case, so an
+# unanchored stride/ also swallowed the iOS app's source folder mobile/ios/Stride/.
+/stride/
 stride-copilot/
 stride-gemini/
 stride-gemini-marketplace/

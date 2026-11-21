@@ -6,11 +6,16 @@ name: Elixir CD
 # newly-published dependency advisories (mix deps.audit / hex.audit) are
 # caught even when the repo is quiet — schedule triggers run on the default
 # branch (main) and a failure surfaces as a failed workflow there.
+# Pushes and pull requests that change only mobile/ (the native apps) do not
+# run the Elixir suite or redeploy; a change that also touches the web app
+# still runs it.
 on:
   push:
     branches: [ "main", "release" ]  # adapt branch for project
+    paths-ignore: [ "mobile/**" ]
   pull_request:
     branches: [ "main" ]  # adapt branch for project
+    paths-ignore: [ "mobile/**" ]
   schedule:
     - cron: '0 6 * * 1'  # Mondays 06:00 UTC — weekly dependency-advisory sweep
   workflow_dispatch:

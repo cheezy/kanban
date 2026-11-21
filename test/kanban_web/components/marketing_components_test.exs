@@ -968,6 +968,27 @@ defmodule KanbanWeb.MarketingComponentsTest do
       refute html =~ ~s|>\nStatus\n<|
       refute html =~ ~s|> Status <|
     end
+
+    test "opens the Integrations, Blog and GitHub links in a new tab" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <KanbanWeb.MarketingClosing.marketing_footer />
+        """)
+
+      assert html =~ ~s|href="/integrations" target="_blank" rel="noopener"|
+
+      assert html =~
+               ~s|href="#{KanbanWeb.MarketingClosing.blog_url()}" target="_blank" rel="noopener noreferrer"|
+
+      assert html =~
+               ~s|href="#{KanbanWeb.MarketingClosing.github_url()}" target="_blank" rel="noopener noreferrer"|
+
+      # The legal links stay in the same tab
+      refute html =~ ~s|href="/privacy" target="_blank"|
+      refute html =~ ~s|href="/security" target="_blank"|
+    end
   end
 
   # Count the occurrences of `href="<path>"` in the rendered HTML. Useful for
