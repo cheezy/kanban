@@ -736,4 +736,29 @@ defmodule KanbanWeb.TaskCardTest do
       assert chip_count(html) == 1
     end
   end
+
+  describe "task_card/1 — read_only" do
+    test "a read-only card shows a plain cursor, not a grab cursor" do
+      assigns = %{task: task()}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} read_only />
+        """)
+
+      assert html =~ "cursor: default;"
+      refute html =~ "cursor: grab;"
+    end
+
+    test "a card is draggable-looking by default" do
+      assigns = %{task: task()}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} />
+        """)
+
+      assert html =~ "cursor: grab;"
+    end
+  end
 end

@@ -3580,6 +3580,7 @@ msgstr "账户信息"
 #: lib/kanban_web/components/agent_activity_feed.ex
 #: lib/kanban_web/components/agents_header.ex
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
+#: lib/kanban_web/live/demo_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Agent activity"
 msgstr "代理活动"
@@ -6262,6 +6263,7 @@ msgstr "人工审查与完成"
 #: lib/kanban_web/components/marketing_components.ex
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #: lib/kanban_web/controllers/page_html/workflows.html.heex
+#: lib/kanban_web/live/demo_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Start now"
 msgstr "立即开始"
@@ -16322,3 +16324,140 @@ msgstr "从适用于 Codex 的 Stride 市场安装。"
 #, elixir-autogen, elixir-format
 msgid "Install from the Stride marketplace for Copilot."
 msgstr "从适用于 Copilot 的 Stride 市场安装。"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} claimed %{card}"
+msgstr "%{agent} 认领了 %{card}"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} hit a failing hook on %{card} and is fixing it"
+msgstr "%{agent} 在 %{card} 上的钩子失败了，正在修复"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} moved %{card} to Done"
+msgstr "%{agent} 将 %{card} 移到了完成"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} sent %{card} to Review"
+msgstr "%{agent} 将 %{card} 提交审查"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "A replay of AI agents working a sample board: they claim tasks, run their hooks and move cards to Done. Nothing here is saved."
+msgstr "AI 代理在示例看板上工作的回放：它们认领任务、运行钩子并将卡片移到完成。这里不会保存任何内容。"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Add a dark mode toggle to settings"
+msgstr "在设置中添加深色模式开关"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Cache the board summary query"
+msgstr "缓存看板摘要查询"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Fix the time zone on the weekly report"
+msgstr "修复周报中的时区"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Live demo board"
+msgstr "实时演示看板"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "See agents work a board"
+msgstr "看代理如何处理看板"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Set up the project README"
+msgstr "编写项目 README"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Translate the onboarding emails"
+msgstr "翻译入门邮件"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Waiting for the first agent…"
+msgstr "正在等待第一个代理…"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Watch AI agents claim tasks, run their hooks and move cards to Done on a sample Stride board. No sign-up needed."
+msgstr "观看 AI 代理在 Stride 示例看板上认领任务、运行钩子并将卡片移到完成。无需注册。"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch a replay of agents claiming tasks, running their hooks and moving cards to Done. No account needed."
+msgstr "观看代理认领任务、运行钩子并将卡片移到完成的回放。无需账户。"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch the live demo"
+msgstr "观看实时演示"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Write tests for the export endpoint"
+msgstr "为导出端点编写测试"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Fix the broken link in the release checklist"
+msgstr "修复发布检查清单中失效的链接"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Get the app ready for launch"
+msgstr "为发布准备好应用"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Backlog"
+msgstr "待办事项"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Doing"
+msgstr "进行中"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Done"
+msgstr "完成"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Ready"
+msgstr "就绪"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Review"
+msgstr "审查"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "hook result"
+msgid "failed"
+msgstr "失败"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "hook result"
+msgid "passed"
+msgstr "通过"

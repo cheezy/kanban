@@ -3580,6 +3580,7 @@ msgstr "アカウント情報"
 #: lib/kanban_web/components/agent_activity_feed.ex
 #: lib/kanban_web/components/agents_header.ex
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
+#: lib/kanban_web/live/demo_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Agent activity"
 msgstr "エージェントの活動"
@@ -6253,6 +6254,7 @@ msgstr "人によるレビューと完了"
 #: lib/kanban_web/components/marketing_components.ex
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #: lib/kanban_web/controllers/page_html/workflows.html.heex
+#: lib/kanban_web/live/demo_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Start now"
 msgstr "今すぐ始める"
@@ -16319,3 +16321,140 @@ msgstr "Codex 用の Stride マーケットプレイスからインストール�
 #, elixir-autogen, elixir-format
 msgid "Install from the Stride marketplace for Copilot."
 msgstr "Copilot 用の Stride マーケットプレイスからインストールします。"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} claimed %{card}"
+msgstr "%{agent} が %{card} を担当しました"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} hit a failing hook on %{card} and is fixing it"
+msgstr "%{agent} の %{card} でフックが失敗し、%{agent} が修正しています"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} moved %{card} to Done"
+msgstr "%{agent} が %{card} を完了に移動しました"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} sent %{card} to Review"
+msgstr "%{agent} が %{card} をレビューに送りました"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "A replay of AI agents working a sample board: they claim tasks, run their hooks and move cards to Done. Nothing here is saved."
+msgstr "AI エージェントがサンプルボードで作業する様子の再生です。タスクを担当し、フックを実行し、カードを完了に移動します。ここでは何も保存されません。"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Add a dark mode toggle to settings"
+msgstr "設定にダークモードの切り替えを追加する"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Cache the board summary query"
+msgstr "ボード概要のクエリをキャッシュする"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Fix the time zone on the weekly report"
+msgstr "週次レポートのタイムゾーンを修正する"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Live demo board"
+msgstr "ライブデモボード"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "See agents work a board"
+msgstr "エージェントがボードで作業する様子を見る"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Set up the project README"
+msgstr "プロジェクトの README を作成する"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Translate the onboarding emails"
+msgstr "オンボーディングメールを翻訳する"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Waiting for the first agent…"
+msgstr "最初のエージェントを待っています…"
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Watch AI agents claim tasks, run their hooks and move cards to Done on a sample Stride board. No sign-up needed."
+msgstr "Stride のサンプルボードで、AI エージェントがタスクを担当し、フックを実行し、カードを完了に移動する様子をご覧ください。登録は不要です。"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch a replay of agents claiming tasks, running their hooks and moving cards to Done. No account needed."
+msgstr "エージェントがタスクを担当し、フックを実行し、カードを完了に移動する様子を再生で見られます。アカウントは不要です。"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch the live demo"
+msgstr "ライブデモを見る"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Write tests for the export endpoint"
+msgstr "エクスポートエンドポイントのテストを書く"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Fix the broken link in the release checklist"
+msgstr "リリースのチェックリストにある壊れたリンクを修正する"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Get the app ready for launch"
+msgstr "アプリをリリースに向けて準備する"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Backlog"
+msgstr "バックログ"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Doing"
+msgstr "進行中"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Done"
+msgstr "完了"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Ready"
+msgstr "準備完了"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Review"
+msgstr "レビュー"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "hook result"
+msgid "failed"
+msgstr "失敗"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "hook result"
+msgid "passed"
+msgstr "成功"

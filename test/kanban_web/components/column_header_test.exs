@@ -212,4 +212,29 @@ defmodule KanbanWeb.ColumnHeaderTest do
       assert html =~ "var(--st-blocked-soft)"
     end
   end
+
+  describe "column_header/1 — status attr" do
+    test "a status atom picks the dot colour whatever the name says" do
+      assigns = %{column: column(%{name: "Terminé"})}
+
+      html =
+        rendered_to_string(~H"""
+        <ColumnHeader.column_header column={@column} count={1} status={:done} />
+        """)
+
+      assert html =~ "background: var(--st-done);"
+      assert html =~ "Terminé"
+    end
+
+    test "without a status a translated name falls back to the neutral dot" do
+      assigns = %{column: column(%{name: "Terminé"})}
+
+      html =
+        rendered_to_string(~H"""
+        <ColumnHeader.column_header column={@column} count={1} />
+        """)
+
+      assert html =~ "background: var(--ink-4);"
+    end
+  end
 end

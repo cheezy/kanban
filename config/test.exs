@@ -8,6 +8,10 @@ config :kanban, :env, :test
 # which would otherwise spray Postgrex disconnect errors into the log.
 config :kanban, :board_index_refresh_ms, 0
 
+# The /demo replay (KanbanWeb.DemoBoardLive) arms no timer in tests; they send
+# its ticks themselves, so a replay never advances on its own mid-assertion.
+config :kanban, :demo_board_tick_ms, 0
+
 # Enable the Phoenix.Ecto.SQL.Sandbox plug in the endpoint so LiveView
 # processes spawned by tests share the test owner's sandbox connection
 # instead of checking out their own (and triggering disconnect logs).

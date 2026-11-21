@@ -47,10 +47,13 @@ defmodule KanbanWeb.GoalCard do
     * `column` — column atom (`:backlog | :ready | :doing | :review | :done`).
       Currently informational; kept for parity with TaskCard. Default `:backlog`.
     * `dense` — when true, tighter padding. Default false.
+    * `read_only` — when true, the card shows a plain cursor rather than a
+      grab cursor, for a card that can never be dragged. Default false.
   """
   attr :task, :map, required: true
   attr :column, :atom, default: :backlog
   attr :dense, :boolean, default: false
+  attr :read_only, :boolean, default: false
 
   def goal_card(assigns) do
     assigns = derive_assigns(assigns)
@@ -63,7 +66,7 @@ defmodule KanbanWeb.GoalCard do
       "padding: #{@padding};",
       "box-shadow: var(--shadow-sm), inset 3px 0 0 #{@color};",
       "display: flex; flex-direction: column; gap: #{@gap}px;",
-      "cursor: grab; position: relative;"
+      "cursor: #{if @read_only, do: "default", else: "grab"}; position: relative;"
     ]}>
       <.top_row task={@task} color={@color} ink={@ink} soft={@soft} author={@author} />
 

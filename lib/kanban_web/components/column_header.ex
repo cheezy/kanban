@@ -28,12 +28,16 @@ defmodule KanbanWeb.ColumnHeader do
       the filters leave visible. The badge then reads "shown of total"
       (`total` being every card in the column). The WIP highlight always
       uses the unfiltered `count`. Default `nil` (no filter).
+    * `status` — the column's status atom (`:backlog | :ready | :doing |
+      :review | :done`). Picks the dot colour instead of the name, so a
+      translated name keeps its colour. Default `nil` (use the name).
   """
   attr :column, :map, required: true
   attr :count, :integer, required: true
   attr :new_task_path, :string, default: nil
   attr :shown, :integer, default: nil
   attr :total, :integer, default: nil
+  attr :status, :atom, default: nil
 
   def column_header(assigns) do
     wip = wip_limit(assigns.column)
@@ -43,7 +47,7 @@ defmodule KanbanWeb.ColumnHeader do
       assigns
       |> assign(:wip, wip)
       |> assign(:over_wip, over_wip)
-      |> assign(:status_color, status_color_for(assigns.column.name))
+      |> assign(:status_color, status_color_for(assigns.status || assigns.column.name))
       |> assign(:wip_label, badge_label(assigns, wip))
 
     ~H"""
@@ -116,6 +120,9 @@ defmodule KanbanWeb.ColumnHeader do
 
   defp badge_bg(true), do: "var(--st-blocked-soft)"
   defp badge_bg(false), do: "var(--surface-sunken)"
+
+  defp status_color_for(status) when is_atom(status) and not is_nil(status),
+    do: status |> Atom.to_string() |> status_color_for()
 
   defp status_color_for(name) when is_binary(name) do
     case String.downcase(name) do

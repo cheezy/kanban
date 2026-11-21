@@ -44,6 +44,7 @@ defmodule KanbanWeb.SeoXML do
     /changelog
     /issue
     /resources
+    /demo
   )
 
   @doc """

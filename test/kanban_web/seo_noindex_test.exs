@@ -68,6 +68,7 @@ defmodule KanbanWeb.SeoNoindexTest do
     "/issue",
     "/resources",
     "/resources/:id",
+    "/demo",
     "/docs",
     "/docs/:slug",
     "/integrations",

@@ -75,6 +75,15 @@ defmodule KanbanWeb.PageControllerTest do
     end)
   end
 
+  test "GET / links the public demo board for visitors and signed-in users", %{conn: conn} do
+    html = conn |> get(~p"/") |> html_response(200)
+    assert html =~ ~s(data-demo-link)
+    assert html =~ ~s(href="/demo")
+
+    %{conn: signed_in} = register_and_log_in_user(%{conn: build_conn()})
+    assert signed_in |> get(~p"/") |> html_response(200) =~ ~s(href="/demo")
+  end
+
   test "GET /about", %{conn: conn} do
     conn = get(conn, ~p"/about")
     assert html_response(conn, 200)

@@ -47,17 +47,21 @@ defmodule KanbanWeb.TaskCard do
       `move_task_to_ready` event). The caller decides eligibility (Backlog
       column by name, modify access, a Ready column exists); goal cards
       never render it. Default false.
+    * `read_only` — when true, the card shows a plain cursor rather than a
+      grab cursor, for a card that can never be dragged. A goal card passes
+      it on to `KanbanWeb.GoalCard`. Default false.
   """
   attr :task, :map, required: true
   attr :column, :atom, default: :backlog
   attr :dense, :boolean, default: false
   attr :board_id, :any, default: nil
   attr :show_move_to_ready, :boolean, default: false
+  attr :read_only, :boolean, default: false
 
   def task_card(assigns) do
     if assigns.task.type == :goal do
       ~H"""
-      <GoalCard.goal_card task={@task} column={@column} dense={@dense} />
+      <GoalCard.goal_card task={@task} column={@column} dense={@dense} read_only={@read_only} />
       """
     else
       regular_card(assigns)
@@ -80,7 +84,8 @@ defmodule KanbanWeb.TaskCard do
       "border-radius: 6px; padding: #{@padding};",
       "box-shadow: var(--shadow-sm);",
       "display: flex; flex-direction: column; gap: #{@gap}px;",
-      "cursor: grab; position: relative; overflow: visible;",
+      "cursor: #{if @read_only, do: "default", else: "grab"};",
+      "position: relative; overflow: visible;",
       "border-left: #{@left_border};"
     ]}>
       <.top_row task={@task} column={@column} />

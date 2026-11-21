@@ -750,6 +750,10 @@ defmodule KanbanWeb.Router do
       ],
       root_layout: {KanbanWeb.Layouts, :marketing} do
       live "/issue", IssueLive.Form, :new
+      # A read-only replay of agents working a sample board (W2902). Public and
+      # indexable; it reads only the static script in KanbanWeb.DemoBoard. It is
+      # a page for visitors, so it takes the marketing layout, not the app shell.
+      live "/demo", DemoBoardLive, :index
     end
 
     live_session :public_app_shell,

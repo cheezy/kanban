@@ -3583,6 +3583,7 @@ msgstr ""
 #: lib/kanban_web/components/agent_activity_feed.ex
 #: lib/kanban_web/components/agents_header.ex
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
+#: lib/kanban_web/live/demo_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Agent activity"
 msgstr ""
@@ -6247,6 +6248,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #: lib/kanban_web/controllers/page_html/workflows.html.heex
+#: lib/kanban_web/live/demo_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Start now"
 msgstr "Start now"
@@ -16326,3 +16328,140 @@ msgstr "Install from the Stride marketplace for Codex."
 #, elixir-autogen, elixir-format
 msgid "Install from the Stride marketplace for Copilot."
 msgstr "Install from the Stride marketplace for Copilot."
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} claimed %{card}"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} hit a failing hook on %{card} and is fixing it"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} moved %{card} to Done"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "%{agent} sent %{card} to Review"
+msgstr ""
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "A replay of AI agents working a sample board: they claim tasks, run their hooks and move cards to Done. Nothing here is saved."
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Add a dark mode toggle to settings"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Cache the board summary query"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Fix the time zone on the weekly report"
+msgstr ""
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Live demo board"
+msgstr ""
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "See agents work a board"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Set up the project README"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Translate the onboarding emails"
+msgstr ""
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Waiting for the first agent…"
+msgstr ""
+
+#: lib/kanban_web/live/demo_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Watch AI agents claim tasks, run their hooks and move cards to Done on a sample Stride board. No sign-up needed."
+msgstr ""
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch a replay of agents claiming tasks, running their hooks and moving cards to Done. No account needed."
+msgstr ""
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch the live demo"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Write tests for the export endpoint"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Fix the broken link in the release checklist"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgid "Get the app ready for launch"
+msgstr ""
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Backlog"
+msgstr "Backlog"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Doing"
+msgstr "Doing"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Done"
+msgstr "Done"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Ready"
+msgstr "Ready"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "demo column"
+msgid "Review"
+msgstr "Review"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "hook result"
+msgid "failed"
+msgstr "failed"
+
+#: lib/kanban_web/demo_board.ex
+#, elixir-autogen, elixir-format
+msgctxt "hook result"
+msgid "passed"
+msgstr "passed"

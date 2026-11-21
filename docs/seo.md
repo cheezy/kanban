@@ -190,7 +190,8 @@ XML-escaped.
 **A new public page must be added to `@public_paths` by hand.** The sitemap
 test derives the `PageController` pages from the router and fails until a new
 one is listed. A public LiveView page is not derived, so nothing fails if you
-forget it. Leave out account pages such as log-in and register, and never list
+forget it; `/demo`, the public demo board ([Demo Board](demo-board.md)), is one
+such page. Leave out account pages such as log-in and register, and never list
 a token, account, board, admin or API path.
 
 ## The changelog feed

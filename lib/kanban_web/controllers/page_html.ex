@@ -9,6 +9,7 @@ defmodule KanbanWeb.PageHTML do
   import KanbanWeb.HitMeComponents
   import KanbanWeb.MarketingClosing
   import KanbanWeb.MarketingComponents
+  import KanbanWeb.MarketingDemoBand
   import KanbanWeb.SeoComponents, only: [structured_data: 1]
 
   alias KanbanWeb.Pricing
