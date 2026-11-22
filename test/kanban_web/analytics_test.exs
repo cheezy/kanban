@@ -195,11 +195,16 @@ defmodule KanbanWeb.AnalyticsTest do
     test "the tracker comes before app.js, so window.umami exists when the hooks mount",
          %{conn: conn} do
       configure()
-      html = conn |> get(~p"/pricing") |> html_response(200)
 
-      {tracker, _} = :binary.match(html, "data-website-id")
-      {app_js, _} = :binary.match(html, "/assets/js/app.js")
-      assert tracker < app_js
+      # One page per root layout that loads the tracker: /pricing renders
+      # marketing, /users/register renders root and /about renders app_chrome.
+      for path <- [~p"/pricing", ~p"/users/register", ~p"/about"] do
+        html = conn |> recycle() |> get(path) |> html_response(200)
+
+        {tracker, _} = :binary.match(html, "data-website-id")
+        {app_js, _} = :binary.match(html, "/assets/js/app.js")
+        assert tracker < app_js, "#{path} loads app.js before the tracker"
+      end
     end
 
     test "nothing renders and the CSP is unchanged when the Umami config is absent",
