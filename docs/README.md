@@ -32,6 +32,7 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [Task Form Field Visibility](TASK-FORM-FIELD-VISIBILITY.md) — Which fields the task form shows and how a board owner turns optional fields on or off.
 - [Webhooks and Slack](webhooks.md) — Send a board's task events to your own systems or a Slack or Discord channel, and verify webhook signatures.
 - [Two-Factor Authentication](TWO-FACTOR-AUTHENTICATION.md) — Add a second sign-in factor to your account.
+- [The Stride Mobile Apps](mobile-apps.md) — Coming soon: what the iPhone, iPad and Android apps will do, signing in, notifications and quiet hours, reviewing on a phone, the status screens, devices and the Organization plan.
 
 ## AI agent integrators
 
@@ -74,6 +75,8 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md) — Add a comment to a task.
 - [POST /api/tasks/:id/unclaim](api/post_tasks_id_unclaim.md) — Release a claimed task.
 - [PUT /api/tasks/:id/changed_files](api/put_tasks_id_changed_files.md) — Upload the per-file diff snapshot for a task.
+- [Device sign-in: the OAuth flow](api/oauth.md) — How a Stride app signs a device in, from the browser confirmation to the tokens and signing out; for the apps, not agents.
+- [The person API: /api/me](api/me.md) — The map of every /api/me route the Stride apps call: plan gating, the version header, the shared errors and caching; for the apps, not agents.
 - [POST /oauth/token and POST /oauth/revoke](api/post_oauth_token.md) — Device sign-in for the mobile apps: redeem an authorization code, rotate a refresh token, sign a device out.
 - [GET /api/me](api/get_me.md) — The person API's first route for the mobile apps: the person, their Organization and workspaces, the plan status, the minimum app versions and the device.
 - [The device routes: /api/me/devices](api/me_devices.md) — List, sign out and revoke a person's devices, and update the current device's push token, locale and time zone.

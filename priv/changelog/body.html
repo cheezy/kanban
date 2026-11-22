@@ -31,6 +31,33 @@
               <code>docs/feature-flags.md</code>.
             </li>
             <li>
+              <strong>Sign in to the Stride app through the browser.</strong> The Stride mobile apps sign a phone or tablet in through the system browser: you sign in as on the web, with your Organization's single sign-on and two-factor rules, then confirm a page naming the device with <strong>Allow</strong> or <strong>Cancel</strong>. The app gets a one-time code for an access token that lasts an hour and a refresh token that lasts 30 days, never past 90 days from sign-in. A token or code used twice signs the device out. Device tokens are not for agents: every agent route that takes an API token refuses one. See <code>docs/api/oauth.md</code>.
+            </li>
+            <li>
+              <strong><code>GET /api/me</code> and the app's version check.</strong> The first route the Stride app calls returns you, your Organization and workspaces, whether your plan includes the app, the minimum app versions and the signed-in device. An outdated app gets <code>426 app_update_required</code> with a store link. The app is a new Organization plan feature, <code>mobile_app</code>, which every app route except <code>GET /api/me</code> and the device routes needs while plans are enforced. See <code>docs/api/me.md</code>.
+            </li>
+            <li>
+              <strong>See and revoke your signed-in devices.</strong> The app can list your devices, sign itself out and revoke another, with no plan needed. On the web, Settings lists your devices with <strong>Revoke</strong>, and an org-admin can revoke a member's devices. Every revocation is written to the audit log with its reason. See <code>docs/api/me_devices.md</code>.
+            </li>
+            <li>
+              <strong>The decisions waiting on you, for the Stride app.</strong> The app's Now screen lists the reviews, released tasks, expired claims, failed goal hooks and empty Ready columns waiting on you, ordered by how much each holds up, with a review queue in the same order. Both need the Organization plan. See <code>docs/api/me_decisions.md</code>.
+            </li>
+            <li>
+              <strong>Review a task in the Stride app.</strong> One pending review with its verdicts, acceptance criteria, security review, behaviour matrix and changed files, flagged ones first, and each file's diff highlighted on the server with the reviewer's notes. See <code>docs/api/me_reviews.md</code>.
+            </li>
+            <li>
+              <strong>Approve or request changes from the Stride app.</strong> An approval is signed with a key the device keeps behind Face ID, a fingerprint or its passcode, and checked on the server. A phone cannot approve a change of more than 10 files or 500 changed lines; a tablet or the web can, and a phone can still request changes. A retried decision is safe for 24 hours. Both decisions are written to the audit log, never with the notes or the title. See <code>docs/api/me_review_approval.md</code>.
+            </li>
+            <li>
+              <strong>Push settings for the Stride app.</strong> The app reads and changes your push mode, <strong>Decisions only</strong> by default or <strong>Every event</strong>, the eight push switches, quiet hours and their time zone, and the web's notification preferences page shows the same settings in a Push column. See <code>docs/api/me_notification_settings.md</code>.
+            </li>
+            <li>
+              <strong>Push notifications to the Stride app.</strong> Stride can send push notifications to the app, only with the Organization plan. A push shows only the kind of event, the task's identifier and title, a target's name and date, and counts; never review notes, hook output, code or comment text. Quiet hours hold pushes, and one summary push follows when decisions still wait. See <code>docs/push-notifications.md</code>.
+            </li>
+            <li>
+              <strong>Hide task titles in push notifications.</strong> An Organization's org-admins can turn this on in the <strong>Notification privacy</strong> card on the Organization security page, so pushes read, for example, "W2701 is ready for review". It is off by default. See <code>docs/organization-security-policies.md</code>.
+            </li>
+            <li>
               <strong>Boards, columns and promoting for the Stride app.</strong> The person API the Stride mobile app calls has three new routes for its Boards tab: the boards you can see with their task counts and idle agents, one column's tasks 100 to a page, and a promote that moves up to 100 Backlog tasks to Ready in one step, as the web's Backlog arrow does. When two columns share a name, the leftmost one is the one counted and read. All three take a device token and need the Organization plan.
             </li>
             <li>

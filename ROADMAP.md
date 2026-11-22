@@ -20,7 +20,7 @@ This roadmap describes what we are considering for Stride next. What has already
 
 - **Native mobile apps**
 
-  iPhone, iPad and Android apps for the human side of the loop: hear when work is waiting on you, review with the verdicts first, approve with Face ID or a fingerprint, and keep Ready full.
+  iPhone, iPad and Android apps for the human side of the loop: hear when work is waiting on you, review with the verdicts first, approve with Face ID or a fingerprint, and keep Ready full. The server side the apps call is in place; the iPhone and iPad app comes first, then Android. The [user guide](docs/mobile-apps.md) describes how they will work.
 
 - **Retention and legal hold**
 

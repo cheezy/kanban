@@ -20,8 +20,9 @@ lists:
 - the agent endpoint pages in `api/`, at `/docs/api-<method>-<path>` (for
   example `/docs/api-post-tasks-claim`).
 
-The mobile person-API pages (`api/me_*.md`, `api/get_me.md`,
-`api/post_oauth_token.md`) are not published, nor is anything else in `docs/`.
+The mobile person-API pages (`api/me.md`, `api/me_*.md`, `api/get_me.md`,
+`api/oauth.md`, `api/post_oauth_token.md`) are not published, nor is anything
+else in `docs/`.
 Security findings, plans, runbooks and other internal docs must never be added
 to the allow-list; `test/kanban_web/docs_test.exs` fails if a source path
 looks like one.

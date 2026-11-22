@@ -272,6 +272,10 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 ### Device Sign-in (mobile apps)
 
+These routes are for the Stride mobile apps, not for agents. They take a device token, which no agent route accepts; agents keep using the routes above with their API token.
+
+- [Device sign-in: the OAuth flow](oauth.md) — How a Stride app signs a device in, end to end: the browser confirmation at `GET /oauth/authorize`, the PKCE code, the tokens and their lifetimes, signing out and the rate limits
+- [The person API: /api/me](me.md) — The map of every `/api/me` route the Stride apps call: which are plan-gated with `mobile_app`, the version header, the errors every route shares and how responses are cached
 - [POST /oauth/token and POST /oauth/revoke](post_oauth_token.md) — The token endpoints the Stride mobile apps sign in with: redeem a PKCE authorization code for a device's tokens, rotate a refresh token, and sign a device out. They take no bearer token, and agent API tokens are not accepted there
 - [GET /api/me](get_me.md) — What the mobile app loads at launch and after every sign-in: the person, their Organization and workspaces, the plan status, the minimum app versions, the phone guard limits and the device. It takes a device access token from `POST /oauth/token`; an agent API token is refused, and a device token is refused on every agent route that takes an API token (the public `GET /api/agent/onboarding` and `GET /api/openapi.json` take none)
 - [The device routes: /api/me/devices](me_devices.md) — List the person's devices, update the current device's push token, locale and time zone, sign this device out and revoke another. They take a device access token and are never plan-gated; every revocation writes a `device_revoked` audit event with a reason

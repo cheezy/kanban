@@ -160,6 +160,59 @@ config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 
 See [Telemetry Events](docs/telemetry.md#metrics-retention) for the event the
 job emits.
 
+### Mobile app development
+
+The native iPhone, iPad and Android apps live in `mobile/`, beside the Phoenix
+app at the repository root. They are not built yet: `mobile/ios/` and
+`mobile/android/` hold only their `CLAUDE.md` rules today, and the iOS app
+comes first, then Android
+([phased delivery](docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md#20-phased-delivery)).
+The build and run steps for each app will be added here with its project. The
+user guide is [The Stride Mobile Apps](docs/mobile-apps.md), and the server
+side the apps call is described in [the person API](docs/api/me.md).
+
+- **iOS and iPadOS need a Mac** with Xcode 26.6 and the iOS 26.5 simulators,
+  and XcodeGen 2.47.0, the versions CI pins in `.github/workflows/ios.yml`.
+  The Xcode project will be generated from `mobile/ios/project.yml` and never
+  committed. The apps target iOS and iPadOS 17.
+- **Android needs JDK 17** (Temurin in CI) and the Android SDK, with an
+  emulator image like CI's: API 35, `google_apis`, `x86_64`, the `pixel_7`
+  profile, as pinned in `.github/workflows/android.yml`. The app targets
+  Android 9 (API 28) and up, and builds on macOS, Linux or Windows.
+- **Shared files** for both apps live in `mobile/shared/`
+  ([what is there](mobile/shared/README.md)). `MIX_ENV=test mix mobile.api`
+  checks the API contract and copies it there for the generated API clients,
+  and `MIX_ENV=test mix mobile.tokens` and `MIX_ENV=test mix mobile.strings`
+  write the design tokens and strings.
+- **The iOS and Android workflows skip** their build jobs until their own
+  project exists: `mobile/ios/project.yml` for iOS and
+  `mobile/android/settings.gradle.kts` for Android. Until then each runs only a
+  short Linux check that finds no project, so it passes without running the
+  builds.
+
+**Running against a local server.** Start Stride with `mix phx.server` as
+above, on `http://localhost:4000`. What is already true on the server side:
+
+- The development server listens on `127.0.0.1` only (`config/dev.exs`). The
+  iOS Simulator reaches the Mac's `localhost` directly, and the Android
+  Emulator reaches it at `10.0.2.2`. A physical phone or tablet needs the
+  server bound to `{0, 0, 0, 0}` instead, on a network you trust.
+- Paid plans are not enforced in development, so every app route is unlocked
+  and `GET /api/me` returns `app_unlocked: true`.
+- Development never contacts Apple or Google, so no push is sent
+  ([push notifications](docs/push-notifications.md#development-and-tests)).
+- Sign-in always returns to the apps' fixed redirect,
+  `com.stridelikeaboss.app:/oauth/callback`
+  ([the OAuth flow](docs/api/oauth.md)).
+- The web's Devices list and Push settings show while the `:mobile_app_preview`
+  flag is on for you, which a site admin turns on at `/admin/feature-flags`, and
+  also once you have a signed-in device, or for Push one a push can reach
+  ([the mobile app preview](docs/feature-flags.md#the-mobile-app-preview)).
+
+How each app is pointed at a local server, rather than the hosted one, is not
+settled yet: nothing in the repository sets it. It will be documented with each
+app's project.
+
 ---
 
 ## What is Stride?
@@ -452,6 +505,7 @@ Start with the [documentation index](docs/README.md). It lists every doc in `doc
 - [AI Workflow Guide](docs/AI-WORKFLOW.md) - Complete API workflow for agents
 - [Agent Hook Execution Guide](docs/AGENT-HOOK-EXECUTION-GUIDE.md) - Deep dive into hooks
 - [Review Workflow](docs/REVIEW-WORKFLOW.md) - Mastering the review process
+- [The Stride Mobile Apps](docs/mobile-apps.md) - Coming soon: what the iPhone, iPad and Android apps will do, signing in, notifications, reviewing on a phone and devices
 - [Unclaim Tasks Guide](docs/UNCLAIM-TASKS.md) - When and how to unclaim tasks
 - [Webhooks and Slack](docs/webhooks.md) - Send a board's task events to your own systems or a Slack or Discord channel, and verify webhook signatures
 - [Stride MCP Server](docs/MCP.md) - Use Stride through its Model Context Protocol server instead of hand-built API calls
@@ -524,6 +578,8 @@ the documentation index; use each tool's Stride plugin instead.
 - [POST /api/tasks/:id/comments](docs/api/post_tasks_id_comments.md) - Add a comment to a task
 - [POST /api/tasks/:id/unclaim](docs/api/post_tasks_id_unclaim.md) - Release a claimed task
 - [PUT /api/tasks/:id/changed_files](docs/api/put_tasks_id_changed_files.md) - Upload the per-file diff snapshot for a task
+- [Device sign-in: the OAuth flow](docs/api/oauth.md) - How a Stride app signs a device in; for the apps, not agents
+- [The person API: /api/me](docs/api/me.md) - Every /api/me route the Stride apps call; for the apps, not agents
 
 ## Project Guidelines
 
