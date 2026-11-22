@@ -64,8 +64,9 @@ test("umamiTrack does nothing when the tracker is missing or blocked", () => {
   // Removing umamiTrack's guard, or just its typeof clause, is an equivalent
   // mutant for these inputs: the try/catch turns the resulting TypeError into
   // the same false. So this test checks the behaviour (returns false), not
-  // the guard itself. Only a track getter (counting or throwing reads) would
-  // tell the mutant apart, and no test here uses one.
+  // the guard itself. Only a track getter that counts its reads would tell
+  // the mutant apart, and no test here uses one; the throwing getters in the
+  // next-but-one test return false with or without the guard.
   assert.equal(umamiTrack({}, "signup"), false)
   assert.equal(umamiTrack(undefined, "signup"), false)
   assert.equal(umamiTrack({umami: {}}, "signup"), false)
@@ -74,6 +75,14 @@ test("umamiTrack does nothing when the tracker is missing or blocked", () => {
 test("umamiTrack swallows an error thrown by the tracker", () => {
   const umami = {track: () => { throw new Error("blocked") }}
   assert.equal(umamiTrack({umami}, "signup"), false)
+})
+
+test("umamiTrack returns false when reading the tracker throws", () => {
+  const throwingTrack = {get track() { throw new Error("blocked") }}
+  assert.equal(umamiTrack({umami: throwingTrack}, "signup"), false)
+
+  const throwingUmami = {get umami() { throw new Error("blocked") }}
+  assert.equal(umamiTrack(throwingUmami, "install-command-copied", {runtime: "codex"}), false)
 })
 
 test("stripQuery drops the query string and the fragment", () => {

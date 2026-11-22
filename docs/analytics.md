@@ -161,7 +161,8 @@ session and the funnel could not use it.
    `data-umami-event-<property>="<value>"` per property to the link. The
    tracker sends it; no JavaScript is needed.
 3. For anything else, call `umamiTrack(win, "<name>", {...})` from
-   `analytics.js`, which does nothing when the tracker is missing, and add a
+   `analytics.js`, which does nothing when the tracker is missing and returns
+   false when reading or calling the tracker throws, and add a
    `node --test` case to
    [`analytics.test.mjs`](../assets/js/analytics.test.mjs).
 4. Add the event and its allowed values to the allow-lists in
