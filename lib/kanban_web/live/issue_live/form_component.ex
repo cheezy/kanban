@@ -120,6 +120,8 @@ defmodule KanbanWeb.IssueLive.FormComponent do
         <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);">
           <a
             href="https://github.com/cheezy/kanban/issues"
+            data-umami-event="github-clicked"
+            data-umami-event-location="issue"
             target="_blank"
             rel="noopener noreferrer"
             style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); text-decoration: none;"

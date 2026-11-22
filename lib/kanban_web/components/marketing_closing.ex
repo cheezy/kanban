@@ -79,6 +79,8 @@ defmodule KanbanWeb.MarketingClosing do
         <% else %>
           <.link
             href={~p"/users/register"}
+            data-umami-event="get-started-clicked"
+            data-umami-event-location="closing"
             class="inline-flex items-center justify-center gap-1.5 font-medium hover:opacity-90 transition-opacity h-12 md:h-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             style="padding: 12px 22px; border-radius: 7px; background: var(--ink); color: var(--surface); font-size: 14px;"
           >
@@ -174,6 +176,8 @@ defmodule KanbanWeb.MarketingClosing do
         </.link>
         <.link
           href={github_url()}
+          data-umami-event="github-clicked"
+          data-umami-event-location="footer"
           target="_blank"
           rel="noopener noreferrer"
           class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"

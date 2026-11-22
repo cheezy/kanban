@@ -152,6 +152,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Local Dates and Times](local-time.md) — How every page formats an absolute date or time in the viewer's zone and language, and how to add a style or locale.
 - [Dates and Times](dates-and-times.md) — The rule that every shown date or time goes through `KanbanWeb.LocalTime`, the guard test that enforces it, and its allow-list.
 - [Search and Social Tags](seo.md) — How a page sets its title, description and noindex, how canonical, robots.txt and its AI crawler policy, the sitemap and llms.txt work, the Open Graph image, and how structured data is escaped.
+- [Analytics](analytics.md) — How Umami analytics is configured, which pages load the tracker, the CSP it widens, the events it sends, how to add one, and the dashboard funnel and goal setup.
 - [Demo Board](demo-board.md) — The public read-only `/demo` board that replays agents working tasks: how the replay runs, how to change its script and translate its text, and why it can change nothing.
 - [Publishing Guides on the Site](docs-site.md) — Which guides are published at `/docs`, how they are copied, rendered and link-rewritten, and how to publish another one.
 - [Agent Integration Pages](integrations-pages.md) — The `/integrations` page for each agent runtime, where its install commands come from, the test that checks them against the plugin READMEs, and how to update one.

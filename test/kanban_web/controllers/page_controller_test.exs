@@ -237,7 +237,7 @@ defmodule KanbanWeb.PageControllerTest do
   for {path, localized, english} <- [
         {"/terms", "21. Oktober 2026", "October 21, 2026"},
         {"/acceptable-use", "11. Juni 2026", "June 11, 2026"},
-        {"/privacy", "21. November 2026", "November 21, 2026"},
+        {"/privacy", "22. November 2026", "November 22, 2026"},
         {"/security", "14. Mai 2026", "May 14, 2026"}
       ] do
     test "GET #{path} shows the Last updated date with a German month under de", %{conn: conn} do
@@ -365,6 +365,43 @@ defmodule KanbanWeb.PageControllerTest do
 
         assert item |> LazyHTML.text() |> String.replace(~r/\s+/u, " ") |> String.trim() =~
                  ~r/^#{Regex.escape(label)} — \S/u
+      end
+    end
+  end
+
+  # The Umami disclosure (W2897) renders translated under every locale, with
+  # the "<strong>label</strong> — body" structure and the provider named.
+  @privacy_analytics_labels %{
+    "en" => "Analytics",
+    "de" => "Analyse",
+    "es" => "Analítica",
+    "fr" => "Mesure d'audience",
+    "ja" => "アクセス解析",
+    "pt" => "Análise de uso",
+    "zh" => "访问分析"
+  }
+
+  for {locale, label} <- @privacy_analytics_labels do
+    test "GET /privacy describes Umami analytics under #{locale}", %{conn: conn} do
+      item =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/privacy")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("main section li#privacy-analytics")
+
+      text = item |> LazyHTML.text() |> String.replace(~r/\s+/u, " ") |> String.trim()
+
+      assert item |> LazyHTML.query("strong") |> LazyHTML.text() |> String.trim() ==
+               unquote(label)
+
+      assert text =~ ~r/^#{Regex.escape(unquote(label))} — \S/u
+      assert text =~ "Umami"
+      assert text =~ "GitHub"
+
+      if unquote(locale) != "en" do
+        refute text =~ "cookie-free analytics service"
       end
     end
   end

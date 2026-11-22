@@ -216,6 +216,87 @@ end
 # End of the app links block (test/kanban_web/app_links_runtime_config_test.exs
 # cuts out and runs everything from its first comment line to this one)
 
+# Umami analytics (W2897): KanbanWeb.Analytics renders the Umami tracker on
+# the pages that opt in, and KanbanWeb.Plugs.CspNonce allows its two origins,
+# only when all three variables are set. docs/analytics.md has the details.
+# Every value is public (the website id is printed in the HTML of every page
+# that loads the tracker):
+#
+#   UMAMI_SCRIPT_URL  the tracker script, https only
+#                     (Umami Cloud: https://cloud.umami.is/script.js)
+#   UMAMI_WEBSITE_ID  the website's UUID from the Umami dashboard
+#   UMAMI_HOST_URL    where the tracker sends events, https only
+#                     (Umami Cloud: https://gateway.umami.is)
+#
+# This runs in every environment. With none set analytics is off. Each value
+# is trimmed, and a blank one counts as unset. A value that does not have its
+# shape, or a partial set, stops the boot. Errors name the variable and never
+# print its value.
+umami_value = fn name ->
+  case System.get_env(name) do
+    nil -> nil
+    value -> if String.trim(value) == "", do: nil, else: String.trim(value)
+  end
+end
+
+umami_https! = fn name, value ->
+  uri = URI.parse(value)
+
+  # The host goes into the CSP, so it must be a plain DNS name: a '*', ';' or
+  # quote would widen the policy or end the directive.
+  plain_host? =
+    is_binary(uri.host) and
+      Regex.match?(
+        ~r/\A[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\z/i,
+        uri.host
+      )
+
+  if uri.scheme != "https" or not plain_host? or not is_nil(uri.userinfo) do
+    raise "#{name} must be an https URL with a plain host name and no user info " <>
+            "(see docs/analytics.md). " <>
+            "Its value is not shown here."
+  end
+
+  value
+end
+
+umami_settings = [
+  script_url: umami_value.("UMAMI_SCRIPT_URL"),
+  website_id: umami_value.("UMAMI_WEBSITE_ID"),
+  host_url: umami_value.("UMAMI_HOST_URL")
+]
+
+umami_names = %{
+  script_url: "UMAMI_SCRIPT_URL",
+  website_id: "UMAMI_WEBSITE_ID",
+  host_url: "UMAMI_HOST_URL"
+}
+
+case Enum.filter(umami_settings, fn {_key, value} -> is_nil(value) end) do
+  [_, _, _] ->
+    :ok
+
+  [] ->
+    umami_https!.("UMAMI_SCRIPT_URL", umami_settings[:script_url])
+    umami_https!.("UMAMI_HOST_URL", umami_settings[:host_url])
+
+    unless Regex.match?(
+             ~r/\A[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\z/i,
+             umami_settings[:website_id]
+           ) do
+      raise "UMAMI_WEBSITE_ID must be a UUID (see docs/analytics.md). Its value is not shown here."
+    end
+
+    config :kanban, :umami, umami_settings
+
+  missing ->
+    names = Enum.map_join(missing, ", ", fn {key, _value} -> umami_names[key] end)
+    raise "#{names} not set; set all three UMAMI_ variables or none (see docs/analytics.md)."
+end
+
+# End of the Umami block (test/kanban_web/analytics_runtime_config_test.exs
+# cuts out and runs everything from its first comment line to this one)
+
 # Where workspace export archives are written (W2222). Set only when
 # EXPORT_DIR is, so config/test.exs keeps its own directory. Without it,
 # Kanban.Workspaces.Export.export_dir/0 uses the system temp directory.

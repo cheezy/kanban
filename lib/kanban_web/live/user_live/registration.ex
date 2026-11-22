@@ -1,6 +1,9 @@
 defmodule KanbanWeb.UserLive.Registration do
   use KanbanWeb, :live_view
 
+  # Loads the Umami tracker (W2897), so funnels can start at this page.
+  on_mount {KanbanWeb.AnalyticsOnMount, :track}
+
   import KanbanWeb.AuthFrame
   import KanbanWeb.FormHelpers
 

@@ -39,8 +39,11 @@ import topbar from "../vendor/topbar"
 import {install as installFocusAfterMove} from "./focus_after_move"
 import {install as installCopyToClipboard} from "./copy_to_clipboard"
 import {install as installReleaseModalFocus} from "./release_modal_focus"
+import {install as installAnalytics, signupHook as analyticsSignupHook} from "./analytics"
 
 const MyHooks = {
+  // Sends the Umami signup event once after a registration (W2897).
+  AnalyticsSignup: analyticsSignupHook(window),
   AutoDismissFlash,
   Sortable: SortableHook,
   ColumnSortable: ColumnSortableHook,
@@ -94,6 +97,10 @@ window.addEventListener("phx:comment-thread:scroll-to", event => {
 installCopyToClipboard(window, document, (el, visible) =>
   visible ? liveSocket.js().show(el) : liveSocket.js().hide(el)
 )
+
+// Umami analytics (W2897): the install-command copy event and the tracker's
+// data-before-send hook. Each does nothing when the tracker did not load.
+installAnalytics(window, document)
 
 // Return keyboard focus after a card's Move to Ready arrow leaves with its card.
 installFocusAfterMove(window, document)

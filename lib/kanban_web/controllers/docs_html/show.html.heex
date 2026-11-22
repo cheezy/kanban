@@ -41,6 +41,8 @@
           </ul>
           <a
             href={github_source_url(@page)}
+            data-umami-event="github-clicked"
+            data-umami-event-location="docs-source"
             class="inline-flex items-center gap-1 text-sm font-medium"
             style="color: var(--stride-orange-ink);"
             target="_blank"
@@ -56,6 +58,8 @@
     <p class="lg:hidden mt-12 text-sm">
       <a
         href={github_source_url(@page)}
+        data-umami-event="github-clicked"
+        data-umami-event-location="docs-source"
         class="inline-flex items-center gap-1 font-medium"
         style="color: var(--stride-orange-ink);"
         target="_blank"

@@ -124,6 +124,8 @@ defmodule KanbanWeb.MarketingComponents do
         </.link>
         <.link
           href={~p"/users/register"}
+          data-umami-event="get-started-clicked"
+          data-umami-event-location="nav"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] md:min-h-0 rounded-md text-xs font-medium hover:opacity-90 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="background: var(--ink); color: var(--surface);"
         >
@@ -452,6 +454,8 @@ defmodule KanbanWeb.MarketingComponents do
         <% else %>
           <.link
             href={~p"/users/register"}
+            data-umami-event="get-started-clicked"
+            data-umami-event-location="hero"
             class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
             style="background: var(--ink); color: var(--surface);"
           >

@@ -23,7 +23,13 @@ defmodule KanbanWeb.UserSessionController do
         # account, so it is accepted once the email is confirmed (W2219). It
         # always returns :ok, so the response is the same either way.
         :ok = Invitations.bind_registration(params["invitation_token"], user)
-        deliver_confirmation_and_redirect(conn, user)
+
+        # One-shot flag for the next page (W2897): confirmation-pending reads
+        # it and sends the Umami signup event once. A flash is consumed by the
+        # request that reads it, so a reload or a direct visit has none.
+        conn
+        |> put_flash(:analytics_signup, true)
+        |> deliver_confirmation_and_redirect(user)
 
       {:error, %Ecto.Changeset{} = _changeset} ->
         # This shouldn't happen since LiveView validated, but handle it gracefully

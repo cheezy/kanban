@@ -58,7 +58,7 @@
         <li :for={step <- @runtime.install} data-install-step>
           <p class="font-medium text-base-content mb-2">{step.title}</p>
           <div class="stride-docs-prose">
-            <pre translate="no"><code class={"language-" <> step.lang} data-install-command>{step.command}</code></pre>
+            <pre translate="no"><code class={"language-" <> step.lang} data-install-command data-runtime={@runtime.slug}>{step.command}</code></pre>
           </div>
         </li>
       </ol>
@@ -94,6 +94,8 @@
           <dd>
             <a
               href={@runtime.listing_url}
+              data-umami-event="github-clicked"
+              data-umami-event-location="integration-listing"
               class="font-medium"
               style="color: var(--stride-orange-ink); overflow-wrap: anywhere;"
               target="_blank"
@@ -120,6 +122,8 @@
           <dd>
             <a
               href={@runtime.docs_url}
+              data-umami-event="github-clicked"
+              data-umami-event-location="integration-docs"
               class="font-medium"
               style="color: var(--stride-orange-ink);"
               target="_blank"

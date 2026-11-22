@@ -101,6 +101,14 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # there: its Allow and Cancel POSTs redirect to com.stridelikeaboss.app:.
   # The sources come from code, never from a request, and every other page
   # keeps form-action 'self' alone.
+  #
+  # W2897: when Umami analytics is configured (KanbanWeb.Analytics.config/0),
+  # script-src adds the tracker script's origin and a connect-src directive
+  # allows 'self' plus the origin the tracker sends events to. Both come from
+  # config/runtime.exs, never from a request, and are exact origins, never a
+  # wildcard. connect-src keeps 'self', which default-src already gave it, so
+  # the LiveView socket and long-poll fallback are unaffected. Without the
+  # configuration the policy is unchanged.
   @doc """
   The policy for `nonce`. `opts[:form_action]` is a list of extra
   `form-action` sources, appended after `'self'`; with no options the policy
@@ -109,11 +117,12 @@ defmodule KanbanWeb.Plugs.CspNonce do
   @spec policy(String.t(), keyword()) :: String.t()
   def policy(nonce, opts \\ []) do
     form_action = Enum.join(["'self'" | Keyword.get(opts, :form_action, [])], " ")
+    {script_extra, connect} = analytics_sources(KanbanWeb.Analytics.config())
 
     """
     default-src 'self'; \
-    script-src 'self' 'nonce-#{nonce}'; \
-    img-src 'self' data: blob:; \
+    script-src 'self' 'nonce-#{nonce}'#{script_extra}; \
+    #{connect}img-src 'self' data: blob:; \
     style-src 'self' 'unsafe-inline'; \
     font-src 'self'; \
     base-uri 'self'; \
@@ -122,4 +131,9 @@ defmodule KanbanWeb.Plugs.CspNonce do
     frame-ancestors 'self'\
     """
   end
+
+  defp analytics_sources(nil), do: {"", ""}
+
+  defp analytics_sources(%{script_origin: script, connect_origin: connect}),
+    do: {" " <> script, "connect-src 'self' #{connect}; "}
 end

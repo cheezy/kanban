@@ -114,6 +114,8 @@ defmodule KanbanWeb.DemoBoardLive do
           </div>
           <.link
             href={~p"/users/register"}
+            data-umami-event="get-started-clicked"
+            data-umami-event-location="demo"
             class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity self-start"
             style="background: var(--ink); color: var(--surface);"
             data-demo-cta

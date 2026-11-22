@@ -5,7 +5,7 @@
         {gettext("Privacy Policy")}
       </h1>
       <p class="text-sm text-base-content opacity-80 mb-10">
-        {gettext("Last updated: %{date}", date: gettext("November 21, 2026"))}
+        {gettext("Last updated: %{date}", date: gettext("November 22, 2026"))}
       </p>
 
       <div class="prose prose-lg max-w-none">
@@ -80,6 +80,20 @@
                 ),
                 gettext(
                   "Every email has an unsubscribe link, and unsubscribing deletes your address from the list at once."
+                )
+              ])}
+            </li>
+            <li id="privacy-analytics">
+              <strong>{gettext("Analytics")}</strong>
+              {KanbanWeb.Sentences.join([
+                gettext(
+                  " — on our public pages and the sign-up and log-in pages we use Umami, a cookie-free analytics service, to count visits. It records the page address without its query string or fragment, the referring site, and your browser, operating system, device type, country and language."
+                ),
+                gettext(
+                  "It also records a few events: a completed sign-up, a copied install command, and clicks on GitHub links and sign-up buttons."
+                ),
+                gettext(
+                  "Umami sets no cookie and never receives your email address, your account details, or any board or task data, and it does not run on your boards or account pages."
                 )
               ])}
             </li>

@@ -16588,11 +16588,6 @@ msgstr "Laissez votre adresse e-mail et nous vous enverrons un court message à 
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
 #, elixir-autogen, elixir-format
-msgid "November 21, 2026"
-msgstr "21 novembre 2026"
-
-#: lib/kanban_web/controllers/page_html/privacy.html.heex
-#, elixir-autogen, elixir-format
 msgid "Release announcement list"
 msgstr "Liste des annonces de version"
 
@@ -16856,3 +16851,28 @@ msgstr "Où Stride a sa place pour le travail des agents IA, et où %{name} est 
 #, elixir-autogen, elixir-format
 msgid "Watch a simulated demo"
 msgstr "Voir une démo simulée"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid " — on our public pages and the sign-up and log-in pages we use Umami, a cookie-free analytics service, to count visits. It records the page address without its query string or fragment, the referring site, and your browser, operating system, device type, country and language."
+msgstr " — sur nos pages publiques et sur les pages d'inscription et de connexion, nous utilisons Umami, un service de mesure d'audience sans cookie, pour compter les visites. Il enregistre l'adresse de la page sans sa chaîne de requête ni son fragment, le site d'origine, ainsi que votre navigateur, votre système d'exploitation, votre type d'appareil, votre pays et votre langue."
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "Analytics"
+msgstr "Mesure d'audience"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "It also records a few events: a completed sign-up, a copied install command, and clicks on GitHub links and sign-up buttons."
+msgstr "Il enregistre aussi quelques événements : une inscription terminée, une commande d'installation copiée et les clics sur les liens GitHub et les boutons d'inscription."
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "November 22, 2026"
+msgstr "22 novembre 2026"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "Umami sets no cookie and never receives your email address, your account details, or any board or task data, and it does not run on your boards or account pages."
+msgstr "Umami ne dépose aucun cookie et ne reçoit jamais votre adresse e-mail, les informations de votre compte ni aucune donnée de tableau ou de tâche, et il ne s'exécute pas sur vos tableaux ni sur les pages de votre compte."

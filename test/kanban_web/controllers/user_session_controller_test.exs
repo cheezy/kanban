@@ -41,6 +41,28 @@ defmodule KanbanWeb.UserSessionControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
                "An error occurred during registration"
     end
+
+    # W2897: the one-shot flag that makes confirmation-pending send the Umami
+    # signup event.
+    test "a successful registration marks the next page to send one signup event",
+         %{conn: conn} do
+      conn =
+        post(conn, ~p"/users/register", %{
+          "user" => %{"email" => unique_user_email(), "password" => valid_user_password()}
+        })
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :analytics_signup) == true
+    end
+
+    test "a failed registration sends no signup event", %{conn: conn} do
+      conn =
+        post(conn, ~p"/users/register", %{
+          "user" => %{"email" => "invalid", "password" => "short"}
+        })
+
+      assert redirected_to(conn) == ~p"/users/register"
+      assert Phoenix.Flash.get(conn.assigns.flash, :analytics_signup) == nil
+    end
   end
 
   describe "POST /users/log-in - email and password" do

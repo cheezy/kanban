@@ -16542,11 +16542,6 @@ msgstr "メールアドレスを入力すると、Strideの新しいバージョ
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex
 #, elixir-autogen, elixir-format
-msgid "November 21, 2026"
-msgstr "2026年11月21日"
-
-#: lib/kanban_web/controllers/page_html/privacy.html.heex
-#, elixir-autogen, elixir-format
 msgid "Release announcement list"
 msgstr "リリースのお知らせリスト"
 
@@ -16810,3 +16805,28 @@ msgstr "AI エージェントの作業で Stride が向いている場面と、%
 #, elixir-autogen, elixir-format
 msgid "Watch a simulated demo"
 msgstr "シミュレーションのデモを見る"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid " — on our public pages and the sign-up and log-in pages we use Umami, a cookie-free analytics service, to count visits. It records the page address without its query string or fragment, the referring site, and your browser, operating system, device type, country and language."
+msgstr " — 公開ページと、サインアップおよびログインのページでは、Cookie を使わないアクセス解析サービス Umami を使って訪問数を数えています。記録するのは、クエリ文字列とフラグメントを除いたページのアドレス、参照元サイト、そしてお使いのブラウザ、OS、デバイスの種類、国、言語です。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "Analytics"
+msgstr "アクセス解析"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "It also records a few events: a completed sign-up, a copied install command, and clicks on GitHub links and sign-up buttons."
+msgstr "また、いくつかのイベントも記録します：サインアップの完了、インストールコマンドのコピー、GitHub リンクとサインアップボタンのクリックです。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "November 22, 2026"
+msgstr "2026年11月22日"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex
+#, elixir-autogen, elixir-format
+msgid "Umami sets no cookie and never receives your email address, your account details, or any board or task data, and it does not run on your boards or account pages."
+msgstr "Umami は Cookie を設定せず、メールアドレス、アカウント情報、ボードやタスクのデータを受け取ることはありません。また、ボードやアカウントのページでは動作しません。"

@@ -3,6 +3,10 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
 
   # A token or account page: never in search results (W2890).
   on_mount {KanbanWeb.SeoOnMount, :noindex}
+  # Loads the Umami tracker (W2897): a finished sign-up lands here, so the
+  # signup event is sent from this page. The query string carrying the email
+  # is excluded from what Umami records (KanbanWeb.Analytics).
+  on_mount {KanbanWeb.AnalyticsOnMount, :track}
 
   import KanbanWeb.AuthFrame
 
@@ -16,6 +20,7 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
   def render(assigns) do
     ~H"""
     <.auth_frame flash={@flash}>
+      <KanbanWeb.Analytics.signup_event :if={@signup_event} />
       <:footer_switch>
         <.link navigate={~p"/"} style="color: var(--ink); font-weight: 500; text-decoration: none;">
           <span aria-hidden="true">←</span> {gettext("Return to Stride")}
@@ -114,8 +119,13 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
 
   @impl true
   def mount(params, session, socket) do
+    # Set by UserSessionController.register/2 on success only. The flash is
+    # not cleared here: the connected mount must see it too, or the hook
+    # element would vanish before it mounts. A reconnect gets no flash.
     socket =
-      assign(socket, :client_ip, KanbanWeb.ClientIp.from_session_or_socket(session, socket))
+      socket
+      |> assign(:client_ip, KanbanWeb.ClientIp.from_session_or_socket(session, socket))
+      |> assign(:signup_event, Phoenix.Flash.get(socket.assigns.flash, :analytics_signup) == true)
 
     case validate_email_param(params) do
       {:ok, email} ->

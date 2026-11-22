@@ -30,7 +30,7 @@
               "Before a single task hits the board, stride-ideation turns a fuzzy idea into a structured plan. An interactive session writes a committed requirements document, then decomposes it into a goal with dependency-ordered tasks — so agents start from a real specification, not a one-line prompt."
             ),
             "stride-ideation",
-            ~s{<a href="https://github.com/cheezy/stride-ideation" class="underline" style="color: var(--stride-orange-ink);" target="_blank" rel="noopener noreferrer">stride-ideation</a>},
+            ~s{<a href="https://github.com/cheezy/stride-ideation" data-umami-event="github-clicked" data-umami-event-location="workflows" class="underline" style="color: var(--stride-orange-ink);" target="_blank" rel="noopener noreferrer">stride-ideation</a>},
             global: false
           )
         )}
@@ -884,6 +884,8 @@
       <div class="flex flex-col sm:flex-row gap-3 justify-center">
         <.link
           href={~p"/users/register"}
+          data-umami-event="get-started-clicked"
+          data-umami-event-location="workflows"
           class="px-6 py-3 rounded-lg bg-primary text-primary-content font-semibold hover:opacity-90 transition-opacity"
         >
           {gettext("Start now")}

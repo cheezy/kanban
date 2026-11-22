@@ -48,6 +48,14 @@ defmodule KanbanWeb.Router do
     plug KanbanWeb.Plugs.PutNoindex
   end
 
+  # Opts a page in to Umami analytics (W2897) through the :analytics assign
+  # the root layouts read. Only the public page routes pipe through it; the
+  # tracker still renders only when Umami is configured. Never added to
+  # :browser itself, so a new signed-in page never loads the tracker.
+  pipeline :put_analytics do
+    plug KanbanWeb.Plugs.PutAnalytics
+  end
+
   # Pins the response format to json for every /api route (D351). It must be
   # its own pipeline, piped through BEFORE :api / :api_public, rather than a
   # plug inside them: when `plug :accepts, ["json"]` rejects an unsupported
@@ -165,7 +173,7 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/", KanbanWeb do
-    pipe_through :browser
+    pipe_through [:browser, :put_analytics]
 
     get "/", PageController, :home
     get "/about", PageController, :about
@@ -191,6 +199,11 @@ defmodule KanbanWeb.Router do
     # competitor is only looked up in the KanbanWeb.Comparisons list.
     get "/compare", CompareController, :index
     get "/compare/:competitor", CompareController, :show
+  end
+
+  scope "/", KanbanWeb do
+    pipe_through :browser
+
     post "/locale/:locale", PageController, :set_locale
   end
 
@@ -744,7 +757,9 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :mount_current_scope}
       ] do
-      # Log-in and register stay indexable: people search for them.
+      # Log-in and register stay indexable: people search for them. They and
+      # confirmation-pending opt in to analytics (W2897) module by module,
+      # because this session also holds the token pages.
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
 
@@ -768,11 +783,13 @@ defmodule KanbanWeb.Router do
       end
     end
 
+    # Both public sessions opt in to Umami analytics (W2897).
     live_session :public,
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
-        {KanbanWeb.TimezoneOnMount, :default}
+        {KanbanWeb.TimezoneOnMount, :default},
+        {KanbanWeb.AnalyticsOnMount, :track}
       ],
       root_layout: {KanbanWeb.Layouts, :marketing} do
       live "/issue", IssueLive.Form, :new
@@ -789,7 +806,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.TimezoneOnMount, :default},
         {KanbanWeb.UserAuth, :mount_current_scope},
         # No-op for visitors; keeps a signed-in user's bell live here too.
-        {KanbanWeb.NotificationsOnMount, :default}
+        {KanbanWeb.NotificationsOnMount, :default},
+        {KanbanWeb.AnalyticsOnMount, :track}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/resources", ResourcesLive.Index, :index

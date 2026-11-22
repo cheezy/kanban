@@ -5,6 +5,7 @@ defmodule KanbanWeb.Layouts do
   """
   use KanbanWeb, :html
 
+  import KanbanWeb.Analytics, only: [tracker: 1]
   import KanbanWeb.MarketingComponents
   import KanbanWeb.MarketingClosing
   import KanbanWeb.SeoComponents

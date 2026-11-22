@@ -22,6 +22,7 @@
     <link rel="icon" type="image/svg+xml" sizes="32x32" href={~p"/images/favicon-32x32.svg"} />
     <link rel="apple-touch-icon" sizes="180x180" href={~p"/images/apple-touch-icon.svg"} />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <.tracker enabled={assigns[:analytics] == true} nonce={assigns[:csp_nonce]} />
     <script
       defer
       phx-track-static

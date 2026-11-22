@@ -18,7 +18,8 @@ defmodule KanbanWeb.JsHooksTest do
     "assets/js/hooks/auto-dismiss-flash.test.mjs",
     "assets/js/focus_after_move.test.mjs",
     "assets/js/copy_to_clipboard.test.mjs",
-    "assets/js/release_modal_focus.test.mjs"
+    "assets/js/release_modal_focus.test.mjs",
+    "assets/js/analytics.test.mjs"
   ]
 
   if is_nil(@node), do: @moduletag(skip: "node is not installed")
