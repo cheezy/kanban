@@ -1149,7 +1149,7 @@ kanban/
 **The app strings in gettext.** They go in their own gettext domain, `mobile`, so `mix gettext.extract --merge` keeps them with the web's. They're translated in the same pass as web strings. Placeholders use gettext's `%{name}` form, and the generator converts them to each platform's format.
 
 **Other repository changes:**
-- **CI:** `paths-ignore: ['mobile/**']` on `elixir.yml` pushes and pull requests, so app-only changes don't run the Elixir suite or redeploy.
+- **CI:** `paths-ignore: ['mobile/**']` on `elixir.yml` pull requests, so app-only pull requests don't run the Elixir suite. Pushes keep no path filter: GitHub checks a newly created branch only against commits it hasn't seen, so a `release` branch recreated on a commit already on main would never deploy to production.
 - **Docker:** `/mobile/` in `.dockerignore`.
 - **`.gitignore`:**
   - anchor `/package.json`, `/package-lock.json` and `/node_modules` (`:64-66`);
@@ -1170,7 +1170,7 @@ kanban/
 
 | Workflow | Runner | Runs on changes to | Jobs |
 |---|---|---|---|
-| `elixir.yml` | Linux | everything except `mobile/**` | the existing suite, plus the new contract, fixture and generator tests |
+| `elixir.yml` | Linux | every push; pull requests except `mobile/**` | the existing suite, plus the new contract, fixture and generator tests |
 | `ios.yml` | macOS | `mobile/ios/**`, `mobile/shared/**`, `priv/openapi/**` | generate the project, build, Swift Testing, snapshot tests, XCUITest on one iPhone and one iPad simulator |
 | `android.yml` | Linux | `mobile/android/**`, `mobile/shared/**`, `priv/openapi/**` | Gradle build, ktlint, unit tests, screenshot tests, instrumented UI tests on an emulator |
 

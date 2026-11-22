@@ -13,9 +13,9 @@ MIX_ENV=test mix mobile.tokens
 
 and commit the result in the same task.
 `test/kanban/mobile/tokens_test.exs` regenerates the file in memory and fails
-while the committed copy is stale. The Elixir CI workflow skips a change
-confined to `mobile/`, so run that test locally before committing one. See
-section 14 of
+while the committed copy is stale. The Elixir CI workflow skips a pull
+request confined to `mobile/`, so run that test locally before committing
+one. See section 14 of
 [docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md](../../../docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md).
 
 ## What the file holds

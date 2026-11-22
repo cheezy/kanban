@@ -114,14 +114,16 @@ defmodule Kanban.RepositoryLayoutTest do
       assert "/mobile/" in lines
     end
 
-    test "elixir.yml skips pushes and pull requests that change only mobile/" do
-      workflow = read!(".github/workflows/elixir.yml")
-      [triggers | _] = String.split(workflow, "\njobs:")
+    test "elixir.yml skips pull requests that change only mobile/" do
+      assert trigger_block("pull_request") =~ ~r/\n    paths-ignore: \[ "mobile\/\*\*" \]\n/,
+             "pull_request trigger has no paths-ignore for mobile/**"
+    end
 
-      for event <- ["push", "pull_request"] do
-        assert triggers =~ ~r/\n  #{event}:\n(    .*\n)*    paths-ignore: \[ "mobile\/\*\*" \]\n/,
-               "#{event} trigger has no paths-ignore for mobile/**"
-      end
+    # A recreated release branch points at a commit already on main, so GitHub
+    # sees no new files and a path filter would skip the production deploy.
+    test "elixir.yml filters no paths on push, so a recreated release branch still deploys" do
+      refute trigger_block("push") =~ ~r/\n    paths(-ignore)?:/,
+             "push trigger has a path filter; a recreated release branch would not deploy"
     end
   end
 
@@ -215,6 +217,14 @@ defmodule Kanban.RepositoryLayoutTest do
         end
       end
     end
+  end
+
+  # The indented lines under one `elixir.yml` trigger event, with a leading
+  # newline so a pattern can anchor on the start of a line.
+  defp trigger_block(event) do
+    [triggers | _] = ".github/workflows/elixir.yml" |> read!() |> String.split("\njobs:")
+    [_, block] = Regex.run(~r/\n  #{event}:\n((?:    .*\n)*)/, triggers)
+    "\n" <> block
   end
 
   # The quoted list items under one trigger event, which are its `paths`.

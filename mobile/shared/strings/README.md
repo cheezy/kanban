@@ -23,8 +23,8 @@ Never edit these files by hand. To add or change a string:
 
 `test/kanban/mobile/strings_test.exs` fails while a copy is stale, and when a
 string is missing, empty, fuzzy or loses a placeholder in any locale. The
-Elixir CI workflow skips a change confined to `mobile/`, so run that test
-locally before committing one. See sections 14 and 17 of
+Elixir CI workflow skips a pull request confined to `mobile/`, so run that
+test locally before committing one. See sections 14 and 17 of
 [docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md](../../../docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md).
 
 ## What each file holds
