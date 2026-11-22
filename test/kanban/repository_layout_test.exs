@@ -54,6 +54,7 @@ defmodule Kanban.RepositoryLayoutTest do
     "mobile/shared/tokens/tokens.json",
     "mobile/shared/strings/de.json",
     "mobile/shared/fixtures/getMe.json",
+    "mobile/shared/openapi.json",
     "mobile/package.json",
     "mobile/ios/project.yml",
     "mobile/ios/Stride/App/StrideApp.swift",

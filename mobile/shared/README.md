@@ -13,12 +13,26 @@ names a single `mobile/shared/tokens.json`, the generated tokens live in the
 | [tokens/](tokens/README.md) | colour and type tokens | the `.stride-screen` tokens in `assets/css/app.css` | `mix mobile.tokens` (generated) |
 | [strings/](strings/README.md) | app strings in seven locales | `priv/gettext/*/LC_MESSAGES/mobile.po` | `mix mobile.strings` (generated) |
 | [fixtures/](fixtures/README.md) | example API responses | `priv/openapi/stride-api.json` | written by hand, checked against the contract |
+| [openapi.json](openapi.json) | the API contract both apps generate their clients from | `priv/openapi/stride-api.json` | `mix mobile.api` (checked, then copied byte for byte) |
 
-`mix mobile.tokens` and `mix mobile.strings` exist, and `tokens/tokens.json`
-and the seven `strings/<locale>.json` files are generated. `fixtures/` holds one
+`mix mobile.tokens`, `mix mobile.strings` and `mix mobile.api` exist, and
+`tokens/tokens.json`, the seven `strings/<locale>.json` files and
+`openapi.json` are generated. `fixtures/` holds one
 hand-written example response per `/api/me` and `/oauth` operation whose
 success response has a JSON body, and
 `test/kanban_web/controllers/api/mobile_fixtures_test.exs` checks each against
-the contract. The API generator and its check arrive with a later task of the
-goal. Never edit a generated file by hand: change its source and run the
+the contract.
+
+`mix mobile.api` checks `priv/openapi/stride-api.json` before it copies it:
+the contract must parse, every operation needs a unique `operationId`, and
+every `/api/me` operation must require `deviceAuth` and give a response schema
+for each 2xx response that has a body. It writes nothing when a rule fails.
+`test/kanban/mobile/api_contract_test.exs` fails when `openapi.json` is stale;
+refresh it with `MIX_ENV=test mix mobile.api`. The task only checks and copies
+the contract. Each app's own build will generate its client from
+`openapi.json` (the Swift OpenAPI Generator for iOS, the Gradle OpenAPI plugin
+for Android) once the app projects exist in Phase 1b and 1c; no generator
+config is committed yet, and no client generator runs in the Elixir build.
+
+Never edit a generated file by hand: change its source and run the
 generator.
