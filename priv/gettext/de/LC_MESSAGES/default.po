@@ -7338,7 +7338,7 @@ msgstr "Lieferstatus"
 #: lib/kanban_web/components/delivery_health_band.ex
 #, elixir-autogen, elixir-format
 msgid "No delivery targets yet."
-msgstr "Noch keine Lieferziele."
+msgstr "Noch keine Zielvorgaben."
 
 #: lib/kanban_web/components/delivery_health_band.ex
 #, elixir-autogen, elixir-format
@@ -7359,7 +7359,7 @@ msgstr "Warum Zielvorgaben gefährdet sind"
 #: lib/kanban_web/components/agent_roster_card.ex
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
-msgstr "Vorangetriebenes Lieferziel und Ziel"
+msgstr "Zielvorgabe und Ziel, die vorangetrieben werden"
 
 #: lib/kanban_web/live/target_live/form.html.heex
 #, elixir-autogen, elixir-format
@@ -8533,7 +8533,7 @@ msgstr "Überprüfung angefordert"
 #: lib/kanban_web/emails/notification_email.ex
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
-msgstr "Zielstatus geändert"
+msgstr "Status der Zielvorgabe geändert"
 
 #: lib/kanban_web/emails/notification_email.ex
 #, elixir-autogen, elixir-format
@@ -8604,7 +8604,7 @@ msgstr "Abgeschlossene Ziele"
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
 msgid "Delivery target status"
-msgstr "Status der Lieferziele"
+msgstr "Status der Zielvorgaben"
 
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
@@ -8814,7 +8814,7 @@ msgstr "Mir eine wöchentliche Zusammenfassung der Aktivitäten auf meinen Board
 #: lib/kanban_web/live/user_live/notification_preferences.ex
 #, elixir-autogen, elixir-format
 msgid "Goals and targets"
-msgstr "Ziele und Lieferziele"
+msgstr "Ziele und Zielvorgaben"
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex
 #, elixir-autogen, elixir-format
@@ -8964,27 +8964,27 @@ msgstr "Sie wurden von diesem Board entfernt."
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
 msgid "A delivery target you own becomes at risk or misses its date."
-msgstr "Ein Lieferziel, das Ihnen gehört, ist gefährdet oder verpasst seinen Termin."
+msgstr "Eine Zielvorgabe, die Ihnen gehört, ist gefährdet oder verpasst ihren Termin."
 
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
 msgid "At risk of missing its target date of %{date}."
-msgstr "Droht seinen Zieltermin %{date} zu verpassen."
+msgstr "Droht ihren Zieltermin %{date} zu verpassen."
 
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
 msgid "At risk of missing its target date."
-msgstr "Droht seinen Zieltermin zu verpassen."
+msgstr "Droht ihren Zieltermin zu verpassen."
 
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
 msgid "Missed its target date of %{date}."
-msgstr "Hat seinen Zieltermin %{date} verpasst."
+msgstr "Hat ihren Zieltermin %{date} verpasst."
 
 #: lib/kanban_web/notification_labels.ex
 #, elixir-autogen, elixir-format
 msgid "Missed its target date."
-msgstr "Hat seinen Zieltermin verpasst."
+msgstr "Hat ihren Zieltermin verpasst."
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex
 #: lib/kanban_web/live/workspace_live/invitations_card.ex
@@ -12729,7 +12729,7 @@ msgstr "Sehen Sie die Belege des Reviewers zu jedem Akzeptanzkriterium, die Prü
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "A Stride delivery target with its date, status, estimated finish, progress by column and its goal"
-msgstr "Ein Stride-Lieferziel mit Datum, Status, geschätztem Abschluss, Fortschritt nach Spalte und seinem Ziel"
+msgstr "Eine Stride-Zielvorgabe mit Datum, Status, geschätztem Abschluss, Fortschritt nach Spalte und ihrem Ziel"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
@@ -12744,7 +12744,7 @@ msgstr "Der Eigentümer eines Boards kann dessen Aufgabenereignisse, etwa eine e
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "A delivery target groups goals from any of your boards under one date. Stride estimates when the work will finish from how long tasks have been taking and marks the target On-track, At-risk, Missed or Complete, so you see a date at risk before it slips."
-msgstr "Ein Lieferziel fasst Ziele aus beliebigen Ihrer Boards unter einem Datum zusammen. Stride schätzt anhand der bisherigen Dauer von Aufgaben, wann die Arbeit fertig wird, und markiert das Lieferziel als Im Plan, Gefährdet, Verpasst oder Abgeschlossen, sodass Sie ein gefährdetes Datum sehen, bevor es verstreicht."
+msgstr "Eine Zielvorgabe fasst Ziele aus beliebigen Ihrer Boards unter einem Datum zusammen. Stride schätzt anhand der bisherigen Dauer von Aufgaben, wann die Arbeit fertig wird, und markiert die Zielvorgabe als Im Plan, Gefährdet, Verpasst oder Abgeschlossen, sodass Sie ein gefährdetes Datum sehen, bevor es verstreicht."
 
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
@@ -12790,7 +12790,7 @@ msgstr "Zur Anleitung: Webhooks, Slack und Discord verbinden"
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "Read the guide: Planning with targets"
-msgstr "Zur Anleitung: Mit Lieferzielen planen"
+msgstr "Zur Anleitung: Mit Zielvorgaben planen"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
@@ -12840,7 +12840,7 @@ msgstr "Beobachten Sie jeden Agenten bei der Arbeit, sehen Sie, was Ihnen über 
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
 msgid "When a goal under an at-risk delivery target stalls, the target's owner or the board's owner can reassign or reprioritize it from this page, with 8 seconds to undo."
-msgstr "Wenn ein Ziel unter einem gefährdeten Lieferziel stockt, kann der Eigentümer des Lieferziels oder des Boards es auf dieser Seite neu zuweisen oder neu priorisieren, mit 8 Sekunden zum Rückgängigmachen."
+msgstr "Wenn ein Ziel unter einer gefährdeten Zielvorgabe stockt, kann der Eigentümer der Zielvorgabe oder des Boards es auf dieser Seite neu zuweisen oder neu priorisieren, mit 8 Sekunden zum Rückgängigmachen."
 
 #: lib/kanban_web/controllers/page_html/product.html.heex
 #, elixir-autogen, elixir-format
@@ -15651,7 +15651,7 @@ msgstr "Datenschutz bei Benachrichtigungen"
 #: lib/kanban_web/live/org_live/security.html.heex
 #, elixir-autogen, elixir-format
 msgid "Push notifications to your members show the task identifier and what happened, but not task, goal or target titles, so no title appears on a locked phone."
-msgstr "Push-Benachrichtigungen an Ihre Mitglieder zeigen die Aufgabenkennung und was passiert ist, aber keine Titel von Aufgaben, Zielen oder Zielterminen, sodass auf einem gesperrten Telefon kein Titel erscheint."
+msgstr "Push-Benachrichtigungen an Ihre Mitglieder zeigen die Aufgabenkennung und was passiert ist, aber keine Titel von Aufgaben, Zielen oder Zielvorgaben, sodass auf einem gesperrten Telefon kein Titel erscheint."
 
 #: lib/kanban/push/payload_builder.ex
 #, elixir-autogen, elixir-format
@@ -15705,12 +15705,12 @@ msgstr "%{name} hat seinen Termin verpasst"
 #: lib/kanban/push/payload_builder.ex
 #, elixir-autogen, elixir-format
 msgid "A target is at risk"
-msgstr "Ein Ziel ist gefährdet"
+msgstr "Eine Zielvorgabe ist gefährdet"
 
 #: lib/kanban/push/payload_builder.ex
 #, elixir-autogen, elixir-format
 msgid "A target missed its date"
-msgstr "Ein Ziel hat seinen Termin verpasst"
+msgstr "Eine Zielvorgabe hat ihren Termin verpasst"
 
 #: lib/kanban/push/payload_builder.ex
 #, elixir-autogen, elixir-format
