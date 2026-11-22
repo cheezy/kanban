@@ -14,6 +14,10 @@ name: iOS CI
 #
 # The workflow uses no secrets, so a pull request from a fork runs it the same
 # way as a branch in this repository. Signing arrives with the app releases.
+#
+# The last path, !mobile/**/*.md, keeps a change to Markdown alone (a README
+# or CLAUDE.md under mobile/) from starting a run. GitHub applies the patterns
+# in order, so the exclusion must stay after the patterns it narrows.
 on:
   push:
     branches: [ "main", "release" ]
@@ -22,6 +26,7 @@ on:
       - "mobile/shared/**"
       - "priv/openapi/**"
       - ".github/workflows/ios.yml"
+      - "!mobile/**/*.md"
   pull_request:
     branches: [ "main" ]
     paths:
@@ -29,6 +34,7 @@ on:
       - "mobile/shared/**"
       - "priv/openapi/**"
       - ".github/workflows/ios.yml"
+      - "!mobile/**/*.md"
   workflow_dispatch:
 
 permissions:

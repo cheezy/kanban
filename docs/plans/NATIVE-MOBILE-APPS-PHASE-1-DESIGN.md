@@ -1171,8 +1171,8 @@ kanban/
 | Workflow | Runner | Runs on changes to | Jobs |
 |---|---|---|---|
 | `elixir.yml` | Linux | every push; pull requests except `mobile/**` | the existing suite, plus the new contract, fixture and generator tests |
-| `ios.yml` | macOS | `mobile/ios/**`, `mobile/shared/**`, `priv/openapi/**` | generate the project, build, Swift Testing, snapshot tests, XCUITest on one iPhone and one iPad simulator |
-| `android.yml` | Linux | `mobile/android/**`, `mobile/shared/**`, `priv/openapi/**` | Gradle build, ktlint, unit tests, screenshot tests, instrumented UI tests on an emulator |
+| `ios.yml` | macOS | `mobile/ios/**`, `mobile/shared/**`, `priv/openapi/**`, except Markdown under `mobile/` | generate the project, build, Swift Testing, snapshot tests, XCUITest on one iPhone and one iPad simulator |
+| `android.yml` | Linux | `mobile/android/**`, `mobile/shared/**`, `priv/openapi/**`, except Markdown under `mobile/` | Gradle build, ktlint, unit tests, screenshot tests, instrumented UI tests on an emulator |
 
 **Pinned toolchains.** Each app job pins its toolchain: the Xcode version, the JDK, and the Android Gradle Plugin through the version catalog.
 

@@ -176,6 +176,17 @@ defmodule Kanban.RepositoryLayoutTest do
         end
       end
 
+      # GitHub applies path patterns in order, so a negation only narrows the
+      # patterns before it.
+      test "#{file} ignores a change to Markdown alone under mobile/" do
+        workflow = read!(@workflow_path)
+
+        for event <- ["push", "pull_request"] do
+          assert workflow |> trigger_paths(event) |> List.last() == "!mobile/**/*.md",
+                 "#{@workflow_path} #{event} paths do not end with !mobile/**/*.md"
+        end
+      end
+
       test "#{file} runs pull requests from forks without secrets" do
         workflow = read!(@workflow_path)
 
