@@ -384,7 +384,8 @@ defmodule KanbanWeb.AnalyticsTest do
   describe "event attributes" do
     @events ~w(get-started-clicked github-clicked)
     @locations ~w(nav hero closing pricing product workflows demo footer docs-source
-                   integration-listing integration-docs integration-install-note security issue)
+                   integration-listing integration-docs integration-install-note security issue
+                   workflows-runtime compare-corrections changelog)
 
     defp events_on(path) do
       build_conn()
@@ -407,7 +408,15 @@ defmodule KanbanWeb.AnalyticsTest do
         ],
         "/pricing" => [{"get-started-clicked", "pricing"}],
         "/product" => [{"get-started-clicked", "product"}],
-        "/workflows" => [{"get-started-clicked", "workflows"}, {"github-clicked", "workflows"}],
+        "/workflows" => [
+          {"get-started-clicked", "workflows"},
+          {"github-clicked", "workflows"},
+          {"github-clicked", "workflows-runtime"}
+        ],
+        "/compare/linear" => [{"github-clicked", "compare-corrections"}],
+        "/compare/jira" => [{"github-clicked", "compare-corrections"}],
+        "/compare/github-projects" => [{"github-clicked", "compare-corrections"}],
+        "/changelog" => [{"github-clicked", "changelog"}],
         "/security" => [{"github-clicked", "security"}],
         "/issue" => [{"github-clicked", "issue"}],
         "/integrations/codex" => [
@@ -441,6 +450,54 @@ defmodule KanbanWeb.AnalyticsTest do
           |> Enum.count(&(&1 == {"github-clicked", "integration-install-note"}))
 
         assert sent == if(runtime.install_note, do: 1, else: 0), runtime.slug
+      end
+    end
+
+    test "every runtime card on /workflows and both plugin links on /changelog send github-clicked" do
+      runtime_events =
+        ~p"/workflows"
+        |> events_on()
+        |> Enum.count(&(&1 == {"github-clicked", "workflows-runtime"}))
+
+      assert runtime_events == length(KanbanWeb.PageHTML.workflow_runtimes())
+      assert runtime_events == 6
+
+      changelog_events =
+        ~p"/changelog"
+        |> events_on()
+        |> Enum.count(&(&1 == {"github-clicked", "changelog"}))
+
+      assert changelog_events == 2
+    end
+
+    test "every comparison page sends compare-corrections exactly once" do
+      for slug <- KanbanWeb.Comparisons.slugs() do
+        sent =
+          ~p"/compare/#{slug}"
+          |> events_on()
+          |> Enum.count(&(&1 == {"github-clicked", "compare-corrections"}))
+
+        assert sent == 1, slug
+      end
+    end
+
+    test "links to GitHub pages that are not Stride's own repositories stay untagged" do
+      for {path, selector} <- [
+            {~p"/changelog", ~s{a[href="https://github.com/openai/codex"]}},
+            {~p"/compare/github-projects", ~s{a[href^="https://docs.github.com/"]}}
+          ] do
+        links =
+          build_conn()
+          |> get(path)
+          |> document()
+          |> LazyHTML.query(selector)
+          |> Enum.to_list()
+
+        assert links != [], "#{path} has no #{selector} link to check"
+
+        for link <- links do
+          assert LazyHTML.attribute(link, "data-umami-event") == [], "#{path} tags #{selector}"
+        end
       end
     end
 

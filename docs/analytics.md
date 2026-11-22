@@ -129,7 +129,7 @@ Page views are sent by the tracker itself. The events are:
 | `signup` | none | A registration succeeded; sent once, from `/users/confirmation-pending` | The `AnalyticsSignup` hook |
 | `install-command-copied` | `runtime`: the runtime slug, such as `codex` | The visitor copies text from an install command on `/integrations/:runtime` | The copy listener in `analytics.js` |
 | `get-started-clicked` | `location`: `nav`, `hero`, `closing`, `pricing`, `product`, `workflows` or `demo` | A sign-up call to action is clicked | The tracker, from `data-umami-event` |
-| `github-clicked` | `location`: `footer`, `docs-source`, `integration-listing`, `integration-docs`, `integration-install-note`, `security`, `workflows` or `issue` | A GitHub link is clicked | The tracker, from `data-umami-event` |
+| `github-clicked` | `location`: `footer`, `docs-source`, `integration-listing`, `integration-docs`, `integration-install-note`, `security`, `workflows`, `workflows-runtime`, `compare-corrections`, `changelog` or `issue` | A GitHub link is clicked | The tracker, from `data-umami-event` |
 
 Every property is a fixed string or a runtime slug that must match
 `^[a-z0-9-]{1,40}$`. No event carries an email address, a token, a user or
