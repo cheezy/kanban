@@ -61,6 +61,11 @@ test("umamiTrack sends the event and its data when the tracker loaded", () => {
 })
 
 test("umamiTrack does nothing when the tracker is missing or blocked", () => {
+  // Removing umamiTrack's guard, or just its typeof clause, is an equivalent
+  // mutant for these inputs: the try/catch turns the resulting TypeError into
+  // the same false. So this test checks the behaviour (returns false), not
+  // the guard itself. Only a track getter (counting or throwing reads) would
+  // tell the mutant apart, and no test here uses one.
   assert.equal(umamiTrack({}, "signup"), false)
   assert.equal(umamiTrack(undefined, "signup"), false)
   assert.equal(umamiTrack({umami: {}}, "signup"), false)

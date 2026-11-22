@@ -19,6 +19,14 @@ const RUNTIME_SLUG = /^[a-z0-9-]{1,40}$/
 // Calls umami.track when the tracker loaded. Returns whether it was sent.
 export function umamiTrack(win, name, data) {
   const umami = win && win.umami
+  // The guard and the try/catch below overlap on purpose. The guard handles a
+  // missing tracker (Umami unset or blocked, the common case) by returning
+  // false without raising an exception; the catch handles a track call that
+  // throws. For a missing tracker the catch alone would also return false,
+  // so no test in analytics.test.mjs can see whether the guard is there
+  // (W2918). Keep it anyway: it spares every page without a tracker a thrown
+  // and caught TypeError. The guard reads umami.track outside the try, so a
+  // track getter that throws is not caught.
   if (!umami || typeof umami.track !== "function") return false
 
   try {
