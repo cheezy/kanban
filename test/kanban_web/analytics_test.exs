@@ -60,15 +60,30 @@ defmodule KanbanWeb.AnalyticsTest do
     header
   end
 
+  # Parses a policy into %{name => sources}. A browser enforces only the first
+  # of two same-named directives, so a map that silently kept the last one could
+  # pass a widening test while the header carries a wider directive the browser
+  # obeys. A repeated name (CSP names are case-insensitive) fails the test, and
+  # so does a comma, which would start a second policy this map cannot see.
+  # Case and whitespace follow CSP's ASCII rules: only tab, LF, FF, CR and space
+  # separate tokens, and only A-Z fold to lower case.
   defp directives(policy) do
+    if String.contains?(policy, ","),
+      do: flunk("CSP joins a second policy with a comma: #{policy}")
+
     policy
     |> String.split(";")
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-    |> Map.new(fn directive ->
-      [name | sources] = String.split(directive, " ")
-      {name, sources}
-    end)
+    |> Enum.map(&String.split(&1, ~r/[\t\n\f\r ]+/, trim: true))
+    |> Enum.reject(&(&1 == []))
+    |> Enum.reduce(%{}, &put_directive(&1, &2, policy))
+  end
+
+  defp put_directive([name | sources], acc, policy) do
+    name = String.downcase(name, :ascii)
+
+    if Map.has_key?(acc, name), do: flunk("CSP repeats directive #{name}: #{policy}")
+
+    Map.put(acc, name, sources)
   end
 
   defp nonce_of(policy) do
@@ -256,6 +271,45 @@ defmodule KanbanWeb.AnalyticsTest do
       assert directives(policy)["script-src"] == ["'self'", "'nonce-#{nonce}'"]
       refute policy =~ "connect-src"
       assert tracker_tags(conn) == []
+    end
+
+    test "the policy parser rejects a repeated script-src" do
+      policy = "default-src 'self'; script-src 'self'; script-src https://evil.example.test"
+
+      error = assert_raise ExUnit.AssertionError, fn -> directives(policy) end
+      assert error.message =~ "CSP repeats directive script-src"
+    end
+
+    test "the policy parser treats directive names that differ only in case as repeats" do
+      policy = "script-src 'self'; SCRIPT-SRC https://evil.example.test"
+
+      error = assert_raise ExUnit.AssertionError, fn -> directives(policy) end
+      assert error.message =~ "CSP repeats directive script-src"
+    end
+
+    test "the policy parser splits sources on runs of whitespace and ignores a trailing semicolon" do
+      assert directives("default-src  'self'; \t ;  script-src 'self'\t 'nonce-abc'  ; ") == %{
+               "default-src" => ["'self'"],
+               "script-src" => ["'self'", "'nonce-abc'"]
+             }
+    end
+
+    test "the policy parser rejects a second policy joined with a comma" do
+      policy = "script-src 'self', script-src https://evil.example.test"
+
+      error = assert_raise ExUnit.AssertionError, fn -> directives(policy) end
+      assert error.message =~ "CSP joins a second policy with a comma"
+    end
+
+    test "the policy parser follows CSP's ASCII rules for whitespace and case" do
+      assert directives("script-src 'self'\v'nonce-abc'") == %{
+               "script-src" => ["'self'\v'nonce-abc'"]
+             }
+
+      assert directives("worker-src 'self'; wor\u212Aer-src https://evil.example.test") == %{
+               "worker-src" => ["'self'"],
+               "wor\u212Aer-src" => ["https://evil.example.test"]
+             }
     end
   end
 
