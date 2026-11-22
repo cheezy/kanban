@@ -14,7 +14,8 @@ names a single `mobile/shared/tokens.json`, the generated tokens live in the
 | [strings/](strings/README.md) | app strings in seven locales | `priv/gettext/*/LC_MESSAGES/mobile.po` | `mix mobile.strings` (generated) |
 | [fixtures/](fixtures/README.md) | example API responses | `priv/openapi/stride-api.json` | written by hand, checked against the contract |
 
-`mix mobile.tokens` exists, and `tokens/tokens.json` is generated. The other
-generators and their checks arrive with the goal's later tasks; until a
-folder's generator exists, it holds only its README. Never edit a generated
+`mix mobile.tokens` and `mix mobile.strings` exist, and `tokens/tokens.json`
+and the seven `strings/<locale>.json` files are generated. The API generator
+and its check arrive with a later task of the goal; until a folder's generator
+exists, it holds only its README. Never edit a generated
 file by hand: change its source and run the generator.

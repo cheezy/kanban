@@ -1,0 +1,60 @@
+## This file is a PO Template file.
+##
+## "msgid"s here are often extracted from source code.
+## Add new messages manually only if they're dynamic
+## messages that can't be statically extracted.
+##
+## Run "mix gettext.extract" to bring this file up to
+## date. Leave "msgstr"s empty as changing them here has no
+## effect: edit them in PO (.po) files instead.
+#
+msgid ""
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "agent_dormant"
+msgid "Dormant"
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "agent_stuck"
+msgid "Stuck"
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_risk_slip"
+msgid "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_risk_title"
+msgid "Why targets are at risk"
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_at_risk"
+msgid "At-risk"
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_complete"
+msgid "Complete"
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_missed"
+msgid "Missed"
+msgstr ""
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_on_track"
+msgid "On-track"
+msgstr ""

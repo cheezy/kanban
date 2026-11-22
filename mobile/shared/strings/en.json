@@ -1,0 +1,16 @@
+{
+  "generator": "mix mobile.strings",
+  "locale": "en",
+  "plurals": {},
+  "source": "priv/gettext/en/LC_MESSAGES/mobile.po",
+  "strings": {
+    "agent_dormant": "Dormant",
+    "agent_stuck": "Stuck",
+    "target_risk_slip": "Finishing at the current pace would land {estimate}, after the {target_date} target. Reduce remaining work or move the target date.",
+    "target_risk_title": "Why targets are at risk",
+    "target_status_at_risk": "At-risk",
+    "target_status_complete": "Complete",
+    "target_status_missed": "Missed",
+    "target_status_on_track": "On-track"
+  }
+}

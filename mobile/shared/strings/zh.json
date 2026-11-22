@@ -1,0 +1,16 @@
+{
+  "generator": "mix mobile.strings",
+  "locale": "zh",
+  "plurals": {},
+  "source": "priv/gettext/zh/LC_MESSAGES/mobile.po",
+  "strings": {
+    "agent_dormant": "休眠",
+    "agent_stuck": "卡住",
+    "target_risk_slip": "按当前进度，预计将在 {estimate} 完成，晚于目标日期 {target_date}。请减少剩余工作或调整目标日期。",
+    "target_risk_title": "目标存在风险的原因",
+    "target_status_at_risk": "有风险",
+    "target_status_complete": "已完成",
+    "target_status_missed": "未达成",
+    "target_status_on_track": "正常"
+  }
+}

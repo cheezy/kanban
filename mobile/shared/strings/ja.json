@@ -1,0 +1,16 @@
+{
+  "generator": "mix mobile.strings",
+  "locale": "ja",
+  "plurals": {},
+  "source": "priv/gettext/ja/LC_MESSAGES/mobile.po",
+  "strings": {
+    "agent_dormant": "休止中",
+    "agent_stuck": "停滞中",
+    "target_risk_slip": "現在のペースでは完了は {estimate} となり、目標日 {target_date} を過ぎます。残作業を減らすか、目標日を変更してください。",
+    "target_risk_title": "ターゲットがリスクにさらされている理由",
+    "target_status_at_risk": "リスクあり",
+    "target_status_complete": "完了",
+    "target_status_missed": "未達",
+    "target_status_on_track": "順調"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "generator": "mix mobile.strings",
+  "locale": "es",
+  "plurals": {},
+  "source": "priv/gettext/es/LC_MESSAGES/mobile.po",
+  "strings": {
+    "agent_dormant": "Inactivo",
+    "agent_stuck": "Atascado",
+    "target_risk_slip": "Al ritmo actual, la finalización sería el {estimate}, posterior a la fecha objetivo del {target_date}. Reduce el trabajo restante o cambia la fecha objetivo.",
+    "target_risk_title": "Por qué las metas están en riesgo",
+    "target_status_at_risk": "En riesgo",
+    "target_status_complete": "Completado",
+    "target_status_missed": "Incumplido",
+    "target_status_on_track": "En curso"
+  }
+}

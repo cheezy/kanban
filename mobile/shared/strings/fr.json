@@ -1,0 +1,16 @@
+{
+  "generator": "mix mobile.strings",
+  "locale": "fr",
+  "plurals": {},
+  "source": "priv/gettext/fr/LC_MESSAGES/mobile.po",
+  "strings": {
+    "agent_dormant": "Inactif",
+    "agent_stuck": "Bloqué",
+    "target_risk_slip": "Au rythme actuel, l'achèvement tomberait le {estimate}, après la date cible du {target_date}. Réduisez le travail restant ou déplacez la date cible.",
+    "target_risk_title": "Pourquoi les cibles sont à risque",
+    "target_status_at_risk": "À risque",
+    "target_status_complete": "Terminé",
+    "target_status_missed": "Non atteint",
+    "target_status_on_track": "Dans les temps"
+  }
+}

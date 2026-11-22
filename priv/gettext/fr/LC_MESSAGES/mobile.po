@@ -1,0 +1,60 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "agent_dormant"
+msgid "Dormant"
+msgstr "Inactif"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "agent_stuck"
+msgid "Stuck"
+msgstr "Bloqué"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_risk_slip"
+msgid "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
+msgstr "Au rythme actuel, l'achèvement tomberait le %{estimate}, après la date cible du %{target_date}. Réduisez le travail restant ou déplacez la date cible."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_risk_title"
+msgid "Why targets are at risk"
+msgstr "Pourquoi les cibles sont à risque"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_at_risk"
+msgid "At-risk"
+msgstr "À risque"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_complete"
+msgid "Complete"
+msgstr "Terminé"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_missed"
+msgid "Missed"
+msgstr "Non atteint"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_status_on_track"
+msgid "On-track"
+msgstr "Dans les temps"
