@@ -213,12 +213,20 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
 
   # Re-read so the second link sees the first; a changeset that refuses the
   # link (a goal under a goal, from data older than that rule) is reported,
-  # since nothing has reached the database yet.
+  # since nothing has reached the database yet. updated_at is forced to the
+  # archived value, which Repo.update would otherwise replace with the import
+  # time.
   defp update_link(ctx, task, row, attrs, field) do
-    changeset = Task |> Repo.get!(task.id) |> Task.changeset(attrs)
+    current = Repo.get!(Task, task.id)
+    changeset = Task.changeset(current, attrs)
 
     if changeset.valid? do
-      Repo.update(changeset) |> elem(0) |> link_result(row)
+      changeset
+      |> Ecto.Changeset.force_change(:updated_at, current.updated_at)
+      |> Repo.update()
+      |> elem(0)
+      |> link_result(row)
+
       ctx
     else
       Importer.skip(ctx, :tasks, "task #{row["identifier"]}: #{field} refused")

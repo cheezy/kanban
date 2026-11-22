@@ -77,6 +77,7 @@ defmodule Kanban.Workspaces.Export.Importer do
   alias Kanban.Workspaces.Export.Importer.Refs
   alias Kanban.Workspaces.Export.Importer.RowErrors
   alias Kanban.Workspaces.Export.Importer.Tasks
+  alias Kanban.Workspaces.Export.Importer.Timestamps
   alias Kanban.Workspaces.Export.Importer.Users
   alias Kanban.Workspaces.Export.Serializer
   alias Kanban.Workspaces.Workspace
@@ -439,10 +440,11 @@ defmodule Kanban.Workspaces.Export.Importer do
   end
 
   @doc false
+  # Offset values are converted to UTC first: cast would drop the offset.
   def cast_timestamps(changeset, row, fields \\ @timestamps) do
     Ecto.Changeset.cast(
       changeset,
-      Map.take(row, fields),
+      row |> Map.take(fields) |> Timestamps.to_utc(),
       Enum.map(fields, &String.to_existing_atom/1)
     )
   end

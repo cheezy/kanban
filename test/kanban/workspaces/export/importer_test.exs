@@ -395,6 +395,69 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
     end
   end
 
+  describe "timestamps with a UTC offset" do
+    test "are stored as the UTC instant they name", ctx do
+      files =
+        ctx.files
+        |> change_task(ctx.second, %{"inserted_at" => "2026-10-07T15:40:52+02:00"})
+        |> change_task(ctx.goal, %{"inserted_at" => "2026-10-07T15:40:52"})
+        |> update_rows(:comments, fn row ->
+          Map.merge(row, %{
+            "inserted_at" => "2026-10-07T15:40:52Z",
+            "updated_at" => "2026-10-31T23:30:00-05:00"
+          })
+        end)
+        |> update_rows(:boards, fn
+          %{"name" => "Alpha board"} = row ->
+            Map.put(row, "inserted_at", "2026-10-07T15:40:52.987654+02:00")
+
+          row ->
+            row
+        end)
+
+      assert {:ok, report} = import_files(ctx, files)
+
+      offset_task = imported_task(ctx.second.identifier, report.workspace_name)
+      assert offset_task.inserted_at == ~N[2026-10-07 13:40:52]
+
+      naive_task = imported_task(ctx.goal.identifier, report.workspace_name)
+      assert naive_task.inserted_at == ~N[2026-10-07 15:40:52]
+
+      comment = imported_comment(report.workspace_name)
+      assert comment.inserted_at == ~N[2026-10-07 15:40:52]
+      assert comment.updated_at == ~N[2026-11-01 04:30:00]
+
+      board = imported_board("Alpha board", report.workspace_name)
+      assert board.inserted_at == ~N[2026-10-07 13:40:52]
+    end
+
+    test "a linked task keeps its archived updated_at", ctx do
+      files =
+        update_rows(ctx.files, :tasks, &Map.put(&1, "updated_at", "2026-10-31T23:30:00-05:00"))
+
+      linked = Enum.filter(files["tasks.json"], &(&1["parent_id"] || &1["duplicate_of_id"]))
+      assert linked != []
+
+      assert {:ok, report} = import_files(ctx, files)
+
+      stored =
+        report.workspace_name |> imported_tasks() |> select([t], t.updated_at) |> Repo.all()
+
+      assert length(stored) == length(files["tasks.json"])
+      assert Enum.all?(stored, &(&1 == ~N[2026-11-01 04:30:00]))
+    end
+
+    test "an invalid timestamp still refuses its row", ctx do
+      for value <- ["2026-13-45T00:00:00+02:00", "not a time", %{"x" => 1}] do
+        files = change_task(ctx.files, ctx.second, %{"inserted_at" => value})
+
+        assert_refused(ctx, files, fn {:invalid_row, :tasks, ref, errors} ->
+          ref == ctx.second.identifier and errors == %{inserted_at: ["is invalid"]}
+        end)
+      end
+    end
+  end
+
   describe "skipped members" do
     test "name the user and say whether their account is disabled or missing", ctx do
       from(u in User, where: u.id == ^ctx.guest.id)

@@ -108,6 +108,12 @@ mix kanban.import_workspace --file PATH --org-admin-email admin@example.com
   bidirectional controls as `\u{202E}` and the like. A crafted archive
   cannot send control sequences to your terminal this way. The imported
   names themselves are not changed.
+- Created and updated times are stored in UTC. Stride's own archives write
+  them in UTC with no offset, and those are stored as written. A time that
+  carries a UTC offset, such as `2026-10-07T15:40:52+02:00` from an archive
+  another tool wrote or edited, is converted to UTC on import and stored as
+  `2026-10-07 13:40:52`. A time that is not a valid ISO 8601 value still
+  fails its row, and the import is refused.
 
 ### Attachments in an import
 
