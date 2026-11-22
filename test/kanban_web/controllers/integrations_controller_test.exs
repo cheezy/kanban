@@ -115,6 +115,11 @@ defmodule KanbanWeb.IntegrationsControllerTest do
       assert query(html, "a[data-install-note-link]") |> LazyHTML.attribute("rel") ==
                ["noopener noreferrer"]
 
+      # The link sits inside running text, where colour alone barely sets it
+      # apart in dark mode, so it carries an underline too.
+      [note_classes] = query(html, "a[data-install-note-link]") |> LazyHTML.attribute("class")
+      assert "underline" in String.split(note_classes)
+
       for slug <- Integrations.slugs(), slug != "codex" do
         assert count(page_html(conn, slug), "[data-install-note]") == 0, slug
       end

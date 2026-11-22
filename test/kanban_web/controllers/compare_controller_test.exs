@@ -120,6 +120,10 @@ defmodule KanbanWeb.CompareControllerTest do
         end
 
         assert attrs(html, "a[data-corrections-link]", "rel") == ["noopener noreferrer"]
+
+        # Inline in running text: underlined so it does not rely on colour alone.
+        [corrections_classes] = attrs(html, "a[data-corrections-link]", "class")
+        assert "underline" in String.split(corrections_classes)
       end
     end
 

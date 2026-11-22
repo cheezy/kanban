@@ -1702,6 +1702,33 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "data-changelog"
   end
 
+  test "every changelog link is underlined and coloured with the ink token", %{conn: conn} do
+    # priv/changelog/body.html is not a Tailwind @source, so a utility class
+    # that nothing under lib/ uses (text-primary was one) is never generated
+    # and the link renders in the paragraph's colour. Underline (generated
+    # because lib/ uses it) plus the inline ink token keep the links visible
+    # in both themes.
+    links =
+      conn
+      |> get(~p"/changelog")
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query("[data-changelog] section a[href]")
+      |> Enum.to_list()
+
+    assert links != []
+
+    for link <- links do
+      [href] = LazyHTML.attribute(link, "href")
+      classes = link |> LazyHTML.attribute("class") |> Enum.join(" ") |> String.split()
+      style = link |> LazyHTML.attribute("style") |> Enum.join(" ")
+
+      assert "underline" in classes, "#{href} is not underlined"
+      refute "text-primary" in classes, "#{href} uses text-primary, which is never generated"
+      assert style =~ "color: var(--stride-orange-ink)", "#{href} has no ink colour"
+    end
+  end
+
   test "the /changelog page lists the new [Unreleased] entries inside the data-changelog container",
        %{conn: conn} do
     # The entries live in hand-edited HTML, so a misplaced closing tag could
