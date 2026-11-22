@@ -33,8 +33,11 @@ locally before committing one. See sections 14 and 17 of
 - `plurals`: `key => {category => text}`, keyed by the CLDR plural category
   each platform's plural resources use. de, en, es, fr and pt have `one` and
   `other`; ja and zh have `other` only. The categories come from the locale's
-  `Plural-Forms` header. gettext's pt rule treats 0 as plural while CLDR's
-  treats it as `one`, so a pt string read for 0 can differ from the web's.
+  `Plural-Forms` header. The apps pick a form by CLDR's rules, which agree
+  with gettext's for every count except pt at 0: CLDR reads 0 as `one`, so
+  the apps show "0 meta" where gettext would show "0 metas". CLDR also has a
+  `many` category for es, fr and pt at a million and up; no file has one, so
+  both platforms fall back to `other`, which reads correctly.
 - `generator`, `locale`, and `source`, the `.po` file the strings came from.
 
 A key is the string's `msgctxt`: a stable snake_case id that the app
@@ -45,6 +48,11 @@ a neutral form each app's generator maps to its own format. A `one` plural
 form may leave out `{count}`. Keys are sorted at every level so the files diff
 cleanly.
 
-The status labels and the risk explainer sentence read the same as the web's
+The status labels and the risk explainer strings read the same as the web's
 default domain in every locale, and the test fails when the two differ. Change
-both copies together, or give the app string its own wording on purpose.
+both copies together, or give the app string its own wording on purpose. The
+plurals (`target_task_progress`, `target_goal_count`, `targets_at_risk_count`,
+`goals_open_count` and `goal_archived_count`) are the app's own: the Targets,
+Goals and goal screens in sections 6.16 to 6.19 of the design say things no
+web page does. They use the web's words for each term in every locale, such as
+de *Ziele* for goals and *Zielvorgaben* for targets.

@@ -5,6 +5,7 @@ defmodule Kanban.Mobile.StringsTest do
   """
   use ExUnit.Case, async: true
 
+  alias Expo.Message.Plural
   alias Expo.Message.Singular
   alias Expo.PO
   alias Kanban.Mobile.Strings
@@ -81,7 +82,25 @@ defmodule Kanban.Mobile.StringsTest do
     end)
   end
 
-  defp pot_messages, do: @gettext |> Path.join("mobile.pot") |> messages()
+  # Every mobile.pot entry as {key, kind, msgid}, the msgid a {msgid,
+  # msgid_plural} tuple for a plural, the shape Strings.msgids/0 returns.
+  defp pot_entries do
+    @gettext
+    |> Path.join("mobile.pot")
+    |> PO.parse_file!()
+    |> Map.fetch!(:messages)
+    |> Enum.map(&pot_entry/1)
+  end
+
+  defp pot_entry(%Plural{} = m) do
+    msgid = {IO.iodata_to_binary(m.msgid), IO.iodata_to_binary(m.msgid_plural)}
+    {IO.iodata_to_binary(m.msgctxt), :plural, msgid}
+  end
+
+  defp pot_entry(%Singular{} = m),
+    do: {IO.iodata_to_binary(m.msgctxt), :string, IO.iodata_to_binary(m.msgid)}
+
+  defp pot_keys(kind), do: for({key, ^kind, _msgid} <- pot_entries(), do: key) |> Enum.sort()
 
   defp po_messages(locale, domain),
     do: [@gettext, locale, "LC_MESSAGES", domain <> ".po"] |> Path.join() |> messages()
@@ -98,20 +117,22 @@ defmodule Kanban.Mobile.StringsTest do
   describe "the committed mobile domain" do
     test "every mobile msgid is translated in all seven locales" do
       built = Strings.build!(@gettext)
-      pot_keys = pot_messages() |> Enum.map(&elem(&1, 0)) |> Enum.sort()
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys) == 8
+      assert length(pot_keys(:string)) == 8
+      assert length(pot_keys(:plural)) == 5
 
       for {locale, strings} <- built do
-        assert strings["strings"] |> Map.keys() |> Enum.sort() == pot_keys,
-               "#{locale} lacks a key"
+        assert strings["strings"] |> Map.keys() |> Enum.sort() == pot_keys(:string),
+               "#{locale} lacks a string"
+
+        assert strings["plurals"] |> Map.keys() |> Enum.sort() == pot_keys(:plural),
+               "#{locale} lacks a plural"
 
         assert strings["strings"] |> Map.values() |> Enum.all?(&(String.trim(&1) != "")), locale
       end
 
-      assert Enum.sort(Strings.msgids()) ==
-               pot_messages() |> Enum.map(&elem(&1, 1)) |> Enum.sort()
+      assert Enum.sort(Strings.msgids()) == pot_entries() |> Enum.map(&elem(&1, 2)) |> Enum.sort()
     end
 
     test "the mobile copies read the same as the web's default domain in every locale" do
@@ -134,6 +155,20 @@ defmodule Kanban.Mobile.StringsTest do
 
         assert length(compared) == 8, "#{locale} compared only #{length(compared)} strings"
       end
+    end
+
+    test "the committed plurals have each locale's categories and keep their count" do
+      for {locale, strings} <- Strings.build!(@gettext) do
+        categories = if locale in ~w(ja zh), do: ~w(other), else: ~w(one other)
+
+        for {key, forms} <- strings["plurals"] do
+          assert forms |> Map.keys() |> Enum.sort() == categories, "#{locale} #{key}"
+          assert forms |> Map.values() |> Enum.all?(&(&1 =~ "{count}")), "#{locale} #{key}"
+        end
+      end
+
+      assert Strings.build!(@gettext)["de"]["plurals"]["target_goal_count"] ==
+               %{"one" => "{count} Ziel", "other" => "{count} Ziele"}
     end
 
     test "the locale list matches priv/gettext and the Gettext backend" do

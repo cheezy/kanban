@@ -7353,7 +7353,7 @@ msgstr "Inaktiv"
 #: lib/kanban_web/components/target_risk_explainer.ex
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
-msgstr "Warum Ziele gefährdet sind"
+msgstr "Warum Zielvorgaben gefährdet sind"
 
 #: lib/kanban_web/components/agent_activity_feed.ex
 #: lib/kanban_web/components/agent_roster_card.ex

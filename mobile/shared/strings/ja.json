@@ -1,7 +1,23 @@
 {
   "generator": "mix mobile.strings",
   "locale": "ja",
-  "plurals": {},
+  "plurals": {
+    "goal_archived_count": {
+      "other": "アーカイブ済み {count} 件"
+    },
+    "goals_open_count": {
+      "other": "ゴール · オープン {count} 件"
+    },
+    "target_goal_count": {
+      "other": "{count} 件のゴール"
+    },
+    "target_task_progress": {
+      "other": "タスク {count} 件中 {done} 件"
+    },
+    "targets_at_risk_count": {
+      "other": "ターゲット · リスクあり {count} 件"
+    }
+  },
   "source": "priv/gettext/ja/LC_MESSAGES/mobile.po",
   "strings": {
     "agent_dormant": "休止中",

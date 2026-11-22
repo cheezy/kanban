@@ -1,7 +1,23 @@
 {
   "generator": "mix mobile.strings",
   "locale": "zh",
-  "plurals": {},
+  "plurals": {
+    "goal_archived_count": {
+      "other": "{count} 个已归档"
+    },
+    "goals_open_count": {
+      "other": "目标 · {count} 个开放"
+    },
+    "target_goal_count": {
+      "other": "{count} 个目标"
+    },
+    "target_task_progress": {
+      "other": "{done}/{count} 个任务"
+    },
+    "targets_at_risk_count": {
+      "other": "交付目标 · {count} 个有风险"
+    }
+  },
   "source": "priv/gettext/zh/LC_MESSAGES/mobile.po",
   "strings": {
     "agent_dormant": "休眠",

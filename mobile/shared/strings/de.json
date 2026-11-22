@@ -1,13 +1,34 @@
 {
   "generator": "mix mobile.strings",
   "locale": "de",
-  "plurals": {},
+  "plurals": {
+    "goal_archived_count": {
+      "one": "{count} archiviert",
+      "other": "{count} archiviert"
+    },
+    "goals_open_count": {
+      "one": "Ziele · {count} offen",
+      "other": "Ziele · {count} offen"
+    },
+    "target_goal_count": {
+      "one": "{count} Ziel",
+      "other": "{count} Ziele"
+    },
+    "target_task_progress": {
+      "one": "{done} von {count} Aufgabe",
+      "other": "{done} von {count} Aufgaben"
+    },
+    "targets_at_risk_count": {
+      "one": "Zielvorgaben · {count} gefährdet",
+      "other": "Zielvorgaben · {count} gefährdet"
+    }
+  },
   "source": "priv/gettext/de/LC_MESSAGES/mobile.po",
   "strings": {
     "agent_dormant": "Inaktiv",
     "agent_stuck": "Festgefahren",
     "target_risk_slip": "Beim aktuellen Tempo wäre der Abschluss am {estimate} und damit nach dem Zieldatum {target_date}. Reduzieren Sie die verbleibende Arbeit oder verschieben Sie das Zieldatum.",
-    "target_risk_title": "Warum Ziele gefährdet sind",
+    "target_risk_title": "Warum Zielvorgaben gefährdet sind",
     "target_status_at_risk": "Gefährdet",
     "target_status_complete": "Abgeschlossen",
     "target_status_missed": "Verpasst",

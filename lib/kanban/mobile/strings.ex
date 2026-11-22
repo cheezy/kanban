@@ -66,12 +66,38 @@ defmodule Kanban.Mobile.Strings do
   def locales, do: @locales
 
   @doc """
-  The English text of every app string. The calls exist so that
-  `mix gettext.extract` writes them, with their keys, to `mobile.pot`.
+  The English text of every app string: a msgid, or `{msgid, msgid_plural}`
+  for a count. The calls exist so that `mix gettext.extract` writes them, with
+  their keys, to `mobile.pot`.
+
+  The status labels and the risk explainer strings are copied from the web's
+  default domain. The counts are the app's own: the Targets, Goals and goal
+  screens of the native apps design (sections 6.16 to 6.19) have no web page
+  that says the same thing.
   """
-  @spec msgids() :: [String.t()]
+  @spec msgids() :: [String.t() | {String.t(), String.t()}]
   def msgids do
     [
+      dpngettext_noop(
+        "mobile",
+        "target_task_progress",
+        "%{done} of %{count} task",
+        "%{done} of %{count} tasks"
+      ),
+      dpngettext_noop("mobile", "target_goal_count", "%{count} goal", "%{count} goals"),
+      dpngettext_noop(
+        "mobile",
+        "targets_at_risk_count",
+        "Targets · %{count} at risk",
+        "Targets · %{count} at risk"
+      ),
+      dpngettext_noop(
+        "mobile",
+        "goals_open_count",
+        "Goals · %{count} open",
+        "Goals · %{count} open"
+      ),
+      dpngettext_noop("mobile", "goal_archived_count", "%{count} archived", "%{count} archived"),
       dpgettext_noop("mobile", "target_status_on_track", "On-track"),
       dpgettext_noop("mobile", "target_status_at_risk", "At-risk"),
       dpgettext_noop("mobile", "target_status_missed", "Missed"),

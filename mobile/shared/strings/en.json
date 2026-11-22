@@ -1,7 +1,28 @@
 {
   "generator": "mix mobile.strings",
   "locale": "en",
-  "plurals": {},
+  "plurals": {
+    "goal_archived_count": {
+      "one": "{count} archived",
+      "other": "{count} archived"
+    },
+    "goals_open_count": {
+      "one": "Goals · {count} open",
+      "other": "Goals · {count} open"
+    },
+    "target_goal_count": {
+      "one": "{count} goal",
+      "other": "{count} goals"
+    },
+    "target_task_progress": {
+      "one": "{done} of {count} task",
+      "other": "{done} of {count} tasks"
+    },
+    "targets_at_risk_count": {
+      "one": "Targets · {count} at risk",
+      "other": "Targets · {count} at risk"
+    }
+  },
   "source": "priv/gettext/en/LC_MESSAGES/mobile.po",
   "strings": {
     "agent_dormant": "Dormant",

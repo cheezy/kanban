@@ -58,3 +58,43 @@ msgstr "Incumplido"
 msgctxt "target_status_on_track"
 msgid "On-track"
 msgstr "En curso"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_archived_count"
+msgid "%{count} archived"
+msgid_plural "%{count} archived"
+msgstr[0] "%{count} archivada"
+msgstr[1] "%{count} archivadas"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goals_open_count"
+msgid "Goals · %{count} open"
+msgid_plural "Goals · %{count} open"
+msgstr[0] "Objetivos · %{count} abierto"
+msgstr[1] "Objetivos · %{count} abiertos"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_goal_count"
+msgid "%{count} goal"
+msgid_plural "%{count} goals"
+msgstr[0] "%{count} objetivo"
+msgstr[1] "%{count} objetivos"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_task_progress"
+msgid "%{done} of %{count} task"
+msgid_plural "%{done} of %{count} tasks"
+msgstr[0] "%{done} de %{count} tarea"
+msgstr[1] "%{done} de %{count} tareas"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "targets_at_risk_count"
+msgid "Targets · %{count} at risk"
+msgid_plural "Targets · %{count} at risk"
+msgstr[0] "Metas · %{count} en riesgo"
+msgstr[1] "Metas · %{count} en riesgo"

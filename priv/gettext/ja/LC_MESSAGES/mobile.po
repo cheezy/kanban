@@ -58,3 +58,38 @@ msgstr "未達"
 msgctxt "target_status_on_track"
 msgid "On-track"
 msgstr "順調"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_archived_count"
+msgid "%{count} archived"
+msgid_plural "%{count} archived"
+msgstr[0] "アーカイブ済み %{count} 件"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goals_open_count"
+msgid "Goals · %{count} open"
+msgid_plural "Goals · %{count} open"
+msgstr[0] "ゴール · オープン %{count} 件"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_goal_count"
+msgid "%{count} goal"
+msgid_plural "%{count} goals"
+msgstr[0] "%{count} 件のゴール"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "target_task_progress"
+msgid "%{done} of %{count} task"
+msgid_plural "%{done} of %{count} tasks"
+msgstr[0] "タスク %{count} 件中 %{done} 件"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "targets_at_risk_count"
+msgid "Targets · %{count} at risk"
+msgid_plural "Targets · %{count} at risk"
+msgstr[0] "ターゲット · リスクあり %{count} 件"

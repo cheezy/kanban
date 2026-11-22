@@ -1,7 +1,28 @@
 {
   "generator": "mix mobile.strings",
   "locale": "pt",
-  "plurals": {},
+  "plurals": {
+    "goal_archived_count": {
+      "one": "{count} arquivada",
+      "other": "{count} arquivadas"
+    },
+    "goals_open_count": {
+      "one": "Metas · {count} aberta",
+      "other": "Metas · {count} abertas"
+    },
+    "target_goal_count": {
+      "one": "{count} meta",
+      "other": "{count} metas"
+    },
+    "target_task_progress": {
+      "one": "{done} de {count} tarefa",
+      "other": "{done} de {count} tarefas"
+    },
+    "targets_at_risk_count": {
+      "one": "Alvos · {count} em risco",
+      "other": "Alvos · {count} em risco"
+    }
+  },
   "source": "priv/gettext/pt/LC_MESSAGES/mobile.po",
   "strings": {
     "agent_dormant": "Inativo",
