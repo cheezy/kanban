@@ -33,7 +33,7 @@ msgstr "Beim aktuellen Tempo wäre der Abschluss am %{estimate} und damit nach d
 #, elixir-autogen, elixir-format
 msgctxt "target_risk_title"
 msgid "Why targets are at risk"
-msgstr "Warum Ziele gefährdet sind"
+msgstr "Warum Zielvorgaben gefährdet sind"
 
 #: lib/kanban/mobile/strings.ex
 #, elixir-autogen, elixir-format

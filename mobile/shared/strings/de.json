@@ -7,7 +7,7 @@
     "agent_dormant": "Inaktiv",
     "agent_stuck": "Festgefahren",
     "target_risk_slip": "Beim aktuellen Tempo wäre der Abschluss am {estimate} und damit nach dem Zieldatum {target_date}. Reduzieren Sie die verbleibende Arbeit oder verschieben Sie das Zieldatum.",
-    "target_risk_title": "Warum Ziele gefährdet sind",
+    "target_risk_title": "Warum Zielvorgaben gefährdet sind",
     "target_status_at_risk": "Gefährdet",
     "target_status_complete": "Abgeschlossen",
     "target_status_missed": "Verpasst",
