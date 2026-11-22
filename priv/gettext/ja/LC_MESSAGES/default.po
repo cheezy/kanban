@@ -16389,11 +16389,6 @@ msgstr "Stride のサンプルボードで、AI エージェントがタスク�
 msgid "Watch a replay of agents claiming tasks, running their hooks and moving cards to Done. No account needed."
 msgstr "エージェントがタスクを担当し、フックを実行し、カードを完了に移動する様子を再生で見られます。アカウントは不要です。"
 
-#: lib/kanban_web/components/marketing_demo_band.ex
-#, elixir-autogen, elixir-format
-msgid "Watch the live demo"
-msgstr "ライブデモを見る"
-
 #: lib/kanban_web/demo_board.ex
 #, elixir-autogen, elixir-format
 msgid "Write tests for the export endpoint"
@@ -16810,3 +16805,8 @@ msgstr "Stride と GitHub Projects、Linear、Jira の比較"
 #, elixir-autogen, elixir-format
 msgid "Where Stride fits for AI agent work, and where %{name} is the better choice."
 msgstr "AI エージェントの作業で Stride が向いている場面と、%{name} のほうが適している場面。"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch a simulated demo"
+msgstr "シミュレーションのデモを見る"

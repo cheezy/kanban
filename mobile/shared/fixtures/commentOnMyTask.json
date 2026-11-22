@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": 9120,
+    "task_id": 4812,
+    "content": "Keep the old column for now; drop it next release.",
+    "author_name": "Sam Rivera",
+    "author_agent_name": null,
+    "mentioned_user_ids": [
+      31
+    ],
+    "edited_at": null,
+    "inserted_at": "2026-11-20T09:14:02Z",
+    "updated_at": "2026-11-20T09:14:02Z"
+  }
+}

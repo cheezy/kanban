@@ -15,7 +15,10 @@ names a single `mobile/shared/tokens.json`, the generated tokens live in the
 | [fixtures/](fixtures/README.md) | example API responses | `priv/openapi/stride-api.json` | written by hand, checked against the contract |
 
 `mix mobile.tokens` and `mix mobile.strings` exist, and `tokens/tokens.json`
-and the seven `strings/<locale>.json` files are generated. The API generator
-and its check arrive with a later task of the goal; until a folder's generator
-exists, it holds only its README. Never edit a generated
-file by hand: change its source and run the generator.
+and the seven `strings/<locale>.json` files are generated. `fixtures/` holds one
+hand-written example response per `/api/me` and `/oauth` operation whose
+success response has a JSON body, and
+`test/kanban_web/controllers/api/mobile_fixtures_test.exs` checks each against
+the contract. The API generator and its check arrive with a later task of the
+goal. Never edit a generated file by hand: change its source and run the
+generator.

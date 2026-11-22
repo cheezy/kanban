@@ -1,0 +1,17 @@
+{
+  "data": {
+    "targets": [
+      {
+        "id": 3,
+        "name": "1.0 launch",
+        "status": "at_risk",
+        "target_date": "2026-12-15",
+        "estimated_completion_date": "2026-12-19",
+        "goal_count": 5,
+        "completed": 6,
+        "total": 20,
+        "owner": true
+      }
+    ]
+  }
+}

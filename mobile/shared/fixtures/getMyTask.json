@@ -1,0 +1,46 @@
+{
+  "data": {
+    "id": 4812,
+    "identifier": "W2701",
+    "title": "Add the member table",
+    "type": "work",
+    "priority": "high",
+    "status": "open",
+    "needs_review": false,
+    "board_id": 55,
+    "column": {
+      "id": 127,
+      "name": "Ready"
+    },
+    "description": "List the organization's members with their roles.",
+    "acceptance_criteria": "The table lists every member\nEach row shows the role",
+    "key_files": [
+      {
+        "file_path": "lib/kanban_web/live/org_live/members.ex",
+        "note": "New table",
+        "position": 0
+      }
+    ],
+    "security_considerations": [
+      "Only organization admins see email addresses"
+    ],
+    "created_via": null,
+    "archived_at": null,
+    "comments": [
+      {
+        "id": 9120,
+        "task_id": 4812,
+        "content": "Released because the migration needs a decision: keep the old column?",
+        "author_name": "Sam Rivera",
+        "author_agent_name": null,
+        "mentioned_user_ids": [
+          31
+        ],
+        "edited_at": null,
+        "inserted_at": "2026-11-20T09:14:02Z",
+        "updated_at": "2026-11-20T09:14:02Z"
+      }
+    ],
+    "has_more_comments": false
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "data": {
+    "target": {
+      "id": 3,
+      "name": "1.0 launch",
+      "status": "at_risk",
+      "target_date": "2026-12-15",
+      "estimated_completion_date": "2026-12-19",
+      "goal_count": 1,
+      "completed": 6,
+      "total": 20,
+      "owner": true
+    },
+    "goals": [
+      {
+        "id": 4790,
+        "identifier": "G88",
+        "title": "Ship the Stride app",
+        "status": "in_progress",
+        "board": {
+          "id": 12,
+          "name": "Mobile"
+        },
+        "target": {
+          "id": 3,
+          "name": "1.0 launch"
+        },
+        "counts": {
+          "total": 9,
+          "completed": 4,
+          "doing": 2,
+          "review": 1,
+          "blocked": 0
+        },
+        "waiting_on_you": 1,
+        "hook_failed": false
+      }
+    ],
+    "risk": {
+      "slipped": {
+        "estimate": "2026-12-19",
+        "target_date": "2026-12-15"
+      },
+      "stalled": [
+        {
+          "id": 4790,
+          "identifier": "G88",
+          "title": "Ship the Stride app",
+          "agents": [
+            {
+              "name": "Claude",
+              "reasons": [
+                "stuck"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

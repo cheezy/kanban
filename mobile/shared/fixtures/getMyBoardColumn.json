@@ -1,0 +1,33 @@
+{
+  "data": {
+    "board_id": 12,
+    "column": {
+      "id": 81,
+      "name": "Backlog"
+    },
+    "tasks": [
+      {
+        "id": 4812,
+        "identifier": "W2701",
+        "title": "Add the member table",
+        "type": "work",
+        "priority": "high",
+        "status": "open",
+        "needs_review": false,
+        "position": 0,
+        "label": {
+          "id": 7,
+          "name": "frontend",
+          "color": "blue"
+        },
+        "criteria_count": 3,
+        "key_files_count": 2,
+        "security_considerations_count": 2
+      }
+    ],
+    "page": 1,
+    "per_page": 100,
+    "total": 1,
+    "next_page": null
+  }
+}

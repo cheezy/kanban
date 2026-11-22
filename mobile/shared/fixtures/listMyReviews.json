@@ -1,0 +1,54 @@
+{
+  "data": [
+    {
+      "id": "review-4812",
+      "kind": "review",
+      "since": "2026-11-18T09:30:00Z",
+      "task_id": 4812,
+      "board_id": 12,
+      "summary": {
+        "identifier": "W101",
+        "title": "Add a sign-in screen",
+        "priority": "high",
+        "agent": "Claude",
+        "board": {
+          "id": 12,
+          "name": "Stride Development"
+        }
+      },
+      "details": {
+        "verdicts": [
+          {
+            "section": "acceptance_criteria",
+            "status": "passed"
+          },
+          {
+            "section": "testing_strategy",
+            "status": "passed"
+          },
+          {
+            "section": "patterns",
+            "status": "failed"
+          },
+          {
+            "section": "security_considerations",
+            "status": null
+          }
+        ],
+        "first_failed_note": "One view model reads the store directly."
+      },
+      "actions": [
+        "open_review",
+        "approve",
+        "request_changes",
+        "open_on_web"
+      ],
+      "web_url": "https://stride.example/boards/12/tasks/4812",
+      "holds_up": 2,
+      "held_identifiers": [
+        "W102",
+        "W103"
+      ]
+    }
+  ]
+}

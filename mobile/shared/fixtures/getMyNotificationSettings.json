@@ -1,0 +1,19 @@
+{
+  "data": {
+    "mode": "decisions",
+    "switches": {
+      "review_requested": true,
+      "task_unclaimed": true,
+      "claim_expired": true,
+      "after_goal_failed": true,
+      "task_reviewed": false,
+      "goal_completed": false,
+      "target_status_changed": false,
+      "mentioned": true
+    },
+    "quiet_hours_enabled": true,
+    "quiet_start": "22:00",
+    "quiet_end": "07:00",
+    "time_zone": "Europe/London"
+  }
+}

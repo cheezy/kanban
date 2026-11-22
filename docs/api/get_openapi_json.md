@@ -190,6 +190,13 @@ makes sure it cannot quietly fall behind the router. The test checks that:
 5. **The document is safe to publish.** It contains no token-shaped strings,
    no `localhost` or internal hostnames, and only the relative server.
 
+A second test, `test/kanban_web/controllers/api/mobile_fixtures_test.exs`,
+keeps the native apps' example responses in
+[`mobile/shared/fixtures/`](../../mobile/shared/fixtures/README.md) true to the
+spec. Every `/api/me` and `/oauth` operation whose success response has a JSON
+body needs a fixture named `<operationId>.json`, and each fixture must fit its
+response schema with no undeclared key. A `204` with no body needs none.
+
 ### Adding a New `/api` Route
 
 When you add a route under `/api` in `lib/kanban_web/router.ex`:
@@ -222,6 +229,9 @@ When you add a route under `/api` in `lib/kanban_web/router.ex`:
 
 6. Add a markdown page for the endpoint in `docs/api/`, and add it to the
    endpoint index and the summary table in [README.md](README.md).
+7. If the route is under `/api/me` or `/oauth` and its success response has
+   a JSON body, add `mobile/shared/fixtures/<operationId>.json` with made-up
+   data, and run `mix test test/kanban_web/controllers/api/mobile_fixtures_test.exs`.
 
 The file is served exactly as stored, so a change reaches clients on the next
 deploy, once their cached copy is more than an hour old. The server also keeps

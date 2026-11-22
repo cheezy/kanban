@@ -1,0 +1,27 @@
+{
+  "data": {
+    "promoted": [
+      {
+        "id": 4812,
+        "identifier": "W2701",
+        "title": "Add the member table",
+        "type": "work",
+        "priority": "high",
+        "status": "open",
+        "needs_review": true,
+        "position": 3,
+        "label": {
+          "id": 7,
+          "name": "frontend",
+          "color": "blue"
+        },
+        "criteria_count": 3,
+        "key_files_count": 2,
+        "security_considerations_count": 2
+      }
+    ],
+    "already_ready": [
+      4790
+    ]
+  }
+}

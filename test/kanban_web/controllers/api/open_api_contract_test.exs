@@ -175,13 +175,35 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert extra == [], "Documented but not routed:\n" <> Enum.join(extra, "\n")
     end
 
-    test "authenticated routes require bearerAuth and public routes declare none", %{spec: spec} do
+    # :device_api routes need exactly deviceAuth, :api routes bearerAuth, and
+    # :api_public and :oauth routes declare none.
+    test "each route's security scheme matches its pipeline", %{spec: spec} do
+      routes = api_routes()
+
       failures =
-        for {verb, router_path} <- api_routes(),
+        for {verb, router_path} <- routes,
             failure = security_failure(spec, verb, router_path),
             do: failure
 
       assert failures == [], Enum.join(failures, "\n")
+
+      # Every pipeline kind is checked, so none of them passes by being absent.
+      kinds =
+        MapSet.new(routes, fn {verb, path} ->
+          case route_pipelines(Atom.to_string(verb), path) do
+            :unresolved -> :unresolved
+            pipes -> pipeline_kind(pipes)
+          end
+        end)
+
+      for kind <- [:device_api, :api, :api_public, :oauth] do
+        assert kind in kinds, "no route is behind the #{inspect(kind)} pipeline"
+      end
+
+      for path <- ["/oauth/token", "/oauth/revoke"] do
+        assert {:post, path} in routes, "POST #{path} is not checked"
+        assert get_in(spec, ["paths", path, "post", "security"]) == []
+      end
     end
 
     test "every /api/me route requires deviceAuth and every agent route bearerAuth", %{

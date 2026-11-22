@@ -402,23 +402,23 @@ defmodule KanbanWeb.GoalLive.Show do
   # Ready, in-flight and backlog come from the column a child sits in, the
   # same buckets the hierarchy sections use: `Task.status` has no :ready or
   # :review value, so a task in the Ready column is :open and one in Review
-  # may be :open or :in_progress. Blocked children are counted on their own
-  # row rather than in their column's bucket, and done stays the children
-  # whose status is :completed.
+  # may be :open or :in_progress. A blocked child still counts in its
+  # column's bucket, because the section for that column lists it, and
+  # Blocked counts it again: Blocked overlaps the other rows rather than
+  # being a bucket of its own. Done stays the children whose status is
+  # :completed.
   defp sidebar_counts(children, contributor_count) do
-    {blocked_children, unblocked} =
-      Enum.split_with(children, &(Map.get(&1, :status) == :blocked))
-
     done = Enum.count(children, &(Map.get(&1, :status) == :completed))
+    blocked = Enum.count(children, &(Map.get(&1, :status) == :blocked))
     total = length(children)
 
-    unblocked
+    children
     |> column_bucket_counts()
     |> Map.merge(%{
       percent: completion_percent(done, total),
       done: done,
       total: total,
-      blocked: length(blocked_children),
+      blocked: blocked,
       contributor_count: contributor_count
     })
   end

@@ -1,0 +1,24 @@
+{
+  "data": {
+    "id": 4830,
+    "identifier": "D461",
+    "title": "Sync button does nothing offline",
+    "type": "defect",
+    "priority": "medium",
+    "status": "open",
+    "needs_review": false,
+    "board_id": 55,
+    "column": {
+      "id": 126,
+      "name": "Backlog"
+    },
+    "description": "Tapping Sync with no connection shows no message.",
+    "acceptance_criteria": null,
+    "key_files": [],
+    "security_considerations": [],
+    "created_via": "mobile",
+    "archived_at": null,
+    "comments": [],
+    "has_more_comments": false
+  }
+}

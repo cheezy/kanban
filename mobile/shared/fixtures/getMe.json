@@ -1,0 +1,52 @@
+{
+  "data": {
+    "user": {
+      "id": 101,
+      "display_name": "Alex Example",
+      "initials": "AE"
+    },
+    "organization": {
+      "id": 51,
+      "name": "Example Co",
+      "role": "org_admin"
+    },
+    "workspaces": [
+      {
+        "id": 3,
+        "name": "Engineering",
+        "slug": "engineering"
+      },
+      {
+        "id": 4,
+        "name": "Design",
+        "slug": "design"
+      }
+    ],
+    "app_unlocked": true,
+    "min_app_versions": {
+      "ios": {
+        "min_version": "1.0.0",
+        "store_url": "https://apps.stride.example/ios"
+      },
+      "android": {
+        "min_version": "1.0.0",
+        "store_url": "https://apps.stride.example/android"
+      }
+    },
+    "limits": {
+      "phone_max_files": 20,
+      "phone_max_lines": 400
+    },
+    "device": {
+      "id": 301,
+      "name": "Alex's iPhone",
+      "platform": "ios",
+      "device_class": "phone",
+      "model": "iPhone16,2",
+      "os_version": "18.1",
+      "app_version": "1.0.0",
+      "last_seen_at": "2026-11-20T09:28:00Z",
+      "signed_in_at": "2026-11-02T08:15:00Z"
+    }
+  }
+}

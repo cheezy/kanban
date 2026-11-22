@@ -238,12 +238,13 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       review_col = column_fixture(board, %{name: "Review"})
       done_col = column_fixture(board, %{name: "Done"})
 
-      {:ok, %{goal: goal, child_tasks: [ready, doing, review, blocked, done, _backlog]}} =
+      {:ok,
+       %{goal: goal, child_tasks: [ready, doing, review, blocked, done, _backlog, blocked_ready]}} =
         Tasks.create_goal_with_tasks(
           backlog_col,
           %{"title" => "Column counts Goal", "created_by_id" => user.id},
           Enum.map(
-            1..6,
+            1..7,
             &%{"title" => "Child #{&1}", "type" => "work", "created_by_id" => user.id}
           )
         )
@@ -261,13 +262,16 @@ defmodule KanbanWeb.GoalLive.ShowTest do
       move.(review, review_col, status: :in_progress)
       move.(blocked, backlog_col, status: :blocked)
       move.(done, done_col, status: :completed, completed_at: DateTime.utc_now())
+      # A blocked task in Ready is listed under the Ready section, so it
+      # counts as Ready as well as Blocked.
+      move.(blocked_ready, ready_col, status: :blocked)
 
       {:ok, _live, html} = live(conn, ~p"/boards/#{board}/goals/#{goal.id}")
 
-      assert sidebar_value(html, "Ready") == "1"
+      assert sidebar_value(html, "Ready") == "2"
       assert sidebar_value(html, "In flight") == "2"
-      assert sidebar_value(html, "Blocked") == "1"
-      assert sidebar_value(html, "Done / total") == "1/6"
+      assert sidebar_value(html, "Blocked") == "2"
+      assert sidebar_value(html, "Done / total") == "1/7"
     end
 
     test "renders Contributors count from the goal + children authors",

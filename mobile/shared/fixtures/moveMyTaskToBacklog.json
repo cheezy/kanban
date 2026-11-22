@@ -1,0 +1,19 @@
+{
+  "data": {
+    "moved": true,
+    "task": {
+      "id": 4812,
+      "identifier": "W2701",
+      "title": "Add the member table",
+      "type": "work",
+      "priority": "high",
+      "status": "open",
+      "needs_review": false,
+      "position": 4,
+      "label": null,
+      "criteria_count": 2,
+      "key_files_count": 1,
+      "security_considerations_count": 1
+    }
+  }
+}

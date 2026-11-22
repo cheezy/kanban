@@ -16,7 +16,7 @@ defmodule KanbanWeb.MarketingDemoBandTest do
 
     assert html =~ "data-demo-band"
     assert html =~ ~s(href="/demo")
-    assert html =~ "Watch the live demo"
+    assert html =~ "Watch a simulated demo"
     assert html =~ "See agents work a board"
   end
 
@@ -30,7 +30,7 @@ defmodule KanbanWeb.MarketingDemoBandTest do
         """)
       end)
 
-    refute html =~ "Watch the live demo"
+    refute html =~ "Watch a simulated demo"
     assert html =~ ~s(href="/demo")
   end
 end

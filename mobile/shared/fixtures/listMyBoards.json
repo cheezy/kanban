@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "id": 12,
+      "name": "Stride Development",
+      "access": "owner",
+      "group": "workspace",
+      "workspace": {
+        "id": 3,
+        "name": "Engineering",
+        "slug": "engineering"
+      },
+      "counts": {
+        "backlog": 5,
+        "ready": 0,
+        "doing": 1,
+        "review": 1,
+        "done": 40
+      },
+      "idle_agents": 1
+    }
+  ]
+}

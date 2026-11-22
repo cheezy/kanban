@@ -1,0 +1,39 @@
+{
+  "data": {
+    "goals": [
+      {
+        "id": 4790,
+        "identifier": "G88",
+        "title": "Ship the Stride app",
+        "status": "in_progress",
+        "board": {
+          "id": 12,
+          "name": "Mobile"
+        },
+        "target": {
+          "id": 3,
+          "name": "1.0 launch"
+        },
+        "counts": {
+          "total": 9,
+          "completed": 4,
+          "doing": 2,
+          "review": 1,
+          "blocked": 0
+        },
+        "waiting_on_you": 1,
+        "hook_failed": false
+      }
+    ],
+    "filter": "open",
+    "filters": {
+      "open": 14,
+      "done": 31,
+      "no_target": 5
+    },
+    "page": 1,
+    "per_page": 100,
+    "total": 14,
+    "next_page": null
+  }
+}

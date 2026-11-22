@@ -1,0 +1,10 @@
+{
+  "data": {
+    "nonce": "EXAMPLE-approval-nonce-for-previews-only",
+    "expires_at": "2026-11-18T09:42:00Z",
+    "task_id": 4812,
+    "review_requested_at": "2026-11-18T09:30:00Z",
+    "decision": "approve",
+    "signing_version": "stride-approval-v1"
+  }
+}

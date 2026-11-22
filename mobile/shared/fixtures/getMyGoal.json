@@ -1,0 +1,65 @@
+{
+  "data": {
+    "goal": {
+      "id": 4790,
+      "identifier": "G88",
+      "title": "Ship the Stride app",
+      "status": "in_progress",
+      "board": {
+        "id": 12,
+        "name": "Mobile"
+      },
+      "target": {
+        "id": 3,
+        "name": "1.0 launch"
+      },
+      "counts": {
+        "total": 9,
+        "completed": 4,
+        "doing": 2,
+        "review": 1,
+        "blocked": 0
+      },
+      "waiting_on_you": 1,
+      "hook_failed": false
+    },
+    "agents": [
+      "Claude"
+    ],
+    "archived_done": 2,
+    "groups": [
+      {
+        "status": "backlog",
+        "tasks": []
+      },
+      {
+        "status": "ready",
+        "tasks": []
+      },
+      {
+        "status": "doing",
+        "tasks": [
+          {
+            "id": 4801,
+            "identifier": "W2762",
+            "title": "Add the goals routes",
+            "type": "work",
+            "status": "in_progress",
+            "needs_review": false,
+            "reviewable": false,
+            "agent": "Claude",
+            "in_column_since": "2026-11-20T08:02:11Z"
+          }
+        ]
+      },
+      {
+        "status": "review",
+        "tasks": []
+      },
+      {
+        "status": "done",
+        "tasks": []
+      }
+    ]
+  }
+}

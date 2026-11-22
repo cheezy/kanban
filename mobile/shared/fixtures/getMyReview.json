@@ -1,0 +1,151 @@
+{
+  "data": {
+    "task": {
+      "id": 4812,
+      "identifier": "W101",
+      "title": "Add a sign-in screen",
+      "priority": "high",
+      "completed_by_agent": "Claude",
+      "time_spent_minutes": 95,
+      "board": {
+        "id": 12,
+        "name": "Stride Development"
+      },
+      "goal": {
+        "id": 4800,
+        "identifier": "G11",
+        "title": "Ship the first app build"
+      }
+    },
+    "summary": "Adds the sign-in screen and its view model, with tests for both themes.",
+    "verdicts": [
+      {
+        "section": "acceptance_criteria",
+        "status": "passed",
+        "note": null
+      },
+      {
+        "section": "testing_strategy",
+        "status": "passed",
+        "note": null
+      },
+      {
+        "section": "patterns",
+        "status": "failed",
+        "note": "One view model reads the store directly."
+      },
+      {
+        "section": "pitfalls",
+        "status": "passed",
+        "note": null
+      },
+      {
+        "section": "security_considerations",
+        "status": "not_assessed",
+        "note": null
+      }
+    ],
+    "acceptance_criteria": [
+      {
+        "criterion": "The screen signs a person in",
+        "status": "met",
+        "evidence": "SignInViewModelTests"
+      },
+      {
+        "criterion": "Both themes pass contrast",
+        "status": "met",
+        "evidence": null
+      }
+    ],
+    "security_considerations": [
+      {
+        "consideration": "Tokens are kept in the keychain only",
+        "status": "mitigated",
+        "detail": "TokenStore writes to the keychain"
+      }
+    ],
+    "security_findings": {
+      "critical": 0,
+      "important": 0,
+      "minor": 1
+    },
+    "project_checks": {
+      "met": 4,
+      "not_met": 0,
+      "not_applicable": 1
+    },
+    "exploratory": {
+      "count": null,
+      "note": "see_notes_on_web"
+    },
+    "behaviour_matrix": [
+      {
+        "category": "Happy path",
+        "behaviour": "Signs in",
+        "test_name": "SignInViewModelTests.testSignsIn",
+        "type": "unit",
+        "status": "passing"
+      },
+      {
+        "category": "Concurrency",
+        "behaviour": "N/A",
+        "test_name": null,
+        "type": null,
+        "status": "not_applicable"
+      }
+    ],
+    "files": [
+      {
+        "index": 0,
+        "path": "mobile/ios/Stride/SignIn/SignInView.swift",
+        "additions": 120,
+        "deletions": 4,
+        "truncated": false,
+        "flagged": true,
+        "flag_reason": "issue"
+      },
+      {
+        "index": 1,
+        "path": "mobile/ios/StrideTests/SignInViewModelTests.swift",
+        "additions": 64,
+        "deletions": 0,
+        "truncated": false,
+        "flagged": false,
+        "flag_reason": null
+      },
+      {
+        "index": null,
+        "path": "mobile/ios/Stride/Assets.xcassets/Logo.png",
+        "additions": null,
+        "deletions": null,
+        "truncated": false,
+        "flagged": false,
+        "flag_reason": null
+      }
+    ],
+    "files_version": "v1-2026-11-18T09:30:00Z",
+    "size": {
+      "files": 3,
+      "files_unknown": false,
+      "changed_lines": 188,
+      "truncated": false,
+      "large_change": false
+    },
+    "approvable_here": true,
+    "approvable_here_reason": null,
+    "review_requested_at": "2026-11-18T09:30:00Z",
+    "waiting_since": "2026-11-18T09:30:00Z",
+    "holds_up": [
+      {
+        "id": 4816,
+        "identifier": "W102",
+        "title": "Add a sign-out button"
+      },
+      {
+        "id": 4817,
+        "identifier": "W103",
+        "title": "Show the signed-in device list"
+      }
+    ]
+  }
+}

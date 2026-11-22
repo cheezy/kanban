@@ -1,0 +1,175 @@
+{
+  "data": {
+    "items": [
+      {
+        "id": "review-4812",
+        "kind": "review",
+        "since": "2026-11-18T09:30:00Z",
+        "task_id": 4812,
+        "board_id": 12,
+        "summary": {
+          "identifier": "W101",
+          "title": "Add a sign-in screen",
+          "priority": "high",
+          "agent": "Claude",
+          "board": {
+            "id": 12,
+            "name": "Stride Development"
+          }
+        },
+        "details": {
+          "verdicts": [
+            {
+              "section": "acceptance_criteria",
+              "status": "passed"
+            },
+            {
+              "section": "testing_strategy",
+              "status": "passed"
+            },
+            {
+              "section": "patterns",
+              "status": "failed"
+            },
+            {
+              "section": "security_considerations",
+              "status": null
+            }
+          ],
+          "first_failed_note": "One view model reads the store directly."
+        },
+        "actions": [
+          "open_review",
+          "approve",
+          "request_changes",
+          "open_on_web"
+        ],
+        "web_url": "https://stride.example/boards/12/tasks/4812",
+        "holds_up": 2,
+        "held_identifiers": [
+          "W102",
+          "W103"
+        ]
+      },
+      {
+        "id": "released-9001",
+        "kind": "released",
+        "since": "2026-11-19T14:05:00Z",
+        "task_id": 4813,
+        "board_id": 12,
+        "summary": {
+          "identifier": "W104",
+          "title": "Cache board columns offline",
+          "priority": "medium",
+          "agent": "Claude",
+          "board": {
+            "id": 12,
+            "name": "Stride Development"
+          }
+        },
+        "details": {
+          "reason": "Needs a design decision on cache size",
+          "notification_id": 9001
+        },
+        "actions": [
+          "reply",
+          "move_to_backlog",
+          "open_on_web"
+        ],
+        "web_url": "https://stride.example/boards/12/tasks/4813",
+        "holds_up": 0,
+        "held_identifiers": []
+      },
+      {
+        "id": "claim_expired-4814",
+        "kind": "claim_expired",
+        "since": "2026-11-19T16:00:00Z",
+        "task_id": 4814,
+        "board_id": 12,
+        "summary": {
+          "identifier": "D21",
+          "title": "Fix the empty review list",
+          "priority": "low",
+          "agent": null,
+          "board": {
+            "id": 12,
+            "name": "Stride Development"
+          }
+        },
+        "details": {
+          "claimed_at": "2026-11-19T15:00:00Z",
+          "expired_at": "2026-11-19T16:00:00Z"
+        },
+        "actions": [
+          "move_to_backlog",
+          "open_on_web"
+        ],
+        "web_url": "https://stride.example/boards/12/tasks/4814",
+        "holds_up": null,
+        "held_identifiers": []
+      },
+      {
+        "id": "hook_failed-4815",
+        "kind": "hook_failed",
+        "since": "2026-11-20T08:10:00Z",
+        "task_id": 4815,
+        "board_id": 12,
+        "summary": {
+          "identifier": "W105",
+          "title": "Show goal progress",
+          "priority": "critical",
+          "agent": "Claude",
+          "board": {
+            "id": 12,
+            "name": "Stride Development"
+          }
+        },
+        "details": {
+          "exit_code": 1,
+          "duration_ms": 48210
+        },
+        "actions": [
+          "view_attempt",
+          "open_on_web"
+        ],
+        "web_url": "https://stride.example/boards/12/tasks/4815",
+        "holds_up": 1,
+        "held_identifiers": [
+          "W106"
+        ]
+      },
+      {
+        "id": "ready_empty-12",
+        "kind": "ready_empty",
+        "since": null,
+        "task_id": null,
+        "board_id": 12,
+        "summary": {
+          "identifier": null,
+          "title": null,
+          "priority": null,
+          "agent": null,
+          "board": {
+            "id": 12,
+            "name": "Stride Development"
+          }
+        },
+        "details": {
+          "idle_agents": 2,
+          "backlog_count": 5
+        },
+        "actions": [
+          "open_backlog"
+        ],
+        "web_url": "https://stride.example/boards/12",
+        "holds_up": null,
+        "held_identifiers": []
+      }
+    ],
+    "summary": {
+      "waiting": 4,
+      "held_up": 3,
+      "agents_working": 1
+    }
+  }
+}

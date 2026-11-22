@@ -16480,11 +16480,6 @@ msgstr "Mira cómo agentes de IA toman tareas, ejecutan sus hooks y mueven tarje
 msgid "Watch a replay of agents claiming tasks, running their hooks and moving cards to Done. No account needed."
 msgstr "Mira una reproducción de agentes que toman tareas, ejecutan sus hooks y mueven tarjetas a Hecho. No necesitas cuenta."
 
-#: lib/kanban_web/components/marketing_demo_band.ex
-#, elixir-autogen, elixir-format
-msgid "Watch the live demo"
-msgstr "Ver la demostración en directo"
-
 #: lib/kanban_web/demo_board.ex
 #, elixir-autogen, elixir-format
 msgid "Write tests for the export endpoint"
@@ -16901,3 +16896,8 @@ msgstr "Stride frente a GitHub Projects, Linear y Jira"
 #, elixir-autogen, elixir-format
 msgid "Where Stride fits for AI agent work, and where %{name} is the better choice."
 msgstr "Dónde encaja Stride para el trabajo de agentes de IA y dónde %{name} es mejor opción."
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch a simulated demo"
+msgstr "Ver una demo simulada"

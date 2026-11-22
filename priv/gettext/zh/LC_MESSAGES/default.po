@@ -16392,11 +16392,6 @@ msgstr "观看 AI 代理在 Stride 示例看板上认领任务、运行钩子并
 msgid "Watch a replay of agents claiming tasks, running their hooks and moving cards to Done. No account needed."
 msgstr "观看代理认领任务、运行钩子并将卡片移到完成的回放。无需账户。"
 
-#: lib/kanban_web/components/marketing_demo_band.ex
-#, elixir-autogen, elixir-format
-msgid "Watch the live demo"
-msgstr "观看实时演示"
-
 #: lib/kanban_web/demo_board.ex
 #, elixir-autogen, elixir-format
 msgid "Write tests for the export endpoint"
@@ -16813,3 +16808,8 @@ msgstr "Stride 与 GitHub Projects、Linear 和 Jira 对比"
 #, elixir-autogen, elixir-format
 msgid "Where Stride fits for AI agent work, and where %{name} is the better choice."
 msgstr "Stride 在 AI 智能体工作中适用的场景，以及 %{name} 更合适的场景。"
+
+#: lib/kanban_web/components/marketing_demo_band.ex
+#, elixir-autogen, elixir-format
+msgid "Watch a simulated demo"
+msgstr "观看模拟演示"

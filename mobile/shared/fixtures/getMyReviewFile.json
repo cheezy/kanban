@@ -1,0 +1,207 @@
+{
+  "data": {
+    "index": 2,
+    "path": "lib/example/greeting.ex",
+    "language": "elixir",
+    "file_count": 3,
+    "additions": 3,
+    "deletions": 1,
+    "truncated": false,
+    "flagged": true,
+    "flag_reason": "security",
+    "lines": [
+      {
+        "kind": "hunk",
+        "old": null,
+        "new": null,
+        "spans": [
+          {
+            "class": "plain",
+            "text": "@@ -1,4 +1,6 @@"
+          }
+        ]
+      },
+      {
+        "kind": "ctx",
+        "old": 1,
+        "new": 1,
+        "spans": [
+          {
+            "class": "keyword",
+            "text": "defmodule"
+          },
+          {
+            "class": "plain",
+            "text": " "
+          },
+          {
+            "class": "module",
+            "text": "Example.Greeting"
+          },
+          {
+            "class": "plain",
+            "text": " "
+          },
+          {
+            "class": "keyword",
+            "text": "do"
+          }
+        ]
+      },
+      {
+        "kind": "del",
+        "old": 2,
+        "new": null,
+        "spans": [
+          {
+            "class": "plain",
+            "text": "  "
+          },
+          {
+            "class": "keyword",
+            "text": "def"
+          },
+          {
+            "class": "plain",
+            "text": " "
+          },
+          {
+            "class": "function",
+            "text": "hello"
+          },
+          {
+            "class": "operator",
+            "text": "("
+          },
+          {
+            "class": "plain",
+            "text": "name"
+          },
+          {
+            "class": "operator",
+            "text": ")"
+          },
+          {
+            "class": "plain",
+            "text": ", "
+          },
+          {
+            "class": "atom",
+            "text": "do:"
+          },
+          {
+            "class": "plain",
+            "text": " name"
+          }
+        ]
+      },
+      {
+        "kind": "add",
+        "old": null,
+        "new": 2,
+        "spans": [
+          {
+            "class": "plain",
+            "text": "  "
+          },
+          {
+            "class": "comment",
+            "text": "# Greets one person"
+          }
+        ]
+      },
+      {
+        "kind": "add",
+        "old": null,
+        "new": 3,
+        "spans": [
+          {
+            "class": "plain",
+            "text": "  "
+          },
+          {
+            "class": "keyword",
+            "text": "def"
+          },
+          {
+            "class": "plain",
+            "text": " "
+          },
+          {
+            "class": "function",
+            "text": "hello"
+          },
+          {
+            "class": "operator",
+            "text": "("
+          },
+          {
+            "class": "plain",
+            "text": "name"
+          },
+          {
+            "class": "operator",
+            "text": ")"
+          },
+          {
+            "class": "plain",
+            "text": ", "
+          },
+          {
+            "class": "atom",
+            "text": "do:"
+          },
+          {
+            "class": "plain",
+            "text": " "
+          },
+          {
+            "class": "string",
+            "text": "\"Hello, #{name}\""
+          }
+        ]
+      },
+      {
+        "kind": "add",
+        "old": null,
+        "new": 4,
+        "spans": [
+          {
+            "class": "plain",
+            "text": "  "
+          },
+          {
+            "class": "atom",
+            "text": "@retries"
+          },
+          {
+            "class": "plain",
+            "text": " "
+          },
+          {
+            "class": "number",
+            "text": "3"
+          }
+        ]
+      }
+    ],
+    "notes": [
+      {
+        "line": 3,
+        "anchored": true,
+        "severity": "minor",
+        "category": "security",
+        "description": "Interpolates input into a greeting without a length limit."
+      },
+      {
+        "line": null,
+        "anchored": false,
+        "severity": null,
+        "category": null,
+        "description": "The file has no tests yet."
+      }
+    ],
+    "review_requested_at": "2026-11-18T09:30:00Z",
+    "files_version": "v1-2026-11-18T09:30:00Z"
+  }
+}

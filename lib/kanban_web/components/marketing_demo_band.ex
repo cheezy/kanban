@@ -44,7 +44,7 @@ defmodule KanbanWeb.MarketingDemoBand do
         data-demo-link
       >
         <.icon name="hero-play" class="w-3 h-3" />
-        {gettext("Watch the live demo")}
+        {gettext("Watch a simulated demo")}
       </.link>
     </section>
     """
