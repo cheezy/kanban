@@ -379,7 +379,7 @@ defmodule KanbanWeb.AnalyticsTest do
   describe "event attributes" do
     @events ~w(get-started-clicked github-clicked)
     @locations ~w(nav hero closing pricing product workflows demo footer docs-source
-                   integration-listing integration-docs security issue)
+                   integration-listing integration-docs integration-install-note security issue)
 
     defp events_on(path) do
       build_conn()
@@ -407,7 +407,8 @@ defmodule KanbanWeb.AnalyticsTest do
         "/issue" => [{"github-clicked", "issue"}],
         "/integrations/codex" => [
           {"github-clicked", "integration-listing"},
-          {"github-clicked", "integration-docs"}
+          {"github-clicked", "integration-docs"},
+          {"github-clicked", "integration-install-note"}
         ],
         "/demo" => [{"get-started-clicked", "demo"}],
         "/docs/getting-started-with-ai" => [{"github-clicked", "docs-source"}]
@@ -424,6 +425,17 @@ defmodule KanbanWeb.AnalyticsTest do
           assert name in @events, "#{path} sends an unlisted event #{name}"
           assert location in @locations, "#{path} sends an unlisted location #{location}"
         end
+      end
+    end
+
+    test "only a runtime with an install note sends the integration-install-note event" do
+      for runtime <- KanbanWeb.Integrations.all() do
+        sent =
+          ~p"/integrations/#{runtime.slug}"
+          |> events_on()
+          |> Enum.count(&(&1 == {"github-clicked", "integration-install-note"}))
+
+        assert sent == if(runtime.install_note, do: 1, else: 0), runtime.slug
       end
     end
 
