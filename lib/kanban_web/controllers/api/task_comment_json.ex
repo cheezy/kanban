@@ -35,10 +35,17 @@ defmodule KanbanWeb.API.TaskCommentJSON do
       author_agent_name: comment.author_agent_name,
       mentioned_user_ids: comment.mentioned_user_ids || [],
       edited_at: comment.edited_at,
-      inserted_at: comment.inserted_at,
-      updated_at: comment.updated_at
+      inserted_at: utc(comment.inserted_at),
+      updated_at: utc(comment.updated_at)
     }
   end
+
+  # `inserted_at` and `updated_at` are naive columns holding UTC, so they are
+  # tagged Etc/UTC here and encode with a `Z`, matching `edited_at`. The
+  # columns stay naive; only the rendered value changes.
+  defp utc(nil), do: nil
+  defp utc(%NaiveDateTime{} = value), do: DateTime.from_naive!(value, "Etc/UTC")
+  defp utc(%DateTime{} = value), do: value
 
   defp author_name(%User{name: name}) when is_binary(name) and name != "", do: name
   defp author_name(%User{email: email}) when is_binary(email) and email != "", do: email

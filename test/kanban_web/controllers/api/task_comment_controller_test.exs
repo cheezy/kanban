@@ -81,6 +81,12 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
     })
   end
 
+  # A rendered comment timestamp is an ISO 8601 date-time in UTC with a Z.
+  defp assert_utc_offset(value) do
+    assert is_binary(value) and String.ends_with?(value, "Z")
+    assert {:ok, _datetime, 0} = DateTime.from_iso8601(value)
+  end
+
   defp post_comment(conn, id, body) do
     conn
     |> put_req_header("content-type", "application/json")
@@ -116,6 +122,8 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
       assert comment["author_agent_name"] == nil
       assert comment["mentioned_user_ids"] == []
       assert comment["edited_at"] == nil
+      assert_utc_offset(comment["inserted_at"])
+      assert_utc_offset(comment["updated_at"])
     end
 
     test "a comment with no author renders author_name Unknown", %{conn: conn, task: task} do
@@ -234,6 +242,9 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
       assert body["data"]["task_id"] == task.id
       assert body["data"]["author_name"] == "Owner Person"
       assert body["data"]["author_agent_name"] == "Claude"
+      assert body["data"]["edited_at"] == nil
+      assert_utc_offset(body["data"]["inserted_at"])
+      assert_utc_offset(body["data"]["updated_at"])
 
       assert [%{author_user_id: author_id, author_agent_name: "Claude"}] =
                Tasks.list_comments(task)

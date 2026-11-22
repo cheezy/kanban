@@ -114,8 +114,8 @@ Returns the new comment in the same shape that
     "author_agent_name": "Claude",
     "mentioned_user_ids": [],
     "edited_at": null,
-    "inserted_at": "2026-10-07T15:40:52",
-    "updated_at": "2026-10-07T15:40:52"
+    "inserted_at": "2026-10-07T15:40:52Z",
+    "updated_at": "2026-10-07T15:40:52Z"
   }
 }
 ```

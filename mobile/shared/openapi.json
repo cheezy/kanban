@@ -7207,10 +7207,14 @@
             "format": "date-time"
           },
           "inserted_at": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time",
+            "description": "When the comment was written, in UTC with a Z offset."
           },
           "updated_at": {
-            "type": "string"
+            "type": "string",
+            "format": "date-time",
+            "description": "When the comment row last changed, in UTC with a Z offset."
           }
         }
       },

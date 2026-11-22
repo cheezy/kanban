@@ -51,8 +51,8 @@ and `meta.has_more` is `true`.
       "author_agent_name": null,
       "mentioned_user_ids": [],
       "edited_at": null,
-      "inserted_at": "2026-10-07T14:02:11",
-      "updated_at": "2026-10-07T14:02:11"
+      "inserted_at": "2026-10-07T14:02:11Z",
+      "updated_at": "2026-10-07T14:02:11Z"
     },
     {
       "id": 418,
@@ -62,8 +62,8 @@ and `meta.has_more` is `true`.
       "author_agent_name": "Claude",
       "mentioned_user_ids": [7],
       "edited_at": null,
-      "inserted_at": "2026-10-07T15:40:52",
-      "updated_at": "2026-10-07T15:40:52"
+      "inserted_at": "2026-10-07T15:40:52Z",
+      "updated_at": "2026-10-07T15:40:52Z"
     }
   ],
   "meta": {
@@ -85,9 +85,9 @@ A task with no comments returns an empty `data` array.
 | `author_name` | string | The author's name, else their email. `"Unknown"` for an older comment with no recorded author |
 | `author_agent_name` | string or null | The agent that wrote the comment, if any. Display attribution only |
 | `mentioned_user_ids` | array | IDs of the board members the comment mentions |
-| `edited_at` | string or null | When the comment was last edited (UTC), or `null` |
-| `inserted_at` | string | When the comment was written (UTC, no offset) |
-| `updated_at` | string | When the comment row last changed (UTC, no offset) |
+| `edited_at` | string or null | When the comment was last edited, in UTC with a `Z` offset, or `null` |
+| `inserted_at` | string | When the comment was written, in UTC with a `Z` offset, for example `2026-10-07T15:40:52Z` |
+| `updated_at` | string | When the comment row last changed, in UTC with a `Z` offset |
 
 ### Bad Request (400)
 
