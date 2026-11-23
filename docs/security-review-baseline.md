@@ -96,7 +96,10 @@ router, so no pipeline above applies to an error they raise.
   path that parses still renders the HTML 404. `/api/me` and `/oauth` (except
   the browser's `/oauth/authorize` and the paths under it) are pinned before
   parsing (D462), so an unrouted path there answers that API's fixed JSON
-  404, with the `no-store` cache headers those scopes set. `KanbanWeb.PathScope` decides
+  404, with the `no-store` cache headers those scopes set. The browser's
+  `/oauth/authorize` page is not pinned, but gets `cache-control: no-store`
+  before parsing (D463), so the redirects and errors sent before
+  `OAuthController` runs are uncacheable too. `KanbanWeb.PathScope` decides
   the scope on decoded segments; no other browser path is pinned.
 - **It must be the first plug that parses the query string.**
   `Phoenix.LiveDashboard.RequestLogger` calls `fetch_query_params`, so it sits

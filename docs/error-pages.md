@@ -116,7 +116,7 @@ conn as it entered the endpoint, unless the exception is a
 `Plug.Parsers` for that reason. On an `/api` path it re-raises any parse
 failure as a `WrapperError` whose conn has its format pinned to json, so the
 error renders through `ErrorJSON` whatever the `Accept` header says. The status
-is unchanged. Two other paths are handled too:
+is unchanged. Other paths are handled too:
 
 - **`/scim` paths** are re-raised the same way, with the format pinned to
   `scim`, so the error renders through `KanbanWeb.SCIM.ErrorJSON` as a SCIM
@@ -127,6 +127,15 @@ is unchanged. Two other paths are handled too:
   whose body is a JSON-RPC `-32700` parse error. An unauthenticated request
   gets its 401 first. A 413, a 415 or a malformed query string on that route
   still raises as on every other `/api` path.
+- **The browser's `/oauth/authorize` page** (and the paths under it, D463)
+  gets no format pin, so its errors render in the format the `Accept` header
+  asks for, as on every other browser path (HTML for a browser, JSON for
+  `Accept: application/json`), but it gets `cache-control: no-store` before
+  parsing. The log-in redirect, the organization two-factor redirect, a wrong
+  verb's 404 and a malformed query's 400 are all sent before
+  `KanbanWeb.OAuthController` runs, and none of them may be cached. A parse
+  failure there is re-raised as a `WrapperError` carrying that conn, so its
+  400 keeps the header.
 
 On any other path it is plain `Plug.Parsers`.
 

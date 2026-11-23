@@ -139,14 +139,28 @@ defmodule KanbanWeb.Plugs.ParsersTest do
     assert conn.private[:kanban_mcp_parse_error] == true
   end
 
-  test "the authorize page gets no pin (W2746)" do
+  test "the authorize page gets no format pin (W2746) but is no-store (D463)" do
     conn = conn(:get, "/oauth/authorize?a=%FF")
 
-    assert_raise Plug.Conn.InvalidQueryError, fn -> Parsers.call(conn, @opts) end
+    error = assert_raise Plug.Conn.WrapperError, fn -> Parsers.call(conn, @opts) end
+    assert %Plug.Conn.InvalidQueryError{} = error.reason
+    refute Map.has_key?(error.conn.private, :phoenix_format)
+    assert Plug.Conn.get_resp_header(error.conn, "cache-control") == ["no-store"]
 
-    clean = :get |> conn("/oauth/authorize?a=%41") |> Parsers.call(@opts)
-    refute Map.has_key?(clean.private, :phoenix_format)
-    assert Plug.Conn.get_resp_header(clean, "cache-control") != ["no-store"]
+    for path <- ["/oauth/authorize?a=%41", "/oauth/authorize/extra", "/%6Fauth/authorize"] do
+      clean = :get |> conn(path) |> Parsers.call(@opts)
+      refute Map.has_key?(clean.private, :phoenix_format), path
+      assert Plug.Conn.get_resp_header(clean, "cache-control") == ["no-store"], path
+      assert Plug.Conn.get_resp_header(clean, "pragma") == [], path
+    end
+  end
+
+  test "a browser path keeps Plug's default cache-control (D463)" do
+    conn = :get |> conn("/oauth-authorize") |> Parsers.call(@opts)
+
+    assert Plug.Conn.get_resp_header(conn, "cache-control") == [
+             "max-age=0, private, must-revalidate"
+           ]
   end
 
   test "another /.well-known path gets no pin (W2697)" do

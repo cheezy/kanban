@@ -354,6 +354,24 @@ defmodule KanbanWeb.OAuthAuthorizeTest do
   end
 
   describe "signed out" do
+    test "A signed-out GET /oauth/authorize redirect carries cache-control no-store", %{
+      conn: conn
+    } do
+      conn = get(conn, authorize_path(valid_params()))
+
+      assert redirected_to(conn) == ~p"/users/log-in"
+      # Set before the log-in gate halts (D463), not Plug's default
+      # "max-age=0, private, must-revalidate".
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+    end
+
+    test "a signed-out HEAD /oauth/authorize redirect carries no-store", %{conn: conn} do
+      conn = head(conn, authorize_path(valid_params()))
+
+      assert redirected_to(conn) == ~p"/users/log-in"
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+    end
+
     test "a signed-out visitor is sent to log in and comes back to the page", %{conn: conn} do
       path = authorize_path(valid_params())
       conn = get(conn, path)
@@ -565,6 +583,78 @@ defmodule KanbanWeb.OAuthAuthorizeTest do
 
       assert redirected_to(post_conn) == "/users/settings?section=two_factor"
       assert code_count() == 0
+    end
+
+    test "The organization two-factor gate redirect on /oauth/authorize carries no-store", %{
+      conn: conn,
+      member: member
+    } do
+      conn = log_in_user(conn, member)
+
+      get_conn = get(conn, authorize_path(valid_params()))
+      assert redirected_to(get_conn) == "/users/settings?section=two_factor"
+      assert get_resp_header(get_conn, "cache-control") == ["no-store"]
+
+      post_conn =
+        post(conn, ~p"/oauth/authorize", Map.put(valid_params(), "decision", "allow"))
+
+      assert redirected_to(post_conn) == "/users/settings?section=two_factor"
+      assert get_resp_header(post_conn, "cache-control") == ["no-store"]
+    end
+  end
+
+  describe "answers given before the router reaches the controller (D463)" do
+    test "PUT /oauth/authorize answers with no-store", %{conn: conn} do
+      conn = put(conn, ~p"/oauth/authorize", valid_params())
+
+      assert conn.status == 404
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+    end
+
+    test "every other wrong verb and unrouted path there answers with no-store" do
+      for {label, request} <- [
+            {"DELETE", &delete(&1, "/oauth/authorize")},
+            {"a _method=put override", &post(&1, "/oauth/authorize", %{"_method" => "put"})},
+            {"an unrouted path under it", &get(&1, "/oauth/authorize/extra")}
+          ] do
+        conn = request.(build_conn())
+
+        assert conn.status == 404, label
+        assert get_resp_header(conn, "content-type") == ["text/html; charset=utf-8"], label
+        assert get_resp_header(conn, "cache-control") == ["no-store"], label
+      end
+    end
+
+    test "a malformed query string answers its HTML 400 with no-store" do
+      {400, headers, body} =
+        assert_error_sent(400, fn -> get(build_conn(), "/oauth/authorize?a=%FF") end)
+
+      assert {"cache-control", "no-store"} in headers
+      assert {"content-type", "text/html; charset=utf-8"} in headers
+      assert body =~ "<!DOCTYPE html>"
+    end
+
+    test "a malformed query string asked for as JSON answers a JSON 400 with no-store" do
+      {400, headers, body} =
+        assert_error_sent(400, fn ->
+          build_conn()
+          |> put_req_header("accept", "application/json")
+          |> get("/oauth/authorize?a=%FF")
+        end)
+
+      assert {"cache-control", "no-store"} in headers
+      assert {"content-type", "application/json; charset=utf-8"} in headers
+      assert Jason.decode!(body) == %{"errors" => %{"detail" => "Bad Request"}}
+    end
+
+    test "a signed-in page keeps the controller's own headers", %{conn: conn} do
+      %{conn: conn} = register_and_log_in_user(%{conn: conn})
+
+      conn = get(conn, authorize_path(valid_params()))
+
+      assert html_response(conn, 200)
+      assert get_resp_header(conn, "cache-control") == ["no-store"]
+      assert get_resp_header(conn, "referrer-policy") == ["no-referrer"]
     end
   end
 end

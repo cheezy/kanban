@@ -22,8 +22,9 @@ defmodule KanbanWeb.PathScopeTest do
           {["oauth", "revoke"], :oauth},
           {["oauth", "nope"], :oauth},
           {["oauth", "token", "extra"], :oauth},
-          {["oauth", "authorize"], :browser},
-          {["oauth", "authorize", "extra"], :browser},
+          {["oauth", "authorize"], :oauth_authorize},
+          {["oauth", "authorize", "extra"], :oauth_authorize},
+          {["oauth-authorize"], :browser},
           {[], :browser},
           {["about"], :browser},
           {["apis", "me"], :browser}
@@ -36,7 +37,7 @@ defmodule KanbanWeb.PathScopeTest do
     assert PathScope.of(["%61pi", "me", "x"]) == :device_api
     assert PathScope.of(["api", "%6De"]) == :device_api
     assert PathScope.of(["%6Fauth", "nope"]) == :oauth
-    assert PathScope.of(["oauth", "%61uthorize"]) == :browser
+    assert PathScope.of(["oauth", "%61uthorize"]) == :oauth_authorize
     assert PathScope.of(["api", "%6Dcp"]) == :mcp
   end
 

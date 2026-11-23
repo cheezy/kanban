@@ -49,6 +49,17 @@ defmodule KanbanWeb.Plugs.Parsers do
   `:device_api` pipeline then sets the header of every response it sends
   (`KanbanWeb.Plugs.DeviceApiCacheControl`).
 
+  The browser's authorize page (`/oauth/authorize` and the paths under it,
+  D463) is a browser page, so it gets no format pin: its errors render in
+  the format the `Accept` header asks for, as on every other browser path.
+  It gets `cache-control: no-store` before parsing: RFC 6749 asks that
+  authorization responses are not cached, and the answers given before
+  `KanbanWeb.OAuthController` runs (the log-in redirect, the organization
+  two-factor redirect, a wrong verb's 404, a malformed query's 400) would
+  otherwise carry Plug's default `max-age=0, private, must-revalidate`. A
+  parse failure there is re-raised as a `WrapperError` carrying that conn,
+  so its 400 keeps the header, in whichever format it renders.
+
   One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
   raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
   `-32700` after authentication — see `parse_mcp/2`.
@@ -95,10 +106,10 @@ defmodule KanbanWeb.Plugs.Parsers do
   defp parse(:audit_signing_keys, conn, opts), do: parse_pinning_failures(conn, "json", opts)
 
   # The device sign-in token API (W2746) is called by the apps, which read
-  # every refusal as JSON. Every response under /oauth, the browser's
-  # /oauth/authorize page aside, must be `cache-control: no-store` (RFC 6749
-  # §5.1), so the headers are set before parsing: an error raised here, or in
-  # the router before the controller's own no_store plug runs, keeps them.
+  # every refusal as JSON. Every response under /oauth must be
+  # `cache-control: no-store` (RFC 6749 §5.1), so the headers are set before
+  # parsing: an error raised here, or in the router before the controller's
+  # own no_store plug runs, keeps them.
   # The json format is pinned before parsing (D462), so a parse failure or an
   # /oauth path no route matches renders through KanbanWeb.ErrorJSON's OAuth
   # error shape whatever the Accept header says.
@@ -109,7 +120,28 @@ defmodule KanbanWeb.Plugs.Parsers do
     |> parse_pinning_failures("json", opts)
   end
 
+  # The browser's authorize page (D463): a browser page, so no format pin
+  # (its errors follow the Accept header, as on every browser path), but every
+  # response on it is no-store, the ones sent before OAuthController's own
+  # harden_response plug included (the log-in and two-factor redirects, a
+  # wrong verb's 404). The controller sets the same value again, so nothing it
+  # sends is overridden.
+  defp parse(:oauth_authorize, conn, opts) do
+    conn
+    |> Plug.Conn.put_resp_header("cache-control", "no-store")
+    |> parse_keeping_conn(opts)
+  end
+
   defp parse(:browser, conn, opts), do: Plug.Parsers.call(conn, opts)
+
+  # Re-raises a parse failure as a WrapperError carrying the conn unchanged,
+  # so RenderErrors renders it with the headers already set on it rather than
+  # with the conn that entered the endpoint. No format is pinned.
+  defp parse_keeping_conn(conn, opts) do
+    Plug.Parsers.call(conn, opts)
+  catch
+    kind, reason -> Plug.Conn.WrapperError.reraise(conn, kind, reason, __STACKTRACE__)
+  end
 
   # Re-raises a parse failure as a WrapperError carrying the conn with its
   # format pinned, so RenderErrors renders it in that format. The exception,

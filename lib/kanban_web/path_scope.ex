@@ -24,13 +24,22 @@ defmodule KanbanWeb.PathScope do
     * `:api` - every other `/api` path, the agent API
     * `:scim` - `/scim` and everything under it
     * `:audit_signing_keys` - exactly `/.well-known/stride-audit-signing-keys`
-    * `:oauth` - `/oauth` and everything under it, the device sign-in token
-      API, except the browser's `/oauth/authorize` page and the paths under
-      it, which keep the browser's 404
+    * `:oauth_authorize` - the browser's `/oauth/authorize` page and the
+      paths under it, which are HTML like every browser path but whose every
+      response must be uncacheable (D463)
+    * `:oauth` - every other `/oauth` path, the device sign-in token API
     * `:browser` - every other path
   """
 
-  @type t :: :device_api | :mcp | :api | :scim | :audit_signing_keys | :oauth | :browser
+  @type t ::
+          :device_api
+          | :mcp
+          | :api
+          | :scim
+          | :audit_signing_keys
+          | :oauth_authorize
+          | :oauth
+          | :browser
 
   @doc """
   Returns the scope of a conn's path, or of a list of raw path segments.
@@ -44,7 +53,7 @@ defmodule KanbanWeb.PathScope do
       :device_api
 
       iex> KanbanWeb.PathScope.of(["oauth", "authorize"])
-      :browser
+      :oauth_authorize
   """
   @spec of(Plug.Conn.t() | [String.t()]) :: t()
   def of(%Plug.Conn{path_info: path_info}), do: of(path_info)
@@ -58,7 +67,7 @@ defmodule KanbanWeb.PathScope do
   defp classify(["api" | _]), do: :api
   defp classify(["scim" | _]), do: :scim
   defp classify([".well-known", "stride-audit-signing-keys"]), do: :audit_signing_keys
-  defp classify(["oauth", "authorize" | _]), do: :browser
+  defp classify(["oauth", "authorize" | _]), do: :oauth_authorize
   defp classify(["oauth" | _]), do: :oauth
   defp classify(_segments), do: :browser
 end
