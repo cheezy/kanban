@@ -4,7 +4,8 @@ This document compares the work in goals G559 and G560 with what Ahrefs sells
 and with what Umami, the analytics tool planned for task W2897, measures. It
 then lists the gaps in our current plan and what it would take to close each
 one. It was written on 2026-11-21 from the public Ahrefs and Umami sites and
-the state of both goals on that day.
+the state of both goals on that day. It was updated on 2026-11-23, when Gap 1
+was closed.
 
 ## The short version
 
@@ -21,22 +22,25 @@ Our plan is strong on the first layer, has a tool chosen for the second, and
 has almost nothing for the third. The most serious gaps are not exotic SEO
 features. They are basic measurement:
 
-1. **Nobody has told Google or Bing the site exists.** The site has never been
-   verified in Google Search Console or Bing Webmaster Tools, so the sitemap
-   from W2891 has never been submitted and we can't see a single search query,
-   impression or ranking.
+1. **Nobody had told Google or Bing the site exists.** The site had never been
+   added to Google Search Console or Bing Webmaster Tools, so the sitemap from
+   W2891 had never been submitted and we couldn't see a single search query,
+   impression or ranking. **Now closed:** on 2026-11-23 the site was verified
+   in both and the sitemap submitted to each (see Gap 1).
 2. **W2897 as first written could not see a signup.** The sign-up page used a
    layout the analytics script was not added to, and a successful sign-up
    lands on a page the script never reached. Without a signup event, no Umami
    funnel, goal or attribution report can say which page or channel brings
-   users. **Now covered:** W2897 was rewritten on 2026-11-21 to use Umami and
-   record a signup event (see Gap 2).
+   users. **Now built:** W2897 was rewritten on 2026-11-21 to use Umami and
+   record a signup event, and was built on 2026-11-22. It records nothing
+   until the Umami settings are set in production (see Gap 2).
 3. **We have no baseline.** Most of G559 and five G560 tasks have shipped, and
    nothing recorded where search traffic, backlinks or AI mentions stood
    before them, so their effect can't be measured.
 
-All three are cheap to fix, and none needs a paid Ahrefs plan. Gap 2 now has a
-task; Gaps 1 and 3 still need a person to act.
+All three are cheap to fix, and none needs a paid Ahrefs plan. Gap 1 was
+closed on 2026-11-23. Gap 2's code was built on 2026-11-22 and needs only its
+Umami settings and dashboard. Gap 3 still needs a person to act.
 
 ## What Ahrefs does
 
@@ -128,9 +132,9 @@ The conventions are in [the SEO conventions document](../seo.md).
   - the release feed (W2896);
   - `/docs` (W2898);
   - `/integrations` (W2899);
-  - `/llms.txt` and the AI crawler policy (W2900).
+  - `/llms.txt` and the AI crawler policy (W2900);
+  - analytics (W2897), built on 2026-11-22 but not yet switched on.
 - **Open:**
-  - analytics (W2897);
   - comparison pages (W2901);
   - the public demo board (W2902);
   - social proof (W2903);
@@ -143,10 +147,10 @@ The conventions are in [the SEO conventions document](../seo.md).
 | Capability | Ahrefs | Umami | Our plan | Gap |
 | --- | --- | --- | --- | --- |
 | Pages search engines can read and trust (titles, canonical URLs, sitemap, structured data) | Audits for it | No | **Done** (G559) | None |
-| Telling search engines the site exists, and submitting the sitemap | Free Webmaster Tools reads Search Console | Cloud Pro shows Search Console data | Not planned | **Gap 1** |
-| Search queries, impressions, clicks and rankings for our pages | Rank Tracker, GSC Insights | Cloud Pro, via Search Console | Not planned | **Gap 1** |
-| Visitors, sources and campaigns | Web Analytics | **Yes** | W2897, with Umami | Hosting choice still open; see W2897 changes |
-| Which page or channel produces sign-ups | Not its focus | Funnels, goals, attribution, but only with a sign-up event | **Covered by W2897** (signup and click events) | **Gap 2**, covered once W2897 is built |
+| Telling search engines the site exists, and submitting the sitemap | Free Webmaster Tools reads Search Console | Cloud Pro shows Search Console data | **Done** 2026-11-23: Search Console and Bing Webmaster Tools | **Gap 1**, closed |
+| Search queries, impressions, clicks and rankings for our pages | Rank Tracker, GSC Insights | Cloud Pro, via Search Console | Search Console, collecting since 2026-11-23 | **Gap 1**, closed |
+| Visitors, sources and campaigns | Web Analytics | **Yes** | **Built** (W2897, with Umami), off until its settings are set | Hosting choice still open; campaign tags not recorded yet (see Gap 2) |
+| Which page or channel produces sign-ups | Not its focus | Funnels, goals, attribution, but only with a sign-up event | **Built** (W2897: signup and click events) | **Gap 2**, closes once Umami is switched on and the funnel is set up |
 | What people search for, to choose topics and wording | Keywords Explorer | No | Topics chosen by judgement | **Gap 4** |
 | Backlinks: who links to us, gaining links | Site Explorer, Content Explorer | No | W2906 lists Stride in directories; nothing measures links | **Gap 5** |
 | Readable by AI crawlers | Audits AI bot crawling | No | **Done** (W2900, llms.txt) | None |
@@ -161,13 +165,29 @@ The conventions are in [the SEO conventions document](../seo.md).
 
 ### Gap 1: the site is not registered with any search engine
 
-**What's missing.** No Google Search Console or Bing Webmaster Tools
-verification exists: there is no verification meta tag in the code, and no
-record of a DNS verification. So:
-- the sitemap from W2891 has never been submitted;
-- nobody gets Google's or Bing's reports on indexing errors, mobile problems
+**Status: closed on 2026-11-23.** What was done, all without a code change:
+- **Google Search Console:** a Domain property for `stridelikeaboss.com`,
+  verified by a DNS TXT record in Cloudflare. It covers `www`, the bare domain
+  and every subdomain. The sitemap
+  `https://www.stridelikeaboss.com/sitemap.xml` is submitted.
+- **Bing Webmaster Tools:** the site is verified and the same sitemap is
+  submitted.
+- **IndexNow:** Cloudflare's Crawler Hints is switched on. It sends IndexNow
+  notices to Bing and the other engines that use it whenever pages change.
+  Google doesn't use IndexNow, so it relies on the sitemap.
+
+Search Console and Bing only report from the day a site is verified, so
+2026-11-23 is the start date for Gap 3's baseline.
+
+**What was missing.** The site had not been added to Google Search Console or
+Bing Webmaster Tools. There was no verification meta tag in the code. The
+domain did have a `google-site-verification` TXT record, beside an SPF record
+for Google's mail servers, most likely from setting up Google Workspace, but
+it had never been used to add the site to Search Console. So:
+- the sitemap from W2891 had never been submitted;
+- nobody got Google's or Bing's reports on indexing errors, mobile problems
   or manual penalties;
-- not one search query or ranking for the site is visible anywhere.
+- not one search query or ranking for the site was visible anywhere.
 
 **Why it matters.** Search Console is the only source of *actual* search
 queries and positions for our pages; Ahrefs and every other tool estimate
@@ -178,20 +198,54 @@ them. It is free. It also feeds every other option here:
 Bing matters more than its market share suggests: its index is one of the
 sources behind Copilot and ChatGPT search.
 
-**Fix.** A small human task:
-- add DNS TXT records for both services on `stridelikeaboss.com`;
+**Fix, as first planned.** A small human task:
+- add DNS records for both services on `stridelikeaboss.com`;
 - submit `https://www.stridelikeaboss.com/sitemap.xml` to each;
 - record the date.
 
 DNS verification needs no code change. Optionally, add IndexNow so Bing
 hears about new pages straight away; Ahrefs lists IndexNow among its own
-tools.
+tools. All of it, IndexNow included, was done on 2026-11-23, as the status
+above records.
 
 ### Gap 2: analytics can't see a sign-up
 
-**Status: covered by W2897**, rewritten on 2026-11-21. The gap stays open
-until W2897 is built and the funnel and goal are set up in the Umami
-dashboard.
+**Status: built, not yet switched on.** W2897 was rewritten on 2026-11-21
+and built on 2026-11-22, and the code is in production: the `/privacy` page
+already describes Umami. Analytics stays off until all three Umami settings
+are set, and on 2026-11-23 the production content security policy still had
+no Umami addresses, so nothing is recorded yet.
+[The analytics guide](../analytics.md) has the configuration, the events and
+the dashboard steps.
+
+What closing the gap still takes, all done by a person:
+- **Choose the hosting,** Umami Cloud or self-hosted, and on Cloud the US or
+  EU region (item 4 below).
+- **Create the website** for `www.stridelikeaboss.com` in Umami and copy its
+  website ID.
+- **Set `UMAMI_SCRIPT_URL`, `UMAMI_WEBSITE_ID` and `UMAMI_HOST_URL`** on
+  production, all three in one `fly secrets set`. The boot stops when only one
+  or two are set, when a URL isn't `https`, or when the ID isn't a UUID.
+- **Run the checks W2897 handed back:**
+  - register a test account and see one `signup` event;
+  - copy an install command on `/integrations/codex` and see
+    `install-command-copied`;
+  - confirm no recorded URL has a query string or an email address;
+  - confirm `/pricing`'s content security policy lists the two Umami
+    addresses;
+  - confirm a signed-in board page loads no tracker.
+- **Set up the dashboard:** the `signup` goal, and the funnel from a landing
+  page through `/users/register` to the `signup` event.
+
+Two limits of what was built:
+- **Campaign tags aren't recorded.** `data-exclude-search` drops every query
+  string, so `utm_` tags and Google's ad click ID (`gclid`) are lost along
+  with emails and tokens. Sign-ups can be traced to a page and a referring
+  site, not to a campaign. Allowing only those parameters through would be a
+  small code task, worth doing before any ads or tagged campaigns.
+- **`/privacy` doesn't yet say where the data is kept or for how long**
+  (item 6 below). Once the hosting and region are chosen, it needs that
+  sentence in all seven languages.
 
 **What was missing.** W2897 added the script to the `marketing` and `app_chrome`
 layouts, on public pages only. That left three holes:
@@ -256,8 +310,9 @@ the day its script goes live.
 **Why it matters.** Without a baseline we can't tell which goal paid off, or
 whether the next one is worth building.
 
-**Fix.** Gap 1 and W2897 start the clock; do both soon. On the same day,
-record a one-off snapshot in a short dated note:
+**Fix.** Gap 1 and W2897 start the clock. Gap 1 started it on 2026-11-23;
+switch on W2897's analytics soon. As close to 2026-11-23 as possible, record a one-off
+snapshot in a short dated note:
 - Ahrefs Webmaster Tools: referring domains and site-audit score;
 - the free AI Visibility Checker for "Stride" and for "kanban for AI agents";
 - a `site:stridelikeaboss.com` search on Google and Bing.
@@ -425,12 +480,15 @@ comparison pages need ongoing rank tracking.
 ## Suggested next steps, in order
 
 1. **Gap 1 (human, 30 minutes):** verify the site in Google Search Console and
-   Bing Webmaster Tools by DNS and submit the sitemap.
-2. **Gap 3 (human, 30 minutes):** record the baseline snapshot the same day.
-3. **Build W2897.** It was updated on 2026-11-21 with the Umami changes
-   above and the Gap 2 events. Before it ships, decide Umami Cloud or
-   self-hosted (item 4 above), then set up the funnel and goal in the Umami
-   dashboard.
+   Bing Webmaster Tools by DNS and submit the sitemap. **Done on
+   2026-11-23.**
+2. **Gap 3 (human, 30 minutes):** record the baseline snapshot as close to
+   2026-11-23 as possible.
+3. **Switch on W2897.** It was updated on 2026-11-21 with the Umami changes
+   above and the Gap 2 events, and built on 2026-11-22. Decide Umami Cloud or
+   self-hosted (item 4 above), set the three Umami settings on production,
+   then set up the funnel and goal in the Umami dashboard. Gap 2 lists the
+   steps.
 4. **Gap 4:** after four to six weeks of Search Console data, add the keyword
    research to W2901 before building it.
 5. **Gaps 5, 6 and 7:** a monthly 15-minute review of backlinks, the AI
@@ -532,7 +590,7 @@ the next deployment.
 | Paid social and retargeting | Not planned | **New**, but conflicts with the cookie-free analytics; see below |
 | Tracking signups, activation and upgrades by channel | **Planned:** W2897 records visits and signups by channel (Gap 2) | Ad-platform conversion tracking. Activation and upgrades we can already measure ourselves; see below |
 | AI-answer audit across assistants | Not planned (Gap 6) | **Closes Gap 6**, as a monthly check |
-| Search Console and analytics access | We have neither yet (Gap 1, W2897) | They assume Google Analytics. Our setup is Umami plus Search Console |
+| Search Console and analytics access | Search Console since 2026-11-23 (Gap 1); analytics built but not yet switched on (W2897) | They assume Google Analytics. Our setup is Umami plus Search Console |
 
 ### Where they add real value
 
@@ -585,7 +643,7 @@ There are three ways to handle it:
 
 | Option | What it means |
 | --- | --- |
-| Search ads without pixels | Umami records the `gclid` on each ad click. Send signups back to Google Ads as offline conversions from our server. No cookie on our site, and most of the measurement remains |
+| Search ads without pixels | Umami records the `gclid` on each ad click, once the query-string exclusion lets it through (see Gap 2). Send signups back to Google Ads as offline conversions from our server. No cookie on our site, and most of the measurement remains |
 | Ads with platform tags and a consent banner | Full retargeting and platform reporting, at the cost of the cookie-free position and extra build work (the banner, the CSP, the privacy page) |
 | No paid social | Keep Package A to organic posts only |
 
@@ -621,7 +679,7 @@ for most of these server-side, without any client tags:
 
 What's missing is the link between a signup and the channel it came from,
 which is Gap 2. W2897 now covers it with a `signup` event in the visitor's
-Umami session. Once it is built, we can produce the "signed up", "activated"
+Umami session. It is built; once it is switched on, we can produce the "signed up", "activated"
 and "upgraded" parts of their report ourselves. They would only report on the
 channels they run.
 
@@ -659,11 +717,12 @@ videos and posts yourself. Without the founder, three posts a week from an
 agency would read as generic content.
 
 **Do now, before any contract:**
-- Gaps 1 and 3, and building W2897 (Gap 2);
+- Gap 3, and switching on W2897's analytics (Gap 2). Gap 1 was closed on
+  2026-11-23;
 - the About page with real people;
 - a benefit-first hero.
 
-Without the first three, no one, us or them, can show what the money did.
+Without the first item, no one, us or them, can show what the money did.
 The last two cost nothing but a decision.
 
 ### Questions to ask them
