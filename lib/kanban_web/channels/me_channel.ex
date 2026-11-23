@@ -29,9 +29,10 @@ defmodule KanbanWeb.MeChannel do
 
   ## Boards
 
-  `sync_boards/2` subscribes the channel process to `"<prefix>:<id>"` for
-  every board `Kanban.Boards.list_app_board_ids/1` returns, the boards the
-  person can access in any workspace that the plan unlocks, and unsubscribes
+  `sync_boards/2` subscribes the channel process to `"<prefix>:<id>"`, for
+  each prefix the channel names, for every board
+  `Kanban.Boards.list_app_board_ids/1` returns, the boards the person can
+  access in any workspace that the plan unlocks, and unsubscribes
   from every board that is no longer among them. Each channel calls it on
   join and before every rebuild, so an access change that sends no
   notification (the person changed their own access, or turned the in-app
@@ -109,14 +110,28 @@ defmodule KanbanWeb.MeChannel do
 
   @doc """
   Brings the channel's board subscriptions on `"<prefix>:<id>"` in line with
-  `Kanban.Boards.list_app_board_ids/1`, and stores the ids in `:board_ids`.
+  `Kanban.Boards.list_app_board_ids/1`, for one prefix or for each of a list
+  of them, and stores the ids in `:board_ids`. A channel that needs more than
+  one topic per board passes every prefix in one call, since the second of
+  two calls would find `:board_ids` already current and subscribe nothing.
   """
-  @spec sync_boards(Socket.t(), String.t()) :: Socket.t()
-  def sync_boards(%Socket{assigns: %{current_scope: scope, board_ids: current}} = socket, prefix) do
-    wanted = scope |> Boards.list_app_board_ids() |> MapSet.new()
+  @spec sync_boards(Socket.t(), String.t() | [String.t()]) :: Socket.t()
+  def sync_boards(%Socket{} = socket, prefix) when is_binary(prefix),
+    do: sync_boards(socket, [prefix])
 
-    current |> MapSet.difference(wanted) |> each_topic(prefix, &Phoenix.PubSub.unsubscribe/2)
-    wanted |> MapSet.difference(current) |> each_topic(prefix, &Phoenix.PubSub.subscribe/2)
+  def sync_boards(
+        %Socket{assigns: %{current_scope: scope, board_ids: current}} = socket,
+        prefixes
+      )
+      when is_list(prefixes) do
+    wanted = scope |> Boards.list_app_board_ids() |> MapSet.new()
+    lost = MapSet.difference(current, wanted)
+    gained = MapSet.difference(wanted, current)
+
+    Enum.each(prefixes, fn prefix ->
+      each_topic(lost, prefix, &Phoenix.PubSub.unsubscribe/2)
+      each_topic(gained, prefix, &Phoenix.PubSub.subscribe/2)
+    end)
 
     assign(socket, :board_ids, wanted)
   end

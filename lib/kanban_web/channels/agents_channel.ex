@@ -6,18 +6,23 @@ defmodule KanbanWeb.AgentsChannel do
   contract.
 
   On join (gated by `KanbanWeb.MeChannel.authorize_join/1`) it subscribes to
-  `"agents:<id>"` (`Kanban.Tasks.Broadcaster.broadcast_agent_event/3`) for
-  every board the person can access in any workspace that the plan unlocks,
-  and to the person's notification topic, then pushes `"agents"` with the
-  full roster and goal progress.
+  `"agents:<id>"` (`Kanban.Tasks.Broadcaster.broadcast_agent_event/3`) and to
+  `"board:<id>"` for every board the person can access in any workspace that
+  the plan unlocks, and to the person's notification topic, then pushes
+  `"agents"` with the full roster and goal progress.
 
-  An `{:agent_event, _}` on a board's topic (a task created, claimed,
-  completed or reviewed), or a `board_access_changed` notification, asks for
-  a rebuild, coalesced to one per second (`KanbanWeb.Coalescer`); every
-  other notification is ignored. A rebuild first checks the device, the user and the plan again
+  An `{:agent_event, _}` on a board's agents topic (a task created, claimed,
+  completed or reviewed), a `{Kanban.Boards, :members_changed, board_id}`
+  broadcast on its board topic, or a `board_access_changed` notification
+  asks for a rebuild, coalesced to one per second (`KanbanWeb.Coalescer`).
+  The board topic is subscribed for `members_changed` alone: it is the only
+  signal for an access loss that sends no notification, such as an org-admin
+  removed from the Organization or a SCIM deprovisioning (D460). Every other
+  message on it, and every other notification, is ignored. A rebuild first
+  checks the device, the user and the plan again
   (`KanbanWeb.MeChannel.check_access/1`) and stops the channel when they
-  fail, then re-reads the person's
-  boards and re-subscribes, then reads `Kanban.Agents.list_agents_for_app/2`
+  fail, then re-reads the person's boards and re-subscribes both topics,
+  dropping the boards they lost, then reads `Kanban.Agents.list_agents_for_app/2`
   in the device's time zone and renders it with
   `KanbanWeb.API.Me.AgentJSON.index/1`, so the push is exactly what
   `GET /api/me/agents` returns for the same device. It pushes only when that
@@ -31,19 +36,21 @@ defmodule KanbanWeb.AgentsChannel do
   alias KanbanWeb.API.Me.AgentJSON
   alias KanbanWeb.MeChannel
 
+  @topics ["agents", "board"]
+
   @impl true
   def join("me:agents", _params, socket), do: MeChannel.authorize_join(socket)
 
   @impl true
   def handle_info(:after_join, socket) do
     Notifications.subscribe(socket.assigns.current_scope)
-    {:noreply, socket |> MeChannel.sync_boards("agents") |> push_agents()}
+    {:noreply, socket |> MeChannel.sync_boards(@topics) |> push_agents()}
   end
 
   def handle_info(:rebuild, socket) do
     case socket |> MeChannel.rebuild_arrived() |> MeChannel.check_access() do
       {:ok, socket} ->
-        {:noreply, socket |> MeChannel.sync_boards("agents") |> push_agents()}
+        {:noreply, socket |> MeChannel.sync_boards(@topics) |> push_agents()}
 
       {:error, _refused} ->
         {:stop, :normal, socket}
@@ -51,6 +58,9 @@ defmodule KanbanWeb.AgentsChannel do
   end
 
   def handle_info({:agent_event, _event}, socket),
+    do: {:noreply, MeChannel.request_rebuild(socket)}
+
+  def handle_info({Kanban.Boards, :members_changed, _board_id}, socket),
     do: {:noreply, MeChannel.request_rebuild(socket)}
 
   def handle_info(

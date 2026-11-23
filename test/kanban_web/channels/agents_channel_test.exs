@@ -11,14 +11,17 @@ defmodule KanbanWeb.AgentsChannelTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.DevicesFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Agents
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
+  alias Kanban.Organizations
   alias Kanban.Repo
   alias KanbanWeb.AgentsChannel
   alias KanbanWeb.API.Me.AgentJSON
@@ -107,6 +110,67 @@ defmodule KanbanWeb.AgentsChannelTest do
     Kanban.PubSub |> Registry.keys(socket.channel_pid) |> Enum.filter(&(&1 =~ ~r/^agents:/))
   end
 
+  defp board_topics(socket) do
+    Kanban.PubSub |> Registry.keys(socket.channel_pid) |> Enum.filter(&(&1 =~ ~r/^board:/))
+  end
+
+  # A board in an Organization's workspace that `user` reaches only as an
+  # org-admin, with no board_users row, so removing them from the
+  # Organization ends the access without a board_access_changed notification.
+  # The board's owner is a second org-admin, so `user` is not the last one.
+  defp derived_org_board(user) do
+    organization = organization_fixture()
+    owner = user_fixture()
+    organization_member_fixture(organization, owner, :org_admin)
+    organization_member_fixture(organization, user, :org_admin)
+    workspace = org_workspace_fixture(organization)
+
+    board =
+      owner
+      |> ai_optimized_board_fixture()
+      |> Ecto.Changeset.change(workspace_id: workspace.id)
+      |> Repo.update!()
+
+    agent_task(columns(board)["Doing"], %{created_by_agent: "Gemini"})
+    {organization, board}
+  end
+
+  defp remove_org_admin!(organization, user),
+    do: {:ok, _membership} = Organizations.remove_org_admin(admin_fixture(), organization, user)
+
+  # Counts the :rebuild messages the channel process receives while `fun` runs
+  # and until its coalescer has nothing pending.
+  defp count_rebuilds(socket, fun) do
+    :erlang.trace(socket.channel_pid, true, [:receive])
+    fun.()
+    assert_eventually(fn -> not pending?(socket) end)
+    :erlang.trace(socket.channel_pid, false, [:receive])
+    count_traced_rebuilds(socket.channel_pid, 0)
+  end
+
+  defp count_traced_rebuilds(pid, count) do
+    receive do
+      {:trace, ^pid, :receive, :rebuild} -> count_traced_rebuilds(pid, count + 1)
+      {:trace, ^pid, :receive, _other} -> count_traced_rebuilds(pid, count)
+    after
+      0 -> count
+    end
+  end
+
+  defp assert_eventually(fun, attempts \\ 50) do
+    cond do
+      fun.() ->
+        true
+
+      attempts == 0 ->
+        flunk("condition never became true")
+
+      true ->
+        Process.sleep(20)
+        assert_eventually(fun, attempts - 1)
+    end
+  end
+
   defp pending?(socket),
     do: :sys.get_state(socket.channel_pid).assigns.coalescer |> Coalescer.pending?()
 
@@ -126,6 +190,7 @@ defmodule KanbanWeb.AgentsChannelTest do
       assert %{data: %{goals: [%{id: goal_id, counts: %{total: 2, doing: 1}}]}} = payload
       assert goal_id == goal.id
       assert agents_topics(socket) == ["agents:#{ctx.board.id}"]
+      assert board_topics(socket) == ["board:#{ctx.board.id}"]
     end
 
     test "the roster is taken in the device's time zone", ctx do
@@ -177,6 +242,72 @@ defmodule KanbanWeb.AgentsChannelTest do
       assert_receive {:DOWN, ^ref, :process, _pid, :normal}, 1_000
       refute_push "agents", _payload, 50
     end
+
+    test "an org-admin removal drops the lost board's agents topic and no further agents_changed push arrives for it",
+         ctx do
+      {organization, lost} = derived_org_board(ctx.user)
+      socket = join!(ctx.device)
+      assert_push "agents", payload
+      assert "Gemini" in agent_names(payload)
+      assert "agents:#{lost.id}" in agents_topics(socket)
+      assert "board:#{lost.id}" in board_topics(socket)
+
+      remove_org_admin!(organization, ctx.user)
+
+      payload = assert_agents_until(&("Gemini" not in agent_names(&1)))
+      assert payload == expected(ctx.scope)
+      refute "agents:#{lost.id}" in agents_topics(socket)
+      refute "board:#{lost.id}" in board_topics(socket)
+
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "agents:#{lost.id}",
+        {:agent_event, %{kind: :claim, board_id: lost.id}}
+      )
+
+      agent_task(columns(lost)["Doing"], %{created_by_agent: "Codex"})
+
+      refute pending?(socket)
+      refute_push "agents", _payload, 100
+    end
+
+    test "a members_changed broadcast for a board the person keeps leaves the subscription in place",
+         ctx do
+      {organization, lost} = derived_org_board(ctx.user)
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      remove_org_admin!(organization, ctx.user)
+      assert_agents_until(&("Gemini" not in agent_names(&1)))
+
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "board:#{ctx.board.id}",
+        {Boards, :members_changed, ctx.board.id}
+      )
+
+      assert pending?(socket)
+      assert_eventually(fn -> not pending?(socket) end)
+      assert agents_topics(socket) == ["agents:#{ctx.board.id}"]
+      assert board_topics(socket) == ["board:#{ctx.board.id}"]
+      refute "agents:#{lost.id}" in agents_topics(socket)
+      assert Process.alive?(socket.channel_pid)
+    end
+
+    test "losing every board stops the channel", ctx do
+      {organization, lost} = derived_org_board(ctx.user)
+      enforce_plans()
+      socket = join!(ctx.device)
+      assert_push "agents", payload
+      assert "Gemini" in agent_names(payload)
+      assert agents_topics(socket) == ["agents:#{lost.id}"]
+      ref = Process.monitor(socket.channel_pid)
+
+      remove_org_admin!(organization, ctx.user)
+
+      assert_receive {:DOWN, ^ref, :process, _pid, :normal}, 1_000
+      refute_push "agents", _payload, 50
+    end
   end
 
   describe "rebuilds" do
@@ -222,6 +353,29 @@ defmodule KanbanWeb.AgentsChannelTest do
       refute pending?(socket)
     end
 
+    test "a burst of members_changed broadcasts coalesces into one rebuild", ctx do
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      rebuilds =
+        count_rebuilds(socket, fn ->
+          for _ <- 1..100 do
+            send(socket.channel_pid, {Boards, :members_changed, ctx.board.id})
+          end
+        end)
+
+      assert rebuilds == 1
+    end
+
+    test "other messages on the board topic are ignored", ctx do
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      send(socket.channel_pid, {Kanban.Tasks, :task_updated, %{id: 0}})
+
+      refute pending?(socket)
+    end
+
     test "board_access_changed re-subscribes the agents topics", ctx do
       owner = user_fixture()
       gained = ai_optimized_board_fixture(owner)
@@ -234,11 +388,13 @@ defmodule KanbanWeb.AgentsChannelTest do
 
       assert_agents_until(&("Gemini" in agent_names(&1)))
       assert "agents:#{gained.id}" in agents_topics(socket)
+      assert "board:#{gained.id}" in board_topics(socket)
 
       {:ok, _removed} = Boards.remove_user_from_board(gained, ctx.user, owner)
 
       assert_agents_until(&("Gemini" not in agent_names(&1)))
       refute "agents:#{gained.id}" in agents_topics(socket)
+      refute "board:#{gained.id}" in board_topics(socket)
     end
   end
 end

@@ -71,10 +71,16 @@ created, moved, claimed, completed or reviewed, a membership change, a new
 notification or a notification marked read.
 
 `me:agents` listens to the agents feed of every board it covers (a task
-created, claimed, completed or reviewed) and to `board_access_changed`
-notifications. Other notifications are ignored. A goal's counts can move
-without an agent event, for example when a person drags a task to Done;
-`me:agents` picks that up on its next rebuild, not at once.
+created, claimed, completed or reviewed), to each of those boards'
+membership changes, and to `board_access_changed` notifications. The
+membership change is what drops a board the person lost when no
+notification is sent, for example when an Organization admin is removed
+from the Organization or a person is deprovisioned; when the plan no
+longer includes the app after that change, the rebuild closes the channel
+instead. Other messages on the board's task topic, and other
+notifications, are ignored. A goal's counts can move without an agent
+event, for example when a person drags a task to Done; `me:agents` picks
+that up on its next rebuild, not at once.
 
 ## Which boards are covered
 
