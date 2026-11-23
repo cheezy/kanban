@@ -34,7 +34,7 @@ features. They are basic measurement:
    users. **Now built:** W2897 was rewritten on 2026-11-21 to use Umami and
    record a signup event, and was built on 2026-11-22. It records nothing
    until the Umami settings are set in production (see Gap 2).
-3. **We have no baseline.** Most of G559 and five G560 tasks have shipped, and
+3. **We have no baseline.** All of G559 and most of G560 have shipped, and
    nothing recorded where search traffic, backlinks or AI mentions stood
    before them, so their effect can't be measured.
 
@@ -133,14 +133,14 @@ The conventions are in [the SEO conventions document](../seo.md).
   - `/docs` (W2898);
   - `/integrations` (W2899);
   - `/llms.txt` and the AI crawler policy (W2900);
-  - analytics (W2897), built on 2026-11-22 but not yet switched on.
-- **Open:**
-  - comparison pages (W2901);
-  - the public demo board (W2902);
-  - social proof (W2903);
+  - comparison pages at `/compare` (W2901);
+  - the public demo board at `/demo` (W2902);
   - per-page preview images and the `/docs` links (W2904);
   - the release email list (W2905);
-  - the directory listing kit (W2906).
+  - analytics (W2897), built on 2026-11-22 but not yet switched on.
+- **Open:** the directory listing kit (W2906).
+- **Dropped:** social proof (W2903) was never built and is no longer on the
+  board.
 
 ## Capability by capability
 
@@ -302,7 +302,7 @@ paid".
 
 ### Gap 3: no baseline
 
-**What's missing.** G559 is finished and G560 is half done, with no "before"
+**What's missing.** G559 is finished and G560 is nearly done, with no "before"
 measurement of indexed pages, search clicks, backlinks or AI mentions. Search
 Console only shows data from the day a site is verified, and Umami only from
 the day its script goes live.
@@ -317,6 +317,13 @@ snapshot in a short dated note:
 - the free AI Visibility Checker for "Stride" and for "kanban for AI agents";
 - a `site:stridelikeaboss.com` search on Google and Bing.
 
+**Status: the note is ready, the checks aren't run.**
+[The baseline note](SEARCH-BASELINE-2026-11-23.md) lists what was live on
+2026-11-23, with each G559 and G560 task's completion date, and has a blank
+table for each check, including the fixed questions for the AI assistants.
+The gap closes when a person runs the checks and fills it in, and adds each
+task's production deployment date.
+
 ### Gap 4: topics are chosen without search data
 
 **What's missing.** The comparison pages (W2901), the integration pages and
@@ -330,12 +337,13 @@ nothing. A small change in wording, such as "AI agent kanban" rather than
 "kanban for AI agents", can be the difference between one search a month
 and a thousand.
 
-**Fix.** Before W2901 is built, add a short research step:
-- take its candidate queries from Search Console (once Gap 1 has run for a
-  few weeks), from Ahrefs' free keyword tools, or from one month of an
-  Ahrefs Starter plan ($29);
-- put the results in W2901's description, so each comparison page targets a
-  query people actually search for.
+**Fix.** W2901's comparison pages were built on 2026-11-21 without this
+research, so it now checks their wording after the fact:
+- take candidate queries from Search Console (once Gap 1 has run for a few
+  weeks), from Ahrefs' free keyword tools, or from one month of an Ahrefs
+  Starter plan ($29);
+- reword the comparison pages so each one targets a query people actually
+  search for, and use the same research before writing any new page.
 
 ### Gap 5: backlinks are gained but never measured
 
@@ -482,15 +490,16 @@ comparison pages need ongoing rank tracking.
 1. **Gap 1 (human, 30 minutes):** verify the site in Google Search Console and
    Bing Webmaster Tools by DNS and submit the sitemap. **Done on
    2026-11-23.**
-2. **Gap 3 (human, 30 minutes):** record the baseline snapshot as close to
-   2026-11-23 as possible.
+2. **Gap 3 (human, 30 minutes):** run the checks and fill in
+   [the baseline note](SEARCH-BASELINE-2026-11-23.md) as close to 2026-11-23
+   as possible.
 3. **Switch on W2897.** It was updated on 2026-11-21 with the Umami changes
    above and the Gap 2 events, and built on 2026-11-22. Decide Umami Cloud or
    self-hosted (item 4 above), set the three Umami settings on production,
    then set up the funnel and goal in the Umami dashboard. Gap 2 lists the
    steps.
-4. **Gap 4:** after four to six weeks of Search Console data, add the keyword
-   research to W2901 before building it.
+4. **Gap 4:** after four to six weeks of Search Console data, use the
+   keyword research to check and reword W2901's comparison pages.
 5. **Gaps 5, 6 and 7:** a monthly 15-minute review of backlinks, the AI
    assistants segment and the site audit; a quarterly AI Visibility Checker
    run.
@@ -575,10 +584,10 @@ the next deployment.
 | --- | --- | --- |
 | Meta tags, schema, `llms.txt` | **Done** (G559, W2900) | Nothing; don't pay for it again |
 | Per-agent setup pages | **Done** (W2899) | Ad landing pages and keyword targeting for pages that already exist |
-| Comparison pages for Linear, Jira and GitHub Projects | **Planned** (W2901) | Search volumes to choose and word them (Gap 4), and the copywriting |
+| Comparison pages for Linear, Jira and GitHub Projects | **Built** (W2901, at `/compare`) | Search volumes to check their wording (Gap 4), and the copywriting |
 | A "Vibe Kanban alternative" page | Not planned | **New.** They report that Vibe Kanban's company shut down on 10 April 2026 and its users are looking for a new home. If that's true, this is the most time-sensitive idea in the proposal. We have not verified it |
 | Moving the blog to stridelikeaboss.com/blog | **Decided against** (W2895 is link-only) | Conflicts with that decision; see below |
-| Proof bar, testimonials, user counts | **Planned** (W2903: tasks-completed counter, GitHub stars, quote slots) | Collecting real quotes from users, which W2903 leaves empty |
+| Proof bar, testimonials, user counts | **Not planned.** W2903 (tasks-completed counter, GitHub stars, quote slots) was dropped from the board | The proof bar itself, and real quotes from users to put in it |
 | A 2-minute demo video | Not planned. W2902 is a live replay board, not a video | **New:** video production, reused for social posts and ads |
 | Benefit-first hero and copy without jargon | Not planned | **New.** Fair point: the home page's mini board shows "Stream task_moved via PubSub" before it says who Stride is for |
 | "Meet the makers": founder and team on the About page | Not planned. The About page links to Tango but names no one | **New.** Cheap to do in-house, and needs your decision on who appears |
@@ -598,7 +607,8 @@ In order of value for the money, given what's already built:
 
 1. **Search data and a phrase list (Gap 4).** Volumes and difficulty for 35
    phrases, before any more pages are written. This is the work the free
-   tools do worst, and it decides whether W2901 is worth building.
+   tools do worst, and it shows whether W2901's comparison pages target
+   phrases anyone searches for.
 2. **The name problem.** Brand-defence ads on "Stride kanban" and consistent
    use of "Stride for AI agents" protect every other channel. A developer who
    hears about Stride and searches for it should land on us.
@@ -652,8 +662,8 @@ there's a reason to give up the cookie-free stance.
 
 **URLs.** Their sample ads and phrase list use `/claude-code`, `/codex` and
 `/vs/...`. The per-agent pages already live at `/integrations/claude-code` and
-so on, and W2901 will set the comparison URLs. Ask them to use the existing
-pages, not create duplicates.
+so on, and W2901's comparison pages are at `/compare/:competitor`. Ask them
+to use the existing pages, not create duplicates.
 
 **Access.** They ask for website, Google Analytics, Search Console, Google Ads
 and social account access:
@@ -689,7 +699,7 @@ channels they run.
   spend. The question is not cost but fit:
   - about a third of Package B, the technical SEO and the per-agent pages, is
     already built;
-  - part of what remains, the comparison pages, is planned.
+  - so are the comparison pages.
 - **Little evidence from developer tools.** Their reviews come from
   landscaping, physiotherapy, home care and accounting businesses. The
   software clients they name are a SOC 2 compliance service, an AI
@@ -700,15 +710,16 @@ channels they run.
 quarter of Package B ($650 CAD, if that's the quarterly price), rewritten
 to:
 - **include:**
-  - the 35-phrase keyword research, delivered in week 1 for W2901 and future
-    pages;
+  - the 35-phrase keyword research, delivered in week 1 to check the
+    comparison pages and plan future ones;
   - brand-defence and category search ads, with offline conversions and no
     pixels;
   - the Vibe Kanban check and, if it holds, ads to its comparison page;
   - submissions to G2, Product Hunt and AlternativeTo, and roundup pitches;
   - a monthly AI-answer audit.
 - **exclude:**
-  - technical SEO and per-agent pages, which are done;
+  - technical SEO, the per-agent pages and the comparison pages, which are
+    done;
   - moving the blog, which is decided;
   - any change to the site's code.
 
