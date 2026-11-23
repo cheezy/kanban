@@ -241,8 +241,7 @@ with `action: :promote` and the device's platform as `via`
   id that is not a positive integer, a column the board does not have, or a
   promote naming a task that is not a live task on this board. A promote
   that answers `404` moves nothing. A path that matches no route at all, such
-  as an empty column name, gets the router's own `404 {"errors": {"detail":
-  "Not Found"}}` instead.
+  as an empty column name, gets the same `404 {"error": "Not Found"}`.
 - `409 {"error": "conflict", "message": "A task was moved by someone else at the same time. Try again."}`
   when a concurrent move kept changing a task in the middle of the promote.
 - `422 {"errors": {"task_ids": ["can't be blank"]}}` for a missing or empty

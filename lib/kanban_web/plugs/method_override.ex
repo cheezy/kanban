@@ -22,10 +22,15 @@ defmodule KanbanWeb.Plugs.MethodOverride do
       browser path does)
     * `/.well-known`
 
-  The set follows the machine paths `KanbanWeb.Plugs.Parsers` names, with one
-  difference: Parsers names only `/.well-known/stride-audit-signing-keys`,
-  while this plug skips the whole of `/.well-known`, whose routes are all
-  `GET`s and are read by machines, not browsers.
+  The set is close to the machine paths `KanbanWeb.PathScope` names for
+  `KanbanWeb.Plugs.Parsers`, with two differences. `PathScope` names only
+  `/.well-known/stride-audit-signing-keys`, while this plug skips the whole of
+  `/.well-known`, whose routes are all `GET`s and are read by machines, not
+  browsers. And `PathScope` puts every `/oauth` path under the token API
+  except the browser's `/oauth/authorize` and the paths under it (D462), so
+  an unrouted path there gets that API's JSON error, while this plug skips
+  only the two routed endpoints: an unrouted `/oauth` path has no verb to
+  protect.
 
   The paths are matched on their decoded segments, as `Phoenix.Router`
   matches routes, so a percent-encoded prefix such as `/%61pi/me` (which the

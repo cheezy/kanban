@@ -17,105 +17,111 @@ defmodule KanbanWeb.Plugs.Parsers do
   `WrapperError` carrying the conn with its format pinned to json. The
   exception itself, and therefore the status, is unchanged.
 
-  The pin is applied only when parsing fails. A request that parses cleanly
-  leaves this plug with no format set, so the router decides the format as
-  before, and an unrouted `/api` path still renders its HTML 404. Every path
-  not named here is passed straight to `Plug.Parsers` and never gets the pin.
+  Which API a path belongs to is decided by `KanbanWeb.PathScope`, on the
+  decoded segments the router matches, so a percent-encoded prefix such as
+  `/%61pi/me` gets the same treatment as `/api/me`.
+
+  On the agent API (`/api`) the pin is applied only when parsing fails. A
+  request that parses cleanly leaves this plug with no format set, so the
+  router decides the format as before, and an unrouted agent `/api` path
+  still renders its HTML 404. Every path not named here is passed straight
+  to `Plug.Parsers` and never gets the pin.
 
   `/scim` paths get the same treatment with the `scim` format, so their
   errors render as SCIM errors (`KanbanWeb.SCIM.ErrorJSON`, W2247).
 
   The audit signing keys address, `/.well-known/stride-audit-signing-keys`,
   gets the json pin too (W2697): curl and verifier libraries fetch it, and
-  its own refusals are JSON. So do `/oauth/token` and `/oauth/revoke`
-  (W2746), which the mobile apps call; those two paths are also marked
-  `cache-control: no-store` and `pragma: no-cache` before parsing, so every
-  response there carries both, the errors raised before the controller
-  included.
+  its own refusals are JSON.
 
-  The person API paths (`/api/me` and everything under it) are marked
-  `cache-control: private, no-store` before parsing, so a parse failure
-  there, or an `/api/me` path no route matches, is never cached either; the
-  router's `:device_api` pipeline then sets the header of every response it
-  sends (`KanbanWeb.Plugs.DeviceApiCacheControl`).
+  The device sign-in token API (`/oauth` and everything under it, except the
+  browser's `/oauth/authorize` page, W2746) and the person API (`/api/me` and
+  everything under it) are pinned to json **before** parsing (D462), not
+  only when it fails. Their clients read every refusal as JSON, so a path no
+  route matches there renders its 404 through `KanbanWeb.ErrorJSON` in that
+  API's own error body, whatever the `Accept` header says. The pin does not
+  change the format of a routed request: the router's `:api_json` pipeline
+  sets json there anyway, and `plug :accepts` still answers a 406 for an
+  `Accept` the API does not serve. The headers are set before parsing too,
+  so every response there carries them, the errors raised before the
+  controller included: `cache-control: no-store` and `pragma: no-cache`
+  under `/oauth`, `cache-control: private, no-store` under `/api/me`, whose
+  `:device_api` pipeline then sets the header of every response it sends
+  (`KanbanWeb.Plugs.DeviceApiCacheControl`).
 
   One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
   raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
-  `-32700` after authentication — see `parse_api/2`.
+  `-32700` after authentication — see `parse_mcp/2`.
   """
   @behaviour Plug
 
   @impl Plug
   def init(opts), do: Plug.Parsers.init(opts)
 
+  # The scope is decided on decoded segments, as the router matches routes
+  # (KanbanWeb.PathScope), so a percent-encoded prefix such as /%61pi/me is
+  # treated exactly as /api/me.
+  @impl Plug
+  def call(conn, opts), do: conn |> KanbanWeb.PathScope.of() |> parse(conn, opts)
+
   # The person API (/api/me/*) is no-store (decided 2026-11-19): the router's
   # :device_api pipeline sets it on every response it sends
   # (KanbanWeb.Plugs.DeviceApiCacheControl), and setting it here, before
   # parsing, covers a parse failure and an unmatched /api/me path, which never
-  # reach that pipeline. The json pin works as for /api below.
-  @impl Plug
-  def call(%Plug.Conn{path_info: ["api", "me" | _]} = conn, opts) do
-    conn |> device_api_no_store() |> Plug.Parsers.call(opts)
-  catch
-    kind, reason ->
-      conn
-      |> device_api_no_store()
-      |> Phoenix.Controller.put_format("json")
-      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
+  # reach that pipeline. The json format is pinned before parsing too (D462),
+  # so an /api/me path no route matches renders its 404 through
+  # KanbanWeb.ErrorJSON whatever the Accept header says.
+  defp parse(:device_api, conn, opts) do
+    conn
+    |> device_api_no_store()
+    |> Phoenix.Controller.put_format("json")
+    |> parse_pinning_failures("json", opts)
   end
 
-  def call(%Plug.Conn{path_info: ["api" | _]} = conn, opts) do
-    parse_api(conn, opts)
-  catch
-    kind, reason ->
-      conn
-      |> Phoenix.Controller.put_format("json")
-      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
-  end
+  # The agent API: the json pin is applied only when parsing fails, so an
+  # unrouted /api path still renders its HTML 404.
+  defp parse(:api, conn, opts), do: parse_pinning_failures(conn, "json", opts)
+  defp parse(:mcp, conn, opts), do: parse_pinning_failures(conn, "json", opts, &parse_mcp/2)
 
   # SCIM (W2247): a parse failure on /scim renders through
   # KanbanWeb.SCIM.ErrorJSON as an application/scim+json SCIM error, which is
-  # what an identity provider expects; the pin works as for /api above.
-  def call(%Plug.Conn{path_info: ["scim" | _]} = conn, opts) do
-    Plug.Parsers.call(conn, opts)
-  catch
-    kind, reason ->
-      conn
-      |> Phoenix.Controller.put_format("scim")
-      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
-  end
+  # what an identity provider expects.
+  defp parse(:scim, conn, opts), do: parse_pinning_failures(conn, "scim", opts)
 
   # The audit signing keys address (W2697) is read by curl and verifier
   # libraries, not by a browser, so a parse failure there (a kid that is not
   # valid UTF-8, say) renders as JSON like the address's own 404, not as the
-  # HTML error page; the pin works as for /api above.
-  def call(%Plug.Conn{path_info: [".well-known", "stride-audit-signing-keys"]} = conn, opts) do
-    Plug.Parsers.call(conn, opts)
+  # HTML error page.
+  defp parse(:audit_signing_keys, conn, opts), do: parse_pinning_failures(conn, "json", opts)
+
+  # The device sign-in token API (W2746) is called by the apps, which read
+  # every refusal as JSON. Every response under /oauth, the browser's
+  # /oauth/authorize page aside, must be `cache-control: no-store` (RFC 6749
+  # §5.1), so the headers are set before parsing: an error raised here, or in
+  # the router before the controller's own no_store plug runs, keeps them.
+  # The json format is pinned before parsing (D462), so a parse failure or an
+  # /oauth path no route matches renders through KanbanWeb.ErrorJSON's OAuth
+  # error shape whatever the Accept header says.
+  defp parse(:oauth, conn, opts) do
+    conn
+    |> oauth_no_store()
+    |> Phoenix.Controller.put_format("json")
+    |> parse_pinning_failures("json", opts)
+  end
+
+  defp parse(:browser, conn, opts), do: Plug.Parsers.call(conn, opts)
+
+  # Re-raises a parse failure as a WrapperError carrying the conn with its
+  # format pinned, so RenderErrors renders it in that format. The exception,
+  # and therefore the status, is unchanged.
+  defp parse_pinning_failures(conn, format, opts, parser \\ &Plug.Parsers.call/2) do
+    parser.(conn, opts)
   catch
     kind, reason ->
       conn
-      |> Phoenix.Controller.put_format("json")
+      |> Phoenix.Controller.put_format(format)
       |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
   end
-
-  # The device sign-in token endpoints (W2746) are called by the apps, which
-  # read every refusal as JSON, so a malformed body there renders through
-  # KanbanWeb.ErrorJSON's OAuth error shape; the pin works as for /api above.
-  # Every response there must be `cache-control: no-store` (RFC 6749 §5.1),
-  # so the headers are set before parsing: an error raised here, or in the
-  # router before the controller's own no_store plug runs, keeps them.
-  def call(%Plug.Conn{path_info: ["oauth", endpoint]} = conn, opts)
-      when endpoint in ["token", "revoke"] do
-    conn |> oauth_no_store() |> Plug.Parsers.call(opts)
-  catch
-    kind, reason ->
-      conn
-      |> oauth_no_store()
-      |> Phoenix.Controller.put_format("json")
-      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
-  end
-
-  def call(conn, opts), do: Plug.Parsers.call(conn, opts)
 
   defp oauth_no_store(conn) do
     conn
@@ -137,8 +143,8 @@ defmodule KanbanWeb.Plugs.Parsers do
   # the `:api` pipeline authenticates it and `KanbanWeb.API.McpController`
   # answers -32700. Every other failure on that route — an oversized body
   # (413), an unsupported content type (415), a malformed query string — still
-  # raises through the `catch` above exactly as for every other /api path.
-  defp parse_api(%Plug.Conn{method: "POST", path_info: ["api", "mcp"]} = conn, opts) do
+  # raises through `parse_pinning_failures/4` exactly as for every other /api path.
+  defp parse_mcp(%Plug.Conn{method: "POST"} = conn, opts) do
     Plug.Parsers.call(conn, opts)
   rescue
     Plug.Parsers.ParseError ->
@@ -147,5 +153,5 @@ defmodule KanbanWeb.Plugs.Parsers do
       |> Plug.Conn.put_private(:kanban_mcp_parse_error, true)
   end
 
-  defp parse_api(conn, opts), do: Plug.Parsers.call(conn, opts)
+  defp parse_mcp(conn, opts), do: Plug.Parsers.call(conn, opts)
 end

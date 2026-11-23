@@ -136,6 +136,8 @@ same as `DELETE /api/me/devices/current`
 Every response carries `cache-control: no-store` and `pragma: no-cache`,
 including the errors raised before the request reaches the endpoint's own code,
 such as a body that cannot be parsed or an `Accept` header that rules out JSON.
+So does every response to an `/oauth` path, other than the browser's
+`/oauth/authorize` page and the paths under it, that matches no route.
 
 ### Success (200 OK)
 
@@ -176,6 +178,22 @@ carries a token.
 | `invalid_client` | `client_id` is not `stride-ios` or `stride-android` |
 | `invalid_grant` | The code or refresh token is unknown, used, expired, issued to another client or redirect URI, or refused; or the PKCE verifier does not match |
 | `unsupported_grant_type` | `grant_type` is neither `authorization_code` nor `refresh_token` |
+
+### Not Found (404)
+
+A request under `/oauth` that matches no route, such as `GET /oauth/token` or
+`/oauth/no-such-endpoint`, answers `404` with the same RFC 6749 shape, as JSON
+whatever the `Accept` header says. The description is fixed text and never
+echoes the path:
+
+```json
+{ "error": "invalid_request", "error_description": "No endpoint matches this request." }
+```
+
+The browser's `/oauth/authorize` page is not part of this API, so a path under
+it that matches no route gets the browser's 404: the HTML 404 page, or the
+generic `{"errors": {"detail": "Not Found"}}` body when the `Accept` header
+asks for JSON.
 
 ### Too Many Requests (429)
 

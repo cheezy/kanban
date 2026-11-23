@@ -83,6 +83,73 @@ defmodule KanbanWeb.ErrorJSONTest do
              %{errors: %{detail: "Not Found"}}
   end
 
+  # D462: an /api/me 404 uses the person API's own Not Found body.
+  test "renders an /api/me 404 with the person API's error body" do
+    for path <- ["/api/me", "/api/me/no-such-route", "/%61pi/me/x"] do
+      conn = Phoenix.ConnTest.build_conn(:options, path)
+
+      assert KanbanWeb.ErrorJSON.render("404.json", %{conn: conn}) == %{error: "Not Found"},
+             path
+    end
+  end
+
+  test "renders an /api/me 400 and 406 with the API error shape" do
+    conn = Phoenix.ConnTest.build_conn(:put, "/api/me/devices/current")
+
+    assert KanbanWeb.ErrorJSON.render("400.json", %{conn: conn}) ==
+             KanbanWeb.ErrorJSON.render("400.json", %{conn: build_api_conn()})
+
+    assert KanbanWeb.ErrorJSON.render("406.json", %{conn: conn}) ==
+             KanbanWeb.ErrorJSON.render("406.json", %{conn: build_api_conn()})
+  end
+
+  # D462: an /oauth 404 is an RFC 6749 invalid_request with a fixed description.
+  test "renders an /oauth 404 as an invalid_request" do
+    for path <- ["/oauth/nope", "/oauth/token", "/oauth/token/extra", "/oauth", "/%6Fauth/x"] do
+      conn = Phoenix.ConnTest.build_conn(:get, path)
+
+      assert KanbanWeb.ErrorJSON.render("404.json", %{conn: conn}) == %{
+               error: "invalid_request",
+               error_description: "No endpoint matches this request."
+             },
+             path
+    end
+  end
+
+  test "renders /oauth 400, 413, 415 and 406 under any /oauth API path" do
+    conn = Phoenix.ConnTest.build_conn(:post, "/oauth/nope")
+
+    assert %{error: "invalid_request", error_description: _} =
+             KanbanWeb.ErrorJSON.render("400.json", %{conn: conn})
+
+    assert %{error: "invalid_request"} = KanbanWeb.ErrorJSON.render("413.json", %{conn: conn})
+    assert %{error: "invalid_request"} = KanbanWeb.ErrorJSON.render("415.json", %{conn: conn})
+
+    assert KanbanWeb.ErrorJSON.render("406.json", %{conn: conn}) == %{
+             error: "Not Acceptable",
+             message: "This API only serves application/json."
+           }
+  end
+
+  test "renders an /oauth 404 without echoing the request" do
+    conn =
+      :get
+      |> Phoenix.ConnTest.build_conn("/oauth/d462-probe?q=d462-probe")
+      |> Plug.Conn.put_req_header("accept", "text/html;marker=d462-probe")
+
+    refute inspect(KanbanWeb.ErrorJSON.render("404.json", %{conn: conn})) =~ "d462-probe"
+  end
+
+  test "renders a 404 on the authorize page and an agent /api path with the generic body" do
+    for path <- ["/oauth/authorize", "/oauth/authorize/extra", "/api/no-such-route"] do
+      conn = Phoenix.ConnTest.build_conn(:delete, path)
+
+      assert KanbanWeb.ErrorJSON.render("404.json", %{conn: conn}) ==
+               %{errors: %{detail: "Not Found"}},
+             path
+    end
+  end
+
   test "renders 500" do
     assert KanbanWeb.ErrorJSON.render("500.json", %{}) ==
              %{errors: %{detail: "Internal Server Error"}}

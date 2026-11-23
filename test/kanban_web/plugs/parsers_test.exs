@@ -88,10 +88,65 @@ defmodule KanbanWeb.Plugs.ParsersTest do
     end
   end
 
+  # D462: the person API and the device sign-in token API are pinned to json
+  # before parsing, so a path no route matches renders its 404 as JSON.
+  test "an /api/me or /oauth request that parses cleanly is pinned to json with its headers" do
+    for {path, headers} <- [
+          {"/api/me/no-such-route", [{"cache-control", "private, no-store"}]},
+          {"/%61pi/me", [{"cache-control", "private, no-store"}]},
+          {"/oauth/nope", [{"cache-control", "no-store"}, {"pragma", "no-cache"}]},
+          {"/oauth/token", [{"cache-control", "no-store"}, {"pragma", "no-cache"}]},
+          {"/%6Fauth/nope", [{"cache-control", "no-store"}, {"pragma", "no-cache"}]}
+        ] do
+      conn = :get |> conn(path <> "?a=%41") |> Parsers.call(@opts)
+
+      assert conn.params == %{"a" => "A"}, path
+      assert Phoenix.Controller.get_format(conn) == "json", path
+
+      for {name, value} <- headers do
+        assert Plug.Conn.get_resp_header(conn, name) == [value], "#{path} #{name}"
+      end
+    end
+  end
+
+  test "an unrouted /oauth path parse failure gets the json pin and no-store (D462)" do
+    error =
+      assert_raise Plug.Conn.WrapperError, fn ->
+        :get |> conn("/oauth/nope?a=%FF") |> Parsers.call(@opts)
+      end
+
+    assert %Plug.Conn.InvalidQueryError{} = error.reason
+    assert Phoenix.Controller.get_format(error.conn) == "json"
+    assert Plug.Conn.get_resp_header(error.conn, "cache-control") == ["no-store"]
+  end
+
+  test "a percent-encoded /api prefix gets the json pin on a parse failure (D462)" do
+    error =
+      assert_raise Plug.Conn.WrapperError, fn ->
+        :get |> conn("/%61pi/tasks?a=%FF") |> Parsers.call(@opts)
+      end
+
+    assert Phoenix.Controller.get_format(error.conn) == "json"
+  end
+
+  test "a percent-encoded /api/mcp path is flagged like /api/mcp (D462)" do
+    conn =
+      :post
+      |> conn("/%61pi/mcp", "{not json")
+      |> Plug.Conn.put_req_header("content-type", "application/json")
+      |> Parsers.call(@opts)
+
+    assert conn.private[:kanban_mcp_parse_error] == true
+  end
+
   test "the authorize page gets no pin (W2746)" do
     conn = conn(:get, "/oauth/authorize?a=%FF")
 
     assert_raise Plug.Conn.InvalidQueryError, fn -> Parsers.call(conn, @opts) end
+
+    clean = :get |> conn("/oauth/authorize?a=%41") |> Parsers.call(@opts)
+    refute Map.has_key?(clean.private, :phoenix_format)
+    assert Plug.Conn.get_resp_header(clean, "cache-control") != ["no-store"]
   end
 
   test "another /.well-known path gets no pin (W2697)" do

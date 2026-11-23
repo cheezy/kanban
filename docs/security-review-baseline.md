@@ -91,9 +91,13 @@ router, so no pipeline above applies to an error they raise.
   413) is re-raised as a `Plug.Conn.WrapperError` carrying the conn with its
   format pinned to json, so `Phoenix.Endpoint.RenderErrors` renders it through
   `ErrorJSON` (fixed `error` + `message`, no echo of the query, body or
-  exception) whatever the `Accept` header says. The status is unchanged. The
-  pin is applied only on failure, so an unrouted `/api` path that parses still
-  renders the HTML 404, and it is never applied to a non-`/api` path.
+  exception) whatever the `Accept` header says. The status is unchanged. On
+  the agent API the pin is applied only on failure, so an unrouted `/api`
+  path that parses still renders the HTML 404. `/api/me` and `/oauth` (except
+  the browser's `/oauth/authorize` and the paths under it) are pinned before
+  parsing (D462), so an unrouted path there answers that API's fixed JSON
+  404, with the `no-store` cache headers those scopes set. `KanbanWeb.PathScope` decides
+  the scope on decoded segments; no other browser path is pinned.
 - **It must be the first plug that parses the query string.**
   `Phoenix.LiveDashboard.RequestLogger` calls `fetch_query_params`, so it sits
   after the parsers; moved back above them, a malformed query on `/api` would

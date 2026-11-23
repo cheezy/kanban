@@ -91,6 +91,7 @@ plans are not enforced, every route is unlocked and `GET /api/me` returns
 | `400` | The query string or body cannot be parsed ([details](README.md#400-for-a-malformed-query-string-or-body)) |
 | `401` | `{"error": "Missing or invalid Authorization header"}` without a `Bearer` header, or `{"error": "Invalid access token"}` for an unknown, expired or revoked token, a disabled account or an agent API token |
 | `403` | `plan_required`, on the plan-gated routes only |
+| `404` | `{"error": "Not Found"}` for a path under `/api/me` that matches no route, such as a verb a route does not serve, as JSON whatever the `Accept` header says |
 | `406` | The `Accept` header rules out JSON ([details](README.md#406-not-acceptable)) |
 | `426` | `{"error": "app_update_required", "store_url": "…"}` when the app is below the minimum version |
 | `429` | `{"error": "Too many requests"}` after too many failed authentications from one address, with `retry-after`. A token that has only expired is not counted |

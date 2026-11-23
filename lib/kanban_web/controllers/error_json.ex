@@ -18,13 +18,34 @@ defmodule KanbanWeb.ErrorJSON do
     "415.json" => {"Unsupported Media Type", "Send the request body as application/json."}
   }
 
-  @oauth_endpoints ["token", "revoke"]
+  # The agent API, the MCP endpoint and the person API share the `error` +
+  # `message` body for these statuses.
+  @api_scopes [:api, :mcp, :device_api]
+
   @oauth_errors %{
     "400.json" => "The request is malformed and could not be processed.",
+    "404.json" => "No endpoint matches this request.",
     "413.json" => "The request body is too large.",
     "415.json" =>
       "Send the request body as application/x-www-form-urlencoded or application/json."
   }
+
+  # Each API is told apart by KanbanWeb.PathScope, on the decoded segments the
+  # router matches (D462), so a percent-encoded prefix such as /%61pi/me gets
+  # the same body as /api/me.
+  def render(template, %{conn: %Plug.Conn{} = conn}) do
+    render_scoped(KanbanWeb.PathScope.of(conn), template)
+  end
+
+  def render(template, _assigns), do: generic(template)
+
+  # 404 Not Found on the person API (D462). A path under /api/me that no route
+  # matches answers the same `{"error": "Not Found"}` body as the API's own
+  # 404s (KanbanWeb.API.Me.FallbackController), never the generic
+  # `errors.detail` fallback below. KanbanWeb.Plugs.Parsers pins the format
+  # to json for /api/me paths, so this renders whatever the Accept header
+  # says. The body is a fixed string: it never echoes the path or a header.
+  defp render_scoped(:device_api, "404.json"), do: %{error: "Not Found"}
 
   # 406 Not Acceptable on an /api route (D351). Raised by
   # `plug :accepts, ["json"]` in the :api and :api_public pipelines when a
@@ -38,7 +59,7 @@ defmodule KanbanWeb.ErrorJSON do
   # Accept: application/json also renders "406.json" here, and its body stays
   # the generic fallback, because "This API only serves application/json."
   # would be false for an HTML page.
-  def render("406.json", %{conn: %Plug.Conn{path_info: ["api" | _]}}) do
+  defp render_scoped(scope, "406.json") when scope in @api_scopes do
     %{error: "Not Acceptable", message: "This API only serves application/json."}
   end
 
@@ -50,31 +71,31 @@ defmodule KanbanWeb.ErrorJSON do
   # these render here rather than through ErrorHTML. Like the 406, each body is
   # the API's `error` + `message` shape with a fixed message that never echoes
   # the query string, the body, a header or the exception text.
-  def render(template, %{conn: %Plug.Conn{path_info: ["api" | _]}})
-      when is_map_key(@api_errors, template) do
+  defp render_scoped(scope, template)
+       when scope in @api_scopes and is_map_key(@api_errors, template) do
     {error, message} = Map.fetch!(@api_errors, template)
     %{error: error, message: message}
   end
 
-  # The device sign-in token endpoints (W2746). An app reads every refusal
-  # there as an RFC 6749 §5.2 error, so a 400, 413 or 415 raised by
-  # Plug.Parsers is an `invalid_request` with a fixed description, and a 406
-  # is the API's own Not Acceptable body. Only POST /oauth/token and
-  # /oauth/revoke: the authorize page is HTML.
-  def render("406.json", %{conn: %Plug.Conn{path_info: ["oauth", endpoint]}})
-      when endpoint in @oauth_endpoints do
+  # The device sign-in token API (W2746). An app reads every refusal there as
+  # an RFC 6749 §5.2 error, so a 400, 413 or 415 raised by Plug.Parsers, and a
+  # 404 for an /oauth path no route matches (D462), is an `invalid_request`
+  # with a fixed description, and a 406 is the API's own Not Acceptable body.
+  # Every /oauth path except the authorize page, which is HTML.
+  defp render_scoped(:oauth, "406.json") do
     %{error: "Not Acceptable", message: "This API only serves application/json."}
   end
 
-  def render(template, %{conn: %Plug.Conn{path_info: ["oauth", endpoint]}})
-      when endpoint in @oauth_endpoints and is_map_key(@oauth_errors, template) do
+  defp render_scoped(:oauth, template) when is_map_key(@oauth_errors, template) do
     %{error: "invalid_request", error_description: Map.fetch!(@oauth_errors, template)}
   end
+
+  defp render_scoped(_scope, template), do: generic(template)
 
   # By default, Phoenix returns the status message from
   # the template name. For example, "404.json" becomes
   # "Not Found".
-  def render(template, _assigns) do
+  defp generic(template) do
     %{errors: %{detail: Phoenix.Controller.status_message_from_template(template)}}
   end
 end

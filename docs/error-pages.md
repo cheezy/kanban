@@ -89,8 +89,20 @@ message that never echoes the request:
 | 413 | Request Entity Too Large | The request body is too large. |
 | 415 | Unsupported Media Type | Send the request body as application/json. |
 
-These clauses match only when the request path starts with `/api`. Any other
-JSON error, and any other `/api` status, gets Phoenix's generic
+These clauses match only when the request path is under `/api`, `/api/me`
+included. Two other APIs have their own clauses (D462):
+
+- **`/api/me`** answers a 404 with `{"error": "Not Found"}`, the body its
+  controllers return for a missing record.
+- **`/oauth`**, except the browser's `/oauth/authorize` page and the paths
+  under it, answers a 400,
+  404, 413 or 415 with the RFC 6749 shape, `{"error": "invalid_request",
+  "error_description": "<fixed text>"}`, and a 406 with the API's
+  `Not Acceptable` body above.
+
+The path is matched by `KanbanWeb.PathScope` on its decoded segments, as the
+router matches routes, so `/%61pi/me/x` is under `/api/me`. Any other JSON
+error, and any other status on these paths, gets Phoenix's generic
 `{"errors": {"detail": "<reason phrase>"}}` body.
 
 ## Errors raised before the router
@@ -128,9 +140,17 @@ Two rules keep this working:
   metadata is now set after `Plug.Telemetry`'s request-start line and after
   parsing, so the LiveDashboard request-logger stream no longer shows the
   `GET /path` line or anything logged while parsing.
-- **The pin is applied only on failure.** A request that parses cleanly leaves
-  the wrapper with no format set, so an unrouted `/api` path such as
-  `/api/no-such-route` still renders the HTML 404, exactly as before.
+- **On the agent API the pin is applied only on failure.** A request that
+  parses cleanly leaves the wrapper with no format set, so an unrouted `/api`
+  path such as `/api/no-such-route` still renders the HTML 404, exactly as
+  before. The person API (`/api/me`) and the device sign-in token API
+  (`/oauth`, except the browser's `/oauth/authorize` page and the paths under
+  it) are pinned to json
+  before parsing instead (D462), so a path there that matches no route
+  answers its API's own JSON 404 body, `{"error": "Not Found"}` under
+  `/api/me` and an `invalid_request` under `/oauth`, whatever the `Accept`
+  header says. `KanbanWeb.PathScope` decides which API a path is under, on
+  the decoded segments the router matches.
 
 `Plug.Parsers` is configured with `pass: ["*/*"]`, so it does not raise a 415
 for an unknown content type today; the 415 clauses exist so that the response
