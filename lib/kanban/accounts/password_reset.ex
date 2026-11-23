@@ -22,6 +22,7 @@ defmodule Kanban.Accounts.PasswordReset do
 
   import Ecto.Query, only: [from: 2]
 
+  alias Kanban.Accounts.DeviceSignOut
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Accounts.UserTelemetry
@@ -104,6 +105,10 @@ defmodule Kanban.Accounts.PasswordReset do
       iex> reset_user_password(user, %{password: "valid", password_confirmation: "not the same"})
       {:error, %Ecto.Changeset{}}
 
+  Signs out every web session and, in the same transaction, revokes every
+  live mobile device of the user and expires its tokens; once it commits
+  each device is told to disconnect (`Kanban.Accounts.DeviceSignOut`).
+
   Returns `{:error, :user_disabled}` and changes nothing when the account was
   disabled after its reset page opened. That is read from the database under
   a row lock, so a disable landing at the same moment is seen too.
@@ -127,12 +132,14 @@ defmodule Kanban.Accounts.PasswordReset do
             tokens_query = UserToken.by_user_and_contexts_query(user, :all)
             tokens_to_expire = Repo.all(tokens_query)
             Repo.delete_all(tokens_query)
-            {user, tokens_to_expire}
+            # Sign every mobile device out in the same transaction (D459).
+            {user, tokens_to_expire, DeviceSignOut.revoke!(user)}
 
           {:error, changeset} ->
             Repo.rollback(changeset)
         end
       end)
+      |> DeviceSignOut.announce()
 
     UserTelemetry.password_reset_completed(result)
   end
@@ -141,7 +148,11 @@ defmodule Kanban.Accounts.PasswordReset do
     from(u in User,
       where: u.id == ^user_id,
       select: not is_nil(u.disabled_at),
-      lock: "FOR UPDATE"
+      # NO KEY UPDATE still serializes against a disable, and lets a device
+      # an authorization code exchange in flight inserts take its foreign
+      # key share lock on the user, so the exchange commits before the
+      # reset expires the codes, instead of deadlocking with it (D459).
+      lock: "FOR NO KEY UPDATE"
     )
     |> Repo.one()
     |> Kernel.==(true)

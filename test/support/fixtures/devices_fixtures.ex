@@ -88,4 +88,25 @@ defmodule Kanban.DevicesFixtures do
     {:ok, code} = Devices.create_authorization_code(scope, code_attrs, now)
     code
   end
+
+  @doc """
+  Exchanges an `authorization_code_fixture/3` code for a new device at `now`,
+  with the fixture's verifier, redirect URI and device details.
+  """
+  def redeem_authorization_code(code, now \\ DateTime.utc_now()) do
+    grant = %{
+      code: code.code,
+      client_id: code.client_id,
+      redirect_uri: code.redirect_uri,
+      code_verifier: valid_code_verifier()
+    }
+
+    details = %{
+      "platform" => "ios",
+      "device_class" => "phone",
+      "approval_public_key" => valid_approval_public_key()
+    }
+
+    Devices.exchange_authorization_code(grant, details, now)
+  end
 end

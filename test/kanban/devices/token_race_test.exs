@@ -7,6 +7,8 @@ defmodule Kanban.Devices.TokenRaceTest do
       (`revoke_by_refresh_token/3`), in both orders and at random;
     * a replay of an authorization code against its first exchange, from
       the same and from the other client;
+    * an exchange of an authorization code, and the issue of one, against a
+      password reset or change of its user, in both orders (D459);
     * `PUT /api/me/devices/current` moving push tokens
       (`Kanban.Devices.CurrentDevice`): two devices trading their tokens, and
       two devices registering one fresh token, in both orders.
@@ -39,6 +41,7 @@ defmodule Kanban.Devices.TokenRaceTest do
   import Ecto.Query
 
   alias Ecto.Adapters.SQL.Sandbox
+  alias Kanban.Accounts
   alias Kanban.AccountsFixtures
   alias Kanban.Devices
   alias Kanban.Devices.Device
@@ -138,6 +141,82 @@ defmodule Kanban.Devices.TokenRaceTest do
         assert Task.await(replayed, @deadline_ms) == {:error, :invalid_grant}
 
         assert_revoked_and_dead(issued.device, rotation: {:ok, issued})
+      end
+    end
+  end
+
+  describe "an authorization code exchange against a password change of its user (D459)" do
+    for change <- [:update_user_password, :reset_user_password] do
+      test "#{change}, the exchange first: the device it signs in is revoked by the change",
+           %{scope: scope} do
+        code = DevicesFixtures.authorization_code_fixture(scope)
+
+        holder = hold_rows("oauth_authorization_codes", [code.id])
+
+        exchange =
+          start_racer(fn -> code |> grant() |> Devices.exchange_authorization_code(details()) end)
+
+        await_lock_waiters(1)
+        change = start_racer(fn -> change_password(unquote(change), scope) end)
+        await_lock_waiters(2)
+        release(holder)
+
+        assert {:ok, issued} = Task.await(exchange, @deadline_ms)
+        assert {:ok, {_user, _tokens}} = Task.await(change, @deadline_ms)
+
+        assert_revoked_and_dead(issued.device, rotation: {:ok, issued})
+      end
+
+      test "#{change}, the change first: the code is refused and signs no device in",
+           %{scope: scope} do
+        code = DevicesFixtures.authorization_code_fixture(scope)
+
+        holder = hold_rows("oauth_authorization_codes", [code.id])
+        change = start_racer(fn -> change_password(unquote(change), scope) end)
+        await_lock_waiters(1)
+
+        exchange =
+          start_racer(fn -> code |> grant() |> Devices.exchange_authorization_code(details()) end)
+
+        await_lock_waiters(2)
+        release(holder)
+
+        assert {:ok, {_user, _tokens}} = Task.await(change, @deadline_ms)
+        assert Task.await(exchange, @deadline_ms) == {:error, :invalid_grant}
+        refute Repo.get_by(Device, user_id: scope.user.id)
+      end
+    end
+  end
+
+  describe "issuing an authorization code against a password change of its user (D459)" do
+    for change <- [:update_user_password, :reset_user_password] do
+      test "#{change}, the change first: no code is issued for the old password",
+           %{scope: scope} do
+        holder = hold_rows("users", [scope.user.id])
+        change = start_racer(fn -> change_password(unquote(change), scope) end)
+        await_lock_waiters(1)
+        issue = start_racer(fn -> issue_code(scope) end)
+        await_lock_waiters(2)
+        release(holder)
+
+        assert {:ok, {_user, _tokens}} = Task.await(change, @deadline_ms)
+        assert {:error, %Ecto.Changeset{}} = Task.await(issue, @deadline_ms)
+        refute Repo.get_by(Kanban.Devices.AuthorizationCode, user_id: scope.user.id)
+      end
+
+      test "#{change}, the code first: the change expires it", %{scope: scope} do
+        holder = hold_rows("users", [scope.user.id])
+        issue = start_racer(fn -> issue_code(scope) end)
+        await_lock_waiters(1)
+        change = start_racer(fn -> change_password(unquote(change), scope) end)
+        await_lock_waiters(2)
+        release(holder)
+
+        assert {:ok, code} = Task.await(issue, @deadline_ms)
+        assert {:ok, {_user, _tokens}} = Task.await(change, @deadline_ms)
+
+        assert code |> grant() |> Devices.exchange_authorization_code(details()) ==
+                 {:error, :invalid_grant}
       end
     end
   end
@@ -295,6 +374,16 @@ defmodule Kanban.Devices.TokenRaceTest do
       approval_public_key: DevicesFixtures.valid_approval_public_key()
     }
   end
+
+  defp change_password(change, scope),
+    do: apply(Accounts, change, [scope.user, %{password: "a new race password"}])
+
+  defp issue_code(scope),
+    do:
+      Devices.create_authorization_code(
+        scope,
+        DevicesFixtures.valid_authorization_code_attributes()
+      )
 
   defp push(token), do: %{"push_token" => token}
 

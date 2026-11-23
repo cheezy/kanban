@@ -24,8 +24,9 @@ defmodule Kanban.Devices.Revocation do
 
   The reasons are `:sign_out` (the app signed itself out), `:user` (the
   person revoked it from another device or the web), `:org_admin` (an
-  Organization admin revoked a member's device) and `:reuse_detected` (an
-  old refresh token was presented again).
+  Organization admin revoked a member's device), `:reuse_detected` (an
+  old refresh token was presented again) and `:password_changed` (the
+  person reset or changed their password, which signs every device out).
   """
 
   import Ecto.Query, warn: false
@@ -38,13 +39,13 @@ defmodule Kanban.Devices.Revocation do
   alias Kanban.Devices.DeviceToken
   alias Kanban.Repo
 
-  @reasons [:sign_out, :user, :org_admin, :reuse_detected]
+  @reasons [:sign_out, :user, :org_admin, :reuse_detected, :password_changed]
 
   # The reasons a person can give for revoking one of their own devices.
   @own_reasons [:sign_out, :user]
 
   @typedoc "Why a device was revoked."
-  @type reason :: :sign_out | :user | :org_admin | :reuse_detected
+  @type reason :: :sign_out | :user | :org_admin | :reuse_detected | :password_changed
 
   @typedoc "A revocation inside a transaction: whether it changed the device."
   @type locked_result :: {:ok, {:revoked | :unchanged, Device.t()}} | {:error, :not_found}
@@ -128,6 +129,43 @@ defmodule Kanban.Devices.Revocation do
   def revoke_locked(%Device{} = device, revoked_by_id, now) do
     with {:ok, revoked} <- revoke_and_expire(device, revoked_by_id, now),
          do: {:ok, {:revoked, revoked}}
+  end
+
+  @doc """
+  Revokes every live device of `user` at `now`, by `revoked_by_id`, inside
+  the caller's transaction, and expires their tokens. The devices are locked
+  in id order, so a device revoked meanwhile is left as it is. Returns the
+  devices it revoked, to pass to `announce_all/2` once the transaction
+  commits, or the first error, on which the caller rolls back.
+  """
+  @spec revoke_all_locked(User.t(), pos_integer() | nil, DateTime.t()) ::
+          {:ok, [Device.t()]} | {:error, Ecto.Changeset.t()}
+  def revoke_all_locked(%User{id: user_id}, revoked_by_id, now) do
+    from(d in Device,
+      where: d.user_id == ^user_id and is_nil(d.revoked_at),
+      order_by: d.id,
+      lock: "FOR UPDATE"
+    )
+    |> Repo.all()
+    |> Enum.reduce_while({:ok, []}, fn device, {:ok, revoked} ->
+      case revoke_and_expire(device, revoked_by_id, now) do
+        {:ok, device} -> {:cont, {:ok, [device | revoked]}}
+        {:error, _changeset} = error -> {:halt, error}
+      end
+    end)
+    |> case do
+      {:ok, revoked} -> {:ok, Enum.reverse(revoked)}
+      error -> error
+    end
+  end
+
+  @doc """
+  Announces each committed revocation in `devices` with `details`, as
+  `announce/2` does one. Call it once the transaction has committed.
+  """
+  @spec announce_all([Device.t()], keyword()) :: :ok
+  def announce_all(devices, details) when is_list(devices) do
+    Enum.each(devices, &announce_revoked(&1, details))
   end
 
   @doc """

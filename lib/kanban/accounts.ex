@@ -14,6 +14,7 @@ defmodule Kanban.Accounts do
 
   alias Kanban.Accounts.AccountDeletion
   alias Kanban.Accounts.AdminManagement
+  alias Kanban.Accounts.DeviceSignOut
   alias Kanban.Accounts.EmailConfirmation
   alias Kanban.Accounts.PasswordReset
   alias Kanban.Accounts.SSOUsers
@@ -279,6 +280,9 @@ defmodule Kanban.Accounts do
   Updates the user password.
 
   Returns a tuple with the updated user, as well as a list of expired tokens.
+  In the same transaction every live mobile device of the user is revoked
+  and its tokens expired; once it commits each device is told to disconnect
+  (`Kanban.Accounts.DeviceSignOut`).
 
   ## Examples
 
@@ -476,8 +480,10 @@ defmodule Kanban.Accounts do
 
         Repo.delete_all(from(t in UserToken, where: t.id in ^Enum.map(tokens_to_expire, & &1.id)))
 
-        {:ok, {user, tokens_to_expire}}
+        # Sign every mobile device out in the same transaction (D459).
+        {:ok, {user, tokens_to_expire, DeviceSignOut.revoke!(user)}}
       end
     end)
+    |> DeviceSignOut.announce()
   end
 end

@@ -151,7 +151,14 @@ However a device is revoked, once the revocation commits Stride:
     devices, from the Members section of the org console (`/org`);
   - `reuse_detected`: an old refresh token, or an authorization code that was
     already redeemed, was presented again (see
-    [POST /oauth/token](post_oauth_token.md)).
+    [POST /oauth/token](post_oauth_token.md));
+  - `password_changed`: the person reset their password or changed it on
+    `/users/settings`. That signs out every device they hold, in the same
+    transaction as the new password, so no old access or refresh token
+    outlives it. The same transaction expires every authorization code the
+    person has not yet redeemed, and a code is issued only while the
+    password the person signed in with is still theirs, so no code issued
+    before or during the change can sign a new device in after it.
 - emits `[:kanban, :device, :revoked]` with the platform and the reason
   ([telemetry](../telemetry.md#mobile-app-events)).
 - broadcasts a `disconnect` on the PubSub topic `device:<id>`, so a socket the

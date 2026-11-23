@@ -2,6 +2,7 @@ defmodule Kanban.AccountsTest do
   use Kanban.DataCase
 
   import Kanban.AccountsFixtures
+  import Kanban.DevicesFixtures
   import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
@@ -9,6 +10,9 @@ defmodule Kanban.AccountsTest do
   alias Kanban.Accounts.PasswordReset
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserToken
+  alias Kanban.Devices
+  alias Kanban.Devices.Device
+  alias Kanban.Devices.Revocation
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
@@ -480,6 +484,58 @@ defmodule Kanban.AccountsTest do
         })
 
       refute Repo.get_by(UserToken, user_id: user.id)
+    end
+
+    test "update_user_password/2 revokes every live device of the user and expires its tokens",
+         %{user: user} do
+      attach_telemetry([:kanban, :device, :revoked])
+      scope = user_scope_fixture(user)
+      {device, issued} = device_with_tokens_fixture(scope)
+      gone = device_fixture(scope, %{name: "Gone"})
+      {:ok, gone} = Devices.revoke_device(scope, gone)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(gone.id))
+
+      assert {:ok, {%User{}, _tokens}} =
+               Accounts.update_user_password(user, %{password: "new valid password"})
+
+      assert Repo.get!(Device, device.id).revoked_by_id == user.id
+      assert {:error, :invalid_token} = Devices.fetch_by_access_token(issued.access_token)
+      assert {:error, :invalid_token} = Devices.rotate_refresh_token(issued.refresh_token)
+
+      topic = Revocation.topic(device.id)
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{reason: :password_changed}}
+
+      # The device revoked before the change is left as it was, unannounced.
+      assert Repo.get!(Device, gone.id).revoked_at == gone.revoked_at
+      gone_topic = Revocation.topic(gone.id)
+      refute_receive %Phoenix.Socket.Broadcast{topic: ^gone_topic}
+    end
+
+    test "a failed password change leaves devices untouched", %{user: user} do
+      attach_telemetry([:kanban, :device, :revoked])
+      {device, issued} = user |> user_scope_fixture() |> device_with_tokens_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Accounts.update_user_password(user, %{password: "too short"})
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+      assert {:ok, %Device{}} = Devices.fetch_by_access_token(issued.access_token)
+      refute_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
+    end
+
+    test "an authorization code issued before the password change cannot sign a device in after it",
+         %{user: user} do
+      code = user |> user_scope_fixture() |> authorization_code_fixture()
+
+      assert {:ok, {%User{}, _tokens}} =
+               Accounts.update_user_password(user, %{password: "new valid password"})
+
+      assert {:error, :invalid_grant} = redeem_authorization_code(code)
+      refute Repo.get_by(Device, user_id: user.id)
     end
   end
 

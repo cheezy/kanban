@@ -10,6 +10,12 @@ defmodule Kanban.Devices.AuthorizationCodes do
   of two redemptions of one code exactly one gets it, and the other waits
   until the first has committed and then sees the code used.
 
+  A password reset or change ends every code of the user's
+  (`expire_unused/2`), and a code is issued only while the password the
+  request signed in with is still the user's, under a share lock on the
+  user row, so a code issued around a password change cannot sign a device
+  in after it (D459).
+
   A code presented again after it was redeemed is a replay (RFC 6749
   §4.1.2, OAuth 2.0 Security BCP §4.2.4): the code leaked. The device the
   first redemption created is found by its token family, which is derived
@@ -35,12 +41,29 @@ defmodule Kanban.Devices.AuthorizationCodes do
   """
   @spec create(Scope.t(), map(), DateTime.t(), keyword()) ::
           {:ok, AuthorizationCode.t()} | {:error, Ecto.Changeset.t()}
-  def create(%Scope{user: %User{id: user_id}} = scope, attrs, now, opts \\ []) do
+  def create(%Scope{user: %User{id: user_id} = user} = scope, attrs, now, opts \\ []) do
     sso_organization_id = SsoExemption.authorized_organization_id(scope, opts[:sso_mark])
 
-    %AuthorizationCode{user_id: user_id, sso_organization_id: sso_organization_id}
-    |> AuthorizationCode.create_changeset(attrs, DateTime.truncate(now, :second))
-    |> Repo.insert()
+    Repo.transact(fn ->
+      %AuthorizationCode{user_id: user_id, sso_organization_id: sso_organization_id}
+      |> AuthorizationCode.create_changeset(attrs, DateTime.truncate(now, :second))
+      |> refuse_after_password_change(user)
+      |> Repo.insert()
+    end)
+  end
+
+  # Locks the user row FOR SHARE, so a password reset or change in flight
+  # commits first, and refuses the code when the password the scope was
+  # loaded with is no longer the user's: the change has already expired
+  # every code it could see, and this one would outlive it.
+  defp refuse_after_password_change(changeset, %User{id: user_id, hashed_password: hashed}) do
+    current =
+      from(u in User, where: u.id == ^user_id, select: u.hashed_password, lock: "FOR SHARE")
+      |> Repo.one()
+
+    if current == hashed,
+      do: changeset,
+      else: Ecto.Changeset.add_error(changeset, :user_id, "changed its password")
   end
 
   @doc """
@@ -112,6 +135,33 @@ defmodule Kanban.Devices.AuthorizationCodes do
   defp redeemable?(code, client_id, now) do
     code.client_id === client_id and DateTime.compare(code.expires_at, now) == :gt and
       is_nil(code.user.disabled_at)
+  end
+
+  @doc """
+  Expires every unused, unexpired code of `user` at `now`, inside the
+  caller's transaction, so none of them can sign a device in afterwards: a
+  password reset or change runs this before it revokes the user's devices.
+
+  The code's expiry is moved back to the second it was issued, which no
+  redemption's clock can precede, rather than to `now`: an exchange that
+  read its clock a second before the change, or on a node whose clock lags,
+  still sees the code expired. It is expired rather than marked used, so
+  presenting it later is an ordinary refusal and never a replay. A redemption in flight holds the
+  code's row lock, so this waits for it to commit and then skips the code
+  it used; the device that redemption created is committed by then, and
+  the revocation that follows in the same transaction sees it.
+  """
+  @spec expire_unused(User.t(), DateTime.t()) :: :ok
+  def expire_unused(%User{id: user_id}, now) do
+    at = DateTime.truncate(now, :second)
+
+    from(c in AuthorizationCode,
+      where: c.user_id == ^user_id and is_nil(c.used_at) and c.expires_at > ^at,
+      update: [set: [expires_at: c.inserted_at]]
+    )
+    |> Repo.update_all([])
+
+    :ok
   end
 
   @doc """
