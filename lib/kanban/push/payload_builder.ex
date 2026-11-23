@@ -11,6 +11,15 @@ defmodule Kanban.Push.PayloadBuilder do
   a decision's `reason` or `first_failed_note`, hook output, code or comment
   text, and it never names the person who acted.
 
+  A title, name or identifier is shown on one line, with control characters
+  replaced by spaces and format characters removed (bidi overrides and
+  isolates, zero-width spaces, direction marks), so it cannot add a line or
+  read differently from what it is. What text needs is kept: the zero-width
+  joiner and non-joiner, emoji tag sequences such as the England flag, and
+  the visible marks some scripts write with a format character. Where a
+  removal would fuse two characters into one, a space keeps them apart, and
+  text with nothing visible left is left out, as an empty title is.
+
   When the recipient's Organization hides titles
   (`Kanban.Organizations.hide_titles?/1`), the title is left out and the text
   names only the kind and the identifier ("W2701 is ready for review"); a
@@ -46,6 +55,19 @@ defmodule Kanban.Push.PayloadBuilder do
   alias Kanban.Push.Payload
 
   @title_max 160
+
+  # Format characters one_line/1 keeps: see the comment there.
+  @kept_format "\\x{200C}\\x{200D}\\x{0600}-\\x{0605}\\x{06DD}\\x{070F}\\x{0890}\\x{0891}" <>
+                 "\\x{08E2}\\x{110BD}\\x{110CD}\\x{13430}-\\x{1343F}"
+  @emoji_tag_sequence "\\x{1F3F4}[\\x{E0020}-\\x{E007E}]+\\x{E007F}"
+  @format_run ~r/#{@emoji_tag_sequence}|(?:(?![#{@kept_format}])\p{Cf})+/u
+  @only_format_run ~r/\A(?:(?![#{@kept_format}])\p{Cf})+\z/u
+
+  # What shows nothing on its own once one_line/1 has stripped: whitespace,
+  # the kept joiners and hieroglyph controls, tag characters, variation
+  # selectors and the other default-ignorable fillers.
+  @not_visible ~r/[\s\x{200C}\x{200D}\x{13430}-\x{1343F}\x{034F}\x{115F}\x{1160}\x{17B4}\x{17B5}\x{180B}-\x{180F}\x{3164}\x{FE00}-\x{FE0F}\x{FFA0}\x{E0000}-\x{E0FFF}]/u
+
   @summary_collapse_id "quiet_hours_summary"
 
   @decision_prefixes %{
@@ -297,20 +319,68 @@ defmodule Kanban.Push.PayloadBuilder do
   defp shown(text) do
     case one_line(text) do
       nil -> nil
-      line -> String.slice(line, 0, @title_max)
+      line -> line |> String.slice(0, @title_max) |> String.trim_trailing() |> visible_line()
     end
   end
 
   # Free text never adds a line of its own: a line break or other control
   # character in a title could otherwise forge a count line in the body.
+  # Format characters (\p{Cf}) are removed, so a bidi override or isolate
+  # (U+202E, U+2066), a zero-width space (U+200B) or a direction mark
+  # (U+200F) cannot make the lock-screen text read differently from the
+  # title. Kept, because they reorder nothing and text needs them: the
+  # zero-width non-joiner and joiner (emoji sequences, Persian), as in
+  # Kanban.Attachments.Filename; the visible prepended concatenation marks
+  # (Arabic number sign, Syriac abbreviation mark, Kaithi number sign);
+  # Egyptian hieroglyph format controls; and a well-formed emoji tag
+  # sequence, which is how the England, Scotland and Wales flags are spelled.
+  # Where removing a run would regroup its neighbours (a skin tone onto the
+  # emoji before it, two regional indicators into a flag, or a lone
+  # indicator re-pairing the flag after it) a space keeps them apart. A title with nothing visible left is treated as
+  # an empty one.
   defp one_line(text) do
     text
+    |> strip_format()
     |> String.replace(~r/[\p{Cc}\p{Zl}\p{Zp}]+/u, " ")
     |> String.trim()
-    |> case do
-      "" -> nil
-      line -> line
+    |> visible_line()
+  end
+
+  defp strip_format(text) do
+    @format_run
+    |> Regex.split(text, include_captures: true)
+    |> Enum.reduce({[], nil, false}, &join_piece/2)
+    |> elem(0)
+    |> Enum.reverse()
+    |> IO.iodata_to_binary()
+  end
+
+  defp join_piece("", acc), do: acc
+
+  defp join_piece(piece, {parts, last, seam?}) do
+    cond do
+      format_run?(piece) -> {parts, last, true}
+      seam? and fuses?(last, piece) -> {[piece, " " | parts], last_grapheme(piece), false}
+      true -> {[piece | parts], last_grapheme(piece), false}
     end
+  end
+
+  defp format_run?(piece), do: String.match?(piece, @only_format_run)
+
+  defp fuses?(nil, _piece), do: false
+
+  # Joining regroups the seam when the two sides no longer split back into
+  # the same two characters: they fuse into one, or a regional indicator
+  # pairs with the one after it instead of standing alone.
+  defp fuses?(last, piece) do
+    {first, _rest} = String.next_grapheme(piece)
+    String.graphemes(last <> first) != [last, first]
+  end
+
+  defp last_grapheme(piece), do: piece |> String.graphemes() |> List.last()
+
+  defp visible_line(line) do
+    if String.replace(line, @not_visible, "") == "", do: nil, else: line
   end
 
   # -- data --------------------------------------------------------------------

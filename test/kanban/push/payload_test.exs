@@ -89,6 +89,14 @@ defmodule Kanban.Push.PayloadTest do
   end
 
   defp build(notification, context), do: PayloadBuilder.build(notification, context)
+
+  defp review_body(title) do
+    build(
+      notification(:review_requested),
+      context(subject: %{identifier: "W2701", title: title})
+    ).body
+  end
+
   defp collapse_id(notification), do: PayloadBuilder.collapse_id(notification)
   defp decision_id(notification), do: PayloadBuilder.decision_id(notification)
 
@@ -281,6 +289,149 @@ defmodule Kanban.Push.PayloadTest do
         )
 
       assert target.title == "Q4 launch is at risk"
+    end
+
+    # D464: a bidi override, isolate, zero-width space or direction mark in a
+    # title would otherwise reach the lock screen, where "Pay" + U+202E +
+    # "invoice" reads as something other than the title.
+    @format_chars [
+      {"U+202E", "\u202E"},
+      {"U+2066", "\u2066"},
+      {"U+200B", "\u200B"},
+      {"U+200F", "\u200F"}
+    ]
+
+    test "a title containing U+202E, U+2066, U+200B or U+200F reaches the push text without it" do
+      for {name, char} <- @format_chars do
+        subject = %{identifier: "W2701#{char}", title: "Pay#{char}invoice"}
+
+        for type <- @push_events -- [:target_status_changed] do
+          payload = build(notification(type), context(subject: subject))
+          text = all_text(payload)
+
+          refute String.contains?(text, char), "#{type} kept #{name}"
+          assert payload.title =~ "W2701"
+          assert payload.body == "Payinvoice", "#{type} body with #{name}"
+        end
+
+        target =
+          build(
+            target_notification("at_risk"),
+            context(subject: %{name: "Q4#{char} launch"})
+          )
+
+        refute target |> all_text() |> String.contains?(char), "target name kept #{name}"
+        assert target.title == "Q4 launch is at risk"
+      end
+    end
+
+    test "a title that is only format characters falls back as an empty title does" do
+      only_format = Enum.map_join(@format_chars, fn {_name, char} -> char end)
+
+      for invisible <- [
+            only_format,
+            "\u200D",
+            " \u200C\u200B\n",
+            "\u2066\u2069",
+            "\uFE0F",
+            "\u{E0101}",
+            "\u3164\u034F",
+            "\u{E0067}\u{E007F}"
+          ] do
+        review =
+          build(
+            notification(:review_requested),
+            context(subject: %{identifier: invisible, title: invisible})
+          )
+
+        assert review.title == "#4812 is ready for review"
+        assert review.body == nil
+
+        target =
+          build(target_notification("at_risk"), context(subject: %{name: invisible}))
+
+        assert target.title == "A target is at risk"
+      end
+    end
+
+    test "ordinary accented, CJK and emoji titles are unchanged" do
+      titles = [
+        "Réviser la façade",
+        "Überprüfung der Größe",
+        "レビュー準備を追加",
+        "添加座位数",
+        "Ship it 🚀",
+        "Family 👨\u200D👩\u200D👧 emoji",
+        "Flag 🏳️\u200D🌈 emoji",
+        "می\u200Cخواهم",
+        "مرحبا بالعالم"
+      ]
+
+      for title <- titles do
+        payload =
+          build(
+            notification(:review_requested),
+            context(subject: %{identifier: "W2701", title: title})
+          )
+
+        assert payload.title == "W2701 is ready for review"
+        assert payload.body == title
+
+        target = build(target_notification("at_risk"), context(subject: %{name: title}))
+        assert target.title == "#{title} is at risk"
+      end
+    end
+
+    # D464: what one_line/1 keeps of the format characters, and why each.
+    test "England, Scotland and Wales flags keep their tag sequence" do
+      england = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}"
+      scotland = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}"
+      wales = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}"
+
+      for flag <- [england, scotland, wales] do
+        assert review_body("Go #{flag} team") == "Go #{flag} team"
+
+        target = build(target_notification("at_risk"), context(subject: %{name: flag}))
+        assert target.title == "#{flag} is at risk"
+      end
+
+      assert review_body("Pay\u{E0041}invoice") == "Payinvoice"
+      assert review_body("\u{1F3F4}\u{E0067}\u{E0062} unterminated") == "\u{1F3F4} unterminated"
+    end
+
+    test "visible prepended marks and hieroglyph controls are kept" do
+      for title <- [
+            "\u0600\u0661\u0662\u0663",
+            "\u06DD\u0661",
+            "\u070F\u0710\u0712",
+            "\u0890\u0661",
+            "\u08E2\u0661",
+            "\u{11083}\u{110BD}\u{11083}",
+            "\u{13000}\u{13430}\u{13001}"
+          ] do
+        assert review_body(title) == title
+      end
+    end
+
+    test "a removed character never fuses its neighbours into one" do
+      assert review_body("Up \u{1F44D}\u200B\u{1F3FD} done") == "Up \u{1F44D} \u{1F3FD} done"
+      assert review_body("\u{1F1FA}\u2060\u{1F1F8} team") == "\u{1F1FA} \u{1F1F8} team"
+      assert review_body("e\u202E\u0301") == "e \u0301"
+
+      # A lone indicator must not re-pair the flag after it: A + US would
+      # otherwise show as the Australian flag and a lone S.
+      assert review_body("\u{1F1E6}\u2060\u{1F1FA}\u{1F1F8}") == "\u{1F1E6} \u{1F1FA}\u{1F1F8}"
+      assert review_body("\u{1F1FA}\u2060\u{1F1F8}\u{1F1EA}") == "\u{1F1FA} \u{1F1F8}\u{1F1EA}"
+
+      assert review_body("\u{1F1FA}\u{1F1F8} \u{1F1E6}\u200B\u{1F1FA}\u{1F1F8}") ==
+               "\u{1F1FA}\u{1F1F8} \u{1F1E6} \u{1F1FA}\u{1F1F8}"
+
+      assert review_body("Pay\u200Binvoice") == "Payinvoice"
+    end
+
+    test "a title cut at the length cap never ends in a space or shows nothing" do
+      assert review_body(String.duplicate("a", 159) <> " tail") == String.duplicate("a", 159)
+      assert review_body(String.duplicate("\u3164", 160) <> "tail") == nil
     end
   end
 

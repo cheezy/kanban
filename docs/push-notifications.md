@@ -113,7 +113,14 @@ is read right after the plan, so a job with no device left never emits
 **What a push shows.** Only the event kind, the identifier, the task or goal
 title, a target's name and date, and the checks passed and failed and tasks
 held up for a decision. A line break in a title or name becomes a space, so
-free text never adds a line to the body. Never review notes, an unclaim reason, hook output,
+free text never adds a line to the body. Format characters (bidi overrides
+and isolates, zero-width spaces, direction marks) are removed, so a title
+cannot read differently from what it is. What text needs is kept: the
+zero-width joiner and non-joiner, emoji tag sequences such as the England
+flag, and the visible marks some scripts write with a format character. Where
+a removal would fuse two characters into one, such as a skin tone onto an
+emoji, a space keeps them apart. A title or name with nothing visible left,
+variation selectors and fillers included, is left out, as an empty one is. Never review notes, an unclaim reason, hook output,
 code, comment text or the name of the person who acted. When the recipient's
 Organization turns on **Hide task titles in push notifications**, the title
 is left out and the push reads, for example, "W2701 is ready for review"; a
