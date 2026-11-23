@@ -57,7 +57,7 @@ defmodule Kanban.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:bcrypt_elixir, "~> 3.0"},
+      {:bcrypt_elixir, "~> 4.0"},
       {:mdex, "~> 0.8"},
       # Server-side diff highlighting (Kanban.Reviews.DiffHighlighter). Only
       # maintained lexers: JavaScript and CSS stay plain (design decision 11).
