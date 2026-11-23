@@ -87,7 +87,11 @@ defmodule KanbanWeb.Endpoint do
     param_key: "request_logger",
     cookie_key: "request_logger"
 
-  plug Plug.MethodOverride
+  # Plug.MethodOverride, skipped on /api, /scim, /oauth/token,
+  # /oauth/revoke and /.well-known so a JSON body's _method cannot change
+  # an API request's verb (D461). Browser forms keep the override. It stays
+  # before Plug.Session and the router, so CSRF handling is unchanged.
+  plug KanbanWeb.Plugs.MethodOverride
   # Records a HEAD before Plug.Head turns it into a GET, so a streaming
   # controller can skip reading a body that would be dropped.
   plug KanbanWeb.Plugs.HeadRequest
