@@ -92,4 +92,50 @@ defmodule KanbanWeb.ErrorHTMLTest do
       assert html =~ "stride-screen"
     end
   end
+
+  # D467: the theme bootstrap is an inline script, so under the nonce'd policy
+  # CspNonce sends it must carry the request's nonce or the browser blocks it.
+  test "error pages put the request's CSP nonce on the theme script" do
+    for status <- ["404", "500", "400", "403"] do
+      html = render_to_string(KanbanWeb.ErrorHTML, status, "html", csp_nonce: "d467-nonce")
+      assert html =~ ~s|<script nonce="d467-nonce">|, status
+
+      html = render_to_string(KanbanWeb.ErrorHTML, status, "html", [])
+      refute html =~ "nonce=", status
+    end
+  end
+
+  # D467: :protect_from_forgery raises InvalidCSRFTokenError inside :browser;
+  # the header plugs run first, in :browser_headers, so the 403 still carries
+  # them. Log-out is a second browser route besides /oauth/authorize.
+  test "renders the CSRF 403 with headers" do
+    {status, headers, body} =
+      assert_error_sent(403, fn ->
+        build_conn()
+        |> Plug.Conn.put_private(:plug_skip_csrf_protection, false)
+        |> delete(~p"/users/log-out")
+      end)
+
+    assert status == 403
+    assert [[_, nonce]] = Regex.scan(~r/<script nonce="([^"]+)"/, body)
+    assert [policy] = for({"content-security-policy", value} <- headers, do: value)
+    assert policy == KanbanWeb.Plugs.CspNonce.policy(nonce)
+    assert {"referrer-policy", "strict-origin-when-cross-origin"} in headers
+    assert {"x-content-type-options", "nosniff"} in headers
+    assert body =~ "Something Went Wrong"
+    refute body =~ "InvalidCSRFTokenError"
+  end
+
+  test "normal page keeps the nonce'd CSP", %{conn: conn} do
+    conn = get(conn, ~p"/users/log-in")
+    nonce = conn.assigns.csp_nonce
+
+    assert html_response(conn, 200) =~ ~s|nonce="#{nonce}"|
+
+    assert get_resp_header(conn, "content-security-policy") == [
+             KanbanWeb.Plugs.CspNonce.policy(nonce)
+           ]
+
+    assert get_resp_header(conn, "x-content-type-options") == ["nosniff"]
+  end
 end

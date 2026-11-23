@@ -1,6 +1,7 @@
 <.error_page
   page_title={gettext("Page Not Found")}
   status_code="404"
+  csp_nonce={assigns[:csp_nonce]}
   heading={gettext("Page Not Found")}
   message={
     gettext(

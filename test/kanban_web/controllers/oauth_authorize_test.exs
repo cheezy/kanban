@@ -657,4 +657,107 @@ defmodule KanbanWeb.OAuthAuthorizeTest do
       assert get_resp_header(conn, "referrer-policy") == ["no-referrer"]
     end
   end
+
+  # D467: :protect_from_forgery raises InvalidCSRFTokenError inside :browser,
+  # and the router re-raises with the conn as it entered that pipeline, so the
+  # browser security headers come from :browser_headers, piped through first.
+  # Phoenix re-raises after rendering, so each refusal is read through
+  # assert_error_sent/2, which returns what the client was sent.
+  describe "CSRF refusals carry the browser security headers (D467)" do
+    test "CSRF refusal carries the security headers", %{conn: conn} do
+      %{conn: conn} = register_and_log_in_user(%{conn: conn})
+
+      sent =
+        assert_error_sent(403, fn ->
+          conn
+          |> enforce_csrf()
+          |> post(~p"/oauth/authorize", Map.put(valid_params(), "decision", "allow"))
+        end)
+
+      assert_browser_security_headers(sent)
+      assert code_count() == 0
+    end
+
+    test "foreign CSRF token refusal carries the headers" do
+      # A real masked token, minted for session A by rendering a page.
+      page_conn = get(build_conn(), ~p"/users/log-in")
+
+      [_, token] =
+        Regex.run(~r/<meta name="csrf-token" content="([^"]+)"/, html_response(page_conn, 200))
+
+      # Control: the token is valid for its own session, so the refusal below
+      # is about the session it is sent with, not a malformed token.
+      own_conn =
+        page_conn
+        |> recycle()
+        |> enforce_csrf()
+        |> post(~p"/oauth/authorize", Map.put(valid_params(), "_csrf_token", token))
+
+      assert redirected_to(own_conn) == ~p"/users/log-in"
+
+      # Session B holds its own CSRF state; A's token does not match it.
+      sent =
+        assert_error_sent(403, fn ->
+          build_conn()
+          |> init_test_session(%{"_csrf_token" => foreign_csrf_state()})
+          |> enforce_csrf()
+          |> post(~p"/oauth/authorize", Map.put(valid_params(), "_csrf_token", token))
+        end)
+
+      {403, _headers, body} = assert_browser_security_headers(sent)
+      refute body =~ token
+    end
+
+    test "sessionless CSRF refusal carries the headers" do
+      sent =
+        assert_error_sent(403, fn ->
+          build_conn()
+          |> enforce_csrf()
+          |> post(~p"/oauth/authorize", Map.put(valid_params(), "decision", "allow"))
+        end)
+
+      assert_browser_security_headers(sent)
+    end
+
+    test "CSRF refusal stays no-store" do
+      {403, headers, _body} =
+        assert_error_sent(403, fn ->
+          build_conn()
+          |> enforce_csrf()
+          |> post(~p"/oauth/authorize", valid_params())
+        end)
+
+      assert {"cache-control", "no-store"} in headers
+    end
+  end
+
+  defp enforce_csrf(conn), do: Plug.Conn.put_private(conn, :plug_skip_csrf_protection, false)
+
+  # A session-side CSRF state of the shape Plug.CSRFProtection stores: 18
+  # random bytes, URL-safe Base64 (24 characters). Fresh, so it matches no
+  # token minted for any other session.
+  defp foreign_csrf_state, do: 18 |> :crypto.strong_rand_bytes() |> Base.url_encode64()
+
+  # The 403 must carry the same nonce'd policy every page gets, with the
+  # nonce its own inline theme script carries, plus Phoenix's secure browser
+  # headers. Nothing from the request or the CSRF state reaches the body.
+  defp assert_browser_security_headers({403, headers, body} = sent) do
+    assert_nonced_policy(headers, body)
+    assert {"referrer-policy", "strict-origin-when-cross-origin"} in headers
+    assert {"x-content-type-options", "nosniff"} in headers
+    assert_no_csrf_detail(body)
+    sent
+  end
+
+  defp assert_nonced_policy(headers, body) do
+    assert [[_, nonce]] = Regex.scan(~r/<script nonce="([^"]+)"/, body)
+    assert [policy] = for({"content-security-policy", value} <- headers, do: value)
+    assert policy == KanbanWeb.Plugs.CspNonce.policy(nonce)
+  end
+
+  defp assert_no_csrf_detail(body) do
+    assert body =~ "403"
+    refute body =~ "_csrf_token"
+    refute body =~ "InvalidCSRFTokenError"
+  end
 end

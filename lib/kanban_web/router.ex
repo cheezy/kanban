@@ -5,6 +5,40 @@ defmodule KanbanWeb.Router do
   import KanbanWeb.UserAuth
   import Phoenix.LiveDashboard.Router
 
+  # Browser security headers (D467). Framework-default headers
+  # (X-Content-Type-Options, Referrer-Policy, etc.; Phoenix 1.8 sends no
+  # X-Frame-Options) plus a placeholder Content-Security-Policy so static
+  # analyzers (Sobelow Config.CSP) see a policy declared here. The placeholder
+  # is intentionally restrictive — `default-src 'self'` plus the
+  # `frame-ancestors 'self'` it replaces from Phoenix's default — so even if
+  # CspNonce somehow fails to fire, the response still ships a defense-grade
+  # CSP rather than no policy at all. CspNonce overwrites this header with the
+  # per-request nonce'd policy via Plug.Conn.put_resp_header (single-value
+  # semantics: last write wins).
+  #
+  # It must be its own pipeline, piped through BEFORE :browser, rather than
+  # plugs inside it, for the same reason as :api_json below: when
+  # :protect_from_forgery in :browser raises
+  # Plug.CSRFProtection.InvalidCSRFTokenError, the router re-raises with the
+  # conn as it ENTERED the failing pipeline, so headers set earlier in that
+  # same pipeline are lost and the 403 page went out with no CSP,
+  # Referrer-Policy or X-Content-Type-Options. Piped first, the headers and
+  # the csp_nonce assign the error page's inline script needs are already on
+  # that conn. Every route that pipes through :browser pipes through this
+  # first; test/kanban_web/browser_headers_pipeline_test.exs enforces it.
+  pipeline :browser_headers do
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "default-src 'self'; frame-ancestors 'self'"
+    }
+
+    plug KanbanWeb.Plugs.CspNonce
+  end
+
+  # Sobelow's Config.Headers flags any html-accepting pipeline without
+  # put_secure_browser_headers. :browser no longer carries it on purpose: the
+  # headers come from :browser_headers above, piped through first on every
+  # :browser route (D467), so the finding is a false positive here.
+  # sobelow_skip ["Config.Headers"]
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -15,23 +49,6 @@ defmodule KanbanWeb.Router do
     plug :fetch_live_flash
     plug :put_root_layout, html: {KanbanWeb.Layouts, :root}
     plug :protect_from_forgery
-
-    # Framework-default security headers (X-Content-Type-Options,
-    # Referrer-Policy, etc.; Phoenix 1.8 sends no X-Frame-Options) plus a
-    # placeholder Content-Security-Policy so static analyzers (Sobelow
-    # Config.CSP) see a policy declared here. The placeholder is
-    # intentionally restrictive — `default-src 'self'` plus the
-    # `frame-ancestors 'self'` it replaces from Phoenix's default — so even if
-    # CspNonce somehow fails to fire later in the pipeline, the response still
-    # ships a defense-grade CSP rather than no policy at all. CspNonce overwrites this header with the per-request
-    # nonce'd policy via Plug.Conn.put_resp_header (single-value semantics:
-    # last write wins).
-    plug :put_secure_browser_headers, %{
-      "content-security-policy" => "default-src 'self'; frame-ancestors 'self'"
-    }
-
-    plug KanbanWeb.Plugs.CspNonce
-
     plug :fetch_current_scope_for_user
     plug KanbanWeb.Plugs.Locale, "en"
     plug KanbanWeb.Plugs.Timezone
@@ -39,8 +56,8 @@ defmodule KanbanWeb.Router do
 
   # Marks a response noindex (W2890): the robots meta tag through the
   # :noindex assign seo_head reads, and an X-Robots-Tag header for crawlers
-  # that never parse the HTML and for bodiless redirects. Piped second, right
-  # after :browser, so a later plug that halts (the log-in redirect, the
+  # that never parse the HTML and for bodiless redirects. Piped right after
+  # :browser, so a later plug that halts (the log-in redirect, the
   # OAuth refusal) still carries it. Never added to :browser itself: public
   # pages stay indexable because noindex is opt-in. A request to crawlers,
   # not access control.
@@ -173,7 +190,7 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/", KanbanWeb do
-    pipe_through [:browser, :put_analytics]
+    pipe_through [:browser_headers, :browser, :put_analytics]
 
     get "/", PageController, :home
     get "/about", PageController, :about
@@ -202,7 +219,7 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/", KanbanWeb do
-    pipe_through :browser
+    pipe_through [:browser_headers, :browser]
 
     post "/locale/:locale", PageController, :set_locale
   end
@@ -214,7 +231,7 @@ defmodule KanbanWeb.Router do
   # prefetch links); the confirmation form POSTs through :browser, so it keeps
   # session, flash and CSRF protection.
   scope "/notifications", KanbanWeb do
-    pipe_through :browser
+    pipe_through [:browser_headers, :browser]
 
     get "/unsubscribe", NotificationUnsubscribeController, :show
     post "/unsubscribe", NotificationUnsubscribeController, :update
@@ -247,7 +264,7 @@ defmodule KanbanWeb.Router do
   # and unsubscribe GETs only render a confirmation (mail scanners prefetch
   # links); their forms POST through :browser, keeping CSRF protection.
   scope "/releases", KanbanWeb do
-    pipe_through :browser
+    pipe_through [:browser_headers, :browser]
 
     post "/subscribe", SubscriberController, :create
     get "/confirm", SubscriberController, :confirm_show
@@ -483,7 +500,7 @@ defmodule KanbanWeb.Router do
     # as long as you are also using SSL (which you should anyway).
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through [:browser_headers, :browser]
 
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
@@ -491,6 +508,7 @@ defmodule KanbanWeb.Router do
 
   scope "/admin" do
     pipe_through [
+      :browser_headers,
       :browser,
       :put_noindex,
       :require_authenticated_user,
@@ -517,6 +535,7 @@ defmodule KanbanWeb.Router do
 
   scope "/admin", KanbanWeb.Admin do
     pipe_through [
+      :browser_headers,
       :browser,
       :put_noindex,
       :require_authenticated_user,
@@ -561,7 +580,7 @@ defmodule KanbanWeb.Router do
   # settings page to enroll, so enforcing it here would loop. The banner hook
   # still shows them the requirement.
   scope "/", KanbanWeb do
-    pipe_through [:browser, :put_noindex, :require_authenticated_user]
+    pipe_through [:browser_headers, :browser, :put_noindex, :require_authenticated_user]
 
     # Account settings mutate the credentials themselves (password, email), so
     # they sit behind a re-authentication (sudo) gate rather than a plain
@@ -589,6 +608,7 @@ defmodule KanbanWeb.Router do
 
   scope "/", KanbanWeb do
     pipe_through [
+      :browser_headers,
       :browser,
       :put_noindex,
       :require_authenticated_user,
@@ -719,6 +739,7 @@ defmodule KanbanWeb.Router do
 
   scope "/", KanbanWeb do
     pipe_through [
+      :browser_headers,
       :browser,
       :put_noindex,
       :oauth_authorize,
@@ -734,6 +755,7 @@ defmodule KanbanWeb.Router do
   # controller re-declares the plug as defense in depth.
   scope "/org", KanbanWeb do
     pipe_through [
+      :browser_headers,
       :browser,
       :put_noindex,
       :require_authenticated_user,
@@ -748,7 +770,7 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/", KanbanWeb do
-    pipe_through [:browser]
+    pipe_through [:browser_headers, :browser]
 
     live_session :current_user,
       on_mount: [

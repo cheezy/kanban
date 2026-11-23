@@ -165,7 +165,7 @@ defmodule KanbanWeb.NotificationUnsubscribeControllerTest do
       route =
         Phoenix.Router.route_info(KanbanWeb.Router, "POST", "/notifications/unsubscribe", "")
 
-      assert route.pipe_through == [:browser]
+      assert route.pipe_through == [:browser_headers, :browser]
 
       # Without a CSRF token the request is rejected before the controller
       # runs. (The app has no 403 error template, so the rejection surfaces as

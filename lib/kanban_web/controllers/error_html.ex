@@ -68,6 +68,7 @@ defmodule KanbanWeb.ErrorHTML do
       status_code={@status_code}
       heading={@heading}
       message={@message}
+      csp_nonce={assigns[:csp_nonce]}
     >
       <:icon>
         <div
@@ -85,6 +86,14 @@ defmodule KanbanWeb.ErrorHTML do
   attr :status_code, :string, required: true
   attr :heading, :string, required: true
   attr :message, :string, required: true
+
+  # The nonce CspNonce assigned to the request, when the error is raised after
+  # :browser_headers ran (a CSRF 403, or an error inside a browser route). The
+  # response then carries the nonce'd policy, so the inline theme script must
+  # carry the same nonce or the browser blocks it (D467). nil when no nonce
+  # was assigned (an unrouted 404, a parse error before the router): those
+  # responses carry no policy that would block the script.
+  attr :csp_nonce, :string, default: nil
   slot :icon, required: true
 
   def error_page(assigns) do
@@ -109,7 +118,7 @@ defmodule KanbanWeb.ErrorHTML do
              the toggle machinery (no data-theme-choice, no phx:set-theme /
              matchMedia listeners) since they are one-shot and carry no theme
              switcher. --%>
-        <script nonce={assigns[:csp_nonce]}>
+        <script nonce={@csp_nonce}>
           (() => {
             const stored = localStorage.getItem("phx:theme");
             const systemDark =

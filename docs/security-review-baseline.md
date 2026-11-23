@@ -74,7 +74,8 @@ each route sits behind, are the single most important fact for the authz reviews
 
 | Pipeline | Plugs (security-relevant) | Trust level |
 |----------|---------------------------|-------------|
-| `:browser` | `fetch_session`, `protect_from_forgery` (CSRF), `put_secure_browser_headers` (with placeholder `default-src 'self'; frame-ancestors 'self'` CSP), `CspNonce` (its policy also ends in `frame-ancestors 'self'`: Phoenix 1.8 sends no X-Frame-Options, so the replaced default's anti-framing rule is restated), `fetch_current_scope_for_user`, `Locale` | Session-cookie auth; CSRF-protected |
+| `:browser_headers` | `put_secure_browser_headers` (with placeholder `default-src 'self'; frame-ancestors 'self'` CSP), `CspNonce` (its policy also ends in `frame-ancestors 'self'`: Phoenix 1.8 sends no X-Frame-Options, so the replaced default's anti-framing rule is restated) | Piped through first by every `:browser` route, ahead of `:browser` (D467). It must be its own pipeline: `protect_from_forgery` raises inside `:browser`, the router re-raises with the conn as it entered that pipeline, so headers set inside `:browser` were lost and the CSRF 403 page went out with no CSP, Referrer-Policy or X-Content-Type-Options. `test/kanban_web/browser_headers_pipeline_test.exs` enforces the order. `:browser` carries a `sobelow_skip ["Config.Headers"]` because of the move |
+| `:browser` | `fetch_session`, `protect_from_forgery` (CSRF), `fetch_current_scope_for_user`, `Locale` | Session-cookie auth; CSRF-protected |
 | `:api_json` | `put_format "json"` only (D351) | Piped through first by both `/api` scopes, ahead of `:api` / `:api_public`. It pins the response format so a rejected `Accept` header renders a 406 through `ErrorJSON` (fixed `error` + `message`, no echo) instead of crashing in `ErrorHTML`. It must be its own pipeline: the router re-raises with the conn as it entered the failing pipeline, so a pin inside `:api` would be lost. Never on `:browser` |
 | `:api` | `accepts ["json"]`, `ApiTelemetry`, **`AuthenticateApiToken`** | Bearer-token auth (the agent surface). The 406 from `accepts` fires before `AuthenticateApiToken`, so it reveals nothing about token validity, and before `ApiTelemetry`, so 406s are not counted in API telemetry |
 | `:api_public` | `accepts ["json"]`, `ApiTelemetry` | **Unauthenticated** — only `/api/agent/onboarding` and `/api/openapi.json` |
@@ -173,7 +174,7 @@ Each domain review below has a concrete, non-exhaustive starting file list.
 - **Verify held:** metric-param allow-list (W1431/W1432).
 
 ### W1596 — XSS, output encoding & CSP
-- `lib/kanban_web/plugs/csp_nonce.ex` + router `put_secure_browser_headers`.
+- `lib/kanban_web/plugs/csp_nonce.ex` + router `put_secure_browser_headers` (both in the `:browser_headers` pipeline).
 - `raw/1` sinks: `lib/kanban_web/components/review_report_panel.ex`, `lib/kanban_web/live/resources_live/components.ex` (user-content-adjacent); `metrics_pdf_html/*.heex`, `page_html/{changelog,workflows}.html.heex` (server-controlled — lower priority, still confirm).
 - `lib/kanban_web/review_report_helpers.ex` — diff/report rendering.
 

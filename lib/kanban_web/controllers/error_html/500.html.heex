@@ -1,6 +1,7 @@
 <.error_page
   page_title={gettext("Internal Server Error")}
   status_code="500"
+  csp_nonce={assigns[:csp_nonce]}
   heading={gettext("Internal Server Error")}
   message={
     gettext(

@@ -75,7 +75,31 @@ shows the status code and fixed text only: nothing from the request (query
 string, headers, body) or the exception reaches it.
 
 To give a status its own page, add `error_html/<status>.html.heex` that calls
-`<.error_page>`; a template always wins over the fallback.
+`<.error_page>` and passes it `csp_nonce={assigns[:csp_nonce]}`; a template
+always wins over the fallback.
+
+### Security headers on browser error pages
+
+A browser POST with a missing, malformed or foreign CSRF token is refused by
+`:protect_from_forgery` in the `:browser` pipeline, which raises
+`Plug.CSRFProtection.InvalidCSRFTokenError`. That renders as a 403 through the
+`render/2` fallback (Something Went Wrong), in the default locale, before any
+controller runs. The body shows nothing from the request or the CSRF state.
+
+The router re-raises an exception with the conn as it entered the failing
+pipeline, so anything a plug inside `:browser` had set is lost. For that
+reason the browser security headers live in their own `:browser_headers`
+pipeline, piped through before `:browser` on every browser route (D467). A CSRF
+403, or any other error raised inside a browser route, therefore carries
+`put_secure_browser_headers`' headers (`referrer-policy`,
+`x-content-type-options` and the rest) and `KanbanWeb.Plugs.CspNonce`'s nonce'd
+`content-security-policy`, the same policy every page gets.
+
+That policy only admits inline scripts that carry the request's nonce, so
+`error_page/1` takes a `csp_nonce` attribute and puts it on the theme
+bootstrap script. Every caller passes `assigns[:csp_nonce]`. An error raised
+before the router (a malformed query string, an unrouted 404) has no nonce and
+no policy, and the script carries no `nonce` attribute.
 
 ## `/api` bodies (`KanbanWeb.ErrorJSON`)
 
@@ -182,5 +206,7 @@ unrouted 404 is tested with a plain `get/2`.
 The tests for this behaviour are in
 `test/kanban_web/controllers/api/pre_router_errors_test.exs`,
 `test/kanban_web/controllers/api/not_acceptable_test.exs`,
-`test/kanban_web/controllers/error_html_test.exs` and
-`test/kanban_web/controllers/error_json_test.exs`.
+`test/kanban_web/controllers/error_html_test.exs`,
+`test/kanban_web/controllers/error_json_test.exs` and, for the CSRF 403's
+headers, `test/kanban_web/controllers/oauth_authorize_test.exs` and
+`test/kanban_web/browser_headers_pipeline_test.exs`.
