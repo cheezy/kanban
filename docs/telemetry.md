@@ -1017,8 +1017,9 @@ sign-in and revocation events. They are declared in
   `/users/settings`), `:org_admin` (an Organization admin revoked it from the
   org console's Members section), `:reuse_detected` (an old refresh token,
   or an authorization code that was already redeemed, was presented again)
-  or `:password_changed` (the person reset or changed their password, which
-  signs every device out).
+  `:password_changed` (the person reset or changed their password, which
+  signs every device out) or `:account_disabled` (a site admin disabled the
+  account, or SCIM deprovisioning did, which signs every device out for good).
   `reason` is its only tag. Neither carries the
   device's name, a token, a user or an id: the `:device_signed_in` and
   `:device_revoked` audit rows record who and which device, so neither event
@@ -1694,7 +1695,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :audit_stream_cursors_reseeded]` | event, legacy | `count` | `user_id`, `organization_id`, `destinations` | An operator's release command re-seeded the Organization's streaming cursors after a database move. destinations is how many were re-seeded; user_id is not set. |
 | `[:kanban, :audit, :device_signed_in]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `platform`, `device_class`, `app_version` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform, device_class and app_version are what the app reported. |
 | `[:kanban, :audit, :device_refresh_reuse_detected]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id` | A device's used refresh token was presented again, the sign of a stolen token, so Stride revoked the device and expired all of its tokens. |
-| `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it), reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again) or password_changed (the person reset or changed their password, which signs every device out). user_id is who revoked it, or the device's owner on a reuse_detected row; device_user_id is whose device it was. |
+| `[:kanban, :audit, :device_revoked]` | event, legacy | `count` | `user_id`, `organization_id`, `device_id`, `device_user_id`, `reason` | A device was revoked and its tokens expired. reason is sign_out (the app signed itself out), user (the person revoked it), org_admin (an Organization admin revoked it), reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again), password_changed (the person reset or changed their password, which signs every device out) or account_disabled (a site admin disabled the account, or SCIM deprovisioning did, which signs every device out for good). user_id is who revoked it, or no one on a SCIM account_disabled row, or the device's owner on a reuse_detected row; device_user_id is whose device it was. |
 | `[:kanban, :audit, :feature_flag_enabled]` | event, legacy | `count` | `user_id`, `flag`, `target_user_id`, `scope` | A site admin turned a feature flag on at /admin/feature-flags. flag is its name; scope is user (target_user_id is whose gate was added) or everyone (target_user_id is not set). |
 | `[:kanban, :audit, :feature_flag_disabled]` | event, legacy | `count` | `user_id`, `flag`, `target_user_id`, `scope` | A site admin turned a feature flag off at /admin/feature-flags. flag is its name; scope is user (target_user_id is whose gate was removed) or everyone (the everyone gate was turned off and every user's own gate kept; target_user_id is not set). |
 | `[:kanban, :audit, :review_approved]` | event, legacy | `count` | `user_id`, `organization_id`, `task_id`, `identifier`, `board_id`, `via`, `device_id`, `device_class`, `app_version`, `approval_key`, `files`, `changed_lines` | A reviewer approved a task, on the web or in the app. via is web, ios or android; device_id, device_class and app_version are set only for the app; approval_key is true when the device's approval signature was verified; files and changed_lines are the change size. Review notes and titles are never recorded. |
@@ -1749,7 +1750,7 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :device, :signed_in]` | event | `count` | `platform`, `device_class` | A phone or tablet signed in: POST /oauth/token redeemed an authorization code and created the device. platform is ios or android, device_class phone or tablet; never the device's name. |
-| `[:kanban, :device, :revoked]` | event | `count` | `platform`, `reason` | A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin, :reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again) or :password_changed (the person reset or changed their password). Never the device's name or an id. |
+| `[:kanban, :device, :revoked]` | event | `count` | `platform`, `reason` | A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin, :reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again) or :password_changed (the person reset or changed their password) or :account_disabled (a site admin or SCIM deprovisioning disabled the account). Never the device's name or an id. |
 
 ### Domain `digest`
 

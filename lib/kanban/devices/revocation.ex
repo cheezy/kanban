@@ -25,8 +25,10 @@ defmodule Kanban.Devices.Revocation do
   The reasons are `:sign_out` (the app signed itself out), `:user` (the
   person revoked it from another device or the web), `:org_admin` (an
   Organization admin revoked a member's device), `:reuse_detected` (an
-  old refresh token was presented again) and `:password_changed` (the
-  person reset or changed their password, which signs every device out).
+  old refresh token was presented again), `:password_changed` (the
+  person reset or changed their password, which signs every device out) and
+  `:account_disabled` (a site admin disabled the account, or SCIM
+  deprovisioning did, which signs every device out for good).
   """
 
   import Ecto.Query, warn: false
@@ -39,13 +41,14 @@ defmodule Kanban.Devices.Revocation do
   alias Kanban.Devices.DeviceToken
   alias Kanban.Repo
 
-  @reasons [:sign_out, :user, :org_admin, :reuse_detected, :password_changed]
+  @reasons [:sign_out, :user, :org_admin, :reuse_detected, :password_changed, :account_disabled]
 
   # The reasons a person can give for revoking one of their own devices.
   @own_reasons [:sign_out, :user]
 
   @typedoc "Why a device was revoked."
-  @type reason :: :sign_out | :user | :org_admin | :reuse_detected | :password_changed
+  @type reason ::
+          :sign_out | :user | :org_admin | :reuse_detected | :password_changed | :account_disabled
 
   @typedoc "A revocation inside a transaction: whether it changed the device."
   @type locked_result :: {:ok, {:revoked | :unchanged, Device.t()}} | {:error, :not_found}

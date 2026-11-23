@@ -143,4 +143,99 @@ defmodule Kanban.Accounts.DeviceSignOutTest do
       refute_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
     end
   end
+
+  describe "Devices.revoke_all_for_user/3 (D465)" do
+    test "revokes every live device by the given revoker and expires unused codes",
+         %{scope: scope} do
+      {device, issued} = device_with_tokens_fixture(scope)
+      code = authorization_code_fixture(scope)
+      admin = user_fixture()
+
+      assert {:ok, [%Device{} = revoked]} = Devices.revoke_all_for_user(scope.user, admin.id)
+
+      assert revoked.id == device.id
+      assert revoked.revoked_by_id == admin.id
+      assert {:error, :invalid_token} = Devices.fetch_by_access_token(issued.access_token)
+
+      assert {:error, :invalid_grant} =
+               Devices.consume_authorization_code(code.code, code.client_id)
+    end
+
+    test "records no revoker when given nil", %{scope: scope} do
+      device = device_fixture(scope)
+
+      assert {:ok, [%Device{revoked_by_id: nil}]} = Devices.revoke_all_for_user(scope.user, nil)
+      assert Repo.get!(Device, device.id).revoked_at
+    end
+  end
+
+  describe "Devices.announce_signed_out/4 (D465)" do
+    test "announces each device with the given reason", %{scope: scope} do
+      device = device_fixture(scope)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+      assert Devices.announce_signed_out(scope.user, [device], nil, :account_disabled) == :ok
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{reason: :account_disabled}}
+    end
+  end
+
+  describe "revoke!/2 (D465)" do
+    test "records the given revoker inside a transaction", %{scope: scope} do
+      device = device_fixture(scope)
+      admin = user_fixture()
+
+      assert {:ok, [%Device{id: id, revoked_by_id: revoked_by_id}]} =
+               Repo.transact(fn -> {:ok, DeviceSignOut.revoke!(scope.user, admin.id)} end)
+
+      assert id == device.id
+      assert revoked_by_id == admin.id
+    end
+  end
+
+  describe "revoke_stale!/2 (D465)" do
+    test "revokes the devices of a disabled account by the given revoker", %{scope: scope} do
+      device = device_fixture(scope)
+      admin = user_fixture()
+      disabled = %{scope.user | disabled_at: DateTime.utc_now(:second)}
+
+      assert {:ok, [%Device{id: id, revoked_by_id: revoked_by_id}]} =
+               Repo.transact(fn -> {:ok, DeviceSignOut.revoke_stale!(disabled, admin.id)} end)
+
+      assert id == device.id
+      assert revoked_by_id == admin.id
+    end
+
+    test "keeps the devices of an account that is not disabled", %{scope: scope} do
+      device = device_fixture(scope)
+
+      assert DeviceSignOut.revoke_stale!(scope.user, nil) == []
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+    end
+  end
+
+  describe "announce_disabled/2 (D465)" do
+    test "announces the devices with reason :account_disabled and returns the user",
+         %{scope: scope} do
+      device = device_fixture(scope)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+      assert DeviceSignOut.announce_disabled({:ok, {scope.user, [device]}}, nil) ==
+               {:ok, scope.user}
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{reason: :account_disabled}}
+    end
+
+    test "passes an error through and announces nothing" do
+      assert DeviceSignOut.announce_disabled({:error, :last_org_admin}, 1) ==
+               {:error, :last_org_admin}
+
+      refute_receive {:telemetry_event, [:kanban, :device, :revoked], _, _}
+    end
+  end
 end

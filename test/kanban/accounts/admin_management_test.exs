@@ -5,7 +5,9 @@ defmodule Kanban.Accounts.AdminManagementTest do
   import Ecto.Query
   import ExUnit.CaptureLog
   import Kanban.BoardsFixtures
+  import Kanban.DevicesFixtures
   import Kanban.OrganizationsFixtures
+  import Kanban.SCIMFixtures
   import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
 
@@ -17,6 +19,10 @@ defmodule Kanban.Accounts.AdminManagementTest do
   alias Kanban.AuditLog
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.Devices
+  alias Kanban.Devices.Device
+  alias Kanban.Devices.Revocation
+  alias Kanban.SCIM.Lifecycle
   alias Kanban.SCIM.UserLink
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Workspace
@@ -970,6 +976,175 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
       assert Accounts.reactivate_in_organization(disabled, ctx.organization.id) ==
                {:error, :user_disabled}
+    end
+  end
+
+  describe "disabling an account revokes the user's devices (D465)" do
+    setup do
+      attach_telemetry([:kanban, :device, :revoked])
+      user = user_fixture()
+      %{user: user, scope: user_scope_fixture(user), admin: admin_fixture()}
+    end
+
+    defp subscribe_device(device),
+      do: Phoenix.PubSub.subscribe(Kanban.PubSub, Revocation.topic(device.id))
+
+    defp assert_tokens_refused(issued) do
+      assert {:error, :invalid_token} = Devices.fetch_by_access_token(issued.access_token)
+      assert {:error, :invalid_token} = Devices.rotate_refresh_token(issued.refresh_token)
+    end
+
+    defp revoked_reasons do
+      AuditLog.list_events(action: "device_revoked")
+      |> Enum.map(&{&1.metadata["device_id"], &1.metadata["reason"], &1.metadata["user_id"]})
+    end
+
+    test "disable_user/2 revokes every live device and expires its tokens", ctx do
+      {first, first_issued} = device_with_tokens_fixture(ctx.scope)
+      {second, second_issued} = device_with_tokens_fixture(ctx.scope, %{name: "Second"})
+      {other, other_issued} = device_with_tokens_fixture(user_scope_fixture())
+
+      assert {:ok, %User{disabled_at: %DateTime{}}} = Accounts.disable_user(ctx.user, ctx.admin)
+
+      for {device, issued} <- [{first, first_issued}, {second, second_issued}] do
+        revoked = Repo.get!(Device, device.id)
+        assert revoked.revoked_at
+        assert revoked.revoked_by_id == ctx.admin.id
+        assert_tokens_refused(issued)
+      end
+
+      assert is_nil(Repo.get!(Device, other.id).revoked_at)
+      assert {:ok, _device} = Devices.fetch_by_access_token(other_issued.access_token)
+    end
+
+    test "enable_user/2 after a disable leaves the old device tokens refused", ctx do
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+      assert {:ok, _device} = Devices.fetch_by_access_token(issued.access_token)
+
+      {:ok, disabled} = Accounts.disable_user(ctx.user, ctx.admin)
+      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(disabled, ctx.admin)
+
+      assert Repo.get!(Device, device.id).revoked_at
+      assert_tokens_refused(issued)
+    end
+
+    test "disable_user/2 broadcasts a disconnect on device:<id> after commit", ctx do
+      {device, _issued} = device_with_tokens_fixture(ctx.scope)
+      subscribe_device(device)
+      refute_received %Phoenix.Socket.Broadcast{}
+
+      assert {:ok, _user} = Accounts.disable_user(ctx.user, ctx.admin)
+
+      topic = Revocation.topic(device.id)
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{reason: :account_disabled}}
+
+      assert revoked_reasons() == [{device.id, "account_disabled", ctx.admin.id}]
+    end
+
+    test "a refused disable leaves the devices untouched and announces nothing", ctx do
+      organization = organization_fixture()
+      organization_member_fixture(organization, ctx.user, :org_admin)
+      organization_member_fixture(organization, user_fixture(), :member)
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+      subscribe_device(device)
+
+      assert {:error, :last_org_admin} = Accounts.disable_user(ctx.user, ctx.admin)
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+      assert {:ok, _device} = Devices.fetch_by_access_token(issued.access_token)
+      refute_received %Phoenix.Socket.Broadcast{}
+      refute_received {:telemetry_event, [:kanban, :device, :revoked], _, _}
+      assert revoked_reasons() == []
+    end
+
+    test "SCIM deprovisioning revokes the user's devices", ctx do
+      organization = organization_fixture()
+      organization_member_fixture(organization, ctx.user)
+      user = manage(ctx.user, organization)
+      {token, _plain} = scim_token_fixture(organization)
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+      subscribe_device(device)
+
+      assert {:ok, {:revoked, _sessions}} = Lifecycle.deprovision(token, user, :deactivated)
+
+      revoked = Repo.get!(Device, device.id)
+      assert revoked.revoked_at
+      assert is_nil(revoked.revoked_by_id)
+      assert_tokens_refused(issued)
+
+      topic = Revocation.topic(device.id)
+      assert_receive %Phoenix.Socket.Broadcast{topic: ^topic, event: "disconnect"}
+
+      assert_receive {:telemetry_event, [:kanban, :device, :revoked], _,
+                      %{reason: :account_disabled}}
+
+      assert revoked_reasons() == [{device.id, "account_disabled", nil}]
+
+      assert {:ok, %{enabled: true}} =
+               Accounts.reactivate_in_organization(user, organization.id)
+
+      assert_tokens_refused(issued)
+    end
+
+    test "SCIM deprovisioning keeps the devices of an account it does not disable", ctx do
+      organization = organization_fixture()
+      organization_member_fixture(organization, ctx.user)
+      {token, _plain} = scim_token_fixture(organization)
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+
+      assert {:ok, {:live, _sessions}} = Lifecycle.deprovision(token, ctx.user, :deactivated)
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+      assert {:ok, _device} = Devices.fetch_by_access_token(issued.access_token)
+    end
+
+    test "enable_user/2 revokes a device left live on an account disabled before D465", ctx do
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+
+      {:ok, disabled} =
+        ctx.user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update()
+
+      subscribe_device(device)
+
+      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(disabled, ctx.admin)
+
+      assert Repo.get!(Device, device.id).revoked_by_id == ctx.admin.id
+      assert_tokens_refused(issued)
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+      assert revoked_reasons() == [{device.id, "account_disabled", ctx.admin.id}]
+    end
+
+    test "enable_user/2 of an account that is not disabled keeps its devices", ctx do
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+
+      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(ctx.user, ctx.admin)
+
+      assert is_nil(Repo.get!(Device, device.id).revoked_at)
+      assert {:ok, _device} = Devices.fetch_by_access_token(issued.access_token)
+      assert revoked_reasons() == []
+    end
+
+    test "SCIM reactivation revokes a device left live on the disabled account", ctx do
+      organization = organization_fixture()
+      organization_member_fixture(organization, ctx.user)
+      user = manage(ctx.user, organization)
+      {token, _plain} = scim_token_fixture(organization)
+      assert {:ok, {:revoked, _sessions}} = Lifecycle.deprovision(token, user, :deactivated)
+      {device, issued} = device_with_tokens_fixture(ctx.scope)
+      subscribe_device(device)
+
+      assert {:ok, %User{disabled_at: nil}} =
+               Lifecycle.reactivate(token, Repo.get!(User, user.id))
+
+      revoked = Repo.get!(Device, device.id)
+      assert revoked.revoked_at
+      assert is_nil(revoked.revoked_by_id)
+      assert_tokens_refused(issued)
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+      assert {device.id, "account_disabled", nil} in revoked_reasons()
     end
   end
 end

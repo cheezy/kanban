@@ -53,7 +53,7 @@ defmodule Kanban.Telemetry.Catalog.DeviceEvents do
       measurements: [:count],
       metadata: [:platform, :reason],
       description:
-        "A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin, :reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again) or :password_changed (the person reset or changed their password). Never the device's name or an id.",
+        "A device was revoked and its tokens expired. platform is ios or android; reason is :sign_out, :user, :org_admin, :reuse_detected (an old refresh token, or an authorization code that was already redeemed, was presented again) or :password_changed (the person reset or changed their password) or :account_disabled (a site admin or SCIM deprovisioning disabled the account). Never the device's name or an id.",
       legacy: false,
       metrics: [counter: :count],
       persist: false,

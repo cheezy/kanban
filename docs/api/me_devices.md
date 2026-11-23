@@ -158,7 +158,16 @@ However a device is revoked, once the revocation commits Stride:
     outlives it. The same transaction expires every authorization code the
     person has not yet redeemed, and a code is issued only while the
     password the person signed in with is still theirs, so no code issued
-    before or during the change can sign a new device in after it.
+    before or during the change can sign a new device in after it;
+  - `account_disabled`: a site admin disabled the account from
+    `/admin/users`, or SCIM deprovisioning disabled an account the
+    Organization manages. That signs out every device the person holds, in
+    the same transaction as the disable, and expires their unredeemed
+    authorization codes. The devices stay revoked, so enabling the account
+    again does not bring any old access or refresh token back. An account
+    disabled before Stride revoked devices on a disable may still hold
+    some, so enabling it, by a site admin or by SCIM, revokes them with
+    the same reason.
 - emits `[:kanban, :device, :revoked]` with the platform and the reason
   ([telemetry](../telemetry.md#mobile-app-events)).
 - broadcasts a `disconnect` on the PubSub topic `device:<id>`, so a socket the

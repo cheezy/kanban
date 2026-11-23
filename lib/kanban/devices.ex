@@ -259,32 +259,50 @@ defmodule Kanban.Devices do
 
   @doc """
   Revokes every live device of `user` at `now` and expires their tokens,
-  recording `user` in `revoked_by_id`, inside the caller's transaction: a
-  password reset or change signs every device out
+  recording `revoked_by_id` (who signed them out, or `nil` for no person),
+  inside the caller's transaction: a password reset or change, or disabling
+  the account, signs every device out
   (`Kanban.Devices.Revocation.revoke_all_locked/3`). It first expires the
   user's unused authorization codes
   (`Kanban.Devices.AuthorizationCodes.expire_unused/2`), so no code issued
-  before the change can sign a new device in after it. Returns the revoked
-  devices, for `announce_password_changed/2` once the transaction commits,
-  or `{:error, changeset}`, on which the caller rolls back.
+  before the sign-out can sign a new device in after it. Returns the revoked
+  devices, for `announce_signed_out/4` once the transaction commits, or
+  `{:error, changeset}`, on which the caller rolls back.
   """
-  @spec revoke_all_for_password_change(User.t(), DateTime.t()) ::
+  @spec revoke_all_for_user(User.t(), pos_integer() | nil, DateTime.t()) ::
           {:ok, [Device.t()]} | {:error, Ecto.Changeset.t()}
-  def revoke_all_for_password_change(%User{id: user_id} = user, now \\ DateTime.utc_now()) do
+  def revoke_all_for_user(%User{} = user, revoked_by_id, now \\ DateTime.utc_now()) do
     now = truncate(now)
     :ok = AuthorizationCodes.expire_unused(user, now)
-    Revocation.revoke_all_locked(user, user_id, now)
+    Revocation.revoke_all_locked(user, revoked_by_id, now)
   end
 
   @doc """
-  Announces the devices `revoke_all_for_password_change/2` revoked, with
-  reason `:password_changed`, once the password change has committed: the
+  `revoke_all_for_user/3` for a password reset or change, recording `user`
+  in `revoked_by_id`.
+  """
+  @spec revoke_all_for_password_change(User.t(), DateTime.t()) ::
+          {:ok, [Device.t()]} | {:error, Ecto.Changeset.t()}
+  def revoke_all_for_password_change(%User{id: user_id} = user, now \\ DateTime.utc_now()),
+    do: revoke_all_for_user(user, user_id, now)
+
+  @doc """
+  Announces the devices `revoke_all_for_user/3` revoked, with `reason`
+  (`:password_changed` or `:account_disabled`) and `revoked_by_id` as the
+  audit row's `user_id`, once the transaction has committed: the
   `:device_revoked` audit row, `[:kanban, :device, :revoked]` and the
   `"disconnect"` broadcast that closes each device's socket.
   """
+  @spec announce_signed_out(User.t(), [Device.t()], pos_integer() | nil, Revocation.reason()) ::
+          :ok
+  def announce_signed_out(%User{} = user, devices, revoked_by_id, reason)
+      when is_list(devices) and reason in [:password_changed, :account_disabled],
+      do: Revocation.announce_all(devices, owner: user, user_id: revoked_by_id, reason: reason)
+
+  @doc "`announce_signed_out/4` for a password reset or change, by `user`."
   @spec announce_password_changed(User.t(), [Device.t()]) :: :ok
-  def announce_password_changed(%User{id: user_id} = user, devices) when is_list(devices),
-    do: Revocation.announce_all(devices, owner: user, user_id: user_id, reason: :password_changed)
+  def announce_password_changed(%User{id: user_id} = user, devices),
+    do: announce_signed_out(user, devices, user_id, :password_changed)
 
   @doc """
   Gets one of the scope user's devices by id, revoked or not. Another

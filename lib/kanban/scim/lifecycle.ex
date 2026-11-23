@@ -9,9 +9,11 @@ defmodule Kanban.SCIM.Lifecycle do
   deprovisioned, so the same Organization can still read and re-activate
   them, and a deleted user's link is detached, so they are no longer found.
   When the deprovisioning disables a managed account, the link records the
-  `disabled_at` it set, so only SCIM's own disable is ever reversed by SCIM.
-  Once committed, open board pages are told to re-read the user's access and
-  the change is audited with the token's id.
+  `disabled_at` it set, so only SCIM's own disable is ever reversed by SCIM,
+  and every device of the account is revoked for good
+  (`Kanban.Devices.revoke_all_for_user/3`), so a re-activation revives none.
+  Once committed, the devices' sockets are closed, open board pages are told
+  to re-read the user's access and the change is audited with the token's id.
 
   The caller disconnects the returned session tokens: those of a disabled
   account were deleted and are revoked for good
@@ -23,6 +25,7 @@ defmodule Kanban.SCIM.Lifecycle do
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
+  alias Kanban.Devices
   alias Kanban.Repo
   alias Kanban.SCIM.ScimToken
   alias Kanban.SCIM.UserLink
@@ -50,13 +53,18 @@ defmodule Kanban.SCIM.Lifecycle do
   end
 
   defp deprovision_and_mark(organization_id, user, reason) do
-    with {:ok, result} <- Accounts.deprovision_from_organization(user, organization_id) do
+    with {:ok, result} <- Accounts.deprovision_from_organization(user, organization_id),
+         {:ok, devices} <- revoke_devices(user, result) do
       {:ok, _link} = UserLink.upsert(organization_id, user.id, :keep)
       :ok = record_disable(organization_id, user.id, result.disabled_at)
       :ok = update_link(organization_id, user.id, reason)
-      {:ok, result}
+      {:ok, Map.put(result, :devices, devices)}
     end
   end
+
+  # A disabled account's devices are revoked by no person: the token did it.
+  defp revoke_devices(user, %{disabled: true}), do: Devices.revoke_all_for_user(user, nil)
+  defp revoke_devices(_user, _result), do: {:ok, []}
 
   defp record_disable(_organization_id, _user_id, nil), do: :ok
 
@@ -70,6 +78,7 @@ defmodule Kanban.SCIM.Lifecycle do
     do: UserLink.detach(organization_id, user_id)
 
   defp report({:ok, result}, token, user, reason) do
+    :ok = Devices.announce_signed_out(user, result.devices, nil, :account_disabled)
     MembershipCascade.broadcast_removed(result.removed)
     MembershipCascade.notify_derived_access_ended(user.id, token.organization_id)
 
@@ -90,7 +99,7 @@ defmodule Kanban.SCIM.Lifecycle do
   @doc """
   Re-activates `user` in the token's Organization: restores a `:member`
   membership and re-enables an account the Organization manages, without
-  restoring revoked tokens.
+  restoring revoked tokens, and closes the sockets of any device it revoked.
 
   An account the Organization does not manage is re-linked only while its
   email is on one of the Organization's verified domains, the same gate as
@@ -105,7 +114,9 @@ defmodule Kanban.SCIM.Lifecycle do
           | {:error, :domain_not_verified | :user_disabled | :membership_conflict | :not_found}
   def reactivate(%ScimToken{organization_id: organization_id} = token, %User{} = user) do
     with :ok <- check_domain(user, organization_id),
-         {:ok, %{user: user}} <- Accounts.reactivate_in_organization(user, organization_id) do
+         {:ok, %{user: user, devices: devices}} <-
+           Accounts.reactivate_in_organization(user, organization_id) do
+      :ok = Devices.announce_signed_out(user, devices, nil, :account_disabled)
       relink_reactivated(token, user)
     end
   end

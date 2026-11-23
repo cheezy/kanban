@@ -18,8 +18,9 @@ defmodule Kanban.Accounts.AdminManagement do
   (`Kanban.Organizations.ensure_not_last_working_org_admin/1`) runs in the
   same transaction as the write, under the Organization's row lock.
 
-  Disabling a user does not close their open pages by itself: the caller
-  disconnects them with `KanbanWeb.UserAuth.disconnect_live_sessions/1` and
+  Disabling a user revokes every device they signed in, so enabling them
+  again revives none (`Kanban.Accounts.DeviceSignOut`), but leaves their open
+  pages to the caller: `KanbanWeb.UserAuth.disconnect_live_sessions/1` and
   `Kanban.Accounts.list_session_tokens/1`.
 
   SCIM provisioning (W2247) ends and restores an account's place in an
@@ -33,6 +34,7 @@ defmodule Kanban.Accounts.AdminManagement do
 
   alias Kanban.Accounts
   alias Kanban.Accounts.AccountDeletion
+  alias Kanban.Accounts.DeviceSignOut
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
@@ -98,18 +100,19 @@ defmodule Kanban.Accounts.AdminManagement do
       not authorized_admin?(current_user) -> {:error, :unauthorized}
       user.id == current_user.id -> {:error, :cannot_disable_self}
       last_admin?(user) -> {:error, :last_admin}
-      true -> user |> do_disable() |> UserTelemetry.disabled(user, current_user)
+      true -> user |> do_disable(current_user) |> UserTelemetry.disabled(user, current_user)
     end
   end
 
-  defp do_disable(user) do
+  defp do_disable(user, %User{id: admin_id}) do
     Repo.transact(fn ->
       with :ok <- Organizations.ensure_not_last_working_org_admin(user),
            {:ok, user} <-
-             user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update() do
-        forget_scim_disable(user)
-      end
+             user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update(),
+           {:ok, user} <- forget_scim_disable(user),
+           do: {:ok, {user, DeviceSignOut.revoke!(user, admin_id)}}
     end)
+    |> DeviceSignOut.announce_disabled(admin_id)
   end
 
   # A site admin's disable or enable supersedes SCIM's, so SCIM never
@@ -141,18 +144,19 @@ defmodule Kanban.Accounts.AdminManagement do
   """
   def enable_user(%User{} = user, %User{} = current_user) do
     if authorized_admin?(current_user) do
-      user |> do_enable() |> UserTelemetry.enabled(user, current_user)
+      user |> do_enable(current_user) |> UserTelemetry.enabled(user, current_user)
     else
       {:error, :unauthorized}
     end
   end
 
-  defp do_enable(user) do
+  defp do_enable(user, %User{id: admin_id}) do
     Repo.transact(fn ->
-      with {:ok, user} <- user |> User.disabled_changeset(nil) |> Repo.update() do
-        forget_scim_disable(user)
-      end
+      with {:ok, enabled} <- user |> User.disabled_changeset(nil) |> Repo.update(),
+           {:ok, enabled} <- forget_scim_disable(enabled),
+           do: {:ok, {enabled, DeviceSignOut.revoke_stale!(user, admin_id)}}
     end)
+    |> DeviceSignOut.announce_disabled(admin_id)
   end
 
   @doc """
@@ -374,8 +378,8 @@ defmodule Kanban.Accounts.AdminManagement do
   enabled again, and the user gets a `:member` membership (an org-admin keeps
   their role). Revoked tokens stay revoked and deleted sessions stay deleted.
 
-  Returns `{:ok, %{user: user, enabled: enabled}}`, or changes nothing and
-  returns `{:error, reason}`:
+  Returns `{:ok, %{user: user, enabled: enabled, devices: revoked_devices}}`,
+  or changes nothing and returns `{:error, reason}`:
 
     * `:user_disabled` - the account is disabled and this Organization does
       not manage it, or it is a site admin
@@ -385,7 +389,7 @@ defmodule Kanban.Accounts.AdminManagement do
   Membership telemetry is emitted once the transaction has committed.
   """
   @spec reactivate_in_organization(User.t(), integer()) ::
-          {:ok, %{user: User.t(), enabled: boolean()}}
+          {:ok, %{user: User.t(), enabled: boolean(), devices: list()}}
           | {:error, :user_disabled | :membership_conflict | :not_found}
   def reactivate_in_organization(%User{id: user_id}, organization_id)
       when is_integer(organization_id) do
@@ -396,10 +400,10 @@ defmodule Kanban.Accounts.AdminManagement do
 
   defp reactivate_locked(user_id, organization_id) do
     with :ok <- MembershipWrites.lock_organization(organization_id),
-         {:ok, user} <- lock_user(user_id),
-         {:ok, user, enabled} <- enable_if_managed(user, organization_id),
+         {:ok, locked} <- lock_user(user_id),
+         {:ok, user, enabled} <- enable_if_managed(locked, organization_id),
          {:ok, _membership} <- rejoin_organization(user, organization_id) do
-      {:ok, %{user: user, enabled: enabled}}
+      {:ok, %{user: user, enabled: enabled, devices: DeviceSignOut.revoke_stale!(locked, nil)}}
     end
   end
 

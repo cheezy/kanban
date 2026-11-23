@@ -20,13 +20,14 @@ defmodule Kanban.Devices.RevocationTest do
     assert Revocation.topic(42) == "device:42"
   end
 
-  test "reasons/0 lists the five reasons" do
+  test "reasons/0 lists the six reasons" do
     assert Revocation.reasons() == [
              :sign_out,
              :user,
              :org_admin,
              :reuse_detected,
-             :password_changed
+             :password_changed,
+             :account_disabled
            ]
   end
 
