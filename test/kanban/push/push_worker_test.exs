@@ -25,7 +25,9 @@ defmodule Kanban.Push.PushWorkerTest do
   alias Kanban.Devices.Device
   alias Kanban.Notifications
   alias Kanban.Organizations.SecurityPolicies
+  alias Kanban.Push.APNs
   alias Kanban.Push.APNsMock
+  alias Kanban.Push.FCM
   alias Kanban.Push.FCMMock
   alias Kanban.Push.PushWorker
   alias Kanban.Tasks
@@ -164,6 +166,47 @@ defmodule Kanban.Push.PushWorkerTest do
 
       assert_received {:telemetry_event, @sent, %{count: 1},
                        %{platform: :android, event_type: :review_requested}}
+    end
+
+    # D468: a combining-mark flood within the 255-character column is cut by
+    # bytes on a grapheme boundary before it reaches either provider.
+    test "builds an in-limit payload for a flooded title", ctx do
+      ios = ios_device!(ctx)
+      android = android_device!(ctx)
+      grapheme = "a" <> String.duplicate("\u20DD", 66)
+      flooded = String.duplicate(grapheme, 3)
+      task = pending_review!(ctx)
+      {:ok, task} = Tasks.update_task(task, %{title: flooded})
+      n = notify_review!(ctx, task)
+      test_pid = self()
+
+      expect(APNsMock, :send, fn _device, payload -> send(test_pid, {:ios, payload}) && :ok end)
+
+      expect(FCMMock, :send, fn _device, payload -> send(test_pid, {:android, payload}) && :ok end)
+
+      assert :ok = perform(n)
+
+      assert_received {:ios, ios_payload}
+      assert_received {:android, android_payload}
+
+      for payload <- [ios_payload, android_payload] do
+        assert payload.body == String.duplicate(grapheme, 2)
+        assert byte_size(payload.body) <= 512
+      end
+
+      apns = APNs.build_notification(ios, ios_payload, "com.example.app")
+      assert byte_size(Jason.encode!(apns.payload)) < 4_096
+
+      fcm = FCM.build_notification(android, android_payload)
+
+      message = %{
+        token: "t",
+        notification: fcm.notification,
+        data: fcm.data,
+        android: fcm.android
+      }
+
+      assert byte_size(Jason.encode!(%{message: message})) < 4_096
     end
 
     test "a review approved before delivery is held as resolved", ctx do

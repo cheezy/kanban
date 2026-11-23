@@ -20,6 +20,14 @@ defmodule Kanban.Push.PayloadBuilder do
   removal would fuse two characters into one, a space keeps them apart, and
   text with nothing visible left is left out, as an empty title is.
 
+  Each piece is also capped by bytes, because a grapheme has none: one letter
+  can carry thousands of combining marks, and APNs and FCM reject a payload
+  over 4 KB outright. A title or target name keeps at most 160 graphemes and
+  512 bytes, an identifier at most 64 graphemes and 128 bytes. The cut falls
+  between whole graphemes, so it never splits a character or leaves a broken
+  UTF-8 sequence; a grapheme bigger than the cap is dropped whole. Invalid
+  UTF-8 is replaced with U+FFFD before anything else.
+
   When the recipient's Organization hides titles
   (`Kanban.Organizations.hide_titles?/1`), the title is left out and the text
   names only the kind and the identifier ("W2701 is ready for review"); a
@@ -54,7 +62,13 @@ defmodule Kanban.Push.PayloadBuilder do
   alias Kanban.Notifications.Notification
   alias Kanban.Push.Payload
 
+  # Both caps hold: a grapheme has no byte bound, and APNs and FCM reject a
+  # payload over 4,096 bytes. With JSON escaping at most doubling a byte, the
+  # identifier in the title plus a title or name stays well under it.
   @title_max 160
+  @title_max_bytes 512
+  @identifier_max 64
+  @identifier_max_bytes 128
 
   # Format characters one_line/1 keeps: see the comment there.
   @kept_format "\\x{200C}\\x{200D}\\x{0600}-\\x{0605}\\x{06DD}\\x{070F}\\x{0890}\\x{0891}" <>
@@ -301,7 +315,7 @@ defmodule Kanban.Push.PayloadBuilder do
   # A task without an identifier is named by its id, which reads the same in
   # every locale's sentence.
   defp identifier(%{subject: %{identifier: id}}, n) when is_binary(id),
-    do: one_line(id) || fallback_identifier(n)
+    do: capped(id, @identifier_max, @identifier_max_bytes) || fallback_identifier(n)
 
   defp identifier(_context, n), do: fallback_identifier(n)
 
@@ -316,11 +330,34 @@ defmodule Kanban.Push.PayloadBuilder do
   defp target_name(%{subject: %{name: name}}) when is_binary(name), do: shown(name)
   defp target_name(_context), do: nil
 
-  defp shown(text) do
+  defp shown(text), do: capped(text, @title_max, @title_max_bytes)
+
+  defp capped(text, max_graphemes, max_bytes) do
     case one_line(text) do
-      nil -> nil
-      line -> line |> String.slice(0, @title_max) |> String.trim_trailing() |> visible_line()
+      nil ->
+        nil
+
+      line ->
+        line
+        |> take_graphemes(max_graphemes, max_bytes)
+        |> String.trim_trailing()
+        |> visible_line()
     end
+  end
+
+  # The longest run of whole graphemes within both caps. Never binary_part:
+  # a byte offset can fall inside a codepoint or a grapheme.
+  defp take_graphemes(line, max_graphemes, max_bytes) do
+    line
+    |> Stream.unfold(&String.next_grapheme/1)
+    |> Stream.take(max_graphemes)
+    |> Enum.reduce_while({[], 0}, fn grapheme, {kept, size} ->
+      size = size + byte_size(grapheme)
+      if size > max_bytes, do: {:halt, {kept, size}}, else: {:cont, {[grapheme | kept], size}}
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> IO.iodata_to_binary()
   end
 
   # Free text never adds a line of its own: a line break or other control
@@ -337,9 +374,11 @@ defmodule Kanban.Push.PayloadBuilder do
   # Where removing a run would regroup its neighbours (a skin tone onto the
   # emoji before it, two regional indicators into a flag, or a lone
   # indicator re-pairing the flag after it) a space keeps them apart. A title with nothing visible left is treated as
-  # an empty one.
+  # an empty one. Invalid UTF-8 would make the /u regexes raise, so it is
+  # replaced with U+FFFD first.
   defp one_line(text) do
     text
+    |> String.replace_invalid()
     |> strip_format()
     |> String.replace(~r/[\p{Cc}\p{Zl}\p{Zp}]+/u, " ")
     |> String.trim()

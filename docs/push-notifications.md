@@ -120,8 +120,16 @@ zero-width joiner and non-joiner, emoji tag sequences such as the England
 flag, and the visible marks some scripts write with a format character. Where
 a removal would fuse two characters into one, such as a skin tone onto an
 emoji, a space keeps them apart. A title or name with nothing visible left,
-variation selectors and fillers included, is left out, as an empty one is. Never review notes, an unclaim reason, hook output,
-code, comment text or the name of the person who acted. When the recipient's
+variation selectors and fillers included, is left out, as an empty one is.
+Each is also capped by bytes, because a character has none: one letter can
+carry thousands of combining marks, and APNs and FCM reject a payload over
+4 KB. A title or name keeps at most 160 characters and 512 bytes, an
+identifier at most 64 characters and 128 bytes, so the encoded payload stays
+under the limit whatever a title holds. The cut falls between whole
+characters, never inside one, and a single character bigger than the cap is
+dropped; invalid UTF-8 is replaced with U+FFFD first. Never review notes, an
+unclaim reason, hook output, code, comment text or the name of the person who
+acted. When the recipient's
 Organization turns on **Hide task titles in push notifications**, the title
 is left out and the push reads, for example, "W2701 is ready for review"; a
 target's name is replaced too ("A target is at risk"). The iOS badge is the person's

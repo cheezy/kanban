@@ -7,6 +7,8 @@ defmodule Kanban.Push.PayloadTest do
 
   alias Kanban.Devices.Device
   alias Kanban.Notifications.Notification
+  alias Kanban.Push.APNs
+  alias Kanban.Push.FCM
   alias Kanban.Push.Payload
   alias Kanban.Push.PayloadBuilder
 
@@ -432,6 +434,188 @@ defmodule Kanban.Push.PayloadTest do
     test "a title cut at the length cap never ends in a space or shows nothing" do
       assert review_body(String.duplicate("a", 159) <> " tail") == String.duplicate("a", 159)
       assert review_body(String.duplicate("\u3164", 160) <> "tail") == nil
+    end
+  end
+
+  # D468: a grapheme has no byte bound, so each free-text piece is also
+  # capped by bytes (512 for a title or name, 128 for an identifier) to keep
+  # the APNs and FCM payload under their 4 KB limit.
+  describe "byte bound" do
+    @family "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}"
+    @flood "e" <> String.duplicate("\u0301", 5_000)
+
+    defp target_title(name),
+      do: build(target_notification("at_risk"), context(subject: %{name: name})).title
+
+    defp review_title(identifier) do
+      build(
+        notification(:review_requested),
+        context(subject: %{identifier: identifier, title: "Add seat count"})
+      ).title
+    end
+
+    defp encoded_sizes(%Payload{} = payload) do
+      apns = APNs.build_notification(%Device{push_token: "t"}, payload, "com.example.app")
+      fcm = FCM.build_notification(%Device{push_token: "t"}, payload)
+
+      fcm_message = %{
+        message: %{
+          token: "t",
+          notification: fcm.notification,
+          data: fcm.data,
+          android: fcm.android
+        }
+      }
+
+      {byte_size(Jason.encode!(apns.payload)), byte_size(Jason.encode!(fcm_message))}
+    end
+
+    defp prefix_of_graphemes?(cut, original) do
+      kept = String.graphemes(cut)
+      kept == original |> String.graphemes() |> Enum.take(length(kept))
+    end
+
+    test "keeps a normal title" do
+      ascii = String.duplicate("a", 160)
+      emoji = String.duplicate("\u{1F680}", 128)
+
+      assert review_body(ascii) == ascii
+      assert review_body(emoji) == emoji
+      assert byte_size(emoji) == 512
+      assert review_body("Add seat count") == "Add seat count"
+      assert target_title("Q4 launch") == "Q4 launch is at risk"
+      assert review_title("W2701") == "W2701 is ready for review"
+    end
+
+    test "bounds a combining-mark flood by bytes" do
+      # One letter with 5,000 marks is one grapheme of 10,001 bytes: bigger
+      # than the cap, so it is dropped whole rather than split.
+      assert review_body("Fix " <> @flood) == "Fix"
+      assert target_title("Q4 " <> @flood) == "Q4 is at risk"
+
+      # 160 graphemes of 7 bytes each: the grapheme cap alone keeps 1,120.
+      marked = String.duplicate("e\u0301\u0301\u0301", 160)
+      body = review_body(marked)
+
+      assert byte_size(body) <= 512
+      assert byte_size(body) > 512 - 7
+      assert prefix_of_graphemes?(body, marked)
+
+      name = marked |> target_title() |> String.replace_suffix(" is at risk", "")
+      assert byte_size(name) <= 512
+      assert prefix_of_graphemes?(name, marked)
+    end
+
+    test "bounds the identifier by graphemes and bytes" do
+      assert review_title(String.duplicate("W", 200)) ==
+               String.duplicate("W", 64) <> " is ready for review"
+
+      emoji = String.duplicate("\u{1F680}", 64)
+      assert review_title(emoji) == String.duplicate("\u{1F680}", 32) <> " is ready for review"
+
+      # An identifier cut to nothing falls back to the task id.
+      assert review_title(@flood) == "#4812 is ready for review"
+    end
+
+    test "the cut never splits a grapheme or a multi-byte codepoint" do
+      # 18 bytes each, so 28 whole families (504 bytes) fit and a 29th would not.
+      families = String.duplicate(@family, 160)
+      body = review_body(families)
+
+      assert body == String.duplicate(@family, 28)
+      assert String.valid?(body)
+
+      for title <- [String.duplicate("\u3042", 300), String.duplicate("\u{1F1FA}\u{1F1F8}", 160)] do
+        cut = review_body(title)
+        assert String.valid?(cut)
+        assert byte_size(cut) <= 512
+        assert prefix_of_graphemes?(cut, title)
+      end
+    end
+
+    test "format characters are stripped before the cut" do
+      title = String.duplicate("\u200B", 1_000) <> "Visible title"
+      assert review_body(title) == "Visible title"
+
+      assert review_body(String.duplicate("a\u202E", 600)) == String.duplicate("a", 160)
+    end
+
+    test "never emits invalid UTF-8" do
+      broken = <<"Fix ", 0xFF, "bug">>
+
+      assert review_body(broken) == "Fix \uFFFDbug"
+      assert target_title(broken) == "Fix \uFFFDbug is at risk"
+      assert review_title(<<"W27", 0xC3>>) == "W27\uFFFD is ready for review"
+
+      payload =
+        build(
+          notification(:review_requested),
+          context(subject: %{identifier: <<0xFE>>, title: String.duplicate(<<0xFF>>, 1_000)})
+        )
+
+      assert String.valid?(payload.title)
+      assert String.valid?(payload.body)
+      assert byte_size(payload.body) <= 512
+    end
+
+    test "treats a cut-to-empty title as empty" do
+      assert review_body(@flood) == nil
+
+      with_counts =
+        build(
+          notification(:review_requested),
+          context(subject: %{identifier: "W2701", title: @flood}, decision: decision_item())
+        )
+
+      assert with_counts.body == "2 checks passed\n1 check failed\nHolds up 3 tasks"
+      assert target_title(@flood) == "A target is at risk"
+    end
+
+    test "hide_titles still leaves no title or name" do
+      # Long enough to be cut, but with a visible prefix that would survive it.
+      long = String.duplicate("e\u0301\u0301\u0301", 160)
+      assert review_body(long) != nil
+
+      hidden = context(hide_titles: true, subject: %{identifier: "W2701", title: long})
+      assert build(notification(:goal_completed), hidden).body == nil
+
+      target =
+        build(
+          target_notification("at_risk"),
+          context(hide_titles: true, subject: %{name: long})
+        )
+
+      assert target.title == "A target is at risk"
+    end
+
+    test "encoded payload stays under 4 KB" do
+      floods = [
+        @flood,
+        String.duplicate("e\u0301\u0301\u0301", 2_000),
+        String.duplicate("\"", 5_000),
+        String.duplicate("\\", 5_000),
+        String.duplicate("\u{1F680}", 5_000),
+        String.duplicate(@family, 1_000)
+      ]
+
+      # The test bites: unbounded, one flood alone is over the limit.
+      assert byte_size(@flood) > 4_096
+
+      for locale <- ["en", "de"], identifier <- floods, title <- floods, type <- @push_events do
+        n =
+          if type == :target_status_changed,
+            do: target_notification("at_risk"),
+            else: notification(type)
+
+        subject = %{identifier: identifier, title: title, name: title}
+
+        payload =
+          build(n, context(locale: locale, subject: subject, decision: decision_item()))
+
+        {apns, fcm} = encoded_sizes(payload)
+        assert apns < 4_096, "APNs #{type} #{locale}: #{apns} bytes"
+        assert fcm < 4_096, "FCM #{type} #{locale}: #{fcm} bytes"
+      end
     end
   end
 
