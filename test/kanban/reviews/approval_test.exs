@@ -1,5 +1,5 @@
 defmodule Kanban.Reviews.ApprovalTest do
-  # async: false - one test switches the global :plans_enforced application env on.
+  # async: false - the plan tests switch the global :plans_enforced application env on.
   use Kanban.DataCase, async: false
   use Oban.Testing, repo: Kanban.Repo
 
@@ -18,6 +18,7 @@ defmodule Kanban.Reviews.ApprovalTest do
   alias Kanban.Reviews.Approval
   alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Reviews.ApprovalChallengePurgeWorker
+  alias Kanban.Reviews.DecisionChecks
   alias Kanban.Tasks
 
   @requested_at ~U[2026-11-18 09:30:00Z]
@@ -524,6 +525,133 @@ defmodule Kanban.Reviews.ApprovalTest do
 
       assert {:error, {:conflict, :edited, _task}} =
                Approval.issue_challenge(ctx.scope, ctx.phone, task.id, loaded)
+    end
+  end
+
+  # Grants the person and ctx.board the :mobile_app plan with plans enforced.
+  # Returns the membership, the board's own (personal) workspace id and the
+  # Organization workspace id it was moved to.
+  defp paid!(ctx) do
+    organization = organization_fixture()
+    member = organization_member_fixture(organization, ctx.user)
+    enforce_plans()
+    paid_id = org_workspace_fixture(organization).id
+    move_board!(ctx.board, paid_id)
+    %{member: member, personal_id: ctx.board.workspace_id, paid_id: paid_id}
+  end
+
+  defp move_board!(board, workspace_id),
+    do:
+      board
+      |> Repo.reload!()
+      |> Ecto.Changeset.change(workspace_id: workspace_id)
+      |> Repo.update!()
+
+  # The device plug builds the scope with the membership it read then, so a
+  # scope that carries one passes the plan check before the lock with no query.
+  defp snapshot_scope(ctx, member), do: Scope.put_organization_membership(ctx.scope, member)
+
+  defp recheck_in_transaction(scope, device, task, requested) do
+    {:ok, result} =
+      Repo.transaction(fn -> DecisionChecks.recheck_locked(scope, device, task, requested) end)
+
+    result
+  end
+
+  defp still_pending?(task),
+    do: Repo.get!(Kanban.Tasks.Task, task.id).review_status in [nil, :pending]
+
+  describe "the :mobile_app plan under the lock" do
+    test "approves with a current plan", ctx do
+      %{member: member} = paid!(ctx)
+      task = pending_task!(ctx.review)
+      scope = snapshot_scope(ctx, member)
+
+      challenge = challenge!(%{ctx | scope: scope}, task)
+
+      assert {:ok, %{review_status: :approved}} =
+               approve_with(%{ctx | scope: scope}, task, challenge)
+
+      # The check under the lock passes for a scope with no membership too,
+      # which reads the plan from the database.
+      other = pending_task!(ctx.review)
+
+      assert {:ok, %{id: id}} =
+               recheck_in_transaction(ctx.scope, ctx.phone, other, @requested_at)
+
+      assert id == other.id
+    end
+
+    test "refuses when the person's plan is gone after the checks", ctx do
+      %{member: member} = paid!(ctx)
+      task = pending_task!(ctx.review)
+      scope = snapshot_scope(ctx, member)
+      challenge = challenge!(%{ctx | scope: scope}, task)
+
+      # Committed after the request was admitted: the scope still carries the
+      # membership, so only the check under the lock reads it from the database.
+      Repo.delete!(member)
+
+      assert {:error, {:plan_required, :mobile_app}} =
+               approve_with(%{ctx | scope: scope}, task, challenge)
+
+      assert still_pending?(task)
+      assert Repo.get!(ApprovalChallenge, challenge.id).used_at == nil
+    end
+
+    test "refuses when only the board plan is gone", ctx do
+      %{personal_id: personal_id} = paid!(ctx)
+      task = pending_task!(ctx.review)
+
+      {:ok, pending, requested} =
+        DecisionChecks.decidable(
+          ctx.scope,
+          task.id,
+          %{"review_requested_at" => @requested_param},
+          :required
+        )
+
+      # The board moves to a workspace without the plan between the checks and
+      # the lock; the person keeps theirs.
+      move_board!(ctx.board, personal_id)
+      assert :ok = Kanban.Plans.check_user(ctx.scope, :mobile_app, surface: :controller)
+
+      assert {:error, {:plan_required, :mobile_app}} =
+               recheck_in_transaction(ctx.scope, ctx.phone, pending, requested)
+
+      assert still_pending?(task)
+    end
+
+    test "refuses a board with no plan", ctx do
+      organization = organization_fixture()
+      member = organization_member_fixture(organization, ctx.user)
+      enforce_plans()
+      # ctx.board stays in the person's personal workspace, which has no plan.
+      task = pending_task!(ctx.review)
+
+      assert {:error, {:plan_required, :mobile_app}} =
+               recheck_in_transaction(snapshot_scope(ctx, member), ctx.phone, task, @requested_at)
+
+      assert still_pending?(task)
+    end
+
+    test "replay still checks the plan", ctx do
+      %{member: member, personal_id: personal_id, paid_id: paid_id} = paid!(ctx)
+      task = pending_task!(ctx.review)
+
+      assert :ok = DecisionChecks.replayable(ctx.scope, task.id)
+
+      move_board!(ctx.board, personal_id)
+
+      assert {:error, {:plan_required, :mobile_app}} =
+               DecisionChecks.replayable(ctx.scope, task.id)
+
+      move_board!(ctx.board, paid_id)
+      assert :ok = DecisionChecks.replayable(ctx.scope, task.id)
+      Repo.delete!(member)
+
+      assert {:error, {:plan_required, :mobile_app}} =
+               DecisionChecks.replayable(ctx.scope, task.id)
     end
   end
 

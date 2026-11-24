@@ -23,12 +23,14 @@ defmodule Kanban.Reviews.RequestChanges do
 
   The commit runs in one transaction, as an approval's does: it claims the
   request's idempotency key first (`Kanban.Devices.Nonces.claim/2`), locks
-  the task row and the device row, runs the access and state checks again
-  (`Kanban.Reviews.DecisionChecks.recheck_locked/4`), records the request,
-  and stores its result with the key (`Kanban.Devices.Nonces.record/2`). So
-  a review decided or resubmitted since the checks ran answers 409, a device
-  revoked since is `:revoked`, and a retry with the same key replays the
-  first result rather than requesting changes twice.
+  the task row and the device row, runs the access, state and plan checks
+  again (`Kanban.Reviews.DecisionChecks.recheck_locked/4`), records the
+  request, and stores its result with the key
+  (`Kanban.Devices.Nonces.record/2`). So a review decided or resubmitted
+  since the checks ran answers 409, a device revoked since is `:revoked`, a
+  plan downgraded since is `{:plan_required, :mobile_app}`, and a retry with
+  the same key replays the first result rather than requesting changes
+  twice.
 
   The transaction is wrapped in `Kanban.Telemetry.AfterCommit.after_commit/1`,
   so the review telemetry, the audit event's telemetry and log line, the

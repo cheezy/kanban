@@ -1,5 +1,6 @@
 defmodule Kanban.Reviews.RequestChangesTest do
-  use Kanban.DataCase, async: true
+  # async: false - the plan tests switch the global :plans_enforced application env on.
+  use Kanban.DataCase, async: false
 
   import Ecto.Query
 
@@ -7,7 +8,10 @@ defmodule Kanban.Reviews.RequestChangesTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.DevicesFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts.Scope
   alias Kanban.AuditLog
@@ -26,7 +30,7 @@ defmodule Kanban.Reviews.RequestChangesTest do
     phone = device_fixture(scope, %{device_class: :phone})
     review = user |> board_fixture() |> column_fixture(%{name: "Review"})
 
-    %{scope: scope, phone: phone, review: review}
+    %{user: user, scope: scope, phone: phone, review: review}
   end
 
   defp pending_task!(column) do
@@ -139,5 +143,64 @@ defmodule Kanban.Reviews.RequestChangesTest do
              RequestChanges.request_changes(ctx.scope, ctx.phone, task.id, @params)
 
     assert Repo.aggregate(Nonce, :count) == 0
+  end
+
+  # Grants the person and the review column's board the plan, with plans
+  # enforced, and returns a scope carrying the membership the way the device
+  # plug builds it, so the plan check before the lock makes no query.
+  defp paid_scope!(ctx) do
+    organization = organization_fixture()
+    member = organization_member_fixture(organization, ctx.user)
+    enforce_plans()
+
+    Kanban.Boards.Board
+    |> where([b], b.id == ^ctx.review.board_id)
+    |> Repo.update_all(set: [workspace_id: org_workspace_fixture(organization).id])
+
+    {Scope.put_organization_membership(ctx.scope, member), member}
+  end
+
+  describe "the :mobile_app plan under the lock" do
+    test "refuses after a plan downgrade", ctx do
+      {scope, member} = paid_scope!(ctx)
+      task = pending_task!(ctx.review)
+      key = key(ctx.phone, task)
+
+      # Committed after the request was admitted, so only the check under the
+      # lock sees it.
+      Repo.delete!(member)
+
+      assert {:error, {:plan_required, :mobile_app}} =
+               RequestChanges.request_changes(scope, ctx.phone, task.id, @params,
+                 idempotency: key
+               )
+
+      assert Nonces.find_replay(key) == :none
+      assert rows() == []
+      assert Repo.get!(Task, task.id).review_status in [nil, :pending]
+    end
+
+    test "plan refusal shape", ctx do
+      {scope, member} = paid_scope!(ctx)
+      task = pending_task!(ctx.review)
+      Repo.delete!(member)
+
+      # The same refusal before the lock (a scope with no membership) and under
+      # it (a scope still carrying the removed one).
+      before_lock = RequestChanges.request_changes(ctx.scope, ctx.phone, task.id, @params)
+      under_lock = RequestChanges.request_changes(scope, ctx.phone, task.id, @params)
+
+      assert before_lock == {:error, {:plan_required, :mobile_app}}
+      assert under_lock == before_lock
+      assert Repo.get!(Task, task.id).review_status in [nil, :pending]
+    end
+
+    test "a current plan still requests changes", ctx do
+      {scope, _member} = paid_scope!(ctx)
+      task = pending_task!(ctx.review)
+
+      assert {:ok, %Task{review_status: :changes_requested}} =
+               RequestChanges.request_changes(scope, ctx.phone, task.id, @params)
+    end
   end
 end

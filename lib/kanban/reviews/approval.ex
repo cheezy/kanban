@@ -396,8 +396,8 @@ defmodule Kanban.Reviews.Approval do
     end
   end
 
-  # Under the locks, in this order: the idempotency key, the access, device
-  # and state re-check, the submission, and the nonce.
+  # Under the locks, in this order: the idempotency key, the access, device,
+  # state and plan re-check, the submission, and the nonce.
   defp admit_locked(scope, device, task, challenge, requested, {now, idempotency}) do
     with :ok <- Nonces.claim(idempotency, now),
          {:ok, fresh} <- DecisionChecks.recheck_locked(scope, device, task, requested),

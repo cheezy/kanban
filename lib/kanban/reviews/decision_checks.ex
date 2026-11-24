@@ -26,9 +26,15 @@ defmodule Kanban.Reviews.DecisionChecks do
 
   `recheck_locked/4` runs inside the decision's commit transaction: it locks
   the task row and the device row, runs the access check again, refuses a
-  device revoked since its request was admitted (`:revoked`) and checks the
+  device revoked since its request was admitted (`:revoked`), checks the
   state again, so a review decided or resubmitted between the checks and the
-  commit answers 409.
+  commit answers 409, and checks the plan again, so a downgrade committed
+  between the checks and the commit is `{:plan_required, :mobile_app}`.
+  Under the lock the plan is read from the database: the person's
+  membership as it is now, not the one the scope was built with. The plan
+  rows are not locked, so a downgrade committed after this read and before
+  the commit still lets that one decision through (design doc §24,
+  decision 20).
   """
 
   import Ecto.Query, warn: false
@@ -73,7 +79,9 @@ defmodule Kanban.Reviews.DecisionChecks do
   @doc """
   Under the task row lock, inside the decision's transaction: the task is
   still visible and decidable, `device` is still active (`:revoked`
-  otherwise), and the review is still pending with the stamp `requested`.
+  otherwise), the review is still pending with the stamp `requested`, and
+  the person and the task's board still have the `:mobile_app` plan
+  (`{:plan_required, :mobile_app}` otherwise, as `decidable/4` answers).
 
   Returns `{:ok, fresh_task}` or `{:error, reason}`.
   """
@@ -81,9 +89,16 @@ defmodule Kanban.Reviews.DecisionChecks do
           {:ok, Task.t()} | {:error, term()}
   def recheck_locked(%Scope{} = scope, %Device{} = device, %Task{} = task, requested) do
     with :ok <- lock_task_row(task.id),
-         {:ok, _current} <- fetch_decidable(scope, task.id),
+         {:ok, current} <- fetch_decidable(scope, task.id),
          :ok <- lock_active_device(device),
-         do: locked_state(scope, task, requested)
+         do: locked_state_and_plan(scope, task, current, requested)
+  end
+
+  # The review state, then the plan, both under the row lock.
+  defp locked_state_and_plan(scope, task, current, requested) do
+    with {:ok, fresh} <- locked_state(scope, task, requested),
+         :ok <- check_locked_plan(scope, current),
+         do: {:ok, fresh}
   end
 
   @doc """
@@ -169,11 +184,16 @@ defmodule Kanban.Reviews.DecisionChecks do
 
   # --- 3. Plan -------------------------------------------------------------------
 
-  defp check_plan(scope, %Task{column: %{board: board}}) do
-    with :ok <- Plans.check_user(scope, :mobile_app, surface: :controller) do
+  defp check_plan(user_or_scope, %Task{column: %{board: board}}) do
+    with :ok <- Plans.check_user(user_or_scope, :mobile_app, surface: :controller) do
       Plans.check_board(board, :mobile_app, surface: :controller)
     end
   end
+
+  # Under the lock, from the database: the scope's user, not its membership
+  # snapshot (a scope that carries one is decided without a query), and the
+  # board `fetch_decidable/2` just read, whose workspace is not preloaded.
+  defp check_locked_plan(%Scope{user: user}, %Task{} = current), do: check_plan(user, current)
 
   # --- Under the lock --------------------------------------------------------------
 

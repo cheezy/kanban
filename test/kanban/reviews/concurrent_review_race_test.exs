@@ -14,7 +14,10 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
 
   It also proves that a signed phone approval re-checks what the reviewer was
   shown under that lock: an edit committed while the approval waits on the
-  row lock changes the task's review fingerprint, so the approval is refused.
+  row lock changes the task's review fingerprint, so the approval is refused,
+  and that it re-checks the `:mobile_app` plan there too: a downgrade
+  committed while the approval waits on the row lock refuses it with
+  `{:plan_required, :mobile_app}`.
 
   ## Running
 
@@ -36,11 +39,16 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.DevicesFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
 
   alias Ecto.Adapters.SQL.Sandbox
   alias Kanban.Accounts.Scope
   alias Kanban.AuditLog
+  alias Kanban.Boards.Board
+  alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
   alias Kanban.Reviews
   alias Kanban.Reviews.Approval
@@ -87,7 +95,7 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
         completed_by_agent: "Claude"
       })
 
-    %{user: user, task: task}
+    %{user: user, board: board, task: task}
   end
 
   test "two approvals at once commit one approval and one audit row",
@@ -157,6 +165,58 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
       end)
 
     assert {:error, {:signature_rejected, :invalid}} = Elixir.Task.await(approval, @deadline_ms)
+    assert Repo.get!(Task, task.id).review_status in [nil, :pending]
+    assert Repo.get!(ApprovalChallenge, challenge.id).used_at == nil
+  end
+
+  test "plan downgrade during a decision", %{user: user, board: board, task: task} do
+    organization = organization_fixture()
+    member = organization_member_fixture(organization, user)
+    enforce_plans()
+
+    Board
+    |> where([b], b.id == ^board.id)
+    |> Repo.update_all(set: [workspace_id: org_workspace_fixture(organization).id])
+
+    # The membership the device plug read when it admitted the request.
+    scope = user |> Scope.for_user() |> Scope.put_organization_membership(member)
+    key = approval_keypair_fixture()
+    phone = device_fixture(scope, %{device_class: :phone, approval_public_key: key.public_key})
+    requested_at = DateTime.utc_now() |> DateTime.truncate(:second)
+    task = task |> Ecto.Changeset.change(review_requested_at: requested_at) |> Repo.update!()
+
+    shown = %{"review_fingerprint" => ApprovalChallenge.review_fingerprint(task)}
+    {:ok, challenge, _task} = Approval.issue_challenge(scope, phone, task.id, shown)
+
+    params = %{
+      "review_requested_at" => Approval.stamp(requested_at),
+      "nonce" => challenge.nonce,
+      "signature" =>
+        sign_approval(
+          key.private_key,
+          Approval.signing_string(challenge.nonce, task.id, requested_at)
+        )
+    }
+
+    {:ok, approval} =
+      Repo.transaction(fn ->
+        Repo.one!(from(t in Task, where: t.id == ^task.id, lock: "FOR UPDATE", select: t.id))
+
+        approval =
+          Elixir.Task.async(fn ->
+            :ok = Sandbox.checkout(Repo, sandbox: false)
+            Approval.approve(scope, phone, task.id, params)
+          end)
+
+        await_blocked_on_lock(1)
+
+        # Committed with the lock released, after the approval's plan check.
+        Repo.delete_all(from(m in OrganizationMember, where: m.id == ^member.id))
+
+        approval
+      end)
+
+    assert {:error, {:plan_required, :mobile_app}} = Elixir.Task.await(approval, @deadline_ms)
     assert Repo.get!(Task, task.id).review_status in [nil, :pending]
     assert Repo.get!(ApprovalChallenge, challenge.id).used_at == nil
   end
