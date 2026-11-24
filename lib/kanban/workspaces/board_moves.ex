@@ -74,13 +74,19 @@ defmodule Kanban.Workspaces.BoardMoves do
 
   After commit, `{Kanban.Boards, :members_changed, board_id}` is broadcast on
   `"board:<id>"`, so an open members screen recomputes
-  `Kanban.Boards.member_cap_status/1` and drops the cap line.
+  `Kanban.Boards.member_cap_status/1` and drops the cap line. The board's
+  members and the target Organization's org-admins are then signalled on
+  their own topics (`Kanban.Boards.AccessSignal.board_gained/1`): the
+  org-admins gain it through derived access and the members may find it
+  unlocked, and neither is subscribed to its board topic yet (D466). A
+  refused move signals nobody.
   """
 
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.User
   alias Kanban.Attachments.Usage
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations
@@ -309,6 +315,7 @@ defmodule Kanban.Workspaces.BoardMoves do
       {Kanban.Boards, :members_changed, board_id}
     )
 
+    AccessSignal.board_gained(board_id)
     result
   end
 

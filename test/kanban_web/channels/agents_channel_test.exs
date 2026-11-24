@@ -18,11 +18,13 @@ defmodule KanbanWeb.AgentsChannelTest do
 
   alias Kanban.Agents
   alias Kanban.Boards
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Columns
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias Kanban.Organizations
   alias Kanban.Repo
+  alias Kanban.Workspaces
   alias KanbanWeb.AgentsChannel
   alias KanbanWeb.API.Me.AgentJSON
   alias KanbanWeb.Coalescer
@@ -133,6 +135,20 @@ defmodule KanbanWeb.AgentsChannelTest do
 
     agent_task(columns(board)["Doing"], %{created_by_agent: "Gemini"})
     {organization, board}
+  end
+
+  # An Organization where `user` and a second org-admin, `owner`, are
+  # org-admins, its workspace, and a personal board of `owner`'s with a
+  # Gemini task that `user` cannot see yet.
+  defp org_with_personal_board(user) do
+    organization = organization_fixture()
+    owner = user_fixture()
+    organization_member_fixture(organization, owner, :org_admin)
+    organization_member_fixture(organization, user, :org_admin)
+    workspace = org_workspace_fixture(organization)
+    board = ai_optimized_board_fixture(owner)
+    agent_task(columns(board)["Doing"], %{created_by_agent: "Gemini"})
+    %{organization: organization, owner: owner, workspace: workspace, moved: board}
   end
 
   defp remove_org_admin!(organization, user),
@@ -395,6 +411,161 @@ defmodule KanbanWeb.AgentsChannelTest do
       assert_agents_until(&("Gemini" not in agent_names(&1)))
       refute "agents:#{gained.id}" in agents_topics(socket)
       refute "board:#{gained.id}" in board_topics(socket)
+    end
+  end
+
+  # D466: gains that send no board_access_changed notification.
+  describe "access gained without a notification" do
+    setup :with_board
+
+    test "pushes a board gained through a board move", ctx do
+      %{owner: owner, workspace: workspace, moved: moved} = org_with_personal_board(ctx.user)
+      socket = join!(ctx.device)
+      assert_push "agents", payload
+      refute "Gemini" in agent_names(payload)
+      refute "agents:#{moved.id}" in agents_topics(socket)
+
+      {:ok, _board} = Workspaces.move_board_to_workspace(owner, moved, workspace)
+
+      payload = assert_agents_until(&("Gemini" in agent_names(&1)))
+      assert payload == expected(ctx.scope)
+      assert "agents:#{moved.id}" in agents_topics(socket)
+      assert "board:#{moved.id}" in board_topics(socket)
+    end
+
+    test "subscribes to the gained board topic", ctx do
+      %{organization: organization, owner: owner, workspace: workspace, moved: moved} =
+        org_with_personal_board(ctx.user)
+
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      {:ok, _board} = Workspaces.move_board_to_workspace(owner, moved, workspace)
+      assert_agents_until(&("Gemini" in agent_names(&1)))
+      assert_eventually(fn -> not pending?(socket) end)
+
+      # A members_changed on the gained board's topic is now heard.
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "board:#{moved.id}",
+        {Boards, :members_changed, moved.id}
+      )
+
+      assert pending?(socket)
+
+      # So is the loss it signals: removal from the Organization sends no
+      # notification, only that broadcast (D460).
+      remove_org_admin!(organization, ctx.user)
+
+      assert_agents_until(&("Gemini" not in agent_names(&1)))
+      refute "board:#{moved.id}" in board_topics(socket)
+    end
+
+    test "pushes the Organization's boards when the person becomes an org-admin", ctx do
+      {organization, board} = derived_org_board(user_fixture())
+      socket = join!(ctx.device)
+      assert_push "agents", payload
+      refute "Gemini" in agent_names(payload)
+
+      {:ok, _membership} =
+        Organizations.appoint_org_admin(admin_fixture(), organization, ctx.user)
+
+      payload = assert_agents_until(&("Gemini" in agent_names(&1)))
+      assert payload == expected(ctx.scope)
+      assert "agents:#{board.id}" in agents_topics(socket)
+      assert "board:#{board.id}" in board_topics(socket)
+    end
+
+    test "subscribes a board another org-admin creates in the Organization", ctx do
+      %{owner: owner, workspace: workspace} = org_with_personal_board(ctx.user)
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      {:ok, created} = Boards.create_board(owner, %{name: "Shared board"}, workspace: workspace)
+
+      assert created.workspace_id == workspace.id
+      assert_eventually(fn -> "agents:#{created.id}" in agents_topics(socket) end)
+      assert "board:#{created.id}" in board_topics(socket)
+    end
+
+    test "ignores a gain to an already covered board", ctx do
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      send(socket.channel_pid, {Boards, :access_gained, [ctx.board.id]})
+
+      refute pending?(socket)
+      assert agents_topics(socket) == ["agents:#{ctx.board.id}"]
+      assert board_topics(socket) == ["board:#{ctx.board.id}"]
+    end
+
+    test "coalesces several gains", ctx do
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+      uncovered = ai_optimized_board_fixture(user_fixture())
+
+      rebuilds =
+        count_rebuilds(socket, fn ->
+          for _ <- 1..100 do
+            send(socket.channel_pid, {Boards, :access_gained, [uncovered.id]})
+          end
+        end)
+
+      assert rebuilds == 1
+      # The rebuild re-reads access from the context, so a signal naming a
+      # board the person cannot see never subscribes it.
+      refute "board:#{uncovered.id}" in board_topics(socket)
+    end
+
+    test "a gain and a loss in one burst are both picked up", ctx do
+      {organization, lost} = derived_org_board(ctx.user)
+      gained = ai_optimized_board_fixture(user_fixture())
+      agent_task(columns(gained)["Doing"], %{created_by_agent: "Codex"})
+      socket = join!(ctx.device)
+      assert_push "agents", payload
+      assert "Gemini" in agent_names(payload)
+
+      Repo.insert!(%Kanban.Boards.BoardUser{
+        board_id: gained.id,
+        user_id: ctx.user.id,
+        access: :read_only
+      })
+
+      send(socket.channel_pid, {Boards, :access_gained, [gained.id]})
+      remove_org_admin!(organization, ctx.user)
+
+      payload =
+        assert_agents_until(fn payload ->
+          names = agent_names(payload)
+          "Codex" in names and "Gemini" not in names
+        end)
+
+      assert payload == expected(ctx.scope)
+      assert "board:#{gained.id}" in board_topics(socket)
+      refute "board:#{lost.id}" in board_topics(socket)
+    end
+
+    # SCIM and SSO provisioning add the person through this same function
+    # (Kanban.SSO.Provisioning), and plain membership grants no board access.
+    test "joining an Organization as a plain member gains nothing", ctx do
+      {organization, board} = derived_org_board(user_fixture())
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+      AccessSignal.subscribe(ctx.user)
+
+      assert {:ok, _membership} = Organizations.add_member(organization, ctx.user, :member)
+
+      refute_receive {Boards, :access_gained, _board_ids}, 50
+      refute pending?(socket)
+      refute "board:#{board.id}" in board_topics(socket)
+      assert board_topics(socket) == ["board:#{ctx.board.id}"]
+    end
+
+    test "subscribes to the person's board-access topic on join", ctx do
+      socket = join!(ctx.device)
+      assert_push "agents", _payload
+
+      assert AccessSignal.topic(ctx.user) in Registry.keys(Kanban.PubSub, socket.channel_pid)
     end
   end
 end

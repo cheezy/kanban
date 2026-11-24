@@ -15,7 +15,10 @@ defmodule Kanban.Boards.Creation do
   workspace the caller is an org-admin or a member of
   (`Kanban.Workspaces.Policy.can_create_board_in?/2`). Otherwise, and without
   the option, it goes into the caller's personal workspace. Each successful
-  creation emits `[:kanban, :board, :creation]`.
+  creation emits `[:kanban, :board, :creation]`. Each one, AI-optimized boards
+  included, then signals the new board to its owner and, in an org workspace,
+  to the Organization's org-admins (`Kanban.Boards.AccessSignal.board_gained/1`,
+  D466), so their open app channels subscribe to it.
 
   Split out of `Kanban.Boards` per the module design guidance in `AGENTS.md`.
   """
@@ -24,6 +27,7 @@ defmodule Kanban.Boards.Creation do
 
   alias Kanban.Repo
 
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Workspaces
@@ -108,7 +112,12 @@ defmodule Kanban.Boards.Creation do
     })
   end
 
-  defp handle_board_transaction_result({:ok, %{board: board}}), do: {:ok, board}
+  # After commit, for both create functions.
+  defp handle_board_transaction_result({:ok, %{board: board}}) do
+    AccessSignal.board_gained(board.id)
+    {:ok, board}
+  end
+
   defp handle_board_transaction_result({:error, _step, changeset, _}), do: {:error, changeset}
 
   @doc """

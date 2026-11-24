@@ -15,6 +15,7 @@ defmodule Kanban.Workspaces.BoardMovesTest do
   alias Kanban.Attachments.Limits
   alias Kanban.Attachments.Usage
   alias Kanban.Boards
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations
@@ -297,6 +298,74 @@ defmodule Kanban.Workspaces.BoardMovesTest do
                Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
 
       assert outsider_id == outsider.id
+    end
+  end
+
+  # D466: a move grants access with no board_access_changed notification.
+  describe "the gain signal" do
+    # A process subscribed to `user`'s board-access topic that forwards what
+    # it hears to the test, tagged with the user's id.
+    defp listen(%{id: user_id} = user) do
+      test = self()
+
+      pid =
+        spawn_link(fn ->
+          AccessSignal.subscribe(user)
+          send(test, {:listening, user_id})
+          forward(test, user_id)
+        end)
+
+      assert_receive {:listening, ^user_id}
+      pid
+    end
+
+    defp forward(test, user_id) do
+      receive do
+        message ->
+          send(test, {:heard, user_id, message})
+          forward(test, user_id)
+      end
+    end
+
+    test "signals the board to its members and the Organization's org-admins", ctx do
+      reader = user_fixture()
+      organization_member_fixture(ctx.organization, reader)
+      grant(ctx.board, reader, :read_only)
+      other_admin = user_fixture()
+      organization_member_fixture(ctx.organization, other_admin, :org_admin)
+      stranger = user_fixture()
+
+      for user <- [ctx.org_admin, reader, other_admin, stranger], do: listen(user)
+
+      assert {:ok, %Board{}} =
+               Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+      board_ids = [ctx.board.id]
+
+      for %{id: user_id} <- [ctx.org_admin, reader, other_admin],
+          do: assert_receive({:heard, ^user_id, {Kanban.Boards, :access_gained, ^board_ids}})
+
+      stranger_id = stranger.id
+      refute_receive {:heard, ^stranger_id, _message}, 50
+    end
+
+    test "sends no gain signal when the move fails", ctx do
+      outsider = user_fixture()
+      grant(ctx.board, outsider, :modify)
+      listen(ctx.org_admin)
+      listen(outsider)
+
+      assert {:error, {:non_members, _users}} =
+               Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+      refute_receive {:heard, _user_id, _message}, 50
+    end
+
+    test "broadcasts with no subscribers", ctx do
+      assert {:ok, %Board{workspace_id: workspace_id}} =
+               Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+      assert workspace_id == ctx.workspace.id
     end
   end
 end

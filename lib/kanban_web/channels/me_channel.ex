@@ -40,6 +40,14 @@ defmodule KanbanWeb.MeChannel do
   briefly stale can only cause an extra rebuild, never a leak: every push is
   rebuilt from the context for the person, and never forwards a broadcast.
 
+  A board the person gains is the one topic they are not subscribed to yet,
+  so a gain that sends no notification (a board created or moved into an
+  Organization workspace, or the person made an org-admin) arrives instead
+  on their own board-access topic (`Kanban.Boards.AccessSignal`), which
+  `subscribe_person/1` subscribes on join. `access_gained/2` asks for a
+  rebuild when the signal names a board the channel does not cover yet
+  (D466).
+
   ## Pushes
 
   `push_changed/3` pushes the full state under `event` only when it differs
@@ -52,7 +60,9 @@ defmodule KanbanWeb.MeChannel do
   import Phoenix.Socket, only: [assign: 3]
 
   alias Kanban.Boards
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Devices
+  alias Kanban.Notifications
   alias Kanban.Plans
   alias KanbanWeb.Coalescer
   alias KanbanWeb.Plugs.AuthenticateDeviceToken
@@ -140,6 +150,34 @@ defmodule KanbanWeb.MeChannel do
     do: Enum.each(ids, &fun.(Kanban.PubSub, board_topic(prefix, &1)))
 
   defp board_topic(prefix, id), do: "#{prefix}:#{id}"
+
+  @doc """
+  Subscribes the channel process to the person's notification topic
+  (`Kanban.Notifications.subscribe/1`) and board-access topic
+  (`Kanban.Boards.AccessSignal.subscribe/1`), both named from the
+  server-side scope.
+  """
+  @spec subscribe_person(Socket.t()) :: Socket.t()
+  def subscribe_person(%Socket{assigns: %{current_scope: scope}} = socket) do
+    Notifications.subscribe(scope)
+    AccessSignal.subscribe(scope)
+    socket
+  end
+
+  @doc """
+  Handles a `{Kanban.Boards, :access_gained, board_ids}` signal: asks for a
+  rebuild unless every board in it is already among the channel's
+  `:board_ids`, which already hear changes on their own topics. The rebuild's
+  `sync_boards/2` subscribes the gained boards; the ids in the signal are
+  never subscribed directly.
+  """
+  @spec access_gained(Socket.t(), [integer()]) :: Socket.t()
+  def access_gained(%Socket{assigns: %{board_ids: covered}} = socket, board_ids)
+      when is_list(board_ids) do
+    if Enum.all?(board_ids, &MapSet.member?(covered, &1)),
+      do: socket,
+      else: request_rebuild(socket)
+  end
 
   @doc "Asks for a rebuild, coalesced to one per interval (`KanbanWeb.Coalescer`)."
   @spec request_rebuild(Socket.t()) :: Socket.t()

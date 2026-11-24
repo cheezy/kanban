@@ -8,13 +8,18 @@ defmodule KanbanWeb.AgentsChannel do
   On join (gated by `KanbanWeb.MeChannel.authorize_join/1`) it subscribes to
   `"agents:<id>"` (`Kanban.Tasks.Broadcaster.broadcast_agent_event/3`) and to
   `"board:<id>"` for every board the person can access in any workspace that
-  the plan unlocks, and to the person's notification topic, then pushes
-  `"agents"` with the full roster and goal progress.
+  the plan unlocks, and to the person's notification and board-access topics
+  (`KanbanWeb.MeChannel.subscribe_person/1`), then pushes `"agents"` with the
+  full roster and goal progress.
 
   An `{:agent_event, _}` on a board's agents topic (a task created, claimed,
   completed or reviewed), a `{Kanban.Boards, :members_changed, board_id}`
-  broadcast on its board topic, or a `board_access_changed` notification
-  asks for a rebuild, coalesced to one per second (`KanbanWeb.Coalescer`).
+  broadcast on its board topic, a `board_access_changed` notification, or a
+  `{Kanban.Boards, :access_gained, board_ids}` signal naming a board the
+  channel does not cover yet (`Kanban.Boards.AccessSignal`, D466: a gain
+  that sends no notification, such as a board moved into the person's
+  Organization) asks for a rebuild, coalesced to one per second
+  (`KanbanWeb.Coalescer`).
   The board topic is subscribed for `members_changed` alone: it is the only
   signal for an access loss that sends no notification, such as an org-admin
   removed from the Organization or a SCIM deprovisioning (D460). Every other
@@ -31,7 +36,6 @@ defmodule KanbanWeb.AgentsChannel do
   use KanbanWeb, :channel
 
   alias Kanban.Agents
-  alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias KanbanWeb.API.Me.AgentJSON
   alias KanbanWeb.MeChannel
@@ -43,8 +47,8 @@ defmodule KanbanWeb.AgentsChannel do
 
   @impl true
   def handle_info(:after_join, socket) do
-    Notifications.subscribe(socket.assigns.current_scope)
-    {:noreply, socket |> MeChannel.sync_boards(@topics) |> push_agents()}
+    {:noreply,
+     socket |> MeChannel.subscribe_person() |> MeChannel.sync_boards(@topics) |> push_agents()}
   end
 
   def handle_info(:rebuild, socket) do
@@ -62,6 +66,9 @@ defmodule KanbanWeb.AgentsChannel do
 
   def handle_info({Kanban.Boards, :members_changed, _board_id}, socket),
     do: {:noreply, MeChannel.request_rebuild(socket)}
+
+  def handle_info({Kanban.Boards, :access_gained, board_ids}, socket),
+    do: {:noreply, MeChannel.access_gained(socket, board_ids)}
 
   def handle_info(
         {:notification_created, %Notification{event_type: :board_access_changed}},

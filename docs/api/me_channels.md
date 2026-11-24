@@ -82,6 +82,21 @@ notifications, are ignored. A goal's counts can move without an agent
 event, for example when a person drags a task to Done; `me:agents` picks
 that up on its next rebuild, not at once.
 
+Both channels also listen to the person's own board-access topic. A board
+the person gains is the one board whose topics the channel is not
+subscribed to yet, so the gains that send no `board_access_changed`
+notification also send a signal there: a board created by the person, or
+created in or moved into an Organization workspace where the person is an
+Organization admin or a member of the board, and the person being made an
+Organization admin. The signal names board ids only. When it names a
+board the channel does not cover yet it asks for a rebuild; when it names
+only boards the channel already covers it is ignored, since those boards'
+own topics already reach the channel. Joining an Organization as an
+ordinary member grants no board access, so it sends nothing. A workspace
+import sends nothing either: it runs as a separate command outside the web
+servers, so the boards it creates reach an open channel on its next
+rebuild, or when the app joins again.
+
 ## Which boards are covered
 
 Both channels cover every board the person can access, in every workspace,
@@ -92,7 +107,8 @@ board the person cannot see is never subscribed to.
 Every rebuild re-reads those boards first, then subscribes to the boards the
 person gained and drops the boards they lost. So being added to a board, or
 removed from one, is picked up by the rebuild the change itself triggers (a
-`board_access_changed` notification, or the board's membership change), and
+`board_access_changed` notification, the board's membership change, or the
+board-access signal), and
 the removed board's changes stop reaching the channel. Every push is built
 for the person from their current access, never forwarded from a broadcast,
 so a subscription that is briefly stale can cause an extra rebuild but never

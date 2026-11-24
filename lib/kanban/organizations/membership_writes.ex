@@ -26,6 +26,7 @@ defmodule Kanban.Organizations.MembershipWrites do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.User
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
@@ -92,6 +93,11 @@ defmodule Kanban.Organizations.MembershipWrites do
       new membership or a promoted member, never an existing org-admin. It
       runs after the commit only when this is not nested in an outer
       transaction. Defaults to doing nothing.
+
+  A new or promoted org-admin gains every board of the Organization through
+  derived access with no `board_access_changed` notification, so their open
+  app channels are signalled (`Kanban.Boards.AccessSignal.organization_gained/2`,
+  D466). An existing org-admin and a refusal signal nothing.
   """
   @spec appoint_org_admin(User.t(), integer(), User.t(), [
           {:account_created, boolean()} | {:on_appointed, (OrganizationMember.t() -> any())}
@@ -100,19 +106,25 @@ defmodule Kanban.Organizations.MembershipWrites do
           | {:error,
              :already_in_another_organization | :user_disabled | :not_found | Ecto.Changeset.t()}
   def appoint_org_admin(%User{} = actor, organization_id, %User{} = user, opts \\ []) do
-    account_created = Keyword.get(opts, :account_created, false)
-    on_appointed = Keyword.get(opts, :on_appointed, fn _membership -> :ok end)
-
     Repo.transact(fn ->
       with :ok <- lock_organization(organization_id),
            :ok <- ensure_enabled(user) do
         appoint_in_locked_organization(organization_id, user)
       end
     end)
-    |> notify(fn change, membership ->
-      OrganizationTelemetry.org_admin_appointed(membership, change, actor, account_created)
-      on_appointed.(membership)
-    end)
+    |> notify(&appointed(&1, &2, actor, opts))
+  end
+
+  # Runs for a new or promoted org-admin once the transaction has returned.
+  # They gain the Organization's boards with no board_access_changed
+  # notification, so their open app channels are signalled (D466).
+  defp appointed(change, %OrganizationMember{} = membership, actor, opts) do
+    account_created = Keyword.get(opts, :account_created, false)
+    on_appointed = Keyword.get(opts, :on_appointed, fn _membership -> :ok end)
+
+    OrganizationTelemetry.org_admin_appointed(membership, change, actor, account_created)
+    AccessSignal.organization_gained(membership.user_id, membership.organization_id)
+    on_appointed.(membership)
   end
 
   @doc """

@@ -18,13 +18,16 @@ defmodule KanbanWeb.InboxChannelTest do
   import Kanban.WorkspacesFixtures
 
   alias Kanban.Boards
+  alias Kanban.Boards.AccessSignal
   alias Kanban.Columns
   alias Kanban.Decisions
   alias Kanban.Devices
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
+  alias Kanban.Organizations
   alias Kanban.Repo
   alias Kanban.Tasks
+  alias Kanban.Workspaces
   alias KanbanWeb.API.Me.DecisionJSON
   alias KanbanWeb.Coalescer
   alias KanbanWeb.InboxChannel
@@ -378,6 +381,70 @@ defmodule KanbanWeb.InboxChannelTest do
       true ->
         Process.sleep(20)
         assert_eventually(fun, attempts - 1)
+    end
+  end
+
+  # D466: gains that send no board_access_changed notification.
+  describe "access gained without a notification" do
+    setup do
+      organization = organization_fixture()
+      owner = user_fixture()
+      organization_member_fixture(organization, owner, :org_admin)
+      workspace = org_workspace_fixture(organization)
+      %{organization: organization, owner: owner, workspace: workspace}
+    end
+
+    test "becoming an org-admin rebuilds with the Organization's boards' items", ctx do
+      {:ok, org_board} =
+        Boards.create_ai_optimized_board(ctx.owner, %{name: "Org board"},
+          workspace: ctx.workspace
+        )
+
+      assert org_board.workspace_id == ctx.workspace.id
+      review = pending_task!(columns(org_board)["Review"])
+      socket = join!(ctx.device)
+      assert_push "decisions", payload
+      refute "review:task:#{review.id}" in item_ids(payload)
+
+      {:ok, _membership} =
+        Organizations.appoint_org_admin(admin_fixture(), ctx.organization, ctx.user)
+
+      payload = assert_decisions_until(&("review:task:#{review.id}" in item_ids(&1)))
+      assert payload == expected(ctx.scope)
+      assert "board:#{org_board.id}" in board_topics(socket)
+    end
+
+    test "a board moved into the person's Organization is subscribed", ctx do
+      organization_member_fixture(ctx.organization, ctx.user, :org_admin)
+      moved = ai_optimized_board_fixture(ctx.owner)
+      review = pending_task!(columns(moved)["Review"])
+      socket = join!(ctx.device)
+      assert_push "decisions", payload
+      refute "review:task:#{review.id}" in item_ids(payload)
+
+      {:ok, _board} = Workspaces.move_board_to_workspace(ctx.owner, moved, ctx.workspace)
+
+      assert_decisions_until(&("review:task:#{review.id}" in item_ids(&1)))
+      assert "board:#{moved.id}" in board_topics(socket)
+    end
+
+    test "a gain to a board the channel already covers asks for no rebuild", ctx do
+      socket = join!(ctx.device)
+      assert_push "decisions", _payload
+      attach_telemetry(@built, any_process: true)
+
+      send(socket.channel_pid, {Boards, :access_gained, [ctx.board.id]})
+      settle(socket)
+
+      refute :sys.get_state(socket.channel_pid).assigns.coalescer |> Coalescer.pending?()
+      refute_receive {:telemetry_event, @built, _measurements, _metadata}, 100
+    end
+
+    test "subscribes to the person's board-access topic on join", ctx do
+      socket = join!(ctx.device)
+      assert_push "decisions", _payload
+
+      assert AccessSignal.topic(ctx.user) in topics(socket)
     end
   end
 end
