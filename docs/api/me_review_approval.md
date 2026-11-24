@@ -157,7 +157,11 @@ successful approval is stored, so a refused one's retry runs again. A retry
 that arrives while the first approval is committing finds its nonce used by
 that approval: it is answered with the replay when it carries the key, or
 `409 already_decided` when it does not, never `422 reused`, and writes no
-`approval_signature_rejected` event. The rules
+`approval_signature_rejected` event. The key is bound to the approval's
+`review_requested_at` and a hash of its signature, so a retry resends the
+same body: a resend with other signature bytes, such as a bad signature, or
+with none, is a new request that runs its checks and is refused, never
+answered with the stored `200`. The rules
 are shared with the request for changes and are in
 [Request changes on a review in the app](me_review_request_changes.md#retrying-safely-idempotency-key).
 

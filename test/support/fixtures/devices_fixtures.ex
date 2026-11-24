@@ -51,6 +51,23 @@ defmodule Kanban.DevicesFixtures do
     |> Base.url_encode64(padding: false)
   end
 
+  # The order n of the P-256 group: (r, s) and (r, n - s) both verify.
+  @p256_order 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
+
+  @doc """
+  The twin of a `sign_approval/2` signature: the same `r` with `s` replaced
+  by `n - s`, re-encoded as DER in unpadded base64url. It verifies for the
+  same message and key, with other bytes (design doc §24 decision 15).
+  """
+  def signature_twin(signature) do
+    {:"ECDSA-Sig-Value", r, s} =
+      :public_key.der_decode(:"ECDSA-Sig-Value", Base.url_decode64!(signature, padding: false))
+
+    :"ECDSA-Sig-Value"
+    |> :public_key.der_encode({:"ECDSA-Sig-Value", r, @p256_order - s})
+    |> Base.url_encode64(padding: false)
+  end
+
   def device_fixture(scope, attrs \\ %{}, now \\ DateTime.utc_now()) do
     device_attrs = valid_device_attributes(attrs)
     {:ok, device} = Devices.create_device(scope, device_attrs, now)

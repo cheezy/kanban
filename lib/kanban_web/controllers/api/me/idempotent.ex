@@ -13,10 +13,16 @@ defmodule KanbanWeb.API.Me.Idempotent do
   again. A request without the header runs as it always did.
 
   The key is bound to the request it was sent with: the `review_requested_at`
-  of an approval, and the `review_requested_at` and `notes` of a request for
-  changes. The same key sent with others is a new request, so new notes are
-  never answered with the first request's 200 while being dropped. Before a
-  stored result is replayed, the person's access to the task and their plan
+  and a hash of the `signature` of an approval, and the `review_requested_at`
+  and `notes` of a request for changes. The same key sent with others is a
+  new request, so new notes are never answered with the first request's 200
+  while being dropped, and an approval resent with other signature bytes (a
+  bad signature, a high-s twin of the first, or none) runs as a new request
+  and is refused, never answered with the first request's 200 unchecked
+  (W2923, design doc §24 decision 18). Only the signature's SHA-256 enters the
+  binding, and the binding itself is hashed again before it is stored. A
+  replay answers the first result as it was: it does not check that the
+  review is still current. Before a stored result is replayed, the person's access to the task and their plan
   are checked again (`Kanban.Reviews.DecisionChecks.replayable/2`), so a
   person removed from the board or downgraded since is refused rather than
   answered from the store.
@@ -30,6 +36,7 @@ defmodule KanbanWeb.API.Me.Idempotent do
   import Phoenix.Controller, only: [json: 2]
 
   alias Kanban.Devices.Device
+  alias Kanban.Devices.DeviceToken
   alias Kanban.Devices.IdempotencyKey
   alias Kanban.Devices.Nonce
   alias Kanban.Devices.Nonces
@@ -39,9 +46,11 @@ defmodule KanbanWeb.API.Me.Idempotent do
   @typep decide :: (IdempotencyKey.t() | nil -> {:ok, term()} | {:error, term()})
   @typep replayable :: (-> :ok | {:error, term()})
 
-  # The body fields each decision's key is bound to.
+  # The body fields each decision's key is bound to. A `{:hashed, field}`
+  # field is bound by the SHA-256 of its string value, so the approval
+  # signature never enters the binding as sent.
   @bound_fields %{
-    approve: ["review_requested_at"],
+    approve: ["review_requested_at", {:hashed, "signature"}],
     request_changes: ["review_requested_at", "notes"]
   }
 
@@ -125,9 +134,21 @@ defmodule KanbanWeb.API.Me.Idempotent do
   defp bound(%Plug.Conn{body_params: params}, action) do
     @bound_fields
     |> Map.fetch!(action)
-    |> Enum.map(&(params |> Map.get(&1) |> bound_value()))
+    |> Enum.map(&bound_field(params, &1))
     |> Jason.encode!()
   end
+
+  defp bound_field(params, {:hashed, field}), do: params |> Map.get(field) |> hashed_value()
+  defp bound_field(params, field), do: params |> Map.get(field) |> bound_value()
+
+  # A string is bound by its hash alone, so its bytes decide the binding
+  # without being kept in it. Any other value (nil when the field is missing,
+  # or a value the decision refuses anyway) is bound as `bound_value/1` binds
+  # it, under another name, so no value sent can bind as a hash does.
+  defp hashed_value(value) when is_binary(value),
+    do: %{"sha256" => DeviceToken.hash_token(value)}
+
+  defp hashed_value(value), do: %{"as_sent" => bound_value(value)}
 
   # What a bound field contributes to the key's hash. A value a JSON or form
   # body can carry (a string, number, boolean, nil, or a map or list of them)

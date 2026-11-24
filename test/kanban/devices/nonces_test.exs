@@ -126,6 +126,30 @@ defmodule Kanban.Devices.NoncesTest do
       refute inspect(key) =~ @key
     end
 
+    test "stores no raw signature", ctx do
+      %{private_key: private_key} = approval_keypair_fixture()
+      signature = sign_approval(private_key, "approve-v1\nnonce\n42\n2026-11-18T09:30:00Z")
+      signature_hash = DeviceToken.hash_token(signature)
+
+      # An approval binds its signature by hash; the store hashes the request
+      # again, so neither the signature nor its hash reaches the row, whichever
+      # of the two the request carries.
+      for bound <- [signature, %{"sha256" => signature_hash}] do
+        request = Jason.encode!(["2026-11-18T09:30:00Z", bound])
+        key = Nonces.idempotency_key(ctx.phone, :approve, 42, @key, &render/1, request)
+        assert store!(key) == :ok
+
+        assert [%Nonce{} = row] = Repo.all(Nonce)
+        stored = row |> Map.from_struct() |> Map.drop([:__meta__]) |> inspect(limit: :infinity)
+
+        refute stored =~ signature
+        refute stored =~ signature_hash
+        refute inspect(key) =~ signature_hash
+
+        Repo.delete_all(Nonce)
+      end
+    end
+
     test "the same key sent with another request is a different row", ctx do
       bound = fn request ->
         Nonces.idempotency_key(ctx.phone, :request_changes, 42, @key, &render/1, request)

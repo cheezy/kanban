@@ -95,11 +95,15 @@ Idempotency-Key: 4f8e2a6c-1b3d-4e5f-8a7b-9c0d1e2f3a4b
   and body. The decision is not made again, so a retried approval returns its
   first `200` rather than `409 already_decided`.
 - The key is bound to the request it was sent with: the `review_requested_at`
-  of an approval, and the `review_requested_at` and `notes` of a request for
-  changes. The same key sent with others is a new request: on a review already
-  decided it answers `409 already_decided`, never the first `200` with the new
-  notes dropped. An approval retried with a new challenge and signature is
-  still the same request.
+  and a SHA-256 hash of the `signature` of an approval, and the
+  `review_requested_at` and `notes` of a request for changes. The same key
+  sent with others is a new request: on a review already decided it answers
+  `409 already_decided`, never the first `200` with the new notes dropped.
+  So a retried approval resends the same body, with the same nonce and
+  signature. An approval resent with other signature bytes, such as a new
+  challenge's, a bad signature or the high-s twin of the first, or with no
+  signature, is a new request too: it runs its checks and is refused, never
+  answered with the stored `200` unchecked.
 - Before a stored result is replayed, the person's access to the task and the
   `mobile_app` plan are checked again, so a person removed from the board, a
   task archived since, or a plan that no longer includes the app answers

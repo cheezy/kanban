@@ -15,9 +15,10 @@ defmodule Kanban.Devices.Nonces do
     * the same key from another device is a different row;
     * the same key sent for another task, or for the other decision, is a
       different row, so it acts anew and never replays another task's result;
-    * the same key sent with another request (other notes, or another
-      `review_requested_at`) is a different row too, so it is never answered
-      with the first request's result.
+    * the same key sent with another request (other notes, another
+      `review_requested_at`, or other approval signature bytes, which the
+      caller binds by their hash) is a different row too, so it is never
+      answered with the first request's result.
 
   A result is kept for at least 24 hours: the expiry is rounded up to the
   next whole second.

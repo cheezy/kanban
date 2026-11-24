@@ -124,6 +124,14 @@ defmodule KanbanWeb.API.Me.ReviewApproveTest do
   defp approve(device, task_id, body),
     do: post_json(device.token, "/api/me/reviews/#{task_id}/approve", body)
 
+  defp approve(device, task_id, body, key) do
+    build_conn()
+    |> put_req_header("authorization", "Bearer " <> device.token)
+    |> put_req_header("content-type", "application/json")
+    |> put_req_header("idempotency-key", key)
+    |> post("/api/me/reviews/#{task_id}/approve", Jason.encode!(body))
+  end
+
   defp challenge!(device, task_id) do
     device |> challenge(task_id) |> json_response(201) |> Map.fetch!("data")
   end
@@ -348,6 +356,41 @@ defmodule KanbanWeb.API.Me.ReviewApproveTest do
                device_class: :phone,
                reason: :missing
              }
+    end
+
+    test "refuses a bad-signature resend", ctx do
+      key = "0e9d8c7b-6a5f-4e3d-8c2b-1a0f9e8d7c6b"
+      task = pending_task!(ctx.review)
+      good = signed(ctx.phone, challenge!(ctx.phone, task.id))
+      bad = %{good | "signature" => "AAAA"}
+
+      first = ctx.phone |> approve(task.id, good, key) |> json_response(200)
+
+      # The key is bound to the signature it was sent with: a resend with a
+      # bad one is a new request, refused as already decided, never answered
+      # with the stored 200.
+      assert %{"error" => "already_decided"} =
+               ctx.phone |> approve(task.id, bad, key) |> json_response(409)
+
+      # Back in Review with the same review_requested_at, the identical resend
+      # still replays the past result. The valid twin of the signature is a new
+      # request too: it runs, and is refused because its nonce is used.
+      task
+      |> Repo.reload!()
+      |> Ecto.Changeset.change(review_status: nil, column_id: ctx.review.id)
+      |> Repo.update!()
+
+      assert ctx.phone |> approve(task.id, good, key) |> json_response(200) == first
+
+      twin = %{good | "signature" => signature_twin(good["signature"])}
+
+      assert %{"error" => "signature_rejected", "reason" => "reused"} =
+               ctx.phone |> approve(task.id, twin, key) |> json_response(422)
+
+      assert [_one] = rows(:review_approved)
+
+      assert ["reused"] =
+               :approval_signature_rejected |> rows() |> Enum.map(& &1.metadata["reason"])
     end
 
     test "two devices approving at once: one succeeds, one gets 409", ctx do
