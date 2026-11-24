@@ -667,6 +667,148 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
     end
   end
 
+  describe "a raised PDF build failure (D475)" do
+    # ChromicPDF never returns {:error, _}: a failed print raises, or exits
+    # when a Chrome process dies mid-call. Each stub fails the way it does.
+    defmodule RaisingPdfPrinter do
+      def print_to_pdf(_content, _opts) do
+        raise ChromicPDF.Browser.ExecutionError, "forced_pdf_raise"
+      end
+    end
+
+    defmodule ChromeErrorPdfPrinter do
+      def print_to_pdf(_content, _opts) do
+        raise ChromicPDF.ChromeError, error: "forced_chrome_error", opts: []
+      end
+    end
+
+    defmodule ConnectionLostPdfPrinter do
+      def print_to_pdf(_content, _opts) do
+        raise ChromicPDF.Connection.ConnectionLostError, "forced_connection_lost"
+      end
+    end
+
+    defmodule ExitingPdfPrinter do
+      def print_to_pdf(_content, _opts), do: exit(:forced_pdf_exit)
+    end
+
+    defmodule MessagelessPdfPrinter do
+      def print_to_pdf(_content, _opts), do: raise(ChromicPDF.Browser.ExecutionError)
+    end
+
+    defmodule BuggyPdfPrinter do
+      def print_to_pdf(_content, _opts), do: raise("forced_bug")
+    end
+
+    @span_events [
+      [:kanban, :export, :start],
+      [:kanban, :export, :stop],
+      [:kanban, :export, :exception]
+    ]
+
+    for {stub, reason} <- [
+          {RaisingPdfPrinter, "forced_pdf_raise"},
+          {ChromeErrorPdfPrinter, "forced_chrome_error"},
+          {ConnectionLostPdfPrinter, "forced_connection_lost"},
+          {ExitingPdfPrinter, "forced_pdf_exit"}
+        ] do
+      @stub stub
+      @reason reason
+
+      test "redirects when the PDF build raises: #{inspect(stub)}", %{conn: conn, user: user} do
+        board_with_completed_task!(user)
+        override_export_seam(:export_pdf_printer, @stub)
+
+        {conn, log} = with_log(fn -> get(conn, "/metrics/export") end)
+
+        assert redirected_to(conn) == ~p"/metrics"
+
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+                 WorkspaceMetricsExportController.export_error_flash_message()
+
+        assert log =~ "Workspace metrics export generation failed"
+        assert log =~ @reason
+      end
+
+      test "does not leak the raised reason: #{inspect(stub)}", %{conn: conn, user: user} do
+        board_with_completed_task!(user)
+        override_export_seam(:export_pdf_printer, @stub)
+
+        {conn, _log} = with_log(fn -> get(conn, "/metrics/export") end)
+
+        refute Phoenix.Flash.get(conn.assigns.flash, :error) =~ @reason
+        refute conn.resp_body =~ @reason
+        refute conn.resp_body =~ "ChromicPDF"
+      end
+
+      test "a raised build failure ends the export span with :stop: #{inspect(stub)}",
+           %{conn: conn, user: user} do
+        board_with_completed_task!(user)
+        override_export_seam(:export_pdf_printer, @stub)
+        attach_telemetry(@span_events)
+
+        with_log(fn -> get(conn, "/metrics/export") end)
+
+        assert export_span_metadata() ==
+                 {%{kind: :workspace_metrics, format: :pdf},
+                  %{kind: :workspace_metrics, format: :pdf}}
+
+        refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+        refute_received {:telemetry_event, [:kanban, :export, :exception], _, _}
+      end
+    end
+
+    test "shows the export-failed flash in the session's locale when the build raises",
+         %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+      override_export_seam(:export_pdf_printer, RaisingPdfPrinter)
+
+      {conn, _log} =
+        with_log(fn -> conn |> put_session(:locale, "de") |> get("/metrics/export") end)
+
+      german =
+        Gettext.with_locale(
+          KanbanWeb.Gettext,
+          "de",
+          &WorkspaceMetricsExportController.export_error_flash_message/0
+        )
+
+      assert german !=
+               Gettext.with_locale(
+                 KanbanWeb.Gettext,
+                 "en",
+                 &WorkspaceMetricsExportController.export_error_flash_message/0
+               )
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == german
+    end
+
+    test "handles a raised build failure with no message", %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+      override_export_seam(:export_pdf_printer, MessagelessPdfPrinter)
+
+      {conn, log} = with_log(fn -> get(conn, "/metrics/export") end)
+
+      assert redirected_to(conn) == ~p"/metrics"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               WorkspaceMetricsExportController.export_error_flash_message()
+
+      assert log =~ "ChromicPDF.Browser.ExecutionError"
+    end
+
+    test "an exception that is not a failed print still surfaces", %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+      override_export_seam(:export_pdf_printer, BuggyPdfPrinter)
+      attach_telemetry(@span_events)
+
+      assert_raise RuntimeError, "forced_bug", fn -> get(conn, "/metrics/export") end
+
+      assert_receive {:telemetry_event, [:kanban, :export, :exception], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+  end
+
   describe "export seams" do
     test "default to the real PDF printer and Excel generator" do
       assert Application.fetch_env(:kanban, :export_pdf_printer) == :error

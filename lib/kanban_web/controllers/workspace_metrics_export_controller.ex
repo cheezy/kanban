@@ -64,6 +64,7 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   use KanbanWeb, :controller
 
   alias Kanban.Metrics.Workspace
+  alias KanbanWeb.ExportPdf
   alias KanbanWeb.MetricsLive.Helpers
   alias KanbanWeb.Plugs.HeadRequest
   alias KanbanWeb.WorkspaceMetricsExcelExport
@@ -173,7 +174,10 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
       |> Phoenix.HTML.Safe.to_iodata()
       |> IO.iodata_to_binary()
 
-    case pdf_printer().print_to_pdf({:html, html}, print_to_pdf: %{printBackground: true}) do
+    # ExportPdf turns a raised Chrome failure into {:error, reason}, so a real
+    # failure redirects with the flash, and ends the span with :stop, exactly
+    # as a stubbed {:error, reason} does.
+    case ExportPdf.print(pdf_printer(), html) do
       {:ok, pdf_base64} ->
         {content_type, extension} = format_response_type(:pdf)
 
@@ -189,6 +193,9 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
     end
   end
 
+  # Unlike the PDF print, nothing here is rescued: the workbook is built in
+  # this process from data already loaded, so a raise is a bug (such as an
+  # unsupported cell type), not a transient failure, and must still surface.
   defp send_excel(conn, assigns) do
     case excel_exporter().generate(assigns) do
       {:ok, excel_binary} ->
