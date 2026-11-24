@@ -341,13 +341,21 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   also measures `row_count` for `:archive_csv`, the number of archived tasks
   exported; the other exports have no row count to report. A board, its
   name, the metric filters and the audit-log filters never appear, nor the
-  admin's or org-admin's IP address. A failed metrics report that redirects with an error
-  still ends with a stop event, and so does a signed Organization audit log
-  export whose build fails; only an exception produces the exception
-  event. A `HEAD` on any export route (the metrics, workspace metrics,
-  board archive, audit log, Organization audit log or workspace export
-  download route) gets the headers only and emits no span, so on all six
-  routes the span counts only exports that sent a file; a `HEAD` on the
+  admin's or org-admin's IP address. The stop event counts export
+  attempts that built or tried to build a file, not files received. A
+  request its route refuses before building anything, such as an unknown
+  format, a board the user cannot see or a rate-limited Organization audit
+  log export, emits no span. A metrics or workspace metrics report whose
+  build fails, including a PDF print that Chrome fails by raising, redirects
+  with an error and still ends with a stop event. So does a signed
+  Organization audit log export whose build fails, or whose requester stops
+  being an org-admin during the build, and one whose download the client
+  cancels. Only an exception that escapes the export produces the exception
+  event, such as any other raise during a report's build. A `HEAD` on any
+  export route (the metrics, workspace metrics, board archive, audit log,
+  Organization audit log or workspace export download route) gets the
+  headers only and emits no span, so on all six routes the span never
+  counts a `HEAD`; a `HEAD` on the
   metrics and workspace metrics exports also builds no report, and a `HEAD`
   on the board archive export never calls
   `Kanban.Archives.export_csv_for_board/1`, so it builds no CSV. A `HEAD` on
@@ -1770,7 +1778,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log, :org_audit_log or :workspace_export, format the file type; row_count is measured for the archive CSV only. |
+| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | An export attempt that built or tried to build a download; a HEAD emits none. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log, :org_audit_log or :workspace_export, format the file type; row_count is measured for the archive CSV only. |
 
 - `[:kanban, :export]` is a span: it emits `[:kanban, :export, :start]`, `[:kanban, :export, :stop]` and `[:kanban, :export, :exception]`.
 
