@@ -93,4 +93,120 @@ defmodule KanbanWeb.ArchiveExportControllerTest do
       refute conn.resp_body =~ "Secret Task"
     end
   end
+
+  describe "export/2 - HEAD (D474)" do
+    @export_events [[:kanban, :export, :start], [:kanban, :export, :stop]]
+
+    defp archived_board(user, attrs \\ %{}) do
+      board = board_fixture(user, attrs)
+
+      board
+      |> column_fixture()
+      |> task_fixture(%{title: "Exported Task"})
+      |> Tasks.archive_task()
+
+      board
+    end
+
+    defp assert_same_headers(headed, got) do
+      assert headed.status == got.status
+      assert headed.resp_body == ""
+
+      for header <- ["content-type", "content-disposition"] do
+        assert [_value] = get_resp_header(headed, header)
+        assert get_resp_header(headed, header) == get_resp_header(got, header)
+      end
+    end
+
+    defp refute_export_span do
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
+    test "GET still emits the export span", %{conn: conn, user: user} do
+      board = archived_board(user)
+      attach_telemetry(@export_events)
+
+      got = get(conn, ~p"/boards/#{board}/archive/export")
+
+      assert got.status == 200
+      assert got.resp_body =~ "Exported Task"
+
+      assert_received {:telemetry_event, [:kanban, :export, :start], _,
+                       %{kind: :archive_csv, format: :csv}}
+
+      assert_received {:telemetry_event, [:kanban, :export, :stop], %{row_count: 1},
+                       %{kind: :archive_csv, format: :csv}}
+
+      refute_export_span()
+    end
+
+    test "HEAD emits no export span and its headers match GET",
+         %{conn: conn, user: user} do
+      board = archived_board(user)
+      got = get(conn, ~p"/boards/#{board}/archive/export")
+
+      attach_telemetry(@export_events)
+      headed = head(conn, ~p"/boards/#{board}/archive/export")
+
+      assert headed.status == 200
+      assert [content_type] = get_resp_header(headed, "content-type")
+      assert content_type =~ "text/csv"
+      assert_same_headers(headed, got)
+      refute_export_span()
+    end
+
+    test "HEAD with no archived tasks returns the headers and no span",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      got = get(conn, ~p"/boards/#{board}/archive/export")
+
+      attach_telemetry(@export_events)
+      headed = head(conn, ~p"/boards/#{board}/archive/export")
+
+      assert_same_headers(headed, got)
+      refute_export_span()
+    end
+
+    test "HEAD keeps the sanitized filename in the content-disposition",
+         %{conn: conn, user: user} do
+      board = archived_board(user, %{name: ~s(Q4 "Plan"; a/b\\c)})
+      got = get(conn, ~p"/boards/#{board}/archive/export")
+
+      attach_telemetry(@export_events)
+      headed = head(conn, ~p"/boards/#{board}/archive/export")
+
+      assert [disposition] = get_resp_header(headed, "content-disposition")
+
+      assert disposition ==
+               ~s(attachment; filename="Q4__Plan___a_b_c_archive_#{Date.utc_today()}.csv")
+
+      assert_same_headers(headed, got)
+      refute_export_span()
+    end
+
+    test "HEAD on another user's board redirects like GET", %{conn: conn} do
+      other_board = archived_board(user_fixture())
+      got = get(conn, ~p"/boards/#{other_board}/archive/export")
+
+      attach_telemetry(@export_events)
+      headed = head(conn, ~p"/boards/#{other_board}/archive/export")
+
+      assert redirected_to(headed) == ~p"/boards"
+      assert redirected_to(headed) == redirected_to(got)
+      refute headed.resp_body =~ "Exported Task"
+      refute_export_span()
+    end
+
+    test "HEAD on a malformed board id redirects like GET", %{conn: conn} do
+      got = get(conn, "/boards/not-a-board/archive/export")
+
+      attach_telemetry(@export_events)
+      headed = head(conn, "/boards/not-a-board/archive/export")
+
+      assert redirected_to(headed) == ~p"/boards"
+      assert redirected_to(headed) == redirected_to(got)
+      refute_export_span()
+    end
+  end
 end
