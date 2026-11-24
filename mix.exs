@@ -95,7 +95,7 @@ defmodule Kanban.MixProject do
       {:oidcc, "~> 3.9"},
       {:simple_saml, "~> 1.2"},
       {:simple_xml, "~> 1.3"},
-      {:eqrcode, "~> 0.2.1"},
+      {:eqrcode, "~> 0.3.0"},
       {:tz, "~> 0.28"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
