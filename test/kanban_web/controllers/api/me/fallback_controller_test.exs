@@ -6,6 +6,7 @@ defmodule KanbanWeb.API.Me.FallbackControllerTest do
   test "a device revoked mid-request answers the plug's 401", %{conn: conn} do
     conn = FallbackController.call(conn, {:error, :revoked})
     assert json_response(conn, 401) == %{"error" => "Invalid access token"}
+    assert get_resp_header(conn, "www-authenticate") == [~s(Bearer error="invalid_token")]
   end
 
   test "not found answers 404 with the Error shape", %{conn: conn} do

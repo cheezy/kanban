@@ -45,7 +45,11 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
   token"}`, whatever the cause, so the response never says whether a string
   was ever a real token; the app answers it by refreshing. A missing or
   non-Bearer header answers `401 {"error": "Missing or invalid Authorization
-  header"}`. Failed authentications count toward the same per-IP limit as
+  header"}`. Every `401`, the in-flight refusal below included, carries the
+  `www-authenticate` challenge from `KanbanWeb.Plugs.BearerChallenge`:
+  `Bearer` for a missing or non-Bearer header, and
+  `Bearer error="invalid_token"` for a refused token, whatever the cause.
+  Failed authentications count toward the same per-IP limit as
   agent tokens, which answers `429` with `retry-after`, and emit
   `[:kanban, :api, :auth_failed]` with reason `missing_token`,
   `device_token_invalid` or `rate_limited`. The header and the token are never
@@ -75,6 +79,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
   alias Kanban.Devices
   alias Kanban.Organizations
   alias Kanban.RateLimit
+  alias KanbanWeb.Plugs.BearerChallenge
 
   def init(opts), do: opts
 
@@ -132,6 +137,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
     conn
     |> delete_resp_header("etag")
     |> put_resp_header("cache-control", "private, no-store")
+    |> BearerChallenge.put_challenge(:invalid_token)
     |> put_resp_content_type("application/json")
     |> resp(:unauthorized, Jason.encode!(%{error: "Invalid access token"}))
   end
@@ -167,6 +173,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
     emit_auth_failed_telemetry(conn, "missing_token")
 
     conn
+    |> BearerChallenge.put_challenge(:no_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Missing or invalid Authorization header"})
     |> halt()
@@ -185,6 +192,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceToken do
     emit_auth_failed_telemetry(conn, "device_token_invalid")
 
     conn
+    |> BearerChallenge.put_challenge(:invalid_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Invalid access token"})
     |> halt()

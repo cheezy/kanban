@@ -619,10 +619,135 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
         for _ <- 1..25 do
           conn = call_with(%{build_conn() | remote_ip: ip}, ctx.ws_plain, opts)
           assert conn.status == status
+          # A valid token was sent, so a selector failure is not a 401 and
+          # carries no www-authenticate challenge.
+          assert get_resp_header(conn, "www-authenticate") == []
         end
 
         assert :ok = Kanban.RateLimit.peek(:api_token, ip: ip)
       end
+    end
+  end
+
+  # RFC 6750 §3: every 401 names the Bearer scheme, and a token that was sent
+  # and refused adds error="invalid_token", the same for every cause.
+  describe "the www-authenticate challenge (W2924)" do
+    test "401 carries the Bearer challenge", %{conn: conn} do
+      conn = AuthenticateApiToken.call(conn, [])
+
+      assert json_response(conn, 401) == %{"error" => "Missing or invalid Authorization header"}
+      assert get_resp_header(conn, "www-authenticate") == ["Bearer"]
+    end
+
+    test "empty header gets the challenge" do
+      repeated = %{
+        build_conn()
+        | req_headers: [{"authorization", "Bearer one"}, {"authorization", "Bearer two"}]
+      }
+
+      headers =
+        Enum.map(["", "Bearer", "Basic abc", "InvalidFormat token123"], fn value ->
+          put_req_header(build_conn(), "authorization", value)
+        end)
+
+      for conn <- [repeated | headers] do
+        conn = AuthenticateApiToken.call(conn, [])
+
+        assert json_response(conn, 401) == %{"error" => "Missing or invalid Authorization header"}
+        assert get_resp_header(conn, "www-authenticate") == ["Bearer"]
+      end
+    end
+
+    test "refused token says invalid_token", %{user: user, board: board} do
+      {:ok, {expiring, expired_plain}} =
+        ApiTokens.create_api_token(user, board, %{name: "Expiring"})
+
+      expire_token(expiring)
+
+      {:ok, {revoking, revoked_plain}} =
+        ApiTokens.create_api_token(user, board, %{name: "Revoking"})
+
+      {:ok, _} = ApiTokens.revoke_api_token(revoking)
+
+      disabled_owner = user_fixture()
+
+      {:ok, {_token, disabled_plain}} =
+        ApiTokens.create_api_token(disabled_owner, ai_optimized_board_fixture(disabled_owner), %{
+          name: "Disabled owner"
+        })
+
+      {:ok, _} = Kanban.Accounts.disable_user(disabled_owner, admin_fixture())
+
+      plain_owner = user_fixture()
+      plain_board = ai_optimized_board_fixture(plain_owner)
+
+      {:ok, {_token, not_ai_plain}} =
+        ApiTokens.create_api_token(plain_owner, plain_board, %{name: "Not AI optimized"})
+
+      from(b in Kanban.Boards.Board, where: b.id == ^plain_board.id)
+      |> Repo.update_all(set: [ai_optimized_board: false])
+
+      for token <- ["does_not_exist", expired_plain, revoked_plain, disabled_plain, not_ai_plain] do
+        conn =
+          build_conn()
+          |> put_req_header("authorization", "Bearer #{token}")
+          |> AuthenticateApiToken.call([])
+
+        assert json_response(conn, 401) == %{"error" => "Invalid API token"}
+        assert [challenge] = get_resp_header(conn, "www-authenticate")
+        assert challenge == ~s(Bearer error="invalid_token")
+        refute challenge =~ token
+      end
+    end
+
+    test "MCP 401 carries the challenge" do
+      initialize = Jason.encode!(%{"jsonrpc" => "2.0", "id" => 1, "method" => "initialize"})
+
+      post_mcp = fn conn ->
+        conn
+        |> put_req_header("accept", "application/json, text/event-stream")
+        |> put_req_header("content-type", "application/json")
+        |> post(~p"/api/mcp", initialize)
+      end
+
+      no_token = post_mcp.(build_conn())
+
+      assert json_response(no_token, 401) == %{
+               "error" => "Missing or invalid Authorization header"
+             }
+
+      assert get_resp_header(no_token, "www-authenticate") == ["Bearer"]
+
+      refused =
+        build_conn()
+        |> put_req_header("authorization", "Bearer stride_dev_not_a_real_token")
+        |> then(post_mcp)
+
+      assert json_response(refused, 401) == %{"error" => "Invalid API token"}
+      assert get_resp_header(refused, "www-authenticate") == [~s(Bearer error="invalid_token")]
+    end
+
+    test "a 429 carries no challenge", %{plain_text_token: plain_text_token} do
+      original = Application.get_env(:kanban, Kanban.RateLimit)
+      Application.put_env(:kanban, Kanban.RateLimit, enabled: true)
+      on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
+
+      ip = {10, :rand.uniform(255), :rand.uniform(255), :rand.uniform(255)}
+
+      from_ip = fn header ->
+        %{build_conn() | remote_ip: ip}
+        |> put_req_header("authorization", header)
+        |> AuthenticateApiToken.call([])
+      end
+
+      # :api_token allows 20 failed authentications a minute per address.
+      for _ <- 1..20, do: assert(from_ip.("Bearer does_not_exist").status == 401)
+
+      conn = from_ip.("Bearer #{plain_text_token}")
+
+      assert json_response(conn, 429) == %{"error" => "Too many requests"}
+      assert [_seconds] = get_resp_header(conn, "retry-after")
+      assert get_resp_header(conn, "www-authenticate") == []
     end
   end
 

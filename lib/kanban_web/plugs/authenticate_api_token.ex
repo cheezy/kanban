@@ -20,7 +20,10 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   - Validate the token against the database
   - Check that the token is not revoked
   - Assign :current_user, :current_board, and :api_token to conn.assigns
-  - Return 401 Unauthorized if token is invalid or missing
+  - Return 401 Unauthorized if token is invalid or missing, with the
+    `www-authenticate` challenge from `KanbanWeb.Plugs.BearerChallenge`:
+    `Bearer` when no Bearer header was sent, and
+    `Bearer error="invalid_token"` when a token was sent and refused
 
   A mobile app's device access token is refused like any unknown token: it
   lives in a different table, which this plug never reads, so a phone never
@@ -75,6 +78,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   alias Kanban.ApiTokens.DeniedAudit
   alias Kanban.RateLimit
   alias KanbanWeb.Plugs.AuthenticateApiToken.BoardSelector
+  alias KanbanWeb.Plugs.BearerChallenge
 
   def init(opts), do: opts
 
@@ -215,6 +219,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     emit_auth_failed_telemetry(conn, "missing_token")
 
     conn
+    |> BearerChallenge.put_challenge(:no_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Missing or invalid Authorization header"})
     |> halt()
@@ -231,6 +236,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     emit_auth_failed_telemetry(conn, telemetry_reason(reason))
 
     conn
+    |> BearerChallenge.put_challenge(:invalid_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Invalid API token"})
     |> halt()
@@ -243,6 +249,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     emit_auth_failed_telemetry(conn, "user_disabled")
 
     conn
+    |> BearerChallenge.put_challenge(:invalid_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Invalid API token"})
     |> halt()
@@ -254,6 +261,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     emit_auth_failed_telemetry(conn, "board_not_ai_optimized")
 
     conn
+    |> BearerChallenge.put_challenge(:invalid_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Invalid API token"})
     |> halt()

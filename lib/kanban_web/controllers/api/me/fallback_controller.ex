@@ -10,7 +10,8 @@ defmodule KanbanWeb.API.Me.FallbackController do
     * `:revoked`, a device revoked while its request was in flight, is the
       `401 {"error": "Invalid access token"}` that
       `KanbanWeb.Plugs.AuthenticateDeviceToken` answers for a revoked device,
-      so the app handles both the same way;
+      with the same `www-authenticate: Bearer error="invalid_token"`
+      challenge, so the app handles both the same way;
     * `{:plan_required, feature}`, a route the person's plan or the board's
       does not unlock (design §10), is `403 {"error": "plan_required",
       "feature": feature, "message": message}` (`PlanRequired`), the shape
@@ -72,6 +73,7 @@ defmodule KanbanWeb.API.Me.FallbackController do
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.ReviewJSON
   alias KanbanWeb.CoreComponents
+  alias KanbanWeb.Plugs.BearerChallenge
 
   # The refusals Kanban.Reviews.approve_review/3 can return once the approval
   # checks have passed: the board has no Done column to move the task to, or
@@ -266,6 +268,7 @@ defmodule KanbanWeb.API.Me.FallbackController do
 
   def call(conn, {:error, :revoked}) do
     conn
+    |> BearerChallenge.put_challenge(:invalid_token)
     |> put_status(:unauthorized)
     |> json(%{error: "Invalid access token"})
   end

@@ -12,6 +12,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
   alias Kanban.Devices
   alias Kanban.Devices.Device
   alias Kanban.Repo
+  alias KanbanWeb.Plugs.AuthenticateApiToken
   alias KanbanWeb.Plugs.AuthenticateDeviceToken
 
   @auth_failed [:kanban, :api, :auth_failed]
@@ -155,6 +156,52 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
       end
     end
 
+    test "wrong token kind carries the challenge", %{scope: scope, access_token: device_token} do
+      {:ok, {_api_token, agent_token}} =
+        ApiTokens.create_api_token(scope.user, ai_optimized_board_fixture(scope.user), %{
+          name: "Agent"
+        })
+
+      {_device, issued} = device_with_tokens_fixture(scope)
+
+      # An agent token or a refresh token on /api/me.
+      for token <- [agent_token, issued.refresh_token] do
+        conn = call_with(build_conn(), "Bearer " <> token)
+
+        assert json_response(conn, 401) == %{"error" => "Invalid access token"}
+        assert get_resp_header(conn, "www-authenticate") == [~s(Bearer error="invalid_token")]
+      end
+
+      # A device access token on an agent route.
+      conn =
+        build_conn()
+        |> put_req_header("authorization", "Bearer " <> device_token)
+        |> AuthenticateApiToken.call([])
+
+      assert json_response(conn, 401) == %{"error" => "Invalid API token"}
+      assert get_resp_header(conn, "www-authenticate") == [~s(Bearer error="invalid_token")]
+    end
+
+    test "401 body unchanged", %{scope: scope} do
+      {_device, expired} =
+        device_with_tokens_fixture(scope, %{}, DateTime.add(DateTime.utc_now(), -2, :hour))
+
+      missing = AuthenticateDeviceToken.call(build_conn(), [])
+
+      assert json_response(missing, 401) == %{
+               "error" => "Missing or invalid Authorization header"
+             }
+
+      assert get_resp_header(missing, "www-authenticate") == ["Bearer"]
+
+      for header <- ["Bearer sdat_not-a-real-token", "Bearer " <> expired.access_token] do
+        conn = call_with(build_conn(), header)
+
+        assert json_response(conn, 401) == %{"error" => "Invalid access token"}
+        assert get_resp_header(conn, "www-authenticate") == [~s(Bearer error="invalid_token")]
+      end
+    end
+
     test "never echoes the presented token", %{conn: conn} do
       bogus = "sdat_not-a-real-token-value"
 
@@ -194,6 +241,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
       assert [retry_after] = get_resp_header(conn, "retry-after")
       assert String.to_integer(retry_after) in 1..61
       refute_authenticated(conn)
+      assert get_resp_header(conn, "www-authenticate") == []
 
       assert_received {:telemetry_event, @auth_failed, %{count: 1},
                        %{reason: "rate_limited", path: "/", method: "GET"}}
@@ -293,6 +341,7 @@ defmodule KanbanWeb.Plugs.AuthenticateDeviceTokenTest do
       refute conn.resp_body =~ "secret"
       assert get_resp_header(conn, "etag") == []
       assert get_resp_header(conn, "cache-control") == ["private, no-store"]
+      assert get_resp_header(conn, "www-authenticate") == [~s(Bearer error="invalid_token")]
     end
 
     test "a GET answers 401 when the user is disabled meanwhile", %{scope: scope} = ctx do

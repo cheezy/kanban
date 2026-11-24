@@ -584,6 +584,25 @@ body is the same in every case, so it never shows which one applies:
 }
 ```
 
+Every `401` also carries a `www-authenticate` header (RFC 6750 §3), so an HTTP
+or MCP client can tell that the route needs a token. It is `Bearer` with the
+first body above, and `Bearer error="invalid_token"` with the second, whatever
+the cause:
+
+```http
+HTTP/1.1 401 Unauthorized
+content-type: application/json; charset=utf-8
+www-authenticate: Bearer error="invalid_token"
+
+{
+  "error": "Invalid API token"
+}
+```
+
+The header names no realm, never echoes the token and says nothing the body
+does not. `POST /api/mcp` and the person API (`/api/me`) send it the same way.
+No other status carries it, a `403` or a `429` included.
+
 ### 429 Too Many Requests
 
 Each failed authentication (a `401` above) counts against the client's IP
@@ -601,7 +620,8 @@ retry-after: 42
 }
 ```
 
-`retry-after` is the number of seconds to wait. Requests with a valid token are
+`retry-after` is the number of seconds to wait. A `429` carries no
+`www-authenticate` header. Requests with a valid token are
 never counted, so normal traffic does not hit this limit. If you see it, check
 that every client on that address sends a working token.
 

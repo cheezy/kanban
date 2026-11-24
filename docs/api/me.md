@@ -22,6 +22,10 @@ Every route takes a device access token, sent as
 ([authentication](get_me.md#authentication)). It lasts one hour, and the app
 renews it with its refresh token.
 
+Every `401` carries a `www-authenticate` header: `Bearer` when no Bearer header
+was sent, and `Bearer error="invalid_token"` when a token was sent and refused,
+whatever the cause ([the header](README.md#401-for-a-missing-or-invalid-token)).
+
 Every app request also carries the `X-Stride-App` header with the app's platform
 and version. A version below the platform's minimum is refused with `426` before
 the token is checked, so an outdated app reaches its update screen even when its
@@ -89,7 +93,7 @@ plans are not enforced, every route is unlocked and `GET /api/me` returns
 | Status | When |
 |---|---|
 | `400` | The query string or body cannot be parsed ([details](README.md#400-for-a-malformed-query-string-or-body)) |
-| `401` | `{"error": "Missing or invalid Authorization header"}` without a `Bearer` header, or `{"error": "Invalid access token"}` for an unknown, expired or revoked token, a disabled account or an agent API token |
+| `401` | `{"error": "Missing or invalid Authorization header"}` without a `Bearer` header, or `{"error": "Invalid access token"}` for an unknown, expired or revoked token, a disabled account or an agent API token. Both carry `www-authenticate`: `Bearer` for the first, `Bearer error="invalid_token"` for the second |
 | `403` | `plan_required`, on the plan-gated routes only |
 | `404` | `{"error": "Not Found"}` for a path under `/api/me` that matches no route, such as a verb a route does not serve, as JSON whatever the `Accept` header says |
 | `406` | The `Accept` header rules out JSON ([details](README.md#406-not-acceptable)) |
