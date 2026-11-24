@@ -131,6 +131,9 @@
             >
               {gettext("Notes for the agent")}
             </label>
+            <%!-- normalize_value/2 emits a newline before the notes: the HTML
+                 parser drops one newline right after <textarea>, so without it
+                 notes that begin with a newline would lose it on re-render. --%>
             <textarea
               id="review-notes"
               name="review[notes]"
@@ -144,7 +147,7 @@
                 "color: var(--ink); background: var(--surface);",
                 "border: 1px solid var(--line-input); border-radius: 6px;"
               ]}
-            >{@notes}</textarea>
+            >{Phoenix.HTML.Form.normalize_value("textarea", @notes)}</textarea>
             <p
               id="review-notes-count"
               data-review-notes-count

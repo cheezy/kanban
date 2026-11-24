@@ -67,6 +67,23 @@ defmodule KanbanWeb.ReviewLiveTest do
     %{board: board, column: review_column}
   end
 
+  # Opens the request-changes form, then decides the task elsewhere so the
+  # next submit is refused and the form re-renders the typed notes.
+  defp open_form_then_decide_elsewhere!(conn, user, identifier) do
+    %{column: column} = setup_review_column(user)
+    task = pending_task!(column, %{identifier: identifier})
+
+    {:ok, view, _html} = live(conn, ~p"/review")
+
+    view
+    |> element("[data-review-detail-header-request-changes]")
+    |> render_click()
+
+    task |> Ecto.Changeset.change(review_status: :approved) |> Kanban.Repo.update!()
+
+    view
+  end
+
   describe "unauthenticated access" do
     test "redirects to the log-in page when the user is not signed in", %{conn: conn} do
       assert {:error, {:redirect, %{to: redirect_to}}} = live(conn, ~p"/review")
@@ -906,6 +923,11 @@ defmodule KanbanWeb.ReviewLiveTest do
         |> render_click()
 
       assert html =~ "data-review-request-changes-form"
+      # The form opens with no notes in it. LiveViewTest skips whitespace-only
+      # text nodes, so this cannot see the rendering newline either way; the
+      # browser drops it, which the manual check on /review confirms.
+      assert view |> element("#review-notes") |> render() =~ "></textarea>"
+      assert html =~ "0 / 10000 characters"
     end
 
     test "submitting Request changes with notes removes the task from the queue",
@@ -996,6 +1018,96 @@ defmodule KanbanWeb.ReviewLiveTest do
       |> render_submit()
 
       assert view |> element("#review-notes") |> render() =~ ">Cover the empty list.</textarea>"
+    end
+
+    # The HTML parser drops one newline right after <textarea>, so the
+    # rendered element must carry a rendering newline ahead of the notes for
+    # a leading newline of the reviewer's own to survive the re-render.
+    test "keeps a leading newline in the notes on re-render", %{conn: conn, user: user} do
+      view = open_form_then_decide_elsewhere!(conn, user, "W314")
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]",
+          review: %{notes: "\nCover the empty list."}
+        )
+        |> render_submit()
+
+      assert view |> element("#review-notes") |> render() =~
+               ">\nCover the empty list.</textarea>"
+
+      # The counter counts the reviewer's notes, not the rendering newline.
+      assert html =~ "22 / 10000 characters"
+    end
+
+    test "keeps two leading newlines", %{conn: conn, user: user} do
+      view = open_form_then_decide_elsewhere!(conn, user, "W315")
+
+      view
+      |> form("[data-review-request-changes-form]", review: %{notes: "\n\nCover it."})
+      |> render_submit()
+
+      assert view |> element("#review-notes") |> render() =~ ">\n\nCover it.</textarea>"
+    end
+
+    test "re-renders refused notes unchanged", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      pending_task!(column, %{identifier: "W316"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element("[data-review-detail-header-request-changes]")
+      |> render_click()
+
+      notes = "\n" <> String.duplicate("a", 10_001) <> " <b>&</b>"
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]", review: %{notes: notes})
+        |> render_submit()
+
+      assert html =~ "Notes can be at most 10000 characters."
+      assert html =~ "10011 / 10000 characters — too long"
+
+      # Byte-for-byte, and still HTML-escaped.
+      textarea = view |> element("#review-notes") |> render()
+
+      assert textarea =~
+               ">\n" <> String.duplicate("a", 10_001) <> " &lt;b&gt;&amp;&lt;/b&gt;</textarea>"
+
+      refute textarea =~ "<b>"
+    end
+
+    test "submits the notes without the rendering newline", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{identifier: "W317"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element("[data-review-detail-header-request-changes]")
+      |> render_click()
+
+      notes = "\nPlease fix the thing."
+
+      view
+      |> form("[data-review-request-changes-form]", review: %{notes: notes})
+      |> render_change()
+
+      # The textarea's value is the notes exactly: the rendering newline is
+      # consumed by the parser and never becomes part of the value. (The form
+      # is not submitted from its defaults here: LiveViewTest strips a leading
+      # newline from a textarea's parsed text, which a browser does not.)
+      textarea = view |> element("#review-notes") |> render()
+      assert textarea =~ ">\nPlease fix the thing.</textarea>"
+      refute textarea =~ ">\n\nPlease"
+
+      view
+      |> form("[data-review-request-changes-form]", review: %{notes: notes})
+      |> render_submit()
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).review_notes == notes
     end
 
     test "shows the notes-too-long error translated", %{conn: conn, user: user} do
