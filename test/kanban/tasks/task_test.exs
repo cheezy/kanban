@@ -816,6 +816,80 @@ defmodule Kanban.Tasks.TaskTest do
     MapSet.difference(bounded_scalars, excluded)
   end
 
+  describe "review_notes cap (D469)" do
+    # The cap lives in Kanban.Reviews; the changeset reads it from there so the
+    # two checks cannot drift apart.
+    @cap Kanban.Reviews.review_notes_max_length()
+
+    test "accepts review_notes at the cap", %{column: column} do
+      task = task_fixture(column)
+      cs = Task.changeset(task, %{review_notes: String.duplicate("x", @cap)})
+
+      assert cs.valid?
+      assert get_change(cs, :review_notes) |> String.length() == @cap
+    end
+
+    test "refuses review_notes over the cap, counting codepoints", %{column: column} do
+      task = task_fixture(column)
+
+      over = Task.changeset(task, %{review_notes: String.duplicate("x", @cap + 1)})
+      refute over.valid?
+      assert errors_on(over).review_notes == ["should be at most #{@cap} character(s)"]
+
+      # 10,000 two-byte codepoints are 20,000 bytes but sit exactly at the cap.
+      multibyte = Task.changeset(task, %{review_notes: String.duplicate("é", @cap)})
+      assert multibyte.valid?
+
+      # "e" plus a combining acute accent is one grapheme but two codepoints.
+      # 5,001 of them are 5,001 graphemes, which a grapheme count would accept,
+      # but 10,002 codepoints, which Kanban.Reviews and this changeset refuse.
+      combining = String.duplicate("e\u0301", div(@cap, 2) + 1)
+      assert String.length(combining) == div(@cap, 2) + 1
+      refute Task.changeset(task, %{review_notes: combining}).valid?
+
+      # Agrees with Kanban.Reviews on the same inputs.
+      assert Kanban.Reviews.review_notes_too_long?(combining)
+      at_cap = String.duplicate("é", @cap)
+      refute Kanban.Reviews.review_notes_too_long?(at_cap)
+    end
+
+    test "the error does not echo the notes back", %{column: column} do
+      task = task_fixture(column)
+      notes = String.duplicate("secret-ish ", 1_000)
+      cs = Task.changeset(task, %{review_notes: notes})
+
+      refute cs.valid?
+      [message] = errors_on(cs).review_notes
+      refute message =~ "secret-ish"
+    end
+
+    test "allows nil review_notes", %{column: column} do
+      task = task_fixture(column)
+
+      assert Task.changeset(task, %{review_notes: nil}).valid?
+      assert Task.changeset(task, %{title: "No notes given"}).valid?
+    end
+
+    test "doesn't block unrelated updates on legacy long notes", %{column: column} do
+      task = task_fixture(column)
+      legacy = String.duplicate("x", @cap + 500)
+
+      # Written before the cap existed: bypass the changeset to store it.
+      {1, _} =
+        from(t in Task, where: t.id == ^task.id)
+        |> Repo.update_all(set: [review_notes: legacy])
+
+      task = Repo.get!(Task, task.id)
+      assert task.review_notes == legacy
+
+      cs = Task.changeset(task, %{title: "Renamed with legacy notes"})
+      assert cs.valid?
+      assert {:ok, updated} = Repo.update(cs)
+      assert updated.title == "Renamed with legacy notes"
+      assert updated.review_notes == legacy
+    end
+  end
+
   describe "varchar(255) validator coverage guard (W1412)" do
     # Regression guard for D81: every length-bounded varchar(255) column on the
     # `tasks` table must be covered by a changeset length validator, or oversized

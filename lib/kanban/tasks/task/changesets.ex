@@ -15,6 +15,7 @@ defmodule Kanban.Tasks.Task.Changesets do
   import Ecto.Changeset
 
   alias Kanban.ChangesetText
+  alias Kanban.Reviews
   alias Kanban.Tasks.Task.ArchiveChangeset
   alias Kanban.Tasks.Task.Capabilities
   alias Kanban.Tasks.Task.EmbedValidations
@@ -192,6 +193,15 @@ defmodule Kanban.Tasks.Task.Changesets do
     # and re-rendered into the Review queue, and this changeset is a second
     # writer (the task form) besides the completion endpoint (D188).
     |> validate_length(:completion_notes, max: 65_535)
+    # Same reasoning for `review_notes` (D469): Kanban.Reviews refuses
+    # over-cap request-changes notes with its own :review_notes_too_long, but
+    # the workspace importer writes them through this changeset too. The
+    # limit is read at run time from Reviews, never restated, and counted in
+    # codepoints so the two checks agree on every input.
+    |> validate_length(:review_notes,
+      max: Reviews.review_notes_max_length(),
+      count: :codepoints
+    )
     |> validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
     |> FieldValidations.validate_technology_requirements()
     |> Capabilities.validate_required_capabilities()

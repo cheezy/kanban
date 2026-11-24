@@ -278,6 +278,26 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
       end
     end
 
+    test "refuses an import with over-cap review notes", ctx do
+      cap = Kanban.Reviews.review_notes_max_length()
+      notes = String.duplicate("n", cap + 1)
+      files = change_task(ctx.files, ctx.goal, %{"review_notes" => notes})
+
+      # inspect/1 truncates long strings, so look for a short run of the notes.
+      assert_refused(ctx, files, fn {:invalid_row, :tasks, ref, errors} = error ->
+        ref == ctx.goal.identifier and
+          errors == %{review_notes: ["should be at most #{cap} character(s)"]} and
+          not (inspect(error) =~ String.duplicate("n", 64))
+      end)
+    end
+
+    test "review notes at the cap import", ctx do
+      notes = String.duplicate("é", Kanban.Reviews.review_notes_max_length())
+      files = change_task(ctx.files, ctx.goal, %{"review_notes" => notes})
+
+      assert {:ok, %{counts: %{tasks: 6}}} = import_files(ctx, files)
+    end
+
     test "a comment agent name that is not a string", ctx do
       for name <- [%{"x" => 1}, [-1], 42] do
         files = update_rows(ctx.files, :comments, &Map.put(&1, "author_agent_name", name))
