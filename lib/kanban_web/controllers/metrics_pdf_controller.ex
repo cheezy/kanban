@@ -83,7 +83,7 @@ defmodule KanbanWeb.MetricsPdfController do
     opts = build_metric_options(conn, params)
     html_content = pdf_html(board, metric, opts)
 
-    case ChromicPDF.print_to_pdf({:html, html_content}, print_to_pdf: %{printBackground: true}) do
+    case pdf_printer().print_to_pdf({:html, html_content}, print_to_pdf: %{printBackground: true}) do
       {:ok, pdf_base64} ->
         pdf_binary = Base.decode64!(pdf_base64)
         send_pdf_response(conn, board, metric, opts, pdf_binary)
@@ -92,6 +92,20 @@ defmodule KanbanWeb.MetricsPdfController do
         handle_pdf_error(conn, board.id, metric, reason)
     end
   end
+
+  # Testability seams, in the style of the :metrics_module seam in
+  # KanbanWeb.MetricsLive.Dashboard: a test puts a stub module under the key to
+  # force {:error, reason} from the build, so the failed-build branch, and the
+  # :stop that ends its export span, can be exercised. The module comes only
+  # from application config, never from the request, and no config file sets
+  # either key, so dev and prod always get the real modules. Exposed for
+  # testing.
+  @doc false
+  def pdf_printer, do: Application.get_env(:kanban, :export_pdf_printer, ChromicPDF)
+
+  @doc false
+  def excel_exporter,
+    do: Application.get_env(:kanban, :metrics_excel_export, MetricsExcelExport)
 
   # The HTML the PDF is printed from, for `opts` as build_metric_options/2
   # returns them. Exposed for testing, so a test can assert on the rendered
@@ -109,7 +123,7 @@ defmodule KanbanWeb.MetricsPdfController do
     opts = build_metric_options(conn, params)
     data = load_metric_data(metric, board.id, opts)
 
-    case MetricsExcelExport.generate(board, metric, opts, data) do
+    case excel_exporter().generate(board, metric, opts, data) do
       {:ok, excel_binary} ->
         conn
         |> put_export_headers(board, metric, opts, :xlsx)

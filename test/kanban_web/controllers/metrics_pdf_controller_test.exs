@@ -1,6 +1,7 @@
 defmodule KanbanWeb.MetricsPdfControllerTest do
   use KanbanWeb.ConnCase, async: false
 
+  import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
@@ -1065,8 +1066,6 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
     end
 
     test "handle_pdf_error/4 logs the raw reason but flashes only the generic message" do
-      import ExUnit.CaptureLog
-
       starting_conn =
         :get
         |> Phoenix.ConnTest.build_conn("/some-path")
@@ -1383,5 +1382,103 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       assert get_resp_header(headed, "content-type") == get_resp_header(got, "content-type")
       refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
     end
+  end
+
+  describe "export/2 - a failed build still ends the export span" do
+    # Stubs for the controller's export seams (:export_pdf_printer and
+    # :metrics_excel_export): each forces {:error, reason} from the build.
+    defmodule FailingPdfPrinter do
+      def print_to_pdf(_content, _opts), do: {:error, :forced_pdf_failure}
+    end
+
+    defmodule FailingExcelExport do
+      def generate(_board, _metric, _opts, _data), do: {:error, :forced_excel_failure}
+    end
+
+    @span_events [
+      [:kanban, :export, :start],
+      [:kanban, :export, :stop],
+      [:kanban, :export, :exception]
+    ]
+
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      column_fixture(board)
+      %{board: board}
+    end
+
+    for {query, format, key, stub, reason} <- [
+          {"", :pdf, :export_pdf_printer, FailingPdfPrinter, "forced_pdf_failure"},
+          {"?format=excel", :xlsx, :metrics_excel_export, FailingExcelExport,
+           "forced_excel_failure"}
+        ] do
+      @query query
+      @format format
+      @key key
+      @stub stub
+      @reason reason
+
+      test "a forced #{format} failure redirects with the error flash and ends the span with :stop",
+           %{conn: conn, board: board} do
+        override_export_seam(@key, @stub)
+        attach_telemetry(@span_events)
+
+        {conn, log} =
+          with_log(fn -> get(conn, "/boards/#{board.id}/metrics/throughput/export#{@query}") end)
+
+        assert redirected_to(conn) ==
+                 "/boards/#{board.id}/metrics/throughput?" <>
+                   URI.encode_query(%{
+                     "time_range" => "last_30_days",
+                     "agent_name" => "",
+                     "exclude_weekends" => "false"
+                   })
+
+        flash = Phoenix.Flash.get(conn.assigns.flash, :error)
+        assert flash == MetricsPdfController.pdf_error_flash_message()
+        refute flash =~ @reason
+
+        # The raw reason still reaches the operator log, and only there.
+        assert log =~ @reason
+
+        # One start and one stop, carrying only the kind and format.
+        assert export_span_metadata() ==
+                 {%{kind: :metrics_pdf, format: @format}, %{kind: :metrics_pdf, format: @format}}
+
+        refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+        refute_received {:telemetry_event, [:kanban, :export, :exception], _, _}
+      end
+    end
+  end
+
+  describe "export seams" do
+    test "default to the real PDF printer and Excel generator" do
+      assert Application.fetch_env(:kanban, :export_pdf_printer) == :error
+      assert Application.fetch_env(:kanban, :metrics_excel_export) == :error
+
+      assert MetricsPdfController.pdf_printer() == ChromicPDF
+      assert MetricsPdfController.excel_exporter() == KanbanWeb.MetricsExcelExport
+    end
+
+    test "are set by no config file, so dev and prod get the real modules" do
+      for file <- File.cwd!() |> Path.join("config/*.exs") |> Path.wildcard(),
+          key <- ["export_pdf_printer", "metrics_excel_export"] do
+        refute File.read!(file) =~ key, "#{Path.basename(file)} sets :#{key}"
+      end
+    end
+  end
+
+  # Puts `stub` under the export seam `key` for this test only, then restores
+  # the previous value, or removes the key, when the test exits.
+  defp override_export_seam(key, stub) do
+    original = Application.fetch_env(:kanban, key)
+    Application.put_env(:kanban, key, stub)
+
+    on_exit(fn ->
+      case original do
+        {:ok, value} -> Application.put_env(:kanban, key, value)
+        :error -> Application.delete_env(:kanban, key)
+      end
+    end)
   end
 end

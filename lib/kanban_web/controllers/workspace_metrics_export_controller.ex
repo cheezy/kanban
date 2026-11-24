@@ -173,7 +173,7 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
       |> Phoenix.HTML.Safe.to_iodata()
       |> IO.iodata_to_binary()
 
-    case ChromicPDF.print_to_pdf({:html, html}, print_to_pdf: %{printBackground: true}) do
+    case pdf_printer().print_to_pdf({:html, html}, print_to_pdf: %{printBackground: true}) do
       {:ok, pdf_base64} ->
         {content_type, extension} = format_response_type(:pdf)
 
@@ -190,7 +190,7 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   end
 
   defp send_excel(conn, assigns) do
-    case WorkspaceMetricsExcelExport.generate(assigns) do
+    case excel_exporter().generate(assigns) do
       {:ok, excel_binary} ->
         {content_type, extension} = format_response_type(:xlsx)
 
@@ -205,6 +205,20 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
         handle_export_error(conn, reason)
     end
   end
+
+  # Testability seams, matching the board export's: a test puts a stub module
+  # under the key to force {:error, reason} from the build, so the failed-build
+  # branch, and the :stop that ends its export span, can be exercised. The
+  # module comes only from application config, never from the request, and no
+  # config file sets either key, so dev and prod always get the real modules.
+  # The PDF key is shared with KanbanWeb.MetricsPdfController. Exposed for
+  # testing.
+  @doc false
+  def pdf_printer, do: Application.get_env(:kanban, :export_pdf_printer, ChromicPDF)
+
+  @doc false
+  def excel_exporter,
+    do: Application.get_env(:kanban, :workspace_metrics_excel_export, WorkspaceMetricsExcelExport)
 
   # Phoenix's own download helper rather than a hand-rolled
   # put_resp_content_type/put_resp_header/send_resp chain. Three reasons, in
