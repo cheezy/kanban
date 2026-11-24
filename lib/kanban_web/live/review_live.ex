@@ -111,7 +111,18 @@ defmodule KanbanWeb.ReviewLive do
   @impl true
   def handle_event("request_changes", _params, socket) do
     %{reviewable_board_ids: board_ids, selected: selected} = socket.assigns
-    {:noreply, assign(socket, :request_changes_open?, can_review?(board_ids, selected))}
+
+    {:noreply,
+     socket
+     |> assign(:request_changes_open?, can_review?(board_ids, selected))
+     |> keep_notes("")}
+  end
+
+  # The counter is a convenience: the cap itself is enforced by
+  # Kanban.Reviews.request_changes_review/3 whatever the browser sends.
+  @impl true
+  def handle_event("change_request_changes", params, socket) do
+    {:noreply, keep_notes(socket, extract_notes(params))}
   end
 
   @impl true
@@ -135,7 +146,7 @@ defmodule KanbanWeb.ReviewLive do
 
   defp do_submit_request_changes(socket, _task, notes) do
     if blank?(notes) do
-      {:noreply, notes_required_flash(socket)}
+      {:noreply, socket |> keep_notes(notes) |> notes_required_flash()}
     else
       apply_request_changes(socket, socket.assigns.selected, notes)
     end
@@ -146,10 +157,21 @@ defmodule KanbanWeb.ReviewLive do
     |> Reviews.request_changes_review(task, review_notes: notes, via: :web)
     |> case do
       {:ok, _updated} -> {:noreply, request_changes_success(socket, task)}
-      {:error, :review_notes_required} -> {:noreply, notes_required_flash(socket)}
-      {:error, _reason} -> {:noreply, request_changes_failure_flash(socket)}
+      {:error, reason} -> {:noreply, socket |> keep_notes(notes) |> refused_flash(reason)}
     end
   end
+
+  # The form renders @notes, so a refused submit keeps what was typed and
+  # the reviewer can shorten or fix the notes rather than retype them.
+  defp keep_notes(socket, notes) do
+    socket
+    |> assign(:notes, notes)
+    |> assign(:notes_length, Reviews.review_notes_length(notes))
+  end
+
+  defp refused_flash(socket, :review_notes_required), do: notes_required_flash(socket)
+  defp refused_flash(socket, :review_notes_too_long), do: notes_too_long_flash(socket)
+  defp refused_flash(socket, _reason), do: request_changes_failure_flash(socket)
 
   defp request_changes_success(socket, task) do
     # Request-changes leaves the task in the Review column (the agent will
@@ -163,6 +185,14 @@ defmodule KanbanWeb.ReviewLive do
 
   defp notes_required_flash(socket) do
     put_flash(socket, :error, gettext("Notes are required when requesting changes."))
+  end
+
+  defp notes_too_long_flash(socket) do
+    put_flash(
+      socket,
+      :error,
+      gettext("Notes can be at most %{max} characters.", max: Reviews.review_notes_max_length())
+    )
   end
 
   defp request_changes_failure_flash(socket) do
@@ -297,6 +327,7 @@ defmodule KanbanWeb.ReviewLive do
     |> assign(:selected, List.first(pending))
     |> ReviewReportPanel.track_view(List.first(pending))
     |> assign(:request_changes_open?, false)
+    |> keep_notes("")
     |> assign(:selected_changed_file, nil)
     |> assign(:diff_panel_opened_for_task_id, nil)
   end
@@ -450,6 +481,24 @@ defmodule KanbanWeb.ReviewLive do
 
   defp extract_notes(%{"review" => %{"notes" => notes}}) when is_binary(notes), do: notes
   defp extract_notes(_), do: ""
+
+  defp notes_over_limit?(length), do: length > Reviews.review_notes_max_length()
+
+  defp notes_count_label(length) do
+    max = Reviews.review_notes_max_length()
+
+    if notes_over_limit?(length),
+      do: gettext("%{used} / %{max} characters — too long", used: length, max: max),
+      else: gettext("%{used} / %{max} characters", used: length, max: max)
+  end
+
+  # Announced once, when the notes cross the cap, rather than on every count.
+  defp notes_over_limit_alert(length) do
+    if notes_over_limit?(length),
+      do:
+        gettext("Notes can be at most %{max} characters.", max: Reviews.review_notes_max_length()),
+      else: ""
+  end
 
   defp blank?(nil), do: true
   defp blank?(s) when is_binary(s), do: String.trim(s) == ""

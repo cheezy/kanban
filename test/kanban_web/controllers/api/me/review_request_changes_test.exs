@@ -225,9 +225,12 @@ defmodule KanbanWeb.API.Me.ReviewRequestChangesTest do
       assert ctx.phone |> request_changes(task.id, body("Fix it \u{1F44D}")) |> json_response(200)
     end
 
-    test "very long notes are accepted and never echoed or stored with the key", ctx do
+    test "notes at the 10,000-codepoint cap are accepted and never echoed or stored with the key",
+         ctx do
       task = pending_task!(ctx.review)
-      notes = String.duplicate("Explain the change. ", 5_000)
+      # 20 characters 500 times: exactly the cap.
+      notes = String.duplicate("Explain the change. ", 500)
+      assert String.length(notes) == 10_000
 
       response = ctx.phone |> request_changes(task.id, body(notes), @key)
       assert %{"data" => %{"review_status" => "changes_requested"}} = json_response(response, 200)
@@ -236,6 +239,34 @@ defmodule KanbanWeb.API.Me.ReviewRequestChangesTest do
       assert Repo.get!(Task, task.id).review_notes == notes
       assert [%Nonce{response_body: stored}] = Repo.all(Nonce)
       refute Jason.encode!(stored) =~ "Explain the change."
+    end
+
+    test "refuses over-long notes", ctx do
+      task = pending_task!(ctx.review)
+      notes = String.duplicate("Explain the change. ", 500) <> "!"
+
+      response = ctx.phone |> request_changes(task.id, body(notes), @key)
+
+      assert json_response(response, 422) ==
+               %{"errors" => %{"notes" => ["should be at most 10000 character(s)"]}}
+
+      # The notes are never echoed, never stored and never truncated, and
+      # the refusal stores no key, so a retry with shorter notes acts.
+      refute response.resp_body =~ "Explain the change."
+      assert undecided?(task)
+      assert Repo.get!(Task, task.id).review_notes == nil
+      assert rows(:review_changes_requested) == []
+      assert nonce_count() == 0
+
+      assert ctx.phone |> request_changes(task.id, body(), @key) |> json_response(200)
+    end
+
+    test "blank notes over the cap still answer can't be blank", ctx do
+      task = pending_task!(ctx.review)
+
+      assert ctx.phone
+             |> request_changes(task.id, body(String.duplicate(" \u200B", 6_000)))
+             |> json_response(422) == %{"errors" => %{"notes" => ["can't be blank"]}}
     end
 
     test "409 resubmitted when review_requested_at differs", ctx do

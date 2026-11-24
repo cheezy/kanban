@@ -122,6 +122,98 @@ defmodule Kanban.Reviews.RequestChangesTest do
              )
   end
 
+  describe "the notes cap" do
+    test "accepts normal notes", ctx do
+      task = pending_task!(ctx.review)
+      notes = "Cover the empty list and the error path."
+
+      assert {:ok, %Task{review_status: :changes_requested, review_notes: ^notes}} =
+               RequestChanges.request_changes(
+                 ctx.scope,
+                 ctx.phone,
+                 task.id,
+                 %{@params | "notes" => notes}
+               )
+    end
+
+    test "caps notes at 10,000 codepoints", ctx do
+      task = pending_task!(ctx.review)
+      key = key(ctx.phone, task)
+      over = String.duplicate("a", 10_001)
+
+      assert {:error, :review_notes_too_long} =
+               RequestChanges.request_changes(
+                 ctx.scope,
+                 ctx.phone,
+                 task.id,
+                 %{@params | "notes" => over},
+                 idempotency: key
+               )
+
+      # Refused before the commit: no key stored, no audit row, no decision,
+      # and the notes are not truncated into the task.
+      assert Nonces.find_replay(key) == :none
+      assert rows() == []
+      assert %Task{review_status: status, review_notes: nil} = Repo.get!(Task, task.id)
+      assert status in [nil, :pending]
+
+      at_cap = String.duplicate("a", 10_000)
+
+      assert {:ok, %Task{review_notes: ^at_cap}} =
+               RequestChanges.request_changes(
+                 ctx.scope,
+                 ctx.phone,
+                 task.id,
+                 %{@params | "notes" => at_cap},
+                 idempotency: key
+               )
+    end
+
+    test "empty notes still required", ctx do
+      task = pending_task!(ctx.review)
+
+      # Blank notes are :review_notes_required however long they are.
+      for notes <- ["", String.duplicate(" ", 10_001), String.duplicate("\u200B", 10_001)] do
+        assert {:error, :review_notes_required} =
+                 RequestChanges.request_changes(
+                   ctx.scope,
+                   ctx.phone,
+                   task.id,
+                   %{@params | "notes" => notes}
+                 ),
+               "notes of #{String.length(notes)} characters"
+      end
+    end
+
+    test "counts codepoints not bytes", ctx do
+      task = pending_task!(ctx.review)
+      # "é" is two bytes and "👍🏽" is two codepoints in eight bytes, so 10,000
+      # codepoints of either is well over 10,000 bytes and still accepted.
+      for notes <- [String.duplicate("é", 10_000), String.duplicate("👍🏽", 5_000)] do
+        assert byte_size(notes) > 10_000
+        assert {:ok, %Task{}} = reopen_and_request(ctx, task, notes)
+      end
+
+      # A combining mark is a codepoint of its own: 5,000 "e" + U+0301 pairs
+      # are 5,000 graphemes but 10,000 codepoints, and one more pair is over.
+      assert {:ok, %Task{}} = reopen_and_request(ctx, task, String.duplicate("e\u0301", 5_000))
+
+      assert {:error, :review_notes_too_long} =
+               reopen_and_request(ctx, task, String.duplicate("e\u0301", 5_000) <> "e\u0301")
+
+      assert {:error, :review_notes_too_long} =
+               reopen_and_request(ctx, task, String.duplicate("👍🏽", 5_000) <> "!")
+    end
+  end
+
+  defp reopen_and_request(ctx, task, notes) do
+    Task
+    |> where([t], t.id == ^task.id)
+    |> Repo.update_all(set: [review_status: nil, reviewed_at: nil, reviewed_by_id: nil])
+
+    RequestChanges.request_changes(ctx.scope, ctx.phone, task.id, %{@params | "notes" => notes})
+  end
+
   test "a device revoked before the commit is :revoked and stores nothing", ctx do
     task = pending_task!(ctx.review)
     key = key(ctx.phone, task)

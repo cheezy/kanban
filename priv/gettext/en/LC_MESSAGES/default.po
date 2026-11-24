@@ -16837,3 +16837,18 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Umami sets no cookie and never receives your email address, your account details, or any board or task data, and it does not run on your boards or account pages."
 msgstr ""
+
+#: lib/kanban_web/live/review_live.ex
+#, elixir-autogen, elixir-format
+msgid "%{used} / %{max} characters"
+msgstr ""
+
+#: lib/kanban_web/live/review_live.ex
+#, elixir-autogen, elixir-format
+msgid "%{used} / %{max} characters — too long"
+msgstr ""
+
+#: lib/kanban_web/live/review_live.ex
+#, elixir-autogen, elixir-format
+msgid "Notes can be at most %{max} characters."
+msgstr ""

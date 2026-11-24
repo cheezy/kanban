@@ -117,6 +117,7 @@
             id="review-request-changes-form"
             data-review-request-changes-form
             phx-submit="submit_request_changes"
+            phx-change="change_request_changes"
             phx-mounted={Phoenix.LiveView.JS.focus(to: "#review-notes")}
             style={[
               "padding: 14px 16px; border-bottom: 1px solid var(--line);",
@@ -135,13 +136,32 @@
               name="review[notes]"
               rows="4"
               required
+              phx-debounce="300"
+              aria-describedby="review-notes-count"
               style={[
                 "width: 100%; padding: 8px 10px;",
                 "font-family: var(--font-mono); font-size: 12px;",
                 "color: var(--ink); background: var(--surface);",
                 "border: 1px solid var(--line-input); border-radius: 6px;"
               ]}
-            ></textarea>
+            >{@notes}</textarea>
+            <p
+              id="review-notes-count"
+              data-review-notes-count
+              data-over-limit={to_string(notes_over_limit?(@notes_length))}
+              style={[
+                "margin: 0; font-size: 11px; text-align: right;",
+                if(notes_over_limit?(@notes_length),
+                  do: "color: var(--st-blocked); font-weight: 600;",
+                  else: "color: var(--ink-3);"
+                )
+              ]}
+            >
+              {notes_count_label(@notes_length)}
+            </p>
+            <p class="sr-only" aria-live="polite" data-review-notes-alert>
+              {notes_over_limit_alert(@notes_length)}
+            </p>
             <div class="flex flex-wrap gap-2 justify-end">
               <.button type="button" phx-click="cancel_request_changes">
                 {gettext("Cancel")}

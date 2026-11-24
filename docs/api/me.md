@@ -103,6 +103,18 @@ plans are not enforced, every route is unlocked and `GET /api/me` returns
 Each route's page lists the errors that are its own, such as `404` for a board,
 task, review or target the person cannot see.
 
+## Request-changes notes over 10,000 characters
+
+`POST /api/me/reviews/:task_id/request_changes` refuses notes over 10,000
+codepoints, the task comment cap, with
+`422 {"errors": {"notes": ["should be at most 10000 character(s)"]}}`
+(`review_notes_too_long`). The notes are never truncated and never echoed.
+Codepoints are counted, not bytes. The cap is enforced in
+`Kanban.Reviews.request_changes_review/3`, which every caller goes through, so
+the web review page refuses the same notes with a translated message. Blank
+notes of any length are still `can't be blank`
+([the notes rules](me_review_request_changes.md#errors)).
+
 ## Caching
 
 Every `/api/me` response, success or error, is sent with

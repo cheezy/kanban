@@ -38,7 +38,10 @@ defmodule KanbanWeb.API.Me.FallbackController do
       that are missing or blank, is `422 {"errors": {"notes": ["can't be
       blank"]}}` (`ValidationError`), with the message only, never the notes
       sent; `:review_notes_invalid`, notes with a NUL byte, is `422
-      {"errors": {"notes": ["contains characters that are not allowed"]}}`.
+      {"errors": {"notes": ["contains characters that are not allowed"]}}`;
+      and `:review_notes_too_long`, notes over 10,000 codepoints (W2926), is
+      `422 {"errors": {"notes": ["should be at most 10000 character(s)"]}}`,
+      again never echoing the notes.
     * the app's promote to Ready (W2759, `Kanban.Tasks.Promote`):
       `:forbidden`, a person who can see the board but not write to it, is
       `403 {"error": "Forbidden", "message": message}` (`Error`);
@@ -68,6 +71,7 @@ defmodule KanbanWeb.API.Me.FallbackController do
   use KanbanWeb, :controller
 
   alias Kanban.Locales
+  alias Kanban.Reviews
   alias Kanban.Reviews.MobileGuard
   alias Kanban.Tasks.Promote
   alias Kanban.Tasks.Task
@@ -199,6 +203,14 @@ defmodule KanbanWeb.API.Me.FallbackController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(%{errors: %{notes: ["contains characters that are not allowed"]}})
+  end
+
+  def call(conn, {:error, :review_notes_too_long}) do
+    max = Reviews.review_notes_max_length()
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(%{errors: %{notes: ["should be at most #{max} character(s)"]}})
   end
 
   def call(conn, {:error, :forbidden}) do

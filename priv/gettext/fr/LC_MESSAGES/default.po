@@ -16876,3 +16876,18 @@ msgstr "22 novembre 2026"
 #, elixir-autogen, elixir-format
 msgid "Umami sets no cookie and never receives your email address, your account details, or any board or task data, and it does not run on your boards or account pages."
 msgstr "Umami ne dépose aucun cookie et ne reçoit jamais votre adresse e-mail, les informations de votre compte ni aucune donnée de tableau ou de tâche, et il ne s'exécute pas sur vos tableaux ni sur les pages de votre compte."
+
+#: lib/kanban_web/live/review_live.ex
+#, elixir-autogen, elixir-format
+msgid "%{used} / %{max} characters"
+msgstr "%{used} / %{max} caractères"
+
+#: lib/kanban_web/live/review_live.ex
+#, elixir-autogen, elixir-format
+msgid "%{used} / %{max} characters — too long"
+msgstr "%{used} / %{max} caractères — trop long"
+
+#: lib/kanban_web/live/review_live.ex
+#, elixir-autogen, elixir-format
+msgid "Notes can be at most %{max} characters."
+msgstr "Les notes ne peuvent pas dépasser %{max} caractères."

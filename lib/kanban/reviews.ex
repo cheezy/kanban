@@ -376,8 +376,14 @@ defmodule Kanban.Reviews do
   transaction; `opts` also takes `:via` and `:device`, as `approve_review/3`
   does. The notes are never recorded in the audit event.
 
+  The notes are capped at `review_notes_max_length/0` (10,000) codepoints,
+  the task comment cap: longer notes are `:review_notes_too_long` and are
+  never truncated. Blank notes are `:review_notes_required` whatever their
+  length, so that check runs first.
+
   Returns `{:ok, task}` on success or `{:error, reason}` — additional
-  reason atoms over `approve_review/3`: `:review_notes_required`.
+  reason atoms over `approve_review/3`: `:review_notes_required` and
+  `:review_notes_too_long`.
   """
   @spec request_changes_review(Scope.t() | nil, Task.t(), keyword()) ::
           {:ok, Task.t()} | {:error, atom() | Ecto.Changeset.t()}
@@ -409,16 +415,55 @@ defmodule Kanban.Reviews do
         {:error, :review_notes_required}
 
       notes when is_binary(notes) ->
-        if String.trim(notes) == "" do
-          {:error, :review_notes_required}
-        else
-          {:ok, notes}
+        cond do
+          String.trim(notes) == "" -> {:error, :review_notes_required}
+          review_notes_too_long?(notes) -> {:error, :review_notes_too_long}
+          true -> {:ok, notes}
         end
 
       _ ->
         {:error, :review_notes_required}
     end
   end
+
+  @review_notes_max_length 10_000
+
+  @doc """
+  The most codepoints a request for changes may carry in its notes: 10,000,
+  the task comment cap (`Kanban.Tasks.TaskComment.content_max_length/0`).
+  """
+  @spec review_notes_max_length() :: pos_integer()
+  def review_notes_max_length, do: @review_notes_max_length
+
+  @doc """
+  Whether `notes` hold more than `review_notes_max_length/0` codepoints.
+  Codepoints are counted, not bytes and not graphemes, so an emoji or a
+  combining mark counts as the codepoints it is made of; a byte that is not
+  valid UTF-8 counts as one. It stops counting once past the cap, so a
+  megabyte of notes costs no more than the cap to refuse.
+  """
+  @spec review_notes_too_long?(String.t()) :: boolean()
+  def review_notes_too_long?(notes) when is_binary(notes),
+    do:
+      byte_size(notes) > @review_notes_max_length and
+        over_codepoints?(notes, @review_notes_max_length)
+
+  defp over_codepoints?(<<>>, _left), do: false
+  defp over_codepoints?(_rest, 0), do: true
+  defp over_codepoints?(<<_::utf8, rest::binary>>, left), do: over_codepoints?(rest, left - 1)
+  defp over_codepoints?(<<_, rest::binary>>, left), do: over_codepoints?(rest, left - 1)
+
+  @doc """
+  The length of `notes` as the cap counts it: codepoints, with a byte that
+  is not valid UTF-8 counted as one. It walks the binary without building a
+  list, so counting a long draft costs no memory beyond the draft itself.
+  """
+  @spec review_notes_length(String.t()) :: non_neg_integer()
+  def review_notes_length(notes) when is_binary(notes), do: count_codepoints(notes, 0)
+
+  defp count_codepoints(<<>>, count), do: count
+  defp count_codepoints(<<_::utf8, rest::binary>>, count), do: count_codepoints(rest, count + 1)
+  defp count_codepoints(<<_, rest::binary>>, count), do: count_codepoints(rest, count + 1)
 
   defp perform_review(scope, %Task{} = task, base_attrs, opts) do
     case scope_user(scope) do

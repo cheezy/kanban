@@ -33,6 +33,12 @@ A device access token, sent as `Authorization: Bearer <token>`, exactly as for
   feedback the agent picks up. Notes made only of whitespace, invisible
   characters such as a zero-width space, or combining marks count as blank. It is stored on the task and never echoed back or written to the
   audit event.
+- `notes` holds at most 10,000 codepoints, the task comment cap. Codepoints are
+  counted, not bytes and not grapheme clusters, so `"é"` written as `e` plus a
+  combining accent counts as two and an emoji with a skin-tone modifier as two.
+  Longer notes are refused, never truncated. Blank notes are `can't be blank`
+  whatever their length. The web review page enforces the same cap, through the
+  same check (`Kanban.Reviews.request_changes_review/3`).
 
 `200 OK`:
 
@@ -141,7 +147,11 @@ deletes expired keys.
 - `422 {"errors": {"notes": ["can't be blank"]}}` when `notes` is missing,
   blank or not a string, and
   `422 {"errors": {"notes": ["contains characters that are not allowed"]}}`
-  when it holds a NUL byte.
+  when it holds a NUL byte, and
+  `422 {"errors": {"notes": ["should be at most 10000 character(s)"]}}`
+  (`review_notes_too_long`) when it is over 10,000 codepoints. None of them
+  echoes the notes, and none stores the request's `Idempotency-Key`, so a
+  retry with shorter notes and the same key is a new request.
 - `429 {"error": "rate_limited", "message": "..."}`, with a `retry-after`
   header in seconds, when this device has sent more than 20 challenge,
   approve and request changes requests, together, in a minute.

@@ -16,8 +16,14 @@ defmodule Kanban.Reviews.RequestChanges do
   Missing or non-string notes, and notes with nothing visible in them (only
   whitespace, invisible format characters such as a zero-width space, or
   combining marks), are `:review_notes_required`; notes with a NUL byte are
-  `:review_notes_invalid`. Both are answered only once the checks have
-  passed, so a 422 never reveals a task the person cannot review.
+  `:review_notes_invalid`; and notes over
+  `Kanban.Reviews.review_notes_max_length/0` (10,000) codepoints are
+  `:review_notes_too_long`, after the blank check, so blank notes of any
+  length are still `:review_notes_required`. All three are answered only
+  once the checks have passed, so a 422 never reveals a task the person
+  cannot review, and before the transaction, so a refused request stores no
+  idempotency key and a retry with shorter notes and the same key is a new
+  request.
 
   ## Committing
 
@@ -55,6 +61,7 @@ defmodule Kanban.Reviews.RequestChanges do
           | {:plan_required, :mobile_app}
           | :review_notes_required
           | :review_notes_invalid
+          | :review_notes_too_long
           | :revoked
           | {:replay, Nonce.t()}
           | atom()
@@ -95,6 +102,7 @@ defmodule Kanban.Reviews.RequestChanges do
       String.contains?(notes, <<0>>) -> {:error, :review_notes_invalid}
       not String.valid?(notes) -> {:error, :review_notes_invalid}
       String.replace(notes, @invisible, "") == "" -> {:error, :review_notes_required}
+      Reviews.review_notes_too_long?(notes) -> {:error, :review_notes_too_long}
       true -> :ok
     end
   end

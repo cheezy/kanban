@@ -947,6 +947,137 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ "data-review-queue-item-id=\"#{task.id}\""
     end
 
+    test "shows the notes-too-long error", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{identifier: "W310"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element("[data-review-detail-header-request-changes]")
+      |> render_click()
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]",
+          review: %{notes: String.duplicate("a", 10_001)}
+        )
+        |> render_submit()
+
+      assert html =~ "Notes can be at most 10000 characters."
+      # The task stays in the queue, the form stays open, and the notes are
+      # neither stored nor truncated.
+      assert html =~ "data-review-queue-item-id=\"#{task.id}\""
+      assert html =~ "data-review-request-changes-form"
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).review_notes == nil
+
+      # The typed notes are rendered back into the form, whole, so the
+      # reviewer can shorten them rather than retype them.
+      textarea = view |> element("#review-notes") |> render()
+      assert textarea =~ ">" <> String.duplicate("a", 10_001) <> "</textarea>"
+    end
+
+    test "keeps the typed notes when the request is refused for another reason",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{identifier: "W313"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element("[data-review-detail-header-request-changes]")
+      |> render_click()
+
+      # Decided elsewhere after the page loaded, so the request is refused.
+      task |> Ecto.Changeset.change(review_status: :approved) |> Kanban.Repo.update!()
+
+      view
+      |> form("[data-review-request-changes-form]", review: %{notes: "Cover the empty list."})
+      |> render_submit()
+
+      assert view |> element("#review-notes") |> render() =~ ">Cover the empty list.</textarea>"
+    end
+
+    test "shows the notes-too-long error translated", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      pending_task!(column, %{identifier: "W311"})
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "fr"})
+        |> live(~p"/review")
+
+      view
+      |> element("[data-review-detail-header-request-changes]")
+      |> render_click()
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]",
+          review: %{notes: String.duplicate("a", 10_001)}
+        )
+        |> render_submit()
+
+      refute html =~ "Notes can be at most"
+      assert html =~ "Les notes ne peuvent pas dépasser 10000 caractères."
+    end
+
+    test "the notes counter counts codepoints and flags notes over the cap",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      pending_task!(column, %{identifier: "W312"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      html =
+        view
+        |> element("[data-review-detail-header-request-changes]")
+        |> render_click()
+
+      assert html =~ "0 / 10000 characters"
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]", review: %{notes: "e\u0301 ok"})
+        |> render_change()
+
+      assert html =~ "5 / 10000 characters"
+      assert view |> element("[data-review-notes-count][data-over-limit=false]") |> has_element?()
+      # The running count is not a live region; only crossing the cap is announced.
+      refute view |> element("[data-review-notes-count][aria-live]") |> has_element?()
+
+      refute view
+             |> element("[data-review-notes-alert]", "Notes can be at most")
+             |> has_element?()
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]",
+          review: %{notes: String.duplicate("a", 10_001)}
+        )
+        |> render_change()
+
+      assert html =~ "10001 / 10000 characters — too long"
+      assert view |> element("[data-review-notes-count][data-over-limit=true]") |> has_element?()
+
+      assert view
+             |> element(
+               "[data-review-notes-alert][aria-live=polite]",
+               "Notes can be at most 10000"
+             )
+             |> has_element?()
+
+      # Reopening the form resets the counter.
+      view |> element("button[phx-click=cancel_request_changes]") |> render_click()
+
+      html =
+        view
+        |> element("[data-review-detail-header-request-changes]")
+        |> render_click()
+
+      assert html =~ "0 / 10000 characters"
+    end
+
     test "cancel_request_changes closes the notes form without changing the queue",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)

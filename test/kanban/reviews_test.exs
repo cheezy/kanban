@@ -663,6 +663,38 @@ defmodule Kanban.ReviewsTest do
                Reviews.request_changes_review(scope, task, review_notes: ["a", "b"])
     end
 
+    test "returns {:error, :review_notes_too_long} over 10,000 codepoints and stores nothing",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      scope = Scope.for_user(user)
+
+      assert {:error, :review_notes_too_long} =
+               Reviews.request_changes_review(scope, task,
+                 review_notes: String.duplicate("a", 10_001),
+                 via: :web
+               )
+
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
+      assert reloaded.review_notes == nil
+      refute reloaded.review_status == :changes_requested
+
+      at_cap = String.duplicate("ü", 10_000)
+
+      assert {:ok, %{review_notes: ^at_cap}} =
+               Reviews.request_changes_review(scope, task, review_notes: at_cap)
+    end
+
+    test "blank notes over the cap are still :review_notes_required",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      scope = Scope.for_user(user)
+
+      assert {:error, :review_notes_required} =
+               Reviews.request_changes_review(scope, task,
+                 review_notes: String.duplicate(" ", 10_001)
+               )
+    end
+
     test "returns {:error, :not_found} when scoped user has no board access",
          %{column: column} do
       task = pending_task!(column)
@@ -1496,6 +1528,56 @@ defmodule Kanban.ReviewsTest do
 
       assert audit_id == task.id
       assert review_id == task.id
+    end
+  end
+
+  describe "review_notes_too_long?/1" do
+    test "the cap is 10,000, the task comment cap" do
+      assert Reviews.review_notes_max_length() == 10_000
+
+      assert Reviews.review_notes_max_length() ==
+               Kanban.Tasks.TaskComment.content_max_length()
+    end
+
+    test "is false up to 10,000 codepoints and true past them" do
+      refute Reviews.review_notes_too_long?("")
+      refute "a" |> String.duplicate(10_000) |> Reviews.review_notes_too_long?()
+      assert "a" |> String.duplicate(10_001) |> Reviews.review_notes_too_long?()
+    end
+
+    test "counts codepoints, not bytes and not graphemes" do
+      # 30,000 bytes, 10,000 codepoints
+      refute "€" |> String.duplicate(10_000) |> Reviews.review_notes_too_long?()
+      assert "€" |> String.duplicate(10_001) |> Reviews.review_notes_too_long?()
+      # 5,001 graphemes, 10,002 codepoints
+      assert "e\u0301" |> String.duplicate(5_001) |> Reviews.review_notes_too_long?()
+      # 5,000 skin-toned emoji: 5,000 graphemes, 10,000 codepoints, 40,000 bytes
+      refute "👍🏽" |> String.duplicate(5_000) |> Reviews.review_notes_too_long?()
+    end
+
+    test "counts a byte that is not valid UTF-8 as one" do
+      refute <<0xFF>> |> :binary.copy(10_000) |> Reviews.review_notes_too_long?()
+      assert <<0xFF>> |> :binary.copy(10_001) |> Reviews.review_notes_too_long?()
+    end
+  end
+
+  describe "review_notes_length/1" do
+    test "counts codepoints, not bytes and not graphemes" do
+      assert Reviews.review_notes_length("") == 0
+      assert Reviews.review_notes_length("ok") == 2
+      assert Reviews.review_notes_length("€") == 1
+      assert Reviews.review_notes_length("e\u0301") == 2
+      assert Reviews.review_notes_length("👍🏽") == 2
+      assert "€" |> String.duplicate(10_001) |> Reviews.review_notes_length() == 10_001
+    end
+
+    test "counts a byte that is not valid UTF-8 as one, as the cap does" do
+      assert Reviews.review_notes_length(<<"a", 0xFF, "b">>) == 3
+
+      for notes <- [:binary.copy(<<0xFF>>, 10_000), :binary.copy(<<0xFF>>, 10_001)] do
+        assert Reviews.review_notes_length(notes) > Reviews.review_notes_max_length() ==
+                 Reviews.review_notes_too_long?(notes)
+      end
     end
   end
 end
