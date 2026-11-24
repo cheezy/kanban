@@ -51,12 +51,21 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
     * `exclude_weekends` — `Helpers.parse_exclude_weekends/1`.
     * `format` — `"excel"` selects the workbook; anything else (including
       absent) yields PDF, mirroring the board export. One action serves both.
+
+  ## HEAD
+
+  A `HEAD` request (`KanbanWeb.Plugs.HeadRequest`) passes the same
+  `:require_authenticated_user` pipeline as a `GET` and gets the same status
+  and headers and no body, but it is not timed as the `[:kanban, :export]`
+  span, so export metrics count only real downloads. No header needs the built
+  file, so a `HEAD` never reads the workspace overview or renders the report.
   """
 
   use KanbanWeb, :controller
 
   alias Kanban.Metrics.Workspace
   alias KanbanWeb.MetricsLive.Helpers
+  alias KanbanWeb.Plugs.HeadRequest
   alias KanbanWeb.WorkspaceMetricsExcelExport
   alias KanbanWeb.WorkspaceMetricsPdfHTML
 
@@ -64,11 +73,22 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
 
   @excel_content_type "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+  def export(conn, params) do
+    answer_export(conn, export_format(params), params, HeadRequest.head?(conn))
+  end
+
+  # A HEAD gets the GET headers from the same send_download_response/4, but no
+  # span and no report: the server drops its body, so it is not an export.
+  defp answer_export(conn, format, params, true) do
+    opts = build_export_opts(conn.assigns.current_scope, params, get_session(conn, :timezone))
+    {content_type, extension} = format_response_type(format)
+
+    send_download_response(conn, content_type, export_filename(Map.new(opts), extension), "")
+  end
+
   # Timed as the [:kanban, :export] span. Only the export kind and file format
   # are reported: never the board selection or any other parameter.
-  def export(conn, params) do
-    format = export_format(params)
-
+  defp answer_export(conn, format, params, false) do
     Kanban.Telemetry.span([:kanban, :export], %{kind: :workspace_metrics, format: format}, fn ->
       opts = build_export_opts(conn.assigns.current_scope, params, get_session(conn, :timezone))
       assigns = build_report_assigns(opts)
@@ -138,6 +158,11 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   defp parse_board_id(value) when is_integer(value), do: [value]
   defp parse_board_id(_value), do: []
 
+  # The content type and extension each format is downloaded with, shared by
+  # the GET and HEAD branches so their headers cannot drift apart.
+  defp format_response_type(:pdf), do: {"application/pdf", ".pdf"}
+  defp format_response_type(:xlsx), do: {@excel_content_type, ".xlsx"}
+
   defp dispatch_format(conn, :xlsx, assigns), do: send_excel(conn, assigns)
   defp dispatch_format(conn, :pdf, assigns), do: send_pdf(conn, assigns)
 
@@ -150,10 +175,12 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
 
     case ChromicPDF.print_to_pdf({:html, html}, print_to_pdf: %{printBackground: true}) do
       {:ok, pdf_base64} ->
+        {content_type, extension} = format_response_type(:pdf)
+
         send_download_response(
           conn,
-          "application/pdf",
-          export_filename(assigns, ".pdf"),
+          content_type,
+          export_filename(assigns, extension),
           Base.decode64!(pdf_base64)
         )
 
@@ -165,10 +192,12 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   defp send_excel(conn, assigns) do
     case WorkspaceMetricsExcelExport.generate(assigns) do
       {:ok, excel_binary} ->
+        {content_type, extension} = format_response_type(:xlsx)
+
         send_download_response(
           conn,
-          @excel_content_type,
-          export_filename(assigns, ".xlsx"),
+          content_type,
+          export_filename(assigns, extension),
           excel_binary
         )
 

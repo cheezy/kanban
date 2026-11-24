@@ -6,6 +6,7 @@ defmodule KanbanWeb.MetricsPdfController do
   alias Kanban.Metrics.TaskQueries
   alias KanbanWeb.MetricsExcelExport
   alias KanbanWeb.MetricsLive.Helpers
+  alias KanbanWeb.Plugs.HeadRequest
   alias KanbanWeb.Timezone
 
   require Logger
@@ -34,7 +35,7 @@ defmodule KanbanWeb.MetricsPdfController do
 
     case Boards.get_board(board_id, user) do
       {:ok, board} ->
-        export_board(conn, board, metric, params)
+        answer_export(conn, board, metric, params, HeadRequest.head?(conn))
 
       {:error, :not_found} ->
         conn
@@ -43,9 +44,22 @@ defmodule KanbanWeb.MetricsPdfController do
     end
   end
 
+  # A HEAD (KanbanWeb.Plugs.HeadRequest) is authorized exactly as a GET — the
+  # metric allow-list and the board lookup above both run first — and gets the
+  # same status and headers, but no body and no span: the server drops the
+  # body, so it is not an export. No header needs the built file (there is no
+  # content-length), so the PDF or workbook is never built for a HEAD.
+  defp answer_export(conn, board, metric, params, true) do
+    opts = build_metric_options(conn, params)
+
+    conn
+    |> put_export_headers(board, metric, opts, export_format(params))
+    |> send_resp(200, "")
+  end
+
   # Timed as the [:kanban, :export] span. Only the export kind and file format
   # are reported: never the board, its name or the metric filters.
-  defp export_board(conn, board, metric, params) do
+  defp answer_export(conn, board, metric, params, false) do
     format = export_format(params)
 
     Kanban.Telemetry.span([:kanban, :export], %{kind: :metrics_pdf, format: format}, fn ->
@@ -97,13 +111,8 @@ defmodule KanbanWeb.MetricsPdfController do
 
     case MetricsExcelExport.generate(board, metric, opts, data) do
       {:ok, excel_binary} ->
-        filename = generate_filename(board, metric, opts, ".xlsx")
-
         conn
-        |> put_resp_content_type(
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
+        |> put_export_headers(board, metric, opts, :xlsx)
         |> send_resp(200, excel_binary)
 
       {:error, reason} ->
@@ -148,12 +157,27 @@ defmodule KanbanWeb.MetricsPdfController do
   end
 
   defp send_pdf_response(conn, board, metric, opts, pdf_binary) do
+    conn
+    |> put_export_headers(board, metric, opts, :pdf)
+    |> send_resp(200, pdf_binary)
+  end
+
+  # The content type and content-disposition a GET sends with the file, shared
+  # with the HEAD branch so the two cannot drift apart.
+  defp put_export_headers(conn, board, metric, opts, :pdf) do
     filename = generate_filename(board, metric, opts)
 
     conn
     |> put_resp_content_type("application/pdf")
     |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
-    |> send_resp(200, pdf_binary)
+  end
+
+  defp put_export_headers(conn, board, metric, opts, :xlsx) do
+    filename = generate_filename(board, metric, opts, ".xlsx")
+
+    conn
+    |> put_resp_content_type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
   end
 
   # Log the raw reason for operators (ChromicPDF port output, internal

@@ -344,12 +344,14 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   admin's or org-admin's IP address. A failed metrics report that redirects with an error
   still ends with a stop event, and so does a signed Organization audit log
   export whose build fails; only an exception produces the exception
-  event. A `HEAD` on the audit log, Organization audit log or workspace
-  export download route gets the headers only and emits no span, so on
-  those three routes the span counts only exports that sent a file; a
-  `HEAD` on the metrics, workspace metrics or board archive export is
-  still timed. A `HEAD` on the audit log export also writes no
-  `audit_log_exported` row.
+  event. A `HEAD` on the metrics, workspace metrics, audit log,
+  Organization audit log or workspace export download route gets the
+  headers only and emits no span, so on those five routes the span counts
+  only exports that sent a file; a `HEAD` on the metrics and workspace
+  metrics exports also builds no report. A `HEAD` on the board archive
+  export is still timed, because `Kanban.Archives.export_csv_for_board/1`
+  builds the CSV inside the span before the response is sent. A `HEAD` on
+  the audit log export also writes no `audit_log_exported` row.
 - **On an exception**, `:telemetry` replaces `kind` with the error class
   (`:error`, `:exit` or `:throw`) and adds `reason` and `stacktrace`; `format`
   is kept. Match the exception to its start with `telemetry_span_context`.

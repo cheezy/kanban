@@ -528,4 +528,85 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
       refute message =~ ":"
     end
   end
+
+  describe "HEAD (D472)" do
+    @export_events [[:kanban, :export, :start], [:kanban, :export, :stop]]
+
+    test "GET still emits the export span in both formats", %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+      attach_telemetry(@export_events)
+
+      for {query, format} <- [{"", :pdf}, {"?format=excel", :xlsx}] do
+        got = get(conn, "/metrics/export#{query}")
+
+        assert got.status == 200
+        assert byte_size(got.resp_body) > 0
+
+        assert export_span_metadata() ==
+                 {%{kind: :workspace_metrics, format: format},
+                  %{kind: :workspace_metrics, format: format}}
+      end
+
+      # Each GET consumed exactly one start/stop pair: nothing is left over.
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
+    test "HEAD emits no export span and its headers match GET", %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+
+      paths =
+        for query <- ["", "?format=excel", "?format=excel&window_days=30", "?window_days=7"],
+            do: "/metrics/export#{query}"
+
+      # Every GET runs before the handler is attached, so any export event
+      # received below came from a HEAD.
+      gets = Map.new(paths, &{&1, get(conn, &1)})
+      attach_telemetry(@export_events)
+
+      for path <- paths do
+        got = Map.fetch!(gets, path)
+        headed = head(conn, path)
+
+        assert got.status == 200
+        assert headed.status == got.status
+        assert headed.resp_body == ""
+
+        for header <- ["content-type", "content-disposition"] do
+          assert [_value] = get_resp_header(headed, header)
+          assert get_resp_header(headed, header) == get_resp_header(got, header)
+        end
+      end
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
+    test "HEAD on an empty workspace behaves like GET with no span", %{conn: conn} do
+      got = get(conn, ~p"/metrics/export?format=excel")
+
+      attach_telemetry(@export_events)
+      headed = head(conn, ~p"/metrics/export?format=excel")
+
+      assert headed.status == 200
+      assert headed.resp_body == ""
+
+      assert get_resp_header(headed, "content-disposition") ==
+               get_resp_header(got, "content-disposition")
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+
+    test "an unauthenticated HEAD gets the same log-in redirect as GET and no span" do
+      got = get(build_conn(), ~p"/metrics/export")
+
+      attach_telemetry(@export_events)
+      headed = head(build_conn(), ~p"/metrics/export")
+
+      assert redirected_to(headed) =~ "/users/log-in"
+      assert redirected_to(headed) == redirected_to(got)
+      assert get_resp_header(headed, "content-disposition") == []
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+  end
 end

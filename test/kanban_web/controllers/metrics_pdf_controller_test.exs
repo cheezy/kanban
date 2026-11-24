@@ -1272,4 +1272,116 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       refute strings =~ LocalTime.format(completed_at, :datetime, "Asia/Tokyo")
     end
   end
+
+  describe "export/2 - HEAD (D472)" do
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      %{board: board, column: column}
+    end
+
+    @export_events [[:kanban, :export, :start], [:kanban, :export, :stop]]
+
+    test "GET still emits the export span in both formats", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      column |> task_fixture() |> complete_task()
+      attach_telemetry(@export_events)
+
+      for {query, format} <- [{"", :pdf}, {"?format=excel", :xlsx}] do
+        got = get(conn, "/boards/#{board.id}/metrics/throughput/export#{query}")
+
+        assert got.status == 200
+        assert byte_size(got.resp_body) > 0
+
+        assert export_span_metadata() ==
+                 {%{kind: :metrics_pdf, format: format}, %{kind: :metrics_pdf, format: format}}
+      end
+
+      # Each GET consumed exactly one start/stop pair: nothing is left over.
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
+    test "HEAD emits no export span and its headers match GET", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      column |> task_fixture() |> complete_task()
+
+      paths =
+        for query <- ["", "?format=excel", "?format=excel&time_range=last_7_days"],
+            do: "/boards/#{board.id}/metrics/throughput/export#{query}"
+
+      # Every GET runs before the handler is attached, so any export event
+      # received below came from a HEAD.
+      gets = Map.new(paths, &{&1, get(conn, &1)})
+      attach_telemetry(@export_events)
+
+      for path <- paths do
+        got = Map.fetch!(gets, path)
+        headed = head(conn, path)
+
+        assert got.status == 200
+        assert headed.status == got.status
+        assert headed.resp_body == ""
+
+        for header <- ["content-type", "content-disposition"] do
+          assert [_value] = get_resp_header(headed, header)
+          assert get_resp_header(headed, header) == get_resp_header(got, header)
+        end
+      end
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
+    test "HEAD on an empty board behaves like GET with no span", %{conn: conn, board: board} do
+      path = ~p"/boards/#{board}/metrics/cycle-time/export?format=excel"
+      got = get(conn, path)
+
+      attach_telemetry(@export_events)
+      headed = head(conn, path)
+
+      assert headed.status == 200
+      assert headed.resp_body == ""
+
+      assert get_resp_header(headed, "content-disposition") ==
+               get_resp_header(got, "content-disposition")
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+
+    test "HEAD with an invalid metric matches GET", %{conn: conn, board: board} do
+      path = ~p"/boards/#{board}/metrics/bogus/export"
+      got = get(conn, path)
+
+      attach_telemetry(@export_events)
+      headed = head(conn, path)
+
+      assert headed.status == 404
+      assert headed.status == got.status
+      assert json_response(got, 404)["error"] == "Unknown metric"
+      assert get_resp_header(headed, "content-disposition") == []
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+
+    test "HEAD on a board the user cannot see gets the same 404 as GET", %{conn: conn} do
+      board = ai_optimized_board_fixture(user_fixture())
+      path = ~p"/boards/#{board}/metrics/throughput/export?format=excel"
+      got = get(conn, path)
+
+      attach_telemetry(@export_events)
+      headed = head(conn, path)
+
+      assert json_response(got, 404)["error"] == "Board not found"
+      assert headed.status == 404
+      assert get_resp_header(headed, "content-disposition") == []
+      assert get_resp_header(headed, "content-type") == get_resp_header(got, "content-type")
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+  end
 end
