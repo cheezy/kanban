@@ -13,6 +13,25 @@ defmodule KanbanWeb.AuditLogExportControllerTest do
     Repo.insert!(%AuditEvent{action: action, inserted_at: inserted_at, metadata: metadata})
   end
 
+  @export_headers ["content-type", "content-disposition", "cache-control"]
+
+  defp export_headers(conn), do: Map.new(@export_headers, &{&1, get_resp_header(conn, &1)})
+
+  # Every query this test process sent to audit_events since the handler was
+  # attached, drained from the mailbox.
+  defp audit_event_queries(acc \\ []) do
+    receive do
+      {:telemetry_event, [:kanban, :repo, :query], _measurements,
+       %{source: "audit_events"} = meta} ->
+        audit_event_queries([meta | acc])
+
+      {:telemetry_event, [:kanban, :repo, :query], _measurements, _other} ->
+        audit_event_queries(acc)
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
   describe "as a site admin" do
     setup %{conn: conn} do
       admin = admin_fixture()
@@ -126,6 +145,81 @@ defmodule KanbanWeb.AuditLogExportControllerTest do
       assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Unsupported export format"
       assert AuditLog.list_events(action: :audit_log_exported) == []
     end
+
+    test "HEAD /admin/audit-log/export answers 200 with the same content-type, content-disposition and cache-control as GET and no body",
+         %{conn: conn} do
+      for path <- [
+            ~p"/admin/audit-log/export",
+            ~p"/admin/audit-log/export?format=csv",
+            ~p"/admin/audit-log/export?format=json&action=login_failed&to=2026-10-01"
+          ] do
+        got = get(conn, path)
+        headed = head(conn, path)
+
+        assert got.status == 200
+        assert response(headed, 200) == ""
+        assert export_headers(headed) == export_headers(got)
+        assert [_content_type] = get_resp_header(headed, "content-type")
+      end
+    end
+
+    test "HEAD /admin/audit-log/export writes no audit_log_exported row", %{conn: conn} do
+      head(conn, ~p"/admin/audit-log/export?format=csv")
+      head(conn, ~p"/admin/audit-log/export?format=json&action=login_failed")
+
+      assert AuditLog.list_events(action: :audit_log_exported) == []
+    end
+
+    test "HEAD /admin/audit-log/export reads and writes nothing in audit_events", %{conn: conn} do
+      attach_telemetry([:kanban, :repo, :query])
+
+      assert conn |> head(~p"/admin/audit-log/export?format=json") |> response(200) == ""
+      assert audit_event_queries() == []
+
+      # The same probe sees a GET read the table and write its row, so the
+      # empty result above is not a probe that cannot see anything.
+      assert conn |> get(~p"/admin/audit-log/export?format=json") |> response(200)
+      assert length(audit_event_queries()) >= 2
+    end
+
+    test "HEAD /admin/audit-log/export emits no [:kanban, :export, :stop] event", %{conn: conn} do
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :export, :stop]])
+
+      assert conn |> head(~p"/admin/audit-log/export?format=csv") |> response(200) == ""
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
+    test "HEAD /admin/audit-log/export?format=xml is refused with the same redirect and flash as GET",
+         %{conn: conn} do
+      got = get(conn, ~p"/admin/audit-log/export?format=xml")
+      headed = head(conn, ~p"/admin/audit-log/export?format=xml")
+
+      assert redirected_to(headed) == redirected_to(got)
+      assert redirected_to(headed) == ~p"/admin/audit-log"
+
+      assert Phoenix.Flash.get(headed.assigns.flash, :error) ==
+               Phoenix.Flash.get(got.assigns.flash, :error)
+
+      assert Phoenix.Flash.get(headed.assigns.flash, :error) =~ "Unsupported export format"
+      assert AuditLog.list_events(action: :audit_log_exported) == []
+    end
+
+    test "GET /admin/audit-log/export still writes exactly one audit_log_exported row and emits the export span",
+         %{conn: conn, admin: admin} do
+      attach_telemetry([[:kanban, :export, :stop]])
+
+      assert conn |> get(~p"/admin/audit-log/export?format=csv") |> response(200)
+
+      assert [%AuditEvent{actor_user_id: actor_id}] =
+               AuditLog.list_events(action: :audit_log_exported)
+
+      assert actor_id == admin.id
+
+      assert_received {:telemetry_event, [:kanban, :export, :stop], _,
+                       %{kind: :audit_log, format: :csv}}
+    end
   end
 
   describe "access control" do
@@ -140,6 +234,15 @@ defmodule KanbanWeb.AuditLogExportControllerTest do
 
       assert actor_id == user.id
       assert metadata["gate"] == "require_admin_user"
+      assert AuditLog.list_events(action: :audit_log_exported) == []
+    end
+
+    test "a HEAD by a non-admin is refused exactly as a GET is", %{conn: conn} do
+      user = user_fixture()
+      conn = conn |> log_in_user(user) |> head(~p"/admin/audit-log/export?format=json")
+
+      assert redirected_to(conn) == ~p"/"
+      assert [%AuditEvent{}] = AuditLog.list_events(action: :permission_denied)
       assert AuditLog.list_events(action: :audit_log_exported) == []
     end
 

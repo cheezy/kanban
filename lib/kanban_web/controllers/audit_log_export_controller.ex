@@ -13,6 +13,15 @@ defmodule KanbanWeb.AuditLogExportController do
   batches, so a large export is never loaded into memory at once. Every export
   is itself audited (`:audit_log_exported`) before the first byte is sent, so
   even an aborted download leaves a record.
+
+  ## HEAD
+
+  A `HEAD` request (`KanbanWeb.Plugs.HeadRequest`) gets the headers a `GET`
+  would send and no body. Nothing is read, recorded or timed for it: no audit
+  events are read, no `:audit_log_exported` row is written and no
+  `[:kanban, :export]` span is emitted, because no file leaves the server. An
+  unsupported format is refused as for `GET`, and `:require_admin_user` still
+  runs first.
   """
   use KanbanWeb, :controller
 
@@ -20,13 +29,14 @@ defmodule KanbanWeb.AuditLogExportController do
 
   alias Kanban.AuditLog
   alias Kanban.AuditLog.Filters
+  alias KanbanWeb.Plugs.HeadRequest
 
   plug :require_admin_user
 
   def export(conn, params) do
     case export_format(params["format"]) do
       {:ok, format} ->
-        send_export(conn, format, Filters.parse(params))
+        answer_export(conn, format, params, HeadRequest.head?(conn))
 
       :error ->
         conn
@@ -39,6 +49,21 @@ defmodule KanbanWeb.AuditLogExportController do
   defp export_format("csv"), do: {:ok, :csv}
   defp export_format("json"), do: {:ok, :json}
   defp export_format(_other), do: :error
+
+  # Only a request that arrived as HEAD skips the audit row and the stream;
+  # Plug.Head has already rewritten its method to GET, so conn.method cannot
+  # tell the two apart. The server drops a HEAD's body, so nothing is read,
+  # recorded or timed for one.
+  defp answer_export(conn, format, _params, true), do: send_head(conn, format)
+
+  defp answer_export(conn, format, params, false),
+    do: send_export(conn, format, Filters.parse(params))
+
+  defp send_head(conn, format) do
+    conn
+    |> put_export_headers(format)
+    |> send_resp(200, "")
+  end
 
   defp send_export(conn, format, parsed) do
     AuditLog.event(:audit_log_exported,
@@ -59,12 +84,7 @@ defmodule KanbanWeb.AuditLogExportController do
   defp stream_export(conn, format, parsed) do
     conn =
       conn
-      |> put_export_content_type(format)
-      |> put_resp_header(
-        "content-disposition",
-        ~s(attachment; filename="#{export_filename(format)}")
-      )
-      |> put_resp_header("cache-control", "no-store")
+      |> put_export_headers(format)
       |> send_chunked(200)
 
     parsed.filters
@@ -75,6 +95,17 @@ defmodule KanbanWeb.AuditLogExportController do
         {:error, _reason} -> {:halt, conn}
       end
     end)
+  end
+
+  # The headers a GET streams under, shared with HEAD so the two cannot drift.
+  defp put_export_headers(conn, format) do
+    conn
+    |> put_export_content_type(format)
+    |> put_resp_header(
+      "content-disposition",
+      ~s(attachment; filename="#{export_filename(format)}")
+    )
+    |> put_resp_header("cache-control", "no-store")
   end
 
   # A literal content type per format. export_format/1 has already reduced the

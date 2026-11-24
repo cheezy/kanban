@@ -56,6 +56,41 @@ defmodule KanbanWeb.WorkspaceExportControllerTest do
                      %{kind: :workspace_export, format: :zip}}
   end
 
+  test "HEAD /workspace/exports/:id/download answers 200 with the GET headers and emits no [:kanban, :export, :stop] event",
+       %{conn: conn} = ctx do
+    path = ~p"/workspace/exports/#{ctx.export.id}/download"
+    got = conn |> log_in_user(ctx.org_admin) |> get(path)
+
+    attach_telemetry([[:kanban, :export, :start], [:kanban, :export, :stop]])
+    headed = conn |> log_in_user(ctx.org_admin) |> head(path)
+
+    assert headed.status == 200
+    assert headed.resp_body == ""
+
+    for header <- ["content-type", "content-disposition", "cache-control"] do
+      assert get_resp_header(headed, header) == get_resp_header(got, header)
+    end
+
+    assert get_resp_header(headed, "content-disposition") ==
+             [~s(attachment; filename="stride-workspace-export-#{ctx.export.id}.zip")]
+
+    refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+  end
+
+  test "a HEAD by a member or an outsider gets the same 404 as a GET", %{conn: conn} = ctx do
+    attach_telemetry([[:kanban, :export, :stop]])
+
+    for user <- [ctx.member, user_fixture()] do
+      assert conn
+             |> log_in_user(user)
+             |> head(~p"/workspace/exports/#{ctx.export.id}/download")
+             |> Map.fetch!(:status) == 404
+    end
+
+    refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+  end
+
   test "members, guests, outsiders and another Organization's admin get 404",
        %{conn: conn} = ctx do
     other_admin = user_fixture()

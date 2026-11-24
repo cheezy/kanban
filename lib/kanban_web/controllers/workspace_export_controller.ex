@@ -17,27 +17,39 @@ defmodule KanbanWeb.WorkspaceExportController do
   Organization's export, an unfinished, failed or expired export, a missing
   file or a malformed id — is the same 404, so the response never reveals
   whether an export exists.
+
+  ## HEAD
+
+  A `HEAD` request (`KanbanWeb.Plugs.HeadRequest`) is authorized exactly as a
+  `GET` and gets the same headers and no body, but it is not timed as the
+  `[:kanban, :export]` span, so export metrics count only real downloads.
   """
 
   use KanbanWeb, :controller
 
   alias Kanban.Workspaces.Export
+  alias KanbanWeb.Plugs.HeadRequest
 
-  # Timed as the [:kanban, :export] span. Only the export kind and file format
-  # are reported: never the workspace, the export id or the path.
   def download(conn, %{"id" => id}) do
     case Export.get_export_for_download(conn.assigns.current_scope.user, id) do
-      {:ok, export} ->
-        Kanban.Telemetry.span([:kanban, :export], %{kind: :workspace_export, format: :zip}, fn ->
-          {send_archive(conn, export), %{kind: :workspace_export, format: :zip}}
-        end)
-
-      {:error, :not_found} ->
-        not_found(conn)
+      {:ok, export} -> answer_download(conn, export, HeadRequest.head?(conn))
+      {:error, :not_found} -> not_found(conn)
     end
   end
 
   def download(conn, _params), do: not_found(conn)
+
+  # A HEAD gets the GET headers from the same send_archive/2, but no span:
+  # the server drops its body, so it is not a download.
+  defp answer_download(conn, export, true), do: send_archive(conn, export)
+
+  # Timed as the [:kanban, :export] span. Only the export kind and file format
+  # are reported: never the workspace, the export id or the path.
+  defp answer_download(conn, export, false) do
+    Kanban.Telemetry.span([:kanban, :export], %{kind: :workspace_export, format: :zip}, fn ->
+      {send_archive(conn, export), %{kind: :workspace_export, format: :zip}}
+    end)
+  end
 
   # sobelow_skip ["Traversal.SendDownload"]
   defp send_archive(conn, export) do
