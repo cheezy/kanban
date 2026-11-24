@@ -18,6 +18,7 @@ defmodule KanbanWeb.API.Me.ReviewRequestChangesTest do
   alias Kanban.Devices.Nonce
   alias Kanban.Repo
   alias Kanban.Reviews.Approval
+  alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.Me.Idempotent
@@ -111,9 +112,13 @@ defmodule KanbanWeb.API.Me.ReviewRequestChangesTest do
     do: post_json(device.token, "/api/me/reviews/#{task_id}/approve", body, key)
 
   defp signed_approval(device, task_id) do
+    shown = %{
+      "review_fingerprint" => Task |> Repo.get!(task_id) |> ApprovalChallenge.review_fingerprint()
+    }
+
     %{"data" => %{"nonce" => nonce}} =
       device.token
-      |> post_json("/api/me/reviews/#{task_id}/approval_challenge", %{}, nil)
+      |> post_json("/api/me/reviews/#{task_id}/approval_challenge", shown, nil)
       |> json_response(201)
 
     message = Approval.signing_string(nonce, task_id, @requested_at)

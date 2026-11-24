@@ -2849,7 +2849,7 @@
       "post": {
         "operationId": "createMyReviewApprovalChallenge",
         "summary": "Issue a single-use approval nonce for this device and review",
-        "description": "The first step of an app approval. Returns a nonce valid for 2 minutes and usable once, bound to this device, the task and the task's review_requested_at. Only its SHA-256 hash is stored. It runs the approval's checks 1 to 4 in order: (1) the person can review the task (404 otherwise), (2) the review is still pending and, when the body sends review_requested_at, it matches (409 resubmitted otherwise), (3) the mobile_app plan feature for the person and then the board (403), (4) the large-change guard for the device's class (422 too_large_for_phone on a phone), so a phone learns a change is too large before it asks for a biometric. The app then signs the signing string and calls approveMyReview. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature is refused as invalid. Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
+        "description": "The first step of an app approval. Returns a nonce valid for 2 minutes and usable once, bound to this device, the task, the task's review_requested_at and the review_fingerprint the review screen was rendered with. Only its SHA-256 hash is stored. It runs the approval's checks 1 to 4 in order: (1) the person can review the task (404 otherwise), (2) the review is still pending and, when the body sends review_requested_at, it matches (409 resubmitted otherwise), (3) the mobile_app plan feature for the person and then the board (403), (4) the large-change guard for the device's class (422 too_large_for_phone on a phone), so a phone learns a change is too large before it asks for a biometric. It then checks the review_fingerprint the body sends: missing or malformed is 400, and one that differs from the task's now is 409 edited, so the nonce is bound to what the review screen showed and an edit made after the screen loaded is never signed unseen. The app then signs the signing string and calls approveMyReview. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature is refused as invalid. Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
         "tags": [
           "Mobile"
         ],
@@ -2874,14 +2874,15 @@
           }
         ],
         "requestBody": {
-          "required": false,
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ApprovalChallengeRequest"
               },
               "example": {
-                "review_requested_at": "2026-11-18T09:30:00Z"
+                "review_requested_at": "2026-11-18T09:30:00Z",
+                "review_fingerprint": "3f9a1c0e6b2d4f8a7c5e9b1d3f7a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d4f6a"
               }
             }
           }
@@ -2960,7 +2961,7 @@
             "$ref": "#/components/responses/NotAcceptable"
           },
           "409": {
-            "description": "The review was decided, or the task was sent for review again, since the app loaded it. `review` is its current state.",
+            "description": "The review was decided, the task was sent for review again, or a field the review screen shows was edited, since the app loaded it. `review` is its current state. On edited, reload the review and ask again with the new review_fingerprint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2992,6 +2993,21 @@
                         "identifier": "W2701",
                         "review_status": null,
                         "review_requested_at": "2026-11-18T10:00:00Z",
+                        "reviewed_at": null,
+                        "reviewed_by": null
+                      }
+                    }
+                  },
+                  "edited": {
+                    "summary": "Edited since it was loaded",
+                    "value": {
+                      "error": "edited",
+                      "message": "This task was edited since the review was loaded. Reload the review.",
+                      "review": {
+                        "task_id": 4812,
+                        "identifier": "W2701",
+                        "review_status": null,
+                        "review_requested_at": "2026-11-18T09:30:00Z",
                         "reviewed_at": null,
                         "reviewed_by": null
                       }
@@ -3049,7 +3065,7 @@
       "post": {
         "operationId": "approveMyReview",
         "summary": "Approve a review with the device's approval-key signature",
-        "description": "Approves a task waiting in Review from the app. The body carries review_requested_at, the nonce from createMyReviewApprovalChallenge and the signature. The checks run in this order and the first that fails answers: (1) the person can review the task: it exists, is not archived and is on a board they can write to (404); (2) the review is still pending and review_requested_at matches (409 already_decided or resubmitted, with the current state); (3) the mobile_app plan feature, for the person and then the board (403 plan_required); (4) the large-change guard for the device's class (422 too_large_for_phone on a phone); (5) the signature: a nonce and a signature are sent (reason missing), the nonce was issued to this device for this task, this review_requested_at and this submission, so work resubmitted since the challenge is refused even inside the same second (invalid), is unused (reused) and unexpired (expired), and the signature verifies against the device's approval public key (invalid); a refusal is 422 signature_rejected and writes an approval_signature_rejected audit event with the reason, never the nonce or the signature. Then the approval is made exactly as on the web: the task moves to Done, and the review_approved audit event records via, the device, its class and approval_key true. The commit locks the task and runs the access, state and submission checks again, so a task archived or write access removed since the checks is 404 and work resubmitted is 409 or invalid; a device revoked while its request was in flight is 401 Invalid access token. The nonce is consumed in the same transaction, so it is used at most once and two devices approving at once get one 200 and one 409. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature, padded base64 or base64 with stray bits in its last character is refused as invalid; the same canonical encoding is required of the key. A body without review_requested_at, or with one that is neither an ISO 8601 extended-format timestamp (send the challenge's value back unchanged), null nor the empty string, is 400 Bad Request with the message \"review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none.\" The request may carry an Idempotency-Key header: a retry with the same key within 24 hours is answered with the first successful result, so a retried approval returns its first 200 rather than 409 already_decided; an empty, malformed or repeated key is 400 Bad Request. Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
+        "description": "Approves a task waiting in Review from the app. The body carries review_requested_at, the nonce from createMyReviewApprovalChallenge and the signature. The checks run in this order and the first that fails answers: (1) the person can review the task: it exists, is not archived and is on a board they can write to (404); (2) the review is still pending and review_requested_at matches (409 already_decided or resubmitted, with the current state); (3) the mobile_app plan feature, for the person and then the board (403 plan_required); (4) the large-change guard for the device's class (422 too_large_for_phone on a phone); (5) the signature: a nonce and a signature are sent (reason missing), the nonce was issued to this device for this task, this review_requested_at and this submission, so work resubmitted since the challenge is refused even inside the same second, and the task fields the review screen shows (title, priority, time_spent_minutes, acceptance_criteria and security_considerations) the description and the status of each section verdict are unchanged since the challenge (invalid), is unused (reused) and unexpired (expired), and the signature verifies against the device's approval public key (invalid); a refusal is 422 signature_rejected and writes an approval_signature_rejected audit event with the reason, never the nonce or the signature. Then the approval is made exactly as on the web: the task moves to Done, and the review_approved audit event records via, the device, its class and approval_key true. The commit locks the task and runs the access, state and submission checks again, so a task archived or write access removed since the checks is 404 and work resubmitted is 409 or invalid; a device revoked while its request was in flight is 401 Invalid access token. The nonce is consumed in the same transaction, so it is used at most once and two devices approving at once get one 200 and one 409. The app signs five lines joined by a line feed (\\n, 0x0A), in UTF-8, with no trailing line feed: `stride-approval-v1`, the nonce, the task id in decimal, the challenge's review_requested_at exactly as returned (the empty string when it is empty), and `approve`. For example: \"stride-approval-v1\\nsdan_EXAMPLE0nonce0value0only0for0documentation0\\n4812\\n2026-11-18T09:30:00Z\\napprove\". The signature is ECDSA P-256 with SHA-256 over those bytes, as a DER ECDSA-Sig-Value in unpadded URL-safe base64, verified against the approval public key the device registered at sign-in (the uncompressed P-256 point, unpadded URL-safe base64). A raw r||s signature, padded base64 or base64 with stray bits in its last character is refused as invalid; the same canonical encoding is required of the key. A body without review_requested_at, or with one that is neither an ISO 8601 extended-format timestamp (send the challenge's value back unchanged), null nor the empty string, is 400 Bad Request with the message \"review_requested_at is required: the ISO 8601 extended-format timestamp the challenge returned, such as 2026-11-18T09:30:00Z, or null or an empty string for a task that has none.\" The request may carry an Idempotency-Key header: a retry with the same key within 24 hours is answered with the first successful result, so a retried approval returns its first 200 rather than 409 already_decided; an empty, malformed or repeated key is 400 Bad Request. Takes a device access token only. Human-readable reference: docs/api/me_review_approval.md.",
         "tags": [
           "Mobile"
         ],
@@ -8768,6 +8784,7 @@
           "behaviour_matrix",
           "files",
           "files_version",
+          "review_fingerprint",
           "size",
           "approvable_here",
           "approvable_here_reason",
@@ -8833,6 +8850,11 @@
           "files_version": {
             "type": "string",
             "description": "The version of the task's file list, which a file's index points into. It changes whenever the stored changed files are reordered, renamed, added, removed or their diffs change. Send it as files_version with GET /api/me/reviews/{task_id}/files/{index}, which answers 409 files_changed when the list has changed since."
+          },
+          "review_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "A SHA-256 fingerprint, in lowercase hex, of what this screen shows that decides the approval: the task fields it shows, the description, the submission's completion fields and the status of each section verdict. Send it as review_fingerprint when asking for an approval challenge, which answers 409 edited when the task has changed since. Opaque: compare it only for equality."
           },
           "size": {
             "$ref": "#/components/schemas/ReviewSize"
@@ -9538,7 +9560,7 @@
       },
       "ApprovalChallengeRequest": {
         "type": "object",
-        "description": "Optional. When review_requested_at is sent and the task's differs, the answer is 409 resubmitted.",
+        "description": "Sends back the review_fingerprint the review screen returned: a challenge is issued only when it matches the task's now (409 edited otherwise). When review_requested_at is sent and the task's differs, the answer is 409 resubmitted.",
         "properties": {
           "review_requested_at": {
             "type": [
@@ -9547,8 +9569,16 @@
             ],
             "format": "date-time",
             "description": "The review_requested_at the review screen returned (an ISO 8601 extended-format UTC timestamp), or null or the empty string for a task without one."
+          },
+          "review_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "The review_fingerprint the review detail (GET /api/me/reviews/{task_id}) returned, unchanged. Missing or not 64 lowercase hexadecimal characters is 400."
           }
-        }
+        },
+        "required": [
+          "review_fingerprint"
+        ]
       },
       "ApprovalChallengeResponse": {
         "type": "object",
@@ -9669,7 +9699,7 @@
       },
       "ReviewConflict": {
         "type": "object",
-        "description": "A review decided or resubmitted since the app loaded it. Only someone who may review the task receives one.",
+        "description": "A review decided, resubmitted or (for the approval challenge only) edited since the app loaded it. Only someone who may review the task receives one.",
         "required": [
           "error",
           "message",
@@ -9680,7 +9710,8 @@
             "type": "string",
             "enum": [
               "already_decided",
-              "resubmitted"
+              "resubmitted",
+              "edited"
             ]
           },
           "message": {

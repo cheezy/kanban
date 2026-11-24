@@ -12,6 +12,10 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
   task, both approvals have already read it as pending by then, so both
   commit and two audit rows are written.
 
+  It also proves that a signed phone approval re-checks what the reviewer was
+  shown under that lock: an edit committed while the approval waits on the
+  row lock changes the task's review fingerprint, so the approval is refused.
+
   ## Running
 
   These tests carry `@moduletag :review_race`, which `test/test_helper.exs`
@@ -31,6 +35,7 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.DevicesFixtures
   import Kanban.TasksFixtures
 
   alias Ecto.Adapters.SQL.Sandbox
@@ -38,6 +43,8 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
   alias Kanban.AuditLog
   alias Kanban.Repo
   alias Kanban.Reviews
+  alias Kanban.Reviews.Approval
+  alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
@@ -103,6 +110,55 @@ defmodule Kanban.Reviews.ConcurrentReviewRaceTest do
              [action: :review_approved]
              |> AuditLog.list_events(order: :asc)
              |> Enum.filter(&(&1.metadata["task_id"] == task.id))
+  end
+
+  test "edit during approval refuses it", %{user: user, task: task} do
+    scope = Scope.for_user(user)
+    key = approval_keypair_fixture()
+    phone = device_fixture(scope, %{device_class: :phone, approval_public_key: key.public_key})
+    requested_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    task =
+      task
+      |> Ecto.Changeset.change(review_requested_at: requested_at, acceptance_criteria: "It works")
+      |> Repo.update!()
+
+    shown = %{"review_fingerprint" => ApprovalChallenge.review_fingerprint(task)}
+    {:ok, challenge, _task} = Approval.issue_challenge(scope, phone, task.id, shown)
+
+    params = %{
+      "review_requested_at" => Approval.stamp(requested_at),
+      "nonce" => challenge.nonce,
+      "signature" =>
+        sign_approval(
+          key.private_key,
+          Approval.signing_string(challenge.nonce, task.id, requested_at)
+        )
+    }
+
+    {:ok, approval} =
+      Repo.transaction(fn ->
+        Repo.one!(from(t in Task, where: t.id == ^task.id, lock: "FOR UPDATE", select: t.id))
+
+        approval =
+          Elixir.Task.async(fn ->
+            :ok = Sandbox.checkout(Repo, sandbox: false)
+            Approval.approve(scope, phone, task.id, params)
+          end)
+
+        await_blocked_on_lock(1)
+
+        # Committed with the lock released, after the approval's first read.
+        Task
+        |> where([t], t.id == ^task.id)
+        |> Repo.update_all(set: [acceptance_criteria: "It works\nAnd it ships unreviewed"])
+
+        approval
+      end)
+
+    assert {:error, {:signature_rejected, :invalid}} = Elixir.Task.await(approval, @deadline_ms)
+    assert Repo.get!(Task, task.id).review_status in [nil, :pending]
+    assert Repo.get!(ApprovalChallenge, challenge.id).used_at == nil
   end
 
   defp approve(user, task) do

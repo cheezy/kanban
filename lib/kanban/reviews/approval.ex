@@ -7,10 +7,13 @@ defmodule Kanban.Reviews.Approval do
 
     1. `issue_challenge/5` (`POST /api/me/reviews/:task_id/approval_challenge`)
        returns a single-use nonce, valid for 2 minutes, bound to the device,
-       the task, the task's `review_requested_at` and a fingerprint of the
-       work under review (`Kanban.Reviews.ApprovalChallenge.review_fingerprint/1`),
-       so a resubmission inside the same second cannot reuse it. Only its
-       hash is stored.
+       the task, the task's `review_requested_at` and a fingerprint of what
+       the review screen shows (`Kanban.Reviews.ApprovalChallenge.review_fingerprint/1`),
+       so a resubmission inside the same second cannot reuse it. The app
+       sends the `review_fingerprint` the review detail returned, and a
+       challenge is issued only when it matches the task's now, so an edit
+       made after the screen loaded is never signed unseen. Only the
+       nonce's hash is stored.
     2. The app unlocks its approval key with a biometric, signs
        `signing_string/3` and sends `approve/5`
        (`POST /api/me/reviews/:task_id/approve`) the `review_requested_at`, the
@@ -20,7 +23,10 @@ defmodule Kanban.Reviews.Approval do
 
   `approve/6` runs these checks in this order and stops at the first that
   fails; `issue_challenge/5` runs the first four, so a phone learns that a
-  change is too large before it asks for a biometric. Checks 1 to 3 are
+  change is too large before it asks for a biometric, and then checks the
+  `review_fingerprint` it was sent: missing or malformed is
+  `{:bad_request, message}`, and one that does not match the task's is
+  `{:conflict, :edited, task}`. Checks 1 to 3 are
   `Kanban.Reviews.DecisionChecks.decidable/4`, which the request for changes
   (`Kanban.Reviews.RequestChanges`) runs too:
 
@@ -38,7 +44,10 @@ defmodule Kanban.Reviews.Approval do
        limit, emitting `[:kanban, :review, :phone_approval_refused]`.
     5. **Signature.** A nonce and a signature are present
        (`:missing`); the nonce was issued to this device for this task, this
-       `review_requested_at` and this submission (`:invalid`); it is unused
+       `review_requested_at` and this submission, with the task fields the
+       review screen shows, the description and the status of each section
+       verdict unchanged since (`:invalid`);
+       it is unused
        (`:reused`) and
        unexpired (`:expired`); and the signature verifies against the device's
        approval public key (`:invalid`). A refusal is
@@ -107,7 +116,9 @@ defmodule Kanban.Reviews.Approval do
 
   @purge_batch_size 1000
 
-  @type conflict :: :already_decided | :resubmitted
+  @fingerprint_message "review_fingerprint is required: the review_fingerprint the review detail returned, 64 lowercase hexadecimal characters."
+
+  @type conflict :: :already_decided | :resubmitted | :edited
   @type rejection :: :missing | :invalid | :expired | :reused
   @type reason ::
           :not_found
@@ -138,6 +149,12 @@ defmodule Kanban.Reviews.Approval do
   4. `params` may carry `"review_requested_at"`: when it is present and does
   not match the task's, the answer is `{:conflict, :resubmitted, task}`.
 
+  `params` must carry `"review_fingerprint"`, the value the review detail
+  returned: missing or malformed is `{:bad_request, message}`, and one that
+  does not match the task's fingerprint now is `{:conflict, :edited, task}`,
+  so the nonce is bound to what the reviewer was shown, not to an edit made
+  after the screen loaded.
+
   Returns `{:ok, challenge, task}` with the plain nonce in `challenge.nonce`,
   or `{:error, reason}`.
   """
@@ -149,10 +166,29 @@ defmodule Kanban.Reviews.Approval do
       when is_map(params) do
     with {:ok, pending, _requested} <-
            decidable_pending(scope, device, task_id, params, :optional),
+         :ok <- check_shown(pending, params),
          {:ok, challenge} <- insert_challenge(device, pending, now) do
       {:ok, challenge, pending}
     end
   end
+
+  # The fingerprint the review screen was rendered with must be the task's
+  # now. It is not a secret (the review detail returns it), so a plain
+  # comparison is enough.
+  defp check_shown(%Task{} = task, %{"review_fingerprint" => shown}) do
+    cond do
+      not ApprovalChallenge.valid_fingerprint?(shown) ->
+        {:error, {:bad_request, @fingerprint_message}}
+
+      shown == ApprovalChallenge.review_fingerprint(task) ->
+        :ok
+
+      true ->
+        {:error, {:conflict, :edited, task}}
+    end
+  end
+
+  defp check_shown(_task, _params), do: {:error, {:bad_request, @fingerprint_message}}
 
   @doc """
   Approves task `task_id` on `device` once all five checks pass (see the
@@ -307,7 +343,8 @@ defmodule Kanban.Reviews.Approval do
        else: {:error, :invalid}
   end
 
-  # The work resubmitted since the challenge, even inside the same second.
+  # The work resubmitted since the challenge, even inside the same second, or
+  # a task field the reviewer was shown edited since.
   defp submitted(challenge, task),
     do: if(same_submission?(challenge, task), do: :ok, else: {:error, :invalid})
 

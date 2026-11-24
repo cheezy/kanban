@@ -18,9 +18,9 @@ defmodule KanbanWeb.API.Me.FallbackController do
       locked panel without matching message text;
     * the app approval's refusals (W2754): `{:bad_request, message}` is
       `400 {"error": "Bad Request", "message": message}`;
-      `{:conflict, kind, task}`, a review decided or resubmitted since the
-      app loaded it, is `409 {"error": "already_decided" | "resubmitted",
-      "message", "review"}` (`ReviewConflict`) with the review's current
+      `{:conflict, kind, task}`, a review decided, resubmitted or (for the
+      challenge) edited since the app loaded it, is `409 {"error":
+      "already_decided" | "resubmitted" | "edited", "message", "review"}` (`ReviewConflict`) with the review's current
       state; `{:too_large_for_phone, size}` is `422 {"error":
       "too_large_for_phone", "message", "size", "limits"}`
       (`TooLargeForPhone`); `{:signature_rejected, reason}` is `422
@@ -133,7 +133,7 @@ defmodule KanbanWeb.API.Me.FallbackController do
   end
 
   def call(conn, {:error, {:conflict, kind, %Task{} = task}})
-      when kind in [:already_decided, :resubmitted] do
+      when kind in [:already_decided, :resubmitted, :edited] do
     conn
     |> put_status(:conflict)
     |> json(%{
@@ -274,6 +274,9 @@ defmodule KanbanWeb.API.Me.FallbackController do
 
   defp conflict_message(:resubmitted),
     do: "This task was sent for review again since it was loaded. Review it again."
+
+  defp conflict_message(:edited),
+    do: "This task was edited since the review was loaded. Reload the review."
 
   defp signature_message(:missing), do: "The approval needs a nonce and a signature."
 

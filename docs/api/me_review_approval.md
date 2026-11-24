@@ -28,7 +28,9 @@ A device access token, sent as `Authorization: Bearer <token>`, exactly as for
 
 Both routes run these checks in this order and answer with the first that
 fails. The challenge runs checks 1 to 4, so a phone learns that a change is too
-large before it asks for a biometric; the approval runs all five.
+large before it asks for a biometric, and then checks the
+[`review_fingerprint`](#post-apimereviewstask_idapproval_challenge) it was
+sent; the approval runs all five.
 
 | # | Check | Refusal |
 |---|---|---|
@@ -56,11 +58,25 @@ or `android`), the device, its class and `approval_key: true`.
 
 ## POST /api/me/reviews/:task_id/approval_challenge
 
-The body is optional. When it carries `review_requested_at` and the task's
-differs, the answer is `409 resubmitted`.
+The body is required. It carries `review_fingerprint`, the value
+[GET /api/me/reviews/:task_id](me_reviews.md) returned for the review screen
+the person is looking at, sent back unchanged. Stride issues a nonce only when
+it matches the task's fingerprint now, so an edit made after the screen loaded
+is never signed unseen:
+
+- a body without `review_fingerprint`, or one that is not 64 lowercase
+  hexadecimal characters, is `400 {"error": "Bad Request", "message": "..."}`;
+- one that differs from the task's now is `409 edited`. Reload the review and
+  ask again with its new `review_fingerprint`.
+
+When the body also carries `review_requested_at` and the task's differs, the
+answer is `409 resubmitted`.
 
 ```json
-{ "review_requested_at": "2026-11-18T09:30:00Z" }
+{
+  "review_requested_at": "2026-11-18T09:30:00Z",
+  "review_fingerprint": "3f9a1c0e6b2d4f8a7c5e9b1d3f7a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d4f6a"
+}
 ```
 
 `201 Created`:
@@ -80,11 +96,21 @@ differs, the answer is `409 resubmitted`.
 
 - `nonce` is shown once. Stride stores only its SHA-256 hash.
 - It is valid for 2 minutes (`expires_at`) and can be used once.
-- It is bound to this device, this task, the task's `review_requested_at`
-  and the work submitted for review when it was issued. A nonce issued to
+- It is bound to this device, this task, the task's `review_requested_at`,
+  the `review_fingerprint` it was asked with, and the work submitted for
+  review when it was issued. A nonce issued to
   another device, for another task, or before the task was sent for review
   again is refused as `invalid`, even when the resubmission fell in the same
   second and left `review_requested_at` unchanged.
+- It is also bound to the task fields the review screen shows (the title,
+  priority, time spent, and the task's own acceptance criteria and security
+  considerations), to the task's description, and to the status of each
+  section verdict the screen shows. An edit to any of them after the nonce
+  was issued refuses the approval as `invalid`; request a new challenge to
+  approve the task as it is now. That includes an edit to a field the screen
+  does not show when it changes a verdict's status, such as clearing the
+  task's patterns, testing strategy or pitfalls. An edit to any other field,
+  such as the task's position, does not.
 - `review_requested_at` is the value to sign: an ISO 8601 UTC timestamp, or
   the empty string for a task that has none. Send it back exactly as it was
   returned.
@@ -183,7 +209,8 @@ approve
   [GET /api/me/reviews/:task_id](me_reviews.md#plans).
 - `404 {"error": "Not Found"}` as in [the checks](#the-checks-in-order).
 - `409` when the review was decided or sent for review again since the app
-  loaded it. `error` is `already_decided` or `resubmitted`, and `review` is
+  loaded it, or (from the challenge only) when the task was edited since.
+  `error` is `already_decided`, `resubmitted` or `edited`, and `review` is
   the current state, so the app can say who decided it and when:
 
   ```json
@@ -216,8 +243,10 @@ approve
 
 - `422 signature_rejected` when the signature check refuses the approval.
   `reason` is `missing` (no nonce or no signature), `invalid` (the nonce was
-  not issued to this device for this review, or the signature does not
-  verify), `expired` or `reused`; request a new challenge for any of them.
+  not issued to this device for this review, the task fields the review
+  screen shows, the description or a section verdict's status changed since,
+  or the signature does not verify),
+  `expired` or `reused`; request a new challenge for any of them.
   Each refusal writes an `approval_signature_rejected` audit event with the
   reason, never the nonce or the signature:
 

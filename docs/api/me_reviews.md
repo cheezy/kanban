@@ -91,6 +91,7 @@ locked panel without matching the message.
       {"index": 0, "path": "lib/kanban/organizations.ex", "additions": 20, "deletions": 0, "truncated": false, "flagged": false, "flag_reason": null}
     ],
     "files_version": "q2l9v0ZsB3m7xQ1a",
+    "review_fingerprint": "3f9a1c0e6b2d4f8a7c5e9b1d3f7a2c4e6b8d0f2a4c6e8b0d2f4a6c8e0b2d4f6a",
     "size": {"files": 2, "files_unknown": false, "changed_lines": 33, "truncated": false, "large_change": false},
     "approvable_here": true,
     "approvable_here_reason": null,
@@ -194,7 +195,14 @@ changes is never limited. The app must not work this out for itself; the
 server's answer decides.
 
 To approve, the app asks for an approval challenge and sends a signed
-approval: see [Approve a review in the app](me_review_approval.md). To send
+approval: see [Approve a review in the app](me_review_approval.md). The
+challenge request sends back `review_fingerprint` from this response
+unchanged. It is a SHA-256 fingerprint, in 64 lowercase hexadecimal
+characters, of what this screen shows that decides the approval: the task
+fields in `task`, the description, the submission's completion fields and the
+status of each entry in `verdicts`. When the task has changed since this
+response, the challenge answers `409 edited`, and the app reloads the review.
+Treat the value as opaque and compare it only for equality. To send
 the task back with feedback, see
 [Request changes on a review in the app](me_review_request_changes.md).
 

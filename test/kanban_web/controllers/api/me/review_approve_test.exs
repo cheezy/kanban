@@ -92,7 +92,33 @@ defmodule KanbanWeb.API.Me.ReviewApproveTest do
     |> post(path, Jason.encode!(body))
   end
 
-  defp challenge(device, task_id, body \\ %{}),
+  defp detail(device, task_id) do
+    build_conn()
+    |> put_req_header("authorization", "Bearer " <> device.token)
+    |> get("/api/me/reviews/#{task_id}")
+  end
+
+  # What the app does: send back the review_fingerprint the review detail
+  # returned (null when the detail cannot be read, as for a task the person
+  # cannot review, which the challenge refuses before it reads the field).
+  defp shown_fingerprint(device, task_id) do
+    case detail(device, task_id) do
+      %{status: 200} = conn ->
+        conn |> json_response(200) |> get_in(["data", "review_fingerprint"])
+
+      _refused ->
+        nil
+    end
+  end
+
+  defp challenge(device, task_id, body \\ %{}) do
+    body =
+      Map.put_new_lazy(body, "review_fingerprint", fn -> shown_fingerprint(device, task_id) end)
+
+    post_challenge(device, task_id, body)
+  end
+
+  defp post_challenge(device, task_id, body),
     do: post_json(device.token, "/api/me/reviews/#{task_id}/approval_challenge", body)
 
   defp approve(device, task_id, body),
@@ -399,6 +425,94 @@ defmodule KanbanWeb.API.Me.ReviewApproveTest do
       # A fresh challenge for the work as it is now approves it.
       fresh = challenge!(ctx.phone, task.id)
       assert ctx.phone |> approve(task.id, signed(ctx.phone, fresh)) |> json_response(200)
+    end
+
+    test "the challenge takes the review_fingerprint the review detail returned", ctx do
+      task = pending_task!(ctx.review, %{acceptance_criteria: "It works"})
+
+      assert %{"review_fingerprint" => fingerprint} =
+               ctx.phone |> detail(task.id) |> json_response(200) |> Map.fetch!("data")
+
+      assert fingerprint == Task |> Repo.get!(task.id) |> ApprovalChallenge.review_fingerprint()
+
+      assert %{"data" => %{"nonce" => "sdan_" <> _rest}} =
+               ctx.phone
+               |> post_challenge(task.id, %{"review_fingerprint" => fingerprint})
+               |> json_response(201)
+    end
+
+    test "a missing or malformed review_fingerprint answers 400 and issues nothing", ctx do
+      task = pending_task!(ctx.review)
+      fingerprint = Task |> Repo.get!(task.id) |> ApprovalChallenge.review_fingerprint()
+
+      for body <- [
+            %{},
+            %{"review_requested_at" => "2026-11-18T09:30:00Z"},
+            %{"review_fingerprint" => nil},
+            %{"review_fingerprint" => 7},
+            %{"review_fingerprint" => String.upcase(fingerprint)},
+            %{"review_fingerprint" => String.slice(fingerprint, 0, 32)}
+          ] do
+        assert %{"error" => "Bad Request", "message" => "review_fingerprint is required" <> _} =
+                 ctx.phone |> post_challenge(task.id, body) |> json_response(400),
+               "#{inspect(body)} was not refused"
+      end
+
+      assert Repo.aggregate(ApprovalChallenge, :count) == 0
+    end
+
+    test "an edit after the review loaded answers 409 edited with the review's state", ctx do
+      task = pending_task!(ctx.review, %{acceptance_criteria: "It works"})
+      loaded = shown_fingerprint(ctx.phone, task.id)
+
+      task
+      |> Ecto.Changeset.change(acceptance_criteria: "It works\nAnd it ships unreviewed")
+      |> Repo.update!()
+
+      task_id = task.id
+
+      assert %{
+               "error" => "edited",
+               "message" =>
+                 "This task was edited since the review was loaded. Reload the review.",
+               "review" => %{
+                 "task_id" => ^task_id,
+                 "review_requested_at" => "2026-11-18T09:30:00Z",
+                 "reviewed_at" => nil
+               }
+             } =
+               ctx.phone
+               |> post_challenge(task.id, %{"review_fingerprint" => loaded})
+               |> json_response(409)
+
+      assert Repo.aggregate(ApprovalChallenge, :count) == 0
+
+      # Reloading the review gives the fingerprint the challenge accepts.
+      reloaded = shown_fingerprint(ctx.phone, task.id)
+      refute reloaded == loaded
+      data = challenge!(ctx.phone, task.id)
+      assert ctx.phone |> approve(task.id, signed(ctx.phone, data)) |> json_response(200)
+    end
+
+    test "fresh challenge approves after an edit", ctx do
+      task = pending_task!(ctx.review, %{acceptance_criteria: "It works"})
+      data = challenge!(ctx.phone, task.id)
+
+      # The criteria the reviewer was shown change while the challenge lives.
+      task
+      |> Ecto.Changeset.change(acceptance_criteria: "It works\nAnd it ships unreviewed")
+      |> Repo.update!()
+
+      assert %{"error" => "signature_rejected", "reason" => "invalid"} =
+               ctx.phone |> approve(task.id, signed(ctx.phone, data)) |> json_response(422)
+
+      assert Repo.get!(Task, task.id).review_status in [nil, :pending]
+      assert [%{metadata: %{"reason" => "invalid"}}] = rows(:approval_signature_rejected)
+
+      # A fresh challenge for the criteria as they are now approves it.
+      fresh = challenge!(ctx.phone, task.id)
+      assert ctx.phone |> approve(task.id, signed(ctx.phone, fresh)) |> json_response(200)
+      assert Repo.get!(Task, task.id).review_status == :approved
     end
 
     test "a task with no review_requested_at takes it back as null or an empty string", ctx do

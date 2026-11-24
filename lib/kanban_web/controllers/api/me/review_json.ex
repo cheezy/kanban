@@ -58,6 +58,7 @@ defmodule KanbanWeb.API.Me.ReviewJSON do
       project_checks: review.project_checks,
       exploratory: review.exploratory,
       behaviour_matrix: Enum.map(review.behaviour_matrix, &behaviour_row/1),
+      review_fingerprint: review.review_fingerprint,
       review_requested_at: review.review_requested_at,
       waiting_since: review.waiting_since
     }

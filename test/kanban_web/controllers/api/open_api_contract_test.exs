@@ -1186,6 +1186,27 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert ApprovalChallenge.valid_nonce?(challenge.nonce)
     end
 
+    test "the challenge requires a review_fingerprint of the shape the detail returns",
+         %{spec: spec} do
+      schemas = spec["components"]["schemas"]
+      request = schemas["ApprovalChallengeRequest"]
+      body = spec["paths"][@challenge_path]["post"]["requestBody"]
+
+      assert request["required"] == ["review_fingerprint"]
+      assert body["required"] == true
+
+      pattern = request["properties"]["review_fingerprint"]["pattern"]
+      assert schemas["ReviewDetail"]["properties"]["review_fingerprint"]["pattern"] == pattern
+
+      example = body["content"]["application/json"]["example"]["review_fingerprint"]
+      assert ApprovalChallenge.valid_fingerprint?(example)
+      assert pattern |> Regex.compile!() |> Regex.match?(example)
+
+      issued = ApprovalChallenge.review_fingerprint(%Task{title: "A task"})
+      assert pattern |> Regex.compile!() |> Regex.match?(issued)
+      refute pattern |> Regex.compile!() |> Regex.match?(String.upcase(issued))
+    end
+
     test "the 403, 409 and 422 examples match what the person-API fallback renders",
          %{spec: spec} do
       decided = %Task{
@@ -1205,7 +1226,19 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         reviewed_by: nil
       }
 
+      edited = %Task{
+        id: 4812,
+        identifier: "W2701",
+        review_status: nil,
+        review_requested_at: ~U[2026-11-18 09:30:00Z],
+        reviewed_by: nil
+      }
+
       size = %{files: 14, changed_lines: 652, truncated: false}
+
+      # Only the challenge checks what the review screen was rendered with.
+      assert fallback_body({:conflict, :edited, edited}) ==
+               {409, example(spec, @challenge_path, "409", "edited")}
 
       for path <- [@challenge_path, @approve_path, @request_changes_path] do
         assert fallback_body({:plan_required, :mobile_app}) == {403, example(spec, path, "403")}

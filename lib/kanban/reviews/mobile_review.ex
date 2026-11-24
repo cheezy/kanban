@@ -26,7 +26,9 @@ defmodule Kanban.Reviews.MobileReview do
       so the screen and the approve route apply one rule; `size.files`
       counts the file rows (`MobileGuard.file_paths/1`), and a count in place
       of paths lists none, with `size.files_unknown` set;
-    * `files_version` (`MobileReviewFile.files_version/1`), and
+    * `files_version` (`MobileReviewFile.files_version/1`),
+      `review_fingerprint` (`Kanban.Reviews.ApprovalChallenge.review_fingerprint/1`,
+      which the app sends back when it asks for an approval challenge), and
       `review_requested_at`, `waiting_since` and `holds_up` (the dependents
       not yet completed).
 
@@ -59,6 +61,7 @@ defmodule Kanban.Reviews.MobileReview do
   """
 
   alias Kanban.Reviews
+  alias Kanban.Reviews.ApprovalChallenge
   alias Kanban.Reviews.MobileGuard
   alias Kanban.Reviews.MobileReviewFile
   alias Kanban.Tasks.Task
@@ -82,6 +85,7 @@ defmodule Kanban.Reviews.MobileReview do
           behaviour_matrix: [map()],
           files: [map()],
           files_version: String.t(),
+          review_fingerprint: String.t(),
           size: map(),
           approvable_here: boolean(),
           approvable_here_reason: atom() | nil,
@@ -102,6 +106,7 @@ defmodule Kanban.Reviews.MobileReview do
     |> review_details()
     |> Map.merge(change_details(task, device_class))
     |> Map.merge(%{
+      review_fingerprint: ApprovalChallenge.review_fingerprint(task),
       review_requested_at: task.review_requested_at,
       waiting_since: Reviews.waiting_since(task),
       holds_up: holds_up(dependents)
