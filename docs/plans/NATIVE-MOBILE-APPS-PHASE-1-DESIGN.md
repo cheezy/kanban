@@ -953,7 +953,7 @@ Migrations need no backfill. Following the dev-database practice, run them as so
 - **Rate limits.** Requests to `/oauth/token` and `/api/me/*` are limited per IP, like the existing API, and refresh and revoke requests per presented refresh token as well.
   - **The per-token limit is uniform** (decided 2026-11-19). It is keyed on a digest of the presented token, checked before any lookup, so an unknown, a revoked and a live token reach the `429` after the same number of attempts and the limit cannot be used to tell which tokens were real.
   - **An expired access token is not a failure** (decided 2026-11-19). A device access token Stride recognises that has only expired answers the same `401` as any invalid token but does not count toward the per-IP failure limit agent tokens share, so phones refreshing on schedule never lock their office's agents out.
-- **Caching.** Every `/api/me` response is `cache-control: private, no-store`, errors and the device plug's refusals included, except a response that carries an `ETag` (the review reads), which is `private, max-age=0, must-revalidate` (decided 2026-11-19; `KanbanWeb.Plugs.DeviceApiCacheControl`).
+- **Caching.** No route sets an `ETag` yet, so every `/api/me` response is `cache-control: private, no-store` today, errors and the device plug's refusals included. The rule follows the header, not the route: a response that carries an `ETag` is `private, max-age=0, must-revalidate`, so a read that adds one later (the review reads are the likely first) can be revalidated with no change to the plug (decided 2026-11-19; `KanbanWeb.Plugs.DeviceApiCacheControl`).
 
 ### 9.2 Two kinds of token, never mixed
 
@@ -1009,6 +1009,12 @@ Reviews write no audit event today (§3.2), so **web reviews start writing one t
 ### 9.6 Security review
 
 Phase 1 adds an authorization server, a new token type, a socket and a push path. It gets a security review before the beta. It's also a good candidate for an exploratory-testing charter campaign on the token lifecycle and the review actions ([§19](#19-testing-strategy)).
+
+Three questions from the Phase 1a security review were decided on 2026-11-23 to need no change. Each is recorded with its reason in [§24](#24-decisions-needed):
+
+- **Removal from an Organization doesn't revoke the member's devices** ([decision 14](#24-decisions-needed)). A device belongs to the person, and removal already ends the Organization's board access. The person can still revoke a device, and an org-admin can revoke a member's devices before removing them ([§7.1](#71-sign-in-for-a-device)).
+- **An approval signature's high-s twin is accepted** ([decision 15](#24-decisions-needed)). Each nonce is single-use ([§7.5](#75-review-api)) and signatures are never stored, so a second valid form of the same signature can't approve anything twice. Any future use of a signature as an identifier must normalize it to low-s first.
+- **The redirect URI stays a private-use scheme in Phase 1** ([decision 16](#24-decisions-needed)). PKCE is mandatory ([§9.1](#91-sign-in)), which is what RFC 8252 section 8.1 requires of a private-use scheme. A move to a claimed `https` callback is later-phase work, filed separately.
 
 ---
 
@@ -1445,7 +1451,7 @@ Each measure names its source.
 
 ## 24. Decisions needed
 
-All thirteen were decided on 2026-11-15; decision 13 was added after the first twelve. Each row keeps the question and records the choice and the reason.
+Decisions 1 to 13 were decided on 2026-11-15; decision 13 was added after the first twelve. Decisions 14 to 16 were decided on 2026-11-23: they are questions from the Phase 1a security review that need no change, recorded so the reason stays written down ([§9.6](#96-security-review)). Each row keeps the question and records the choice and the reason.
 
 | # | Decision | Outcome |
 |---|---|---|
@@ -1462,6 +1468,9 @@ All thirteen were decided on 2026-11-15; decision 13 was added after the first t
 | 11 | Which languages does the diff highlighter cover at launch? | **Decided (2026-11-15): Elixir, HEEx, Erlang, JavaScript and CSS,** only where the Makeup lexer is maintained; plain text otherwise. Reason: each lexer is a dependency to keep up, and plain text still reads fine for the rest. |
 | 12 | Start the backend now, or after the five-Organization sales goal? | **Decided (2026-11-15): task 0 now.** The rest of Phase 1a starts when the baseline shows real waits on paying boards. Reason: the metric is a defect worth fixing anyway, and gating the rest protects sales time until the waits are proven. |
 | 13 | Add a status section to Phase 1: targets, then a target's goals, then a goal's tasks, each matching the web, plus a list of every goal? | **Decided (2026-11-15): yes, in Phase 1, inside Agents,** behind a switch with Agents, Targets and Goals ([§6.16](#616-targets-status-at-a-glance)–§6.19). The screens are read-only, refresh by pulling, and have no live channel in 1.0. Access follows the web: the targets list shows every target with a member goal on a board the person can see, but only a target's owner can open its detail, as `/targets/:id` is owner-only. Others see the row without a chevron and reach its goals from the Goals list. Lists span every board the person can see; the app has no current workspace ([§5.1](#51-one-navigation-on-both-platforms)). Reason: high-level status is what a person checks most between decisions, and the web already shows targets on `/agents`. The backend reuses `DeliveryRollup.build/2`, `Kanban.Targets` and the goal page's functions for three read endpoints, plus a few new fields ([§7.10](#710-boards-tasks-agents-and-capture)). The goals list needs one new query, because no web page lists every goal. The cost is four read endpoints and four screens. The goals list was added because a goal with no target would otherwise drop off the phone once agents leave it. This widens the metrics non-goal in [§1](#1-goals-and-non-goals). |
+| 14 | Should removing a member from an Organization revoke that member's devices? | **Decided (2026-11-23): no.** Removal leaves the member's devices signed in. Reason: a device belongs to the person, not to the Organization, and removal already ends the Organization's board access, so the device can't reach that Organization's boards afterwards. The person can still revoke it, and an org-admin can revoke a member's devices before removing them ([§7.1](#71-sign-in-for-a-device)). |
+| 15 | Should the server refuse the high-s twin of a valid ECDSA approval signature? | **Decided (2026-11-23): no, it's accepted.** Reason: each approval nonce is single-use ([§7.5](#75-review-api)) and signatures are never stored, so a second valid form of the same signature can't approve anything a second time. Any future use of a signature as an identifier, such as storing it or deduplicating on it, must normalize it to low-s first. |
+| 16 | Keep the private-use redirect scheme for sign-in, or move to a claimed `https` callback? | **Decided (2026-11-23): keep the private-use scheme in Phase 1.** Reason: PKCE is mandatory ([§9.1](#91-sign-in)), which is what RFC 8252 section 8.1 requires of a private-use scheme, so an intercepted code can't be exchanged without the verifier. A later-phase move to a claimed `https` callback is filed separately. |
 
 
 ## Breakdown of goal G532:

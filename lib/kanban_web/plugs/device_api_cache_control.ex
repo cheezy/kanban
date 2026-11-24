@@ -1,7 +1,11 @@
 defmodule KanbanWeb.Plugs.DeviceApiCacheControl do
   @moduledoc """
   The `cache-control` of every person-API response (`/api/me/*`,
-  docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §9.2, decided 2026-11-19).
+  docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md §9.1, decided 2026-11-19).
+
+  No route sets an `etag` yet, so today every `/api/me` response is
+  `private, no-store`. The rule below still follows the header, so a read
+  that adds an etag later is revalidated without a change here.
 
   It is the first plug of the router's `:device_api` pipeline and sets the
   header in a `before_send` callback, so it covers every response the
@@ -13,9 +17,9 @@ defmodule KanbanWeb.Plugs.DeviceApiCacheControl do
     * A response that carries an `etag` is `private, max-age=0,
       must-revalidate`: the app may keep it and revalidate it with
       `If-None-Match`, which is what the etag is for. The rule follows the
-      header, not the route, so any read that sets an etag (the review
-      reads are the ones meant to) gets it, and a route that sets none
-      never does.
+      header, not the route, so any read that sets an etag gets it, and a
+      route that sets none never does. None sets one today; the review
+      reads are the likely first.
     * Every other response is `private, no-store`: a phone, a proxy or an
       HTTP cache never keeps a person's data, a token refusal or an error.
 
