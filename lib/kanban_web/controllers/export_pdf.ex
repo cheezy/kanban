@@ -29,6 +29,26 @@ defmodule KanbanWeb.ExportPdf do
   missing instance is a deployment fault, not a failed print. Nothing outside the
   print call is wrapped: building the HTML before it, and decoding and sending
   the file after it, still raise as before.
+
+  ## What the reason carries
+
+  Both controllers write the reason to the log with `inspect/1`, so it must
+  name Chrome's error and hold nothing from the report:
+
+    * a `ChromicPDF.ChromeError` carries the print options it was raised for,
+      with the whole HTML under `:html`. They are cleared, and its `:error`,
+      which is what Chrome answered, is kept. Log it with `inspect/1` only:
+      `Exception.message/1` reads the cleared options for an `{:evaluate, _}`
+      error;
+    * `ChromicPDF.Browser.ExecutionError` and
+      `ChromicPDF.Connection.ConnectionLostError` carry only a message. The
+      message of a print timeout prints the `ChromicPDF.Protocol` that was
+      running, whose own `Inspect` implementation filters the HTML out of its
+      state;
+    * an exit can hold the call's arguments, and so the same protocol with the
+      HTML in its state. `inspect/1` filters it in the same way, so the exit is
+      returned as it is. Inspecting it with `structs: false` would bypass that
+      filter.
   """
 
   @print_options [print_to_pdf: %{printBackground: true}]
@@ -38,17 +58,17 @@ defmodule KanbanWeb.ExportPdf do
 
   Returns the printer's own result, or `{:error, exception}` or
   `{:error, {:exit, reason}}` for a failed print. The reason is for the log
-  only; callers never show it to the user.
+  only, through `inspect/1`, which prints Chrome's error and none of `html`;
+  callers never show it to the user.
   """
   @spec print(module(), String.t()) :: {:ok, String.t()} | {:error, term()}
   def print(printer, html) do
     printer.print_to_pdf({:html, html}, @print_options)
   rescue
-    error in [
-      ChromicPDF.Browser.ExecutionError,
-      ChromicPDF.ChromeError,
-      ChromicPDF.Connection.ConnectionLostError
-    ] ->
+    error in ChromicPDF.ChromeError ->
+      {:error, %{error | opts: nil}}
+
+    error in [ChromicPDF.Browser.ExecutionError, ChromicPDF.Connection.ConnectionLostError] ->
       {:error, error}
   catch
     :exit, reason -> {:error, {:exit, reason}}

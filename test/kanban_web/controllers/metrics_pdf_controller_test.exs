@@ -1476,6 +1476,27 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       def print_to_pdf(_content, _opts), do: exit(:forced_pdf_exit)
     end
 
+    # ChromicPDF raises a ChromeError with the options of the print, the report
+    # HTML among them, and an exit from the print call holds the protocol, with
+    # the HTML in its state. Each sends the HTML to the test process too.
+    defmodule HtmlChromeErrorPdfPrinter do
+      def print_to_pdf({:html, html}, opts) do
+        send(self(), {:printed_html, html})
+        raise ChromicPDF.ChromeError, error: "forced_chrome_error", opts: [{:html, html} | opts]
+      end
+    end
+
+    defmodule ProtocolExitPdfPrinter do
+      def print_to_pdf({:html, html}, _opts) do
+        send(self(), {:printed_html, html})
+        protocol = ChromicPDF.PrintToPDF.new("session", source_type: :html, html: html)
+
+        request = {:run_protocol, protocol, make_ref()}
+
+        exit({:forced_exit, {GenServer, :call, [self(), request, 5_000]}})
+      end
+    end
+
     defmodule MessagelessPdfPrinter do
       def print_to_pdf(_content, _opts), do: raise(ChromicPDF.Browser.ExecutionError)
     end
@@ -1543,6 +1564,42 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
 
         refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
         refute_received {:telemetry_event, [:kanban, :export, :exception], _, _}
+      end
+    end
+
+    for {name, stub, logged} <- [
+          {"a ChromeError", HtmlChromeErrorPdfPrinter, "forced_chrome_error"},
+          {"an exit holding the protocol", ProtocolExitPdfPrinter, "ChromicPDF.Protocol"}
+        ] do
+      @stub stub
+      @logged logged
+
+      test "logs #{name} without the report HTML", %{conn: conn, user: user} do
+        board = ai_optimized_board_fixture(user, %{name: "Marker Board"})
+        column_fixture(board)
+        override_export_seam(:export_pdf_printer, @stub)
+        attach_telemetry(@span_events)
+
+        {conn, log} =
+          with_log(fn -> get(conn, "/boards/#{board.id}/metrics/throughput/export") end)
+
+        assert_received {:printed_html, html}
+        assert html =~ "Marker Board"
+
+        assert log =~ "PDF/export generation failed"
+        assert log =~ @logged
+        refute log =~ "Marker Board"
+        refute log =~ "DOCTYPE"
+
+        assert redirected_to(conn) =~ "/boards/#{board.id}/metrics/throughput?"
+
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+                 MetricsPdfController.pdf_error_flash_message()
+
+        refute conn.resp_body =~ "Marker Board"
+
+        assert export_span_metadata() ==
+                 {%{kind: :metrics_pdf, format: :pdf}, %{kind: :metrics_pdf, format: :pdf}}
       end
     end
 

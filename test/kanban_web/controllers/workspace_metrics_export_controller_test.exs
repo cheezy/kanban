@@ -692,6 +692,27 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
       def print_to_pdf(_content, _opts), do: exit(:forced_pdf_exit)
     end
 
+    # ChromicPDF raises a ChromeError with the options of the print, the report
+    # HTML among them, and an exit from the print call holds the protocol, with
+    # the HTML in its state. Each sends the HTML to the test process too.
+    defmodule HtmlChromeErrorPdfPrinter do
+      def print_to_pdf({:html, html}, opts) do
+        send(self(), {:printed_html, html})
+        raise ChromicPDF.ChromeError, error: "forced_chrome_error", opts: [{:html, html} | opts]
+      end
+    end
+
+    defmodule ProtocolExitPdfPrinter do
+      def print_to_pdf({:html, html}, _opts) do
+        send(self(), {:printed_html, html})
+        protocol = ChromicPDF.PrintToPDF.new("session", source_type: :html, html: html)
+
+        request = {:run_protocol, protocol, make_ref()}
+
+        exit({:forced_exit, {GenServer, :call, [self(), request, 5_000]}})
+      end
+    end
+
     defmodule MessagelessPdfPrinter do
       def print_to_pdf(_content, _opts), do: raise(ChromicPDF.Browser.ExecutionError)
     end
@@ -755,6 +776,43 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
 
         refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
         refute_received {:telemetry_event, [:kanban, :export, :exception], _, _}
+      end
+    end
+
+    for {name, stub, logged} <- [
+          {"a ChromeError", HtmlChromeErrorPdfPrinter, "forced_chrome_error"},
+          {"an exit holding the protocol", ProtocolExitPdfPrinter, "ChromicPDF.Protocol"}
+        ] do
+      @stub stub
+      @logged logged
+
+      # The time zone is the one filter value a request can make distinctive.
+      test "logs #{name} without the report HTML", %{conn: conn, user: user} do
+        board_with_completed_task!(user)
+        override_export_seam(:export_pdf_printer, @stub)
+        attach_telemetry(@span_events)
+
+        {conn, log} =
+          with_log(fn -> get(conn, ~p"/metrics/export?timezone=Pacific/Marquesas") end)
+
+        assert_received {:printed_html, html}
+        assert html =~ "Pacific/Marquesas"
+
+        assert log =~ "Workspace metrics export generation failed"
+        assert log =~ @logged
+        refute log =~ "Pacific/Marquesas"
+        refute log =~ "DOCTYPE"
+
+        assert redirected_to(conn) == ~p"/metrics"
+
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+                 WorkspaceMetricsExportController.export_error_flash_message()
+
+        refute conn.resp_body =~ "Pacific/Marquesas"
+
+        assert export_span_metadata() ==
+                 {%{kind: :workspace_metrics, format: :pdf},
+                  %{kind: :workspace_metrics, format: :pdf}}
       end
     end
 
