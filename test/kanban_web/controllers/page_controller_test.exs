@@ -1753,7 +1753,8 @@ defmodule KanbanWeb.PageControllerTest do
     for lead <- [
           "Agents and goal hook results for the Stride app.",
           "Goals and goal status for the Stride app.",
-          "Deleting a column now says how many tasks go with it."
+          "Deleting a column now says how many tasks go with it.",
+          "A column whose tasks others depend on can't be deleted."
         ] do
       assert lead in leads
     end

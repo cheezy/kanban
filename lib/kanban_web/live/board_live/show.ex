@@ -124,9 +124,11 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   # Deleting a column is a two-step server flow: delete_column opens a
-  # confirmation naming the column's open and archived task counts, and
-  # confirm_delete_column deletes only the column that step stored, never an
-  # id from the client. Both re-check owner access; the confirm first checks
+  # confirmation naming the column's open and archived task counts, or, when
+  # tasks in other columns depend on its tasks, the number of those and no
+  # delete. confirm_delete_column deletes only the column that step stored,
+  # never an id from the client, and Columns.delete_column/2 checks the
+  # dependents again. Both re-check owner access; the confirm first checks
   # that column is still on this board, so a column or board deleted
   # elsewhere reports "Column not found on this board".
   def handle_event("delete_column", %{"id" => id}, socket),

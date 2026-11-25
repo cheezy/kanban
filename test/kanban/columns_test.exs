@@ -7,8 +7,11 @@ defmodule Kanban.ColumnsTest do
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
 
+  alias Kanban.ColumnLockHelpers
   alias Kanban.Columns
   alias Kanban.Columns.Column
+  alias Kanban.Tasks
+  alias Kanban.Tasks.Task
 
   describe "list_columns/1" do
     test "returns all columns for a board ordered by position" do
@@ -561,6 +564,201 @@ defmodule Kanban.ColumnsTest do
       assert Columns.count_column_tasks(column) == %{open: 1, archived: 1}
       assert Columns.count_column_tasks(other_column) == %{open: 1, archived: 0}
     end
+  end
+
+  # A task in `column` that depends on `targets`, which must be on its board.
+  defp dependent_on!(column, targets) do
+    {:ok, task} =
+      Tasks.create_task(column, %{
+        "title" => "Dependent #{System.unique_integer([:positive])}",
+        "dependencies" => Enum.map(targets, & &1.identifier)
+      })
+
+    task
+  end
+
+  defp two_columns(_context) do
+    user = user_fixture()
+    board = board_fixture(user)
+    column = column_fixture(board)
+    other = column_fixture(board)
+    %{user: user, board: board, column: column, other: other, target: task_fixture(column)}
+  end
+
+  describe "count_column_dependents/1 (D456)" do
+    setup :two_columns
+
+    test "is 0 for a column whose tasks nobody depends on", %{column: column, other: other} do
+      other_target = task_fixture(other)
+      dependent_on!(other, [other_target])
+
+      assert Columns.count_column_dependents(column) == 0
+    end
+
+    test "counts a task in another column that depends on a task in this one", ctx do
+      dependent_on!(ctx.other, [ctx.target])
+
+      assert Columns.count_column_dependents(ctx.column) == 1
+      # The dependent's own column has no dependents
+      assert Columns.count_column_dependents(ctx.other) == 0
+    end
+
+    test "counts each dependent once, however many of the column's tasks it lists", ctx do
+      second = task_fixture(ctx.column)
+      third_column = column_fixture(ctx.board)
+      dependent_on!(ctx.other, [ctx.target, second])
+      dependent_on!(third_column, [second])
+
+      assert Columns.count_column_dependents(ctx.column) == 2
+    end
+
+    test "does not count a dependent in the same column", ctx do
+      dependent_on!(ctx.column, [ctx.target])
+
+      assert Columns.count_column_dependents(ctx.column) == 0
+    end
+
+    test "does not count an archived dependent", ctx do
+      ctx.other |> dependent_on!([ctx.target]) |> archive!()
+
+      assert Columns.count_column_dependents(ctx.column) == 0
+    end
+
+    test "counts a completed dependent, as delete_task/1 does", ctx do
+      {:ok, _} =
+        ctx.other
+        |> dependent_on!([ctx.target])
+        |> Tasks.update_task(%{
+          status: :completed,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      assert Columns.count_column_dependents(ctx.column) == 1
+      assert Tasks.delete_task(ctx.target) == {:error, :has_dependents}
+    end
+
+    test "counts a dependent of an archived task in the column", ctx do
+      dependent_on!(ctx.other, [ctx.target])
+      archive!(ctx.target)
+
+      assert Columns.count_column_dependents(ctx.column) == 1
+    end
+
+    test "counts a child in another column that depends on its goal", ctx do
+      goal = task_fixture(ctx.column, %{type: :goal, title: "Goal"})
+      child = task_fixture(ctx.column, %{parent_id: goal.id})
+      {:ok, _} = Tasks.update_task(child, %{dependencies: [goal.identifier]})
+      assert Columns.count_column_dependents(ctx.column) == 0
+
+      ColumnLockHelpers.relocate!(child.id, ctx.other.id)
+
+      assert Columns.count_column_dependents(ctx.column) == 1
+    end
+
+    test "does not count a task on another board that lists the same identifier", ctx do
+      foreign = user_fixture() |> board_fixture() |> column_fixture() |> task_fixture()
+
+      from(t in Task, where: t.id == ^foreign.id)
+      |> Kanban.Repo.update_all(set: [dependencies: [ctx.target.identifier]])
+
+      assert Columns.count_column_dependents(ctx.column) == 0
+    end
+  end
+
+  describe "delete_column/2 with dependents in other columns (D456)" do
+    setup :two_columns
+
+    test "returns {:error, :has_dependents} and changes nothing", ctx do
+      dependent = dependent_on!(ctx.other, [ctx.target])
+      attach_telemetry([[:kanban, :column, :deleted]])
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+
+      assert Columns.delete_column(ctx.column, ctx.user) == {:error, :has_dependents}
+
+      positions = ctx.board |> Columns.list_columns() |> Enum.map(&{&1.id, &1.position})
+      assert positions == [{ctx.column.id, 0}, {ctx.other.id, 1}]
+
+      assert Kanban.Repo.get!(Task, ctx.target.id).column_id == ctx.column.id
+      assert Kanban.Repo.get!(Task, dependent.id).dependencies == [ctx.target.identifier]
+      refute_received {:telemetry_event, [:kanban, :column, :deleted], _, _}
+      refute_received {Columns, :columns_changed, _board_id}
+    end
+
+    test "deletes a column whose only dependents are in it, archived or removed", ctx do
+      dependent_on!(ctx.column, [ctx.target])
+      ctx.other |> dependent_on!([ctx.target]) |> archive!()
+      removed = dependent_on!(ctx.other, [ctx.target])
+      assert Columns.delete_column(ctx.column, ctx.user) == {:error, :has_dependents}
+
+      {:ok, _} = Tasks.update_task(removed, %{dependencies: []})
+
+      assert {:ok, %Column{}} = Columns.delete_column(ctx.column, ctx.user)
+      assert Kanban.Repo.get(Task, ctx.target.id) == nil
+      assert [%Column{position: 0}] = Columns.list_columns(ctx.board)
+    end
+
+    test "deletes the dependent's column, and then its dependency's", ctx do
+      dependent_on!(ctx.other, [ctx.target])
+
+      assert {:ok, %Column{}} = Columns.delete_column(ctx.other, ctx.user)
+      assert {:ok, %Column{}} = Columns.delete_column(ctx.column, ctx.user)
+    end
+
+    test "sees a dependency that lands while the board's column locks are taken", ctx do
+      late = task_fixture(ctx.other)
+
+      ColumnLockHelpers.on_column_lock(ctx.other.id, fn ->
+        from(t in Task, where: t.id == ^late.id)
+        |> Kanban.Repo.update_all(set: [dependencies: [ctx.target.identifier]])
+      end)
+
+      assert Columns.delete_column(ctx.column, ctx.user) == {:error, :has_dependents}
+      assert Kanban.Repo.get!(Task, ctx.target.id).column_id == ctx.column.id
+    end
+
+    test "takes every column lock of the board, then the column's task rows", ctx do
+      attach_lock_queries()
+
+      assert {:ok, %Column{}} = Columns.delete_column(ctx.column, ctx.user)
+
+      column_locks = [ctx.column.id, ctx.other.id] |> Enum.sort() |> Enum.map(&{:column, &1})
+      assert received_locks() == column_locks ++ [{:rows, [[ctx.target.id]]}]
+    end
+
+    defp received_locks do
+      receive do
+        {:lock_query, lock} -> [lock | received_locks()]
+      after
+        0 -> []
+      end
+    end
+
+    # Sends `{:lock_query, lock}` for each column lock and each FOR UPDATE the
+    # test process takes, in the order it takes them.
+    defp attach_lock_queries do
+      test_pid = self()
+      handler_id = "lock-queries-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, metadata, _config ->
+          if self() == test_pid, do: send_lock(metadata)
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+    end
+
+    defp send_lock(%{query: "SELECT pg_advisory_xact_lock($1)", params: [column_id]}),
+      do: send(self(), {:lock_query, {:column, column_id}})
+
+    defp send_lock(%{query: query, result: {:ok, %{rows: rows}}}) do
+      if String.ends_with?(query, "FOR UPDATE"), do: send(self(), {:lock_query, {:rows, rows}})
+    end
+
+    defp send_lock(_metadata), do: :ok
   end
 
   describe "D140: create_column/update_column owner authorization" do

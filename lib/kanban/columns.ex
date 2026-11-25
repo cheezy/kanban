@@ -16,6 +16,8 @@ defmodule Kanban.Columns do
   alias Kanban.Columns.Column
   alias Kanban.Columns.ColumnTelemetry
   alias Kanban.Repo
+  alias Kanban.Tasks.ColumnLocks
+  alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.Task
 
   @doc """
@@ -304,7 +306,41 @@ defmodule Kanban.Columns do
   end
 
   @doc """
+  Counts the unarchived tasks in the other columns of `column`'s board that
+  list a task in `column` in their `dependencies`.
+
+  `delete_column/2` refuses while this is above zero, because the delete
+  would leave those tasks blocked for good. See
+  `Kanban.Tasks.Dependencies.count_dependents_outside_column/1` for what
+  counts.
+
+  ## Examples
+
+      iex> count_column_dependents(column)
+      2
+
+      iex> count_column_dependents(column_nobody_depends_on)
+      0
+
+  """
+  def count_column_dependents(%Column{} = column),
+    do: Dependencies.count_dependents_outside_column(column)
+
+  @doc """
   Deletes a column and reorders the remaining columns.
+
+  Refuses with `{:error, :has_dependents}`, deleting nothing, while an
+  unarchived task in another column of the board depends on a task in the
+  column (`count_column_dependents/1`), as `Kanban.Tasks.delete_task/1`
+  refuses a single task.
+
+  The check and the delete share one transaction. It first takes the lock of
+  every column of the board (`Kanban.Tasks.ColumnLocks`), so no task is
+  created on, restored to or moved around the board in between, then the
+  column's task rows. An edit that adds a dependency to a task in another
+  column takes none of these locks, so one that commits in the instant
+  between the check and the delete is not seen; `delete_task/1` has the same
+  gap.
 
   `user` is the acting user, recorded as `actor_user_id` on the
   `[:kanban, :column, :deleted]` telemetry event. This function does not
@@ -315,12 +351,15 @@ defmodule Kanban.Columns do
       iex> delete_column(column, owner)
       {:ok, %Column{}}
 
+      iex> delete_column(column_with_dependents, owner)
+      {:error, :has_dependents}
+
       iex> delete_column(column, owner)
       {:error, %Ecto.Changeset{}}
 
   """
   def delete_column(%Column{} = column, user) do
-    result = Repo.delete(column)
+    result = Repo.transact(fn -> delete_unless_depended_on(column) end)
 
     # Reorder remaining columns after deletion
     case result do
@@ -401,6 +440,30 @@ defmodule Kanban.Columns do
       nil -> 0
       max_position -> max_position + 1
     end
+  end
+
+  # Column locks first, then rows, as a bulk move and a promote take them. A
+  # review locks its task row first (Kanban.Reviews.ReviewCommit) and the Done
+  # or Doing column after it, so deleting the Review column while one of its
+  # tasks is being reviewed can deadlock, and Postgres aborts one of the two.
+  defp delete_unless_depended_on(column) do
+    ColumnLocks.lock_board_columns(column.board_id)
+    lock_column_tasks(column)
+
+    case count_column_dependents(column) do
+      0 -> Repo.delete(column)
+      _count -> {:error, :has_dependents}
+    end
+  end
+
+  defp lock_column_tasks(%Column{id: column_id}) do
+    from(t in Task,
+      where: t.column_id == ^column_id,
+      order_by: t.id,
+      lock: "FOR UPDATE",
+      select: t.id
+    )
+    |> Repo.all()
   end
 
   defp reorder_after_deletion(deleted_column) do

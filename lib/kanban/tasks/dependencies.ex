@@ -190,14 +190,38 @@ defmodule Kanban.Tasks.Dependencies do
     task = Repo.preload(task, :column)
     board_id = task.column.board_id
 
-    from(t in Task,
-      join: c in assoc(t, :column),
-      where: c.board_id == ^board_id,
-      where: is_nil(t.archived_at),
+    from(t in unarchived_on_board(board_id),
       where: fragment("? && ARRAY[?]::varchar[]", t.dependencies, ^task.identifier),
       preload: [:column, :assigned_to]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Counts the unarchived tasks in the other columns of `column`'s board that
+  depend on a task in `column`.
+
+  The rule is `get_dependent_tasks/1`'s, taken over every task in the column,
+  archived ones and goals included: a dependent counts whatever its status or
+  type, and once however many of the column's tasks it lists. A dependent in
+  `column` itself does not count, nor does an archived one.
+  """
+  def count_dependents_outside_column(%Column{id: column_id, board_id: board_id}) do
+    identifiers = from(t in Task, where: t.column_id == ^column_id, select: t.identifier)
+
+    from(t in unarchived_on_board(board_id),
+      where: t.column_id != ^column_id,
+      where: fragment("? && ARRAY(?)", t.dependencies, subquery(identifiers))
+    )
+    |> Repo.aggregate(:count)
+  end
+
+  defp unarchived_on_board(board_id) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
+      where: is_nil(t.archived_at)
+    )
   end
 
   defp get_incomplete_dependencies(dependency_identifiers, board_id) do

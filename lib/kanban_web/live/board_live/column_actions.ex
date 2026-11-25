@@ -22,10 +22,12 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
   @doc """
   Opens the column-deletion confirmation step for the column `raw_id` names.
 
-  Resolves the column on this board, counts its open and archived tasks at
-  this moment, and assigns `:column_deletion` as
-  `%{column_id: id, open: n, archived: m}`, which renders the
-  `delete-column-modal`. A column that is not on this board gets
+  Resolves the column on this board, counts its open and archived tasks and
+  the tasks in other columns that depend on them at this moment, and assigns
+  `:column_deletion` as
+  `%{column_id: id, open: n, archived: m, dependents: d}`, which renders the
+  `delete-column-modal`. While `d` is above zero the modal offers no delete.
+  A column that is not on this board gets
   "Column not found on this board" and opens nothing. The caller has already
   run the owner and AI-board checks; any further refusal (such as a held
   board) belongs in this function.
@@ -34,10 +36,7 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
     with {:ok, column_id} <- Show.parse_task_id(raw_id),
          %Columns.Column{} = column <-
            Columns.get_column_for_board(column_id, socket.assigns.board.id) do
-      %{open: open, archived: archived} = Columns.count_column_tasks(column)
-
-      {:noreply,
-       assign(socket, :column_deletion, %{column_id: column.id, open: open, archived: archived})}
+      {:noreply, assign(socket, :column_deletion, column_deletion_step(column))}
     else
       _ ->
         {:noreply,
@@ -47,11 +46,29 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
     end
   end
 
+  defp column_deletion_step(column) do
+    column
+    |> Columns.count_column_tasks()
+    |> Map.merge(%{
+      column_id: column.id,
+      dependents: Columns.count_column_dependents(column)
+    })
+  end
+
   @doc """
   The confirmation sentence the `delete-column-modal` shows for a
-  `:column_deletion` step: both counts when the column holds tasks, and only
-  "Delete this column?" when it holds none.
+  `:column_deletion` step: why the column can't be deleted while tasks in
+  other columns depend on its tasks, else both counts when the column holds
+  tasks, and only "Delete this column?" when it holds none.
   """
+  def column_deletion_prompt(%{dependents: dependents}) when dependents > 0 do
+    ngettext(
+      "Cannot delete this column: %{count} task in another column depends on tasks in it. Remove those dependencies first.",
+      "Cannot delete this column: %{count} tasks in other columns depend on tasks in it. Remove those dependencies first.",
+      dependents
+    )
+  end
+
   def column_deletion_prompt(%{open: 0, archived: 0}), do: gettext("Delete this column?")
 
   def column_deletion_prompt(%{open: open, archived: archived}) do
@@ -97,6 +114,16 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
          |> assign(:has_columns, not Enum.empty?(columns))
          |> assign(:board_columns, columns)
          |> stream_delete(:columns, column)}
+
+      {:error, :has_dependents} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext(
+             "Cannot delete column: tasks in other columns depend on its tasks. Remove those dependencies first."
+           )
+         )}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete column"))}

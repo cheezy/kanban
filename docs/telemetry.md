@@ -314,8 +314,10 @@ addition. Every event measures `count: 1`, except `token_bulk_revoked` and
   keeps the current order.
 - **Cascades emit nothing extra.** Deleting a board emits only `board.deleted`,
   not a `member_removed` per member, and deleting a column emits only
-  `column.deleted`, not an event per task. Creating an AI-optimized board emits
-  `[:kanban, :board, :creation]` and one `column.created` per default column.
+  `column.deleted`, not an event per task. A column delete refused because
+  tasks in other columns depend on its tasks emits nothing. Creating an
+  AI-optimized board emits `[:kanban, :board, :creation]` and one
+  `column.created` per default column.
 
 ### Export, rate-limit, MCP, GitHub and API auth events
 

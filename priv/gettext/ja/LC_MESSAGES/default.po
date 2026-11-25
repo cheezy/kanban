@@ -16845,3 +16845,14 @@ msgstr "%{used} / %{max} 文字 — 長すぎます"
 #, elixir-autogen, elixir-format
 msgid "Notes can be at most %{max} characters."
 msgstr "メモは最大 %{max} 文字までです。"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Cannot delete column: tasks in other columns depend on its tasks. Remove those dependencies first."
+msgstr "列を削除できません: 他の列のタスクがこの列のタスクに依存しています。先にその依存関係を削除してください。"
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Cannot delete this column: %{count} task in another column depends on tasks in it. Remove those dependencies first."
+msgid_plural "Cannot delete this column: %{count} tasks in other columns depend on tasks in it. Remove those dependencies first."
+msgstr[0] "この列を削除できません: 他の列のタスク %{count} 件がこの列のタスクに依存しています。先にその依存関係を削除してください。"

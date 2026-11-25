@@ -3,10 +3,12 @@ defmodule Kanban.Tasks.ColumnLocks do
   Takes several column advisory locks at once, for every writer that needs
   more than one: `Kanban.Tasks.Positioning` (a board move),
   `Kanban.Tasks.BulkActions` (a bulk move), `Kanban.Tasks.Promote` (the
-  app's promote to Ready), `Kanban.Tasks.Creation` (a task
-  created under a goal) and `Kanban.Tasks.LockedGoalPlacement` (a goal
-  re-placement, D373). A writer that needs a single column still locks it
-  directly, as `Kanban.Tasks.Positioning.get_next_position_locked/1` does.
+  app's promote to Ready), `Kanban.Tasks.MoveToBacklog` (the app's move to
+  Backlog), `Kanban.Tasks.Creation` (a task created under a goal),
+  `Kanban.Tasks.LockedGoalPlacement` (a goal re-placement, D373) and
+  `Kanban.Columns.delete_column/2` (a column delete, D456). A writer that
+  needs a single column still locks it directly, as
+  `Kanban.Tasks.Positioning.get_next_position_locked/1` does.
 
   Every writer that renumbers a column's positions holds that column's
   transaction-level advisory lock (`pg_advisory_xact_lock(column_id)`). A
@@ -39,8 +41,11 @@ defmodule Kanban.Tasks.ColumnLocks do
   Takes the advisory lock of every column of the board `board_id` in one
   ascending pass, as `lock/1` does, and returns those columns ordered by id.
   For a writer that moves several tasks of one board in one transaction
-  (`Kanban.Tasks.BulkActions` and `Kanban.Tasks.Promote`), so it never takes
-  a lower column after a higher one, whichever columns its moves touch.
+  (`Kanban.Tasks.BulkActions`, `Kanban.Tasks.Promote` and
+  `Kanban.Tasks.MoveToBacklog`), so it never takes a lower column after a
+  higher one, whichever columns its moves touch, and for a column delete
+  (`Kanban.Columns.delete_column/2`), so no task moves on the board while it
+  checks and deletes.
   """
   def lock_board_columns(board_id) do
     columns =

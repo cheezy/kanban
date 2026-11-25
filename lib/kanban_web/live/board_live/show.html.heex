@@ -917,7 +917,8 @@
 
   <%!-- Column deletion confirmation: opened by delete_column with the counts
   taken on the server at that moment; confirm_delete_column deletes the column
-  the step holds. Secondary text uses the --ink-2 token, never an opacity
+  the step holds. While tasks in other columns depend on this column's tasks
+  it offers Cancel only. Secondary text uses the --ink-2 token, never an opacity
   (D214); .stride-screen defines it. --%>
   <.modal
     :if={@column_deletion}
@@ -935,7 +936,12 @@
         <.button type="button" phx-click="cancel_delete_column">
           {gettext("Cancel")}
         </.button>
-        <.button type="button" variant="primary" phx-click="confirm_delete_column">
+        <.button
+          :if={@column_deletion.dependents == 0}
+          type="button"
+          variant="primary"
+          phx-click="confirm_delete_column"
+        >
           {gettext("Delete column")}
         </.button>
       </div>

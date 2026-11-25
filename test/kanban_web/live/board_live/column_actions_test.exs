@@ -55,9 +55,62 @@ defmodule KanbanWeb.BoardLive.ColumnActionsTest do
     }
   }
 
+  # column_deletion_prompt/1 in every locale when one task, and when several,
+  # in other columns depend on the column's tasks (D456).
+  @dependents_prompts %{
+    "en" => {
+      "Cannot delete this column: 1 task in another column depends on tasks in it. Remove those dependencies first.",
+      "Cannot delete this column: 3 tasks in other columns depend on tasks in it. Remove those dependencies first."
+    },
+    "de" => {
+      "Diese Spalte kann nicht gelöscht werden: 1 Aufgabe in einer anderen Spalte hängt von Aufgaben in ihr ab. Entfernen Sie zuerst diese Abhängigkeiten.",
+      "Diese Spalte kann nicht gelöscht werden: 3 Aufgaben in anderen Spalten hängen von Aufgaben in ihr ab. Entfernen Sie zuerst diese Abhängigkeiten."
+    },
+    "es" => {
+      "No se puede eliminar esta columna: 1 tarea de otra columna depende de sus tareas. Elimina primero esas dependencias.",
+      "No se puede eliminar esta columna: 3 tareas de otras columnas dependen de sus tareas. Elimina primero esas dependencias."
+    },
+    "fr" => {
+      "Impossible de supprimer cette colonne : 1 tâche d’une autre colonne dépend de ses tâches. Supprimez d’abord ces dépendances.",
+      "Impossible de supprimer cette colonne : 3 tâches d’autres colonnes dépendent de ses tâches. Supprimez d’abord ces dépendances."
+    },
+    "pt" => {
+      "Não é possível excluir esta coluna: 1 tarefa de outra coluna depende das tarefas dela. Remova essas dependências primeiro.",
+      "Não é possível excluir esta coluna: 3 tarefas de outras colunas dependem das tarefas dela. Remova essas dependências primeiro."
+    },
+    "ja" => {
+      "この列を削除できません: 他の列のタスク 1 件がこの列のタスクに依存しています。先にその依存関係を削除してください。",
+      "この列を削除できません: 他の列のタスク 3 件がこの列のタスクに依存しています。先にその依存関係を削除してください。"
+    },
+    "zh" => {
+      "无法删除此列：其他列中有 1 个任务依赖此列中的任务。请先移除这些依赖。",
+      "无法删除此列：其他列中有 3 个任务依赖此列中的任务。请先移除这些依赖。"
+    }
+  }
+
   describe "column_deletion_prompt/1" do
     test "covers all seven locales" do
       assert @prompts |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
+      assert @dependents_prompts |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
+    end
+
+    for {locale, {one, many}} <- @dependents_prompts do
+      @locale locale
+      @one one
+      @many many
+
+      test "names the dependents in other columns, not the tasks, in #{locale}" do
+        Gettext.with_locale(KanbanWeb.Gettext, @locale, fn ->
+          step = %{open: 2, archived: 1, dependents: 1}
+          assert ColumnActions.column_deletion_prompt(step) == @one
+          assert ColumnActions.column_deletion_prompt(%{step | dependents: 3}) == @many
+        end)
+      end
+    end
+
+    test "names the counts when no task in another column depends on the column's" do
+      assert ColumnActions.column_deletion_prompt(%{open: 2, archived: 1, dependents: 0}) ==
+               "Delete this column? It holds 2 open tasks and 1 archived task, which will be deleted with it."
     end
 
     for {locale, {empty, singular, zero_open, zero_archived}} <- @prompts do

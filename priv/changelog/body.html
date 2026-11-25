@@ -248,6 +248,18 @@
             style="color: var(--ink-2);"
           >
             <li>
+              <strong>A column whose tasks others depend on can't be
+              deleted.</strong> Deleting a column deleted its tasks even when
+              a task in another column still depended on one of them. That
+              task then stayed blocked for good, agents could never claim it,
+              and nothing on the board said why. The column's delete
+              confirmation now says how many tasks in other columns depend on
+              tasks in it and offers only <strong>Cancel</strong>, and the
+              delete is refused if such a dependency is added while the
+              confirmation is open. Dependencies inside the column, and
+              archived tasks that depend on it, don't block the delete.
+            </li>
+            <li>
               <strong>Deleting a column now says how many tasks go with
               it.</strong> Deleting a column also deletes every task in it,
               archived ones included, but the old prompt gave no count and

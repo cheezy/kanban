@@ -16941,3 +16941,15 @@ msgstr "%{used} / %{max} Zeichen – zu lang"
 #, elixir-autogen, elixir-format
 msgid "Notes can be at most %{max} characters."
 msgstr "Notizen dürfen höchstens %{max} Zeichen lang sein."
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Cannot delete column: tasks in other columns depend on its tasks. Remove those dependencies first."
+msgstr "Spalte kann nicht gelöscht werden: Aufgaben in anderen Spalten hängen von ihren Aufgaben ab. Entfernen Sie zuerst diese Abhängigkeiten."
+
+#: lib/kanban_web/live/board_live/column_actions.ex
+#, elixir-autogen, elixir-format
+msgid "Cannot delete this column: %{count} task in another column depends on tasks in it. Remove those dependencies first."
+msgid_plural "Cannot delete this column: %{count} tasks in other columns depend on tasks in it. Remove those dependencies first."
+msgstr[0] "Diese Spalte kann nicht gelöscht werden: %{count} Aufgabe in einer anderen Spalte hängt von Aufgaben in ihr ab. Entfernen Sie zuerst diese Abhängigkeiten."
+msgstr[1] "Diese Spalte kann nicht gelöscht werden: %{count} Aufgaben in anderen Spalten hängen von Aufgaben in ihr ab. Entfernen Sie zuerst diese Abhängigkeiten."

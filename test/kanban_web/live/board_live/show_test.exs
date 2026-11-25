@@ -4218,6 +4218,184 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert prompt_text(view) == "この列を削除しますか？"
     end
   end
+
+  describe "column deletion with dependents in other columns (D456)" do
+    setup [:register_and_log_in_user]
+
+    @has_dependents "Cannot delete column: tasks in other columns depend on its tasks. Remove those dependencies first."
+
+    setup %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      other = column_fixture(board)
+      %{board: board, column: column, other: other, target: task_fixture(column)}
+    end
+
+    defp dependent_on!(column, target, title) do
+      {:ok, task} =
+        Kanban.Tasks.create_task(column, %{
+          "title" => title,
+          "dependencies" => [target.identifier]
+        })
+
+      task
+    end
+
+    defp assert_column_kept(ctx) do
+      assert %Kanban.Columns.Column{} =
+               Kanban.Columns.get_column_for_board(ctx.column.id, ctx.board.id)
+
+      assert %Kanban.Tasks.Task{} = Kanban.Repo.get(Kanban.Tasks.Task, ctx.target.id)
+    end
+
+    test "the confirmation names the dependents and offers only Cancel", ctx do
+      first = dependent_on!(ctx.other, ctx.target, "Secret dependent")
+      dependent_on!(ctx.other, ctx.target, "Another dependent")
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+
+      assert prompt_text(view) ==
+               "Cannot delete this column: 2 tasks in other columns depend on tasks in it. Remove those dependencies first."
+
+      assert has_element?(view, "#delete-column-modal button[phx-click='cancel_delete_column']")
+      refute has_element?(view, "#delete-column-modal button[phx-click='confirm_delete_column']")
+
+      # Only a count: never a dependent's title or identifier
+      modal = view |> element("#delete-column-modal") |> render()
+      refute modal =~ "dependent"
+      refute modal =~ first.identifier
+    end
+
+    test "a single dependent uses the singular form", ctx do
+      dependent_on!(ctx.other, ctx.target, "Waiting")
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+
+      assert prompt_text(view) ==
+               "Cannot delete this column: 1 task in another column depends on tasks in it. Remove those dependencies first."
+    end
+
+    test "a confirm the modal did not offer is refused", ctx do
+      dependent_on!(ctx.other, ctx.target, "Waiting")
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+      html = render_hook(view, "confirm_delete_column", %{})
+
+      assert html =~ @has_dependents
+      refute has_element?(view, "#delete-column-modal")
+      assert has_element?(view, "#columns-#{ctx.column.id}")
+      assert_column_kept(ctx)
+    end
+
+    test "a dependency added after the step opened is refused at confirm", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+
+      # Another tab adds the dependency while this confirmation is open
+      late = dependent_on!(ctx.other, ctx.target, "Late dependent")
+      html = confirm_deletion(view)
+
+      assert html =~ @has_dependents
+      refute html =~ "Column deleted successfully"
+      refute has_element?(view, "#delete-column-modal")
+      assert has_element?(view, "#columns-#{ctx.column.id}")
+      assert_column_kept(ctx)
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, late.id).dependencies == [ctx.target.identifier]
+
+      # The flash names no dependent
+      flash = view |> element("#flash-error") |> render()
+      refute flash =~ late.title
+      refute flash =~ late.identifier
+
+      # Opening it again now names the dependent and withholds the delete
+      open_deletion(view, ctx.column)
+      refute has_element?(view, "#delete-column-modal button[phx-click='confirm_delete_column']")
+    end
+
+    test "a column with no dependents in other columns deletes as before", ctx do
+      dependent_on!(ctx.column, ctx.target, "Same column")
+      ctx.other |> dependent_on!(ctx.target, "Archived") |> archive_task!()
+      removed = dependent_on!(ctx.other, ctx.target, "Removed")
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+      refute has_element?(view, "#delete-column-modal button[phx-click='confirm_delete_column']")
+
+      {:ok, _} = Kanban.Tasks.update_task(removed, %{dependencies: []})
+      open_deletion(view, ctx.column)
+
+      assert prompt_text(view) ==
+               "Delete this column? It holds 2 open tasks and 0 archived tasks, which will be deleted with it."
+
+      assert confirm_deletion(view) =~ "Column deleted successfully"
+      refute has_element?(view, "#columns-#{ctx.column.id}")
+      assert Kanban.Repo.get(Kanban.Tasks.Task, ctx.target.id) == nil
+    end
+
+    test "a non-owner learns nothing about the dependents on open or confirm", ctx do
+      dependent_on!(ctx.other, ctx.target, "Waiting")
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+      {:ok, view, _html} = live(log_in_user(ctx.conn, member), ~p"/boards/#{ctx.board}")
+
+      html = render_hook(view, "delete_column", %{"id" => to_string(ctx.column.id)})
+      assert html =~ "Only the board owner can delete columns"
+      refute has_element?(view, "#delete-column-modal")
+      refute html =~ "Cannot delete this column"
+
+      refute render_hook(view, "confirm_delete_column", %{}) =~ @has_dependents
+      assert_column_kept(ctx)
+    end
+
+    test "an AI board refuses on open before the dependents check", ctx do
+      dependent_on!(ctx.other, ctx.target, "Waiting")
+      ctx.board |> Ecto.Changeset.change(ai_optimized_board: true) |> Kanban.Repo.update!()
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      html = render_hook(view, "delete_column", %{"id" => to_string(ctx.column.id)})
+      assert html =~ "Cannot delete columns on AI optimized boards"
+      refute html =~ "Cannot delete this column"
+      refute has_element?(view, "#delete-column-modal")
+
+      refute render_hook(view, "confirm_delete_column", %{}) =~ @has_dependents
+      assert_column_kept(ctx)
+    end
+
+    test "an owner who lost access while the step is open gets the access refusal", ctx do
+      dependent_on!(ctx.other, ctx.target, "Waiting")
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+
+      Kanban.Boards.BoardUser
+      |> Kanban.Repo.get_by!(board_id: ctx.board.id, user_id: ctx.user.id)
+      |> Ecto.Changeset.change(access: :modify)
+      |> Kanban.Repo.update!()
+
+      html = render_hook(view, "confirm_delete_column", %{})
+
+      assert html =~ "Only the board owner can delete columns"
+      refute html =~ @has_dependents
+      assert_column_kept(ctx)
+    end
+
+    test "the refusal renders translated in ja", ctx do
+      dependent_on!(ctx.other, ctx.target, "Waiting")
+
+      conn = Plug.Test.init_test_session(ctx.conn, %{"locale" => "ja"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}")
+      open_deletion(view, ctx.column)
+
+      assert prompt_text(view) ==
+               "この列を削除できません: 他の列のタスク 1 件がこの列のタスクに依存しています。先にその依存関係を削除してください。"
+
+      assert render_hook(view, "confirm_delete_column", %{}) =~
+               "列を削除できません: 他の列のタスクがこの列のタスクに依存しています。先にその依存関係を削除してください。"
+    end
+  end
 end
 
 defmodule KanbanWeb.BoardLive.ApiTokensCrashReportTest do

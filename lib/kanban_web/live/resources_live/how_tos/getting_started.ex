@@ -79,7 +79,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
           %{
             title: "Custom Boards: Flexible Columns",
             content:
-              "An Empty board starts with no columns, and you design the workflow. If you own the board, you can:\n\n- Click **New column** to add a column. Give it a **Name** and click **Save Column**.\n- Drag a column by its handle to move it.\n- Hover over a column header and click the pencil to rename it, or the trash can to delete it.\n\nDeleting a column also deletes every task in it. A custom workflow might be To Do, In Progress, In Review and Published.",
+              "An Empty board starts with no columns, and you design the workflow. If you own the board, you can:\n\n- Click **New column** to add a column. Give it a **Name** and click **Save Column**.\n- Drag a column by its handle to move it.\n- Hover over a column header and click the pencil to rename it, or the trash can to delete it.\n\nDeleting a column also deletes every task in it. Stride won't let you delete a column while a task in another column depends on one of its tasks, so remove that dependency first.\n\nA custom workflow might be To Do, In Progress, In Review and Published.",
             image: "/images/resources/guides/understanding-columns-step-3.png",
             image_width: 1218,
             image_height: 276
