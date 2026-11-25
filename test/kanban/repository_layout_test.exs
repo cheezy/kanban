@@ -37,6 +37,9 @@ defmodule Kanban.RepositoryLayoutTest do
     "mobile/ios/Stride.xcodeproj/project.pbxproj",
     "mobile/ios/build/x",
     "mobile/ios/DerivedData/x",
+    "mobile/ios/StrideKit/.build/x",
+    "mobile/ios/StrideKit/.swiftpm/x",
+    "mobile/ios/Test.xcresult/x",
     "mobile/ios/Stride.ipa",
     "mobile/android/build/x",
     "mobile/android/app/build/x",
@@ -60,7 +63,12 @@ defmodule Kanban.RepositoryLayoutTest do
     "mobile/ios/Stride/App/StrideApp.swift",
     "mobile/ios/Stride/DesignSystem/Tokens/Colors.swift",
     "mobile/ios/Stride/Features/Build/BuildView.swift",
+    "mobile/ios/Stride/Info.plist",
+    "mobile/ios/Stride/Stride.entitlements",
+    "mobile/ios/Stride/Resources/Fonts/Geist-Variable.ttf",
     "mobile/ios/StrideKit/Package.swift",
+    "mobile/ios/StrideTests/SmokeTests.swift",
+    "mobile/ios/StrideWidgets/StrideWidgets.entitlements",
     "mobile/ios/fastlane/Fastfile",
     "mobile/android/settings.gradle.kts",
     "mobile/android/gradle/libs.versions.toml",
@@ -141,6 +149,62 @@ defmodule Kanban.RepositoryLayoutTest do
     test "every mobile instruction file carries the five app rules" do
       for path <- @claude_files, heading <- @rule_headings do
         assert read!(path) =~ "**#{heading}.**", "#{path} lacks the rule: #{heading}"
+      end
+    end
+  end
+
+  # The Xcode project of the iOS app (W2782). Swift tests cover what it builds;
+  # these cover what must stay true of the committed files.
+  describe "iOS project" do
+    test "no Xcode project is committed" do
+      {tracked, 0} = System.cmd("git", ["ls-files", "mobile/ios"], cd: @root)
+
+      refute tracked =~ ".xcodeproj/"
+    end
+
+    test "project.yml holds no signing team, profile or certificate" do
+      refute read!("mobile/ios/project.yml") =~
+               ~r/^\s*["']?(DEVELOPMENT_TEAM|DevelopmentTeam|PROVISIONING_PROFILE\w*|CODE_SIGN_IDENTITY)\b.*:/m
+    end
+
+    # ios.yml names these in -only-testing, which fails for a target the scheme
+    # does not test.
+    test "the Stride scheme tests every target ios.yml names" do
+      [_, targets] =
+        Regex.run(
+          ~r/^schemes:\n.*?^    test:\n.*?^      targets:\n((?:        - .+\n)+)/ms,
+          read!("mobile/ios/project.yml")
+        )
+
+      listed =
+        ~r/^        - (.+)$/m |> Regex.scan(targets, capture: :all_but_first) |> List.flatten()
+
+      assert Enum.sort(listed) == [
+               "StrideTests",
+               "StrideUITests",
+               "package: StrideKit/StrideKitTests"
+             ]
+    end
+
+    test "the bundled fonts match the hashes in their README" do
+      directory = "mobile/ios/Stride/Resources/Fonts"
+      readme = read!("#{directory}/README.md")
+
+      rows =
+        Regex.scan(~r/^\| `([^`]+)` \|.*\| `([0-9a-f]{64})` \|$/m, readme,
+          capture: :all_but_first
+        )
+
+      assert rows |> Enum.map(&hd/1) |> Enum.sort() ==
+               @root
+               |> Path.join(directory)
+               |> File.ls!()
+               |> Enum.reject(&(&1 == "README.md" or String.starts_with?(&1, ".")))
+               |> Enum.sort()
+
+      for [file, sha256] <- rows do
+        hash = :crypto.hash(:sha256, read!("#{directory}/#{file}"))
+        assert Base.encode16(hash, case: :lower) == sha256, "#{file} does not match its hash"
       end
     end
   end

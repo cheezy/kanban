@@ -6,11 +6,10 @@ name: iOS CI
 # so a contract change starts this workflow and android.yml together. The
 # Elixir workflow is independent of it: neither waits on the other.
 #
-# Until Phase 1b commits mobile/ios/project.yml there is no project to build.
-# The `project` job checks for it with hashFiles, and every macOS job is
-# skipped when it is missing, so the workflow passes without spending macOS
-# minutes. hashFiles cannot be used in a job-level `if`, which is why the
-# check is a step in its own job.
+# The `project` job checks for mobile/ios/project.yml with hashFiles, and every
+# macOS job is skipped when it is missing, so a branch without the project
+# passes without spending macOS minutes. hashFiles cannot be used in a job-level
+# `if`, which is why the check is a step in its own job.
 #
 # The workflow uses no secrets, so a pull request from a fork runs it the same
 # way as a branch in this repository. Signing arrives with the app releases.
@@ -77,7 +76,7 @@ jobs:
           if [ "$present" = "true" ]; then
             echo "mobile/ios/project.yml found; building the app."
           else
-            echo "mobile/ios/project.yml not found; the iOS jobs are skipped until Phase 1b adds the project."
+            echo "mobile/ios/project.yml not found; the iOS jobs are skipped."
           fi
 
   test:

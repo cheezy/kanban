@@ -163,18 +163,19 @@ job emits.
 ### Mobile app development
 
 The native iPhone, iPad and Android apps live in `mobile/`, beside the Phoenix
-app at the repository root. They are not built yet: `mobile/ios/` and
-`mobile/android/` hold only their `CLAUDE.md` rules today, and the iOS app
-comes first, then Android
-([phased delivery](docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md#20-phased-delivery)).
-The build and run steps for each app will be added here with its project. The
+app at the repository root. `mobile/ios/` has a project that builds and shows
+an empty screen so far. `mobile/android/` holds only its `CLAUDE.md` rules,
+because the iOS app comes first
+([phased delivery](docs/plans/NATIVE-MOBILE-APPS-PHASE-1-DESIGN.md#20-phased-delivery)),
+and its build and run steps will be added here with its project. The
 user guide is [The Stride Mobile Apps](docs/mobile-apps.md), and the server
 side the apps call is described in [the person API](docs/api/me.md).
 
 - **iOS and iPadOS need a Mac** with Xcode 26.6 and the iOS 26.5 simulators,
   and XcodeGen 2.47.0, the versions CI pins in `.github/workflows/ios.yml`.
-  The Xcode project will be generated from `mobile/ios/project.yml` and never
-  committed. The apps target iOS and iPadOS 17.
+  The Xcode project is generated from `mobile/ios/project.yml` and never
+  committed, so generate it again after pulling a change to that file or adding
+  a source file. The apps target iOS and iPadOS 17.
 - **Android needs JDK 17** (Temurin in CI) and the Android SDK, with an
   emulator image like CI's: API 35, `google_apis`, `x86_64`, the `pixel_7`
   profile, as pinned in `.github/workflows/android.yml`. The app targets
@@ -184,11 +185,25 @@ side the apps call is described in [the person API](docs/api/me.md).
   checks the API contract and copies it there for the generated API clients,
   and `MIX_ENV=test mix mobile.tokens` and `MIX_ENV=test mix mobile.strings`
   write the design tokens and strings.
-- **The iOS and Android workflows skip** their build jobs until their own
-  project exists: `mobile/ios/project.yml` for iOS and
-  `mobile/android/settings.gradle.kts` for Android. Until then each runs only a
-  short Linux check that finds no project, so it passes without running the
-  builds.
+- **The Android workflow skips** its build jobs until
+  `mobile/android/settings.gradle.kts` exists. Until then it runs only a short
+  Linux check that finds no project, so it passes without running the builds.
+
+**Building the iOS app.** From a clean checkout, with no local setting and no
+Apple developer account, generate the project and run the tests on a simulator:
+
+```sh
+cd mobile/ios
+xcodegen generate
+xcodebuild test -project Stride.xcodeproj -scheme Stride \
+  -destination 'platform=iOS Simulator,name=iPhone 17'
+```
+
+Use the name of any iPhone or iPad simulator you have, with its `OS=` if the
+name is not enough. Or open `Stride.xcodeproj` in Xcode and run the `Stride`
+scheme. A build for a device or for the App Store needs a signing team, which is
+not in the repository: choose it in Xcode, or pass `DEVELOPMENT_TEAM=<team id>`
+to `xcodebuild`.
 
 **Running against a local server.** Start Stride with `mix phx.server` as
 above, on `http://localhost:4000`. What is already true on the server side:

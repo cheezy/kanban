@@ -87,9 +87,11 @@ priv/repo/seed_metrics_data.exs
 /mobile/ios/build/
 /mobile/ios/**/.build/
 /mobile/ios/**/DerivedData/
+/mobile/ios/**/.swiftpm/
 /mobile/ios/**/xcuserdata/
 /mobile/ios/**/*.xcuserstate
 /mobile/ios/**/*.xcodeproj
+/mobile/ios/**/*.xcresult
 /mobile/android/**/build/
 /mobile/android/**/.gradle/
 /mobile/android/**/.kotlin/

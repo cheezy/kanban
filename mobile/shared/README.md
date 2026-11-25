@@ -31,8 +31,8 @@ for each 2xx response that has a body. It writes nothing when a rule fails.
 refresh it with `MIX_ENV=test mix mobile.api`. The task only checks and copies
 the contract. Each app's own build will generate its client from
 `openapi.json` (the Swift OpenAPI Generator for iOS, the Gradle OpenAPI plugin
-for Android) once the app projects exist in Phase 1b and 1c; no generator
-config is committed yet, and no client generator runs in the Elixir build.
+for Android). No generator config is committed yet, and no client generator
+runs in the Elixir build.
 
 Never edit a generated file by hand: change its source and run the
 generator.

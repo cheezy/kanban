@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>$(STRIDE_APS_ENVIRONMENT)</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:www.stridelikeaboss.com</string>
+	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(STRIDE_APP_GROUP)</string>
+	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)$(STRIDE_KEYCHAIN_GROUP)</string>
+	</array>
+</dict>
+</plist>

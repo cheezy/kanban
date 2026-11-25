@@ -25,7 +25,7 @@ accessibility and dark mode rules.
 - **Ship all seven locales.** Every visible string is in the `mobile` gettext domain and is translated into de, en, es, fr, ja, pt and zh in the same task, never left for later. Never hard-code a user-visible string in Swift or Kotlin. Status values arrive from the API as enums and are shown through the `mobile` strings, so the apps and the web never read differently.
 - **Label everything for accessibility.** Every control has a VoiceOver or TalkBack label. A state shown by colour, such as a verdict or status pill, also says it in words. Nothing depends on a swipe alone.
 - **Keep business logic out of views.** Views render state and send user intents. Decisions, API calls, caching and formatting live in view models and the shared modules, where tests reach them through the shared fixtures.
-- **Regenerate after changing a source.** After changing the API contract (`priv/openapi/stride-api.json`), the tokens (`assets/css/app.css`) or the strings (`priv/gettext/*/LC_MESSAGES/mobile.po`), run the matching generator (`mix mobile.api`, `mix mobile.tokens` or `mix mobile.strings`) and commit the copies in the same task. Never edit a generated copy by hand: a test fails when a copy is stale. `mix mobile.tokens`, `mix mobile.strings`, `mix mobile.api` and their staleness tests exist. `mix mobile.api` checks the contract and copies it to `shared/openapi.json`. Each app's own build will generate its API client from that copy once the app projects exist (Phase 1b and 1c); no generator config is committed yet. The Elixir CI workflow skips a pull request confined to `mobile/`, so run the staleness tests locally before committing one.
+- **Regenerate after changing a source.** After changing the API contract (`priv/openapi/stride-api.json`), the tokens (`assets/css/app.css`) or the strings (`priv/gettext/*/LC_MESSAGES/mobile.po`), run the matching generator (`mix mobile.api`, `mix mobile.tokens` or `mix mobile.strings`) and commit the copies in the same task. Never edit a generated copy by hand: a test fails when a copy is stale. `mix mobile.tokens`, `mix mobile.strings`, `mix mobile.api` and their staleness tests exist. `mix mobile.api` checks the contract and copies it to `shared/openapi.json`. Each app's own build will generate its API client from that copy; no generator config is committed yet. The Elixir CI workflow skips a pull request confined to `mobile/`, so run the staleness tests locally before committing one.
 - **One task can span the API and both apps.** When an API change affects an app, change the contract, the server and both apps together rather than leaving one app behind.
 - **Never commit signing material or machine paths.** Keystores, `.p8` and `.p12` keys, provisioning profiles and `local.properties` are ignored by `.gitignore`; keep it that way.
 
@@ -37,9 +37,10 @@ Each app has its own workflow, separate from the Elixir one:
 app, `shared/` or the API contract (`priv/openapi/`) changes, so a contract
 change runs both. Each workflow pins its toolchain at the top of the file.
 
-Each one is skipped until its project exists: `ios.yml` looks for
-`ios/project.yml` and `android.yml` for `android/settings.gradle.kts`, and
-reports its build jobs as skipped while the file is missing. The workflows use
+Each one is skipped while its project file is missing: `ios.yml` looks for
+`ios/project.yml`, which exists, so it builds and tests the app. `android.yml`
+looks for `android/settings.gradle.kts`, which does not exist yet, so it reports
+its build jobs as skipped. The workflows use
 no secrets, so pull requests from forks run them too. The names each workflow
 relies on are in [ios/CLAUDE.md](ios/CLAUDE.md) and
 [android/CLAUDE.md](android/CLAUDE.md); change a workflow when you change one
