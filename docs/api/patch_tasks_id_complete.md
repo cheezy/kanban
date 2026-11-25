@@ -629,7 +629,7 @@ if [ $EXIT_CODE_2 -ne 0 ]; then
 fi
 
 # Step 3: If both hooks succeeded, complete the task with both results
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W21/complete \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
@@ -649,8 +649,7 @@ curl -X PATCH \
       \"output\": \"$OUTPUT_2\",
       \"duration_ms\": $DURATION_2
     }
-  }" \
-  https://www.stridelikeaboss.com/api/tasks/W21/complete
+  }"
 ```
 
 ### Complete task by ID with both hooks validated
@@ -671,7 +670,7 @@ END_TIME_2=$(( $(date +%s) * 1000 ))
 DURATION_2=$((END_TIME_2 - START_TIME_2))
 
 # Complete with both results
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
@@ -686,8 +685,7 @@ curl -X PATCH \
       \"output\": \"$OUTPUT_2\",
       \"duration_ms\": $DURATION_2
     }
-  }" \
-  https://www.stridelikeaboss.com/api/tasks/123/complete
+  }"
 ```
 
 ## Hook Execution Example

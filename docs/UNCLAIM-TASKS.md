@@ -174,7 +174,7 @@ outside the signed 64-bit range. See
 # 1. Execute before_doing hook first
 # git pull origin main ✓
 
-# 2. Claim task with the hook's result
+# 2. Claim task with the hook result
 curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \

@@ -161,7 +161,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 # Capture exit_code, output, and duration_ms
 
 # 3. Only if before_doing succeeds, claim task WITH hook result
-curl -X POST \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -173,8 +173,7 @@ curl -X POST \
       "output": "Already up to date.\nAll dependencies are up to date",
       "duration_ms": 1500
     }
-  }' \
-  https://www.stridelikeaboss.com/api/tasks/claim
+  }'
 
 # 4. Begin work immediately
 ```
@@ -193,7 +192,7 @@ curl -X POST \
 # If hook fails, DO NOT proceed — fix issues and retry
 
 # 4. Only if BOTH hooks succeed, call complete endpoint WITH both results
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -214,8 +213,7 @@ curl -X PATCH \
       "output": "Creating pull request...\nPR #123 created",
       "duration_ms": 2340
     }
-  }' \
-  https://www.stridelikeaboss.com/api/tasks/123/complete
+  }'
 ```
 
 ## Code Pattern: Creating a Task

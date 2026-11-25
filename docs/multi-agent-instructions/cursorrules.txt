@@ -153,7 +153,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 # Check exit code (blocking hook must succeed)
 
 # 3. Claim task WITH before_doing result
-curl -X POST \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -165,8 +165,7 @@ curl -X POST \
       "output": "Already up to date.\nResolving Hex...",
       "duration_ms": 3200
     }
-  }' \
-  https://www.stridelikeaboss.com/api/tasks/claim
+  }'
 
 Response includes:
 {
@@ -204,7 +203,7 @@ CODE PATTERN: Completing a Task
 # Check exit code - if non-zero, stop here and fix issues
 
 # 4. Only if BOTH hooks succeed, call complete endpoint with both results
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/complete \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -224,8 +223,7 @@ curl -X PATCH \
       "output": "PR #123 created successfully.",
       "duration_ms": 5000
     }
-  }' \
-  https://www.stridelikeaboss.com/api/tasks/123/complete
+  }'
 
 Response includes after_review hook
 

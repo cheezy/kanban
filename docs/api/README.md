@@ -35,7 +35,8 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
    DURATION=$(( $(date +%s) * 1000 - START_TIME ))
 
    # Claim a task with hook result
-   curl -X POST -H "Authorization: Bearer $TOKEN" \
+   curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
+     -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d "{
        \"agent_name\": \"Claude Sonnet 4.5\",
@@ -44,8 +45,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
          \"output\": \"$OUTPUT\",
          \"duration_ms\": $DURATION
        }
-     }" \
-     https://www.stridelikeaboss.com/api/tasks/claim
+     }"
 
    # ... do your work ...
 
@@ -761,6 +761,8 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 
 The timing lines in these examples use `$(( $(date +%s) * 1000 ))`, which works with both GNU date (Linux) and BSD date (macOS), at whole-second precision. Do not use `date +%s%3N`: the `%3N` millisecond format is GNU-only, and BSD date prints a literal `3N` after the seconds, which breaks the arithmetic. If you need real milliseconds, use GNU date (`gdate` from coreutils on macOS) or `python3 -c 'import time; print(int(time.time() * 1000))'`. The `timeout` wrapper in these examples is GNU coreutils too and is not on stock macOS, where the line fails with exit code 127: `brew install coreutils` provides it as `gtimeout` (recent versions also install it as `timeout`), or drop the wrapper and lose only the time limit it enforces.
 
+In a claim, complete or `mark_reviewed` curl, put the URL right after `-X METHOD`, before the headers and the payload, as a literal or a quoted variable base followed by the literal path. Keep apostrophes, lone double quotes and `<<` out of the comments above the call, leave a captured call unquoted (`RESPONSE=$(curl ...)`), and send each of these calls as a command of its own. A plugin that reads the command text, such as the Stride plugin for Claude Code, can otherwise miss the call and not run its hooks, or refuse to send it. The calls on this page that keep the URL last are in a form the Stride plugin still reads when you send each one as written, on its own.
+
 ### Example 1: Claim and Complete a Task
 
 ```bash
@@ -936,7 +938,7 @@ while true; do
   if [ "$STATUS" = "completed" ]; then
     # Approved from the Review queue: already in Done, so no mark_reviewed call.
     # Run your ## after_review section yourself if your project relies on it, and
-    # for a goal's child check GET /api/tasks/$TASK_ID/after_goal_status
+    # for the child of a goal check GET /api/tasks/$TASK_ID/after_goal_status
     echo "Review finished in the Review queue"
     break
   fi
@@ -969,13 +971,12 @@ while true; do
   esac
 
   # Finalize the review
-  RESPONSE=$(curl -s -X PATCH \
+  RESPONSE=$(curl -s -X PATCH "$STRIDE_API_URL/api/tasks/$TASK_ID/mark_reviewed" \
     -H "Authorization: Bearer $STRIDE_API_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "$BODY" \
-    "$STRIDE_API_URL/api/tasks/$TASK_ID/mark_reviewed")
+    -d "$BODY")
 
-  # An approval of a goal's last open child carries after_goal in its hooks list:
+  # An approval of the last open child of a goal carries after_goal in its hooks list:
   # run ## after_goal and report it with PATCH /api/tasks/:id/after_goal on the goal
   if echo "$RESPONSE" | jq -e '.hooks // [] | any(.name == "after_goal")' > /dev/null; then
     echo "after_goal arrived - run it and report it"

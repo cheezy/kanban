@@ -286,7 +286,7 @@ END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Step 3: Claim the task with hook result
-curl -X POST \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
@@ -296,8 +296,7 @@ curl -X POST \
       \"output\": \"$OUTPUT\",
       \"duration_ms\": $DURATION
     }
-  }" \
-  https://www.stridelikeaboss.com/api/tasks/claim
+  }"
 ```
 
 ### Claim specific task with hook validation
@@ -311,7 +310,7 @@ END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Then claim with result
-curl -X POST \
+curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
@@ -322,8 +321,7 @@ curl -X POST \
       \"output\": \"$OUTPUT\",
       \"duration_ms\": $DURATION
     }
-  }" \
-  https://www.stridelikeaboss.com/api/tasks/claim
+  }"
 ```
 
 ## Notes

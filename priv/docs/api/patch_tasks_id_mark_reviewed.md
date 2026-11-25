@@ -301,7 +301,7 @@ END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Step 2: If hook succeeded, mark as reviewed
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W21/mark_reviewed \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
@@ -310,8 +310,7 @@ curl -X PATCH \
       \"output\": \"$OUTPUT\",
       \"duration_ms\": $DURATION
     }
-  }" \
-  https://www.stridelikeaboss.com/api/tasks/W21/mark_reviewed
+  }"
 ```
 
 ### With numeric ID
@@ -325,7 +324,7 @@ END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Mark reviewed with result
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/123/mark_reviewed \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d "{
@@ -334,8 +333,7 @@ curl -X PATCH \
       \"output\": \"$OUTPUT\",
       \"duration_ms\": $DURATION
     }
-  }" \
-  https://www.stridelikeaboss.com/api/tasks/123/mark_reviewed
+  }"
 ```
 
 ### Send the placeholder for a non-approving review
@@ -343,7 +341,7 @@ curl -X PATCH \
 ```bash
 # review_status is "changes_requested" or "rejected":
 # do NOT run ## after_review - send the placeholder result instead
-curl -X PATCH \
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W21/mark_reviewed \
   -H "Authorization: Bearer stride_dev_abc123..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -352,8 +350,7 @@ curl -X PATCH \
       "output": "after_review not run: review_status is changes_requested",
       "duration_ms": 0
     }
-  }' \
-  https://www.stridelikeaboss.com/api/tasks/W21/mark_reviewed
+  }'
 ```
 
 The task moves back to Doing, still assigned to you.
