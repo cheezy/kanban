@@ -1,29 +1,36 @@
 defmodule Mix.Tasks.Mobile.Api do
-  @shortdoc "Checks the API contract and copies it to mobile/shared/openapi.json"
+  @shortdoc "Checks the API contract and writes the copies both apps build from"
 
   @moduledoc """
-  Writes `mobile/shared/openapi.json` (W2779), the copy of the API contract
-  `priv/openapi/stride-api.json` that both native apps generate their API
-  clients from. It first checks the contract with
+  Writes the copies of the API contract `priv/openapi/stride-api.json` that the
+  native apps generate their API clients from:
+
+    * `mobile/shared/openapi.json` (W2779), which keeps the contract's exact bytes
+    * `mobile/ios/StrideKit/Sources/StrideKit/openapi.json` (W2783), which
+      `Kanban.Mobile.SwiftContract.derive!/1` derives for the Swift generator
+
+  It first checks the contract with
   `Kanban.Mobile.ApiContract.validate/1`: it must parse, every operation needs
   a unique `operationId`, and every `/api/me` operation needs `deviceAuth` and a
   response schema for each 2xx response with a body (a `204` has none). A
   contract that breaks a rule is not copied.
 
-  The copy keeps the contract's exact bytes. Generating the Swift and Kotlin
-  clients from it belongs to each app's own build, not to this task.
+  Generating the Swift and Kotlin clients belongs to each app's own build, not
+  to this task.
 
   ## Usage
 
       MIX_ENV=test mix mobile.api
 
   It takes no arguments. Rerun it and commit the result whenever the contract
-  changes: `test/kanban/mobile/api_contract_test.exs` fails while the committed
-  copy is stale. Never edit the copy by hand.
+  changes: `test/kanban/mobile/api_contract_test.exs` and
+  `test/kanban/mobile/swift_contract_test.exs` fail while a committed copy is
+  stale. Never edit a copy by hand.
   """
   use Mix.Task
 
   alias Kanban.Mobile.ApiContract
+  alias Kanban.Mobile.SwiftContract
 
   @impl Mix.Task
   def run([]), do: generate([])
@@ -36,24 +43,35 @@ defmodule Mix.Tasks.Mobile.Api do
   end
 
   @doc """
-  Checks the contract and writes the copy, returning `:ok`. Raises
+  Checks the contract and writes both copies, returning `:ok`. Raises
   `ArgumentError` listing every problem, without writing, when the contract
   is invalid.
 
   Options, which tests use to stay out of the repository:
 
     * `:source` - the contract to read, default `priv/openapi/stride-api.json`
-    * `:output` - the file to write, default `mobile/shared/openapi.json`
+    * `:output` - the exact copy to write, default `mobile/shared/openapi.json`
+    * `:swift_output` - the Swift document to write, default
+      `mobile/ios/StrideKit/Sources/StrideKit/openapi.json`
   """
   @spec generate(keyword()) :: :ok
   def generate(opts) do
     source = Keyword.get(opts, :source, ApiContract.source_path())
     output = Keyword.get(opts, :output, ApiContract.output_path())
 
-    json = source |> File.read!() |> ApiContract.validate_source!()
-    output |> Path.dirname() |> File.mkdir_p!()
-    File.write!(output, json)
+    swift_output = Keyword.get(opts, :swift_output, SwiftContract.output_path())
 
-    Mix.shell().info("Wrote #{output}")
+    json = source |> File.read!() |> ApiContract.validate_source!()
+    swift_json = SwiftContract.derive!(json)
+
+    write!(output, json)
+    write!(swift_output, swift_json)
+  end
+
+  defp write!(path, contents) do
+    path |> Path.dirname() |> File.mkdir_p!()
+    File.write!(path, contents)
+
+    Mix.shell().info("Wrote #{path}")
   end
 end

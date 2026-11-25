@@ -55,7 +55,7 @@ defmodule Kanban.IosHookScriptsTest do
     end
 
     test "counts a file moved into mobile/ from outside it", %{repo: repo} do
-      File.mkdir_p!(Path.join(repo, "mobile"))
+      repo |> Path.join("mobile") |> File.mkdir_p!()
       git!(repo, ["mv", "lib/kept.ex", "mobile/kept.ex"])
       git!(repo, ["commit", "--quiet", "-m", "task"])
 
@@ -91,7 +91,7 @@ defmodule Kanban.IosHookScriptsTest do
       end
 
       missing =
-        for path <- Path.wildcard(Path.join(@root, "test/**/*_test.exs")),
+        for path <- @root |> Path.join("test/**/*_test.exs") |> Path.wildcard(),
             File.read!(path) =~ ~r{mobile/(ios|android|shared)/|workflows/ios\.yml},
             relative = Path.relative_to(path, @root),
             not Enum.any?(guards, &String.starts_with?(relative, &1)),
@@ -110,9 +110,9 @@ defmodule Kanban.IosHookScriptsTest do
     test "generates the project and runs the whole scheme on an iPhone 17", %{repo: repo} do
       assert {output, 0} = run_script(repo, "ios_test.sh", [{"STUB_XCODE", @passed}])
 
-      assert File.read!(Path.join(repo, "calls")) == """
+      assert calls(repo) == """
              xcodegen generate --quiet --spec mobile/ios/project.yml
-             xcodebuild test -project mobile/ios/Stride.xcodeproj -scheme Stride -destination platform=iOS Simulator,name=iPhone 17
+             xcodebuild test -project mobile/ios/Stride.xcodeproj -scheme Stride -skipPackagePluginValidation -destination platform=iOS Simulator,name=iPhone 17
              """
 
       assert output =~ "Test run with 12 tests"
@@ -122,7 +122,7 @@ defmodule Kanban.IosHookScriptsTest do
       env = [{"STUB_XCODE", @passed}, {"IOS_TEST_DESTINATION", "id=ABC"}]
 
       assert {_, 0} = run_script(repo, "ios_test.sh", env)
-      assert File.read!(Path.join(repo, "calls")) =~ "-destination id=ABC\n"
+      assert calls(repo) =~ "-destination id=ABC\n"
     end
 
     test "fails and names the failure when xcodebuild fails", %{repo: repo} do
@@ -141,7 +141,7 @@ defmodule Kanban.IosHookScriptsTest do
 
     test "fails before the build when the project cannot be generated", %{repo: repo} do
       assert {_, 1} = run_script(repo, "ios_test.sh", [{"STUB_XCODEGEN_EXIT", "1"}])
-      refute File.read!(Path.join(repo, "calls")) =~ "xcodebuild"
+      refute calls(repo) =~ "xcodebuild"
     end
   end
 
@@ -149,9 +149,19 @@ defmodule Kanban.IosHookScriptsTest do
   # The stub tools sit in bin/, which git ignores.
   defp task_branch(%{repo: repo}) do
     for script <- ["ios_elixir_checks.sh", "ios_test.sh"] do
-      File.cp!(Path.join([@root, "test", script]), Path.join([repo, "test", script]))
+      copy!(repo, Path.join("test", script))
     end
 
+    stub_tools!(repo)
+    write!(repo, "lib/kept.ex")
+    repo |> Path.join(".gitignore") |> File.write!("bin/\ncalls\n")
+    git!(repo, ["add", "-A"])
+    git!(repo, ["commit", "--quiet", "-m", "scripts"])
+    git!(repo, ["checkout", "--quiet", "-b", "W1"])
+    :ok
+  end
+
+  defp stub_tools!(repo) do
     stub!(repo, "mix", """
     echo "mix[$MIX_ENV] $*"
     [ "${STUB_MIX_FAILS:-}" != "$1" ]
@@ -167,14 +177,10 @@ defmodule Kanban.IosHookScriptsTest do
     printf '%b\\n' "$STUB_XCODE"
     exit "${STUB_XCODE_EXIT:-0}"
     """)
-
-    write!(repo, "lib/kept.ex")
-    repo |> Path.join(".gitignore") |> File.write!("bin/\ncalls\n")
-    git!(repo, ["add", "-A"])
-    git!(repo, ["commit", "--quiet", "-m", "scripts"])
-    git!(repo, ["checkout", "--quiet", "-b", "W1"])
-    :ok
   end
+
+  defp copy!(repo, file), do: @root |> Path.join(file) |> File.cp!(Path.join(repo, file))
+  defp calls(repo), do: repo |> Path.join("calls") |> File.read!()
 
   defp stub!(repo, name, body) do
     path = Path.join([repo, "bin", name])

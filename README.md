@@ -182,8 +182,9 @@ side the apps call is described in [the person API](docs/api/me.md).
   Android 9 (API 28) and up, and builds on macOS, Linux or Windows.
 - **Shared files** for both apps live in `mobile/shared/`
   ([what is there](mobile/shared/README.md)). `MIX_ENV=test mix mobile.api`
-  checks the API contract and copies it there for the generated API clients,
-  and `MIX_ENV=test mix mobile.tokens` and `MIX_ENV=test mix mobile.strings`
+  checks the API contract, copies it there for the Android client and writes
+  the version the iOS client is generated from into StrideKit, and
+  `MIX_ENV=test mix mobile.tokens` and `MIX_ENV=test mix mobile.strings`
   write the design tokens and strings.
 - **The Android workflow skips** its build jobs until
   `mobile/android/settings.gradle.kts` exists. Until then it runs only a short
@@ -196,8 +197,14 @@ Apple developer account, generate the project and run the tests on a simulator:
 cd mobile/ios
 xcodegen generate
 xcodebuild test -project Stride.xcodeproj -scheme Stride \
+  -skipPackagePluginValidation \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
+
+The first build downloads the Swift packages that generate the API client, at
+the versions pinned in `mobile/ios/Package.resolved`, so it needs a network.
+`-skipPackagePluginValidation` lets the generator's build plugin run without
+Xcode's one-time prompt; in Xcode itself, choose **Trust & Enable** when asked.
 
 Use the name of any iPhone or iPad simulator you have, with its `OS=` if the
 name is not enough. Or open `Stride.xcodeproj` in Xcode and run the `Stride`

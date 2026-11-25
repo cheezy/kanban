@@ -1,0 +1,13 @@
+# Read by the Swift OpenAPI Generator build plugin, which generates the client
+# from the openapi.json beside this file. `mix mobile.api` writes that document
+# from priv/openapi/stride-api.json, so neither is edited by hand.
+generate:
+  - types
+  - client
+accessModifier: public
+namingStrategy: idiomatic
+# The app's own operations: /api/me and /oauth.
+filter:
+  tags:
+    - Mobile
+    - OAuth

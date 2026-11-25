@@ -195,10 +195,11 @@ defmodule Kanban.StrideHooksContractTest do
     end
 
     test "keeps the dependency and security checks before a claim" do
-      gates = Enum.filter(section("before_doing"), &String.starts_with?(&1, "mix "))
+      gates = "before_doing" |> section() |> Enum.filter(&String.starts_with?(&1, "mix "))
 
       assert length(gates) == 5
-      assert Enum.filter(section("before_doing", @ios_dev_md), &(&1 in gates)) == gates
+      ios_gates = "before_doing" |> section(@ios_dev_md) |> Enum.filter(&(&1 in gates))
+      assert ios_gates == gates
     end
 
     test "merges and reviews as the default set does" do
@@ -276,10 +277,13 @@ defmodule Kanban.StrideHooksContractTest do
 
     test "./ios_dev.sh and ./stride_dev.sh copy their set over .stride.md", %{repo: repo} do
       for {script, set} <- [{"ios_dev.sh", ".ios_dev.md"}, {"stride_dev.sh", ".stride_dev.md"}] do
-        for file <- [script, set], do: File.cp!(Path.join(@root, file), Path.join(repo, file))
+        for file <- [script, set] do
+          @root |> Path.join(file) |> File.cp!(Path.join(repo, file))
+        end
 
         assert {"", 0} = run_bash(repo, ["-c", "./#{script}"], [])
-        assert File.read!(Path.join(repo, ".stride.md")) == File.read!(Path.join(@root, set))
+        copied = repo |> Path.join(".stride.md") |> File.read!()
+        assert copied == @root |> Path.join(set) |> File.read!()
       end
     end
   end

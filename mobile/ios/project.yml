@@ -13,6 +13,9 @@ options:
   # The app and the widgets share Stride/Resources/Fonts; nested groups keep
   # its files in one group, where Xcode refuses a file that is in two.
   createIntermediateGroups: true
+  # Pins every Swift package, direct or not. Xcode reads the pins from inside
+  # the generated project, so the committed Package.resolved is copied there.
+  postGenCommand: mkdir -p Stride.xcodeproj/project.xcworkspace/xcshareddata/swiftpm && cp Package.resolved Stride.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
 packages:
   StrideKit:

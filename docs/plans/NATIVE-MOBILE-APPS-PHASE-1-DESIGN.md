@@ -1152,9 +1152,9 @@ kanban/
 |---|---|---|---|
 | `assets/css/app.css` (the `.stride-screen` tokens) | `mix mobile.tokens` | `mobile/shared/tokens.json`, iOS colour assets, the Compose colour and type file | an ExUnit test regenerates in memory and compares |
 | `priv/gettext/*/LC_MESSAGES/mobile.po` (a new `mobile` domain) | `mix mobile.strings` | the Xcode string catalog, Android `strings.xml` for each locale | a test fails when a string is missing in any locale, or a copy is stale |
-| `priv/openapi/stride-api.json` | `mix mobile.api` | `mobile/shared/openapi.json`, which each app's build will turn into its Swift or Kotlin client | `test/kanban/mobile/api_contract_test.exs` fails when the copy is stale; the fixture test (§7.11); both app CI jobs run when the contract changes |
+| `priv/openapi/stride-api.json` | `mix mobile.api` | `mobile/shared/openapi.json`, which the Android build will turn into its Kotlin client, and `mobile/ios/StrideKit/Sources/StrideKit/openapi.json`, derived for the Swift generator | `test/kanban/mobile/api_contract_test.exs` and `test/kanban/mobile/swift_contract_test.exs` fail when a copy is stale; the fixture test (§7.11); both app CI jobs run when the contract changes |
 
-`mix mobile.api` only checks the contract and copies it (W2779). It does not run the client generators: the Swift OpenAPI Generator and the Gradle OpenAPI plugin run in each app's own build, added in Phase 1b and 1c, so no client generator enters the Elixir build.
+`mix mobile.api` checks the contract, copies it (W2779) and derives the document the Swift generator reads (W2783). It does not run the client generators: the Swift OpenAPI Generator and the Gradle OpenAPI plugin run in each app's own build, added in Phase 1b and 1c, so no client generator enters the Elixir build.
 
 **The app strings in gettext.** They go in their own gettext domain, `mobile`, so `mix gettext.extract --merge` keeps them with the web's. They're translated in the same pass as web strings. Placeholders use gettext's `%{name}` form, and the generator converts them to each platform's format.
 

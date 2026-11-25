@@ -4,7 +4,9 @@ defmodule Kanban.Mobile.ApiContract do
   (W2779), before `mix mobile.api` copies it to `mobile/shared/openapi.json`.
 
   The copy is byte-for-byte the same as `priv/openapi/stride-api.json`, so
-  both apps build against exactly the contract the server tests. Generating
+  the Android app builds against exactly the contract the server tests. The iOS app
+  builds from a second document `Kanban.Mobile.SwiftContract` derives from it,
+  which loosens only what the Swift generator cannot read. Generating
   the Swift and Kotlin clients belongs to each app's own build, never to the
   Elixir build. `test/kanban/mobile/api_contract_test.exs` fails when the
   committed copy is stale. Refresh it with `MIX_ENV=test mix mobile.api`, and
@@ -33,7 +35,7 @@ defmodule Kanban.Mobile.ApiContract do
   @spec source_path() :: String.t()
   def source_path, do: @source_path
 
-  @doc "The copy both apps read, relative to the project root."
+  @doc "The exact copy, relative to the project root."
   @spec output_path() :: String.t()
   def output_path, do: @output_path
 

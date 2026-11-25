@@ -128,8 +128,9 @@ must-revalidate` so the app can revalidate it with `If-None-Match`
 The routes are described in the OpenAPI contract,
 `priv/openapi/stride-api.json`, which is served at `GET /api/openapi.json`
 ([OpenAPI specification](get_openapi_json.md)). `MIX_ENV=test mix mobile.api`
-checks it and copies it into `mobile/shared/` for the apps' generated clients,
-next to the example responses in `mobile/shared/fixtures/`
+checks it, copies it into `mobile/shared/` for the Android app's generated
+client and writes the document the iOS app generates its client from. The copy
+sits next to the example responses in `mobile/shared/fixtures/`
 ([shared mobile files](../../mobile/shared/README.md)).
 
 ## See also

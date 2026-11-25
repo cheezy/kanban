@@ -13,7 +13,7 @@ names a single `mobile/shared/tokens.json`, the generated tokens live in the
 | [tokens/](tokens/README.md) | colour and type tokens | the `.stride-screen` tokens in `assets/css/app.css` | `mix mobile.tokens` (generated) |
 | [strings/](strings/README.md) | app strings in seven locales | `priv/gettext/*/LC_MESSAGES/mobile.po` | `mix mobile.strings` (generated) |
 | [fixtures/](fixtures/README.md) | example API responses | `priv/openapi/stride-api.json` | written by hand, checked against the contract |
-| [openapi.json](openapi.json) | the API contract both apps generate their clients from | `priv/openapi/stride-api.json` | `mix mobile.api` (checked, then copied byte for byte) |
+| [openapi.json](openapi.json) | the API contract, which the Android app generates its client from | `priv/openapi/stride-api.json` | `mix mobile.api` (checked, then copied byte for byte) |
 
 `mix mobile.tokens`, `mix mobile.strings` and `mix mobile.api` exist, and
 `tokens/tokens.json`, the seven `strings/<locale>.json` files and
@@ -28,11 +28,18 @@ the contract must parse, every operation needs a unique `operationId`, and
 every `/api/me` operation must require `deviceAuth` and give a response schema
 for each 2xx response that has a body. It writes nothing when a rule fails.
 `test/kanban/mobile/api_contract_test.exs` fails when `openapi.json` is stale;
-refresh it with `MIX_ENV=test mix mobile.api`. The task only checks and copies
-the contract. Each app's own build will generate its client from
-`openapi.json` (the Swift OpenAPI Generator for iOS, the Gradle OpenAPI plugin
-for Android). No generator config is committed yet, and no client generator
-runs in the Elixir build.
+refresh it with `MIX_ENV=test mix mobile.api`. Each app's own build generates
+its client, so no client generator runs in the Elixir build. The Android build
+will read `openapi.json` with the Gradle OpenAPI plugin; its config is not
+committed yet.
+
+The iOS build reads a second document that the same task writes,
+`mobile/ios/StrideKit/Sources/StrideKit/openapi.json`. It is derived from the
+contract by `Kanban.Mobile.SwiftContract`, which loosens only what the Swift
+OpenAPI Generator would drop or refuse: for example, it opens the enums the app
+reads, so a value the API adds later still decodes. Its module documentation
+lists every change. `test/kanban/mobile/swift_contract_test.exs` fails when that
+document is stale.
 
 Never edit a generated file by hand: change its source and run the
 generator.
