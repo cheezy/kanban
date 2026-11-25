@@ -23,16 +23,21 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   The signing secret is held in the `:revealed` assign, wrapped in
   `KanbanWeb.ShownSecret` so inspecting the state hides it (D442), written only by the
-  create and rotate handlers and cleared by dismiss or delete. `update/2`
-  never sets it, and closing the modal unmounts the component, so the secret
-  cannot be shown again. A Slack or Discord endpoint has no secret to
-  show: their messages are not signed.
+  create and rotate handlers and cleared by dismiss or delete. It belongs to
+  one opening of the view: the parent passes `:opening`, a new value each time
+  the view is opened (`KanbanWeb.BoardLive.Integrations.track_opening/3`), and
+  `update/2` clears the secret, the edit form, the open log and the form that
+  adds an endpoint when that value changes. Closing the modal is not what
+  forgets them: LiveView keeps the component until the browser reports it gone,
+  so a quick close and reopen gets the same component back (D480). An update
+  with the same `:opening`, such as a board change, keeps them all. A Slack or
+  Discord endpoint has no secret to show: their messages are not signed.
 
   A component's own flash never reaches the page, so flashes are sent to the
   parent LiveView, which applies them with `apply_parent_message/2`.
 
   Integrations are a paid feature. While paid plans are enforced, a free
-  board's view (`:locked?`, computed once when the component mounts) shows the
+  board's view (`:locked?`, computed once per opening) shows the
   `KanbanWeb.LockedFeature` panel for `:integrations` and lists the existing
   endpoints read only with a Paused badge, keeping only Deliveries and Delete.
   The write events (create, save_edit, toggle, rotate, send_test) are refused
@@ -53,25 +58,24 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   @log_size 20
 
   @impl true
-  def update(%{board: _board, current_scope: _scope} = assigns, socket) do
+  def update(%{board: _board, current_scope: _scope, opening: _opening} = assigns, socket) do
     {:ok,
      socket
+     |> start_opening(assigns)
      |> assign(assigns)
-     |> assign_defaults()
-     |> assign_new(:form, fn %{form_rev: rev} -> new_form(rev) end)
-     |> assign_new(:locked?, &locked?/1)
      |> reload()}
   end
 
-  defp assign_defaults(socket) do
-    Enum.reduce(
-      [revealed: nil, log_endpoint_id: nil, editing: nil, deliveries: [], form_rev: 0],
-      socket,
-      fn {key, default}, acc -> assign_new(acc, key, fn -> default end) end
-    )
-  end
+  # Everything the view holds for one opening only, cleared here rather than
+  # when the modal closes (see the moduledoc).
+  defp start_opening(%{assigns: %{opening: opening}} = socket, %{opening: opening}), do: socket
 
-  defp locked?(%{board: board}), do: not Plans.board_unlocked?(board.id)
+  defp start_opening(socket, assigns) do
+    socket
+    |> assign(revealed: nil, log_endpoint_id: nil, editing: nil, deliveries: [])
+    |> assign(:locked?, not Plans.board_unlocked?(assigns.board.id))
+    |> reset_form()
+  end
 
   @doc "Applies a flash this component sent to its parent LiveView."
   def apply_parent_message(socket, {:flash, kind, message}) when kind in [:info, :error] do
@@ -365,15 +369,15 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   # input would bring its "already used" state into the empty form, so
   # changing the Kind would show "can't be blank" before anything was typed.
   defp reset_form(socket) do
-    rev = socket.assigns.form_rev + 1
+    rev = next_rev(socket.assigns)
 
     socket
     |> assign(:form_rev, rev)
-    |> assign(:form, new_form(rev))
+    |> assign(:form, Webhooks.change_endpoint() |> to_form(as: "endpoint", id: form_id(rev)))
   end
 
-  defp new_form(rev),
-    do: Webhooks.change_endpoint() |> to_form(as: "endpoint", id: form_id(rev))
+  defp next_rev(%{form_rev: rev}), do: rev + 1
+  defp next_rev(_assigns), do: 0
 
   defp form_id(rev), do: "endpoint-#{rev}"
 

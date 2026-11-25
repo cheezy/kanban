@@ -17,7 +17,8 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
 
   @doc """
   The form that adds an endpoint: kind, URL and the events to send. `rev`
-  changes after each create so the browser starts from an empty form.
+  changes after each create, and when a reopened view gets its old component
+  back, so the browser starts from an empty form.
   """
   attr :form, Phoenix.HTML.Form, required: true
   attr :rev, :integer, required: true

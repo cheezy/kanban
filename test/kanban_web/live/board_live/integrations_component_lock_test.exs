@@ -239,6 +239,32 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentLockTest do
     end
   end
 
+  describe "reopening the panel (D480)" do
+    import KanbanWeb.QueuedPatches
+
+    defp close_and_reopen(view, board),
+      do: queue_patches(view, [~p"/boards/#{board}", ~p"/boards/#{board}/integrations"])
+
+    test "a board that lost paid access reopens locked, without the secret it was showing",
+         %{conn: conn} = ctx do
+      view = open(conn, ctx.owner, ctx.board)
+      view |> element("#webhook-rotate-#{ctx.endpoint.id}") |> render_click()
+      assert has_element?(view, "#webhook-secret")
+
+      enforce_plans()
+      close_and_reopen(view, ctx.board)
+
+      assert has_element?(view, "#integrations-locked")
+      refute has_element?(view, "#webhook-secret")
+
+      :ok = make_paid(ctx.board)
+      close_and_reopen(view, ctx.board)
+
+      refute has_element?(view, "#integrations-locked")
+      refute has_element?(view, "#webhook-secret")
+    end
+  end
+
   describe "a paid board or no enforcement" do
     test "a paid board under enforcement shows the normal panel", %{conn: conn} = ctx do
       enforce_plans()

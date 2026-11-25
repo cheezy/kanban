@@ -515,6 +515,283 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
     end
   end
 
+  describe "reopening the view (D480)" do
+    import Kanban.ColumnsFixtures, only: [column_fixture: 1]
+    import Kanban.TasksFixtures, only: [task_fixture: 1]
+    import KanbanWeb.QueuedPatches
+
+    defp close_and_reopen(view, board),
+      do: queue_patches(view, [~p"/boards/#{board}", ~p"/boards/#{board}/integrations"])
+
+    defp reveal(view) do
+      create(view, %{})
+      assert has_element?(view, "#webhook-secret")
+      view
+    end
+
+    # The assigns the page holds. Compare them, never print them.
+    defp page_assigns(view), do: :sys.get_state(view.pid).socket.assigns
+
+    # A change to the board itself, which runs the component's update/2 again.
+    # A change to its columns or tasks alone does not always reach it.
+    defp update_board(view, ctx) do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, user_fixture(), :modify, ctx.owner)
+
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "board:#{ctx.board.id}",
+        {Kanban.Boards, :members_changed, ctx.board.id}
+      )
+
+      render(view)
+      assert length(page_assigns(view).board.members) == 2
+    end
+
+    defp put_access(membership, access) do
+      membership
+      |> Ecto.Changeset.change()
+      |> Ecto.Changeset.force_change(:access, access)
+      |> Repo.update!()
+    end
+
+    defp set_access(view, board, membership, access) do
+      put_access(membership, access)
+      send(view.pid, {Kanban.Boards, :members_changed, board.id})
+      :sys.get_state(view.pid)
+    end
+
+    test "the first opening has no secret, no edit form and no open log",
+         %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      delivery_fixture(endpoint)
+      view = open(conn, ctx.owner, ctx.board)
+
+      assert has_element?(view, "#webhook-edit-#{endpoint.id}")
+      assert has_element?(view, "#webhook-log-toggle-#{endpoint.id}")
+      refute has_element?(view, "#webhook-secret")
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      refute has_element?(view, "#webhook-log-#{endpoint.id}")
+    end
+
+    test "a close and reopen queued together forgets the secret", %{conn: conn} = ctx do
+      view = conn |> open(ctx.owner, ctx.board) |> reveal()
+
+      close_and_reopen(view, ctx.board)
+
+      assert has_element?(view, target(ctx.board))
+      refute has_element?(view, "#webhook-secret")
+    end
+
+    test "a rotated secret is forgotten by a close and reopen queued together",
+         %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      view = open(conn, ctx.owner, ctx.board)
+      view |> element("#webhook-rotate-#{endpoint.id}") |> render_click()
+      assert has_element?(view, "#webhook-secret")
+
+      close_and_reopen(view, ctx.board)
+
+      assert has_element?(view, "#webhook-endpoint-#{endpoint.id}")
+      refute has_element?(view, "#webhook-secret")
+
+      view |> element("#webhook-rotate-#{endpoint.id}") |> render_click()
+      assert has_element?(view, "#webhook-secret")
+    end
+
+    test "each opening starts clean", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      delivery_fixture(endpoint)
+      view = open(conn, ctx.owner, ctx.board)
+      view |> element("#webhook-log-toggle-#{endpoint.id}") |> render_click()
+      open_edit(view, endpoint)
+      assert has_element?(view, "#webhook-log-#{endpoint.id}")
+
+      view
+      |> form()
+      |> render_change(%{"endpoint" => %{"kind" => "generic", "url" => "http://"}})
+
+      assert has_element?(view, ~s(#endpoint-0_url[value="http://"]))
+      first = page_assigns(view).integrations_opening
+
+      close_and_reopen(view, ctx.board)
+
+      assert has_element?(view, "#webhook-endpoint-#{endpoint.id}")
+      refute has_element?(view, "#webhook-log-#{endpoint.id}")
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      assert has_element?(view, "#endpoint-1_url")
+      refute has_element?(view, "#endpoint-1_url[value]")
+      refute page_assigns(view).integrations_opening == first
+    end
+
+    test "a board update keeps the shown secret", %{conn: conn} = ctx do
+      view = conn |> open(ctx.owner, ctx.board) |> reveal()
+      update_board(view, ctx)
+
+      assert has_element?(view, "#webhook-secret")
+    end
+
+    test "a board update keeps the open edit form and delivery log", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      view = open(conn, ctx.owner, ctx.board)
+      view |> element("#webhook-log-toggle-#{endpoint.id}") |> render_click()
+      open_edit(view, endpoint)
+
+      update_board(view, ctx)
+
+      assert has_element?(view, "#webhook-log-#{endpoint.id}")
+      assert has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+    end
+
+    test "a patch that stays on the open view keeps the secret", %{conn: conn} = ctx do
+      view = conn |> open(ctx.owner, ctx.board) |> reveal()
+
+      render_patch(view, ~p"/boards/#{ctx.board}/integrations?labels=1")
+
+      assert has_element?(view, "#webhook-secret")
+    end
+
+    test "a reopen through a URL that names a task or a column forgets the secret",
+         %{conn: conn} = ctx do
+      column = column_fixture(ctx.board)
+      task = task_fixture(column)
+      view = open(conn, ctx.owner, ctx.board)
+
+      for query <- [%{"task_id" => task.id}, %{"column_id" => column.id}] do
+        reveal(view)
+
+        queue_patches(view, [
+          ~p"/boards/#{ctx.board}",
+          ~p"/boards/#{ctx.board}/integrations?#{query}"
+        ])
+
+        assert has_element?(view, target(ctx.board))
+        refute has_element?(view, "#webhook-secret")
+      end
+    end
+
+    test "opening another board's view straight away, and coming back, forgets the secret",
+         %{conn: conn} = ctx do
+      other = board_fixture(ctx.owner)
+      view = conn |> open(ctx.owner, ctx.board) |> reveal()
+
+      queue_patches(view, [~p"/boards/#{other}/integrations"])
+      assert has_element?(view, target(other))
+      refute has_element?(view, "#webhook-secret")
+
+      render_patch(view, ~p"/boards/#{ctx.board}/integrations")
+      reveal(view)
+
+      queue_patches(view, [
+        ~p"/boards/#{other}/integrations",
+        ~p"/boards/#{ctx.board}/integrations"
+      ])
+
+      assert has_element?(view, target(ctx.board))
+      refute has_element?(view, "#webhook-secret")
+    end
+
+    # The page hides the view from anyone but the owner without changing the
+    # URL. The test client is suspended, so it reports the hidden component gone
+    # only after both changes were handled.
+    test "losing ownership and getting it back forgets the secret", %{conn: conn} = ctx do
+      view = conn |> open(ctx.owner, ctx.board) |> reveal()
+      {_ref, _topic, client} = view.proxy
+      membership = Repo.get_by!(Boards.BoardUser, board_id: ctx.board.id, user_id: ctx.owner.id)
+
+      :ok = :sys.suspend(client)
+      set_access(view, ctx.board, membership, :modify)
+      refute page_assigns(view).is_owner
+      set_access(view, ctx.board, membership, :owner)
+      assert page_assigns(view).is_owner
+      :ok = :sys.resume(client)
+
+      assert has_element?(view, target(ctx.board))
+      refute has_element?(view, "#webhook-secret")
+    end
+
+    # Only the URL tells the page about this loss: no membership change is sent.
+    test "a patch naming a task that finds ownership gone ends the opening",
+         %{conn: conn} = ctx do
+      task = ctx.board |> column_fixture() |> task_fixture()
+      membership = Repo.get_by!(Boards.BoardUser, board_id: ctx.board.id, user_id: ctx.owner.id)
+      view = open(conn, ctx.owner, ctx.board)
+      before = page_assigns(view).integrations_opening
+
+      put_access(membership, :modify)
+      render_patch(view, ~p"/boards/#{ctx.board}/integrations?#{%{task_id: task.id}}")
+
+      assigns = page_assigns(view)
+      refute assigns.is_owner
+      refute assigns.integrations_opening == before
+    end
+
+    test "a second tab never shows the secret, and its openings leave the first alone",
+         %{conn: conn} = ctx do
+      view = conn |> open(ctx.owner, ctx.board) |> reveal()
+      second = open(conn, ctx.owner, ctx.board)
+      refute has_element?(second, "#webhook-secret")
+
+      close_and_reopen(second, ctx.board)
+      update_board(view, ctx)
+
+      refute has_element?(second, "#webhook-secret")
+      assert has_element?(view, "#webhook-secret")
+    end
+  end
+
+  describe "update/2 and the opening it belongs to" do
+    # What each opening forgets. The values are compared, never printed.
+    defp open_panel(ctx, opening) do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      delivery_fixture(endpoint)
+      {:ok, socket} = update_panel(%Phoenix.LiveView.Socket{}, ctx, opening)
+
+      {:noreply, socket} =
+        IntegrationsComponent.handle_event("rotate", %{"id" => endpoint.id}, socket)
+
+      {:noreply, socket} =
+        IntegrationsComponent.handle_event("edit", %{"id" => endpoint.id}, socket)
+
+      {:noreply, socket} =
+        IntegrationsComponent.handle_event("show_log", %{"id" => endpoint.id}, socket)
+
+      socket
+    end
+
+    defp update_panel(socket, ctx, opening) do
+      IntegrationsComponent.update(
+        %{board: ctx.board, current_scope: Scope.for_user(ctx.owner), opening: opening},
+        socket
+      )
+    end
+
+    test "a new opening reference clears the secret, the edit form and the log", ctx do
+      socket = open_panel(ctx, {"1", make_ref()})
+      assert is_map(socket.assigns.revealed)
+
+      {:ok, %{assigns: assigns}} = update_panel(socket, ctx, {"1", make_ref()})
+
+      assert assigns.revealed == nil
+      assert assigns.editing == nil
+      assert assigns.log_endpoint_id == nil
+      assert assigns.deliveries == []
+      assert assigns.form_rev == 1
+    end
+
+    test "the same opening reference keeps them", ctx do
+      opening = {"1", make_ref()}
+      before = open_panel(ctx, opening)
+
+      {:ok, %{assigns: assigns}} = update_panel(before, ctx, opening)
+
+      assert is_map(assigns.revealed)
+      assert is_map(assigns.editing)
+      assert is_integer(assigns.log_endpoint_id)
+      assert [_delivery] = assigns.deliveries
+      assert assigns.form_rev == 0
+    end
+  end
+
   describe "editing an endpoint" do
     test "editing an endpoint's events saves them, closes the form, flashes \"Endpoint updated\" and the row shows the new events",
          %{conn: conn} = ctx do

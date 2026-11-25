@@ -155,9 +155,7 @@ defmodule KanbanWeb.BoardLive.Params do
     socket
     |> assign(:page_title, BoardState.page_title(socket.assigns.live_action))
     |> assign(:board, board)
-    |> assign(:user_access, user_access)
-    |> assign(:can_modify, user_access in [:owner, :modify])
-    |> assign(:is_owner, user_access == :owner)
+    |> BoardState.assign_access(user_access)
     |> assign(:field_visibility, board.field_visibility || %{})
     |> assign(:task, task)
     |> assign(:has_columns, not Enum.empty?(columns))

@@ -19,6 +19,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardLive.BulkSelection
   alias KanbanWeb.BoardLive.Goals
+  alias KanbanWeb.BoardLive.Integrations
 
   @doc false
   def assign_common_board_state(socket, board, user_access, columns) do
@@ -51,12 +52,19 @@ defmodule KanbanWeb.BoardLive.BoardState do
     assign_access(socket, Boards.get_user_access(board.id, user.id))
   end
 
-  defp assign_access(socket, user_access) do
+  @doc false
+  def assign_access(socket, user_access) do
     socket
     |> assign(:user_access, user_access)
     |> assign(:can_modify, user_access in [:owner, :modify])
     |> assign(:is_owner, user_access == :owner)
+    |> end_integrations_opening(user_access)
   end
+
+  # The Integrations view is shown to the owner only, so losing ownership hides
+  # it and it must not come back with the secret it was showing (D480).
+  defp end_integrations_opening(socket, :owner), do: socket
+  defp end_integrations_opening(socket, _access), do: Integrations.end_opening(socket)
 
   # Attach the per-board metrics map AND the members list to the board
   # struct so the BoardHeader sub-band can render the in-flight/in-

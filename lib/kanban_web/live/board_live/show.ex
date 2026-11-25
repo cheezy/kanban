@@ -50,6 +50,7 @@ defmodule KanbanWeb.BoardLive.Show do
        column_deletion: nil
      )
      |> BulkSelection.init()
+     |> Integrations.track_openings()
      |> stream(:undismissed_messages, undismissed_messages)}
   end
 
