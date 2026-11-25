@@ -279,15 +279,15 @@ What differs from the Stride set:
 | Hook | Difference |
 |---|---|
 | `before_doing` | Ignores a modified `.stride.md`. The dependency and security checks are the same |
-| `after_doing` | Runs `test/ios_test.sh`, then `test/ios_elixir_checks.sh`, then commits everything except `.stride.md`. It writes no green-tree marker |
+| `after_doing` | Runs `MIX_ENV=test mix ios.test`, then `test/ios_elixir_checks.sh`, then commits everything except `.stride.md`. It writes no green-tree marker |
 | `before_review`, `after_review` | None |
 | `after_goal` | Ignores a modified `.stride.md`. The `mix do` legs, the dirty-tree check, the suite check and the push are the same. It runs no iOS tests; CI runs them after the push |
 
-[`test/ios_test.sh`](../test/ios_test.sh) generates the project from
+[`mix ios.test`](ios-mix-tasks.md#running-the-tests) generates the project from
 `mobile/ios/project.yml` and runs the whole `Stride` scheme on an iPhone 17
-simulator. Set `IOS_TEST_DESTINATION` to use another one. It fails when
-`xcodebuild` fails and also when no Swift Testing test ran. It needs a Mac with
-Xcode and XcodeGen.
+simulator. Set `IOS_SIMULATOR` to use another one. It fails when `xcodebuild`
+fails and also when no Swift Testing test ran. It needs a Mac with Xcode and
+XcodeGen.
 
 [`test/ios_elixir_checks.sh`](../test/ios_elixir_checks.sh) looks at everything
 the task branch changed since it left `main`:
@@ -303,7 +303,8 @@ iOS app did not run the whole suite. So `after_goal` runs the suite before the
 push, unless an older marker from the Stride set names exactly the tree being
 pushed. That is the fallback cost given above, about 181 s to 194 s.
 
-Times on one 8-core machine, one run each: `test/ios_test.sh` took 92 s. A task
+Times on one 8-core machine, one run each: `mix ios.test` took 35 s when little
+had to be built, and the same `xcodebuild` call took 92 s in an earlier run. A task
 that also changes Elixir code adds the Stride set's `after_doing`, measured at
 150.5 s above and at 253 s on W2782, so the two together can pass 290 s. They
 fit the plugin's 600 s default.
@@ -325,9 +326,8 @@ fit the plugin's 600 s default.
   change the `mix do` line in `after_goal` and the list in the development
   guidelines skill in the same commit.
 - [`test/kanban/ios_hook_scripts_test.exs`](../test/kanban/ios_hook_scripts_test.exs)
-  runs the two iOS scripts with stub tools. It fails when a test names a
-  `mobile/` path or `ios.yml` and is missing from the list in
-  `test/ios_elixir_checks.sh`.
+  runs `test/ios_elixir_checks.sh` with a stub `mix`. It fails when a test names a
+  `mobile/` path or `ios.yml` and is missing from the list in that script.
 - To measure again, check that no other `mix test` is running, then time each
   command on its own, three times, and compare the median with 70% of the
   budget in force.

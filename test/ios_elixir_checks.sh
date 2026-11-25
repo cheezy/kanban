@@ -25,6 +25,9 @@ guards=(
   test/kanban/stride_hooks_contract_test.exs
   test/kanban_web/controllers/api/mobile_fixtures_test.exs
   test/kanban_web/controllers/api/open_api_contract_test.exs
+  test/mix/ios
+  test/mix/ios_test.exs
+  test/mix/tasks/ios
   test/mix/tasks/mobile
 )
 

@@ -1,8 +1,8 @@
 defmodule Kanban.IosHookScriptsTest do
   @moduledoc """
-  Runs the two scripts of the iOS hook set (`.ios_dev.md`) in a throwaway git
-  repository, with stubs for `mix`, `xcodegen` and `xcodebuild`, so what they
-  run and when they fail is pinned.
+  Runs the script of the iOS hook set (`.ios_dev.md`) in a throwaway git
+  repository, with a stub for `mix`, so what it runs and when it fails is
+  pinned. `mix ios.test`, which the set also runs, has its own tests.
   """
   use ExUnit.Case, async: true
 
@@ -101,86 +101,27 @@ defmodule Kanban.IosHookScriptsTest do
     end
   end
 
-  describe "test/ios_test.sh" do
-    setup :throwaway_repo
-    setup :task_branch
-
-    @passed "Test run with 12 tests in 3 suites passed after 0.1 seconds.\n** TEST SUCCEEDED **"
-
-    test "generates the project and runs the whole scheme on an iPhone 17", %{repo: repo} do
-      assert {output, 0} = run_script(repo, "ios_test.sh", [{"STUB_XCODE", @passed}])
-
-      assert calls(repo) == """
-             xcodegen generate --quiet --spec mobile/ios/project.yml
-             xcodebuild test -project mobile/ios/Stride.xcodeproj -scheme Stride -skipPackagePluginValidation -destination platform=iOS Simulator,name=iPhone 17
-             """
-
-      assert output =~ "Test run with 12 tests"
-    end
-
-    test "takes another destination from IOS_TEST_DESTINATION", %{repo: repo} do
-      env = [{"STUB_XCODE", @passed}, {"IOS_TEST_DESTINATION", "id=ABC"}]
-
-      assert {_, 0} = run_script(repo, "ios_test.sh", env)
-      assert calls(repo) =~ "-destination id=ABC\n"
-    end
-
-    test "fails and names the failure when xcodebuild fails", %{repo: repo} do
-      env = [{"STUB_XCODE", "View.swift:3:1: error: no such type"}, {"STUB_XCODE_EXIT", "65"}]
-
-      assert {output, 1} = run_script(repo, "ios_test.sh", env)
-      assert output =~ "error: no such type"
-    end
-
-    test "fails when no test ran", %{repo: repo} do
-      for log <- ["** TEST SUCCEEDED **", "Test run with 0 tests in 0 suites passed"] do
-        assert {output, 1} = run_script(repo, "ios_test.sh", [{"STUB_XCODE", log}])
-        assert output =~ "ran no Swift Testing tests"
-      end
-    end
-
-    test "fails before the build when the project cannot be generated", %{repo: repo} do
-      assert {_, 1} = run_script(repo, "ios_test.sh", [{"STUB_XCODEGEN_EXIT", "1"}])
-      refute calls(repo) =~ "xcodebuild"
-    end
-  end
-
-  # The repo's real scripts on main, and a task branch checked out from it.
-  # The stub tools sit in bin/, which git ignores.
+  # The repo's real script on main, and a task branch checked out from it.
+  # The stub mix sits in bin/, which git ignores.
   defp task_branch(%{repo: repo}) do
-    for script <- ["ios_elixir_checks.sh", "ios_test.sh"] do
-      copy!(repo, Path.join("test", script))
-    end
-
-    stub_tools!(repo)
+    copy!(repo, "test/ios_elixir_checks.sh")
+    stub_mix!(repo)
     write!(repo, "lib/kept.ex")
-    repo |> Path.join(".gitignore") |> File.write!("bin/\ncalls\n")
+    repo |> Path.join(".gitignore") |> File.write!("bin/\n")
     git!(repo, ["add", "-A"])
-    git!(repo, ["commit", "--quiet", "-m", "scripts"])
+    git!(repo, ["commit", "--quiet", "-m", "script"])
     git!(repo, ["checkout", "--quiet", "-b", "W1"])
     :ok
   end
 
-  defp stub_tools!(repo) do
+  defp stub_mix!(repo) do
     stub!(repo, "mix", """
     echo "mix[$MIX_ENV] $*"
     [ "${STUB_MIX_FAILS:-}" != "$1" ]
     """)
-
-    stub!(repo, "xcodegen", """
-    echo "xcodegen $*" >> calls
-    exit "${STUB_XCODEGEN_EXIT:-0}"
-    """)
-
-    stub!(repo, "xcodebuild", """
-    echo "xcodebuild $*" >> calls
-    printf '%b\\n' "$STUB_XCODE"
-    exit "${STUB_XCODE_EXIT:-0}"
-    """)
   end
 
   defp copy!(repo, file), do: @root |> Path.join(file) |> File.cp!(Path.join(repo, file))
-  defp calls(repo), do: repo |> Path.join("calls") |> File.read!()
 
   defp stub!(repo, name, body) do
     path = Path.join([repo, "bin", name])

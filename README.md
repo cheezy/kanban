@@ -190,27 +190,29 @@ side the apps call is described in [the person API](docs/api/me.md).
   `mobile/android/settings.gradle.kts` exists. Until then it runs only a short
   Linux check that finds no project, so it passes without running the builds.
 
-**Building the iOS app.** From a clean checkout, with no local setting and no
-Apple developer account, generate the project and run the tests on a simulator:
+**Building the iOS app.** From a clean checkout, after `mix deps.get`, with no
+local setting and no Apple developer account, run the tests on a simulator, or
+build the app and start it there:
 
 ```sh
-cd mobile/ios
-xcodegen generate
-xcodebuild test -project Stride.xcodeproj -scheme Stride \
-  -skipPackagePluginValidation \
-  -destination 'platform=iOS Simulator,name=iPhone 17'
+mix ios.test
+mix ios.deploy
 ```
+
+Both generate the Xcode project first. Put `MIX_ENV=test` in front while your
+development server is running. [iOS mix tasks](docs/ios-mix-tasks.md) has their
+options.
 
 The first build downloads the Swift packages that generate the API client, at
 the versions pinned in `mobile/ios/Package.resolved`, so it needs a network.
-`-skipPackagePluginValidation` lets the generator's build plugin run without
-Xcode's one-time prompt; in Xcode itself, choose **Trust & Enable** when asked.
+The tasks let the generator's build plugin run without Xcode's one-time prompt.
 
-Use the name of any iPhone or iPad simulator you have, with its `OS=` if the
-name is not enough. Or open `Stride.xcodeproj` in Xcode and run the `Stride`
-scheme. A build for a device or for the App Store needs a signing team, which is
-not in the repository: choose it in Xcode, or pass `DEVELOPMENT_TEAM=<team id>`
-to `xcodebuild`.
+Use any iPhone or iPad simulator you have with `--simulator "<name or UDID>"`. Or
+run `xcodegen generate` in `mobile/ios`, open `Stride.xcodeproj` in Xcode, choose
+**Trust & Enable** when asked, and run the `Stride` scheme. A build for a device
+or for the App Store needs a signing team, which is not in the repository: choose
+it in Xcode, or set `DEVELOPMENT_TEAM=<team id>` for
+`mix ios.deploy --device "<name>"`.
 
 **Running against a local server.** Start Stride with `mix phx.server` as
 above, on `http://localhost:4000`. What is already true on the server side:

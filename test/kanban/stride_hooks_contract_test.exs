@@ -13,7 +13,7 @@ defmodule Kanban.StrideHooksContractTest do
 
   In iOS mode `.stride.md` is tracked and differs from HEAD, so the iOS set
   has to leave it out of its dirty checks and commits.
-  `test/kanban/ios_hook_scripts_test.exs` tests the two scripts it runs.
+  `test/kanban/ios_hook_scripts_test.exs` tests the script it runs.
   """
   use ExUnit.Case, async: true
 
@@ -179,7 +179,7 @@ defmodule Kanban.StrideHooksContractTest do
       lines = section("after_doing", @ios_dev_md)
       commit = index_of(lines, "git commit")
 
-      assert index_of(lines, "bash test/ios_test.sh") < commit
+      assert index_of(lines, "MIX_ENV=test mix ios.test") < commit
       assert index_of(lines, "bash test/ios_elixir_checks.sh") < commit
     end
 
