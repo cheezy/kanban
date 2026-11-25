@@ -1,21 +1,31 @@
 defmodule Kanban.StrideHooksContractTest do
   @moduledoc """
-  Pins the quality gates in `.stride.md` (W2723).
+  Pins the quality gates in the Stride hook sets: `.stride_dev.md`, the
+  default, and `.ios_dev.md`, the one for iOS work. `./stride_dev.sh` and
+  `./ios_dev.sh` copy one of them over `.stride.md`, so the gates are read
+  from the two sources and `.stride.md` must be one of them (W2723).
 
   `## after_goal` no longer runs `mix precommit`: it runs the alias's legs
   without the suite through `mix do`, and runs the suite only when the tree
   it is about to push was not already tested green by `## after_doing`. So
   the leg list now lives in two places, and this test fails when they
-  drift, or when a gate moves after the commit or the push it guards. It
-  also keeps `.stride_dev.md`, the copy `stride_dev.sh` restores, in step.
+  drift, or when a gate moves after the commit or the push it guards.
+
+  In iOS mode `.stride.md` is tracked and differs from HEAD, so the iOS set
+  has to leave it out of its dirty checks and commits.
+  `test/kanban/ios_hook_scripts_test.exs` tests the two scripts it runs.
   """
   use ExUnit.Case, async: true
 
-  @stride_md Path.expand("../../.stride.md", __DIR__)
-  @stride_dev_md Path.expand("../../.stride_dev.md", __DIR__)
+  import Kanban.HookRepo
+
+  @root Path.expand("../..", __DIR__)
+  @stride_md Path.join(@root, ".stride.md")
+  @stride_dev_md Path.join(@root, ".stride_dev.md")
+  @ios_dev_md Path.join(@root, ".ios_dev.md")
   @suite_leg "test --warnings-as-errors"
 
-  defp section(name, file \\ @stride_md) do
+  defp section(name, file \\ @stride_dev_md) do
     [_, rest] = file |> File.read!() |> String.split("## #{name}\n", parts: 2)
     [_, body] = String.split(rest, "```bash\n", parts: 2)
     [body, _] = String.split(body, "```", parts: 2)
@@ -83,29 +93,10 @@ defmodule Kanban.StrideHooksContractTest do
   end
 
   describe "the commit and green-tree lines, run in a throwaway git repo" do
-    # Runs the real lines from .stride.md against a stub
+    # Runs the real lines from .stride_dev.md against a stub
     # test/partitioned_test.sh, so the skip condition itself is pinned, not
     # just its wording.
-    setup do
-      repo = Path.join(System.tmp_dir!(), "stride-hooks-#{System.unique_integer([:positive])}")
-      repo |> Path.join("test") |> File.mkdir_p!()
-      on_exit(fn -> File.rm_rf!(repo) end)
-
-      stub = """
-      echo STUB_SUITE_RAN
-      exit "${STUB_EXIT:-0}"
-      """
-
-      repo |> Path.join("test/partitioned_test.sh") |> File.write!(stub)
-
-      git!(repo, ["init", "--quiet"])
-      git!(repo, ["config", "user.name", "t"])
-      git!(repo, ["config", "user.email", "t@t"])
-      git!(repo, ["add", "-A"])
-      git!(repo, ["commit", "--quiet", "-m", "init"])
-
-      %{repo: repo}
-    end
+    setup :throwaway_repo
 
     test "after_doing records the tree only when the working tree is clean", %{repo: repo} do
       assert {_, 0} = run_line(repo, "after_doing")
@@ -183,25 +174,135 @@ defmodule Kanban.StrideHooksContractTest do
     end
   end
 
+  describe "the iOS hook set" do
+    test "runs the iOS tests and the Elixir checks before the task commit" do
+      lines = section("after_doing", @ios_dev_md)
+      commit = index_of(lines, "git commit")
+
+      assert index_of(lines, "bash test/ios_test.sh") < commit
+      assert index_of(lines, "bash test/ios_elixir_checks.sh") < commit
+    end
+
+    test "runs the default set's static legs and suite check before the push" do
+      lines = section("after_goal", @ios_dev_md)
+      legs = Enum.at(lines, index_of(lines, "mix do "))
+      suite = Enum.at(lines, index_of(lines, "stride-green-tree"))
+
+      assert legs in section("after_goal")
+      assert suite =~ "else bash test/partitioned_test.sh --warnings-as-errors || {"
+      assert List.last(lines) == "git push origin main"
+      assert index_of(lines, "git rebase") < index_of(lines, "mix do ")
+    end
+
+    test "keeps the dependency and security checks before a claim" do
+      gates = Enum.filter(section("before_doing"), &String.starts_with?(&1, "mix "))
+
+      assert length(gates) == 5
+      assert Enum.filter(section("before_doing", @ios_dev_md), &(&1 in gates)) == gates
+    end
+
+    test "merges and reviews as the default set does" do
+      for name <- ["before_review", "after_review"] do
+        assert section(name, @ios_dev_md) == section(name)
+      end
+    end
+
+    test "keeps the copied hooks through a pull or a rebase" do
+      for {name, rebase} <- [{"before_doing", "git pull"}, {"after_goal", "git rebase"}] do
+        lines = section(name, @ios_dev_md)
+        index = index_of(lines, rebase)
+
+        assert Enum.at(lines, index) =~ "--autostash"
+        assert Enum.at(lines, index + 1) == "git reset --quiet -- .stride.md && ./ios_dev.sh"
+      end
+    end
+  end
+
+  describe "the iOS hook set's lines, run in a throwaway git repo" do
+    setup :throwaway_repo
+
+    setup %{repo: repo} do
+      # As ./ios_dev.sh leaves it: tracked, and different from HEAD.
+      repo |> Path.join(".stride.md") |> File.write!("the iOS set\n")
+      :ok
+    end
+
+    test "the claim check passes when only .stride.md changed", %{repo: repo} do
+      assert {_, 0} = run_ios(repo, "before_doing", "Working tree is dirty")
+    end
+
+    test "the claim check stops on any other change, staged or not", %{repo: repo} do
+      repo |> Path.join("test/partitioned_test.sh") |> File.write!("exit 0\n")
+      assert {output, 1} = run_ios(repo, "before_doing", "Working tree is dirty")
+      assert output =~ "dirty"
+
+      git!(repo, ["add", "test/partitioned_test.sh"])
+      assert {_, 1} = run_ios(repo, "before_doing", "Working tree is dirty")
+    end
+
+    test "the task commit takes new files and leaves .stride.md out", %{repo: repo} do
+      repo |> Path.join("View.swift") |> File.write!("x")
+      env = [{"TASK_IDENTIFIER", "W1"}, {"TASK_TITLE", "t"}]
+
+      assert {_, 0} = run_ios(repo, "after_doing", "git commit", env)
+      assert git!(repo, ["show", "--name-only", "--format=%s"]) =~ "Completed task W1: t"
+
+      assert git!(repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"]) ==
+               "View.swift\n"
+
+      assert git!(repo, ["status", "--porcelain"]) == " M .stride.md\n"
+    end
+
+    test "the task commit is skipped when only .stride.md changed", %{repo: repo} do
+      assert {_, 0} = run_ios(repo, "after_doing", "git commit")
+      assert git!(repo, ["rev-list", "--count", "HEAD"]) == "1\n"
+    end
+
+    test "after_goal runs the suite before the push, with .stride.md changed", %{repo: repo} do
+      assert {output, 0} = run_ios(repo, "after_goal", "stride-green-tree")
+      assert output =~ "STUB_SUITE_RAN"
+
+      assert {output, 1} = run_ios(repo, "after_goal", "stride-green-tree", [{"STUB_EXIT", "1"}])
+      assert output =~ "not pushing"
+    end
+
+    test "after_goal refuses to push any other change", %{repo: repo} do
+      repo |> Path.join("untracked.txt") |> File.write!("x")
+
+      assert {output, 1} = run_ios(repo, "after_goal", "stride-green-tree")
+      assert output =~ "not pushing"
+      refute output =~ "STUB_SUITE_RAN"
+    end
+
+    test "./ios_dev.sh and ./stride_dev.sh copy their set over .stride.md", %{repo: repo} do
+      for {script, set} <- [{"ios_dev.sh", ".ios_dev.md"}, {"stride_dev.sh", ".stride_dev.md"}] do
+        for file <- [script, set], do: File.cp!(Path.join(@root, file), Path.join(repo, file))
+
+        assert {"", 0} = run_bash(repo, ["-c", "./#{script}"], [])
+        assert File.read!(Path.join(repo, ".stride.md")) == File.read!(Path.join(@root, set))
+      end
+    end
+  end
+
   defp run_line(repo, name, env \\ [], fragment \\ "stride-green-tree") do
-    lines = section(name)
-    line = Enum.at(lines, index_of(lines, fragment))
-    System.cmd("bash", ["-c", line], cd: repo, env: env, stderr_to_stdout: true)
+    run_bash(repo, ["-c", line(name, fragment, @stride_dev_md)], env)
+  end
+
+  defp run_ios(repo, name, fragment, env \\ []) do
+    run_bash(repo, ["-c", line(name, fragment, @ios_dev_md)], env)
+  end
+
+  defp line(name, fragment, file) do
+    lines = section(name, file)
+    Enum.at(lines, index_of(lines, fragment))
   end
 
   defp marker(repo), do: Path.join([repo, ".git", "stride-green-tree"])
 
-  defp git!(repo, args) do
-    {output, 0} = System.cmd("git", args, cd: repo, stderr_to_stdout: true)
-    output
-  end
-
-  test ".stride_dev.md carries the same after_doing and after_goal as .stride.md" do
-    # stride_dev.sh copies .stride_dev.md over .stride.md, so a gate that is
+  test ".stride.md is the Stride hook set or the iOS one" do
+    # ./stride_dev.sh and ./ios_dev.sh copy over .stride.md, so a gate that is
     # only in .stride.md is lost the next time the mode is switched.
-    for name <- ["after_doing", "after_goal"] do
-      assert section(name, @stride_dev_md) == section(name), "## #{name} differs"
-    end
+    assert File.read!(@stride_md) in [File.read!(@stride_dev_md), File.read!(@ios_dev_md)]
   end
 
   test "the precommit alias still carries the suite leg this file splits out" do

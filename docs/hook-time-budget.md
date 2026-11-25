@@ -254,13 +254,69 @@ Exploratory sessions measured the layout away from an idle, warm machine:
   render timing out right after a cold build. The gate fails, which is the safe
   outcome, and the failing partition's full output is printed.
 
+## The iOS hook set
+
+Work on the native iOS app uses its own hooks, in [`.ios_dev.md`](../.ios_dev.md).
+Switch to them, and back to the Stride set, from the repository root:
+
+```bash
+./ios_dev.sh
+```
+
+```bash
+./stride_dev.sh
+```
+
+Each script copies its set over `.stride.md`, as `./plugin_dev.sh` does for
+plugin work. `.stride.md` is tracked, so in iOS mode it shows as modified. Leave
+it modified: the iOS lines exclude it from their clean-tree checks and from the
+task commit, and they keep it through the pull and the rebase with `--autostash`.
+After each of those they run `./ios_dev.sh` again, which also picks up a new
+`.ios_dev.md`. Don't commit `.stride.md` in this mode.
+
+What differs from the Stride set:
+
+| Hook | Difference |
+|---|---|
+| `before_doing` | Ignores a modified `.stride.md`. The dependency and security checks are the same |
+| `after_doing` | Runs `test/ios_test.sh`, then `test/ios_elixir_checks.sh`, then commits everything except `.stride.md`. It writes no green-tree marker |
+| `before_review`, `after_review` | None |
+| `after_goal` | Ignores a modified `.stride.md`. The `mix do` legs, the dirty-tree check, the suite check and the push are the same. It runs no iOS tests; CI runs them after the push |
+
+[`test/ios_test.sh`](../test/ios_test.sh) generates the project from
+`mobile/ios/project.yml` and runs the whole `Stride` scheme on an iPhone 17
+simulator. Set `IOS_TEST_DESTINATION` to use another one. It fails when
+`xcodebuild` fails and also when no Swift Testing test ran. It needs a Mac with
+Xcode and XcodeGen.
+
+[`test/ios_elixir_checks.sh`](../test/ios_elixir_checks.sh) looks at everything
+the task branch changed since it left `main`:
+
+- When only `mobile/` and `.github/workflows/ios.yml` changed, it runs the
+  ExUnit tests that read those files, such as the fixture and contract checks.
+- When anything else changed, or the branch's base cannot be found, it runs the
+  partitioned suite, `format --check-formatted`, `credo --strict` and
+  `sobelow --config`.
+
+`after_doing` writes no green-tree marker, because a task that changed only the
+iOS app did not run the whole suite. So `after_goal` runs the suite before the
+push, unless an older marker from the Stride set names exactly the tree being
+pushed. That is the fallback cost given above, about 181 s to 194 s.
+
+Times on one 8-core machine, one run each: `test/ios_test.sh` took 92 s. A task
+that also changes Elixir code adds the Stride set's `after_doing`, measured at
+150.5 s above and at 253 s on W2782, so the two together can pass 290 s. They
+fit the plugin's 600 s default.
+
 ## Keeping it in shape
 
 - `.stride_dev.md` is the Stride-mode copy of `.stride.md` that
   `./stride_dev.sh` copies back over it. Make every hook change in both
   files, and keep their `after_doing` and `after_goal` sections identical. The
-  contract test below checks this. `.plugin_dev.md`, the plugin-mode variant
-  with empty hooks, is deliberately different.
+  contract test below checks this. `.ios_dev.md` keeps the same `mix do` line,
+  dependency checks and `before_review`, so change those there too.
+  `.plugin_dev.md`, the plugin-mode variant with empty hooks, is deliberately
+  different.
 - [`test/kanban/stride_hooks_contract_test.exs`](../test/kanban/stride_hooks_contract_test.exs)
   fails when the `mix do` legs drift from the `precommit` alias, or when a gate
   moves after the commit or the push it guards. It also runs the commit and
@@ -268,6 +324,10 @@ Exploratory sessions measured the layout away from an idle, warm machine:
   condition and the dirty-tree refusal are tested, not just their wording. When you change the alias,
   change the `mix do` line in `after_goal` and the list in the development
   guidelines skill in the same commit.
+- [`test/kanban/ios_hook_scripts_test.exs`](../test/kanban/ios_hook_scripts_test.exs)
+  runs the two iOS scripts with stub tools. It fails when a test names a
+  `mobile/` path or `ios.yml` and is missing from the list in
+  `test/ios_elixir_checks.sh`.
 - To measure again, check that no other `mix test` is running, then time each
   command on its own, three times, and compare the median with 70% of the
   budget in force.
