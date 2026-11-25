@@ -1,0 +1,187 @@
+import Foundation
+import Security
+
+/// Keeps the device's token pair in the Keychain access group the app and its
+/// extensions share, and nowhere else.
+///
+/// The pair is one Keychain item, so a reader sees either the old pair or the new
+/// one. Nothing is cached, so a process reads what another one last wrote.
+///
+/// Only the app writes, through one store: an extension calls nothing but `read`
+/// and `signedIn`, and two writers could overwrite each other's pair. An extension
+/// can run before the app does, and until the app has run once in this install
+/// every read is nil.
+public actor AuthStore {
+    static let service = "StrideDeviceTokens"
+    static let account = "token-pair"
+
+    private let accessGroup: String
+    private let service: String
+    private let marker: InstallMarker
+    private let keychain: any KeychainClient
+    private var observers: [UUID: AsyncStream<Bool>.Continuation] = [:]
+
+    /// Returns nil when the running target is not entitled to the app group.
+    public init?(
+        group: AppGroup,
+        resolve: @Sendable (String) -> URL? = AppGroup.systemContainerURL
+    ) {
+        guard let container = group.containerURL(resolve: resolve) else { return nil }
+
+        self.init(
+            accessGroup: group.keychainAccessGroup,
+            marker: InstallMarker(container: container),
+            keychain: SystemKeychainClient()
+        )
+    }
+
+    init(
+        accessGroup: String,
+        service: String = AuthStore.service,
+        marker: InstallMarker,
+        keychain: any KeychainClient
+    ) {
+        self.accessGroup = accessGroup
+        self.service = service
+        self.marker = marker
+        self.keychain = keychain
+    }
+
+    deinit {
+        for observer in observers.values {
+            observer.finish()
+        }
+    }
+
+    /// The stored pair, or nil when the device is signed out.
+    public func read() throws(AuthStoreError) -> TokenPair? {
+        guard marker.exists else { return nil }
+
+        let (status, data) = keychain.copyData(matching: itemQuery)
+        if status == errSecItemNotFound { return nil }
+        try check(status)
+
+        guard
+            let data,
+            let stored = try? JSONDecoder().decode(StoredTokenPair.self, from: data)
+        else { throw .invalidPair }
+
+        return stored.pair
+    }
+
+    /// Stores the pair of a new sign-in, in place of any pair already there.
+    public func save(_ pair: TokenPair) throws(AuthStoreError) {
+        try clearItemsFromPreviousInstall()
+
+        let attributes = try attributes(of: pair)
+        let status = keychain.add(itemQuery.merging(attributes) { $1 })
+        if status == errSecDuplicateItem {
+            try check(keychain.update(itemQuery, to: attributes))
+        } else {
+            try check(status)
+        }
+
+        publish(true)
+    }
+
+    /// Replaces the pair that was refreshed with the pair the server answered.
+    ///
+    /// Throws `superseded`, and stores nothing, when `previous` is no longer the
+    /// stored pair. That keeps a refresh that ends after a sign-out from signing
+    /// the device back in.
+    public func rotate(from previous: TokenPair, to next: TokenPair) throws(AuthStoreError) {
+        guard try read() == previous else { throw .superseded }
+
+        // An update, never an add, so it cannot bring back an item that was
+        // cleared since the read.
+        let status = keychain.update(itemQuery, to: try attributes(of: next))
+        if status == errSecItemNotFound { throw .superseded }
+        try check(status)
+    }
+
+    /// Removes every stored item, which signs the device out.
+    public func clear() throws(AuthStoreError) {
+        try deleteEveryItem()
+        publish(false)
+    }
+
+    /// Whether the device is signed in: the state now, then the state after each
+    /// `save` and `clear` made through this store.
+    public func signedIn() throws(AuthStoreError) -> AsyncStream<Bool> {
+        let isSignedIn = try read() != nil
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: Bool.self,
+            bufferingPolicy: .bufferingNewest(1)
+        )
+        let id = UUID()
+
+        continuation.onTermination = { [weak self] _ in
+            Task { await self?.removeObserver(id) }
+        }
+        observers[id] = continuation
+        continuation.yield(isSignedIn)
+
+        return stream
+    }
+
+    /// Removes what a previous install left in the Keychain. The app calls it at
+    /// launch; it does nothing after the first time.
+    ///
+    /// The marker is written last, so a failure leaves it missing: reads stay nil
+    /// and the next launch or sign-in tries again.
+    public func clearItemsFromPreviousInstall() throws(AuthStoreError) {
+        guard marker.exists == false else { return }
+
+        try deleteEveryItem()
+        do {
+            try marker.create()
+        } catch {
+            throw .installNotMarked
+        }
+    }
+
+    var observerCount: Int { observers.count }
+
+    private var serviceQuery: [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccessGroup as String: accessGroup
+        ]
+    }
+
+    private var itemQuery: [String: Any] {
+        serviceQuery.merging([kSecAttrAccount as String: Self.account]) { $1 }
+    }
+
+    private func attributes(of pair: TokenPair) throws(AuthStoreError) -> [String: Any] {
+        guard let data = try? JSONEncoder().encode(StoredTokenPair(pair)) else {
+            throw .invalidPair
+        }
+
+        return [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ]
+    }
+
+    private func deleteEveryItem() throws(AuthStoreError) {
+        let status = keychain.delete(serviceQuery)
+        if status == errSecItemNotFound { return }
+        try check(status)
+    }
+
+    private func check(_ status: OSStatus) throws(AuthStoreError) {
+        guard status == errSecSuccess else { throw .keychain(status) }
+    }
+
+    private func publish(_ isSignedIn: Bool) {
+        for observer in observers.values {
+            observer.yield(isSignedIn)
+        }
+    }
+
+    private func removeObserver(_ id: UUID) {
+        observers[id] = nil
+    }
+}
