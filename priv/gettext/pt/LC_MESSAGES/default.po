@@ -16031,11 +16031,6 @@ msgstr "O logotipo do Stride ao lado das palavras: Kanban para pessoas e agentes
 msgid "$%{amount} CAD"
 msgstr "CA$ %{amount}"
 
-#: lib/kanban_web/components/marketing_components.ex
-#, elixir-autogen, elixir-format
-msgid "Audit log streaming and signed exports"
-msgstr "Streaming do log de auditoria e exportações assinadas"
-
 #: lib/kanban_web/live/goal_live/live_updates.ex
 #, elixir-autogen, elixir-format
 msgid "This goal was deleted."
@@ -16926,3 +16921,8 @@ msgid "Cannot delete this column: %{count} task in another column depends on tas
 msgid_plural "Cannot delete this column: %{count} tasks in other columns depend on tasks in it. Remove those dependencies first."
 msgstr[0] "Não é possível excluir esta coluna: %{count} tarefa de outra coluna depende das tarefas dela. Remova essas dependências primeiro."
 msgstr[1] "Não é possível excluir esta coluna: %{count} tarefas de outras colunas dependem das tarefas dela. Remova essas dependências primeiro."
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Backend for the upcoming mobile apps"
+msgstr "Backend dos próximos aplicativos móveis"

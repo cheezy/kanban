@@ -410,7 +410,7 @@ defmodule KanbanWeb.MarketingComponents do
           style="background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
         >
           <.icon name="hero-sparkles" class="w-2.5 h-2.5" />
-          v3.2.0 · {gettext("Audit log streaming and signed exports")}
+          v3.3.0 · {gettext("Backend for the upcoming mobile apps")}
         </span>
         <.link
           navigate={~p"/changelog"}

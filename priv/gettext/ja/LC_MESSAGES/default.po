@@ -15962,11 +15962,6 @@ msgstr "Stride のロゴと「人と AI エージェントのためのカンバ�
 msgid "$%{amount} CAD"
 msgstr "%{amount}カナダドル"
 
-#: lib/kanban_web/components/marketing_components.ex
-#, elixir-autogen, elixir-format
-msgid "Audit log streaming and signed exports"
-msgstr "監査ログのストリーミングと署名付きエクスポート"
-
 #: lib/kanban_web/live/goal_live/live_updates.ex
 #, elixir-autogen, elixir-format
 msgid "This goal was deleted."
@@ -16856,3 +16851,8 @@ msgstr "列を削除できません: 他の列のタスクがこの列のタス�
 msgid "Cannot delete this column: %{count} task in another column depends on tasks in it. Remove those dependencies first."
 msgid_plural "Cannot delete this column: %{count} tasks in other columns depend on tasks in it. Remove those dependencies first."
 msgstr[0] "この列を削除できません: 他の列のタスク %{count} 件がこの列のタスクに依存しています。先にその依存関係を削除してください。"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Backend for the upcoming mobile apps"
+msgstr "今後登場するモバイルアプリのバックエンド"

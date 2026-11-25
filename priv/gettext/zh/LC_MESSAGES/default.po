@@ -15965,11 +15965,6 @@ msgstr "Stride 标志，旁边写着：面向人类和 AI 智能体的看板"
 msgid "$%{amount} CAD"
 msgstr "%{amount} 加元"
 
-#: lib/kanban_web/components/marketing_components.ex
-#, elixir-autogen, elixir-format
-msgid "Audit log streaming and signed exports"
-msgstr "审计日志流式传输和签名导出"
-
 #: lib/kanban_web/live/goal_live/live_updates.ex
 #, elixir-autogen, elixir-format
 msgid "This goal was deleted."
@@ -16859,3 +16854,8 @@ msgstr "无法删除列：其他列中有任务依赖此列中的任务。请先
 msgid "Cannot delete this column: %{count} task in another column depends on tasks in it. Remove those dependencies first."
 msgid_plural "Cannot delete this column: %{count} tasks in other columns depend on tasks in it. Remove those dependencies first."
 msgstr[0] "无法删除此列：其他列中有 %{count} 个任务依赖此列中的任务。请先移除这些依赖。"
+
+#: lib/kanban_web/components/marketing_components.ex
+#, elixir-autogen, elixir-format
+msgid "Backend for the upcoming mobile apps"
+msgstr "即将推出的移动应用的后端"

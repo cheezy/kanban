@@ -3,7 +3,7 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
-          [Unreleased]
+          [3.3.0] - 2026-11-25
         </h2>
 
         <div class="mb-8">
@@ -18,6 +18,20 @@
             class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
             style="color: var(--ink-2);"
           >
+            <li>
+              <strong>A live demo board anyone can watch.</strong> The new
+              public page <code>/demo</code> shows a sample board on which
+              AI agents claim tasks, run their hooks and move cards from
+              Ready to Done, with a feed of what each agent just did,
+              including a hook that fails and is fixed. A sample goal moves
+              with its tasks, and the goals strip above the columns fills as
+              its children are done. When the script ends the replay starts
+              again. It needs no account, nothing on it can be changed, and
+              it never touches real boards or tasks. It has the marketing
+              header and footer, like the home page, and looks the same
+              signed in or out. The home page links it from a new band under
+              the hero. See <code>docs/demo-board.md</code>.
+            </li>
             <li>
               <strong>Turn the app preview on from an admin page.</strong>
               Site admins can now open <code>/admin/feature-flags</code> to
@@ -173,6 +187,57 @@
               stored with the other metrics; see
               <code>docs/telemetry.md</code>.
             </li>
+            <li>
+              <strong>Guides and API reference on the site.</strong> The new
+              page <code>/docs</code> publishes five agent guides,
+              <em>Getting Started with AI</em>, <em>AI Workflow</em>,
+              <em>MCP</em>, <em>Authentication</em> and <em>Agent Hook
+              Execution</em>, with the API index and the agent endpoint
+              pages. Resources, the footer and the mobile menu link it. See
+              <code>docs/docs-site.md</code>.
+            </li>
+            <li>
+              <strong>A page for each agent runtime.</strong>
+              <code>/integrations</code> lists the six coding agents Stride
+              has a plugin for, Claude Code, Codex CLI, Gemini CLI, GitHub
+              Copilot, OpenCode and Pi. Each has its own page with what the
+              plugin adds, its install commands and a first task. The footer
+              links the list. See <code>docs/integrations-pages.md</code>.
+            </li>
+            <li>
+              <strong>A feed of releases.</strong>
+              <code>/changelog/feed.xml</code> is an Atom feed of Stride's
+              releases, for a feed reader.
+            </li>
+            <li>
+              <strong>A signup for release announcements.</strong> The
+              changelog page has a form that takes an email address. Nothing
+              is added to the list until you confirm the emailed link, which
+              works for 7 days, and a signup that is not confirmed is
+              deleted. Every email carries an unsubscribe link.
+            </li>
+            <li>
+              <strong>Better search results and link previews.</strong>
+              Public pages have their own titles and descriptions, in all
+              seven languages except for the English guides, a preview
+              image when a link is shared, structured data, a
+              <code>sitemap.xml</code>, a
+              <code>robots.txt</code> that allows crawling only on the host
+              it is turned on for, and an <code>/llms.txt</code> summary for
+              AI assistants. Signed-in pages, and pages with a token in
+              their address, ask search engines to leave them out. See
+              <code>docs/seo.md</code>.
+            </li>
+            <li>
+              <strong>Cookie-free visitor counts, for operators.</strong> An
+              operator can connect a Umami server to count visits to public
+              pages. It is off unless <code>UMAMI_SCRIPT_URL</code>,
+              <code>UMAMI_WEBSITE_ID</code> and <code>UMAMI_HOST_URL</code>
+              are all set, sets no cookie, identifies nobody, and leaves
+              query strings out of what is recorded. Signed-in pages and
+              pages with a token in their path don't load it. See
+              <code>docs/analytics.md</code>.
+            </li>
           </ul>
         </div>
 
@@ -188,6 +253,25 @@
             class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
             style="color: var(--ink-2);"
           >
+            <li>
+              <strong>Task comment times now end in <code>Z</code>.</strong>
+              A task comment's <code>inserted_at</code> and
+              <code>updated_at</code> were sent with no offset, such as
+              <code>2026-10-07T15:40:52</code>, while its
+              <code>edited_at</code> already ended in <code>Z</code>, so a
+              client reading them as ISO 8601 date-times could reject them
+              or read them as local time. <code>GET</code> and <code>POST
+              /api/tasks/:id/comments</code>, the comments on <code>GET
+              /api/me/tasks/:id</code> and <code>POST
+              /api/me/tasks/:id/comments</code>, and the MCP
+              <code>stride_add_comment</code> tool now send both in UTC with
+              a <code>Z</code>, such as <code>2026-10-07T15:40:52Z</code>,
+              and the API contract marks them as date-times. The stored
+              values are unchanged, so a client that strips the
+              <code>Z</code> reads the same time as before. A task's own
+              <code>inserted_at</code> and <code>updated_at</code> are not
+              changed. See <code>docs/api/get_tasks_id_comments.md</code>.
+            </li>
             <li>
               <strong>The push settings show only when they can
               matter.</strong> Pushes reach only the Stride app, which hasn't
@@ -232,6 +316,79 @@
               hides, what it leaves alone, and how it is opened up and later
               removed. See <code>docs/feature-flags.md</code>.
             </li>
+            <li>
+              <strong>Dates and times show in your time zone and
+              language.</strong> Tasks, boards, goals, the archive, the
+              review queue, agents, targets, metrics and their PDF and Excel
+              exports, settings, the Organization console and the admin
+              pages show dates and times in your own time zone, in your
+              language's format, instead of UTC with English month names.
+              See <code>docs/dates-and-times.md</code>.
+            </li>
+            <li>
+              <strong>A <code>401</code> names the sign-in scheme.</strong>
+              A <code>401</code> from the agent API, the Stride app's API or
+              MCP now carries a <code>www-authenticate</code> header:
+              <code>Bearer</code> when no token was sent, and <code>Bearer
+              error="invalid_token"</code> when one was refused. The
+              response bodies are unchanged. See
+              <code>docs/api/README.md</code>.
+            </li>
+            <li>
+              <strong>Request-changes notes are limited to 10,000
+              characters.</strong> The web and the Stride app's API refuse
+              longer notes and say so; they are never cut short. A workspace
+              import with longer notes is refused too. Longer notes already
+              stored are kept, and the task can still be edited. See
+              <code>docs/api/me.md</code>.
+            </li>
+            <li>
+              <strong>A board API token needs an AI Optimized
+              board.</strong> A token can be created only on an AI Optimized
+              board, and a board's tokens stop working, with a
+              <code>401</code>, when the board is switched to another mode.
+              They are not revoked and work again when it is switched back,
+              the rule workspace tokens already follow. See
+              <code>docs/AUTHENTICATION.md</code>.
+            </li>
+            <li>
+              <strong>A young goal's throughput chart covers only its own
+              life.</strong> The chart in the goal page's sidebar showed 12
+              bars even for a goal younger than that. It now shows 2 to 12,
+              as many as the goal's age calls for.
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Security
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Error pages for a refused form carry the security
+              headers.</strong> A browser form refused for a missing or
+              foreign CSRF token got a <code>403</code> without the Content
+              Security Policy and the other headers that normal pages carry.
+              It now gets them. See <code>docs/error-pages.md</code>.
+            </li>
+            <li>
+              <strong>A new API token is kept out of crash reports.</strong>
+              The value shown once when a board or workspace token is
+              created is now hidden in logs and crash reports.
+            </li>
+            <li>
+              <code>db_connection</code> is upgraded to 2.10.3 for
+              EEF-CVE-2026-133555 and <code>plug</code> to 1.20.4 for
+              EEF-CVE-2026-120287.
+            </li>
           </ul>
         </div>
 
@@ -247,6 +404,40 @@
             class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
             style="color: var(--ink-2);"
           >
+            <li>
+              <strong>A <code>HEAD</code> on the board archive export is no
+              longer counted as an export.</strong> A <code>HEAD</code> on a
+              board's archive export read every archived task, built the
+              whole CSV, was counted in the export metrics and then had its
+              body dropped. It now gets the same status and headers with no
+              body, builds nothing and is not counted, and it is refused
+              exactly as a <code>GET</code> would be. A <code>GET</code> is
+              unchanged. See <code>docs/telemetry.md</code>.
+            </li>
+            <li>
+              <strong>A <code>HEAD</code> on the metrics exports is no
+              longer counted as an export.</strong> A <code>HEAD</code> on a
+              board's metrics export or on the workspace metrics export
+              built the whole PDF or workbook, was counted in the export
+              metrics and then had its body dropped. It now gets the same
+              status and headers with no body, builds nothing and is not
+              counted, and it is refused exactly as a <code>GET</code> would
+              be. A <code>GET</code> on both is unchanged. See
+              <code>docs/telemetry.md</code>.
+            </li>
+            <li>
+              <strong>A <code>HEAD</code> on the audit log export no longer
+              records an export.</strong> A <code>HEAD</code> on the
+              site-admin audit log export got the download's headers and no
+              body, as it should, but it also read the whole filtered audit
+              log, wrote an <code>audit_log_exported</code> row and was
+              counted in the export metrics, so the audit log recorded an
+              export that never happened. It now gets the headers alone:
+              nothing is read, recorded or counted. A <code>HEAD</code> on a
+              workspace export download is no longer counted as a download
+              in the export metrics either. A <code>GET</code> on both is
+              unchanged. See <code>docs/telemetry.md</code>.
+            </li>
             <li>
               <strong>A column whose tasks others depend on can't be
               deleted.</strong> Deleting a column deleted its tasks even when
@@ -314,6 +505,62 @@
               the idle-agent counts on the Now screen and the Boards tab. An
               archived task is still work the agent did, so it still counts
               toward the agent's completed counts and last activity.
+            </li>
+            <li>
+              <strong>The goal page updates live.</strong> A change to a
+              goal or its child tasks now shows on an open goal page without
+              a reload, and deleting the goal takes its viewers to the
+              board.
+            </li>
+            <li>
+              <strong>Review wait is measured from the review
+              request.</strong> The metrics now measure how long a task
+              waits for review from when review was requested to when it was
+              reviewed. A task with no request time is left out instead of
+              counted.
+            </li>
+            <li>
+              <strong>A failed metrics PDF says so.</strong> When the PDF of
+              a metrics page can't be printed, you are taken back to the
+              page with a message that the export failed, instead of an
+              error page, and the report's content stays out of the log.
+            </li>
+            <li>
+              <strong>A webhook secret and a new API token are forgotten
+              when you leave.</strong> A webhook's secret could still be
+              shown if the Integrations window was closed and reopened at
+              once, and a new API token could still be shown after leaving
+              the API tokens view and coming back. Both are now cleared. A
+              malformed token name no longer crashes either token page.
+            </li>
+            <li>
+              <strong>Creating a task on a board with no columns answers
+              <code>404</code>.</strong> <code>POST /api/tasks</code> and
+              <code>POST /api/tasks/batch</code> crashed on such a board.
+              They now answer <code>column_not_found</code> and create
+              nothing. See <code>docs/api/post_tasks.md</code>.
+            </li>
+            <li>
+              <strong>A workspace import converts times with an offset to
+              UTC.</strong> A created or updated time such as
+              <code>2026-10-07T15:40:52+02:00</code> was stored as if it
+              were UTC. It is now converted. See
+              <code>docs/workspace-export.md</code>.
+            </li>
+            <li>
+              <strong>The audit streaming form keeps the secrets you typed
+              after a failed save.</strong> They no longer have to be typed
+              again when another field is refused.
+            </li>
+            <li>
+              <strong>Request-changes notes keep a leading blank
+              line</strong> when the review page shows them again.
+            </li>
+            <li>
+              <strong>Easier to see:</strong> checkboxes have a 3:1 border,
+              the labels on success badges have more contrast, and links
+              inside text on the changelog and integration pages are
+              underlined.
             </li>
           </ul>
         </div>
