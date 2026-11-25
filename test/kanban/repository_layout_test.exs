@@ -157,6 +157,18 @@ defmodule Kanban.RepositoryLayoutTest do
       end
     end
 
+    # The API client, sign-in storage and cache are tested in the StrideKit
+    # package, so leaving its target out would let them break unseen.
+    test "ios.yml runs the tests of the app and of the StrideKit package" do
+      [step] =
+        ~r/- name: Swift Testing\n.*?(?=\n      - name: |\z)/s
+        |> Regex.run(read!(".github/workflows/ios.yml"))
+
+      for target <- ["StrideTests", "StrideKitTests"] do
+        assert step =~ ~r/-only-testing:#{target}( |$)/m, "ios.yml does not run #{target}"
+      end
+    end
+
     for {file, app, project} <- [
           {"ios.yml", "mobile/ios", "mobile/ios/project.yml"},
           {"android.yml", "mobile/android", "mobile/android/settings.gradle.kts"}

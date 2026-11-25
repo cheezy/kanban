@@ -230,9 +230,15 @@ Firebase project and the APNs sandbox.
 
 ### Which APNs endpoint a device uses
 
-APNs has a sandbox endpoint for development and TestFlight builds and a
-production endpoint for App Store builds. Each iOS device records which one
-its token belongs to in `push_environment`. With APNs configured, Stride runs
+APNs has two endpoints, and the way a build is signed decides which one its
+device token belongs to. A build signed for development, such as one run from
+Xcode, uses the sandbox. A build signed for distribution uses production, and
+that includes TestFlight builds as well as App Store ones. A token sent to the
+wrong endpoint is refused (`:bad_device_token`), so the app must report the
+environment of the build it is running, not whether it is a beta.
+
+Each iOS device records its environment in `push_environment`: `sandbox` or
+`production`. With APNs configured, Stride runs
 one connection to each endpoint: `Kanban.Push.APNs.SandboxDispatcher` and
 `Kanban.Push.APNs.ProductionDispatcher`. It sends each push through the one
 that matches the device. One `.p8` key works for both endpoints.
