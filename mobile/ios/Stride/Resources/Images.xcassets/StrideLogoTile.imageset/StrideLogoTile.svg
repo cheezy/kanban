@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <defs>
+    <linearGradient id="stroke" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f1f5f9"/>
+      <stop offset="1" stop-color="#cbd5e1"/>
+    </linearGradient>
+  </defs>
+  <rect width="72" height="72" rx="18" fill="#131419"/>
+  <g transform="translate(10 10) scale(0.26)">
+    <path d="M 120 60 Q 140 60, 140 75 Q 140 85, 125 90 L 85 100 Q 70 105, 70 120 Q 70 135, 90 135 L 120 135" stroke="url(#stroke)" stroke-width="20" fill="none" stroke-linecap="round"/>
+    <rect x="50" y="65" width="30" height="8" fill="#06b6d4" rx="2" opacity="0.8"/>
+    <rect x="40" y="80" width="40" height="8" fill="#06b6d4" rx="2" opacity="0.6"/>
+    <rect x="45" y="95" width="25" height="8" fill="#06b6d4" rx="2" opacity="0.4"/>
+    <rect x="110" y="110" width="30" height="8" fill="#06b6d4" rx="2" opacity="0.8"/>
+    <rect x="120" y="125" width="35" height="8" fill="#06b6d4" rx="2" opacity="0.6"/>
+    <rect x="125" y="140" width="25" height="8" fill="#06b6d4" rx="2" opacity="0.4"/>
+  </g>
+</svg>

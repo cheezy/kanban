@@ -159,6 +159,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Comparison Pages](compare-pages.md) — The `/compare` pages that set Stride against GitHub Projects, Linear and Jira, the sourcing rule every claim about another product follows, and how to refresh or add a comparison.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.
 - [iOS Mix Tasks](ios-mix-tasks.md) — How `mix ios.test` and `mix ios.deploy` test the native iOS app and start it on a simulator or a connected device.
+- [iOS Sign-in](ios-sign-in.md) — How the iOS app signs a device in with PKCE and the approval key, where each part lives, and how to see the Sign in screen without a server.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.
 - [Organizing Tailwind CSS](TAILWIND_ORGANIZATION.md) — Keeping Tailwind classes readable in HEEx templates with function components.
 

@@ -95,6 +95,805 @@
         }
       }
     },
+    "sign_in_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anmelden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar sesión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインイン"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录"
+          }
+        }
+      }
+    },
+    "sign_in_create_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu bei Stride? Konto im Web erstellen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New to Stride? Create an account on the web"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Nuevo en Stride? Crea una cuenta en la web"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau sur Stride ? Créez un compte sur le web"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride は初めてですか? Web でアカウントを作成"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo no Stride? Crie uma conta na web"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "初次使用 Stride？在网页上创建账户"
+          }
+        }
+      }
+    },
+    "sign_in_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Anmeldung wurde nicht abgeschlossen. Versuchen Sie es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in didn't finish. Try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El inicio de sesión no terminó. Inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion n’a pas abouti. Réessayez."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインインが完了しませんでした。もう一度お試しください。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O login não foi concluído. Tente novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录未完成。请重试。"
+          }
+        }
+      }
+    },
+    "sign_in_locked_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarife ansehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the plans"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver los planes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir les offres"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プランを見る"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver os planos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看方案"
+          }
+        }
+      }
+    },
+    "sign_in_locked_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sie sind angemeldet, gehören aber keiner Organisation an. Treten Sie einer bei oder wählen Sie den Organisationstarif, um die Arbeit Ihrer Agenten hier zu prüfen und freizugeben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has iniciado sesión, pero no perteneces a ninguna organización. Únete a una, o elige el plan Organización, para revisar y desbloquear aquí el trabajo de tus agentes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous êtes connecté, mais vous ne faites partie d’aucune organisation. Rejoignez-en une, ou choisissez l’offre Organisation, pour relire et débloquer ici le travail de vos agents."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインインしていますが、どの組織にも所属していません。組織に参加するか組織プランを選ぶと、ここでエージェントの作業をレビューし、解消できます。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você entrou, mas não faz parte de nenhuma organização. Entre em uma, ou escolha o plano Organização, para revisar e desbloquear aqui o trabalho dos seus agentes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你已登录，但尚未加入任何组织。加入一个组织或选择组织方案后，即可在这里审查并解除代理工作的阻塞。"
+          }
+        }
+      }
+    },
+    "sign_in_locked_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die App gehört zum Organisationstarif"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app is part of the Organization plan"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La app forma parte del plan Organización"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’app fait partie de l’offre Organisation"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このアプリは組織プランに含まれています"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O app faz parte do plano Organização"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 App 属于组织方案"
+          }
+        }
+      }
+    },
+    "sign_in_network_error": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't reach Stride. Check your connection and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se pudo conectar con Stride. Comprueba tu conexión e inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre Stride. Vérifiez votre connexion et réessayez."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride に接続できませんでした。接続を確認して、もう一度お試しください。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível conectar ao Stride. Verifique sua conexão e tente novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法连接到 Stride。请检查网络连接后重试。"
+          }
+        }
+      }
+    },
+    "sign_in_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet ein sicheres Browserfenster. Die Anmeldung Ihres Unternehmens und die Bestätigung in zwei Schritten funktionieren wie im Web."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre una ventana segura del navegador. El inicio de sesión de tu empresa y la verificación en dos pasos funcionan como en la web."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvre une fenêtre de navigateur sécurisée. La connexion de votre entreprise et la vérification en deux étapes fonctionnent comme sur le web."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安全なブラウザウィンドウが開きます。会社のサインインと 2 段階認証は Web と同じように使えます。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre uma janela segura do navegador. O login da sua empresa e a verificação em duas etapas funcionam como na web."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将打开一个安全的浏览器窗口。公司登录和两步验证与网页上的用法相同。"
+          }
+        }
+      }
+    },
+    "sign_in_passcode_required": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richten Sie zuerst einen Code auf diesem Gerät ein. Stride bestätigt damit Ihre Genehmigungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set a passcode on this device first. Stride uses it to confirm your approvals."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primero configura un código en este dispositivo. Stride lo usa para confirmar tus aprobaciones."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Définissez d’abord un code sur cet appareil. Stride l’utilise pour confirmer vos approbations."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まずこのデバイスにパスコードを設定してください。Stride は承認の確認にパスコードを使います。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primeiro, defina um código neste dispositivo. O Stride usa esse código para confirmar suas aprovações."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先为此设备设置密码。Stride 会用它来确认你的批准。"
+          }
+        }
+      }
+    },
+    "sign_in_point_ready": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Halten Sie Bereit gefüllt**, damit untätige Agenten immer Arbeit haben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Keep Ready full** so idle agents always have work."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Mantén Listo lleno** para que los agentes inactivos siempre tengan trabajo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Gardez Prêt rempli** pour que les agents inactifs aient toujours du travail."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "待機中のエージェントに常に作業があるよう、**準備完了を満たしておけます**。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Mantenha Pronto cheio** para que os agentes ociosos sempre tenham trabalho."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**保持就绪列有任务**，让空闲的代理始终有活可干。"
+          }
+        }
+      }
+    },
+    "sign_in_point_review_face_id": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Prüfen** Sie, was ein Agent fertiggestellt hat, Bewertungen zuerst, und genehmigen Sie mit Face ID."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Review** what an agent finished, verdicts first, and approve with Face ID."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Revisa** lo que terminó un agente, con los veredictos primero, y aprueba con Face ID."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Relisez** ce qu’un agent a terminé, verdicts en premier, et approuvez avec Face ID."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エージェントが終えた作業を判定から**レビュー**し、Face ID で承認できます。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Revise** o que um agente terminou, com os veredictos primeiro, e aprove com o Face ID."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**审查**代理完成的工作，先看结论，并用面容 ID 批准。"
+          }
+        }
+      }
+    },
+    "sign_in_point_review_passcode": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Prüfen** Sie, was ein Agent fertiggestellt hat, Bewertungen zuerst, und genehmigen Sie mit Ihrem Code."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Review** what an agent finished, verdicts first, and approve with your passcode."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Revisa** lo que terminó un agente, con los veredictos primero, y aprueba con tu código."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Relisez** ce qu’un agent a terminé, verdicts en premier, et approuvez avec votre code."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エージェントが終えた作業を判定から**レビュー**し、パスコードで承認できます。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Revise** o que um agente terminou, com os veredictos primeiro, e aprove com seu código."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**审查**代理完成的工作，先看结论，并用密码批准。"
+          }
+        }
+      }
+    },
+    "sign_in_point_review_touch_id": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Prüfen** Sie, was ein Agent fertiggestellt hat, Bewertungen zuerst, und genehmigen Sie mit Touch ID."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Review** what an agent finished, verdicts first, and approve with Touch ID."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Revisa** lo que terminó un agente, con los veredictos primero, y aprueba con Touch ID."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Relisez** ce qu’un agent a terminé, verdicts en premier, et approuvez avec Touch ID."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エージェントが終えた作業を判定から**レビュー**し、Touch ID で承認できます。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Revise** o que um agente terminou, com os veredictos primeiro, e aprove com o Touch ID."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**审查**代理完成的工作，先看结论，并用触控 ID 批准。"
+          }
+        }
+      }
+    },
+    "sign_in_point_unblock": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Lösen** Sie freigegebene Aufgaben, abgelaufene Übernahmen und fehlgeschlagene Ziel-Hooks."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Unblock** released tasks, expired claims and failed goal hooks."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Desbloquea** tareas liberadas, reclamaciones vencidas y hooks de objetivos fallidos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Débloquez** les tâches libérées, les réservations expirées et les hooks d’objectif en échec."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解放されたタスク、期限切れの担当、失敗したゴールフックを**解消**できます。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Desbloqueie** tarefas liberadas, reivindicações expiradas e hooks de objetivo com falha."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**解除阻塞**：已释放的任务、已过期的认领和失败的目标钩子。"
+          }
+        }
+      }
+    },
+    "sign_in_tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ihre Agenten erledigen die Arbeit. Stride sagt Ihnen, wenn einer von ihnen auf Sie wartet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your agents do the work. Stride tells you when one of them is waiting on you."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tus agentes hacen el trabajo. Stride te avisa cuando uno de ellos te está esperando."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vos agents font le travail. Stride vous prévient quand l’un d’eux vous attend."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "作業はエージェントが行います。エージェントがあなたを待っているとき、Stride がお知らせします。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seus agentes fazem o trabalho. O Stride avisa quando um deles está esperando por você."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作由你的代理完成。当有代理在等你时，Stride 会告诉你。"
+          }
+        }
+      }
+    },
+    "sign_in_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride"
+          }
+        }
+      }
+    },
+    "sign_in_working": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anmeldung läuft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signing in"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciando sesión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion en cours"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サインイン中"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrando"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在登录"
+          }
+        }
+      }
+    },
     "target_risk_title": {
       "extractionState": "manual",
       "localizations": {

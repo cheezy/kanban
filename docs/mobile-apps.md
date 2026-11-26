@@ -36,9 +36,11 @@ browser once it is installed
 
 ## Signing in
 
-**Sign in** in the app will open your phone's browser on Stride's own sign-in
-page, so the app never sees your password. Your Organization's single sign-on
-and two-factor rules apply exactly as they do on the web.
+**Sign in** in the app will open a secure browser window on Stride's own
+sign-in page, so the app never sees your password. The window shares Safari's
+sign-ins, and your Organization's single sign-on and two-factor rules apply
+exactly as they do on the web. On an iPhone or iPad, set a passcode first: the
+app keeps a key for your approvals that needs one.
 
 After you sign in, Stride shows a confirmation that names the device and the
 email you are signed in as, with **Allow** and **Cancel**. Choose **Allow** only
@@ -159,6 +161,7 @@ will be unlocked.
 
 - [The person API: /api/me](api/me.md) and
   [Device sign-in: the OAuth flow](api/oauth.md) describe what the apps call.
+- [iOS Sign-in](ios-sign-in.md) covers how the iOS app signs a device in.
 - [Push Notifications](push-notifications.md) covers the push senders and the
   settings that turn each platform on.
 - [Universal Links and App Links](universal-links.md) covers the files that

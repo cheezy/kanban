@@ -111,3 +111,105 @@ msgstr "此版本的 Stride 已不再受支持。请更新应用以继续使用�
 msgctxt "update_required_title"
 msgid "Update required"
 msgstr "需要更新"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_action"
+msgid "Sign in"
+msgstr "登录"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_create_account"
+msgid "New to Stride? Create an account on the web"
+msgstr "初次使用 Stride？在网页上创建账户"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_failed"
+msgid "Sign-in didn't finish. Try again."
+msgstr "登录未完成。请重试。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_action"
+msgid "See the plans"
+msgstr "查看方案"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_message"
+msgid "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
+msgstr "你已登录，但尚未加入任何组织。加入一个组织或选择组织方案后，即可在这里审查并解除代理工作的阻塞。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_title"
+msgid "The app is part of the Organization plan"
+msgstr "此 App 属于组织方案"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_network_error"
+msgid "Couldn't reach Stride. Check your connection and try again."
+msgstr "无法连接到 Stride。请检查网络连接后重试。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_note"
+msgid "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
+msgstr "将打开一个安全的浏览器窗口。公司登录和两步验证与网页上的用法相同。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_ready"
+msgid "**Keep Ready full** so idle agents always have work."
+msgstr "**保持就绪列有任务**，让空闲的代理始终有活可干。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_face_id"
+msgid "**Review** what an agent finished, verdicts first, and approve with Face ID."
+msgstr "**审查**代理完成的工作，先看结论，并用面容 ID 批准。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_passcode"
+msgid "**Review** what an agent finished, verdicts first, and approve with your passcode."
+msgstr "**审查**代理完成的工作，先看结论，并用密码批准。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_touch_id"
+msgid "**Review** what an agent finished, verdicts first, and approve with Touch ID."
+msgstr "**审查**代理完成的工作，先看结论，并用触控 ID 批准。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_unblock"
+msgid "**Unblock** released tasks, expired claims and failed goal hooks."
+msgstr "**解除阻塞**：已释放的任务、已过期的认领和失败的目标钩子。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_tagline"
+msgid "Your agents do the work. Stride tells you when one of them is waiting on you."
+msgstr "工作由你的代理完成。当有代理在等你时，Stride 会告诉你。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_title"
+msgid "Stride"
+msgstr "Stride"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_working"
+msgid "Signing in"
+msgstr "正在登录"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_passcode_required"
+msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
+msgstr "请先为此设备设置密码。Stride 会用它来确认你的批准。"

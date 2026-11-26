@@ -1,8 +1,8 @@
 import Foundation
 import Security
 
-/// Keeps the device's token pair in the Keychain access group the app and its
-/// extensions share, and nowhere else.
+/// Keeps the device's token pair, and the approval key made at sign-in, in the
+/// Keychain access group the app and its extensions share, and nowhere else.
 ///
 /// The pair is one Keychain item, so a reader sees either the old pair or the new
 /// one. Nothing is cached, so a process reads what another one last wrote.
@@ -14,6 +14,7 @@ import Security
 public actor AuthStore {
     static let service = "StrideDeviceTokens"
     static let account = "token-pair"
+    static let approvalKeyAccount = "approval-key"
 
     private let accessGroup: String
     private let service: String
@@ -82,17 +83,39 @@ public actor AuthStore {
     /// Stores the pair of a new sign-in, in place of any pair already there.
     public func save(_ pair: TokenPair) throws(AuthStoreError) {
         try clearItemsFromPreviousInstall()
-
-        let attributes = try attributes(of: pair)
-        let status = keychain.add(itemQuery.merging(attributes) { $1 })
-        if status == errSecDuplicateItem {
-            try check(keychain.update(itemQuery, to: attributes))
-        } else {
-            try check(status)
-        }
+        try write(try attributes(of: pair), to: itemQuery)
 
         signIn += 1
         publish(true)
+    }
+
+    /// Stores the pair and the approval key of a new sign-in, in place of any
+    /// already there. The key is a second item of the same service, so every
+    /// `clear` removes it with the pair.
+    public func save(_ pair: TokenPair, approvalKey: ApprovalKey) throws(AuthStoreError) {
+        try clearItemsFromPreviousInstall()
+        try write(
+            [
+                kSecValueData as String: approvalKey.handle,
+                kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            ],
+            to: approvalKeyQuery
+        )
+        try write(try attributes(of: pair), to: itemQuery)
+
+        signIn += 1
+        publish(true)
+    }
+
+    /// The stored approval key's handle, or nil when there is none.
+    func approvalKeyHandle() throws(AuthStoreError) -> Data? {
+        guard marker.exists else { return nil }
+
+        let (status, data) = keychain.copyData(matching: approvalKeyQuery)
+        if status == errSecItemNotFound { return nil }
+        try check(status)
+
+        return data
     }
 
     /// Replaces the pair that was refreshed with the pair the server answered.
@@ -173,6 +196,20 @@ public actor AuthStore {
 
     private var itemQuery: [String: Any] {
         serviceQuery.merging([kSecAttrAccount as String: Self.account]) { $1 }
+    }
+
+    private var approvalKeyQuery: [String: Any] {
+        serviceQuery.merging([kSecAttrAccount as String: Self.approvalKeyAccount]) { $1 }
+    }
+
+    /// Adds the item `query` names, or replaces it.
+    private func write(_ attributes: [String: Any], to query: [String: Any]) throws(AuthStoreError) {
+        let status = keychain.add(query.merging(attributes) { $1 })
+        if status == errSecDuplicateItem {
+            try check(keychain.update(query, to: attributes))
+        } else {
+            try check(status)
+        }
     }
 
     private func attributes(of pair: TokenPair) throws(AuthStoreError) -> [String: Any] {

@@ -15,9 +15,11 @@ struct StrideApp: App {
         return APIClient.make(version: version, store: authStore, update: update)
     }()
 
+    @State private var signIn = SignInModel.atLaunch()
+
     var body: some Scene {
         WindowGroup {
-            RootView(update: Self.update)
+            RootView(update: Self.update, signIn: signIn)
                 .task {
                     // After a failure every read stays nil, and the next launch or
                     // sign-in tries again.

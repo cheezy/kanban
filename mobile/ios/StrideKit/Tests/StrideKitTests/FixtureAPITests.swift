@@ -30,6 +30,30 @@ struct FixtureAPITests {
         }
     }
 
+    @Test("an unreachable operation fails as if the device were offline, and only that one")
+    func unreachable() async throws {
+        let api = FixtureAPI(unreachable: [Operations.GetMe.id]).client
+
+        await #expect(throws: (any Error).self) { _ = try await api.getMe() }
+        do {
+            _ = try await api.getMe()
+        } catch {
+            #expect(SignInError(classifying: error) == .network)
+        }
+        #expect(try await api.listMyBoards().ok.body.json.data.isEmpty == false)
+    }
+
+    @Test("the locked plan answers me for a person without the Organization plan")
+    func lockedPlan() async throws {
+        let api = FixtureAPI(replacing: try FixtureAPI.lockedPlan).client
+        let me = try await api.getMe().ok.body.json.data
+        let fixture = try await FixtureAPI().client.getMe().ok.body.json.data
+
+        #expect(me.appUnlocked == false)
+        #expect(fixture.appUnlocked)
+        #expect(me.user.id == fixture.user.id)
+    }
+
     @Test("throws for an operation with no fixture")
     func missingFixture() {
         #expect(throws: (any Error).self) { try FixtureAPI.fixture(named: "noSuchOperation") }

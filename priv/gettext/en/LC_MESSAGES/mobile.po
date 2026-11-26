@@ -116,3 +116,105 @@ msgstr "This version of Stride is no longer supported. Update the app to continu
 msgctxt "update_required_title"
 msgid "Update required"
 msgstr "Update required"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_action"
+msgid "Sign in"
+msgstr "Sign in"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_create_account"
+msgid "New to Stride? Create an account on the web"
+msgstr "New to Stride? Create an account on the web"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_failed"
+msgid "Sign-in didn't finish. Try again."
+msgstr "Sign-in didn't finish. Try again."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_action"
+msgid "See the plans"
+msgstr "See the plans"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_message"
+msgid "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
+msgstr "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_title"
+msgid "The app is part of the Organization plan"
+msgstr "The app is part of the Organization plan"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_network_error"
+msgid "Couldn't reach Stride. Check your connection and try again."
+msgstr "Couldn't reach Stride. Check your connection and try again."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_note"
+msgid "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
+msgstr "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_ready"
+msgid "**Keep Ready full** so idle agents always have work."
+msgstr "**Keep Ready full** so idle agents always have work."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_face_id"
+msgid "**Review** what an agent finished, verdicts first, and approve with Face ID."
+msgstr "**Review** what an agent finished, verdicts first, and approve with Face ID."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_passcode"
+msgid "**Review** what an agent finished, verdicts first, and approve with your passcode."
+msgstr "**Review** what an agent finished, verdicts first, and approve with your passcode."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_touch_id"
+msgid "**Review** what an agent finished, verdicts first, and approve with Touch ID."
+msgstr "**Review** what an agent finished, verdicts first, and approve with Touch ID."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_unblock"
+msgid "**Unblock** released tasks, expired claims and failed goal hooks."
+msgstr "**Unblock** released tasks, expired claims and failed goal hooks."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_tagline"
+msgid "Your agents do the work. Stride tells you when one of them is waiting on you."
+msgstr "Your agents do the work. Stride tells you when one of them is waiting on you."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_title"
+msgid "Stride"
+msgstr "Stride"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_working"
+msgid "Signing in"
+msgstr "Signing in"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_passcode_required"
+msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
+msgstr "Set a passcode on this device first. Stride uses it to confirm your approvals."

@@ -13,10 +13,28 @@ import OpenAPIRuntime
 public struct FixtureAPI: ClientTransport {
     /// Named by `operationId`, as the files in `mobile/shared/fixtures` are.
     private let replacements: [String: Data]
+    private let unreachable: Set<String>
 
-    /// Replaces the bodies of some operations, keyed by `Operations.<Name>.id`.
-    public init(replacing replacements: [String: Data] = [:]) {
+    /// Replaces the bodies of some operations, keyed by `Operations.<Name>.id`,
+    /// and fails the `unreachable` ones as if the device were offline.
+    public init(replacing replacements: [String: Data] = [:], unreachable: Set<String> = []) {
         self.replacements = replacements
+        self.unreachable = unreachable
+    }
+
+    /// `getMe` for a person whose plan does not include the app.
+    public static var lockedPlan: [String: Data] {
+        get throws {
+            let fixture = try fixture(named: Operations.GetMe.id)
+            guard
+                var me = try JSONSerialization.jsonObject(with: fixture) as? [String: Any],
+                var data = me["data"] as? [String: Any]
+            else { throw CocoaError(.coderReadCorrupt) }
+
+            data["app_unlocked"] = false
+            me["data"] = data
+            return [Operations.GetMe.id: try JSONSerialization.data(withJSONObject: me)]
+        }
     }
 
     public var client: some StrideAPI {
@@ -29,6 +47,8 @@ public struct FixtureAPI: ClientTransport {
         baseURL: URL,
         operationID: String
     ) async throws -> (HTTPResponse, HTTPBody?) {
+        if unreachable.contains(operationID) { throw URLError(.notConnectedToInternet) }
+
         let status = Self.status(of: operationID)
         guard status != .noContent else { return (HTTPResponse(status: status), nil) }
 

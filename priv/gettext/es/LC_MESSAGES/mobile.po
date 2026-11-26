@@ -116,3 +116,105 @@ msgstr "Esta versión de Stride ya no es compatible. Actualiza la app para conti
 msgctxt "update_required_title"
 msgid "Update required"
 msgstr "Actualización necesaria"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_action"
+msgid "Sign in"
+msgstr "Iniciar sesión"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_create_account"
+msgid "New to Stride? Create an account on the web"
+msgstr "¿Nuevo en Stride? Crea una cuenta en la web"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_failed"
+msgid "Sign-in didn't finish. Try again."
+msgstr "El inicio de sesión no terminó. Inténtalo de nuevo."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_action"
+msgid "See the plans"
+msgstr "Ver los planes"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_message"
+msgid "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
+msgstr "Has iniciado sesión, pero no perteneces a ninguna organización. Únete a una, o elige el plan Organización, para revisar y desbloquear aquí el trabajo de tus agentes."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_locked_title"
+msgid "The app is part of the Organization plan"
+msgstr "La app forma parte del plan Organización"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_network_error"
+msgid "Couldn't reach Stride. Check your connection and try again."
+msgstr "No se pudo conectar con Stride. Comprueba tu conexión e inténtalo de nuevo."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_note"
+msgid "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
+msgstr "Abre una ventana segura del navegador. El inicio de sesión de tu empresa y la verificación en dos pasos funcionan como en la web."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_ready"
+msgid "**Keep Ready full** so idle agents always have work."
+msgstr "**Mantén Listo lleno** para que los agentes inactivos siempre tengan trabajo."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_face_id"
+msgid "**Review** what an agent finished, verdicts first, and approve with Face ID."
+msgstr "**Revisa** lo que terminó un agente, con los veredictos primero, y aprueba con Face ID."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_passcode"
+msgid "**Review** what an agent finished, verdicts first, and approve with your passcode."
+msgstr "**Revisa** lo que terminó un agente, con los veredictos primero, y aprueba con tu código."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_review_touch_id"
+msgid "**Review** what an agent finished, verdicts first, and approve with Touch ID."
+msgstr "**Revisa** lo que terminó un agente, con los veredictos primero, y aprueba con Touch ID."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_point_unblock"
+msgid "**Unblock** released tasks, expired claims and failed goal hooks."
+msgstr "**Desbloquea** tareas liberadas, reclamaciones vencidas y hooks de objetivos fallidos."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_tagline"
+msgid "Your agents do the work. Stride tells you when one of them is waiting on you."
+msgstr "Tus agentes hacen el trabajo. Stride te avisa cuando uno de ellos te está esperando."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_title"
+msgid "Stride"
+msgstr "Stride"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_working"
+msgid "Signing in"
+msgstr "Iniciando sesión"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "sign_in_passcode_required"
+msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
+msgstr "Primero configura un código en este dispositivo. Stride lo usa para confirmar tus aprobaciones."

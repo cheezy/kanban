@@ -75,11 +75,16 @@ defmodule Kanban.Mobile.Strings do
   The status labels and the risk explainer strings are copied from the web's
   default domain. The counts and the `update_required_*` strings are the app's
   own: the Targets, Goals and goal screens of the native apps design (sections
-  6.16 to 6.19) and its Update required screen (section 7.2) have no web page that
-  says the same thing.
+  6.16 to 6.19), its Update required screen (section 7.2) and its Sign in screen
+  (section 6.1) have no web page that says the same thing. A `**` pair marks the
+  words the app shows in bold; translations keep it around their own words.
   """
   @spec msgids() :: [String.t() | {String.t(), String.t()}]
   def msgids do
+    count_msgids() ++ status_msgids() ++ update_required_msgids() ++ sign_in_msgids()
+  end
+
+  defp count_msgids do
     [
       dpngettext_noop(
         "mobile",
@@ -100,7 +105,12 @@ defmodule Kanban.Mobile.Strings do
         "Goals · %{count} open",
         "Goals · %{count} open"
       ),
-      dpngettext_noop("mobile", "goal_archived_count", "%{count} archived", "%{count} archived"),
+      dpngettext_noop("mobile", "goal_archived_count", "%{count} archived", "%{count} archived")
+    ]
+  end
+
+  defp status_msgids do
+    [
       dpgettext_noop("mobile", "target_status_on_track", "On-track"),
       dpgettext_noop("mobile", "target_status_at_risk", "At-risk"),
       dpgettext_noop("mobile", "target_status_missed", "Missed"),
@@ -112,7 +122,12 @@ defmodule Kanban.Mobile.Strings do
         "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
       ),
       dpgettext_noop("mobile", "agent_stuck", "Stuck"),
-      dpgettext_noop("mobile", "agent_dormant", "Dormant"),
+      dpgettext_noop("mobile", "agent_dormant", "Dormant")
+    ]
+  end
+
+  defp update_required_msgids do
+    [
       dpgettext_noop("mobile", "update_required_title", "Update required"),
       dpgettext_noop(
         "mobile",
@@ -120,6 +135,76 @@ defmodule Kanban.Mobile.Strings do
         "This version of Stride is no longer supported. Update the app to continue."
       ),
       dpgettext_noop("mobile", "update_required_action", "Open the App Store")
+    ]
+  end
+
+  defp sign_in_msgids do
+    [
+      dpgettext_noop("mobile", "sign_in_title", "Stride"),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_tagline",
+        "Your agents do the work. Stride tells you when one of them is waiting on you."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_point_review_face_id",
+        "**Review** what an agent finished, verdicts first, and approve with Face ID."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_point_review_touch_id",
+        "**Review** what an agent finished, verdicts first, and approve with Touch ID."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_point_review_passcode",
+        "**Review** what an agent finished, verdicts first, and approve with your passcode."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_point_unblock",
+        "**Unblock** released tasks, expired claims and failed goal hooks."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_point_ready",
+        "**Keep Ready full** so idle agents always have work."
+      ),
+      dpgettext_noop("mobile", "sign_in_action", "Sign in"),
+      dpgettext_noop("mobile", "sign_in_working", "Signing in"),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_note",
+        "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_create_account",
+        "New to Stride? Create an account on the web"
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_network_error",
+        "Couldn't reach Stride. Check your connection and try again."
+      ),
+      dpgettext_noop("mobile", "sign_in_failed", "Sign-in didn't finish. Try again."),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_passcode_required",
+        "Set a passcode on this device first. Stride uses it to confirm your approvals."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_locked_title",
+        "The app is part of the Organization plan"
+      ),
+      dpgettext_noop(
+        "mobile",
+        "sign_in_locked_message",
+        "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
+      ),
+      dpgettext_noop("mobile", "sign_in_locked_action", "See the plans")
     ]
   end
 

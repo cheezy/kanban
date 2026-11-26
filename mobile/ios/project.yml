@@ -32,6 +32,9 @@ settings:
     # mix mobile.strings writes the string catalog: Xcode makes a Swift symbol of
     # each string in it, and adds none of its own.
     STRING_CATALOG_GENERATE_SYMBOLS: YES
+    # Images are named through the symbols Xcode makes of the asset catalog,
+    # such as Image(.strideLogoTile), so a missing image fails the build.
+    ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS: YES
     SWIFT_EMIT_LOC_STRINGS: NO
     # Every identifier below comes from this one. It is the bundle id the server
     # is given as STRIDE_IOS_BUNDLE_ID and APNS_TOPIC.
@@ -61,6 +64,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Stride/Stride.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Stride
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # The app has no icon yet; the asset catalog would otherwise require one.
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
     dependencies:
