@@ -9,6 +9,6 @@ final class LaunchUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 }

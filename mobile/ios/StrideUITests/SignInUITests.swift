@@ -11,7 +11,7 @@ final class SignInUITests: XCTestCase {
         XCTAssertTrue(button.waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["Stride"].exists)
         XCTAssertGreaterThanOrEqual(button.frame.height, 44)
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
 
         button.tap()
 
@@ -43,7 +43,7 @@ final class SignInUITests: XCTestCase {
         let message = app.staticTexts["Couldn't reach Stride. Check your connection and try again."]
         XCTAssertTrue(message.waitForExistence(timeout: 30))
         XCTAssertTrue(button.isHittable, "The person can try again")
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
@@ -55,11 +55,11 @@ final class SignInUITests: XCTestCase {
         button.tap()
 
         XCTAssertTrue(app.staticTexts["The app is part of the Organization plan"].waitForExistence(timeout: 30))
-        let plans = app.links["See the plans"]
+        let plans = link(app, "See the plans")
         XCTAssertTrue(plans.isHittable)
         XCTAssertGreaterThanOrEqual(plans.frame.height, 44)
         XCTAssertFalse(button.exists)
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
@@ -71,14 +71,14 @@ final class SignInUITests: XCTestCase {
 
         scroll(app, toReveal: button)
         XCTAssertTrue(button.isHittable)
-        let account = app.links["Neu bei Stride? Konto im Web erstellen"]
+        let account = link(app, "Neu bei Stride? Konto im Web erstellen")
         scroll(app, toReveal: account)
         XCTAssertTrue(account.isHittable)
         try audit(app)
 
         button.tap()
 
-        let plans = app.links["Tarife ansehen"]
+        let plans = link(app, "Tarife ansehen")
         XCTAssertTrue(plans.waitForExistence(timeout: 30))
         scroll(app, toReveal: plans)
         XCTAssertTrue(plans.isHittable)
@@ -92,11 +92,21 @@ final class SignInUITests: XCTestCase {
     /// clipped. Every other issue, and clipped text anywhere else, still fails.
     @MainActor
     private func audit(_ app: XCUIApplication) throws {
-        try app.performAccessibilityAudit { issue in
+        try app.auditAccessibility { issue in
             guard issue.auditType == .textClipped, let element = issue.element else { return false }
 
             return MainActor.assumeIsolated { element.identifier == "sign-in-point" }
         }
+    }
+
+    /// A `Link` by its label. iOS 26 reports some links as buttons, such as
+    /// the create-account link at the largest text size in German, while
+    /// iOS 27 reports them as links, so the query takes either.
+    @MainActor
+    private func link(_ app: XCUIApplication, _ label: String) -> XCUIElement {
+        let types = [XCUIElement.ElementType.link, .button].map(\.rawValue)
+        let predicate = NSPredicate(format: "label == %@ AND elementType IN %@", label, types)
+        return app.descendants(matching: .any).matching(predicate).firstMatch
     }
 
     @MainActor

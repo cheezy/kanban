@@ -10,7 +10,7 @@ final class UpdateRequiredUITests: XCTestCase {
         XCTAssertTrue(link.isHittable)
         XCTAssertGreaterThanOrEqual(link.frame.height, 44)
         XCTAssertGreaterThanOrEqual(link.frame.width, 44)
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
 
         link.tap()
         XCTAssertTrue(app.wait(for: .runningBackground, timeout: 30), "The link opens outside the app")
@@ -26,7 +26,7 @@ final class UpdateRequiredUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(link.isHittable)
-        try app.performAccessibilityAudit()
+        try app.auditAccessibility()
     }
 
     @MainActor
