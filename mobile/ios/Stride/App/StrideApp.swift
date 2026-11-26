@@ -6,6 +6,7 @@ struct StrideApp: App {
     static let appGroup = AppGroup(bundle: .main)
     static let authStore = appGroup.flatMap { AuthStore(group: $0) }
     static let update = AppUpdateState.atLaunch()
+    static let cache = appGroup.flatMap { Cache(group: $0) }
 
     /// The one client of the app. Two would refresh the same token twice, and the
     /// server revokes the device for that.

@@ -974,7 +974,7 @@ That keeps the rule that a phone never becomes an agent, and the rule that an ag
 
 - **Re-enrolled biometrics.** On iOS, `.biometryCurrentSet` means a newly added face or fingerprint invalidates the key. The app then asks the person to sign in again.
 - **The cache:**
-  - iOS: Data Protection class `completeUntilFirstUserAuthentication`;
+  - iOS: Data Protection class `completeUntilFirstUserAuthentication` for the decisions list, which the widget reads while the phone is locked, and `complete` for everything else, such as reviews and their diffs ([iOS Cache](../ios-cache.md));
   - Android: app-private storage;
   - on both, it's wiped on sign-out, on a `device_revoked` answer, and when the person changes.
 - **Hidden in the app switcher.** Review screens are covered by a blur on iOS and `FLAG_SECURE` on Android, so code doesn't show in the app switcher.

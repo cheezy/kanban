@@ -163,6 +163,7 @@ will be unlocked.
   [Device sign-in: the OAuth flow](api/oauth.md) describe what the apps call.
 - [iOS Sign-in](ios-sign-in.md) covers how the iOS app signs a device in.
 - [iOS App Shell](ios-app-shell.md) covers the iOS app's tabs, corner buttons and Now badge.
+- [iOS Cache](ios-cache.md) covers what the iOS app keeps for reading offline and when it is wiped.
 - [Push Notifications](push-notifications.md) covers the push senders and the
   settings that turn each platform on.
 - [Universal Links and App Links](universal-links.md) covers the files that

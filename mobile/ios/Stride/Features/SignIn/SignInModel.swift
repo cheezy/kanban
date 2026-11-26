@@ -78,6 +78,9 @@ final class SignInModel {
         guard let changes else { return }
 
         for await isSignedIn in changes {
+            // A sign-out, a revoked device, or a launch that starts signed out
+            // after one. A failed wipe is tried again at the next of these.
+            if isSignedIn == false { try? await services?.cache?.wipe() }
             await show(signedIn: isSignedIn)
         }
     }

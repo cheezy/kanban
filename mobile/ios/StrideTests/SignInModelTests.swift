@@ -15,10 +15,11 @@ struct SignInModelTests {
         api: FixtureAPI = FixtureAPI(),
         keyMaker: StubApprovalKeyMaker = StubApprovalKeyMaker(),
         unlock: ApprovalUnlock = .faceID,
-        phase: SignInPhase = .signedOut(nil)
+        phase: SignInPhase = .signedOut(nil),
+        cache: RecordingCacheWiper? = nil
     ) -> SignInModel {
         SignInModel(
-            services: SignInServices(store: store, api: api.client, keyMaker: keyMaker, device: phone),
+            services: SignInServices(store: store, api: api.client, keyMaker: keyMaker, device: phone, cache: cache),
             unlock: unlock,
             phase: phase,
             retryDelay: .milliseconds(1)
@@ -213,6 +214,48 @@ struct SignInModelTests {
         await store.clear()
 
         await waitUntil { model.phase == .signedOut(nil) }
+    }
+
+    @Test("signing out wipes the cache")
+    func signOutWipesCache() async {
+        let store = MemorySignInStore(signedIn: true)
+        let cache = RecordingCacheWiper()
+        let model = model(store: store, phase: .starting, cache: cache)
+        let task = Task { await model.observeSignIn() }
+        defer { task.cancel() }
+        await waitUntil { model.phase == .signedIn(.unlocked) }
+        #expect(await cache.wipes == 0)
+
+        await store.clear()
+
+        await waitUntil { model.phase == .signedOut(nil) }
+        #expect(await cache.wipes == 1)
+    }
+
+    @Test("starting signed out wipes the cache")
+    func startSignedOutWipesCache() async {
+        let cache = RecordingCacheWiper()
+        let model = model(phase: .starting, cache: cache)
+        let task = Task { await model.observeSignIn() }
+        defer { task.cancel() }
+
+        await waitUntil { model.phase == .signedOut(nil) }
+        #expect(await cache.wipes == 1)
+    }
+
+    @Test("signing in leaves the cache")
+    func signInKeepsCache() async {
+        let store = MemorySignInStore()
+        let cache = RecordingCacheWiper()
+        let model = model(store: store, phase: .starting, cache: cache)
+        let task = Task { await model.observeSignIn() }
+        defer { task.cancel() }
+        await waitUntil { model.phase == .signedOut(nil) }
+
+        await model.signIn(using: StubWebAuthenticator(outcome: .allow))
+
+        await waitUntil { model.phase == .signedIn(.unlocked) }
+        #expect(await cache.wipes == 1)
     }
 
     @Test("without services the Sign in screen shows at once")

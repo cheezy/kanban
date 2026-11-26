@@ -10,7 +10,8 @@ extension SignInModel {
     static func atLaunch(
         arguments: [String] = ProcessInfo.processInfo.arguments,
         store: AuthStore? = StrideApp.authStore,
-        api: (any StrideAPI)? = StrideApp.api
+        api: (any StrideAPI)? = StrideApp.api,
+        cache: Cache? = StrideApp.cache
     ) -> SignInModel {
         #if DEBUG
         if let stub = StubSignIn(arguments: arguments) { return stub.model() }
@@ -23,7 +24,8 @@ extension SignInModel {
                 store: store,
                 api: api,
                 keyMaker: SecureEnclaveKeyMaker(),
-                device: .current()
+                device: .current(),
+                cache: cache
             )
         )
     }

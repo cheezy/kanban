@@ -342,6 +342,28 @@ that has turned out wrong. Rules the app must follow belong in
   `$model.paths[tab, default: []]` does not compile; give the state a type with
   a plain subscript, as `TabPaths` does (W2790).
 
+## Cache and SwiftData
+
+- StrideKit's `Cache` (W2791) keeps JSON payloads in one generic SwiftData
+  entity rather than typed models, so an API change needs no migration; a
+  payload a build cannot decode reads as nil and is deleted.
+  [docs/ios-cache.md](../../../docs/ios-cache.md) has the design.
+- The app supports iOS 17, so `#Unique`, `#Index`, `ModelContainer.deleteAllData()`,
+  `Mutex` and AsyncSequence primary associated types are out without
+  `#available`; this Mac has no iOS 17 runtime, so only the compiler checks it.
+- `ModelContainer` is Sendable and a `ModelContext` is not: open a fresh context
+  inside each synchronous actor method and never let it or a model leave. A plain
+  actor is used instead of `@ModelActor`, which on iOS 17 runs on the main queue
+  when made there.
+- Keep `AsyncStream` tests deterministic with `.bufferingNewest(1)`: a source
+  that yields several states before the reader starts delivers only the last,
+  so drive each change after the reader has taken the previous one. The same
+  buffer hides a missing de-duplication: a repeat reported just before a change
+  is overwritten either way. Report the repeat alone while the reader waits and
+  the change a moment later (W2791's break-it run caught a test that missed this).
+- A docs edit is outside `mobile/`, so a task that adds `docs/ios-*.md` runs the
+  whole Elixir suite in `after_doing` (see Hook modes).
+
 ## Break-it checks
 
 - Run deliberate breaks in a scratch copy of `mobile/` in the session scratchpad,
@@ -360,7 +382,9 @@ that has turned out wrong. Rules the app must follow belong in
   compile, and the last 4000 characters of the log hid why. Give such a sum a
   typed `let` first.
 - A broken `AsyncStream` that never ends makes a run take minutes; use a time
-  limit trait on such tests.
+  limit trait on such tests. A test stopped by its time limit logs `recorded an
+  issue ... Time limit was exceeded` and may never print a `failed` line before
+  the run ends, so a break-it parser must count that line as caught (W2791).
 
 ## Stride review rules for iOS tasks
 
