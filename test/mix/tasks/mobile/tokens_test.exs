@@ -5,6 +5,7 @@ defmodule Mix.Tasks.Mobile.TokensTest do
 
   import ExUnit.CaptureIO
 
+  alias Kanban.Mobile.IosDesignSystem
   alias Kanban.Mobile.Tokens
 
   @moduletag :tmp_dir
@@ -16,6 +17,8 @@ defmodule Mix.Tasks.Mobile.TokensTest do
   .stride-screen {
     --bg: oklch(98% 0 0);
     --r-sm: 4px;
+    --font-sans: 'Geist', ui-sans-serif, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, monospace;
     font-size: 13px;
     line-height: 1.45;
     letter-spacing: -0.005em;
@@ -41,20 +44,25 @@ defmodule Mix.Tasks.Mobile.TokensTest do
     :ok
   end
 
-  # Call run([]) only inside the tmp dir: elsewhere it writes the
-  # repository's tokens.json.
+  # Call run([]) only inside the tmp dir, and give generate/1 a :root in it:
+  # elsewhere they write the repository's tokens.json and iOS files.
   test "generate/1 writes the render to the output path, creating its folder", %{tmp_dir: dir} do
     source = Path.join(dir, "app.css")
     output = Path.join([dir, "nested", "tokens.json"])
+    opts = [source: source, output: output, root: dir]
     File.write!(source, @css)
 
-    printed = capture_io(fn -> assert @task.generate(source: source, output: output) == :ok end)
+    printed = capture_io(fn -> assert @task.generate(opts) == :ok end)
 
     assert printed =~ "Wrote #{output}"
     assert File.read!(output) == Tokens.render!(@css)
 
+    for {path, content} <- @css |> Tokens.build!() |> IosDesignSystem.render!() do
+      assert dir |> Path.join(path) |> File.read!() == content
+    end
+
     first = File.read!(output)
-    capture_io(fn -> @task.generate(source: source, output: output) end)
+    capture_io(fn -> @task.generate(opts) end)
     assert File.read!(output) == first
   end
 

@@ -120,6 +120,10 @@ targets:
       - path: ../shared/strings
         type: folder
         buildPhase: resources
+      # The tokens the colour assets and DesignTokens.swift must match.
+      - path: ../shared/tokens
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(STRIDE_BUNDLE_ID).tests

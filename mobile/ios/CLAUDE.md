@@ -8,16 +8,22 @@ has the platform choices behind them.
 `project.yml` describes the `Stride` app, the `StrideKit` package, the
 `StrideWidgets` and `StrideNotificationService` extensions, and the two test
 targets. `mix mobile.strings` generates the app's string catalog,
-`Stride/Resources/Localizable.xcstrings`. Nothing generates the asset-catalog
-colours yet, so views use the system's own, such as `.primary` and `.background`;
-add the first colour with that generator, not by hand. The asset catalog,
+`Stride/Resources/Localizable.xcstrings`. `mix mobile.tokens` generates the
+colour catalog, `Stride/DesignSystem/Colors.xcassets`, with a light and a dark
+value for every Stride colour token, and `Stride/DesignSystem/DesignTokens.swift`
+with the font families, the text styles and the radii. Name a colour through the symbol
+Xcode makes of it, so the token `ink-2` is `Color(.ink2)`, and show text in a
+`StrideTextStyle` with `.textStyle(.body)`: each style is in Geist or Geist Mono
+and scales with Dynamic Type. The Sign in and Update required screens still use
+the system's colours and fonts, such as `.primary` and `.headline`; move a screen
+to the tokens when you next change it. The image catalog,
 `Stride/Resources/Images.xcassets`, holds only the logo tile so far, named in
 Swift through its generated symbol as `Image(.strideLogoTile)`. The app shows the
 Update required screen, then the Sign in screen until the device is signed in,
 then a placeholder, and the widget's view is a placeholder. The
 widget shows no text, because the catalog is in the app alone.
 
-- **Support both themes.** Use the generated asset-catalog colours, which carry a light and a dark value, and check every screen in both appearances before you finish.
+- **Support both themes.** Use the generated asset-catalog colours, which carry a light and a dark value, and never a colour or a font written in Swift. Check every screen in both appearances before you finish. `DesignTokenTests` fails when an asset differs from `mobile/shared/tokens/tokens.json` or a pair of tokens falls below its contrast floor.
 - **Support iPhone and iPad.** Every screen looks right on both. Lay out by the available width, not the device, so an iPad in a narrow split view gets the phone layout: `TabView` in a compact width, `NavigationSplitView` in a regular one, and text kept to a readable width instead of stretched across the screen. Before you finish, run the tests on an iPad as well (`MIX_ENV=test mix ios.test --simulator "iPad (A16)"`) and look at every screen you changed on one, upright and on its side, in both appearances and at the largest text size.
 - **Ship all seven locales.** Show every string through the Xcode string catalog generated from the `mobile` gettext domain, in de, en, es, fr, ja, pt and zh. Check layouts at the largest text size in German, where labels run longest. Xcode makes a Swift symbol of each string, so `update_required_title` is `Text(.updateRequiredTitle)`, and `LocalizationTests` fails when the app lacks a locale or its text. The catalog leaves out plurals and strings with a placeholder: extend `Kanban.Mobile.StringCatalog` before a screen needs one, and never edit the catalog in Xcode.
 - **Label everything for accessibility.** Give every control a VoiceOver label, support Dynamic Type up to the accessibility sizes, keep touch targets at least 44 points, and run `performAccessibilityAudit()` in the UI tests. Ignore an audit issue only for elements named by an accessibility identifier, with the reason beside it, as `SignInUITests` does for the points' text.

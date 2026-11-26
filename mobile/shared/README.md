@@ -10,7 +10,7 @@ names a single `mobile/shared/tokens.json`, the generated tokens live in the
 
 | Folder | What it holds | Made from | Made by |
 |---|---|---|---|
-| [tokens/](tokens/README.md) | colour and type tokens | the `.stride-screen` tokens in `assets/css/app.css` | `mix mobile.tokens` (generated) |
+| [tokens/](tokens/README.md) | colour and type tokens | the `.stride-screen` tokens in `assets/css/app.css` and the text styles in `lib/kanban/mobile/type_scale.ex` | `mix mobile.tokens` (generated) |
 | [strings/](strings/README.md) | app strings in seven locales | `priv/gettext/*/LC_MESSAGES/mobile.po` | `mix mobile.strings` (generated) |
 | [fixtures/](fixtures/README.md) | example API responses | `priv/openapi/stride-api.json` | written by hand, checked against the contract |
 | [openapi.json](openapi.json) | the API contract, which the Android app generates its client from | `priv/openapi/stride-api.json` | `mix mobile.api` (checked, then copied byte for byte) |
@@ -27,6 +27,13 @@ the contract.
 catalog `mobile/ios/Stride/Resources/Localizable.xcstrings`. It is built by
 `Kanban.Mobile.StringCatalog`, and `test/kanban/mobile/string_catalog_test.exs`
 fails when it is stale.
+
+`mix mobile.tokens` likewise writes the iOS app's colour asset catalog,
+`mobile/ios/Stride/DesignSystem/Colors.xcassets`, and its other tokens as Swift
+constants in `mobile/ios/Stride/DesignSystem/DesignTokens.swift`. They are built
+by `Kanban.Mobile.IosDesignSystem`, and
+`test/kanban/mobile/ios_design_system_test.exs` fails when they are stale. The
+section on the iOS files in [tokens/README.md](tokens/README.md) describes them.
 
 `mix mobile.api` checks `priv/openapi/stride-api.json` before it copies it:
 the contract must parse, every operation needs a unique `operationId`, and

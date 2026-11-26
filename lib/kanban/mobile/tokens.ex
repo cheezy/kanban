@@ -42,11 +42,15 @@ defmodule Kanban.Mobile.Tokens do
     * `radius`: the `--r-*` radii in px.
     * `type`: `font_size_px`, `font_size_narrow_px`, `letter_spacing_em` and
       `line_height`.
+    * `text_style`: the apps' named text styles, which `Kanban.Mobile.TypeScale`
+      holds because the stylesheet has none. Their body letter spacing and line
+      height come from `type`.
 
   There is no spacing group, because `app.css` defines no spacing tokens.
   Keys are sorted at every level so the file diffs cleanly.
   """
 
+  alias Kanban.Mobile.TypeScale
   alias Mix.Tasks.DarkMode.Contrast
 
   @source_path "assets/css/app.css"
@@ -179,7 +183,13 @@ defmodule Kanban.Mobile.Tokens do
       {group, token} = classify!(name, resolved)
       put_in(acc, [group, name], token)
     end)
-    |> Map.put("type", type_tokens(type))
+    |> put_type(type_tokens(type))
+  end
+
+  defp put_type(groups, type) do
+    groups
+    |> Map.put("type", type)
+    |> Map.put("text_style", TypeScale.build(type))
   end
 
   defp resolve(name, value, props) do

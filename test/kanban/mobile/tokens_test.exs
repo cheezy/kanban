@@ -180,7 +180,7 @@ defmodule Kanban.Mobile.TokensTest do
       css = css("--bg: oklch(98% 0 0);")
 
       assert css |> theme("dark") |> Map.keys() |> Enum.sort() ==
-               ["color", "composite", "font", "radius", "type"]
+               ["color", "composite", "font", "radius", "text_style", "type"]
 
       assert Tokens.build!(css)["generator"] == "mix mobile.tokens"
       assert Tokens.build!(css)["source"] == "assets/css/app.css"
