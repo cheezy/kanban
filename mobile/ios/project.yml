@@ -29,6 +29,10 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
+    # mix mobile.strings writes the string catalog: Xcode makes a Swift symbol of
+    # each string in it, and adds none of its own.
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
+    SWIFT_EMIT_LOC_STRINGS: NO
     # Every identifier below comes from this one. It is the bundle id the server
     # is given as STRIDE_IOS_BUNDLE_ID and APNS_TOPIC.
     STRIDE_BUNDLE_ID: com.stridelikeaboss.app
@@ -107,6 +111,10 @@ targets:
     platform: iOS
     sources:
       - path: StrideTests
+      # The text the string catalog must hold.
+      - path: ../shared/strings
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(STRIDE_BUNDLE_ID).tests

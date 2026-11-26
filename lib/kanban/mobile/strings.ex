@@ -12,7 +12,9 @@ defmodule Kanban.Mobile.Strings do
   labels and the risk explainer sentence are copied from the web's default
   domain, and `test/kanban/mobile/strings_test.exs` fails when the two read
   differently or a committed copy is stale. Refresh the copies with
-  `MIX_ENV=test mix mobile.strings`, and never edit them by hand.
+  `MIX_ENV=test mix mobile.strings`, and never edit them by hand. The same task
+  writes the iOS app's string catalog, which `Kanban.Mobile.StringCatalog` builds
+  from the same strings.
 
   ## What each locale's file holds
 
@@ -71,9 +73,10 @@ defmodule Kanban.Mobile.Strings do
   their keys, to `mobile.pot`.
 
   The status labels and the risk explainer strings are copied from the web's
-  default domain. The counts are the app's own: the Targets, Goals and goal
-  screens of the native apps design (sections 6.16 to 6.19) have no web page
-  that says the same thing.
+  default domain. The counts and the `update_required_*` strings are the app's
+  own: the Targets, Goals and goal screens of the native apps design (sections
+  6.16 to 6.19) and its Update required screen (section 7.2) have no web page that
+  says the same thing.
   """
   @spec msgids() :: [String.t() | {String.t(), String.t()}]
   def msgids do
@@ -109,7 +112,14 @@ defmodule Kanban.Mobile.Strings do
         "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
       ),
       dpgettext_noop("mobile", "agent_stuck", "Stuck"),
-      dpgettext_noop("mobile", "agent_dormant", "Dormant")
+      dpgettext_noop("mobile", "agent_dormant", "Dormant"),
+      dpgettext_noop("mobile", "update_required_title", "Update required"),
+      dpgettext_noop(
+        "mobile",
+        "update_required_message",
+        "This version of Stride is no longer supported. Update the app to continue."
+      ),
+      dpgettext_noop("mobile", "update_required_action", "Open the App Store")
     ]
   end
 

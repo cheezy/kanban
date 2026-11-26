@@ -10,8 +10,8 @@ public enum AuthStoreError: Error, Equatable {
     /// store cannot be encoded.
     case invalidPair
 
-    /// The pair to rotate is no longer the stored one, because another rotation
-    /// or a sign-out came first.
+    /// The pair to rotate or to clear is no longer the stored one, because another
+    /// rotation, a sign-out or a sign-in came first.
     case superseded
 
     /// The marker of this install could not be written.

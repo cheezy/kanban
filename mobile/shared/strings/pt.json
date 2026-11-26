@@ -32,6 +32,9 @@
     "target_status_at_risk": "Em risco",
     "target_status_complete": "Concluído",
     "target_status_missed": "Não atingido",
-    "target_status_on_track": "No prazo"
+    "target_status_on_track": "No prazo",
+    "update_required_action": "Abrir a App Store",
+    "update_required_message": "Esta versão do Stride não é mais compatível. Atualize o app para continuar.",
+    "update_required_title": "Atualização necessária"
   }
 }

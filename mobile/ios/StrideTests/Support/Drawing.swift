@@ -1,0 +1,83 @@
+import SwiftUI
+import Testing
+import UIKit
+
+/// A view drawn into a bitmap, from a window of the app that hosts the tests.
+@MainActor
+struct Drawing {
+    let pixels: [UInt8]
+    private let width: Int
+    private let height: Int
+
+    init(
+        of view: some View,
+        in style: UIUserInterfaceStyle = .light,
+        textSize: UIContentSizeCategory = .large,
+        width: Int = 390,
+        height: Int = 844
+    ) throws {
+        let scene = try #require(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: width, height: height)
+        window.overrideUserInterfaceStyle = style
+        window.traitOverrides.preferredContentSizeCategory = textSize
+        window.rootViewController = UIHostingController(rootView: view)
+        window.isHidden = false
+        defer { window.isHidden = true }
+        window.layoutIfNeeded()
+
+        let context = try #require(
+            CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        )
+        UIGraphicsPushContext(context)
+        defer { UIGraphicsPopContext() }
+        try #require(window.drawHierarchy(in: window.bounds, afterScreenUpdates: true))
+
+        let bitmap = try #require(context.data).assumingMemoryBound(to: UInt8.self)
+        pixels = Array(UnsafeBufferPointer(start: bitmap, count: width * height * 4))
+        self.width = width
+        self.height = height
+    }
+
+    /// The red, green and blue of the top left corner, where no view draws.
+    var corner: [UInt8] { pixel(x: 0, y: 0) }
+
+    /// The darkest and lightest green.
+    var darkest: UInt8 { greens.min() ?? 255 }
+    var lightest: UInt8 { greens.max() ?? 0 }
+
+    /// How many rows hold a pixel that differs from the corner.
+    var drawnRows: Int {
+        (0..<height).count { row in
+            (0..<width).contains { pixel(x: $0, y: row) != corner }
+        }
+    }
+
+    /// The width from the first to the last column that holds such a pixel.
+    var drawnWidth: Int {
+        let columns = (0..<width).filter { column in
+            (0..<height).contains { pixel(x: column, y: $0) != corner }
+        }
+        guard let first = columns.first, let last = columns.last else { return 0 }
+
+        return last - first + 1
+    }
+
+    private var greens: [UInt8] {
+        stride(from: 1, to: pixels.count, by: 4).map { pixels[$0] }
+    }
+
+    private func pixel(x: Int, y: Int) -> [UInt8] {
+        let start = (y * width + x) * 4
+
+        return Array(pixels[start..<start + 3])
+    }
+}

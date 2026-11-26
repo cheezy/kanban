@@ -184,6 +184,76 @@ struct AuthStoreTests {
         #expect(keychain.items.isEmpty)
     }
 
+    @Test("clearing a refused pair removes every item")
+    func clearRefused() async throws {
+        try await store.save(.example(1))
+
+        try await store.clear(refused: .example(1))
+
+        #expect(keychain.items.isEmpty)
+    }
+
+    @Test("clearing a refused pair keeps another one", arguments: [nil, 2])
+    func clearRefusedSuperseded(stored: Int?) async throws {
+        if let stored { try await store.save(.example(stored)) }
+
+        await #expect(throws: AuthStoreError.superseded) {
+            try await store.clear(refused: .example(1))
+        }
+
+        #expect(try await store.read() == stored.map(TokenPair.example))
+    }
+
+    // MARK: Sessions
+
+    @Test("there is no session when signed out")
+    func noSession() async throws {
+        #expect(try await store.session() == nil)
+    }
+
+    @Test("a rotation keeps the sign-in and changes the pair")
+    func sessionAfterRotation() async throws {
+        try await store.save(.example(1))
+        let before = try #require(try await store.session())
+
+        try await store.rotate(from: .example(1), to: .example(2))
+
+        let after = try #require(try await store.session())
+        #expect(before.pair == .example(1))
+        #expect(after == AuthSession(signIn: before.signIn, pair: .example(2)))
+    }
+
+    @Test("saving the same pair again is another sign-in")
+    func sessionAfterSave() async throws {
+        try await store.save(.example(1))
+        let before = try #require(try await store.session())
+
+        try await store.save(.example(1))
+
+        #expect(try await store.session()?.signIn != before.signIn)
+    }
+
+    @Test("a sign-out ends the sign-in, even when the same pair comes back")
+    func sessionAfterClear() async throws {
+        try await store.save(.example(1))
+        let before = try #require(try await store.session())
+        let item = try #require(keychain.items.first)
+
+        try await store.clear()
+        keychain.insert(item)
+
+        #expect(try await store.session()?.signIn != before.signIn)
+    }
+
+    @Test("a session does not print its tokens")
+    func sessionRedacted() {
+        let session = AuthSession(signIn: 1, pair: .example())
+
+        for text in [String(describing: session), String(reflecting: session)] {
+            #expect(!text.contains("EXAMPLE"))
+        }
+    }
+
     // MARK: A previous install
 
     @Test("a previous install's items are cleared on first launch")

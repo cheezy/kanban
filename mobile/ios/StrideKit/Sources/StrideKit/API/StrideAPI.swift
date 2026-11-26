@@ -2,7 +2,7 @@
 /// operation in the contract.
 ///
 /// View models depend on `any StrideAPI`, so the app gives them the client from
-/// `StrideClient`, and previews and tests give them `FixtureAPI().client`.
+/// `APIClient`, and previews and tests give them `FixtureAPI().client`.
 ///
 /// The API adds values to its enums over time, so most are read as a struct of
 /// two: `value1` is the case this version knows, or nil, and `value2` is the

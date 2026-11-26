@@ -185,7 +185,8 @@ side the apps call is described in [the person API](docs/api/me.md).
   checks the API contract, copies it there for the Android client and writes
   the version the iOS client is generated from into StrideKit, and
   `MIX_ENV=test mix mobile.tokens` and `MIX_ENV=test mix mobile.strings`
-  write the design tokens and strings.
+  write the design tokens and strings, the second also the iOS app's string
+  catalog.
 - **The Android workflow skips** its build jobs until
   `mobile/android/settings.gradle.kts` exists. Until then it runs only a short
   Linux check that finds no project, so it passes without running the builds.

@@ -14,6 +14,9 @@ defmodule Kanban.Mobile.StringsTest do
   @gettext Path.join(@root, "priv/gettext")
   @refresh_hint "is stale. Refresh it with: MIX_ENV=test mix mobile.strings"
 
+  # The strings with no web page that says the same thing.
+  @app_only ~w(update_required_action update_required_message update_required_title)
+
   @plural_forms %{
     "de" => "nplurals=2; plural=(n != 1);",
     "en" => "nplurals=2; plural=(n != 1);",
@@ -119,7 +122,7 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 8
+      assert length(pot_keys(:string)) == 11
       assert length(pot_keys(:plural)) == 5
 
       for {locale, strings} <- built do
@@ -143,7 +146,7 @@ defmodule Kanban.Mobile.StringsTest do
               do: {msgid, msgstr}
 
         compared =
-          for {key, msgid, msgstr} <- po_messages(locale, "mobile") do
+          for {key, msgid, msgstr} <- po_messages(locale, "mobile"), key not in @app_only do
             web_text = if web[msgid] == "", do: msgid, else: web[msgid]
 
             assert msgstr == web_text,

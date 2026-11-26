@@ -2,18 +2,15 @@ import Foundation
 import OpenAPIRuntime
 import OpenAPIURLSession
 
-/// Makes the client that talks to the Stride server.
-public enum StrideClient {
+/// Makes the client that talks to the Stride server, without the rules every
+/// request follows. The app takes its client from `APIClient`, which adds them.
+enum StrideClient {
     /// The only server the client talks to.
     static let serverURL = URL(string: "https://www.stridelikeaboss.com")!
 
     static let configuration = Configuration(dateTranscoder: StrideDateTranscoder())
 
     /// Takes no base URL, so a caller cannot point the client anywhere else.
-    public static func make(middlewares: [any ClientMiddleware] = []) -> some StrideAPI {
-        make(transport: makeTransport(), middlewares: middlewares)
-    }
-
     static func make(
         transport: any ClientTransport,
         middlewares: [any ClientMiddleware] = []

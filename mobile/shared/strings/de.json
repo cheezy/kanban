@@ -32,6 +32,9 @@
     "target_status_at_risk": "Gefährdet",
     "target_status_complete": "Abgeschlossen",
     "target_status_missed": "Verpasst",
-    "target_status_on_track": "Im Plan"
+    "target_status_on_track": "Im Plan",
+    "update_required_action": "Zum App Store",
+    "update_required_message": "Diese Version von Stride wird nicht mehr unterstützt. Bitte aktualisieren Sie die App.",
+    "update_required_title": "Update erforderlich"
   }
 }

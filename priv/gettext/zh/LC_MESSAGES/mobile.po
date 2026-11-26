@@ -93,3 +93,21 @@ msgctxt "targets_at_risk_count"
 msgid "Targets · %{count} at risk"
 msgid_plural "Targets · %{count} at risk"
 msgstr[0] "交付目标 · %{count} 个有风险"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "update_required_action"
+msgid "Open the App Store"
+msgstr "打开 App Store"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "update_required_message"
+msgid "This version of Stride is no longer supported. Update the app to continue."
+msgstr "此版本的 Stride 已不再受支持。请更新应用以继续使用。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "update_required_title"
+msgid "Update required"
+msgstr "需要更新"

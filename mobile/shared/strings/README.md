@@ -19,7 +19,10 @@ Never edit these files by hand. To add or change a string:
    MIX_ENV=test mix mobile.strings
    ```
 
-5. Commit the `.po` files and these copies in the same task.
+5. Commit the `.po` files, these copies and the iOS string catalog in the same
+   task. `mix mobile.strings` writes the catalog too, from the same strings:
+   `mobile/ios/Stride/Resources/Localizable.xcstrings`. It leaves out plurals and
+   strings with a placeholder, and names zh `zh-Hans` as iOS does.
 
 `test/kanban/mobile/strings_test.exs` fails while a copy is stale, and when a
 string is missing, empty, fuzzy or loses a placeholder in any locale. The
@@ -56,3 +59,7 @@ plurals (`target_task_progress`, `target_goal_count`, `targets_at_risk_count`,
 Goals and goal screens in sections 6.16 to 6.19 of the design say things no
 web page does. They use the web's words for each term in every locale, such as
 de *Ziele* for goals and *Zielvorgaben* for targets.
+
+The `update_required_*` strings are the app's own too, for the Update required
+screen in section 7.2. A string with no web page that says the same thing is
+listed in `@app_only` in `test/kanban/mobile/strings_test.exs`.

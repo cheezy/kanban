@@ -27,6 +27,9 @@
     "target_status_at_risk": "リスクあり",
     "target_status_complete": "完了",
     "target_status_missed": "未達",
-    "target_status_on_track": "順調"
+    "target_status_on_track": "順調",
+    "update_required_action": "App Store を開く",
+    "update_required_message": "このバージョンの Stride はサポートが終了しました。続けるにはアプリをアップデートしてください。",
+    "update_required_title": "アップデートが必要です"
   }
 }

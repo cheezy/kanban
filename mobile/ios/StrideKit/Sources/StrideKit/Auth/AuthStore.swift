@@ -21,6 +21,9 @@ public actor AuthStore {
     private let keychain: any KeychainClient
     private var observers: [UUID: AsyncStream<Bool>.Continuation] = [:]
 
+    /// Counts the sign-ins and sign-outs made through this store.
+    private var signIn = 0
+
     /// Returns nil when the running target is not entitled to the app group.
     public init?(
         group: AppGroup,
@@ -69,6 +72,13 @@ public actor AuthStore {
         return stored.pair
     }
 
+    /// The stored pair with its sign-in, or nil when the device is signed out.
+    func session() throws(AuthStoreError) -> AuthSession? {
+        guard let pair = try read() else { return nil }
+
+        return AuthSession(signIn: signIn, pair: pair)
+    }
+
     /// Stores the pair of a new sign-in, in place of any pair already there.
     public func save(_ pair: TokenPair) throws(AuthStoreError) {
         try clearItemsFromPreviousInstall()
@@ -81,6 +91,7 @@ public actor AuthStore {
             try check(status)
         }
 
+        signIn += 1
         publish(true)
     }
 
@@ -102,7 +113,17 @@ public actor AuthStore {
     /// Removes every stored item, which signs the device out.
     public func clear() throws(AuthStoreError) {
         try deleteEveryItem()
+        signIn += 1
         publish(false)
+    }
+
+    /// Signs the device out because the server refused `pair`. Throws `superseded`,
+    /// and removes nothing, when that is no longer the stored pair, so that the
+    /// refusal of an old pair cannot end a new sign-in.
+    func clear(refused pair: TokenPair) throws(AuthStoreError) {
+        guard try read() == pair else { throw .superseded }
+
+        try clear()
     }
 
     /// Whether the device is signed in: the state now, then the state after each

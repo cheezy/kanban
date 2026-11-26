@@ -1,21 +1,28 @@
+import StrideKit
 import SwiftUI
 
-/// The placeholder root. It shows only the system background, so it has no text
-/// to translate; the string catalog and the generated colours come later.
+/// The Update required screen once the server refuses this version of the app,
+/// and otherwise a placeholder that shows only the system background.
 struct RootView: View {
+    let update: AppUpdateState
+
     var body: some View {
-        Rectangle()
-            .fill(.background)
-            .ignoresSafeArea()
+        if let storeURL = update.storeURL {
+            UpdateRequiredView(storeURL: storeURL)
+        } else {
+            Rectangle()
+                .fill(.background)
+                .ignoresSafeArea()
+        }
     }
 }
 
 #Preview("Light") {
-    RootView()
+    RootView(update: AppUpdateState())
         .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    RootView()
+    RootView(update: AppUpdateState())
         .preferredColorScheme(.dark)
 }

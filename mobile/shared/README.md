@@ -23,6 +23,11 @@ success response has a JSON body, and
 `test/kanban_web/controllers/api/mobile_fixtures_test.exs` checks each against
 the contract.
 
+`mix mobile.strings` also writes a file outside this folder, the iOS app's string
+catalog `mobile/ios/Stride/Resources/Localizable.xcstrings`. It is built by
+`Kanban.Mobile.StringCatalog`, and `test/kanban/mobile/string_catalog_test.exs`
+fails when it is stale.
+
 `mix mobile.api` checks `priv/openapi/stride-api.json` before it copies it:
 the contract must parse, every operation needs a unique `operationId`, and
 every `/api/me` operation must require `deviceAuth` and give a response schema
