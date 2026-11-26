@@ -5,6 +5,7 @@ defmodule Mix.Tasks.Mobile.StringsTest do
 
   import ExUnit.CaptureIO
 
+  alias Kanban.Mobile.StringAccessors
   alias Kanban.Mobile.StringCatalog
   alias Kanban.Mobile.Strings
 
@@ -40,12 +41,13 @@ defmodule Mix.Tasks.Mobile.StringsTest do
 
   # Call run([]) only inside the tmp dir, and generate/1 only with every path:
   # otherwise they write the repository's own files.
-  test "generate/1 writes one JSON per locale and the catalog, creating their folders",
+  test "generate/1 writes one JSON per locale, the catalog and its accessors, creating their folders",
        %{tmp_dir: dir} do
     source = Path.join(dir, "gettext")
     output = Path.join([dir, "nested", "strings"])
     catalog = Path.join([dir, "resources", "Localizable.xcstrings"])
-    opts = [source: source, output: output, catalog: catalog]
+    accessors = Path.join([dir, "design", "L10n.swift"])
+    opts = [source: source, output: output, catalog: catalog, accessors: accessors]
     copy_domain!(source)
 
     printed = capture_io(fn -> assert @task.generate(opts) == :ok end)
@@ -53,6 +55,8 @@ defmodule Mix.Tasks.Mobile.StringsTest do
 
     assert printed =~ "Wrote #{catalog}"
     assert File.read!(catalog) == source |> Strings.build!() |> StringCatalog.render()
+    assert printed =~ "Wrote #{accessors}"
+    assert File.read!(accessors) == source |> Strings.build!() |> StringAccessors.render()
 
     for locale <- Strings.locales() do
       path = Path.join(output, locale <> ".json")
@@ -60,9 +64,9 @@ defmodule Mix.Tasks.Mobile.StringsTest do
       assert File.read!(path) == rendered[locale]
     end
 
-    first = [File.read!(catalog) | read_all(output)]
+    first = [File.read!(catalog), File.read!(accessors) | read_all(output)]
     capture_io(fn -> @task.generate(opts) end)
-    second = [File.read!(catalog) | read_all(output)]
+    second = [File.read!(catalog), File.read!(accessors) | read_all(output)]
     assert second == first
   end
 
@@ -84,21 +88,29 @@ defmodule Mix.Tasks.Mobile.StringsTest do
              |> Path.join(Strings.source_path())
              |> Strings.build!()
              |> StringCatalog.render()
+
+    assert dir |> Path.join(StringAccessors.output_path()) |> File.read!() ==
+             dir
+             |> Path.join(Strings.source_path())
+             |> Strings.build!()
+             |> StringAccessors.render()
   end
 
   test "a broken domain writes nothing", %{tmp_dir: dir} do
     source = Path.join(dir, "gettext")
     output = Path.join(dir, "strings")
     catalog = Path.join(dir, "Localizable.xcstrings")
+    accessors = Path.join(dir, "L10n.swift")
     copy_domain!(source)
     [source, "zh", "LC_MESSAGES", "mobile.po"] |> Path.join() |> File.rm!()
 
     assert_raise ArgumentError, ~r/zh/, fn ->
-      @task.generate(source: source, output: output, catalog: catalog)
+      @task.generate(source: source, output: output, catalog: catalog, accessors: accessors)
     end
 
     refute File.exists?(output)
     refute File.exists?(catalog)
+    refute File.exists?(accessors)
   end
 
   test "the task takes no arguments" do

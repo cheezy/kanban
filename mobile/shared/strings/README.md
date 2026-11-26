@@ -19,10 +19,12 @@ Never edit these files by hand. To add or change a string:
    MIX_ENV=test mix mobile.strings
    ```
 
-5. Commit the `.po` files, these copies and the iOS string catalog in the same
-   task. `mix mobile.strings` writes the catalog too, from the same strings:
-   `mobile/ios/Stride/Resources/Localizable.xcstrings`. It leaves out plurals and
-   strings with a placeholder, and names zh `zh-Hans` as iOS does.
+5. Commit the `.po` files, these copies, the iOS string catalog and its
+   accessors in the same task. `mix mobile.strings` writes both from the same
+   strings: `mobile/ios/Stride/Resources/Localizable.xcstrings` and
+   `mobile/ios/Stride/DesignSystem/L10n.swift`. The catalog turns each
+   `{name}` into a positional specifier numbered by the English order, varies
+   each plural by `count`, and names zh `zh-Hans` as iOS does.
 
 `test/kanban/mobile/strings_test.exs` fails while a copy is stale, and when a
 string is missing, empty, fuzzy or loses a placeholder in any locale. The
