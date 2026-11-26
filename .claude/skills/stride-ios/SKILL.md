@@ -27,6 +27,9 @@ that has turned out wrong. Rules the app must follow belong in
   task compiles the `:dev` build that the user's running server reads.
   [docs/ios-mix-tasks.md](../../../docs/ios-mix-tasks.md) has the options.
   `ios.deploy` opens no Simulator window unless `--open`.
+- To run some tests only, name them after the options:
+  `MIX_ENV=test mix ios.test --simulator <UDID> StrideUITests/ShellUITests`.
+  The task has no `--only` option (W2790).
 - Pass a full UDID, never a name: a name can pick a simulator the user has not
   approved (see Simulators).
 - Each task runs `xcodegen generate` first. After a hand `xcodegen` or
@@ -103,6 +106,13 @@ that has turned out wrong. Rules the app must follow belong in
 - `test/kanban/mobile/strings_test.exs` pins the number of strings and plurals
   and the count of keys shared with the web domain. A key the web lacks goes in
   its `@app_only` list; bump the counts in the same change.
+- A key whose msgid the web's `default` domain also has must read exactly as the
+  web's translation in every locale, so copy those (grep `priv/gettext/<locale>/
+  LC_MESSAGES/default.po`) instead of translating afresh. A new msgctxt whose
+  msgid another mobile key already has comes out of `gettext.extract --merge`
+  fuzzy with the old text; set its msgstr and drop the flag (W2790).
+- The brand name "Stride" is the `sign_in_title` key; use `Text(.signInTitle)`
+  rather than a verbatim string (W2790).
 - Editing `lib/kanban/mobile/strings.ex` is a change outside `mobile/`, so the
   task's `after_doing` runs the whole Elixir suite and credo (see Hook modes).
 
@@ -114,6 +124,13 @@ that has turned out wrong. Rules the app must follow belong in
   component specs, and the artboards (Main, Review, TabletReview, Targets,
   Agents and others) show each screen. `Diff.dc.html` is not published; the diff
   lines are in TabletReview.
+- **Keep the design artifact current.** The artifact must always show the app
+  as built plus what is still planned. When a task builds a screen or component
+  differently from its artboard (layout, placement, a control, a state the
+  design lacks), update the artifact's files in the same task and republish it
+  to the same URL, reading the live version first; leave unbuilt parts as
+  designed. Name the changed artboards in the completion notes (user request,
+  W2790).
 - Map a CSS token to Swift through the generated catalog: `--ink-2` is
   `Color(.ink2)`, `--st-done-soft` is `Color(.stDoneSoft)`, and a CSS type
   style is `.textStyle(.body)`. Radii come from `DesignTokens.swift`.
@@ -221,6 +238,13 @@ that has turned out wrong. Rules the app must follow belong in
   has `.fixedSize(horizontal: false, vertical: true)`.
 - To prove text wraps rather than truncating, draw it at two widths and expect
   more drawn rows in the narrow one.
+- `FixtureAPI(isOffline:)` takes a `@Sendable` closure read on every request,
+  so a test can take the device offline part way through, with an
+  `OSAllocatedUnfairLock<Bool>` as the switch; `unreachable:` fails chosen
+  operations from the start (W2790).
+- A UI test audits dark mode by setting `XCUIDevice.shared.appearance = .dark`
+  and putting the old value back in `addTeardownBlock`, since the simulator
+  keeps it after the test (W2790).
 - The test bundle carries `mobile/shared/strings` and `mobile/shared/tokens`
   but not the fixtures; `FixtureAPI` reads `mobile/shared/fixtures` through
   `#filePath` and exists only in debug builds.
@@ -244,6 +268,79 @@ that has turned out wrong. Rules the app must follow belong in
   still scrolling; `app.auditAccessibility()` runs the contrast check alone
   first. iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
   link as a link or a button (commit 7975ed01).
+- An iPadOS sidebar `List(selection:)` sometimes fills the selected row with
+  the tint and draws white text on it, and other times greys it, so the audit
+  passes one run and fails the next. In dark the tint `stride-orange-ink` is
+  light, and white on it is about 1.6:1. Draw the selection yourself, as the
+  design's `.side a.on` does: rows as plain buttons, `stride-orange-ink` on a
+  `stride-orange-soft` row background, and the `.isSelected` trait (W2790).
+- To see which element an audit flagged, export the failure's attachments:
+  `xcrun xcresulttool export attachments --path <xcresult> --output-path <dir>
+  --test-id "ShellUITests/<test>()" --only-failures`. The xcresult path is in the
+  `mix ios.test` output; the export holds the issue text and screenshots of the
+  app and the element (W2790).
+- Text inside a navigation-bar toolbar item does not grow with Dynamic Type, so
+  the audit reports "Dynamic Type font sizes are partially unsupported" for it
+  (the avatar's initials, W2790). Put such controls in the screen, as the
+  design's corner row does, and hide the bar on the tab's first screen.
+- A text bar button on iOS 26 and 27's glass fails the contrast audit even in
+  `ink`, black on white to the eye ("Contrast failed for
+  SwiftUI.AccessibilityNode"), so a sheet's Close button sits in the sheet's
+  content with its title, as `ShellSheetView` does (W2790). The audit's element
+  screenshot is in the xcresult: `xcrun xcresulttool export attachments
+  --path <xcresult> --output-path <dir> --test-id "<Suite>/<test>()"`.
+- On iOS 26 and 27 a tab bar item reports its SF Symbol name ("tray") as its
+  identifier, so find a tab by its label, matching the start because Now's label
+  may carry the badge (W2790).
+- A `NavigationSplitView` sidebar row is a `Cell` with no label; its text is a
+  child `StaticText` (with the badge as its value). Find it with
+  `app.cells.staticTexts`, and a phone's tab with `app.tabBars.buttons`
+  (W2790).
+- In a sidebar, a list `.badge` fails the contrast audit on the selected row
+  (faint as standard, white on red with `.badgeProminence(.increased)`). On a
+  row that is not selected the audit also fails any count drawn in it (black on
+  grey, and an ink-on-surface pill alike), and the row's own `StaticText`, whose
+  frame is the whole cell; a longer settle changed nothing, and
+  `.accessibilityHidden` does not keep the count out of the audit. `AppShell`
+  draws an ink-on-surface pill (`sidebar-count`), gives the tab's label the
+  count as its `accessibilityValue`, and `ShellUITests.ignoringSidebarIssue`
+  ignores contrast only on that pill and on the `sidebar-tab` row with a
+  value, selected or not: on iOS 27.2 the selected Now row fails too. On iOS
+  26.4 in dark the audit also fails a plain unselected row (white on near
+  black) below the selected one, though 27.2 passes it and a 2-second settle
+  changed nothing, so that ignore checks `UIDevice.current.systemVersion` and
+  `XCUIDevice.shared.appearance`. CI runs iOS 26, so run a new UI audit on the
+  26.4 simulators in both appearances (W2790).
+- While a split view's detail column shows its navigation bar, the contrast
+  audit fails the sidebar's selected row even without a count. But hiding the
+  detail bar always leaves no way back once the sidebar toggle hides the
+  sidebar, since the toggle then lives in that bar. `AppShell` binds
+  `columnVisibility` (start it at `.all`: `.automatic` starts an upright iPad
+  with the sidebar hidden) and shows the detail bar (`showsDetailBar`) only
+  while it is `.detailOnly` (W2790). Combining the row with `.accessibilityElement(children:
+  .combine)` moved the "text clipped" report to an element without the
+  identifier (W2790).
+- To see what an audit issue is about, print `issue.auditType.rawValue`,
+  `issue.detailedDescription` and `issue.element?.debugDescription` in the
+  handler; `mix ios.test` filters prints, so read them in
+  `mobile/ios/build/ios.test.log` (W2790).
+- On an iPad a form sheet leaves the screen behind it dimmed and out of
+  VoiceOver's reach, and the audit reports that text as "Potentially
+  inaccessible text" (`.elementDetection`) with a nil element. `ShellUITests`
+  ignores only that issue, only on an iPad (W2790).
+- The audit's Dynamic Type pass reports a sidebar row as "Text clipped" on
+  every run, though the same rows at the largest size pass. `ShellUITests`
+  ignores `.textClipped` on the `sidebar-tab` identifier only (W2790).
+- A tab's first screen in a split view's detail column takes only the width of
+  its content, so its background is a narrow strip and its title centred: give
+  the content `.frame(maxWidth: .infinity, alignment: .leading)`, as `TabRoot`
+  does (W2790).
+- A `SignInModel` built with `phase: .starting` and no services moves itself to
+  signed out as soon as the root view's task runs; a drawing that needs the
+  blank screen uses `.signedIn(.checking)` (W2790).
+- A key path cannot use `Dictionary`'s `subscript(_:default:)`, so
+  `$model.paths[tab, default: []]` does not compile; give the state a type with
+  a plain subscript, as `TabPaths` does (W2790).
 
 ## Break-it checks
 

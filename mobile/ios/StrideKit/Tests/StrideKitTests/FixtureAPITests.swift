@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Testing
 
 @testable import StrideKit
@@ -41,6 +42,22 @@ struct FixtureAPITests {
             #expect(SignInError(classifying: error) == .network)
         }
         #expect(try await api.listMyBoards().ok.body.json.data.isEmpty == false)
+    }
+
+    @Test("a device that goes offline fails every request after it, as the network would")
+    func goesOffline() async throws {
+        let offline = OSAllocatedUnfairLock(initialState: false)
+        let api = FixtureAPI(isOffline: { offline.withLock { $0 } }).client
+        #expect(try await api.getMe().ok.body.json.data.user.displayName.isEmpty == false)
+
+        offline.withLock { $0 = true }
+
+        do {
+            _ = try await api.listMyBoards()
+            Issue.record("an offline request answered")
+        } catch {
+            #expect(SignInError(classifying: error) == .network)
+        }
     }
 
     @Test("the locked plan answers me for a person without the Organization plan")

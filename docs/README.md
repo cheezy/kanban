@@ -158,6 +158,7 @@ read the operator section of Audit Log Streaming, under Organization admins.
 - [Agent Integration Pages](integrations-pages.md) — The `/integrations` page for each agent runtime, where its install commands come from, the test that checks them against the plugin READMEs, and how to update one.
 - [Comparison Pages](compare-pages.md) — The `/compare` pages that set Stride against GitHub Projects, Linear and Jira, the sourcing rule every claim about another product follows, and how to refresh or add a comparison.
 - [Hook Time Budget](hook-time-budget.md) — How this repository's `after_doing` and `after_goal` hooks fit the Stride plugin's time budget, and how to measure them.
+- [iOS App Shell](ios-app-shell.md) — The tabs, corner buttons and Now badge the iOS app shows once a device is signed in, and how a sign-out clears them.
 - [iOS Mix Tasks](ios-mix-tasks.md) — How `mix ios.test` and `mix ios.deploy` test the native iOS app and start it on a simulator or a connected device.
 - [iOS Sign-in](ios-sign-in.md) — How the iOS app signs a device in with PKCE and the approval key, where each part lives, and how to see the Sign in screen without a server.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.

@@ -87,7 +87,8 @@ defmodule Kanban.Mobile.Strings do
       sign_in_msgids() ++
       shared_view_label_msgids() ++
       shared_view_reading_msgids() ++
-      shared_view_count_msgids()
+      shared_view_count_msgids() ++
+      shell_msgids()
   end
 
   defp count_msgids do
@@ -279,6 +280,20 @@ defmodule Kanban.Mobile.Strings do
         "%{done}/%{count}",
         "%{done}/%{count}"
       )
+    ]
+  end
+
+  # The tab bar and its corner buttons. Every label but "Now" is copied from
+  # the web.
+  defp shell_msgids do
+    [
+      dpgettext_noop("mobile", "tab_now", "Now"),
+      dpgettext_noop("mobile", "tab_review", "Review"),
+      dpgettext_noop("mobile", "tab_boards", "Boards"),
+      dpgettext_noop("mobile", "tab_agents", "Agents"),
+      dpgettext_noop("mobile", "shell_new_task", "New task"),
+      dpgettext_noop("mobile", "shell_settings", "Settings"),
+      dpgettext_noop("mobile", "shell_close", "Close")
     ]
   end
 

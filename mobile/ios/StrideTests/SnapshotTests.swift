@@ -16,13 +16,24 @@ struct SnapshotTests {
         SignInModel(services: nil, unlock: .faceID, phase: .signedIn(.unlocked))
     }
 
+    /// A device signed in while the server has not said whether its plan
+    /// includes the app, so the root view shows only the background. Unlike
+    /// `.starting`, the phase stays put with no store to read.
+    private static func checking() -> SignInModel {
+        SignInModel(services: nil, unlock: .faceID, phase: .signedIn(.checking))
+    }
+
+    private static func root(_ update: AppUpdateState, _ signIn: SignInModel) -> RootView {
+        RootView(update: update, signIn: signIn, router: AppRouter(api: nil))
+    }
+
     private static func signInScreen(_ phase: SignInPhase = .signedOut(nil)) -> SignInView {
         SignInView(model: SignInModel(services: nil, unlock: .faceID, phase: phase))
     }
 
     @Test("the root view follows the light and dark appearance")
     func rootViewFollowsAppearance() throws {
-        let view = RootView(update: AppUpdateState(), signIn: Self.signedIn())
+        let view = Self.root(AppUpdateState(), Self.checking())
         let light = try Drawing(of: view, in: .light)
         let dark = try Drawing(of: view, in: .dark)
 
@@ -32,13 +43,28 @@ struct SnapshotTests {
 
     @Test("the root view shows the update screen when an update is required")
     func rootViewShowsUpdateScreen() throws {
-        let required = try Drawing(of: RootView(update: AppUpdateState(storeURL: Self.storeURL), signIn: Self.signedIn()))
+        let required = try Drawing(of: Self.root(AppUpdateState(storeURL: Self.storeURL), Self.signedIn()))
         let screen = try Drawing(of: UpdateRequiredView(storeURL: Self.storeURL))
-        let accepted = try Drawing(of: RootView(update: AppUpdateState(), signIn: Self.signedIn()))
+        let accepted = try Drawing(of: Self.root(AppUpdateState(), Self.checking()))
 
         #expect(required.pixels == screen.pixels)
         #expect(required.drawnRows > 50)
         #expect(accepted.drawnRows == 0)
+    }
+
+    @Test("once signed in, the root view shows the shell in light and dark")
+    func rootViewShowsShell() throws {
+        let view = Self.root(AppUpdateState(), Self.signedIn())
+        let light = try Drawing(of: view, in: .light)
+        let dark = try Drawing(of: view, in: .dark)
+        let waiting = try Drawing(of: Self.root(AppUpdateState(), Self.checking()), in: .light)
+
+        #expect(light.drawnRows > 50)
+        #expect(light.pixels != waiting.pixels)
+        #expect(light.darkest < 80)
+        #expect(dark.lightest > 180)
+        #expect(light.corner.allSatisfy { $0 > 200 })
+        #expect(dark.corner.allSatisfy { $0 < 60 })
     }
 
     @Test("the update screen's text stands out in light and dark")
@@ -77,7 +103,7 @@ struct SnapshotTests {
     @Test("the root view shows the Sign in screen until the device is signed in")
     func rootViewShowsSignIn() throws {
         let signedOut = SignInModel(services: nil, unlock: .faceID, phase: .signedOut(nil))
-        let root = try Drawing(of: RootView(update: AppUpdateState(), signIn: signedOut))
+        let root = try Drawing(of: Self.root(AppUpdateState(), signedOut))
         let screen = try Drawing(of: Self.signInScreen())
 
         #expect(root.pixels == screen.pixels)
@@ -87,7 +113,7 @@ struct SnapshotTests {
     @Test("the root view shows the update screen before the Sign in screen")
     func rootViewPutsUpdateFirst() throws {
         let signedOut = SignInModel(services: nil, unlock: .faceID, phase: .signedOut(nil))
-        let root = try Drawing(of: RootView(update: AppUpdateState(storeURL: Self.storeURL), signIn: signedOut))
+        let root = try Drawing(of: Self.root(AppUpdateState(storeURL: Self.storeURL), signedOut))
         let screen = try Drawing(of: UpdateRequiredView(storeURL: Self.storeURL))
 
         #expect(root.pixels == screen.pixels)

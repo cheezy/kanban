@@ -17,7 +17,8 @@ defmodule Kanban.Mobile.StringsTest do
   # The strings with no web page that says the same thing. The Sign in button
   # shares the web's "Sign in" msgid, but the web's Spanish and French nav link
   # is in title case and the app's button in sentence case, as iOS buttons are.
-  # The shared views' readings and kinds (W2789) are the app's own sentences.
+  # The shared views' readings and kinds (W2789) and the Now tab (W2790) are the
+  # app's own words.
   @app_only ~w(
     sign_in_action sign_in_create_account sign_in_failed sign_in_locked_action
     sign_in_locked_message sign_in_locked_title sign_in_network_error sign_in_note
@@ -28,7 +29,7 @@ defmodule Kanban.Mobile.StringsTest do
     decision_kind_claim_expired decision_kind_hook_failed decision_kind_ready_empty
     decision_kind_released diff_line_added diff_line_removed diff_line_unchanged
     goal_hook_failed offline_banner progress_no_tasks verdict_failed verdict_not_assessed
-    verdict_passed
+    verdict_passed tab_now
   )
 
   @plural_forms %{
@@ -136,7 +137,7 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 51
+      assert length(pot_keys(:string)) == 58
       assert length(pot_keys(:plural)) == 12
 
       for {locale, strings} <- built do
@@ -170,7 +171,7 @@ defmodule Kanban.Mobile.StringsTest do
             key
           end
 
-        assert length(compared) == 19, "#{locale} compared only #{length(compared)} strings"
+        assert length(compared) == 25, "#{locale} compared only #{length(compared)} strings"
       end
     end
 

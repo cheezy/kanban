@@ -14,12 +14,20 @@ public struct FixtureAPI: ClientTransport {
     /// Named by `operationId`, as the files in `mobile/shared/fixtures` are.
     private let replacements: [String: Data]
     private let unreachable: Set<String>
+    private let isOffline: @Sendable () -> Bool
 
     /// Replaces the bodies of some operations, keyed by `Operations.<Name>.id`,
-    /// and fails the `unreachable` ones as if the device were offline.
-    public init(replacing replacements: [String: Data] = [:], unreachable: Set<String> = []) {
+    /// and fails the `unreachable` ones as if the device were offline. While
+    /// `isOffline` returns true every operation fails that way, so a test can
+    /// take the device offline after a first answer.
+    public init(
+        replacing replacements: [String: Data] = [:],
+        unreachable: Set<String> = [],
+        isOffline: @escaping @Sendable () -> Bool = { false }
+    ) {
         self.replacements = replacements
         self.unreachable = unreachable
+        self.isOffline = isOffline
     }
 
     /// `getMe` for a person whose plan does not include the app.
@@ -47,7 +55,7 @@ public struct FixtureAPI: ClientTransport {
         baseURL: URL,
         operationID: String
     ) async throws -> (HTTPResponse, HTTPBody?) {
-        if unreachable.contains(operationID) { throw URLError(.notConnectedToInternet) }
+        if isOffline() || unreachable.contains(operationID) { throw URLError(.notConnectedToInternet) }
 
         let status = Self.status(of: operationID)
         guard status != .noContent else { return (HTTPResponse(status: status), nil) }

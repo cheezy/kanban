@@ -16,10 +16,11 @@ struct StrideApp: App {
     }()
 
     @State private var signIn = SignInModel.atLaunch()
+    @State private var router = AppRouter.atLaunch()
 
     var body: some Scene {
         WindowGroup {
-            RootView(update: Self.update, signIn: signIn)
+            RootView(update: Self.update, signIn: signIn, router: router)
                 .task {
                     // After a failure every read stays nil, and the next launch or
                     // sign-in tries again.

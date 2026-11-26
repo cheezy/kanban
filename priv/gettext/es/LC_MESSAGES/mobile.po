@@ -412,3 +412,45 @@ msgstr "Seguridad"
 msgctxt "verdict_section_testing_strategy"
 msgid "Testing"
 msgstr "Pruebas"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "shell_close"
+msgid "Close"
+msgstr "Cerrar"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "shell_new_task"
+msgid "New task"
+msgstr "Nueva tarea"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "shell_settings"
+msgid "Settings"
+msgstr "Configuración"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "tab_agents"
+msgid "Agents"
+msgstr "Agentes"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "tab_boards"
+msgid "Boards"
+msgstr "Tableros"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "tab_now"
+msgid "Now"
+msgstr "Ahora"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "tab_review"
+msgid "Review"
+msgstr "Revisión"
