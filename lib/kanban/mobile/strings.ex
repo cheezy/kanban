@@ -81,7 +81,13 @@ defmodule Kanban.Mobile.Strings do
   """
   @spec msgids() :: [String.t() | {String.t(), String.t()}]
   def msgids do
-    count_msgids() ++ status_msgids() ++ update_required_msgids() ++ sign_in_msgids()
+    count_msgids() ++
+      status_msgids() ++
+      update_required_msgids() ++
+      sign_in_msgids() ++
+      shared_view_label_msgids() ++
+      shared_view_reading_msgids() ++
+      shared_view_count_msgids()
   end
 
   defp count_msgids do
@@ -205,6 +211,74 @@ defmodule Kanban.Mobile.Strings do
         "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
       ),
       dpgettext_noop("mobile", "sign_in_locked_action", "See the plans")
+    ]
+  end
+
+  # The shared views' strings (W2789), split in two for credo's ABC size. The
+  # priority names, the verdict section names and "Review" are copied from the
+  # web; the rest are the app's own.
+  defp shared_view_label_msgids do
+    [
+      dpgettext_noop("mobile", "priority_critical", "Critical priority"),
+      dpgettext_noop("mobile", "priority_high", "High priority"),
+      dpgettext_noop("mobile", "priority_medium", "Medium priority"),
+      dpgettext_noop("mobile", "priority_low", "Low priority"),
+      dpgettext_noop("mobile", "verdict_section_acceptance_criteria", "Acceptance"),
+      dpgettext_noop("mobile", "verdict_section_testing_strategy", "Testing"),
+      dpgettext_noop("mobile", "verdict_section_patterns", "Patterns"),
+      dpgettext_noop("mobile", "verdict_section_security_considerations", "Security"),
+      dpgettext_noop("mobile", "verdict_section_pitfalls", "Pitfalls"),
+      dpgettext_noop("mobile", "decision_kind_review", "Review"),
+      dpgettext_noop("mobile", "decision_kind_released", "Released by agent"),
+      dpgettext_noop("mobile", "decision_kind_claim_expired", "Claim expired"),
+      dpgettext_noop("mobile", "decision_kind_hook_failed", "Goal hook failed"),
+      dpgettext_noop("mobile", "decision_kind_ready_empty", "Ready is empty"),
+      dpgettext_noop("mobile", "goal_hook_failed", "Hook failed")
+    ]
+  end
+
+  defp shared_view_reading_msgids do
+    [
+      dpgettext_noop("mobile", "verdict_passed", "%{section} passed"),
+      dpgettext_noop("mobile", "verdict_failed", "%{section} failed"),
+      dpgettext_noop("mobile", "verdict_not_assessed", "%{section} not assessed"),
+      dpgettext_noop("mobile", "progress_no_tasks", "No tasks yet"),
+      dpgettext_noop("mobile", "diff_line_added", "Added, line %{line}"),
+      dpgettext_noop("mobile", "diff_line_removed", "Removed, line %{line}"),
+      dpgettext_noop("mobile", "diff_line_unchanged", "Line %{line}"),
+      dpgettext_noop("mobile", "offline_banner", "Offline · showing what you had at %{time}")
+    ]
+  end
+
+  defp shared_view_count_msgids do
+    [
+      dpngettext_noop(
+        "mobile",
+        "progress_done",
+        "%{done} of %{count} done",
+        "%{done} of %{count} done"
+      ),
+      dpngettext_noop("mobile", "progress_in_review", "%{count} in review", "%{count} in review"),
+      dpngettext_noop(
+        "mobile",
+        "progress_in_progress",
+        "%{count} in progress",
+        "%{count} in progress"
+      ),
+      dpngettext_noop("mobile", "progress_blocked", "%{count} blocked", "%{count} blocked"),
+      dpngettext_noop("mobile", "decision_holds_up", "holds up %{count}", "holds up %{count}"),
+      dpngettext_noop(
+        "mobile",
+        "goal_waiting_on_you",
+        "%{count} waiting on you",
+        "%{count} waiting on you"
+      ),
+      dpngettext_noop(
+        "mobile",
+        "goal_progress_fraction",
+        "%{done}/%{count}",
+        "%{done}/%{count}"
+      )
     ]
   end
 

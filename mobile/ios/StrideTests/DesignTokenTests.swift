@@ -18,7 +18,7 @@ struct DesignTokenTests {
         #expect(tokens.count > 50)
         for (name, token) in tokens {
             let hex = try #require(token["hex"])
-            let asset = try #require(Self.color(name, in: theme), "\(name) has no colour asset")
+            let asset = try #require(Contrast.color(name, in: theme), "\(name) has no colour asset")
 
             #expect(Self.hex(of: asset) == hex, "\(name) is \(Self.hex(of: asset)) in \(theme), not \(hex)")
         }
@@ -43,9 +43,9 @@ struct DesignTokenTests {
     )
     func contrast(theme: String) throws {
         for pair in Self.contrastPairs {
-            let foreground = try #require(Self.color(pair.foreground, in: theme), "\(pair.foreground) is missing")
-            let background = try #require(Self.color(pair.background, in: theme), "\(pair.background) is missing")
-            let ratio = Self.contrast(foreground, on: background)
+            let foreground = try #require(Contrast.color(pair.foreground, in: theme), "\(pair.foreground) is missing")
+            let background = try #require(Contrast.color(pair.background, in: theme), "\(pair.background) is missing")
+            let ratio = Contrast.ratio(foreground, on: background)
 
             #expect(
                 ratio >= pair.floor,
@@ -196,40 +196,13 @@ struct DesignTokenTests {
         return try #require(themes[theme] as? [String: Any])
     }
 
-    private static func color(_ name: String, in theme: String) -> UIColor? {
-        let traits = UITraitCollection(userInterfaceStyle: theme == "dark" ? .dark : .light)
-        return UIColor(named: name, in: .main, compatibleWith: traits)?.resolvedColor(with: traits)
-    }
-
-    private static func components(of color: UIColor) -> (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        return (red, green, blue, alpha)
-    }
-
     /// `#rrggbb`, with `aa` after it when the colour is not opaque, as the
     /// tokens write it.
     private static func hex(of color: UIColor) -> String {
-        let parts = components(of: color)
+        let parts = Contrast.components(of: color)
         let byte = { (value: CGFloat) in String(format: "%02x", Int((value * 255).rounded())) }
         let rgb = "#" + byte(parts.red) + byte(parts.green) + byte(parts.blue)
         return parts.alpha < 1 ? rgb + byte(parts.alpha) : rgb
-    }
-
-    /// The WCAG 2 contrast ratio of two opaque colours.
-    private static func contrast(_ foreground: UIColor, on background: UIColor) -> Double {
-        let lighter = max(luminance(foreground), luminance(background))
-        let darker = min(luminance(foreground), luminance(background))
-        return (lighter + 0.05) / (darker + 0.05)
-    }
-
-    private static func luminance(_ color: UIColor) -> Double {
-        let parts = components(of: color)
-        let linear = { (value: CGFloat) -> Double in
-            let channel = Double(value)
-            return channel <= 0.04045 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
-        }
-        return 0.2126 * linear(parts.red) + 0.7152 * linear(parts.green) + 0.0722 * linear(parts.blue)
     }
 
     private static func firstFamily(of stack: String?) -> String? {

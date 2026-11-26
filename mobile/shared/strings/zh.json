@@ -2,11 +2,32 @@
   "generator": "mix mobile.strings",
   "locale": "zh",
   "plurals": {
+    "decision_holds_up": {
+      "other": "阻塞 {count} 项"
+    },
     "goal_archived_count": {
       "other": "{count} 个已归档"
     },
+    "goal_progress_fraction": {
+      "other": "{done}/{count}"
+    },
+    "goal_waiting_on_you": {
+      "other": "{count} 项等待你处理"
+    },
     "goals_open_count": {
       "other": "目标 · {count} 个开放"
+    },
+    "progress_blocked": {
+      "other": "{count} 项受阻"
+    },
+    "progress_done": {
+      "other": "{count} 项中已完成 {done} 项"
+    },
+    "progress_in_progress": {
+      "other": "{count} 项进行中"
+    },
+    "progress_in_review": {
+      "other": "{count} 项审查中"
     },
     "target_goal_count": {
       "other": "{count} 个目标"
@@ -22,6 +43,21 @@
   "strings": {
     "agent_dormant": "休眠",
     "agent_stuck": "卡住",
+    "decision_kind_claim_expired": "认领已过期",
+    "decision_kind_hook_failed": "目标钩子失败",
+    "decision_kind_ready_empty": "就绪列为空",
+    "decision_kind_released": "已由智能体释放",
+    "decision_kind_review": "审查",
+    "diff_line_added": "新增，第 {line} 行",
+    "diff_line_removed": "删除，第 {line} 行",
+    "diff_line_unchanged": "第 {line} 行",
+    "goal_hook_failed": "钩子失败",
+    "offline_banner": "离线 · 显示 {time} 时的内容",
+    "priority_critical": "紧急优先级",
+    "priority_high": "高优先级",
+    "priority_low": "低优先级",
+    "priority_medium": "中优先级",
+    "progress_no_tasks": "还没有任务",
     "sign_in_action": "登录",
     "sign_in_create_account": "初次使用 Stride？在网页上创建账户",
     "sign_in_failed": "登录未完成。请重试。",
@@ -47,6 +83,14 @@
     "target_status_on_track": "正常",
     "update_required_action": "打开 App Store",
     "update_required_message": "此版本的 Stride 已不再受支持。请更新应用以继续使用。",
-    "update_required_title": "需要更新"
+    "update_required_title": "需要更新",
+    "verdict_failed": "{section}：未通过",
+    "verdict_not_assessed": "{section}：未评估",
+    "verdict_passed": "{section}：通过",
+    "verdict_section_acceptance_criteria": "验收",
+    "verdict_section_patterns": "模式",
+    "verdict_section_pitfalls": "陷阱",
+    "verdict_section_security_considerations": "安全",
+    "verdict_section_testing_strategy": "测试"
   }
 }

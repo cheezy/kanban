@@ -95,8 +95,9 @@ jobs:
       matrix:
         include:
           # Swift Testing runs once, on the iPhone: the app's StrideTests and
-          # the StrideKit package's StrideKitTests. Snapshot tests and XCUITest
-          # run on one iPhone and one iPad simulator.
+          # the StrideKit package's StrideKitTests. The snapshot suites
+          # (SnapshotTests and SharedViewSnapshotTests) and XCUITest run on one
+          # iPhone and one iPad simulator.
           - device: iPhone 17
             unit_tests: true
           - device: iPad (A16)
@@ -144,7 +145,8 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -only-testing:StrideTests \
             -only-testing:StrideKitTests \
-            -skip-testing:StrideTests/SnapshotTests
+            -skip-testing:StrideTests/SnapshotTests \
+            -skip-testing:StrideTests/SharedViewSnapshotTests
 
       - name: Snapshot tests
         run: |
@@ -154,7 +156,8 @@ jobs:
             -skipPackagePluginValidation \
             -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${SIMULATOR_OS}" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -only-testing:StrideTests/SnapshotTests
+            -only-testing:StrideTests/SnapshotTests \
+            -only-testing:StrideTests/SharedViewSnapshotTests
 
       - name: XCUITest
         run: |

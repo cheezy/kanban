@@ -7,14 +7,69 @@ import Foundation
 /// The strings that take arguments, each argument named after its
 /// placeholder. Xcode's own symbols for them name no argument, so call these.
 extension LocalizedStringResource {
+    /// "holds up {count}"
+    static func decisionHoldsUp(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("decision_holds_up", defaultValue: "holds up \(count, specifier: "%lld")", table: "Localizable", bundle: .main)
+    }
+
+    /// "Added, line {line}"
+    static func diffLineAdded(line: String) -> LocalizedStringResource {
+        LocalizedStringResource("diff_line_added", defaultValue: "Added, line \(line)", table: "Localizable", bundle: .main)
+    }
+
+    /// "Removed, line {line}"
+    static func diffLineRemoved(line: String) -> LocalizedStringResource {
+        LocalizedStringResource("diff_line_removed", defaultValue: "Removed, line \(line)", table: "Localizable", bundle: .main)
+    }
+
+    /// "Line {line}"
+    static func diffLineUnchanged(line: String) -> LocalizedStringResource {
+        LocalizedStringResource("diff_line_unchanged", defaultValue: "Line \(line)", table: "Localizable", bundle: .main)
+    }
+
     /// "{count} archived"
     static func goalArchivedCount(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("goal_archived_count", defaultValue: "\(count, specifier: "%lld") archived", table: "Localizable", bundle: .main)
     }
 
+    /// "{done}/{count}"
+    static func goalProgressFraction(done: Int, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("goal_progress_fraction", defaultValue: "\(done, specifier: "%lld")/\(count, specifier: "%lld")", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} waiting on you"
+    static func goalWaitingOnYou(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("goal_waiting_on_you", defaultValue: "\(count, specifier: "%lld") waiting on you", table: "Localizable", bundle: .main)
+    }
+
     /// "Goals · {count} open"
     static func goalsOpenCount(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("goals_open_count", defaultValue: "Goals · \(count, specifier: "%lld") open", table: "Localizable", bundle: .main)
+    }
+
+    /// "Offline · showing what you had at {time}"
+    static func offlineBanner(time: String) -> LocalizedStringResource {
+        LocalizedStringResource("offline_banner", defaultValue: "Offline · showing what you had at \(time)", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} blocked"
+    static func progressBlocked(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("progress_blocked", defaultValue: "\(count, specifier: "%lld") blocked", table: "Localizable", bundle: .main)
+    }
+
+    /// "{done} of {count} done"
+    static func progressDone(done: Int, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("progress_done", defaultValue: "\(done, specifier: "%lld") of \(count, specifier: "%lld") done", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} in progress"
+    static func progressInProgress(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("progress_in_progress", defaultValue: "\(count, specifier: "%lld") in progress", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} in review"
+    static func progressInReview(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("progress_in_review", defaultValue: "\(count, specifier: "%lld") in review", table: "Localizable", bundle: .main)
     }
 
     /// "{count} goals"
@@ -35,5 +90,20 @@ extension LocalizedStringResource {
     /// "Targets · {count} at risk"
     static func targetsAtRiskCount(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("targets_at_risk_count", defaultValue: "Targets · \(count, specifier: "%lld") at risk", table: "Localizable", bundle: .main)
+    }
+
+    /// "{section} failed"
+    static func verdictFailed(section: String) -> LocalizedStringResource {
+        LocalizedStringResource("verdict_failed", defaultValue: "\(section) failed", table: "Localizable", bundle: .main)
+    }
+
+    /// "{section} not assessed"
+    static func verdictNotAssessed(section: String) -> LocalizedStringResource {
+        LocalizedStringResource("verdict_not_assessed", defaultValue: "\(section) not assessed", table: "Localizable", bundle: .main)
+    }
+
+    /// "{section} passed"
+    static func verdictPassed(section: String) -> LocalizedStringResource {
+        LocalizedStringResource("verdict_passed", defaultValue: "\(section) passed", table: "Localizable", bundle: .main)
     }
 }

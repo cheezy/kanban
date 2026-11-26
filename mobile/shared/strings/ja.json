@@ -2,11 +2,32 @@
   "generator": "mix mobile.strings",
   "locale": "ja",
   "plurals": {
+    "decision_holds_up": {
+      "other": "{count} 件を足止め"
+    },
     "goal_archived_count": {
       "other": "アーカイブ済み {count} 件"
     },
+    "goal_progress_fraction": {
+      "other": "{done}/{count}"
+    },
+    "goal_waiting_on_you": {
+      "other": "あなた待ち {count} 件"
+    },
     "goals_open_count": {
       "other": "ゴール · オープン {count} 件"
+    },
+    "progress_blocked": {
+      "other": "ブロック中 {count} 件"
+    },
+    "progress_done": {
+      "other": "{count} 件中 {done} 件完了"
+    },
+    "progress_in_progress": {
+      "other": "進行中 {count} 件"
+    },
+    "progress_in_review": {
+      "other": "レビュー中 {count} 件"
     },
     "target_goal_count": {
       "other": "{count} 件のゴール"
@@ -22,6 +43,21 @@
   "strings": {
     "agent_dormant": "休止中",
     "agent_stuck": "停滞中",
+    "decision_kind_claim_expired": "担当の期限切れ",
+    "decision_kind_hook_failed": "ゴールのフックが失敗",
+    "decision_kind_ready_empty": "準備完了が空です",
+    "decision_kind_released": "エージェントが解放",
+    "decision_kind_review": "レビュー",
+    "diff_line_added": "追加、{line} 行目",
+    "diff_line_removed": "削除、{line} 行目",
+    "diff_line_unchanged": "{line} 行目",
+    "goal_hook_failed": "フック失敗",
+    "offline_banner": "オフライン · {time} 時点の内容を表示中",
+    "priority_critical": "優先度：重大",
+    "priority_high": "優先度：高",
+    "priority_low": "優先度：低",
+    "priority_medium": "優先度：中",
+    "progress_no_tasks": "タスクはまだありません",
     "sign_in_action": "サインイン",
     "sign_in_create_account": "Stride は初めてですか? Web でアカウントを作成",
     "sign_in_failed": "サインインが完了しませんでした。もう一度お試しください。",
@@ -47,6 +83,14 @@
     "target_status_on_track": "順調",
     "update_required_action": "App Store を開く",
     "update_required_message": "このバージョンの Stride はサポートが終了しました。続けるにはアプリをアップデートしてください。",
-    "update_required_title": "アップデートが必要です"
+    "update_required_title": "アップデートが必要です",
+    "verdict_failed": "{section}：不合格",
+    "verdict_not_assessed": "{section}：未評価",
+    "verdict_passed": "{section}：合格",
+    "verdict_section_acceptance_criteria": "受け入れ",
+    "verdict_section_patterns": "パターン",
+    "verdict_section_pitfalls": "落とし穴",
+    "verdict_section_security_considerations": "セキュリティ",
+    "verdict_section_testing_strategy": "テスト"
   }
 }

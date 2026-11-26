@@ -218,3 +218,197 @@ msgstr "Signing in"
 msgctxt "sign_in_passcode_required"
 msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
 msgstr "Set a passcode on this device first. Stride uses it to confirm your approvals."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_holds_up"
+msgid "holds up %{count}"
+msgid_plural "holds up %{count}"
+msgstr[0] "holds up %{count}"
+msgstr[1] "holds up %{count}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_claim_expired"
+msgid "Claim expired"
+msgstr "Claim expired"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_hook_failed"
+msgid "Goal hook failed"
+msgstr "Goal hook failed"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_ready_empty"
+msgid "Ready is empty"
+msgstr "Ready is empty"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_released"
+msgid "Released by agent"
+msgstr "Released by agent"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_review"
+msgid "Review"
+msgstr "Review"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_line_added"
+msgid "Added, line %{line}"
+msgstr "Added, line %{line}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_line_removed"
+msgid "Removed, line %{line}"
+msgstr "Removed, line %{line}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_line_unchanged"
+msgid "Line %{line}"
+msgstr "Line %{line}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_hook_failed"
+msgid "Hook failed"
+msgstr "Hook failed"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_progress_fraction"
+msgid "%{done}/%{count}"
+msgid_plural "%{done}/%{count}"
+msgstr[0] "%{done}/%{count}"
+msgstr[1] "%{done}/%{count}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_waiting_on_you"
+msgid "%{count} waiting on you"
+msgid_plural "%{count} waiting on you"
+msgstr[0] "%{count} waiting on you"
+msgstr[1] "%{count} waiting on you"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "offline_banner"
+msgid "Offline · showing what you had at %{time}"
+msgstr "Offline · showing what you had at %{time}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_critical"
+msgid "Critical priority"
+msgstr "Critical priority"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_high"
+msgid "High priority"
+msgstr "High priority"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_low"
+msgid "Low priority"
+msgstr "Low priority"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_medium"
+msgid "Medium priority"
+msgstr "Medium priority"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_blocked"
+msgid "%{count} blocked"
+msgid_plural "%{count} blocked"
+msgstr[0] "%{count} blocked"
+msgstr[1] "%{count} blocked"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_done"
+msgid "%{done} of %{count} done"
+msgid_plural "%{done} of %{count} done"
+msgstr[0] "%{done} of %{count} done"
+msgstr[1] "%{done} of %{count} done"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_in_progress"
+msgid "%{count} in progress"
+msgid_plural "%{count} in progress"
+msgstr[0] "%{count} in progress"
+msgstr[1] "%{count} in progress"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_in_review"
+msgid "%{count} in review"
+msgid_plural "%{count} in review"
+msgstr[0] "%{count} in review"
+msgstr[1] "%{count} in review"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_no_tasks"
+msgid "No tasks yet"
+msgstr "No tasks yet"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_failed"
+msgid "%{section} failed"
+msgstr "%{section} failed"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_not_assessed"
+msgid "%{section} not assessed"
+msgstr "%{section} not assessed"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_passed"
+msgid "%{section} passed"
+msgstr "%{section} passed"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_acceptance_criteria"
+msgid "Acceptance"
+msgstr "Acceptance"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_patterns"
+msgid "Patterns"
+msgstr "Patterns"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_pitfalls"
+msgid "Pitfalls"
+msgstr "Pitfalls"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_security_considerations"
+msgid "Security"
+msgstr "Security"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_testing_strategy"
+msgid "Testing"
+msgstr "Testing"

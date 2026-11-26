@@ -213,3 +213,190 @@ msgstr "正在登录"
 msgctxt "sign_in_passcode_required"
 msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
 msgstr "请先为此设备设置密码。Stride 会用它来确认你的批准。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_holds_up"
+msgid "holds up %{count}"
+msgid_plural "holds up %{count}"
+msgstr[0] "阻塞 %{count} 项"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_claim_expired"
+msgid "Claim expired"
+msgstr "认领已过期"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_hook_failed"
+msgid "Goal hook failed"
+msgstr "目标钩子失败"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_ready_empty"
+msgid "Ready is empty"
+msgstr "就绪列为空"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_released"
+msgid "Released by agent"
+msgstr "已由智能体释放"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "decision_kind_review"
+msgid "Review"
+msgstr "审查"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_line_added"
+msgid "Added, line %{line}"
+msgstr "新增，第 %{line} 行"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_line_removed"
+msgid "Removed, line %{line}"
+msgstr "删除，第 %{line} 行"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_line_unchanged"
+msgid "Line %{line}"
+msgstr "第 %{line} 行"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_hook_failed"
+msgid "Hook failed"
+msgstr "钩子失败"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_progress_fraction"
+msgid "%{done}/%{count}"
+msgid_plural "%{done}/%{count}"
+msgstr[0] "%{done}/%{count}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "goal_waiting_on_you"
+msgid "%{count} waiting on you"
+msgid_plural "%{count} waiting on you"
+msgstr[0] "%{count} 项等待你处理"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "offline_banner"
+msgid "Offline · showing what you had at %{time}"
+msgstr "离线 · 显示 %{time} 时的内容"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_critical"
+msgid "Critical priority"
+msgstr "紧急优先级"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_high"
+msgid "High priority"
+msgstr "高优先级"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_low"
+msgid "Low priority"
+msgstr "低优先级"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "priority_medium"
+msgid "Medium priority"
+msgstr "中优先级"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_blocked"
+msgid "%{count} blocked"
+msgid_plural "%{count} blocked"
+msgstr[0] "%{count} 项受阻"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_done"
+msgid "%{done} of %{count} done"
+msgid_plural "%{done} of %{count} done"
+msgstr[0] "%{count} 项中已完成 %{done} 项"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_in_progress"
+msgid "%{count} in progress"
+msgid_plural "%{count} in progress"
+msgstr[0] "%{count} 项进行中"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_in_review"
+msgid "%{count} in review"
+msgid_plural "%{count} in review"
+msgstr[0] "%{count} 项审查中"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "progress_no_tasks"
+msgid "No tasks yet"
+msgstr "还没有任务"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_failed"
+msgid "%{section} failed"
+msgstr "%{section}：未通过"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_not_assessed"
+msgid "%{section} not assessed"
+msgstr "%{section}：未评估"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_passed"
+msgid "%{section} passed"
+msgstr "%{section}：通过"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_acceptance_criteria"
+msgid "Acceptance"
+msgstr "验收"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_patterns"
+msgid "Patterns"
+msgstr "模式"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_pitfalls"
+msgid "Pitfalls"
+msgstr "陷阱"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_security_considerations"
+msgid "Security"
+msgstr "安全"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "verdict_section_testing_strategy"
+msgid "Testing"
+msgstr "测试"

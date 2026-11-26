@@ -56,15 +56,18 @@ struct Drawing {
 
     /// How many rows hold a pixel that differs from the corner.
     var drawnRows: Int {
-        (0..<height).count { row in
-            (0..<width).contains { pixel(x: $0, y: row) != corner }
-        }
+        (0..<height).count(where: rowIsDrawn)
+    }
+
+    /// The last row that holds such a pixel, or -1 when none does.
+    var lastDrawnRow: Int {
+        (0..<height).last(where: rowIsDrawn) ?? -1
     }
 
     /// The width from the first to the last column that holds such a pixel.
     var drawnWidth: Int {
         let columns = (0..<width).filter { column in
-            (0..<height).contains { pixel(x: column, y: $0) != corner }
+            (0..<height).contains { isDrawn(x: column, y: $0) }
         }
         guard let first = columns.first, let last = columns.last else { return 0 }
 
@@ -73,6 +76,18 @@ struct Drawing {
 
     private var greens: [UInt8] {
         stride(from: 1, to: pixels.count, by: 4).map { pixels[$0] }
+    }
+
+    private func rowIsDrawn(_ row: Int) -> Bool {
+        (0..<width).contains { isDrawn(x: $0, y: row) }
+    }
+
+    /// Whether the pixel's red, green or blue differs from the corner's,
+    /// compared in place so a tall drawing scans quickly.
+    private func isDrawn(x: Int, y: Int) -> Bool {
+        let start = (y * width + x) * 4
+
+        return pixels[start] != pixels[0] || pixels[start + 1] != pixels[1] || pixels[start + 2] != pixels[2]
     }
 
     private func pixel(x: Int, y: Int) -> [UInt8] {

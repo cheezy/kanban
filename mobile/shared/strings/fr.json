@@ -2,13 +2,41 @@
   "generator": "mix mobile.strings",
   "locale": "fr",
   "plurals": {
+    "decision_holds_up": {
+      "one": "bloque {count}",
+      "other": "bloque {count}"
+    },
     "goal_archived_count": {
       "one": "{count} archivée",
       "other": "{count} archivées"
     },
+    "goal_progress_fraction": {
+      "one": "{done}/{count}",
+      "other": "{done}/{count}"
+    },
+    "goal_waiting_on_you": {
+      "one": "{count} vous attend",
+      "other": "{count} vous attendent"
+    },
     "goals_open_count": {
       "one": "Objectifs · {count} ouvert",
       "other": "Objectifs · {count} ouverts"
+    },
+    "progress_blocked": {
+      "one": "{count} bloquée",
+      "other": "{count} bloquées"
+    },
+    "progress_done": {
+      "one": "terminées : {done} sur {count}",
+      "other": "terminées : {done} sur {count}"
+    },
+    "progress_in_progress": {
+      "one": "{count} en cours",
+      "other": "{count} en cours"
+    },
+    "progress_in_review": {
+      "one": "{count} en révision",
+      "other": "{count} en révision"
     },
     "target_goal_count": {
       "one": "{count} objectif",
@@ -27,6 +55,21 @@
   "strings": {
     "agent_dormant": "Inactif",
     "agent_stuck": "Bloqué",
+    "decision_kind_claim_expired": "Prise en charge expirée",
+    "decision_kind_hook_failed": "Échec du hook de l’objectif",
+    "decision_kind_ready_empty": "Prêt est vide",
+    "decision_kind_released": "Libérée par l’agent",
+    "decision_kind_review": "Révision",
+    "diff_line_added": "Ajoutée, ligne {line}",
+    "diff_line_removed": "Supprimée, ligne {line}",
+    "diff_line_unchanged": "Ligne {line}",
+    "goal_hook_failed": "Échec du hook",
+    "offline_banner": "Hors ligne · données de {time}",
+    "priority_critical": "Priorité critique",
+    "priority_high": "Priorité élevée",
+    "priority_low": "Priorité basse",
+    "priority_medium": "Priorité moyenne",
+    "progress_no_tasks": "Aucune tâche pour l’instant",
     "sign_in_action": "Se connecter",
     "sign_in_create_account": "Nouveau sur Stride ? Créez un compte sur le web",
     "sign_in_failed": "La connexion n’a pas abouti. Réessayez.",
@@ -52,6 +95,14 @@
     "target_status_on_track": "Dans les temps",
     "update_required_action": "Ouvrir l'App Store",
     "update_required_message": "Cette version de Stride n'est plus prise en charge. Mettez l'app à jour pour continuer.",
-    "update_required_title": "Mise à jour requise"
+    "update_required_title": "Mise à jour requise",
+    "verdict_failed": "{section} : échoué",
+    "verdict_not_assessed": "{section} : non évalué",
+    "verdict_passed": "{section} : réussi",
+    "verdict_section_acceptance_criteria": "Acceptation",
+    "verdict_section_patterns": "Modèles",
+    "verdict_section_pitfalls": "Pièges",
+    "verdict_section_security_considerations": "Sécurité",
+    "verdict_section_testing_strategy": "Tests"
   }
 }
