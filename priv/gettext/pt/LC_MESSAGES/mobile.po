@@ -11,55 +11,55 @@ msgstr ""
 "Language: pt\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "agent_dormant"
 msgid "Dormant"
 msgstr "Inativo"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "agent_stuck"
 msgid "Stuck"
 msgstr "Bloqueado"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_risk_slip"
 msgid "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
 msgstr "No ritmo atual, a conclusão seria em %{estimate}, após a data-alvo de %{target_date}. Reduza o trabalho restante ou altere a data-alvo."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_risk_title"
 msgid "Why targets are at risk"
 msgstr "Por que os alvos estão em risco"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_at_risk"
 msgid "At-risk"
 msgstr "Em risco"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_complete"
 msgid "Complete"
 msgstr "Concluído"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_missed"
 msgid "Missed"
 msgstr "Não atingido"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_on_track"
 msgid "On-track"
 msgstr "No prazo"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_archived_count"
 msgid "%{count} archived"
@@ -67,7 +67,7 @@ msgid_plural "%{count} archived"
 msgstr[0] "%{count} arquivada"
 msgstr[1] "%{count} arquivadas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goals_open_count"
 msgid "Goals · %{count} open"
@@ -75,7 +75,7 @@ msgid_plural "Goals · %{count} open"
 msgstr[0] "Metas · %{count} aberta"
 msgstr[1] "Metas · %{count} abertas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_goal_count"
 msgid "%{count} goal"
@@ -83,7 +83,7 @@ msgid_plural "%{count} goals"
 msgstr[0] "%{count} meta"
 msgstr[1] "%{count} metas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_task_progress"
 msgid "%{done} of %{count} task"
@@ -91,7 +91,7 @@ msgid_plural "%{done} of %{count} tasks"
 msgstr[0] "%{done} de %{count} tarefa"
 msgstr[1] "%{done} de %{count} tarefas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "targets_at_risk_count"
 msgid "Targets · %{count} at risk"
@@ -99,127 +99,127 @@ msgid_plural "Targets · %{count} at risk"
 msgstr[0] "Alvos · %{count} em risco"
 msgstr[1] "Alvos · %{count} em risco"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "update_required_action"
 msgid "Open the App Store"
 msgstr "Abrir a App Store"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "update_required_message"
 msgid "This version of Stride is no longer supported. Update the app to continue."
 msgstr "Esta versão do Stride não é mais compatível. Atualize o app para continuar."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "update_required_title"
 msgid "Update required"
 msgstr "Atualização necessária"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_action"
 msgid "Sign in"
 msgstr "Entrar"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_create_account"
 msgid "New to Stride? Create an account on the web"
 msgstr "Novo no Stride? Crie uma conta na web"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_failed"
 msgid "Sign-in didn't finish. Try again."
 msgstr "O login não foi concluído. Tente novamente."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_locked_action"
 msgid "See the plans"
 msgstr "Ver os planos"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_locked_message"
 msgid "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
 msgstr "Você entrou, mas não faz parte de nenhuma organização. Entre em uma, ou escolha o plano Organização, para revisar e desbloquear aqui o trabalho dos seus agentes."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_locked_title"
 msgid "The app is part of the Organization plan"
 msgstr "O app faz parte do plano Organização"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_network_error"
 msgid "Couldn't reach Stride. Check your connection and try again."
 msgstr "Não foi possível conectar ao Stride. Verifique sua conexão e tente novamente."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_note"
 msgid "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
 msgstr "Abre uma janela segura do navegador. O login da sua empresa e a verificação em duas etapas funcionam como na web."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_ready"
 msgid "**Keep Ready full** so idle agents always have work."
 msgstr "**Mantenha Pronto cheio** para que os agentes ociosos sempre tenham trabalho."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_review_face_id"
 msgid "**Review** what an agent finished, verdicts first, and approve with Face ID."
 msgstr "**Revise** o que um agente terminou, com os veredictos primeiro, e aprove com o Face ID."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_review_passcode"
 msgid "**Review** what an agent finished, verdicts first, and approve with your passcode."
 msgstr "**Revise** o que um agente terminou, com os veredictos primeiro, e aprove com seu código."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_review_touch_id"
 msgid "**Review** what an agent finished, verdicts first, and approve with Touch ID."
 msgstr "**Revise** o que um agente terminou, com os veredictos primeiro, e aprove com o Touch ID."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_unblock"
 msgid "**Unblock** released tasks, expired claims and failed goal hooks."
 msgstr "**Desbloqueie** tarefas liberadas, reivindicações expiradas e hooks de objetivo com falha."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_tagline"
 msgid "Your agents do the work. Stride tells you when one of them is waiting on you."
 msgstr "Seus agentes fazem o trabalho. O Stride avisa quando um deles está esperando por você."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_title"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_working"
 msgid "Signing in"
 msgstr "Entrando"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_passcode_required"
 msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
 msgstr "Primeiro, defina um código neste dispositivo. O Stride usa esse código para confirmar suas aprovações."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_holds_up"
 msgid "holds up %{count}"
@@ -227,61 +227,61 @@ msgid_plural "holds up %{count}"
 msgstr[0] "segura %{count}"
 msgstr[1] "segura %{count}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_claim_expired"
 msgid "Claim expired"
 msgstr "Reserva expirada"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_hook_failed"
 msgid "Goal hook failed"
 msgstr "Hook da meta falhou"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_ready_empty"
 msgid "Ready is empty"
 msgstr "Pronto está vazio"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_released"
 msgid "Released by agent"
 msgstr "Liberada pelo agente"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_review"
 msgid "Review"
 msgstr "Revisão"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "diff_line_added"
 msgid "Added, line %{line}"
 msgstr "Adicionada, linha %{line}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "diff_line_removed"
 msgid "Removed, line %{line}"
 msgstr "Removida, linha %{line}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "diff_line_unchanged"
 msgid "Line %{line}"
 msgstr "Linha %{line}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_hook_failed"
 msgid "Hook failed"
 msgstr "Hook com falha"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_progress_fraction"
 msgid "%{done}/%{count}"
@@ -289,7 +289,7 @@ msgid_plural "%{done}/%{count}"
 msgstr[0] "%{done}/%{count}"
 msgstr[1] "%{done}/%{count}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_waiting_on_you"
 msgid "%{count} waiting on you"
@@ -297,37 +297,37 @@ msgid_plural "%{count} waiting on you"
 msgstr[0] "%{count} esperando por você"
 msgstr[1] "%{count} esperando por você"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "offline_banner"
 msgid "Offline · showing what you had at %{time}"
 msgstr "Offline · mostrando o que você tinha às %{time}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_critical"
 msgid "Critical priority"
 msgstr "Prioridade crítica"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_high"
 msgid "High priority"
 msgstr "Prioridade alta"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_low"
 msgid "Low priority"
 msgstr "Prioridade baixa"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_medium"
 msgid "Medium priority"
 msgstr "Prioridade média"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_blocked"
 msgid "%{count} blocked"
@@ -335,7 +335,7 @@ msgid_plural "%{count} blocked"
 msgstr[0] "%{count} bloqueada"
 msgstr[1] "%{count} bloqueadas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_done"
 msgid "%{done} of %{count} done"
@@ -343,7 +343,7 @@ msgid_plural "%{done} of %{count} done"
 msgstr[0] "concluídas: %{done} de %{count}"
 msgstr[1] "concluídas: %{done} de %{count}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_in_progress"
 msgid "%{count} in progress"
@@ -351,7 +351,7 @@ msgid_plural "%{count} in progress"
 msgstr[0] "%{count} em andamento"
 msgstr[1] "%{count} em andamento"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_in_review"
 msgid "%{count} in review"
@@ -359,103 +359,103 @@ msgid_plural "%{count} in review"
 msgstr[0] "%{count} em revisão"
 msgstr[1] "%{count} em revisão"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_no_tasks"
 msgid "No tasks yet"
 msgstr "Ainda não há tarefas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_failed"
 msgid "%{section} failed"
 msgstr "%{section}: reprovado"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_not_assessed"
 msgid "%{section} not assessed"
 msgstr "%{section}: não avaliado"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_passed"
 msgid "%{section} passed"
 msgstr "%{section}: aprovado"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_acceptance_criteria"
 msgid "Acceptance"
 msgstr "Aceitação"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_patterns"
 msgid "Patterns"
 msgstr "Padrões"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_pitfalls"
 msgid "Pitfalls"
 msgstr "Armadilhas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_security_considerations"
 msgid "Security"
 msgstr "Segurança"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_testing_strategy"
 msgid "Testing"
 msgstr "Testes"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "shell_close"
 msgid "Close"
 msgstr "Fechar"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "shell_new_task"
 msgid "New task"
 msgstr "Nova tarefa"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "shell_settings"
 msgid "Settings"
 msgstr "Configurações"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_agents"
 msgid "Agents"
 msgstr "Agentes"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_boards"
 msgid "Boards"
 msgstr "Quadros"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_now"
 msgid "Now"
 msgstr "Agora"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_review"
 msgid "Review"
 msgstr "Revisão"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_agents_working"
 msgid "%{count} agent working"
@@ -463,7 +463,7 @@ msgid_plural "%{count} agents working"
 msgstr[0] "%{count} agente trabalhando"
 msgstr[1] "%{count} agentes trabalhando"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_backlog_tasks"
 msgid "%{count} task in Backlog to choose from."
@@ -471,13 +471,13 @@ msgid_plural "%{count} tasks in Backlog to choose from."
 msgstr[0] "%{count} tarefa em Pendências para escolher."
 msgstr[1] "%{count} tarefas em Pendências para escolher."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_claim_expired"
 msgid "Its claim ran out with no update. It is back in Ready for another agent."
 msgstr "A reserva expirou sem atualização. Voltou para Pronto para outro agente."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_claim_expired_agent"
 msgid "%{agent} held it for %{count} minute with no update. It is back in Ready for another agent."
@@ -485,37 +485,37 @@ msgid_plural "%{agent} held it for %{count} minutes with no update. It is back i
 msgstr[0] "%{agent} ficou com ela %{count} minuto sem atualização. Voltou para Pronto para outro agente."
 msgstr[1] "%{agent} ficou com ela %{count} minutos sem atualização. Voltou para Pronto para outro agente."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_empty"
 msgid "Nothing is waiting on you. Your agents have what they need."
 msgstr "Nada está esperando por você. Seus agentes têm o que precisam."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_all"
 msgid "All"
 msgstr "Tudo"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_problems"
 msgid "Problems"
 msgstr "Problemas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_ready"
 msgid "Ready"
 msgstr "Pronto"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_reviews"
 msgid "Reviews"
 msgstr "Revisões"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_held_up"
 msgid "%{count} task held up"
@@ -523,19 +523,19 @@ msgid_plural "%{count} tasks held up"
 msgstr[0] "%{count} tarefa parada"
 msgstr[1] "%{count} tarefas paradas"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_hook_failed"
 msgid "after_goal failed"
 msgstr "after_goal falhou"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_hook_failed_exit"
 msgid "after_goal failed · exit %{code} · %{duration}"
 msgstr "after_goal falhou · saída %{code} · %{duration}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_idle_agents"
 msgid "%{count} agent idle."
@@ -543,74 +543,170 @@ msgid_plural "%{count} agents idle."
 msgstr[0] "%{count} agente ocioso."
 msgstr[1] "%{count} agentes ociosos."
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_loading"
 msgid "Loading what is waiting on you"
 msgstr "Carregando o que espera por você"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_move_to_backlog"
 msgid "Move to Backlog"
 msgstr "Mover para Pendências"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_needs_connection"
 msgid "Needs a connection"
 msgstr "Precisa de conexão"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_offline_nothing"
 msgid "Offline · nothing is saved on this device yet"
 msgstr "Offline · ainda não há nada salvo neste dispositivo"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_open_on_web"
 msgid "Open on the web"
 msgstr "Abrir na web"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_open_review"
 msgid "Open review"
 msgstr "Abrir revisão"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_ready_empty_board"
 msgid "Ready is empty · %{board}"
 msgstr "Pronto está vazio · %{board}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_released_reason"
 msgid "“%{reason}”"
 msgstr "“%{reason}”"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_reply"
 msgid "Reply"
 msgstr "Responder"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_sorted"
 msgid "Sorted by how much each one holds up"
 msgstr "Ordenado pelo quanto cada um segura"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_view_attempt"
 msgid "View attempt"
 msgstr "Ver tentativa"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_header_summary"
 msgid "%{waiting} · %{held_up}"
 msgstr "%{waiting} · %{held_up}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_action_failed"
+msgid "That did not go through. Try again."
+msgstr "Não foi possível concluir. Tente de novo."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_duration"
+msgid "Duration"
+msgstr "Duração"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_exit_code"
+msgid "Exit code"
+msgstr "Código de saída"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_loading"
+msgid "Loading the attempt"
+msgstr "Carregando a tentativa"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_no_output"
+msgid "The hook's output is not shown on the phone. It can hold secrets or internal paths."
+msgstr "A saída do hook não é mostrada no telefone. Ela pode conter segredos ou caminhos internos."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_not_reported"
+msgid "Not reported"
+msgstr "Não informado"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_title"
+msgid "Last after_goal attempt"
+msgstr "Última tentativa do after_goal"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_unavailable"
+msgid "Could not load the attempt. Try again later."
+msgstr "Não foi possível carregar a tentativa. Tente mais tarde."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_moved_to_backlog"
+msgid "Moved to Backlog"
+msgstr "Movida para Pendências"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_not_allowed"
+msgid "You can no longer change this task."
+msgstr "Você não pode mais alterar esta tarefa."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_cancel"
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_field"
+msgid "Your reply"
+msgstr "Sua resposta"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_send"
+msgid "Send"
+msgstr "Enviar"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_sent"
+msgid "Reply sent"
+msgstr "Resposta enviada"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_too_long"
+msgid "A reply can be up to 10,000 characters."
+msgstr "Uma resposta pode ter até 10.000 caracteres."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_task_moved"
+msgid "This task has moved since. Now shows where it stands."
+msgstr "Esta tarefa foi movida desde então. Agora mostra onde ela está."

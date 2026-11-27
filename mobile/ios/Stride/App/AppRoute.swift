@@ -5,5 +5,6 @@ enum AppRoute: Hashable, Sendable {
     /// A task's review, by the task's numeric id, which the review API takes.
     case review(Int)
     case goal(String)
-    case board(String)
+    /// A board, opened on `column` when one is named.
+    case board(String, column: BoardColumn? = nil)
 }

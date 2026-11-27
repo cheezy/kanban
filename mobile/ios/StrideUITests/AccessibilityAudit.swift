@@ -52,6 +52,21 @@ extension XCUIAccessibilityAuditIssue {
             .contains { $0.frame.contains(frame) }
     }
 
+    /// A contrast issue on the value in an after_goal attempt row. The value
+    /// is `ink` on `surface`, which `SharedViewAccessibilityTests` holds to
+    /// 4.5:1 in both themes, but on an iPad the audit judges a lone mono
+    /// digit such as the exit code "1" from a tight crop and fails it, as it
+    /// does the Now filter counts (W2794). Only an element inside an
+    /// `attempt-row` is ignored.
+    @MainActor
+    var isOnAttemptRowValue: Bool {
+        guard auditType == .contrast, let element, element.exists else { return false }
+
+        let frame = element.frame
+        return XCUIApplication().descendants(matching: .any).matching(identifier: "attempt-row").allElementsBoundByIndex
+            .contains { $0.frame.contains(frame) }
+    }
+
     /// A contrast issue on an iPad sidebar row's title or its Now count. The
     /// titles are `ink` on the sidebar, or `stride-orange-ink` on
     /// `stride-orange-soft` when selected, and the count is `ink` on

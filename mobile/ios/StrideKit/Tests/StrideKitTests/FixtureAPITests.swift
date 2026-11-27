@@ -85,4 +85,39 @@ struct FixtureAPITests {
 
         #expect(model.titles.first == "Add a sign-in screen")
     }
+
+    @Test("a status override answers with that status, and the send listener hears the body")
+    func statusAndSend() async throws {
+        let heard = OSAllocatedUnfairLock<[(String, Data?)]>(initialState: [])
+        let refusal = Data(#"{"error": "not_movable", "message": "moved"}"#.utf8)
+        let locked = Data(#"{"error": "plan_required", "feature": "mobile_app", "message": "locked"}"#.utf8)
+        let api = FixtureAPI(
+            replacing: [Operations.MoveMyTaskToBacklog.id: refusal, Operations.CommentOnMyTask.id: locked],
+            statuses: [
+                Operations.MoveMyTaskToBacklog.id: 422,
+                Operations.CommentOnMyTask.id: 403,
+                Operations.GetMyGoalAfterGoal.id: 404,
+            ],
+            onSend: { id, body in heard.withLock { $0.append((id, body)) } }
+        ).client
+
+        let moved = try await api.moveMyTaskToBacklog(path: .init(id: 1))
+        #expect(try moved.unprocessableContent.body.json.message == "moved")
+
+        let comment = try await api.commentOnMyTask(path: .init(id: 1), body: .json(.init(content: "返信")))
+        guard case .forbidden = comment else {
+            Issue.record("expected 403, got \(comment)")
+            return
+        }
+
+        // A status whose schema needs a body, sent without one, cannot be decoded.
+        await #expect(throws: (any Error).self) { try await api.getMyGoalAfterGoal(path: .init(id: 1)) }
+
+        let sent = heard.withLock { $0 }
+        #expect(sent.map(\.0) == [Operations.MoveMyTaskToBacklog.id, Operations.CommentOnMyTask.id, Operations.GetMyGoalAfterGoal.id])
+        #expect(sent.last?.1 == nil)
+        let body = try #require(sent[1].1)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect(json["content"] as? String == "返信")
+    }
 }

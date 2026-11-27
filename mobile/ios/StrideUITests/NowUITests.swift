@@ -42,6 +42,71 @@ final class NowUITests: XCTestCase {
     }
 
     @MainActor
+    func testRepliesToAReleasedTask() throws {
+        let app = signIn()
+        XCTAssertTrue(app.staticTexts["tab-title"].waitForExistence(timeout: 30))
+
+        let reply = app.buttons["Reply"].firstMatch
+        if !reply.exists { app.swipeUp() }
+        XCTAssertTrue(reply.waitForExistence(timeout: 10), "no Reply button")
+        reply.tap()
+
+        let heading = app.staticTexts["sheet-title"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 10))
+        XCTAssertEqual(heading.label, "Reply")
+        let send = app.buttons["reply-send"]
+        XCTAssertFalse(send.isEnabled, "an empty reply can be sent")
+
+        let field = app.textViews["reply-text"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "no reply field")
+        field.tap()
+        field.typeText("Keep the old column for now.")
+        XCTAssertTrue(send.isEnabled, "a reply cannot be sent")
+        try app.auditAccessibility(ignoringFormSheetBackdrop)
+
+        send.tap()
+        XCTAssertTrue(heading.waitForNonExistence(timeout: 10), "the reply sheet stayed open")
+        let notice = app.staticTexts["now-notice"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 10), "no notice after the reply")
+        XCTAssertEqual(notice.label, "Reply sent")
+    }
+
+    @MainActor
+    func testViewAttemptShowsExitCodeAndDurationOnly() throws {
+        let app = signIn()
+        XCTAssertTrue(app.staticTexts["tab-title"].waitForExistence(timeout: 30))
+
+        let view = app.buttons["View attempt"].firstMatch
+        for _ in 0..<3 where !view.isHittable { app.swipeUp() }
+        XCTAssertTrue(view.waitForExistence(timeout: 10), "no View attempt button")
+        view.tap()
+
+        let heading = app.staticTexts["sheet-title"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 10))
+        XCTAssertEqual(heading.label, "Last after_goal attempt")
+        let exitCode = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Exit code")).firstMatch
+        XCTAssertTrue(exitCode.waitForExistence(timeout: 10), "no exit code")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Duration")).firstMatch.exists)
+        // The hook's output is never on the phone, so there is nothing to open.
+        XCTAssertFalse(app.buttons["View log"].exists)
+        try app.auditAccessibility { issue in
+            self.ignoringFormSheetBackdrop(issue) || (UIDevice.current.userInterfaceIdiom == .pad && issue.isOnAttemptRowValue)
+        }
+
+        app.buttons["Close"].firstMatch.tap()
+        XCTAssertTrue(heading.waitForNonExistence(timeout: 10))
+    }
+
+    /// On an iPad the form sheet leaves the Now screen visible, dimmed and out
+    /// of VoiceOver's reach, around it, and the audit reports that text as
+    /// "potentially inaccessible text" with no element, as `ShellUITests`
+    /// notes for the corner sheets. Only that is ignored.
+    @MainActor
+    private func ignoringFormSheetBackdrop(_ issue: XCUIAccessibilityAuditIssue) -> Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && issue.auditType == .elementDetection && issue.element == nil
+    }
+
+    @MainActor
     private func signIn() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()

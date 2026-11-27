@@ -12,27 +12,53 @@ struct NowCardTests {
     private static let english = Locale(identifier: "en")
     private static let german = Locale(identifier: "de")
 
-    @Test("each action goes to its screen, and the web only over https")
+    @Test("each action goes to its screen or stays on Now, and the web only to Stride")
     func destinations() async throws {
         let cards = try await DecisionFixtures.cards()
         let review = try #require(cards.first { $0.kind == .review })
         let released = try #require(cards.first { $0.kind == .released })
+        let expired = try #require(cards.first { $0.kind == .claimExpired })
         let hook = try #require(cards.first { $0.kind == .hookFailed })
         let ready = try #require(cards.first { $0.kind == .readyEmpty })
-        let web = try #require(URL(string: "https://stride.example/boards/12/tasks/4812"))
+        let web = try #require(URL(string: "https://www.stridelikeaboss.com/boards/12/tasks/4812"))
 
         #expect(review.destination(for: .openReview) == .push(.review(4812)))
         #expect(review.destination(for: .openOnWeb) == .web(web))
         #expect(review.buttons == [.openReview, .openOnWeb])
-        #expect(released.destination(for: .reply) == .push(.task("W104")))
-        #expect(released.destination(for: .moveToBacklog) == .push(.task("W104")))
-        #expect(hook.destination(for: .viewAttempt) == .push(.goal("W105")))
-        #expect(ready.destination(for: .openBacklog) == .show(.board("12"), on: .boards))
+        // Replying, moving and the attempt happen on Now itself.
+        for action in [NowAction.reply, .moveToBacklog] {
+            #expect(released.canPerform(action))
+            #expect(released.destination(for: action) == nil)
+        }
+        // The fixture's Released card also offers the web, which section 6.3
+        // leaves off it.
+        #expect(released.actions.contains(.openOnWeb))
+        #expect(released.buttons == [.reply, .moveToBacklog])
+        #expect(expired.buttons == [.moveToBacklog, .openOnWeb])
+        #expect(hook.buttons == [.viewAttempt, .openOnWeb])
+        #expect(hook.destination(for: .viewAttempt) == nil)
+        #expect(ready.destination(for: .openBacklog) == .show(.board("12", column: .backlog), on: .boards))
         // The Ready card opens the backlog itself, so it has no buttons.
         #expect(ready.buttons.isEmpty)
     }
 
-    @Test("a web address that is not https is never opened", arguments: ["http://stride.example/x", "javascript:alert(1)", "https://", "not a url"])
+    @Test("a card with no task id offers none of the task's actions")
+    func actionsNeedATask() async throws {
+        let cards = try await DecisionFixtures.cards { items in
+            for index in 1...3 { items[index]["task_id"] = NSNull() }
+        }
+
+        for card in cards where [.claimExpired, .hookFailed].contains(card.kind) {
+            #expect(card.buttons == [.openOnWeb], "\(card.kind) still offers \(card.buttons)")
+        }
+        // A Released card has only actions on its task, so it keeps none.
+        #expect(cards.first { $0.kind == .released }?.buttons == [])
+    }
+
+    @Test("a web address that is not a Stride page over https is never opened", arguments: [
+        "http://www.stridelikeaboss.com/x", "https://stride.example/x", "https://www.stridelikeaboss.com.evil.example/x",
+        "https://www.stridelikeaboss.com:444/x", "javascript:alert(1)", "https://", "not a url",
+    ])
     func webURLRefused(address: String) async throws {
         let cards = try await DecisionFixtures.cards { $0[0]["web_url"] = address }
         let review = try #require(cards.first)
@@ -124,14 +150,14 @@ struct NowCardTests {
     @Test("the router pushes and opens a card's screens, and hands back a web page")
     func routerOpens() throws {
         let router = AppRouter(api: nil)
-        let web = try #require(URL(string: "https://stride.example/boards/12"))
+        let web = try #require(URL(string: "https://www.stridelikeaboss.com/boards/12"))
 
         #expect(router.open(.push(.review(4812))) == nil)
         #expect(router.paths[.now] == [.review(4812)])
 
-        #expect(router.open(.show(.board("12"), on: .boards)) == nil)
+        #expect(router.open(.show(.board("12", column: .backlog), on: .boards)) == nil)
         #expect(router.selectedTab == .boards)
-        #expect(router.paths[.boards] == [.board("12")])
+        #expect(router.paths[.boards] == [.board("12", column: .backlog)])
 
         #expect(router.open(.web(web)) == web)
         #expect(router.paths[.now] == [.review(4812)])

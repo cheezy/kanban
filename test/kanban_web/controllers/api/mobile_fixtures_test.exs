@@ -74,6 +74,11 @@ defmodule KanbanWeb.API.MobileFixturesTest do
     dir |> File.ls!() |> Enum.filter(&String.ends_with?(&1, ".json")) |> Enum.sort()
   end
 
+  # The decisions' web_url values use the configured Stride host, because the
+  # iOS app opens no other (mobile/shared/fixtures/README.md).
+  defp stride_web_link?("listMyDecisions.json", "www.stridelikeaboss.com"), do: true
+  defp stride_web_link?(_file, _host), do: false
+
   # Every problem with the fixtures in `dir`, one line each. Taking the
   # folder as an argument is what lets the tests below point it at a
   # temporary folder.
@@ -320,7 +325,7 @@ defmodule KanbanWeb.API.MobileFixturesTest do
         refute raw =~ ~r/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/, "#{file} holds an email address"
 
         for [host] <- Regex.scan(~r{https?://([^/"\s]+)}, raw, capture: :all_but_first) do
-          assert String.ends_with?(host, ".example"),
+          assert String.ends_with?(host, ".example") or stride_web_link?(file, host),
                  "#{file} links to #{host}, not a .example host"
         end
       end

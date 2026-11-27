@@ -36,6 +36,10 @@ per tab:
 - `push(_:on:)` adds a screen to a tab without leaving the selected one.
 - `show(_:on:)` opens a tab on one screen, as a deep link will.
 
+A Now card's **Open backlog** button opens the Boards tab on
+`.board(id, column: .backlog)`, a board scrolled to one column. `BoardColumn`
+names the columns a route can open; it holds only Backlog so far.
+
 The screens the tabs will hold are still to be built, so each tab shows only its
 title.
 

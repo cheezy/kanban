@@ -117,6 +117,14 @@ final class NowModel {
         hasAnswer = false
     }
 
+    /// Takes a card off the list at once, after the person moved its task.
+    /// An answer that set out before is dropped, since it may still hold the
+    /// card; the next list from the channel or a refresh brings the counts.
+    func remove(cardID: NowCard.ID) {
+        version += 1
+        cards.removeAll { $0.id == cardID }
+    }
+
     // MARK: Following
 
     /// Shows each live list until a sign-out. The session and the cache's

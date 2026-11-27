@@ -114,7 +114,7 @@ struct AppShell: View {
     private func root(for tab: AppTab, showsCornerButtons: Bool) -> some View {
         switch tab {
         case .now:
-            NowView(model: router.now, router: router, showsCornerButtons: showsCornerButtons)
+            NowView(model: router.now, actions: router.nowActions, router: router, showsCornerButtons: showsCornerButtons)
         default:
             TabRoot(tab: tab) {
                 if showsCornerButtons { ShellCornerButtons(router: router) }

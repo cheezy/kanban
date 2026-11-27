@@ -21,6 +21,9 @@ final class AppRouter {
     /// The Now screen's decisions, whose waiting count is the Now badge.
     let now: NowModel
 
+    /// The Now cards' buttons, with their sheets and notices.
+    let nowActions: NowActions
+
     @ObservationIgnored private let api: (any StrideAPI)?
 
     /// The live updates, which connect again each time the app comes back.
@@ -38,6 +41,7 @@ final class AppRouter {
         self.api = api
         self.live = live
         now = NowModel(api: api, cache: cache, live: live, connectivity: connectivity)
+        nowActions = NowActions(api: api, now: now)
     }
 
     // MARK: Tabs
@@ -107,6 +111,7 @@ final class AppRouter {
         sheet = nil
         person = nil
         now.forget()
+        nowActions.forget()
         // The live channels drop the last person's state too.
         let live = live
         Task { await live?.forget() }

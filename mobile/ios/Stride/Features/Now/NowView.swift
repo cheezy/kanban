@@ -8,6 +8,7 @@ struct NowView: View {
     @Environment(\.openURL) private var openURL
 
     @Bindable var model: NowModel
+    @Bindable var actions: NowActions
     let router: AppRouter
     let showsCornerButtons: Bool
 
@@ -27,6 +28,11 @@ struct NowView: View {
                         .accessibilityIdentifier("now-offline")
                 }
 
+                if let notice = actions.notice {
+                    NowNoticeView(notice: notice) { actions.notice = nil }
+                        .id(notice)
+                }
+
                 NowFilterBar(selection: $model.filter, count: model.count(for:))
 
                 Text(.nowSorted)
@@ -44,6 +50,14 @@ struct NowView: View {
         }
         .background(ColorToken.bg.color)
         .refreshable { await model.load() }
+        .sheet(item: $actions.sheet) { sheet in
+            switch sheet {
+            case .reply(let reply):
+                ReplySheet(reply: reply) { await actions.send(reply) }
+            case .attempt(let attempt):
+                HookAttemptView(attempt: attempt)
+            }
+        }
         .toolbar(showsDetailBar ? .automatic : .hidden, for: .navigationBar)
     }
 
@@ -62,6 +76,8 @@ struct NowView: View {
                     NowCardView(card: card, isOffline: model.isOffline) { action in
                         perform(action, on: card)
                     }
+                    // A second tap waits while the card's move is on its way.
+                    .disabled(actions.isMoving(card))
                 }
             }
             // The UI tests find the list by this identifier.
@@ -71,7 +87,7 @@ struct NowView: View {
     }
 
     private func perform(_ action: NowAction, on card: NowCard) {
-        guard let destination = card.destination(for: action) else { return }
+        guard let destination = actions.perform(action, on: card) else { return }
 
         if let url = router.open(destination) { openURL(url) }
     }
@@ -83,7 +99,7 @@ private struct NowPreview: View {
 
     var body: some View {
         NavigationStack {
-            NowView(model: router.now, router: router, showsCornerButtons: true)
+            NowView(model: router.now, actions: router.nowActions, router: router, showsCornerButtons: true)
         }
         .task { await router.now.load() }
     }

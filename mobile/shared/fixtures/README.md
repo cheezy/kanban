@@ -23,7 +23,9 @@ these is broken:
 - **Made-up data only.** Never a real token, email address, hostname or
   customer record. Links use hosts under `.example`, for example
   `https://stride.example/`, and token values read
-  `EXAMPLE-...-for-previews-only`.
+  `EXAMPLE-...-for-previews-only`. The one exception is a decision's
+  `web_url` in `listMyDecisions.json`, which uses the configured Stride host,
+  `https://www.stridelikeaboss.com/`, because the app opens no other.
 
 Keep lists populated, so the test checks their items rather than passing on an
 empty array, and show `null` where the app must handle it. The test also walks

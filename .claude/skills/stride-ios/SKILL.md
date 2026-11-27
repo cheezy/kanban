@@ -60,7 +60,7 @@ that has turned out wrong. Rules the app must follow belong in
   (pipe instead), and functions under credo's ABC size limit of 20 (split a
   render function into helpers early). W2787 and W2788 each lost a completion
   attempt to credo, and so did W2789: each `dpgettext_noop` call in a msgid list
-  counts one toward the ABC size, so keep each list in `strings.ex` to about 15
+  counts one toward the ABC size, so keep each list in `strings/msgids.ex` to about 15
   strings, and rerun `MIX_ENV=test mix gettext.extract --merge` and
   `mix mobile.strings` after moving one, since the `.pot` records line numbers.
 - `after_doing` commits with `git add -A`, so any untracked file not in
@@ -99,8 +99,8 @@ that has turned out wrong. Rules the app must follow belong in
 - Status values arrive as API enums; map each to its `mobile` string in a view
   model.
 - To add a string: add `dpgettext_noop("mobile", key, text)` (or
-  `dpngettext_noop` for a count) to `Kanban.Mobile.Strings.msgids/0` in
-  `lib/kanban/mobile/strings.ex`, run `MIX_ENV=test mix gettext.extract --merge`,
+  `dpngettext_noop` for a count) to `Kanban.Mobile.Strings.Msgids.msgids/0` in
+  `lib/kanban/mobile/strings/msgids.ex`, run `MIX_ENV=test mix gettext.extract --merge`,
   translate it in all seven `priv/gettext/<locale>/LC_MESSAGES/mobile.po` files
   with no fuzzy flag, run `MIX_ENV=test mix mobile.strings`, and commit all of it.
 - `test/kanban/mobile/strings_test.exs` pins the number of strings and plurals
@@ -113,7 +113,10 @@ that has turned out wrong. Rules the app must follow belong in
   fuzzy with the old text; set its msgstr and drop the flag (W2790).
 - The brand name "Stride" is the `sign_in_title` key; use `Text(.signInTitle)`
   rather than a verbatim string (W2790).
-- Editing `lib/kanban/mobile/strings.ex` is a change outside `mobile/`, so the
+- The msgid lists moved out of `strings.ex` into `strings/msgids.ex` when
+  `strings.ex` passed 600 lines; `Strings.msgids/0` delegates there, and the
+  generated `L10n.swift` header names the new file (W2794).
+- Editing `lib/kanban/mobile/strings/msgids.ex` is a change outside `mobile/`, so the
   task's `after_doing` runs the whole Elixir suite and credo (see Hook modes).
   Add a string to an existing `*_msgids` helper, or add a new helper to the
   list `msgids/0` passes to `Enum.concat/1`; a chain of `++` there went over
@@ -277,7 +280,13 @@ that has turned out wrong. Rules the app must follow belong in
 - iOS 26 and 27 report a contrast failure on plain text when a
   `performAccessibilityAudit` call also resizes text, because the screen is
   still scrolling; `app.auditAccessibility()` runs the contrast check alone
-  first. iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
+  first. On an iPad the contrast audit fails a lone mono digit from a tight
+  crop although its pair passes: the attempt sheet's exit code "1" is `ink` on
+  `surface`, and a Now filter count is `ink-3` (`ink-2` when selected) on
+  `surface-sunken`. Read the failed test's "Element Screenshot" with `xcrun
+  xcresulttool export attachments` to see which text it judged, then ignore
+  only that element by an identifier on its container, as `isOnNowFilterCount`
+  and `isOnAttemptRowValue` do (W2794). iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
   link as a link or a button (commit 7975ed01).
 - A failed audit says only "Contrast failed for SwiftUI.AccessibilityNode". To
   see which element, export the run's attachments with `xcrun xcresulttool
@@ -462,6 +471,20 @@ that has turned out wrong. Rules the app must follow belong in
   and `ready_empty` items have no task, identifier, title or `since` (W2793).
 - `approve` and `request_changes` are offered on review items but never shown
   on a Now card; they belong to the review screen, behind Face ID (W2793).
+- The fixture's `web_url`s must be on the configured Stride host
+  (`www.stridelikeaboss.com`), or `StrideWeb.isStridePage` refuses them and the
+  card has no Open on web button; `listMyReviews.json` still names
+  `stride.example` (W2794).
+- A `hook_failed` card's `task_id` is its goal's id, so View attempt asks
+  `getMyGoalAfterGoal` with it. The answer has no output field at all (W2794).
+- To test an action's failure, give `FixtureAPI` a `statuses` entry with a
+  replaced body that matches that status's schema (a 403 on a comment is
+  `PlanRequired`, a 422 on a move is `MeTaskRefusal`); a status without a body
+  the schema needs fails to decode and reads as a plain failure. `onSend`
+  hears each operation with its request body, so a test can check what was
+  sent (W2794).
+- `Optional.map` takes no async closure, so collect an optional `HTTPBody`
+  with `if let`, not `body.map { try await ... }` (W2794).
 
 ## Break-it checks
 

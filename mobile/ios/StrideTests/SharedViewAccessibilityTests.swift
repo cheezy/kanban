@@ -120,6 +120,10 @@ struct SharedViewAccessibilityTests {
         pairs += [(.ink, .stDoingSoft), (.ink, .surface), (.stBlocked, .surface), (.ink3, .surface), (.ink2, .surface)]
         // The selected sidebar row on an iPad.
         pairs += [(.strideOrangeInk, .strideOrangeSoft)]
+        // The Now screen's notices after a card's action.
+        pairs += [(.ink, .stDoneSoft), (.ink, .stBlockedSoft)]
+        // The reply and attempt sheets' problems, on the screen's background.
+        pairs += [(.stBlocked, .bg), (.ink2, .bg), (.ink3, .bg), (.ink, .bg)]
 
         for kind in DiffLineKind.allCases {
             let background = kind.background ?? .surface

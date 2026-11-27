@@ -18,7 +18,7 @@ defmodule Kanban.Mobile.StringsTest do
   # shares the web's "Sign in" msgid, but the web's Spanish and French nav link
   # is in title case and the app's button in sentence case, as iOS buttons are.
   # The shared views' readings and kinds (W2789), the Now tab (W2790) and the
-  # Now screen (W2793) are the app's own words.
+  # Now screen (W2793) and its card actions (W2794) are the app's own words.
   @app_only ~w(
     sign_in_action sign_in_create_account sign_in_failed sign_in_locked_action
     sign_in_locked_message sign_in_locked_title sign_in_network_error sign_in_note
@@ -35,6 +35,10 @@ defmodule Kanban.Mobile.StringsTest do
     now_move_to_backlog now_open_on_web now_view_attempt now_reply now_claim_expired
     now_hook_failed now_hook_failed_exit now_released_reason now_ready_empty_board
     now_header_summary
+    now_moved_to_backlog now_reply_sent now_task_moved now_not_allowed now_action_failed
+    now_reply_field now_reply_send now_reply_too_long now_attempt_title
+    now_attempt_exit_code now_attempt_duration now_attempt_not_reported now_attempt_loading
+    now_attempt_unavailable now_attempt_no_output
   )
 
   @plural_forms %{
@@ -142,7 +146,7 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 78
+      assert length(pot_keys(:string)) == 94
       assert length(pot_keys(:plural)) == 17
 
       for {locale, strings} <- built do
@@ -176,7 +180,7 @@ defmodule Kanban.Mobile.StringsTest do
             key
           end
 
-        assert length(compared) == 25, "#{locale} compared only #{length(compared)} strings"
+        assert length(compared) == 26, "#{locale} compared only #{length(compared)} strings"
       end
     end
 

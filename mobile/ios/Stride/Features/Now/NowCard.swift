@@ -50,26 +50,45 @@ struct NowCard: Identifiable, Hashable, Sendable {
 
     // MARK: Actions
 
-    /// Where an action goes, or nil when the item lacks what it needs.
-    func destination(for action: NowAction) -> NowDestination? {
+    /// Whether the card has what `action` needs: a task id for the actions
+    /// that change or open the task, a Stride page for the web.
+    func canPerform(_ action: NowAction) -> Bool {
         switch action {
-        case .openReview: taskID.map { .push(.review($0)) }
-        // Replying and moving a task are on its own screen.
-        case .reply, .moveToBacklog: identifier.map { .push(.task($0)) }
-        case .viewAttempt: identifier.map { .push(.goal($0)) }
-        case .openOnWeb: webURL.map { .web($0) }
-        case .openBacklog: .show(.board(String(boardID)), on: .boards)
+        case .openReview, .reply, .moveToBacklog, .viewAttempt: taskID != nil
+        case .openOnWeb: webURL != nil
+        case .openBacklog: true
         }
     }
 
-    /// The buttons below the card: every action it can follow, except opening
-    /// the backlog, which is the whole Ready card.
-    var buttons: [NowAction] {
-        actions.filter { $0 != .openBacklog && destination(for: $0) != nil }
+    /// Where an action goes, or nil when it stays on the Now screen (a reply,
+    /// a move or the attempt, which `NowActions` follows) or the item lacks
+    /// what it needs.
+    func destination(for action: NowAction) -> NowDestination? {
+        switch action {
+        case .openReview: taskID.map { .push(.review($0)) }
+        case .openOnWeb: webURL.map { .web($0) }
+        case .openBacklog: .show(.board(String(boardID), column: .backlog), on: .boards)
+        case .reply, .moveToBacklog, .viewAttempt: nil
+        }
     }
 
-    private var identifier: String? {
-        content.identifier.isEmpty ? nil : content.identifier
+    /// The buttons below the card: the actions section 6.3 of the design gives
+    /// its kind, in the server's order, that it can follow. A Released card
+    /// has Reply and Move to Backlog only, and the Ready card none, since the
+    /// whole card opens the backlog, whatever else the server sends.
+    var buttons: [NowAction] {
+        let allowed = Self.buttons(for: kind)
+        return actions.filter { allowed.contains($0) && canPerform($0) }
+    }
+
+    private static func buttons(for kind: DecisionKind) -> Set<NowAction> {
+        switch kind {
+        case .review: [.openReview, .openOnWeb]
+        case .released: [.reply, .moveToBacklog]
+        case .claimExpired: [.moveToBacklog, .openOnWeb]
+        case .hookFailed: [.viewAttempt, .openOnWeb]
+        case .readyEmpty: []
+        }
     }
 
     // MARK: Text
@@ -108,12 +127,7 @@ struct NowCard: Identifiable, Hashable, Sendable {
     private func hookFailedBody(exitCode: Int?, duration: Duration?, locale: Locale) -> LocalizedStringResource {
         guard let exitCode, let duration else { return .nowHookFailed }
 
-        let style = Duration.UnitsFormatStyle(
-            allowedUnits: [.hours, .minutes, .seconds],
-            width: .narrow,
-            maximumUnitCount: 2
-        )
-        return .nowHookFailedExit(code: String(exitCode), duration: duration.formatted(style.locale(locale)))
+        return .nowHookFailedExit(code: String(exitCode), duration: duration.hookText(in: locale))
     }
 
     // MARK: Reading the item
@@ -158,8 +172,10 @@ struct NowCard: Identifiable, Hashable, Sendable {
         }
     }
 
+    /// Only a page on the Stride server opens, so an item cannot send the
+    /// person to another site.
     private static func webURL(_ string: String) -> URL? {
-        guard let url = URL(string: string), url.scheme == "https", url.host() != nil else { return nil }
+        guard let url = URL(string: string), StrideWeb.isStridePage(url) else { return nil }
 
         return url
     }

@@ -11,589 +11,685 @@ msgstr ""
 "Language: ja\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "agent_dormant"
 msgid "Dormant"
 msgstr "休止中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "agent_stuck"
 msgid "Stuck"
 msgstr "停滞中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_risk_slip"
 msgid "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
 msgstr "現在のペースでは完了は %{estimate} となり、目標日 %{target_date} を過ぎます。残作業を減らすか、目標日を変更してください。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_risk_title"
 msgid "Why targets are at risk"
 msgstr "ターゲットがリスクにさらされている理由"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_at_risk"
 msgid "At-risk"
 msgstr "リスクあり"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_complete"
 msgid "Complete"
 msgstr "完了"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_missed"
 msgid "Missed"
 msgstr "未達"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_status_on_track"
 msgid "On-track"
 msgstr "順調"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_archived_count"
 msgid "%{count} archived"
 msgid_plural "%{count} archived"
 msgstr[0] "アーカイブ済み %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goals_open_count"
 msgid "Goals · %{count} open"
 msgid_plural "Goals · %{count} open"
 msgstr[0] "ゴール · オープン %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_goal_count"
 msgid "%{count} goal"
 msgid_plural "%{count} goals"
 msgstr[0] "%{count} 件のゴール"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "target_task_progress"
 msgid "%{done} of %{count} task"
 msgid_plural "%{done} of %{count} tasks"
 msgstr[0] "タスク %{count} 件中 %{done} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "targets_at_risk_count"
 msgid "Targets · %{count} at risk"
 msgid_plural "Targets · %{count} at risk"
 msgstr[0] "ターゲット · リスクあり %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "update_required_action"
 msgid "Open the App Store"
 msgstr "App Store を開く"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "update_required_message"
 msgid "This version of Stride is no longer supported. Update the app to continue."
 msgstr "このバージョンの Stride はサポートが終了しました。続けるにはアプリをアップデートしてください。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "update_required_title"
 msgid "Update required"
 msgstr "アップデートが必要です"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_action"
 msgid "Sign in"
 msgstr "サインイン"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_create_account"
 msgid "New to Stride? Create an account on the web"
 msgstr "Stride は初めてですか? Web でアカウントを作成"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_failed"
 msgid "Sign-in didn't finish. Try again."
 msgstr "サインインが完了しませんでした。もう一度お試しください。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_locked_action"
 msgid "See the plans"
 msgstr "プランを見る"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_locked_message"
 msgid "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
 msgstr "サインインしていますが、どの組織にも所属していません。組織に参加するか組織プランを選ぶと、ここでエージェントの作業をレビューし、解消できます。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_locked_title"
 msgid "The app is part of the Organization plan"
 msgstr "このアプリは組織プランに含まれています"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_network_error"
 msgid "Couldn't reach Stride. Check your connection and try again."
 msgstr "Stride に接続できませんでした。接続を確認して、もう一度お試しください。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_note"
 msgid "Opens a secure browser window. Your company sign-in and two-step check work as they do on the web."
 msgstr "安全なブラウザウィンドウが開きます。会社のサインインと 2 段階認証は Web と同じように使えます。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_ready"
 msgid "**Keep Ready full** so idle agents always have work."
 msgstr "待機中のエージェントに常に作業があるよう、**準備完了を満たしておけます**。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_review_face_id"
 msgid "**Review** what an agent finished, verdicts first, and approve with Face ID."
 msgstr "エージェントが終えた作業を判定から**レビュー**し、Face ID で承認できます。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_review_passcode"
 msgid "**Review** what an agent finished, verdicts first, and approve with your passcode."
 msgstr "エージェントが終えた作業を判定から**レビュー**し、パスコードで承認できます。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_review_touch_id"
 msgid "**Review** what an agent finished, verdicts first, and approve with Touch ID."
 msgstr "エージェントが終えた作業を判定から**レビュー**し、Touch ID で承認できます。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_point_unblock"
 msgid "**Unblock** released tasks, expired claims and failed goal hooks."
 msgstr "解放されたタスク、期限切れの担当、失敗したゴールフックを**解消**できます。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_tagline"
 msgid "Your agents do the work. Stride tells you when one of them is waiting on you."
 msgstr "作業はエージェントが行います。エージェントがあなたを待っているとき、Stride がお知らせします。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_title"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_working"
 msgid "Signing in"
 msgstr "サインイン中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "sign_in_passcode_required"
 msgid "Set a passcode on this device first. Stride uses it to confirm your approvals."
 msgstr "まずこのデバイスにパスコードを設定してください。Stride は承認の確認にパスコードを使います。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_holds_up"
 msgid "holds up %{count}"
 msgid_plural "holds up %{count}"
 msgstr[0] "%{count} 件を足止め"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_claim_expired"
 msgid "Claim expired"
 msgstr "担当の期限切れ"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_hook_failed"
 msgid "Goal hook failed"
 msgstr "ゴールのフックが失敗"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_ready_empty"
 msgid "Ready is empty"
 msgstr "準備完了が空です"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_released"
 msgid "Released by agent"
 msgstr "エージェントが解放"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "decision_kind_review"
 msgid "Review"
 msgstr "レビュー"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "diff_line_added"
 msgid "Added, line %{line}"
 msgstr "追加、%{line} 行目"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "diff_line_removed"
 msgid "Removed, line %{line}"
 msgstr "削除、%{line} 行目"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "diff_line_unchanged"
 msgid "Line %{line}"
 msgstr "%{line} 行目"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_hook_failed"
 msgid "Hook failed"
 msgstr "フック失敗"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_progress_fraction"
 msgid "%{done}/%{count}"
 msgid_plural "%{done}/%{count}"
 msgstr[0] "%{done}/%{count}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "goal_waiting_on_you"
 msgid "%{count} waiting on you"
 msgid_plural "%{count} waiting on you"
 msgstr[0] "あなた待ち %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "offline_banner"
 msgid "Offline · showing what you had at %{time}"
 msgstr "オフライン · %{time} 時点の内容を表示中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_critical"
 msgid "Critical priority"
 msgstr "優先度：重大"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_high"
 msgid "High priority"
 msgstr "優先度：高"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_low"
 msgid "Low priority"
 msgstr "優先度：低"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "priority_medium"
 msgid "Medium priority"
 msgstr "優先度：中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_blocked"
 msgid "%{count} blocked"
 msgid_plural "%{count} blocked"
 msgstr[0] "ブロック中 %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_done"
 msgid "%{done} of %{count} done"
 msgid_plural "%{done} of %{count} done"
 msgstr[0] "%{count} 件中 %{done} 件完了"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_in_progress"
 msgid "%{count} in progress"
 msgid_plural "%{count} in progress"
 msgstr[0] "進行中 %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_in_review"
 msgid "%{count} in review"
 msgid_plural "%{count} in review"
 msgstr[0] "レビュー中 %{count} 件"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "progress_no_tasks"
 msgid "No tasks yet"
 msgstr "タスクはまだありません"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_failed"
 msgid "%{section} failed"
 msgstr "%{section}：不合格"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_not_assessed"
 msgid "%{section} not assessed"
 msgstr "%{section}：未評価"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_passed"
 msgid "%{section} passed"
 msgstr "%{section}：合格"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_acceptance_criteria"
 msgid "Acceptance"
 msgstr "受け入れ"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_patterns"
 msgid "Patterns"
 msgstr "パターン"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_pitfalls"
 msgid "Pitfalls"
 msgstr "落とし穴"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_security_considerations"
 msgid "Security"
 msgstr "セキュリティ"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "verdict_section_testing_strategy"
 msgid "Testing"
 msgstr "テスト"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "shell_close"
 msgid "Close"
 msgstr "閉じる"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "shell_new_task"
 msgid "New task"
 msgstr "新しいタスク"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "shell_settings"
 msgid "Settings"
 msgstr "設定"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_agents"
 msgid "Agents"
 msgstr "エージェント"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_boards"
 msgid "Boards"
 msgstr "ボード"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_now"
 msgid "Now"
 msgstr "いま"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "tab_review"
 msgid "Review"
 msgstr "レビュー"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_agents_working"
 msgid "%{count} agent working"
 msgid_plural "%{count} agents working"
 msgstr[0] "%{count} 体のエージェントが作業中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_backlog_tasks"
 msgid "%{count} task in Backlog to choose from."
 msgid_plural "%{count} tasks in Backlog to choose from."
 msgstr[0] "バックログに選べるタスクが %{count} 件あります。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_claim_expired"
 msgid "Its claim ran out with no update. It is back in Ready for another agent."
 msgstr "更新がないまま担当の期限が切れました。別のエージェント向けに準備完了へ戻っています。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_claim_expired_agent"
 msgid "%{agent} held it for %{count} minute with no update. It is back in Ready for another agent."
 msgid_plural "%{agent} held it for %{count} minutes with no update. It is back in Ready for another agent."
 msgstr[0] "%{agent} が %{count} 分間更新なしで担当していました。別のエージェント向けに準備完了へ戻っています。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_empty"
 msgid "Nothing is waiting on you. Your agents have what they need."
 msgstr "あなたを待っているものはありません。エージェントに必要なものは揃っています。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_all"
 msgid "All"
 msgstr "すべて"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_problems"
 msgid "Problems"
 msgstr "問題"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_ready"
 msgid "Ready"
 msgstr "準備完了"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_filter_reviews"
 msgid "Reviews"
 msgstr "レビュー"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_held_up"
 msgid "%{count} task held up"
 msgid_plural "%{count} tasks held up"
 msgstr[0] "%{count} 件のタスクが停止中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_hook_failed"
 msgid "after_goal failed"
 msgstr "after_goal が失敗しました"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_hook_failed_exit"
 msgid "after_goal failed · exit %{code} · %{duration}"
 msgstr "after_goal が失敗しました · 終了コード %{code} · %{duration}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_idle_agents"
 msgid "%{count} agent idle."
 msgid_plural "%{count} agents idle."
 msgstr[0] "%{count} 体のエージェントが待機中。"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_loading"
 msgid "Loading what is waiting on you"
 msgstr "あなたを待っているものを読み込み中"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_move_to_backlog"
 msgid "Move to Backlog"
 msgstr "バックログへ移動"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_needs_connection"
 msgid "Needs a connection"
 msgstr "接続が必要です"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_offline_nothing"
 msgid "Offline · nothing is saved on this device yet"
 msgstr "オフライン · このデバイスにはまだ何も保存されていません"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_open_on_web"
 msgid "Open on the web"
 msgstr "Web で開く"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_open_review"
 msgid "Open review"
 msgstr "レビューを開く"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_ready_empty_board"
 msgid "Ready is empty · %{board}"
 msgstr "準備完了が空です · %{board}"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_released_reason"
 msgid "“%{reason}”"
 msgstr "「%{reason}」"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_reply"
 msgid "Reply"
 msgstr "返信"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_sorted"
 msgid "Sorted by how much each one holds up"
 msgstr "止めている量の多い順"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_view_attempt"
 msgid "View attempt"
 msgstr "試行を表示"
 
-#: lib/kanban/mobile/strings.ex
+#: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
 msgctxt "now_header_summary"
 msgid "%{waiting} · %{held_up}"
 msgstr "%{waiting} · %{held_up}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_action_failed"
+msgid "That did not go through. Try again."
+msgstr "完了できませんでした。もう一度お試しください。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_duration"
+msgid "Duration"
+msgstr "実行時間"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_exit_code"
+msgid "Exit code"
+msgstr "終了コード"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_loading"
+msgid "Loading the attempt"
+msgstr "実行結果を読み込み中"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_no_output"
+msgid "The hook's output is not shown on the phone. It can hold secrets or internal paths."
+msgstr "フックの出力はスマートフォンには表示されません。秘密情報や内部パスを含むことがあるためです。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_not_reported"
+msgid "Not reported"
+msgstr "報告なし"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_title"
+msgid "Last after_goal attempt"
+msgstr "前回の after_goal の実行"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_attempt_unavailable"
+msgid "Could not load the attempt. Try again later."
+msgstr "実行結果を読み込めませんでした。後でもう一度お試しください。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_moved_to_backlog"
+msgid "Moved to Backlog"
+msgstr "バックログへ移動しました"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_not_allowed"
+msgid "You can no longer change this task."
+msgstr "このタスクはもう変更できません。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_cancel"
+msgid "Cancel"
+msgstr "キャンセル"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_field"
+msgid "Your reply"
+msgstr "返信内容"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_send"
+msgid "Send"
+msgstr "送信"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_sent"
+msgid "Reply sent"
+msgstr "返信を送信しました"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply_too_long"
+msgid "A reply can be up to 10,000 characters."
+msgstr "返信は 10,000 文字までです。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_task_moved"
+msgid "This task has moved since. Now shows where it stands."
+msgstr "このタスクはその後移動されました。「今」に現在の状態が表示されます。"
