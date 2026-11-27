@@ -107,7 +107,10 @@ defmodule Kanban.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:usage_rules, "~> 1.0", only: [:dev]},
-      {:igniter, "~> 0.6", only: [:dev]},
+      # override: oidcc 3.9.2 caps its optional igniter below 0.9.0, which keeps
+      # hex.outdated (and so the before_doing gate) failing. Drop the override
+      # once oidcc accepts igniter 0.9.
+      {:igniter, "~> 0.9", only: [:dev], override: true},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:tidewave, "~> 0.2", only: :dev},
       {:error_tracker, "~> 0.7"},
