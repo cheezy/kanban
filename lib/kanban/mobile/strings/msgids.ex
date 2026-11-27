@@ -36,7 +36,11 @@ defmodule Kanban.Mobile.Strings.Msgids do
       now_card_msgids(),
       now_count_msgids(),
       now_action_msgids(),
-      review_queue_msgids()
+      review_queue_msgids(),
+      review_section_msgids(),
+      review_check_msgids(),
+      review_file_msgids(),
+      review_state_msgids()
     ])
   end
 
@@ -370,6 +374,114 @@ defmodule Kanban.Mobile.Strings.Msgids do
       dpgettext_noop("mobile", "review_queue_too_large_phone", "Too large to approve on a phone"),
       dpngettext_noop("mobile", "review_queue_waiting", "%{count} waiting", "%{count} waiting"),
       dpngettext_noop("mobile", "review_queue_files", "%{count} file", "%{count} files")
+    ]
+  end
+
+  # The review screen's header, its summary and its verdicts, in the order of
+  # design section 6.4 (W2796).
+  defp review_section_msgids do
+    [
+      dpgettext_noop("mobile", "review_loading", "Loading the review"),
+      dpgettext_noop("mobile", "review_holds_up", "holds up %{identifiers}"),
+      dpgettext_noop("mobile", "review_summary", "What the agent says it did"),
+      dpgettext_noop("mobile", "review_verdicts", "Reviewer verdicts"),
+      dpngettext_noop(
+        "mobile",
+        "review_passed",
+        "%{passed} of %{count} passed",
+        "%{passed} of %{count} passed"
+      ),
+      dpgettext_noop("mobile", "review_criteria_count", "%{met}/%{count}"),
+      dpngettext_noop(
+        "mobile",
+        "review_criteria_met",
+        "%{met} of %{count} criterion met",
+        "%{met} of %{count} criteria met"
+      ),
+      dpgettext_noop("mobile", "review_checks", "Tests and checks")
+    ]
+  end
+
+  # "Tests and checks": the pitfalls pill's verdict and each check's result,
+  # split from the sections for credo's ABC size (W2796).
+  defp review_check_msgids do
+    [
+      dpgettext_noop("mobile", "review_verdict_passed", "Passed"),
+      dpgettext_noop("mobile", "review_verdict_failed", "Failed"),
+      dpgettext_noop("mobile", "review_verdict_not_assessed", "Not assessed"),
+      dpgettext_noop("mobile", "review_project_checks", "Project checks"),
+      dpgettext_noop("mobile", "review_all_passed", "All passed"),
+      dpngettext_noop("mobile", "review_not_met", "%{count} not met", "%{count} not met"),
+      dpgettext_noop("mobile", "review_security", "Security review"),
+      dpgettext_noop("mobile", "review_no_findings", "No findings"),
+      dpngettext_noop("mobile", "review_findings", "%{count} finding", "%{count} findings"),
+      dpngettext_noop(
+        "mobile",
+        "review_findings_critical",
+        "%{count} critical",
+        "%{count} critical"
+      ),
+      dpngettext_noop(
+        "mobile",
+        "review_findings_important",
+        "%{count} important",
+        "%{count} important"
+      ),
+      dpngettext_noop("mobile", "review_findings_minor", "%{count} minor", "%{count} minor"),
+      dpgettext_noop("mobile", "review_exploratory", "Exploratory testing"),
+      dpgettext_noop("mobile", "review_see_notes_on_web", "See notes on the web")
+    ]
+  end
+
+  # The changed files and what VoiceOver reads for each (W2796).
+  defp review_file_msgids do
+    [
+      dpngettext_noop("mobile", "review_files", "Files · %{count}", "Files · %{count}"),
+      dpgettext_noop("mobile", "review_flagged_first", "Flagged first"),
+      dpgettext_noop("mobile", "review_flagged", "flagged"),
+      dpgettext_noop("mobile", "review_file_in", "%{name} in %{folder}"),
+      dpngettext_noop(
+        "mobile",
+        "review_lines_added",
+        "%{count} line added",
+        "%{count} lines added"
+      ),
+      dpngettext_noop(
+        "mobile",
+        "review_lines_removed",
+        "%{count} line removed",
+        "%{count} lines removed"
+      )
+    ]
+  end
+
+  # The review screen's bottom bar, and what the screen says when it cannot
+  # be decided here: a large
+  # change, a review decided or resubmitted since it loaded (an HTTP 409), or
+  # one that no longer waits on the person (W2796).
+  defp review_state_msgids do
+    [
+      dpgettext_noop("mobile", "review_request_changes", "Request changes"),
+      dpgettext_noop("mobile", "review_approve", "Approve"),
+      dpgettext_noop("mobile", "review_approve_elsewhere", "Approve on tablet or web"),
+      dpgettext_noop(
+        "mobile",
+        "review_large_hint",
+        "Approve it on a tablet or on the web. You can still request changes here."
+      ),
+      dpgettext_noop("mobile", "review_unavailable", "This review is no longer waiting for you."),
+      dpgettext_noop("mobile", "review_already_decided", "Already decided"),
+      dpgettext_noop("mobile", "review_decided_approved", "%{name} approved this."),
+      dpgettext_noop("mobile", "review_decided_changes", "%{name} requested changes."),
+      dpgettext_noop("mobile", "review_decided_other", "%{name} decided this review."),
+      dpgettext_noop("mobile", "review_decided_someone", "Someone else decided this review."),
+      dpgettext_noop("mobile", "review_resubmitted", "Resubmitted"),
+      dpgettext_noop(
+        "mobile",
+        "review_resubmitted_hint",
+        "The agent sent a new version. Reload to review it."
+      ),
+      dpgettext_noop("mobile", "review_reload", "Reload")
     ]
   end
 end

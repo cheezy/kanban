@@ -40,6 +40,15 @@ defmodule Kanban.Mobile.StringsTest do
     now_attempt_exit_code now_attempt_duration now_attempt_not_reported now_attempt_loading
     now_attempt_unavailable now_attempt_no_output
     review_queue_loading review_queue_empty review_queue_large review_queue_too_large_phone
+    review_loading review_summary review_verdicts review_checks review_project_checks
+    review_all_passed review_security review_no_findings review_exploratory
+    review_see_notes_on_web review_flagged_first review_flagged review_request_changes
+    review_approve review_approve_elsewhere review_large_hint review_unavailable
+    review_already_decided review_decided_approved review_decided_changes
+    review_decided_other review_decided_someone review_resubmitted review_resubmitted_hint
+    review_reload review_holds_up review_criteria_count
+    review_verdict_passed review_verdict_failed review_verdict_not_assessed
+    review_file_in review_lines_added review_lines_removed
   )
 
   @plural_forms %{
@@ -147,8 +156,8 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 98
-      assert length(pot_keys(:plural)) == 19
+      assert length(pot_keys(:string)) == 129
+      assert length(pot_keys(:plural)) == 29
 
       for {locale, strings} <- built do
         assert strings["strings"] |> Map.keys() |> Enum.sort() == pot_keys(:string),

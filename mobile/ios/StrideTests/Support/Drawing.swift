@@ -74,6 +74,25 @@ struct Drawing {
         return last - first + 1
     }
 
+    /// How many bands of rows inside a filled shape, such as a verdict tile,
+    /// hold its ink, one band per line of text or icon set one above another.
+    /// The shape is the run of rows whose pixel at `x` matches the one at
+    /// (`x`, `y`), a point on its fill left of its content; a row holds ink
+    /// when a pixel right of `x + 8` differs from the fill.
+    func inkBands(x: Int, y: Int) -> Int {
+        let fill = pixel(x: x, y: y)
+        let isFill = { (column: Int, row: Int) in
+            zip(pixel(x: column, y: row), fill).allSatisfy { abs(Int($0) - Int($1)) <= 24 }
+        }
+        let top = (0...y).reversed().first { !isFill(x, $0) }.map { $0 + 1 } ?? 0
+        let bottom = (y..<height).first { !isFill(x, $0) } ?? height
+        let inked = (top..<bottom).map { row in
+            (x + 8..<width - x).contains { !isFill($0, row) }
+        }
+
+        return zip([false] + inked, inked).count { !$0 && $1 }
+    }
+
     private var greens: [UInt8] {
         stride(from: 1, to: pixels.count, by: 4).map { pixels[$0] }
     }

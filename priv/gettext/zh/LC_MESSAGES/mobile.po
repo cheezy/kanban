@@ -730,5 +730,260 @@ msgstr "变更过大，无法在手机上批准"
 msgctxt "review_queue_waiting"
 msgid "%{count} waiting"
 msgid_plural "%{count} waiting"
-
 msgstr[0] "%{count} 项等待中"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_all_passed"
+msgid "All passed"
+msgstr "全部通过"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_already_decided"
+msgid "Already decided"
+msgstr "已有决定"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve"
+msgid "Approve"
+msgstr "批准"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_elsewhere"
+msgid "Approve on tablet or web"
+msgstr "请在平板或网页上批准"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_checks"
+msgid "Tests and checks"
+msgstr "测试与检查"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_approved"
+msgid "%{name} approved this."
+msgstr "%{name} 已批准。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_changes"
+msgid "%{name} requested changes."
+msgstr "%{name} 已请求修改。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_other"
+msgid "%{name} decided this review."
+msgstr "%{name} 已对这项评审作出决定。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_someone"
+msgid "Someone else decided this review."
+msgstr "其他人已对这项评审作出决定。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_exploratory"
+msgid "Exploratory testing"
+msgstr "探索性测试"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_files"
+msgid "Files · %{count}"
+msgid_plural "Files · %{count}"
+msgstr[0] "文件 · %{count}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings"
+msgid "%{count} finding"
+msgid_plural "%{count} findings"
+msgstr[0] "%{count} 项发现"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_flagged"
+msgid "flagged"
+msgstr "已标记"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_flagged_first"
+msgid "Flagged first"
+msgstr "已标记的排在前面"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_hint"
+msgid "Approve it on a tablet or on the web. You can still request changes here."
+msgstr "请在平板或网页上批准。你仍可以在这里请求修改。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_loading"
+msgid "Loading the review"
+msgstr "正在加载评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_no_findings"
+msgid "No findings"
+msgstr "无发现"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_not_met"
+msgid "%{count} not met"
+msgid_plural "%{count} not met"
+msgstr[0] "%{count} 项未满足"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_passed"
+msgid "%{passed} of %{count} passed"
+msgid_plural "%{passed} of %{count} passed"
+msgstr[0] "%{count} 项中通过 %{passed} 项"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_project_checks"
+msgid "Project checks"
+msgstr "项目检查"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_reload"
+msgid "Reload"
+msgstr "重新加载"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_request_changes"
+msgid "Request changes"
+msgstr "请求修改"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_resubmitted"
+msgid "Resubmitted"
+msgstr "已重新提交"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_resubmitted_hint"
+msgid "The agent sent a new version. Reload to review it."
+msgstr "代理发送了新版本。请重新加载后再评审。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_security"
+msgid "Security review"
+msgstr "安全评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_see_notes_on_web"
+msgid "See notes on the web"
+msgstr "请在网页上查看备注"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_summary"
+msgid "What the agent says it did"
+msgstr "代理自述完成的工作"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_unavailable"
+msgid "This review is no longer waiting for you."
+msgstr "这项评审已不再等待你处理。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdicts"
+msgid "Reviewer verdicts"
+msgstr "评审结论"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_criteria_count"
+msgid "%{met}/%{count}"
+msgstr "%{met}/%{count}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_criteria_met"
+msgid "%{met} of %{count} criterion met"
+msgid_plural "%{met} of %{count} criteria met"
+msgstr[0] "%{count} 项标准中满足 %{met} 项"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings_critical"
+msgid "%{count} critical"
+msgid_plural "%{count} critical"
+msgstr[0] "严重 %{count} 项"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings_important"
+msgid "%{count} important"
+msgid_plural "%{count} important"
+msgstr[0] "重要 %{count} 项"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings_minor"
+msgid "%{count} minor"
+msgid_plural "%{count} minor"
+msgstr[0] "轻微 %{count} 项"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_holds_up"
+msgid "holds up %{identifiers}"
+msgstr "阻塞 %{identifiers}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdict_failed"
+msgid "Failed"
+msgstr "未通过"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdict_not_assessed"
+msgid "Not assessed"
+msgstr "未评估"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdict_passed"
+msgid "Passed"
+msgstr "通过"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_file_in"
+msgid "%{name} in %{folder}"
+msgstr "%{folder} 中的 %{name}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_lines_added"
+msgid "%{count} line added"
+msgid_plural "%{count} lines added"
+msgstr[0] "新增 %{count} 行"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_lines_removed"
+msgid "%{count} line removed"
+msgid_plural "%{count} lines removed"
+msgstr[0] "删除 %{count} 行"

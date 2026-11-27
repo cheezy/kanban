@@ -750,3 +750,269 @@ msgid "%{count} waiting"
 msgid_plural "%{count} waiting"
 msgstr[0] ""
 msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_all_passed"
+msgid "All passed"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_already_decided"
+msgid "Already decided"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve"
+msgid "Approve"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_elsewhere"
+msgid "Approve on tablet or web"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_checks"
+msgid "Tests and checks"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_approved"
+msgid "%{name} approved this."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_changes"
+msgid "%{name} requested changes."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_other"
+msgid "%{name} decided this review."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_decided_someone"
+msgid "Someone else decided this review."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_exploratory"
+msgid "Exploratory testing"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_files"
+msgid "Files · %{count}"
+msgid_plural "Files · %{count}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings"
+msgid "%{count} finding"
+msgid_plural "%{count} findings"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_flagged"
+msgid "flagged"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_flagged_first"
+msgid "Flagged first"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_hint"
+msgid "Approve it on a tablet or on the web. You can still request changes here."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_loading"
+msgid "Loading the review"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_no_findings"
+msgid "No findings"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_not_met"
+msgid "%{count} not met"
+msgid_plural "%{count} not met"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_passed"
+msgid "%{passed} of %{count} passed"
+msgid_plural "%{passed} of %{count} passed"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_project_checks"
+msgid "Project checks"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_reload"
+msgid "Reload"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_request_changes"
+msgid "Request changes"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_resubmitted"
+msgid "Resubmitted"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_resubmitted_hint"
+msgid "The agent sent a new version. Reload to review it."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_security"
+msgid "Security review"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_see_notes_on_web"
+msgid "See notes on the web"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_summary"
+msgid "What the agent says it did"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_unavailable"
+msgid "This review is no longer waiting for you."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdicts"
+msgid "Reviewer verdicts"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_criteria_count"
+msgid "%{met}/%{count}"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_criteria_met"
+msgid "%{met} of %{count} criterion met"
+msgid_plural "%{met} of %{count} criteria met"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings_critical"
+msgid "%{count} critical"
+msgid_plural "%{count} critical"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings_important"
+msgid "%{count} important"
+msgid_plural "%{count} important"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_findings_minor"
+msgid "%{count} minor"
+msgid_plural "%{count} minor"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_holds_up"
+msgid "holds up %{identifiers}"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdict_failed"
+msgid "Failed"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdict_not_assessed"
+msgid "Not assessed"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_verdict_passed"
+msgid "Passed"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_file_in"
+msgid "%{name} in %{folder}"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_lines_added"
+msgid "%{count} line added"
+msgid_plural "%{count} lines added"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_lines_removed"
+msgid "%{count} line removed"
+msgid_plural "%{count} lines removed"
+msgstr[0] ""
+msgstr[1] ""

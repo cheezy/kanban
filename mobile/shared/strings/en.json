@@ -58,6 +58,46 @@
       "one": "{count} in review",
       "other": "{count} in review"
     },
+    "review_criteria_met": {
+      "one": "{met} of {count} criterion met",
+      "other": "{met} of {count} criteria met"
+    },
+    "review_files": {
+      "one": "Files · {count}",
+      "other": "Files · {count}"
+    },
+    "review_findings": {
+      "one": "{count} finding",
+      "other": "{count} findings"
+    },
+    "review_findings_critical": {
+      "one": "{count} critical",
+      "other": "{count} critical"
+    },
+    "review_findings_important": {
+      "one": "{count} important",
+      "other": "{count} important"
+    },
+    "review_findings_minor": {
+      "one": "{count} minor",
+      "other": "{count} minor"
+    },
+    "review_lines_added": {
+      "one": "{count} line added",
+      "other": "{count} lines added"
+    },
+    "review_lines_removed": {
+      "one": "{count} line removed",
+      "other": "{count} lines removed"
+    },
+    "review_not_met": {
+      "one": "{count} not met",
+      "other": "{count} not met"
+    },
+    "review_passed": {
+      "one": "{passed} of {count} passed",
+      "other": "{passed} of {count} passed"
+    },
     "review_queue_files": {
       "one": "{count} file",
       "other": "{count} files"
@@ -134,10 +174,41 @@
     "priority_low": "Low priority",
     "priority_medium": "Medium priority",
     "progress_no_tasks": "No tasks yet",
+    "review_all_passed": "All passed",
+    "review_already_decided": "Already decided",
+    "review_approve": "Approve",
+    "review_approve_elsewhere": "Approve on tablet or web",
+    "review_checks": "Tests and checks",
+    "review_criteria_count": "{met}/{count}",
+    "review_decided_approved": "{name} approved this.",
+    "review_decided_changes": "{name} requested changes.",
+    "review_decided_other": "{name} decided this review.",
+    "review_decided_someone": "Someone else decided this review.",
+    "review_exploratory": "Exploratory testing",
+    "review_file_in": "{name} in {folder}",
+    "review_flagged": "flagged",
+    "review_flagged_first": "Flagged first",
+    "review_holds_up": "holds up {identifiers}",
+    "review_large_hint": "Approve it on a tablet or on the web. You can still request changes here.",
+    "review_loading": "Loading the review",
+    "review_no_findings": "No findings",
+    "review_project_checks": "Project checks",
     "review_queue_empty": "No reviews are waiting for you.",
     "review_queue_large": "Large change",
     "review_queue_loading": "Loading the review queue",
     "review_queue_too_large_phone": "Too large to approve on a phone",
+    "review_reload": "Reload",
+    "review_request_changes": "Request changes",
+    "review_resubmitted": "Resubmitted",
+    "review_resubmitted_hint": "The agent sent a new version. Reload to review it.",
+    "review_security": "Security review",
+    "review_see_notes_on_web": "See notes on the web",
+    "review_summary": "What the agent says it did",
+    "review_unavailable": "This review is no longer waiting for you.",
+    "review_verdict_failed": "Failed",
+    "review_verdict_not_assessed": "Not assessed",
+    "review_verdict_passed": "Passed",
+    "review_verdicts": "Reviewer verdicts",
     "shell_close": "Close",
     "shell_new_task": "New task",
     "shell_settings": "Settings",

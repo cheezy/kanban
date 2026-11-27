@@ -44,6 +44,36 @@
     "progress_in_review": {
       "other": "{count} 项审查中"
     },
+    "review_criteria_met": {
+      "other": "{count} 项标准中满足 {met} 项"
+    },
+    "review_files": {
+      "other": "文件 · {count}"
+    },
+    "review_findings": {
+      "other": "{count} 项发现"
+    },
+    "review_findings_critical": {
+      "other": "严重 {count} 项"
+    },
+    "review_findings_important": {
+      "other": "重要 {count} 项"
+    },
+    "review_findings_minor": {
+      "other": "轻微 {count} 项"
+    },
+    "review_lines_added": {
+      "other": "新增 {count} 行"
+    },
+    "review_lines_removed": {
+      "other": "删除 {count} 行"
+    },
+    "review_not_met": {
+      "other": "{count} 项未满足"
+    },
+    "review_passed": {
+      "other": "{count} 项中通过 {passed} 项"
+    },
     "review_queue_files": {
       "other": "{count} 个文件"
     },
@@ -115,10 +145,41 @@
     "priority_low": "低优先级",
     "priority_medium": "中优先级",
     "progress_no_tasks": "还没有任务",
+    "review_all_passed": "全部通过",
+    "review_already_decided": "已有决定",
+    "review_approve": "批准",
+    "review_approve_elsewhere": "请在平板或网页上批准",
+    "review_checks": "测试与检查",
+    "review_criteria_count": "{met}/{count}",
+    "review_decided_approved": "{name} 已批准。",
+    "review_decided_changes": "{name} 已请求修改。",
+    "review_decided_other": "{name} 已对这项评审作出决定。",
+    "review_decided_someone": "其他人已对这项评审作出决定。",
+    "review_exploratory": "探索性测试",
+    "review_file_in": "{folder} 中的 {name}",
+    "review_flagged": "已标记",
+    "review_flagged_first": "已标记的排在前面",
+    "review_holds_up": "阻塞 {identifiers}",
+    "review_large_hint": "请在平板或网页上批准。你仍可以在这里请求修改。",
+    "review_loading": "正在加载评审",
+    "review_no_findings": "无发现",
+    "review_project_checks": "项目检查",
     "review_queue_empty": "没有等待你处理的审查。",
     "review_queue_large": "大型变更",
     "review_queue_loading": "正在加载审查",
     "review_queue_too_large_phone": "变更过大，无法在手机上批准",
+    "review_reload": "重新加载",
+    "review_request_changes": "请求修改",
+    "review_resubmitted": "已重新提交",
+    "review_resubmitted_hint": "代理发送了新版本。请重新加载后再评审。",
+    "review_security": "安全评审",
+    "review_see_notes_on_web": "请在网页上查看备注",
+    "review_summary": "代理自述完成的工作",
+    "review_unavailable": "这项评审已不再等待你处理。",
+    "review_verdict_failed": "未通过",
+    "review_verdict_not_assessed": "未评估",
+    "review_verdict_passed": "通过",
+    "review_verdicts": "评审结论",
     "shell_close": "关闭",
     "shell_new_task": "新任务",
     "shell_settings": "设置",

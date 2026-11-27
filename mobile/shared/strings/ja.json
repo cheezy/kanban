@@ -44,6 +44,36 @@
     "progress_in_review": {
       "other": "レビュー中 {count} 件"
     },
+    "review_criteria_met": {
+      "other": "{count}件中{met}件の基準を満たしています"
+    },
+    "review_files": {
+      "other": "ファイル · {count}"
+    },
+    "review_findings": {
+      "other": "{count}件の指摘"
+    },
+    "review_findings_critical": {
+      "other": "重大 {count}件"
+    },
+    "review_findings_important": {
+      "other": "重要 {count}件"
+    },
+    "review_findings_minor": {
+      "other": "軽微 {count}件"
+    },
+    "review_lines_added": {
+      "other": "{count} 行追加"
+    },
+    "review_lines_removed": {
+      "other": "{count} 行削除"
+    },
+    "review_not_met": {
+      "other": "{count}件未達"
+    },
+    "review_passed": {
+      "other": "{count}件中{passed}件合格"
+    },
     "review_queue_files": {
       "other": "{count}件のファイル"
     },
@@ -115,10 +145,41 @@
     "priority_low": "優先度：低",
     "priority_medium": "優先度：中",
     "progress_no_tasks": "タスクはまだありません",
+    "review_all_passed": "すべて合格",
+    "review_already_decided": "決定済み",
+    "review_approve": "承認",
+    "review_approve_elsewhere": "タブレットかWebで承認",
+    "review_checks": "テストとチェック",
+    "review_criteria_count": "{met}/{count}",
+    "review_decided_approved": "{name}さんが承認しました。",
+    "review_decided_changes": "{name}さんが変更を依頼しました。",
+    "review_decided_other": "{name}さんがこのレビューを決定しました。",
+    "review_decided_someone": "別の人がこのレビューを決定しました。",
+    "review_exploratory": "探索的テスト",
+    "review_file_in": "{folder} の {name}",
+    "review_flagged": "フラグ付き",
+    "review_flagged_first": "フラグ付きを先頭に表示",
+    "review_holds_up": "{identifiers}を待たせています",
+    "review_large_hint": "タブレットかWebで承認してください。変更の依頼はここからでもできます。",
+    "review_loading": "レビューを読み込み中",
+    "review_no_findings": "指摘なし",
+    "review_project_checks": "プロジェクトのチェック",
     "review_queue_empty": "あなたを待っているレビューはありません。",
     "review_queue_large": "大きな変更",
     "review_queue_loading": "レビューを読み込み中",
     "review_queue_too_large_phone": "大きすぎてスマートフォンでは承認できません",
+    "review_reload": "再読み込み",
+    "review_request_changes": "変更を依頼",
+    "review_resubmitted": "再提出",
+    "review_resubmitted_hint": "エージェントが新しいバージョンを送りました。再読み込みしてレビューしてください。",
+    "review_security": "セキュリティレビュー",
+    "review_see_notes_on_web": "メモはWebで確認",
+    "review_summary": "エージェントが行ったと報告した内容",
+    "review_unavailable": "このレビューはもうあなたを待っていません。",
+    "review_verdict_failed": "不合格",
+    "review_verdict_not_assessed": "未評価",
+    "review_verdict_passed": "合格",
+    "review_verdicts": "レビュアーの判定",
     "shell_close": "閉じる",
     "shell_new_task": "新しいタスク",
     "shell_settings": "設定",

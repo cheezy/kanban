@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The Review tab's first screen: the reviews waiting on the person, in the
 /// server's order, each with what it holds up, its verdicts and its size.
-/// Opening a review comes with the review screen.
+/// A row opens its review.
 struct ReviewQueueView: View {
     @Environment(\.showsDetailBar) private var showsDetailBar
 
@@ -44,7 +44,19 @@ struct ReviewQueueView: View {
             NowEmptyState(message: .reviewQueueEmpty, identifier: "review-empty")
         case .rows:
             LazyVStack(spacing: 12) {
-                ForEach(model.rows) { ReviewQueueRowView(row: $0) }
+                ForEach(model.rows) { row in
+                    if let taskID = row.taskID {
+                        NavigationLink(value: AppRoute.review(taskID)) {
+                            ReviewQueueRowView(row: row)
+                        }
+                        .buttonStyle(.plain)
+                        // A link takes its row's parts into one button, which
+                        // the UI tests find by this identifier.
+                        .accessibilityIdentifier("review-open")
+                    } else {
+                        ReviewQueueRowView(row: row)
+                    }
+                }
             }
             // The UI tests find the queue by this identifier.
             .accessibilityElement(children: .contain)

@@ -162,4 +162,53 @@ struct SnapshotTests {
         #expect(largest.drawnWidth > normal.drawnWidth)
         #expect(largest.drawnWidth <= 586, "drawn width \(largest.drawnWidth)")
     }
+
+    /// A review screen's tile or file row in a phone's column, at the top
+    /// left of the drawing.
+    private static func reviewPart(_ view: some View, textSize: UIContentSizeCategory) throws -> Drawing {
+        let column = view
+            .padding(16)
+            .frame(width: 390)
+            .frame(maxHeight: .infinity, alignment: .top)
+
+        return try Drawing(of: column, textSize: textSize, width: 390, height: 1600)
+    }
+
+    @Test("a verdict tile puts its name under its mark at the accessibility sizes")
+    func verdictTileStacks() throws {
+        let tile = ReviewVerdictTile(
+            tile: ReviewTile(verdict: Verdict(section: .patterns, state: .failed), note: nil, criteria: nil)
+        )
+        let normal = try Self.reviewPart(tile, textSize: .large)
+        let largest = try Self.reviewPart(tile, textSize: .accessibilityExtraExtraExtraLarge)
+
+        // A point on the fill in the tile's left padding. Beside each other,
+        // the cross and the name make one band of ink; at the largest text,
+        // where a name beside them broke mid-word, they make two.
+        #expect(normal.inkBands(x: 20, y: 30) == 1)
+        #expect(largest.inkBands(x: 20, y: 40) == 2)
+    }
+
+    @Test("a file row gives a long path its own line at the accessibility sizes")
+    func fileRowStacks() throws {
+        let path = "mobile/ios/StrideTests/SignInViewModelTests.swift"
+        let json = #"{"index": 0, "path": "\#(path)", "additions": 120, "deletions": 4, "truncated": false, "flagged": true}"#
+        let file = try JSONDecoder().decode(Components.Schemas.ReviewFile.self, from: Data(json.utf8))
+        let row = ReviewFileRowView(file: ReviewFileRow(file))
+        let alone = Text(verbatim: path)
+            .textStyle(.code)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        let largest = try Self.reviewPart(row, textSize: .accessibilityExtraExtraExtraLarge)
+        let pathAlone = try Self.reviewPart(alone, textSize: .accessibilityExtraExtraExtraLarge)
+
+        // With the flag above and the counts below, the row draws under
+        // twice the path's rows of ink (237 to 132 on iOS 27); squeezed
+        // between them, the path broke every few characters and the row
+        // drew over three times as many (454).
+        #expect(
+            largest.drawnRows * 2 < pathAlone.drawnRows * 5,
+            "row \(largest.drawnRows), path \(pathAlone.drawnRows)"
+        )
+    }
 }

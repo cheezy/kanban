@@ -108,6 +108,10 @@ that has turned out wrong. Rules the app must follow belong in
   `lib/kanban/mobile/strings/msgids.ex`, run `MIX_ENV=test mix gettext.extract --merge`,
   translate it in all seven `priv/gettext/<locale>/LC_MESSAGES/mobile.po` files
   with no fuzzy flag, run `MIX_ENV=test mix mobile.strings`, and commit all of it.
+- `gettext.extract --merge` fuzzy-matches a new msgid to an unrelated old
+  translation (W2796's "%{count} lines added" took another string's text).
+  Replace each new block's msgstr and delete its `#, fuzzy` line in all seven
+  files, then check no fuzzy flag is left.
 - `test/kanban/mobile/strings_test.exs` pins the number of strings and plurals
   and the count of keys shared with the web domain. A key the web lacks goes in
   its `@app_only` list; bump the counts in the same change.
@@ -225,7 +229,14 @@ that has turned out wrong. Rules the app must follow belong in
   `drawnRows`, `drawnWidth`). Do not add a snapshot package for a task that says
   "snapshot"; extend `Drawing`.
 - `drawnRows` and `drawnWidth` compare against the top-left pixel, so they only
-  measure a view that does not paint the whole window.
+  measure a view that does not paint the whole window. In a 1600-high window
+  `lastDrawnRow` landed near the bottom for any view, so measure a view's
+  height with `drawnRows`, not `lastDrawnRow`.
+- `inkBands(x:y:)` counts the bands of ink inside a filled shape, such as a
+  verdict tile, from a point on its fill: one band when the mark and the name
+  sit side by side, two when they stack. Use it to test a layout that must
+  stack at the accessibility sizes; the accessibility audit does not report
+  a word broken mid-line (W2796).
 - `Drawing` takes no locale; wrap the view in
   `.environment(\.locale, Locale(identifier: "de"))`, as the previews do.
 - CI runs the drawing suites `SnapshotTests` and `SharedViewSnapshotTests`
@@ -304,6 +315,55 @@ that has turned out wrong. Rules the app must follow belong in
   only that element by an identifier on its container, as `isOnNowFilterCount`
   and `isOnAttemptRowValue` do (W2794). iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
   link as a link or a button (commit 7975ed01).
+- `performAccessibilityAudit` reaches every element of a scrolled screen by
+  itself, scrolling as it goes, and leaves the screen near the top, so an audit
+  after each scroll step undoes the step. At the largest text, repeating the
+  full audit also ran out of time ("Audit failed to complete in time", code
+  -56, even after a retry). Audit once at the top, scroll to the end, then
+  audit again with `auditAccessibility(skipping: .dynamicType, ...)`.
+  `app.swipeUp()` moves a largest-text screen only a few lines; drag from 75%
+  to 10% of the height with `press(forDuration:thenDragTo:)` (W2796).
+- To audit a screen in both appearances, set `XCUIDevice.shared.appearance`
+  and launch the app fresh for each, so the audit never reads a screen still
+  changing colour. iOS 26.4's contrast audit failed the review's bar buttons
+  (once from a crop of the Approve button's lower edge), its header avatar and
+  its `ink-2` "Flagged first" on every run, from a fresh launch too, while iOS
+  27.2 passed them and their pairs reach 4.5:1; `ReviewUITests` ignores those
+  three containers on iOS 26 only (`#unavailable(iOS 27)`). CI runs the
+  XCUITests on iOS 26.5, so run the 26.4 simulators before completing (W2796).
+- On the iOS 26.4 iPad, `ShellUITests.testEachTabOpensWithVoiceOverLabels`
+  fails contrast on the Review queue's "3 waiting" (`ink-3` on `bg`, over
+  5:1) on main as well, and `NowUITests.testRepliesToAReleasedTask` fails now
+  and then on the keyboard's prediction bar ("TUIPredictionViewCell is missing
+  useful accessibility information"), a system view (W2796).
+- The audit's Dynamic Type check flags text inside a `LazyVGrid` or a
+  `ViewThatFits` as partly unsupported, because both drop or swap a view as the
+  text grows. Use an eager `Grid` or `VStack`, or an `AnyLayout` chosen by
+  `dynamicTypeSize.isAccessibilitySize` (W2796).
+- The Dynamic Type pass reports "Text clipped" with the element's frame at the
+  normal size, although its larger text pushed the rest of the section under a
+  bottom bar. Check the containing section's frame against the bar, as
+  `isUnderReviewBottomBar` does; padding the text changes nothing (W2796).
+- Switching `XCUIDevice.shared.appearance` and auditing straight away gave
+  "Contrast nearly passed" on the navigation title, read mid-change. Launch
+  the app fresh in each appearance instead, as the bullet on auditing both
+  appearances says (W2796).
+- On an iPad `app.navigationBars.buttons.firstMatch` can be the sidebar
+  toggle, not Back. Match the back button by `identifier == 'BackButton'` or
+  its label (W2796).
+- A label that is a bare path ("mobile/ios/Stride/Assets.xcassets/Logo.png")
+  fails "Label not human-readable". Build a reading in the view model, such as
+  "Logo.png in mobile/ios/Stride/Assets.xcassets, 3 lines added", and give the
+  row that label (W2796).
+- An iPad audit failure on a count inside a tile can name the count as its own
+  node without the tile's identifier; match it by frame containment in the
+  tile, as `isOnCriteriaTile` does (W2796).
+- A filter that skips issues under a pinned bar also hides the bar's own
+  faults. Pair it with a largest-text test that launches with
+  `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`
+  and audits while scrolling; it found the review bar taking half the screen
+  and splitting "Approve" mid-word. At accessibility sizes put such a bar's
+  buttons, stacked, at the end of the scrolled content (W2796).
 - A failed audit says only "Contrast failed for SwiftUI.AccessibilityNode". To
   see which element, export the run's attachments with `xcrun xcresulttool
   export attachments --path <xcresult> --output-path <dir> --test-id
@@ -501,6 +561,19 @@ that has turned out wrong. Rules the app must follow belong in
   sent (W2794).
 - `Optional.map` takes no async closure, so collect an optional `HTTPBody`
   with `if let`, not `body.map { try await ... }` (W2794).
+- `FixtureAPI` is keyed by operation id alone, so every `getMyReview` answers
+  task 4812 whatever id was asked; vary the review in a test with
+  `DecisionFixtures.reviewData(editing:)`, which edits the decoded JSON (W2796).
+- `GET /api/me/reviews/:task_id` never answers 409; the 409 states come from
+  the decision calls, so `ReviewModel.show(_:)` takes a `ReviewConflict` and
+  the tests build one directly. An `edited` conflict reads as Resubmitted
+  (W2796).
+- The diff screen is not built yet: `.reviewFile(taskID, index:path:)` shows
+  only the path (`review-file-path`), and a file with no stored diff
+  (`index` nil) does not open (W2796).
+- Resolve a catalog string in a test with
+  `LocalizedStringResource.resolved(in: Locale(identifier: "en"))`, not
+  `String(localized:)`, which follows the simulator's language (W2796).
 
 ## Break-it checks
 

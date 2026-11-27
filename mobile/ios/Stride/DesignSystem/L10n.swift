@@ -117,6 +117,86 @@ extension LocalizedStringResource {
         LocalizedStringResource("progress_in_review", defaultValue: "\(count, specifier: "%lld") in review", table: "Localizable", bundle: .main)
     }
 
+    /// "{met}/{count}"
+    static func reviewCriteriaCount(met: String, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_criteria_count", defaultValue: "\(met)/\(count, specifier: "%lld")", table: "Localizable", bundle: .main)
+    }
+
+    /// "{met} of {count} criteria met"
+    static func reviewCriteriaMet(met: String, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_criteria_met", defaultValue: "\(met) of \(count, specifier: "%lld") criteria met", table: "Localizable", bundle: .main)
+    }
+
+    /// "{name} approved this."
+    static func reviewDecidedApproved(name: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_decided_approved", defaultValue: "\(name) approved this.", table: "Localizable", bundle: .main)
+    }
+
+    /// "{name} requested changes."
+    static func reviewDecidedChanges(name: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_decided_changes", defaultValue: "\(name) requested changes.", table: "Localizable", bundle: .main)
+    }
+
+    /// "{name} decided this review."
+    static func reviewDecidedOther(name: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_decided_other", defaultValue: "\(name) decided this review.", table: "Localizable", bundle: .main)
+    }
+
+    /// "{name} in {folder}"
+    static func reviewFileIn(name: String, folder: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_file_in", defaultValue: "\(name) in \(folder)", table: "Localizable", bundle: .main)
+    }
+
+    /// "Files · {count}"
+    static func reviewFiles(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_files", defaultValue: "Files · \(count, specifier: "%lld")", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} findings"
+    static func reviewFindings(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_findings", defaultValue: "\(count, specifier: "%lld") findings", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} critical"
+    static func reviewFindingsCritical(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_findings_critical", defaultValue: "\(count, specifier: "%lld") critical", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} important"
+    static func reviewFindingsImportant(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_findings_important", defaultValue: "\(count, specifier: "%lld") important", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} minor"
+    static func reviewFindingsMinor(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_findings_minor", defaultValue: "\(count, specifier: "%lld") minor", table: "Localizable", bundle: .main)
+    }
+
+    /// "holds up {identifiers}"
+    static func reviewHoldsUp(identifiers: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_holds_up", defaultValue: "holds up \(identifiers)", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} lines added"
+    static func reviewLinesAdded(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_lines_added", defaultValue: "\(count, specifier: "%lld") lines added", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} lines removed"
+    static func reviewLinesRemoved(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_lines_removed", defaultValue: "\(count, specifier: "%lld") lines removed", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} not met"
+    static func reviewNotMet(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_not_met", defaultValue: "\(count, specifier: "%lld") not met", table: "Localizable", bundle: .main)
+    }
+
+    /// "{passed} of {count} passed"
+    static func reviewPassed(passed: String, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_passed", defaultValue: "\(passed) of \(count, specifier: "%lld") passed", table: "Localizable", bundle: .main)
+    }
+
     /// "{count} files"
     static func reviewQueueFiles(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("review_queue_files", defaultValue: "\(count, specifier: "%lld") files", table: "Localizable", bundle: .main)

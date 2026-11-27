@@ -49,9 +49,43 @@ verdicts and its file count. A large change is labelled **Large change**, or
 this device. The queue is cached under `.reviewQueue`, so it reads offline with
 the offline banner, and it is fetched again on each `me:inbox` update, so a
 review decided elsewhere leaves it. The shell observes both models while it is
-shown, `refresh()` loads both, and `follow(_:)` forgets both. Opening a review
-comes with the review screen. The Boards and Agents screens are still to be
-built, so those tabs show only their titles.
+shown, `refresh()` loads both, and `follow(_:)` forgets both. The Boards and
+Agents screens are still to be built, so those tabs show only their titles.
+
+## The review screen
+
+A queue row pushes `.review(taskID)`, and `AppShell` shows `ReviewView` for it
+with a `ReviewModel` from `AppRouter.reviewModel(for:)`. The model reads
+`GET /api/me/reviews/:task_id`, and `ReviewContent` turns the answer into the
+sections of the design's section 6.4, in the order its `sections` gives: the
+header (identifier, priority, status, the identifiers it holds up, title, agent,
+time spent and goal), What the agent says it did, the four verdict tiles
+(acceptance criteria with how many were met, such as "4/4", testing strategy,
+patterns and security considerations) with "N of 4 passed" and the failed
+tiles' notes, Tests and checks (pitfalls, project checks, the security review's
+findings by severity, red only for a critical or important one, and exploratory
+testing, or **See notes on the web** when no structured block was stored), and
+the changed files, flagged first. A section with nothing to show is left out.
+`ReviewContent` also picks each row's words and colour, so the views only
+render them: the pitfalls pill says the verdict (Passed, Failed or Not
+assessed), and VoiceOver reads a file row as its name in its folder with its
+lines added and removed in words, never a bare path. The bottom
+bar holds **Request changes** and **Approve**, or **Approve on tablet or web**
+for a change too large for the device; the next goal wires them. At the
+accessibility text sizes the bar is not pinned: its buttons follow the files,
+stacked, and the verdict tiles, the check rows and the file rows stack their
+parts, so no word breaks in the middle. The summary and
+notes are shown as plain text, and `completion_notes` is never read.
+
+The model keeps each review in the cache under `.review(taskID:)`, which holds
+the last 20 opened, and shows the cached copy with the offline banner while
+offline; the buttons wait for a connection. A 404 means the review no longer
+waits on the person, and the screen says so. A decision the server refuses with
+a 409 reaches `ReviewModel.show(_:)`: **Already decided** names who decided and
+what, and how long ago, and **Resubmitted** asks the person to reload, which fetches the new
+version. Either one disables the buttons. A file with a stored diff pushes
+`.reviewFile(taskID, index:path:)`, which shows only the file's path until the
+diff screen is built.
 
 ## The corner buttons and the badge
 
@@ -90,7 +124,10 @@ Start a debug build with `-StrideStubSignIn allow` and press **Sign in**: the
 shell then reads the fixtures in `mobile/shared/fixtures/`, so Now shows a badge
 of 4, Review lists three reviews, one of them too large to approve on a phone,
 and the avatar reads "Alex Example". `ReviewQueueModelTests` covers the queue's
-order, sizes, states, cache and live updates. `AppRouterTests` covers the screen
+order, sizes, states, cache and live updates, and `ReviewModelTests` the review
+screen's sections, file order, offline copy and 409 states. `ReviewUITests`
+opens a review from the queue, audits it in light and dark and opens its flagged
+file. `AppRouterTests` covers the screen
 choice, the stacks and the badge, and `ShellUITests` opens every tab in light
 and dark, the two sheets and the German tab names at the largest text size,
 auditing each for accessibility, and hides the iPad's sidebar and brings it

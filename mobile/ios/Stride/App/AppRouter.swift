@@ -28,6 +28,8 @@ final class AppRouter {
     let reviews: ReviewQueueModel
 
     @ObservationIgnored private let api: (any StrideAPI)?
+    @ObservationIgnored private let cache: Cache?
+    @ObservationIgnored private let connectivity: Connectivity
 
     /// The live updates, which connect again each time the app comes back.
     @ObservationIgnored private let live: LiveChannel?
@@ -43,9 +45,17 @@ final class AppRouter {
     ) {
         self.api = api
         self.live = live
+        self.cache = cache
+        self.connectivity = connectivity
         now = NowModel(api: api, cache: cache, live: live, connectivity: connectivity)
         nowActions = NowActions(api: api, now: now)
         reviews = ReviewQueueModel(api: api, cache: cache, live: live, connectivity: connectivity)
+    }
+
+    /// The model for one review's screen, which reads the same API and cache
+    /// as the queue.
+    func reviewModel(for taskID: Int) -> ReviewModel {
+        ReviewModel(taskID: taskID, api: api, cache: cache, connectivity: connectivity)
     }
 
     // MARK: Tabs

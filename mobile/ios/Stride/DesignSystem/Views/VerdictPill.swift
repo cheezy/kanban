@@ -11,13 +11,17 @@ struct VerdictPill: View {
     @ScaledMetric(relativeTo: .caption2) private var minHeight = 18
 
     let verdict: Verdict
+    /// The pill's words, when they are not the section's name, such as
+    /// "Passed" beside a row already named after the section. VoiceOver
+    /// still reads the whole verdict.
+    var text: String?
 
     var body: some View {
         HStack(spacing: 5) {
             marker
                 .accessibilityHidden(true)
 
-            Text(verbatim: verdict.section.name.resolved(in: locale))
+            Text(verbatim: text ?? verdict.section.name.resolved(in: locale))
                 .textStyle(.label)
                 .fontWeight(.semibold)
                 .fixedSize(horizontal: false, vertical: true)

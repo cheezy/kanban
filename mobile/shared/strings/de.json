@@ -58,6 +58,46 @@
       "one": "{count} in Prüfung",
       "other": "{count} in Prüfung"
     },
+    "review_criteria_met": {
+      "one": "{met} von {count} Kriterium erfüllt",
+      "other": "{met} von {count} Kriterien erfüllt"
+    },
+    "review_files": {
+      "one": "Dateien · {count}",
+      "other": "Dateien · {count}"
+    },
+    "review_findings": {
+      "one": "{count} Befund",
+      "other": "{count} Befunde"
+    },
+    "review_findings_critical": {
+      "one": "{count} kritisch",
+      "other": "{count} kritisch"
+    },
+    "review_findings_important": {
+      "one": "{count} wichtig",
+      "other": "{count} wichtig"
+    },
+    "review_findings_minor": {
+      "one": "{count} geringfügig",
+      "other": "{count} geringfügig"
+    },
+    "review_lines_added": {
+      "one": "{count} Zeile hinzugefügt",
+      "other": "{count} Zeilen hinzugefügt"
+    },
+    "review_lines_removed": {
+      "one": "{count} Zeile entfernt",
+      "other": "{count} Zeilen entfernt"
+    },
+    "review_not_met": {
+      "one": "{count} nicht erfüllt",
+      "other": "{count} nicht erfüllt"
+    },
+    "review_passed": {
+      "one": "{passed} von {count} bestanden",
+      "other": "{passed} von {count} bestanden"
+    },
     "review_queue_files": {
       "one": "{count} Datei",
       "other": "{count} Dateien"
@@ -134,10 +174,41 @@
     "priority_low": "Niedrige Priorität",
     "priority_medium": "Mittlere Priorität",
     "progress_no_tasks": "Noch keine Aufgaben",
+    "review_all_passed": "Alle bestanden",
+    "review_already_decided": "Bereits entschieden",
+    "review_approve": "Freigeben",
+    "review_approve_elsewhere": "Auf Tablet oder im Web freigeben",
+    "review_checks": "Tests und Prüfungen",
+    "review_criteria_count": "{met}/{count}",
+    "review_decided_approved": "{name} hat das freigegeben.",
+    "review_decided_changes": "{name} hat Änderungen angefordert.",
+    "review_decided_other": "{name} hat über dieses Review entschieden.",
+    "review_decided_someone": "Jemand anderes hat über dieses Review entschieden.",
+    "review_exploratory": "Exploratives Testen",
+    "review_file_in": "{name} in {folder}",
+    "review_flagged": "markiert",
+    "review_flagged_first": "Markierte zuerst",
+    "review_holds_up": "blockiert {identifiers}",
+    "review_large_hint": "Gib sie auf einem Tablet oder im Web frei. Änderungen kannst du hier trotzdem anfordern.",
+    "review_loading": "Review wird geladen",
+    "review_no_findings": "Keine Befunde",
+    "review_project_checks": "Projektprüfungen",
     "review_queue_empty": "Keine Überprüfungen warten auf Sie.",
     "review_queue_large": "Große Änderung",
     "review_queue_loading": "Lädt die Überprüfungen",
     "review_queue_too_large_phone": "Zu groß zum Genehmigen auf einem Telefon",
+    "review_reload": "Neu laden",
+    "review_request_changes": "Änderungen anfordern",
+    "review_resubmitted": "Erneut eingereicht",
+    "review_resubmitted_hint": "Der Agent hat eine neue Version gesendet. Lade neu, um sie zu prüfen.",
+    "review_security": "Sicherheitsprüfung",
+    "review_see_notes_on_web": "Notizen im Web ansehen",
+    "review_summary": "Was der Agent nach eigener Aussage getan hat",
+    "review_unavailable": "Dieses Review wartet nicht mehr auf dich.",
+    "review_verdict_failed": "Nicht bestanden",
+    "review_verdict_not_assessed": "Nicht bewertet",
+    "review_verdict_passed": "Bestanden",
+    "review_verdicts": "Urteile des Reviewers",
     "shell_close": "Schließen",
     "shell_new_task": "Neue Aufgabe",
     "shell_settings": "Einstellungen",

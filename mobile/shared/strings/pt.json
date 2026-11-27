@@ -58,6 +58,46 @@
       "one": "{count} em revisão",
       "other": "{count} em revisão"
     },
+    "review_criteria_met": {
+      "one": "{met} de {count} critério atendido",
+      "other": "{met} de {count} critérios atendidos"
+    },
+    "review_files": {
+      "one": "Arquivos · {count}",
+      "other": "Arquivos · {count}"
+    },
+    "review_findings": {
+      "one": "{count} constatação",
+      "other": "{count} constatações"
+    },
+    "review_findings_critical": {
+      "one": "{count} crítica",
+      "other": "{count} críticas"
+    },
+    "review_findings_important": {
+      "one": "{count} importante",
+      "other": "{count} importantes"
+    },
+    "review_findings_minor": {
+      "one": "{count} menor",
+      "other": "{count} menores"
+    },
+    "review_lines_added": {
+      "one": "{count} linha adicionada",
+      "other": "{count} linhas adicionadas"
+    },
+    "review_lines_removed": {
+      "one": "{count} linha removida",
+      "other": "{count} linhas removidas"
+    },
+    "review_not_met": {
+      "one": "{count} não atendida",
+      "other": "{count} não atendidas"
+    },
+    "review_passed": {
+      "one": "{passed} de {count} aprovado",
+      "other": "{passed} de {count} aprovados"
+    },
     "review_queue_files": {
       "one": "{count} arquivo",
       "other": "{count} arquivos"
@@ -134,10 +174,41 @@
     "priority_low": "Prioridade baixa",
     "priority_medium": "Prioridade média",
     "progress_no_tasks": "Ainda não há tarefas",
+    "review_all_passed": "Tudo aprovado",
+    "review_already_decided": "Já decidida",
+    "review_approve": "Aprovar",
+    "review_approve_elsewhere": "Aprovar no tablet ou na web",
+    "review_checks": "Testes e verificações",
+    "review_criteria_count": "{met}/{count}",
+    "review_decided_approved": "{name} aprovou isto.",
+    "review_decided_changes": "{name} solicitou alterações.",
+    "review_decided_other": "{name} decidiu esta revisão.",
+    "review_decided_someone": "Outra pessoa decidiu esta revisão.",
+    "review_exploratory": "Testes exploratórios",
+    "review_file_in": "{name} em {folder}",
+    "review_flagged": "sinalizado",
+    "review_flagged_first": "Sinalizados primeiro",
+    "review_holds_up": "segura {identifiers}",
+    "review_large_hint": "Aprove-a em um tablet ou na web. Você ainda pode solicitar alterações aqui.",
+    "review_loading": "Carregando a revisão",
+    "review_no_findings": "Nenhuma constatação",
+    "review_project_checks": "Verificações do projeto",
     "review_queue_empty": "Nenhuma revisão está esperando por você.",
     "review_queue_large": "Mudança grande",
     "review_queue_loading": "Carregando as revisões",
     "review_queue_too_large_phone": "Grande demais para aprovar em um telefone",
+    "review_reload": "Recarregar",
+    "review_request_changes": "Solicitar alterações",
+    "review_resubmitted": "Reenviada",
+    "review_resubmitted_hint": "O agente enviou uma nova versão. Recarregue para revisá-la.",
+    "review_security": "Revisão de segurança",
+    "review_see_notes_on_web": "Ver as notas na web",
+    "review_summary": "O que o agente diz que fez",
+    "review_unavailable": "Esta revisão não está mais esperando por você.",
+    "review_verdict_failed": "Reprovado",
+    "review_verdict_not_assessed": "Não avaliado",
+    "review_verdict_passed": "Aprovado",
+    "review_verdicts": "Veredictos do revisor",
     "shell_close": "Fechar",
     "shell_new_task": "Nova tarefa",
     "shell_settings": "Configurações",

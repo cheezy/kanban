@@ -108,10 +108,23 @@ struct AppShell: View {
     private func stack(for tab: AppTab, showsCornerButtons: Bool) -> some View {
         NavigationStack(path: $router.paths[tab]) {
             root(for: tab, showsCornerButtons: showsCornerButtons)
-            // The screens each route opens are still to be built.
-            .navigationDestination(for: AppRoute.self) { _ in
-                TabRoot(tab: tab, isPushed: true)
+            .navigationDestination(for: AppRoute.self) { route in
+                destination(for: route, on: tab)
             }
+        }
+    }
+
+    /// The screen a route opens. The ones still to be built show the tab's
+    /// title.
+    @ViewBuilder
+    private func destination(for route: AppRoute, on tab: AppTab) -> some View {
+        switch route {
+        case .review(let taskID):
+            ReviewView(model: router.reviewModel(for: taskID))
+        case .reviewFile(_, _, let path):
+            ReviewFilePlaceholder(path: path)
+        default:
+            TabRoot(tab: tab, isPushed: true)
         }
     }
 

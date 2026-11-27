@@ -34,6 +34,17 @@ enum DecisionFixtures {
         return try JSONSerialization.data(withJSONObject: root)
     }
 
+    /// The `getMyReview` fixture's body with `edit` applied to its review,
+    /// the `data` object.
+    static func reviewData(editing edit: (inout [String: Any]) -> Void = { _ in }) throws -> Data {
+        let fixture = try FixtureAPI.fixture(named: Operations.GetMyReview.id)
+        var root = try #require(try JSONSerialization.jsonObject(with: fixture) as? [String: Any])
+        var review = try #require(root["data"] as? [String: Any])
+        edit(&review)
+        root["data"] = review
+        return try JSONSerialization.data(withJSONObject: root)
+    }
+
     /// A client that answers `listMyDecisions` with `data`.
     static func api(_ data: Data) -> some StrideAPI {
         FixtureAPI(replacing: [Operations.ListMyDecisions.id: data]).client
