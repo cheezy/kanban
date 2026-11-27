@@ -84,6 +84,100 @@ defmodule KanbanWeb.PageControllerTest do
     assert signed_in |> get(~p"/") |> html_response(200) =~ ~s(href="/demo")
   end
 
+  describe "GET / half-day session band" do
+    test "renders the HitMe band linking to /HitMe", %{conn: conn} do
+      page = conn |> get(~p"/") |> html_response(200) |> LazyHTML.from_document()
+      band = LazyHTML.query(page, "main section[data-hitme-band]")
+
+      assert Enum.count(band) == 1
+      assert band |> LazyHTML.query(~s(a[data-hitme-link][href="/HitMe"])) |> Enum.count() == 1
+      assert LazyHTML.text(band) =~ "Book a half-day session"
+    end
+
+    test "the HitMe band mentions the half-day session", %{conn: conn} do
+      band =
+        conn
+        |> get(~p"/")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("section[data-hitme-band]")
+
+      assert band |> LazyHTML.query("h2") |> LazyHTML.text() =~
+               "Half-day AI proof-of-concept sessions"
+
+      assert LazyHTML.text(band) =~ "In half a day"
+    end
+
+    test "renders the HitMe band for a signed-in user" do
+      %{conn: signed_in} = register_and_log_in_user(%{conn: build_conn()})
+      html = signed_in |> get(~p"/") |> html_response(200)
+
+      assert html =~ "data-hitme-band"
+      assert html =~ ~s(href="/HitMe")
+    end
+
+    test "a signed-in user with boards keeps the hero's primary action above the band" do
+      %{conn: signed_in, user: user} = register_and_log_in_user(%{conn: build_conn()})
+      Kanban.BoardsFixtures.board_fixture(user)
+      html = signed_in |> get(~p"/") |> html_response(200)
+
+      {hero_action, _} = :binary.match(html, "Go to my boards")
+      {band, _} = :binary.match(html, "data-hitme-band")
+
+      assert hero_action < band
+      assert html =~ ~s(href="/HitMe")
+    end
+
+    test "the band uses the /HitMe page's own wording for the offer", %{conn: conn} do
+      hit_me = conn |> get(~p"/HitMe") |> html_response(200)
+
+      band =
+        build_conn()
+        |> get(~p"/")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("section[data-hitme-band]")
+        |> LazyHTML.text()
+
+      for phrase <- [
+            "Stride with us",
+            "Book a half-day session",
+            "In half a day: your backlog and agents set up, part of your proof of concept delivered, and your team is ready."
+          ] do
+        assert band =~ phrase
+        assert hit_me =~ phrase
+      end
+
+      assert hit_me =~
+               ~s(<meta property="og:title" content="Half-day AI proof-of-concept sessions">)
+    end
+
+    test "renders the HitMe band in French", %{conn: conn} do
+      html =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "fr"})
+        |> get(~p"/")
+        |> html_response(200)
+
+      assert html =~ "data-hitme-band"
+      assert html =~ "Réserver une session d&#39;une demi-journée"
+      refute html =~ "Book a half-day session"
+      assert html =~ ~s(href="/HitMe")
+    end
+
+    test "following the band's link reaches /HitMe", %{conn: conn} do
+      [href] =
+        conn
+        |> get(~p"/")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("a[data-hitme-link]")
+        |> LazyHTML.attribute("href")
+
+      assert build_conn() |> get(href) |> html_response(200) =~ "hitme-hero"
+    end
+  end
+
   test "GET /about", %{conn: conn} do
     conn = get(conn, ~p"/about")
     assert html_response(conn, 200)

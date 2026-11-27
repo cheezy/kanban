@@ -13275,6 +13275,7 @@ msgstr "メールでセッションを予約"
 msgid "Everyone ships."
 msgstr "みんなでリリース。"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_controller.ex
 #, elixir-autogen, elixir-format
 msgid "Half-day AI proof-of-concept sessions"
@@ -13290,6 +13291,7 @@ msgstr "タスクの流れ"
 msgid "Humans decide."
 msgstr "人が決める。"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "In half a day: your backlog and agents set up, part of your proof of concept delivered, and your team is ready."
@@ -13305,6 +13307,7 @@ msgstr "Stride 半日概念実証セッション"
 msgid "Stride sticker: Level Boss"
 msgstr "Stride ステッカー:Level Boss"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride with us"
@@ -13350,6 +13353,7 @@ msgstr "それにつながったエージェント"
 msgid "Agents work from tasks your team has written and prioritized, not from a chat window."
 msgstr "エージェントはチャット画面ではなく、チームが書いて優先順位を付けたタスクに基づいて作業します。"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "Book a half-day session"

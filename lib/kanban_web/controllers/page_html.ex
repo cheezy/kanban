@@ -10,6 +10,7 @@ defmodule KanbanWeb.PageHTML do
   import KanbanWeb.MarketingClosing
   import KanbanWeb.MarketingComponents
   import KanbanWeb.MarketingDemoBand
+  import KanbanWeb.MarketingHitmeBand
   import KanbanWeb.ReleaseSignupForm, only: [release_signup_form: 1]
   import KanbanWeb.SeoComponents, only: [structured_data: 1]
 

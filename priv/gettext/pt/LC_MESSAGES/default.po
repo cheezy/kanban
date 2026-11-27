@@ -13320,6 +13320,7 @@ msgstr "Envie um e-mail para agendar uma sessão"
 msgid "Everyone ships."
 msgstr "Todos entregam."
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_controller.ex
 #, elixir-autogen, elixir-format
 msgid "Half-day AI proof-of-concept sessions"
@@ -13335,6 +13336,7 @@ msgstr "Como uma tarefa avança"
 msgid "Humans decide."
 msgstr "As pessoas decidem."
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "In half a day: your backlog and agents set up, part of your proof of concept delivered, and your team is ready."
@@ -13350,6 +13352,7 @@ msgstr "Sessão de prova de conceito do Stride de meio dia"
 msgid "Stride sticker: Level Boss"
 msgstr "Adesivo do Stride: Level Boss"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride with us"
@@ -13395,6 +13398,7 @@ msgstr "Agentes conectados a ela"
 msgid "Agents work from tasks your team has written and prioritized, not from a chat window."
 msgstr "Os agentes trabalham a partir de tarefas que sua equipe escreveu e priorizou, não de uma janela de chat."
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "Book a half-day session"

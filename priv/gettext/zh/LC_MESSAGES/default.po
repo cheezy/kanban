@@ -13278,6 +13278,7 @@ msgstr "发邮件预约工作坊"
 msgid "Everyone ships."
 msgstr "人人交付。"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_controller.ex
 #, elixir-autogen, elixir-format
 msgid "Half-day AI proof-of-concept sessions"
@@ -13293,6 +13294,7 @@ msgstr "任务如何流转"
 msgid "Humans decide."
 msgstr "人类决策。"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "In half a day: your backlog and agents set up, part of your proof of concept delivered, and your team is ready."
@@ -13308,6 +13310,7 @@ msgstr "Stride 半天概念验证工作坊"
 msgid "Stride sticker: Level Boss"
 msgstr "Stride 贴纸:Level Boss"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "Stride with us"
@@ -13353,6 +13356,7 @@ msgstr "与之连接的代理"
 msgid "Agents work from tasks your team has written and prioritized, not from a chat window."
 msgstr "代理根据团队编写并排好优先级的任务工作，而不是在聊天窗口中工作。"
 
+#: lib/kanban_web/components/marketing_hitme_band.ex
 #: lib/kanban_web/controllers/page_html/hit_me.html.heex
 #, elixir-autogen, elixir-format
 msgid "Book a half-day session"

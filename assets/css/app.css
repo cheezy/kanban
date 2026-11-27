@@ -1651,6 +1651,82 @@
 
 .stride-marketing .hitme-top .hitme-email { font-size: 13px; }
 
+/* The home page's half-day session band (KanbanWeb.MarketingHitmeBand): a
+   small copy of the flyer card. Stacked on narrow screens; sticker, copy
+   and button in one row from 768px. The card clips the tilted sticker. */
+.stride-marketing .hitme-promo {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--hitme-navy);
+  color: var(--hitme-white);
+  box-shadow: var(--shadow-lg);
+}
+
+.stride-marketing .hitme-promo-sticker {
+  display: block;
+  flex: none;
+  width: 88px;
+  height: auto;
+  transform: rotate(8deg);
+}
+
+.stride-marketing .hitme-promo-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stride-marketing .hitme-promo-kicker {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.stride-marketing .hitme-promo-heading {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--hitme-white);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-promo-lead {
+  margin: 8px 0 0;
+  max-width: 38rem;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--hitme-lead);
+  overflow-wrap: anywhere;
+}
+
+.stride-marketing .hitme-promo-button {
+  flex: none;
+  text-decoration: none;
+}
+
+.stride-marketing .hitme-promo-button:focus-visible {
+  outline: 2px solid var(--hitme-yellow);
+  outline-offset: 3px;
+}
+
+@media (min-width: 768px) {
+  .stride-marketing .hitme-promo {
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+    padding: 28px 36px;
+  }
+
+  .stride-marketing .hitme-promo-sticker { width: 112px; }
+}
+
 @media (min-width: 768px) {
   .stride-marketing .hitme-back {
     grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);
