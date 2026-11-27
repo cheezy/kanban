@@ -442,3 +442,158 @@ msgstr "いま"
 msgctxt "tab_review"
 msgid "Review"
 msgstr "レビュー"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_agents_working"
+msgid "%{count} agent working"
+msgid_plural "%{count} agents working"
+msgstr[0] "%{count} 体のエージェントが作業中"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_backlog_tasks"
+msgid "%{count} task in Backlog to choose from."
+msgid_plural "%{count} tasks in Backlog to choose from."
+msgstr[0] "バックログに選べるタスクが %{count} 件あります。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_claim_expired"
+msgid "Its claim ran out with no update. It is back in Ready for another agent."
+msgstr "更新がないまま担当の期限が切れました。別のエージェント向けに準備完了へ戻っています。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_claim_expired_agent"
+msgid "%{agent} held it for %{count} minute with no update. It is back in Ready for another agent."
+msgid_plural "%{agent} held it for %{count} minutes with no update. It is back in Ready for another agent."
+msgstr[0] "%{agent} が %{count} 分間更新なしで担当していました。別のエージェント向けに準備完了へ戻っています。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_empty"
+msgid "Nothing is waiting on you. Your agents have what they need."
+msgstr "あなたを待っているものはありません。エージェントに必要なものは揃っています。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_all"
+msgid "All"
+msgstr "すべて"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_problems"
+msgid "Problems"
+msgstr "問題"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_ready"
+msgid "Ready"
+msgstr "準備完了"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_reviews"
+msgid "Reviews"
+msgstr "レビュー"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_held_up"
+msgid "%{count} task held up"
+msgid_plural "%{count} tasks held up"
+msgstr[0] "%{count} 件のタスクが停止中"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_hook_failed"
+msgid "after_goal failed"
+msgstr "after_goal が失敗しました"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_hook_failed_exit"
+msgid "after_goal failed · exit %{code} · %{duration}"
+msgstr "after_goal が失敗しました · 終了コード %{code} · %{duration}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_idle_agents"
+msgid "%{count} agent idle."
+msgid_plural "%{count} agents idle."
+msgstr[0] "%{count} 体のエージェントが待機中。"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_loading"
+msgid "Loading what is waiting on you"
+msgstr "あなたを待っているものを読み込み中"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_move_to_backlog"
+msgid "Move to Backlog"
+msgstr "バックログへ移動"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_needs_connection"
+msgid "Needs a connection"
+msgstr "接続が必要です"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_offline_nothing"
+msgid "Offline · nothing is saved on this device yet"
+msgstr "オフライン · このデバイスにはまだ何も保存されていません"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_open_on_web"
+msgid "Open on the web"
+msgstr "Web で開く"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_open_review"
+msgid "Open review"
+msgstr "レビューを開く"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_ready_empty_board"
+msgid "Ready is empty · %{board}"
+msgstr "準備完了が空です · %{board}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_released_reason"
+msgid "“%{reason}”"
+msgstr "「%{reason}」"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply"
+msgid "Reply"
+msgstr "返信"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_sorted"
+msgid "Sorted by how much each one holds up"
+msgstr "止めている量の多い順"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_view_attempt"
+msgid "View attempt"
+msgstr "試行を表示"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_header_summary"
+msgid "%{waiting} · %{held_up}"
+msgstr "%{waiting} · %{held_up}"

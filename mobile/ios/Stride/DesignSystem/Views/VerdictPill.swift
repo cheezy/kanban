@@ -28,6 +28,9 @@ struct VerdictPill: View {
         .background(verdict.state.fill.color, in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: verdict.reading(in: locale)))
+        // Read as text, not a control, so the audit does not hold the
+        // 18-point pill to a tap target's size.
+        .accessibilityAddTraits(.isStaticText)
     }
 
     @ViewBuilder private var marker: some View {

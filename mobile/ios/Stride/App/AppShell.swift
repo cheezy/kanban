@@ -25,6 +25,7 @@ struct AppShell: View {
         .task(id: scenePhase) {
             if scenePhase == .active { await router.refresh() }
         }
+        .task { await router.now.observe() }
     }
 
     private var tabs: some View {
@@ -101,12 +102,22 @@ struct AppShell: View {
 
     private func stack(for tab: AppTab, showsCornerButtons: Bool) -> some View {
         NavigationStack(path: $router.paths[tab]) {
-            TabRoot(tab: tab) {
-                if showsCornerButtons { ShellCornerButtons(router: router) }
-            }
+            root(for: tab, showsCornerButtons: showsCornerButtons)
             // The screens each route opens are still to be built.
             .navigationDestination(for: AppRoute.self) { _ in
                 TabRoot(tab: tab, isPushed: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func root(for tab: AppTab, showsCornerButtons: Bool) -> some View {
+        switch tab {
+        case .now:
+            NowView(model: router.now, router: router, showsCornerButtons: showsCornerButtons)
+        default:
+            TabRoot(tab: tab) {
+                if showsCornerButtons { ShellCornerButtons(router: router) }
             }
         }
     }

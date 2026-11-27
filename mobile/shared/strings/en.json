@@ -22,6 +22,26 @@
       "one": "Goals · {count} open",
       "other": "Goals · {count} open"
     },
+    "now_agents_working": {
+      "one": "{count} agent working",
+      "other": "{count} agents working"
+    },
+    "now_backlog_tasks": {
+      "one": "{count} task in Backlog to choose from.",
+      "other": "{count} tasks in Backlog to choose from."
+    },
+    "now_claim_expired_agent": {
+      "one": "{agent} held it for {count} minute with no update. It is back in Ready for another agent.",
+      "other": "{agent} held it for {count} minutes with no update. It is back in Ready for another agent."
+    },
+    "now_held_up": {
+      "one": "{count} task held up",
+      "other": "{count} tasks held up"
+    },
+    "now_idle_agents": {
+      "one": "{count} agent idle.",
+      "other": "{count} agents idle."
+    },
     "progress_blocked": {
       "one": "{count} blocked",
       "other": "{count} blocked"
@@ -64,6 +84,26 @@
     "diff_line_removed": "Removed, line {line}",
     "diff_line_unchanged": "Line {line}",
     "goal_hook_failed": "Hook failed",
+    "now_claim_expired": "Its claim ran out with no update. It is back in Ready for another agent.",
+    "now_empty": "Nothing is waiting on you. Your agents have what they need.",
+    "now_filter_all": "All",
+    "now_filter_problems": "Problems",
+    "now_filter_ready": "Ready",
+    "now_filter_reviews": "Reviews",
+    "now_header_summary": "{waiting} · {held_up}",
+    "now_hook_failed": "after_goal failed",
+    "now_hook_failed_exit": "after_goal failed · exit {code} · {duration}",
+    "now_loading": "Loading what is waiting on you",
+    "now_move_to_backlog": "Move to Backlog",
+    "now_needs_connection": "Needs a connection",
+    "now_offline_nothing": "Offline · nothing is saved on this device yet",
+    "now_open_on_web": "Open on the web",
+    "now_open_review": "Open review",
+    "now_ready_empty_board": "Ready is empty · {board}",
+    "now_released_reason": "“{reason}”",
+    "now_reply": "Reply",
+    "now_sorted": "Sorted by how much each one holds up",
+    "now_view_attempt": "View attempt",
     "offline_banner": "Offline · showing what you had at {time}",
     "priority_critical": "Critical priority",
     "priority_high": "High priority",

@@ -18,10 +18,17 @@ struct DecisionCard<Actions: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            FlowLayout(spacing: 8) {
-                kind
-                if content.holdsUp > 0 {
-                    StatusPill(.decisionHoldsUp(count: content.holdsUp), tone: .blocked)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                FlowLayout(spacing: 8) {
+                    kind
+                    if content.holdsUp > 0 {
+                        StatusPill(.decisionHoldsUp(count: content.holdsUp), tone: .blocked)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if content.since != nil {
+                    age
                 }
             }
 
@@ -29,6 +36,7 @@ struct DecisionCard<Actions: View>: View {
                 Text(verbatim: content.identifier)
                     .textStyle(.code)
                     .foregroundStyle(ColorToken.ink3.color)
+                    .accessibilityIdentifier("card-identifier")
                 if let priority = content.priority {
                     PriorityDot(priority: priority)
                 }
@@ -68,6 +76,17 @@ struct DecisionCard<Actions: View>: View {
         }
         .cardChrome()
         .accessibilityElement(children: .contain)
+    }
+
+    /// The age, redrawn each minute.
+    private var age: some View {
+        TimelineView(.everyMinute) { context in
+            Text(verbatim: content.age(at: context.date, in: locale) ?? "")
+                .textStyle(.code)
+                .foregroundStyle(ColorToken.ink3.color)
+                .accessibilityLabel(Text(verbatim: content.age(at: context.date, in: locale, width: .wide) ?? ""))
+                .accessibilityIdentifier("card-age")
+        }
     }
 
     private var kind: some View {

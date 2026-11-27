@@ -118,6 +118,8 @@ struct SharedViewAccessibilityTests {
         pairs += StatusTone.allCases.map { ($0.ink, $0.fill) }
         pairs += AgentFamily.allCases.map { ($0.ink, $0.fill) }
         pairs += [(.ink, .stDoingSoft), (.ink, .surface), (.stBlocked, .surface), (.ink3, .surface), (.ink2, .surface)]
+        // The selected sidebar row on an iPad.
+        pairs += [(.strideOrangeInk, .strideOrangeSoft)]
 
         for kind in DiffLineKind.allCases {
             let background = kind.background ?? .surface

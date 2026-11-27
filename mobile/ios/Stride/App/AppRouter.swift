@@ -3,8 +3,8 @@ import Observation
 import StrideKit
 
 /// Where the shell is: the selected tab, each tab's stack of pushed screens,
-/// the sheet a corner button opened, and the two things the shell shows of
-/// the person, the avatar's name and the Now badge.
+/// the sheet a corner button opened, the avatar's name, and the Now screen's
+/// decisions, whose waiting count is the Now badge.
 @MainActor
 @Observable
 final class AppRouter {
@@ -18,8 +18,8 @@ final class AppRouter {
     /// The signed-in person, for the avatar. Nil until `/api/me` answers.
     private(set) var person: AgentAvatarContent?
 
-    /// Everything waiting on the person, from `/api/me/decisions`.
-    private(set) var waitingCount = 0
+    /// The Now screen's decisions, whose waiting count is the Now badge.
+    let now: NowModel
 
     @ObservationIgnored private let api: (any StrideAPI)?
 
@@ -29,9 +29,15 @@ final class AppRouter {
     /// Bumped by every sign-out, so an answer that set out before one is dropped.
     @ObservationIgnored private var session = 0
 
-    init(api: (any StrideAPI)?, live: LiveChannel? = nil) {
+    init(
+        api: (any StrideAPI)?,
+        live: LiveChannel? = nil,
+        cache: Cache? = nil,
+        connectivity: Connectivity = .system
+    ) {
         self.api = api
         self.live = live
+        now = NowModel(api: api, cache: cache, live: live, connectivity: connectivity)
     }
 
     // MARK: Tabs
@@ -60,10 +66,25 @@ final class AppRouter {
 
     /// The count a tab's badge shows, where zero hides it. Only Now has one.
     func badge(for tab: AppTab) -> Int {
-        tab == .now ? waitingCount : 0
+        tab == .now ? now.summary.waiting : 0
     }
 
     // MARK: Corner buttons
+
+    /// Follows a Now card's action: pushes or opens its screen, and returns
+    /// the address of a web page for the caller to open.
+    func open(_ destination: NowDestination) -> URL? {
+        switch destination {
+        case .push(let route):
+            push(route, on: .now)
+            return nil
+        case .show(let route, let tab):
+            show(route, on: tab)
+            return nil
+        case .web(let url):
+            return url
+        }
+    }
 
     func showNewTask() {
         sheet = .newTask
@@ -85,7 +106,7 @@ final class AppRouter {
         paths = TabPaths()
         sheet = nil
         person = nil
-        waitingCount = 0
+        now.forget()
         // The live channels drop the last person's state too.
         let live = live
         Task { await live?.forget() }
@@ -100,12 +121,11 @@ final class AppRouter {
 
         let asked = session
         async let me = Self.person(using: api)
-        async let waiting = Self.waitingCount(using: api)
-        let (person, count) = await (me, waiting)
+        await now.load()
+        let person = await me
         guard asked == session else { return }
 
         if let person { self.person = person }
-        if let count { waitingCount = count }
     }
 
     private nonisolated static func person(using api: any StrideAPI) async -> AgentAvatarContent? {
@@ -117,12 +137,4 @@ final class AppRouter {
         return AgentAvatarContent(name: me.user.displayName, isPerson: true)
     }
 
-    private nonisolated static func waitingCount(using api: any StrideAPI) async -> Int? {
-        guard
-            case .ok(let response) = try? await api.listMyDecisions(),
-            let list = try? response.body.json.data
-        else { return nil }
-
-        return max(0, list.summary.waiting)
-    }
 }

@@ -22,6 +22,26 @@
       "one": "Ziele · {count} offen",
       "other": "Ziele · {count} offen"
     },
+    "now_agents_working": {
+      "one": "{count} Agent arbeitet",
+      "other": "{count} Agenten arbeiten"
+    },
+    "now_backlog_tasks": {
+      "one": "{count} Aufgabe im Backlog zur Auswahl.",
+      "other": "{count} Aufgaben im Backlog zur Auswahl."
+    },
+    "now_claim_expired_agent": {
+      "one": "{agent} hatte sie {count} Minute ohne Aktualisierung. Die Aufgabe ist wieder in Bereit für einen anderen Agenten.",
+      "other": "{agent} hatte sie {count} Minuten ohne Aktualisierung. Die Aufgabe ist wieder in Bereit für einen anderen Agenten."
+    },
+    "now_held_up": {
+      "one": "{count} Aufgabe aufgehalten",
+      "other": "{count} Aufgaben aufgehalten"
+    },
+    "now_idle_agents": {
+      "one": "{count} Agent untätig.",
+      "other": "{count} Agenten untätig."
+    },
     "progress_blocked": {
       "one": "{count} blockiert",
       "other": "{count} blockiert"
@@ -64,6 +84,26 @@
     "diff_line_removed": "Entfernt, Zeile {line}",
     "diff_line_unchanged": "Zeile {line}",
     "goal_hook_failed": "Hook fehlgeschlagen",
+    "now_claim_expired": "Die Übernahme ist ohne Aktualisierung abgelaufen. Die Aufgabe ist wieder in Bereit für einen anderen Agenten.",
+    "now_empty": "Nichts wartet auf Sie. Ihre Agenten haben, was sie brauchen.",
+    "now_filter_all": "Alle",
+    "now_filter_problems": "Probleme",
+    "now_filter_ready": "Bereit",
+    "now_filter_reviews": "Prüfungen",
+    "now_header_summary": "{waiting} · {held_up}",
+    "now_hook_failed": "after_goal fehlgeschlagen",
+    "now_hook_failed_exit": "after_goal fehlgeschlagen · Exit {code} · {duration}",
+    "now_loading": "Lädt, was auf Sie wartet",
+    "now_move_to_backlog": "In den Backlog verschieben",
+    "now_needs_connection": "Braucht eine Verbindung",
+    "now_offline_nothing": "Offline · auf diesem Gerät ist noch nichts gespeichert",
+    "now_open_on_web": "Im Web öffnen",
+    "now_open_review": "Prüfung öffnen",
+    "now_ready_empty_board": "Bereit ist leer · {board}",
+    "now_released_reason": "„{reason}“",
+    "now_reply": "Antworten",
+    "now_sorted": "Sortiert danach, wie viel jeweils aufgehalten wird",
+    "now_view_attempt": "Versuch ansehen",
     "offline_banner": "Offline · Stand von {time}",
     "priority_critical": "Kritische Priorität",
     "priority_high": "Hohe Priorität",

@@ -47,6 +47,51 @@ extension LocalizedStringResource {
         LocalizedStringResource("goals_open_count", defaultValue: "Goals · \(count, specifier: "%lld") open", table: "Localizable", bundle: .main)
     }
 
+    /// "{count} agents working"
+    static func nowAgentsWorking(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("now_agents_working", defaultValue: "\(count, specifier: "%lld") agents working", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} tasks in Backlog to choose from."
+    static func nowBacklogTasks(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("now_backlog_tasks", defaultValue: "\(count, specifier: "%lld") tasks in Backlog to choose from.", table: "Localizable", bundle: .main)
+    }
+
+    /// "{agent} held it for {count} minutes with no update. It is back in Ready for another agent."
+    static func nowClaimExpiredAgent(agent: String, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("now_claim_expired_agent", defaultValue: "\(agent) held it for \(count, specifier: "%lld") minutes with no update. It is back in Ready for another agent.", table: "Localizable", bundle: .main)
+    }
+
+    /// "{waiting} · {held_up}"
+    static func nowHeaderSummary(waiting: String, heldUp: String) -> LocalizedStringResource {
+        LocalizedStringResource("now_header_summary", defaultValue: "\(waiting) · \(heldUp)", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} tasks held up"
+    static func nowHeldUp(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("now_held_up", defaultValue: "\(count, specifier: "%lld") tasks held up", table: "Localizable", bundle: .main)
+    }
+
+    /// "after_goal failed · exit {code} · {duration}"
+    static func nowHookFailedExit(code: String, duration: String) -> LocalizedStringResource {
+        LocalizedStringResource("now_hook_failed_exit", defaultValue: "after_goal failed · exit \(code) · \(duration)", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} agents idle."
+    static func nowIdleAgents(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("now_idle_agents", defaultValue: "\(count, specifier: "%lld") agents idle.", table: "Localizable", bundle: .main)
+    }
+
+    /// "Ready is empty · {board}"
+    static func nowReadyEmptyBoard(board: String) -> LocalizedStringResource {
+        LocalizedStringResource("now_ready_empty_board", defaultValue: "Ready is empty · \(board)", table: "Localizable", bundle: .main)
+    }
+
+    /// "“{reason}”"
+    static func nowReleasedReason(reason: String) -> LocalizedStringResource {
+        LocalizedStringResource("now_released_reason", defaultValue: "“\(reason)”", table: "Localizable", bundle: .main)
+    }
+
     /// "Offline · showing what you had at {time}"
     static func offlineBanner(time: String) -> LocalizedStringResource {
         LocalizedStringResource("offline_banner", defaultValue: "Offline · showing what you had at \(time)", table: "Localizable", bundle: .main)

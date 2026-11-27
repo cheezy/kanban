@@ -17,6 +17,21 @@
     "goals_open_count": {
       "other": "ゴール · オープン {count} 件"
     },
+    "now_agents_working": {
+      "other": "{count} 体のエージェントが作業中"
+    },
+    "now_backlog_tasks": {
+      "other": "バックログに選べるタスクが {count} 件あります。"
+    },
+    "now_claim_expired_agent": {
+      "other": "{agent} が {count} 分間更新なしで担当していました。別のエージェント向けに準備完了へ戻っています。"
+    },
+    "now_held_up": {
+      "other": "{count} 件のタスクが停止中"
+    },
+    "now_idle_agents": {
+      "other": "{count} 体のエージェントが待機中。"
+    },
     "progress_blocked": {
       "other": "ブロック中 {count} 件"
     },
@@ -52,6 +67,26 @@
     "diff_line_removed": "削除、{line} 行目",
     "diff_line_unchanged": "{line} 行目",
     "goal_hook_failed": "フック失敗",
+    "now_claim_expired": "更新がないまま担当の期限が切れました。別のエージェント向けに準備完了へ戻っています。",
+    "now_empty": "あなたを待っているものはありません。エージェントに必要なものは揃っています。",
+    "now_filter_all": "すべて",
+    "now_filter_problems": "問題",
+    "now_filter_ready": "準備完了",
+    "now_filter_reviews": "レビュー",
+    "now_header_summary": "{waiting} · {held_up}",
+    "now_hook_failed": "after_goal が失敗しました",
+    "now_hook_failed_exit": "after_goal が失敗しました · 終了コード {code} · {duration}",
+    "now_loading": "あなたを待っているものを読み込み中",
+    "now_move_to_backlog": "バックログへ移動",
+    "now_needs_connection": "接続が必要です",
+    "now_offline_nothing": "オフライン · このデバイスにはまだ何も保存されていません",
+    "now_open_on_web": "Web で開く",
+    "now_open_review": "レビューを開く",
+    "now_ready_empty_board": "準備完了が空です · {board}",
+    "now_released_reason": "「{reason}」",
+    "now_reply": "返信",
+    "now_sorted": "止めている量の多い順",
+    "now_view_attempt": "試行を表示",
     "offline_banner": "オフライン · {time} 時点の内容を表示中",
     "priority_critical": "優先度：重大",
     "priority_high": "優先度：高",

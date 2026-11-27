@@ -17,6 +17,21 @@
     "goals_open_count": {
       "other": "目标 · {count} 个开放"
     },
+    "now_agents_working": {
+      "other": "{count} 个智能体正在工作"
+    },
+    "now_backlog_tasks": {
+      "other": "待办中有 {count} 个任务可供选择。"
+    },
+    "now_claim_expired_agent": {
+      "other": "{agent} 认领了 {count} 分钟且没有任何更新。它已回到就绪列，等待其他智能体。"
+    },
+    "now_held_up": {
+      "other": "{count} 个任务受阻"
+    },
+    "now_idle_agents": {
+      "other": "{count} 个智能体空闲。"
+    },
     "progress_blocked": {
       "other": "{count} 项受阻"
     },
@@ -52,6 +67,26 @@
     "diff_line_removed": "删除，第 {line} 行",
     "diff_line_unchanged": "第 {line} 行",
     "goal_hook_failed": "钩子失败",
+    "now_claim_expired": "认领已过期且没有任何更新。它已回到就绪列，等待其他智能体。",
+    "now_empty": "没有等待你处理的事项。你的智能体已拥有所需的一切。",
+    "now_filter_all": "全部",
+    "now_filter_problems": "问题",
+    "now_filter_ready": "就绪",
+    "now_filter_reviews": "审查",
+    "now_header_summary": "{waiting} · {held_up}",
+    "now_hook_failed": "after_goal 失败",
+    "now_hook_failed_exit": "after_goal 失败 · 退出码 {code} · {duration}",
+    "now_loading": "正在加载等待你处理的事项",
+    "now_move_to_backlog": "移到待办",
+    "now_needs_connection": "需要网络连接",
+    "now_offline_nothing": "离线 · 此设备上尚未保存任何内容",
+    "now_open_on_web": "在网页中打开",
+    "now_open_review": "打开审查",
+    "now_ready_empty_board": "就绪列为空 · {board}",
+    "now_released_reason": "“{reason}”",
+    "now_reply": "回复",
+    "now_sorted": "按各项阻塞的多少排序",
+    "now_view_attempt": "查看尝试",
     "offline_banner": "离线 · 显示 {time} 时的内容",
     "priority_critical": "紧急优先级",
     "priority_high": "高优先级",

@@ -15,6 +15,9 @@ struct PriorityDot: View {
             .frame(width: side, height: side)
             .accessibilityElement()
             .accessibilityLabel(Text(verbatim: priority.label.resolved(in: locale)))
+            // Read as text, not a control, so the audit does not hold the
+            // 7-point dot to a tap target's size.
+            .accessibilityAddTraits(.isStaticText)
     }
 }
 

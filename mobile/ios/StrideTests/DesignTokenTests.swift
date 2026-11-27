@@ -62,8 +62,10 @@ struct DesignTokenTests {
         let largest = style.metrics(at: .accessibilityExtraExtraExtraLarge)
 
         #expect(standard.pointSize == style.size)
-        // The smallest styles stop shrinking at 11 points, as the system's do.
-        #expect(small.pointSize <= standard.pointSize)
+        // Every style shrinks too: the accessibility audit reports text that
+        // keeps its size at a smaller setting, as caption2 does below 11
+        // points, as "partially unsupported" (W2793).
+        #expect(small.pointSize < standard.pointSize)
         #expect(larger.pointSize > standard.pointSize)
         #expect(largest.pointSize > standard.pointSize * 1.5)
         #expect(largest.lineSpacing >= 0)

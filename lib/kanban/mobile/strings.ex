@@ -81,14 +81,19 @@ defmodule Kanban.Mobile.Strings do
   """
   @spec msgids() :: [String.t() | {String.t(), String.t()}]
   def msgids do
-    count_msgids() ++
-      status_msgids() ++
-      update_required_msgids() ++
-      sign_in_msgids() ++
-      shared_view_label_msgids() ++
-      shared_view_reading_msgids() ++
-      shared_view_count_msgids() ++
-      shell_msgids()
+    Enum.concat([
+      count_msgids(),
+      status_msgids(),
+      update_required_msgids(),
+      sign_in_msgids(),
+      shared_view_label_msgids(),
+      shared_view_reading_msgids(),
+      shared_view_count_msgids(),
+      shell_msgids(),
+      now_label_msgids(),
+      now_card_msgids(),
+      now_count_msgids()
+    ])
   end
 
   defp count_msgids do
@@ -294,6 +299,85 @@ defmodule Kanban.Mobile.Strings do
       dpgettext_noop("mobile", "shell_new_task", "New task"),
       dpgettext_noop("mobile", "shell_settings", "Settings"),
       dpgettext_noop("mobile", "shell_close", "Close")
+    ]
+  end
+
+  # The Now screen: its filters, states and buttons (W2793).
+  defp now_label_msgids do
+    [
+      dpgettext_noop("mobile", "now_filter_all", "All"),
+      dpgettext_noop("mobile", "now_filter_reviews", "Reviews"),
+      dpgettext_noop("mobile", "now_filter_problems", "Problems"),
+      dpgettext_noop("mobile", "now_filter_ready", "Ready"),
+      dpgettext_noop("mobile", "now_sorted", "Sorted by how much each one holds up"),
+      dpgettext_noop(
+        "mobile",
+        "now_empty",
+        "Nothing is waiting on you. Your agents have what they need."
+      ),
+      dpgettext_noop("mobile", "now_loading", "Loading what is waiting on you"),
+      dpgettext_noop(
+        "mobile",
+        "now_offline_nothing",
+        "Offline · nothing is saved on this device yet"
+      ),
+      dpgettext_noop("mobile", "now_needs_connection", "Needs a connection"),
+      dpgettext_noop("mobile", "now_open_review", "Open review"),
+      dpgettext_noop("mobile", "now_move_to_backlog", "Move to Backlog"),
+      dpgettext_noop("mobile", "now_open_on_web", "Open on the web"),
+      dpgettext_noop("mobile", "now_view_attempt", "View attempt"),
+      dpgettext_noop("mobile", "now_reply", "Reply")
+    ]
+  end
+
+  # What a Now card says about its decision. The server's own text fills the
+  # placeholders.
+  defp now_card_msgids do
+    [
+      dpgettext_noop(
+        "mobile",
+        "now_claim_expired",
+        "Its claim ran out with no update. It is back in Ready for another agent."
+      ),
+      dpgettext_noop("mobile", "now_hook_failed", "after_goal failed"),
+      dpgettext_noop(
+        "mobile",
+        "now_hook_failed_exit",
+        "after_goal failed · exit %{code} · %{duration}"
+      ),
+      dpgettext_noop("mobile", "now_released_reason", "“%{reason}”"),
+      dpgettext_noop("mobile", "now_ready_empty_board", "Ready is empty · %{board}"),
+      dpgettext_noop("mobile", "now_header_summary", "%{waiting} · %{held_up}")
+    ]
+  end
+
+  defp now_count_msgids do
+    [
+      dpngettext_noop("mobile", "now_held_up", "%{count} task held up", "%{count} tasks held up"),
+      dpngettext_noop(
+        "mobile",
+        "now_agents_working",
+        "%{count} agent working",
+        "%{count} agents working"
+      ),
+      dpngettext_noop(
+        "mobile",
+        "now_claim_expired_agent",
+        "%{agent} held it for %{count} minute with no update. It is back in Ready for another agent.",
+        "%{agent} held it for %{count} minutes with no update. It is back in Ready for another agent."
+      ),
+      dpngettext_noop(
+        "mobile",
+        "now_idle_agents",
+        "%{count} agent idle.",
+        "%{count} agents idle."
+      ),
+      dpngettext_noop(
+        "mobile",
+        "now_backlog_tasks",
+        "%{count} task in Backlog to choose from.",
+        "%{count} tasks in Backlog to choose from."
+      )
     ]
   end
 

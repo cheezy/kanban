@@ -454,3 +454,163 @@ msgstr "Jetzt"
 msgctxt "tab_review"
 msgid "Review"
 msgstr "Überprüfung"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_agents_working"
+msgid "%{count} agent working"
+msgid_plural "%{count} agents working"
+msgstr[0] "%{count} Agent arbeitet"
+msgstr[1] "%{count} Agenten arbeiten"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_backlog_tasks"
+msgid "%{count} task in Backlog to choose from."
+msgid_plural "%{count} tasks in Backlog to choose from."
+msgstr[0] "%{count} Aufgabe im Backlog zur Auswahl."
+msgstr[1] "%{count} Aufgaben im Backlog zur Auswahl."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_claim_expired"
+msgid "Its claim ran out with no update. It is back in Ready for another agent."
+msgstr "Die Übernahme ist ohne Aktualisierung abgelaufen. Die Aufgabe ist wieder in Bereit für einen anderen Agenten."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_claim_expired_agent"
+msgid "%{agent} held it for %{count} minute with no update. It is back in Ready for another agent."
+msgid_plural "%{agent} held it for %{count} minutes with no update. It is back in Ready for another agent."
+msgstr[0] "%{agent} hatte sie %{count} Minute ohne Aktualisierung. Die Aufgabe ist wieder in Bereit für einen anderen Agenten."
+msgstr[1] "%{agent} hatte sie %{count} Minuten ohne Aktualisierung. Die Aufgabe ist wieder in Bereit für einen anderen Agenten."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_empty"
+msgid "Nothing is waiting on you. Your agents have what they need."
+msgstr "Nichts wartet auf Sie. Ihre Agenten haben, was sie brauchen."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_all"
+msgid "All"
+msgstr "Alle"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_problems"
+msgid "Problems"
+msgstr "Probleme"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_ready"
+msgid "Ready"
+msgstr "Bereit"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_filter_reviews"
+msgid "Reviews"
+msgstr "Prüfungen"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_held_up"
+msgid "%{count} task held up"
+msgid_plural "%{count} tasks held up"
+msgstr[0] "%{count} Aufgabe aufgehalten"
+msgstr[1] "%{count} Aufgaben aufgehalten"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_hook_failed"
+msgid "after_goal failed"
+msgstr "after_goal fehlgeschlagen"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_hook_failed_exit"
+msgid "after_goal failed · exit %{code} · %{duration}"
+msgstr "after_goal fehlgeschlagen · Exit %{code} · %{duration}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_idle_agents"
+msgid "%{count} agent idle."
+msgid_plural "%{count} agents idle."
+msgstr[0] "%{count} Agent untätig."
+msgstr[1] "%{count} Agenten untätig."
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_loading"
+msgid "Loading what is waiting on you"
+msgstr "Lädt, was auf Sie wartet"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_move_to_backlog"
+msgid "Move to Backlog"
+msgstr "In den Backlog verschieben"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_needs_connection"
+msgid "Needs a connection"
+msgstr "Braucht eine Verbindung"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_offline_nothing"
+msgid "Offline · nothing is saved on this device yet"
+msgstr "Offline · auf diesem Gerät ist noch nichts gespeichert"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_open_on_web"
+msgid "Open on the web"
+msgstr "Im Web öffnen"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_open_review"
+msgid "Open review"
+msgstr "Prüfung öffnen"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_ready_empty_board"
+msgid "Ready is empty · %{board}"
+msgstr "Bereit ist leer · %{board}"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_released_reason"
+msgid "“%{reason}”"
+msgstr "„%{reason}“"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_reply"
+msgid "Reply"
+msgstr "Antworten"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_sorted"
+msgid "Sorted by how much each one holds up"
+msgstr "Sortiert danach, wie viel jeweils aufgehalten wird"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_view_attempt"
+msgid "View attempt"
+msgstr "Versuch ansehen"
+
+#: lib/kanban/mobile/strings.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_header_summary"
+msgid "%{waiting} · %{held_up}"
+msgstr "%{waiting} · %{held_up}"

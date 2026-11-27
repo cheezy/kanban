@@ -70,7 +70,9 @@ enum StrideTextStyle: CaseIterable, Sendable {
         case .callout: .callout
         case .subheadline: .subheadline
         case .footnote: .footnote
-        case .label: .caption2
+        // Not caption2, which stops shrinking at 11 points: the accessibility
+        // audit reports text that keeps its size as partly unsupported (W2793).
+        case .label: .caption
         case .code: .caption
         }
     }

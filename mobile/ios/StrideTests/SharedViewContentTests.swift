@@ -93,4 +93,19 @@ struct SharedViewContentTests {
         #expect(german.hasSuffix("0:00"))
         #expect(!german.contains("AM"))
     }
+
+    @Test("a decision's age is its largest unit, and nothing without a start")
+    func decisionAge() {
+        let since = Date(timeIntervalSince1970: 1_795_000_000)
+        let content = DecisionCardContent(kind: .review, identifier: "W1", title: "T", since: since)
+        let english = Locale(identifier: "en")
+
+        #expect(content.age(at: since.addingTimeInterval(120), in: english) == "2m")
+        #expect(content.age(at: since.addingTimeInterval(3 * 3600 + 60), in: english) == "3h")
+        #expect(content.age(at: since.addingTimeInterval(2 * 86400), in: english) == "2d")
+        #expect(content.age(at: since.addingTimeInterval(120), in: english, width: .wide) == "2 minutes")
+        // A clock behind the server's says no time has passed.
+        #expect(content.age(at: since.addingTimeInterval(-60), in: english) == "0m")
+        #expect(DecisionCardContent(kind: .review, identifier: "W1", title: "T").age(at: since, in: english) == nil)
+    }
 }

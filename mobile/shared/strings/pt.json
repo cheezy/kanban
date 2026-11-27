@@ -22,6 +22,26 @@
       "one": "Metas · {count} aberta",
       "other": "Metas · {count} abertas"
     },
+    "now_agents_working": {
+      "one": "{count} agente trabalhando",
+      "other": "{count} agentes trabalhando"
+    },
+    "now_backlog_tasks": {
+      "one": "{count} tarefa em Pendências para escolher.",
+      "other": "{count} tarefas em Pendências para escolher."
+    },
+    "now_claim_expired_agent": {
+      "one": "{agent} ficou com ela {count} minuto sem atualização. Voltou para Pronto para outro agente.",
+      "other": "{agent} ficou com ela {count} minutos sem atualização. Voltou para Pronto para outro agente."
+    },
+    "now_held_up": {
+      "one": "{count} tarefa parada",
+      "other": "{count} tarefas paradas"
+    },
+    "now_idle_agents": {
+      "one": "{count} agente ocioso.",
+      "other": "{count} agentes ociosos."
+    },
     "progress_blocked": {
       "one": "{count} bloqueada",
       "other": "{count} bloqueadas"
@@ -64,6 +84,26 @@
     "diff_line_removed": "Removida, linha {line}",
     "diff_line_unchanged": "Linha {line}",
     "goal_hook_failed": "Hook com falha",
+    "now_claim_expired": "A reserva expirou sem atualização. Voltou para Pronto para outro agente.",
+    "now_empty": "Nada está esperando por você. Seus agentes têm o que precisam.",
+    "now_filter_all": "Tudo",
+    "now_filter_problems": "Problemas",
+    "now_filter_ready": "Pronto",
+    "now_filter_reviews": "Revisões",
+    "now_header_summary": "{waiting} · {held_up}",
+    "now_hook_failed": "after_goal falhou",
+    "now_hook_failed_exit": "after_goal falhou · saída {code} · {duration}",
+    "now_loading": "Carregando o que espera por você",
+    "now_move_to_backlog": "Mover para Pendências",
+    "now_needs_connection": "Precisa de conexão",
+    "now_offline_nothing": "Offline · ainda não há nada salvo neste dispositivo",
+    "now_open_on_web": "Abrir na web",
+    "now_open_review": "Abrir revisão",
+    "now_ready_empty_board": "Pronto está vazio · {board}",
+    "now_released_reason": "“{reason}”",
+    "now_reply": "Responder",
+    "now_sorted": "Ordenado pelo quanto cada um segura",
+    "now_view_attempt": "Ver tentativa",
     "offline_banner": "Offline · mostrando o que você tinha às {time}",
     "priority_critical": "Prioridade crítica",
     "priority_high": "Prioridade alta",

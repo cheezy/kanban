@@ -22,6 +22,26 @@
       "one": "Objectifs · {count} ouvert",
       "other": "Objectifs · {count} ouverts"
     },
+    "now_agents_working": {
+      "one": "{count} agent au travail",
+      "other": "{count} agents au travail"
+    },
+    "now_backlog_tasks": {
+      "one": "{count} tâche dans le Backlog au choix.",
+      "other": "{count} tâches dans le Backlog au choix."
+    },
+    "now_claim_expired_agent": {
+      "one": "{agent} l’a gardée {count} minute sans mise à jour. Elle est de retour dans Prêt pour un autre agent.",
+      "other": "{agent} l’a gardée {count} minutes sans mise à jour. Elle est de retour dans Prêt pour un autre agent."
+    },
+    "now_held_up": {
+      "one": "{count} tâche bloquée",
+      "other": "{count} tâches bloquées"
+    },
+    "now_idle_agents": {
+      "one": "{count} agent inactif.",
+      "other": "{count} agents inactifs."
+    },
     "progress_blocked": {
       "one": "{count} bloquée",
       "other": "{count} bloquées"
@@ -64,6 +84,26 @@
     "diff_line_removed": "Supprimée, ligne {line}",
     "diff_line_unchanged": "Ligne {line}",
     "goal_hook_failed": "Échec du hook",
+    "now_claim_expired": "Sa prise en charge a expiré sans mise à jour. Elle est de retour dans Prêt pour un autre agent.",
+    "now_empty": "Rien ne vous attend. Vos agents ont ce qu’il leur faut.",
+    "now_filter_all": "Tout",
+    "now_filter_problems": "Problèmes",
+    "now_filter_ready": "Prêt",
+    "now_filter_reviews": "Relectures",
+    "now_header_summary": "{waiting} · {held_up}",
+    "now_hook_failed": "after_goal a échoué",
+    "now_hook_failed_exit": "after_goal a échoué · sortie {code} · {duration}",
+    "now_loading": "Chargement de ce qui vous attend",
+    "now_move_to_backlog": "Déplacer vers le Backlog",
+    "now_needs_connection": "Connexion requise",
+    "now_offline_nothing": "Hors ligne · rien n’est encore enregistré sur cet appareil",
+    "now_open_on_web": "Ouvrir sur le web",
+    "now_open_review": "Ouvrir la relecture",
+    "now_ready_empty_board": "Prêt est vide · {board}",
+    "now_released_reason": "« {reason} »",
+    "now_reply": "Répondre",
+    "now_sorted": "Trié selon ce que chacun bloque",
+    "now_view_attempt": "Voir la tentative",
     "offline_banner": "Hors ligne · données de {time}",
     "priority_critical": "Priorité critique",
     "priority_high": "Priorité élevée",

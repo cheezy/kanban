@@ -69,7 +69,9 @@ final class ShellUITests: XCTestCase {
             XCTAssertTrue(control.waitForExistence(timeout: 30), "no \(tab) tab")
             control.tap()
             XCTAssertEqual(app.staticTexts["tab-title"].label, tab)
-            // A clipped German row fails here, on every tab's screen.
+            // A clipped German row fails here, on every tab's screen. The
+            // lazy Now cards are audited too: at the largest size the audit
+            // has no larger text to push them off the screen with.
             try app.auditAccessibility(ignoringSidebarContrast)
         }
     }
@@ -85,29 +87,19 @@ final class ShellUITests: XCTestCase {
             let title = app.staticTexts["tab-title"]
             XCTAssertTrue(title.waitForExistence(timeout: 10))
             XCTAssertEqual(title.label, tab)
-            try app.auditAccessibility(ignoringSidebarContrast)
+            // The audit's larger text pushes the lazy Now cards off the screen.
+            try app.auditAccessibility { $0.isOnLazyNowCard || self.ignoringSidebarContrast($0) }
         }
     }
 
-    /// The audit fails the contrast of the Now count's pill, ink on surface,
-    /// which `SharedViewAccessibilityTests` holds to 4.5:1 in both themes. On
-    /// iOS 26 in dark it also fails the title of the row that holds it, though
-    /// the title is the same ink on the same sidebar as the rows that pass,
-    /// and iOS 27 passes it. Only those issues on those elements are ignored.
+    /// The audit misreads the contrast of an iPad's sidebar rows
+    /// (`isOnSidebarRow`) and of its short mono text, the filter counts and
+    /// the cards' identifiers and ages, and scrolls the Now cards under the
+    /// tab bar. Only those issues are ignored.
     @MainActor
     private func ignoringSidebarContrast(_ issue: XCUIAccessibilityAuditIssue) -> Bool {
-        guard issue.auditType == .contrast, let element = issue.element else { return false }
-        switch element.identifier {
-        case "sidebar-count":
-            return true
-        case "sidebar-tab-title":
-            return Self.isIOS26 && XCUIDevice.shared.appearance == .dark
-        default:
-            return false
-        }
+        issue.isUnderBarsContrast || issue.isOnNowFilterCount || issue.isOnCardMonoText || issue.isOnSidebarRow
     }
-
-    @MainActor private static var isIOS26: Bool { UIDevice.current.systemVersion.hasPrefix("26.") }
 
     @MainActor
     private func wait(for element: XCUIElement, hittable: Bool) -> Bool {

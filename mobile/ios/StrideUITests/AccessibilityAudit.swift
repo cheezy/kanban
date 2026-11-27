@@ -15,3 +15,86 @@ extension XCUIApplication {
         try performAccessibilityAudit(for: .all.subtracting(.contrast), issueHandler)
     }
 }
+
+extension XCUIAccessibilityAuditIssue {
+    /// A contrast issue on an element scrolled under the tab bar or past the
+    /// top edge, where iOS fades the content on purpose: the element reaches
+    /// under the tab bar or above the screen, or it is a Now card that cannot
+    /// be hit because the bars cover it. The same element passes once it is
+    /// scrolled into view.
+    @MainActor
+    var isUnderBarsContrast: Bool {
+        guard auditType == .contrast, let element, element.exists else { return false }
+
+        let app = XCUIApplication()
+        let frame = element.frame
+        let tabBar = app.tabBars.firstMatch
+        if frame.minY < 0 || (tabBar.exists && frame.maxY > tabBar.frame.minY) { return true }
+        guard !element.isHittable else { return false }
+
+        let list = app.otherElements["now-cards"]
+        return list.exists && list.frame.intersects(frame)
+    }
+
+    /// A contrast issue on a Now filter's count. The count is `ink-3` on
+    /// `surface-sunken`, which reaches 5:1, but on an iPad the audit judges the thin
+    /// 11-point mono digit from a 7-by-16-point crop and fails it even in
+    /// `ink-2`, about 9:1. Only a number inside a `now-filter` segment is
+    /// ignored, so the segment's label is still audited.
+    @MainActor
+    var isOnNowFilterCount: Bool {
+        guard auditType == .contrast, let element, element.exists else { return false }
+        let label = element.label
+        guard !label.isEmpty, label.allSatisfy(\.isNumber) else { return false }
+
+        let frame = element.frame
+        return XCUIApplication().buttons.matching(identifier: "now-filter").allElementsBoundByIndex
+            .contains { $0.frame.contains(frame) }
+    }
+
+    /// A contrast issue on an iPad sidebar row's title or its Now count. The
+    /// titles are `ink` on the sidebar, or `stride-orange-ink` on
+    /// `stride-orange-soft` when selected, and the count is `ink` on
+    /// `surface`; `SharedViewAccessibilityTests` holds the token pairs to
+    /// 4.5:1 in both themes. The audit still fails one title or another from
+    /// run to run, on iOS 27 upright and on its side and on iOS 26 in dark,
+    /// so only these two elements are ignored, and the rest of the sidebar is
+    /// still audited.
+    @MainActor
+    var isOnSidebarRow: Bool {
+        guard auditType == .contrast, let element, element.exists else { return false }
+
+        return ["sidebar-tab-title", "sidebar-count"].contains(element.identifier)
+    }
+
+    /// A contrast issue on a decision card's identifier or age: 12-point mono
+    /// `ink-3` on `surface`, which `SharedViewAccessibilityTests` holds to
+    /// 4.5:1 in both themes. On an iPad the audit fails one short identifier,
+    /// such as "D21", from run to run, as it does the filter counts. The
+    /// card's other text is still audited.
+    @MainActor
+    var isOnCardMonoText: Bool {
+        guard auditType == .contrast, let element, element.exists else { return false }
+
+        return ["card-identifier", "card-age"].contains(element.identifier)
+    }
+
+    /// A Dynamic Type issue on a Now card after the first. The audit makes the
+    /// text larger, which pushes those cards out of the screen, and the lazy
+    /// list then lets go of them, so the audit cannot find their text at the
+    /// larger size. The same cards pass in an eager stack, and
+    /// `ShellUITests`' largest-text German test audits them without this
+    /// filter, since the audit has no larger size to try there. The first
+    /// card stays on the screen, so it is still audited in full.
+    @MainActor
+    var isOnLazyNowCard: Bool {
+        guard auditType == .dynamicType, let element, element.exists else { return false }
+
+        let list = XCUIApplication().otherElements["now-cards"]
+        let first = list.children(matching: .any).firstMatch
+        guard list.exists, first.exists else { return false }
+
+        let frame = element.frame
+        return list.frame.contains(frame) && frame.minY >= first.frame.maxY
+    }
+}

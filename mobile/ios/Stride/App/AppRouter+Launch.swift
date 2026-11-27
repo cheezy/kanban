@@ -3,16 +3,18 @@ import StrideKit
 
 extension AppRouter {
     /// The app's one client, or the fixtures in a debug build that signs in
-    /// through the stub, which has no server to ask.
+    /// through the stub, which has no server to ask and keeps nothing in the
+    /// cache.
     static func atLaunch(
         arguments: [String] = ProcessInfo.processInfo.arguments,
         api: (any StrideAPI)? = StrideApp.api,
-        live: LiveChannel? = StrideApp.live
+        live: LiveChannel? = StrideApp.live,
+        cache: Cache? = StrideApp.cache
     ) -> AppRouter {
         #if DEBUG
         if StubSignIn(arguments: arguments) != nil { return AppRouter(api: FixtureAPI().client) }
         #endif
 
-        return AppRouter(api: api, live: live)
+        return AppRouter(api: api, live: live, cache: cache)
     }
 }

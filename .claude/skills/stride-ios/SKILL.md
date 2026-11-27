@@ -115,6 +115,9 @@ that has turned out wrong. Rules the app must follow belong in
   rather than a verbatim string (W2790).
 - Editing `lib/kanban/mobile/strings.ex` is a change outside `mobile/`, so the
   task's `after_doing` runs the whole Elixir suite and credo (see Hook modes).
+  Add a string to an existing `*_msgids` helper, or add a new helper to the
+  list `msgids/0` passes to `Enum.concat/1`; a chain of `++` there went over
+  credo's ABC size limit at eleven helpers (W2793).
 
 ## Design
 
@@ -248,6 +251,14 @@ that has turned out wrong. Rules the app must follow belong in
 - The test bundle carries `mobile/shared/strings` and `mobile/shared/tokens`
   but not the fixtures; `FixtureAPI` reads `mobile/shared/fixtures` through
   `#filePath` and exists only in debug builds.
+- To edit a fixture for one test, `StrideTests/Support/DecisionFixtures.swift`
+  reads it through `FixtureAPI.fixture(named:)` (internal, so `@testable import
+  StrideKit`), changes the JSON object and decodes it through the client, so the
+  test reads exactly what the app would (W2793).
+- To hold an answer while something else lands, block `FixtureAPI(isOffline:)`'s
+  closure on a `DispatchSemaphore` and signal it once the other event has shown;
+  the closure runs off the main actor, so the test's main-actor waits still run
+  (`NowModelTests.liveDuringReloadKept`, W2793).
 
 ## Test side effects
 
@@ -268,6 +279,51 @@ that has turned out wrong. Rules the app must follow belong in
   still scrolling; `app.auditAccessibility()` runs the contrast check alone
   first. iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
   link as a link or a button (commit 7975ed01).
+- A failed audit says only "Contrast failed for SwiftUI.AccessibilityNode". To
+  see which element, export the run's attachments with `xcrun xcresulttool
+  export attachments --path <xcresult> --output-path <dir> --test-id
+  '<Suite>/<test>()'`; the "Element Screenshot" image shows the element. Give it
+  an identifier and ignore only that issue, with its measured contrast. When
+  many elements fail at once, list them all in a scratch copy of the test with
+  `performAccessibilityAudit(for: .contrast) { print(...); return true }`; the
+  audit stops at the first failure otherwise. In W2793 every text in the cards
+  failed because `.shadow` sat on the whole card; shadowing only the
+  background shape fixed it (W2793).
+- A scratch test's `print` does not reach the `xcodebuild` log; write the
+  dumped issues to a file in the scratchpad instead, which the simulator can
+  reach (W2793).
+- The audit's Dynamic Type check reports as "partially unsupported": text in a
+  style that follows `caption2`, which stops shrinking at 11 points (the
+  `label` style now follows `caption`); and every element of a `LazyVStack`
+  row that its larger text pushes off the screen, because the lazy stack lets
+  go of the row. Prove the second by swapping in a `VStack` in a scratch copy.
+  "Hit area is too small" fires on any small element with its own label that is
+  not text; the `.isStaticText` trait fixes a dot or pill that is not a
+  control (W2793).
+- The contrast check measures pixels, so thin small text can fail on an iPad
+  (2x) and pass on an iPhone (3x): the Now filter's 11-point mono count in
+  `ink-3` on `surface-sunken` failed there though the tokens reach 5:1, and
+  still failed in `ink-2` (about 9:1), because the audit judges it from a
+  7-by-16-point crop. A darker ink does not fix that: ignore such an issue
+  narrowly, by its frame and text, as `isOnNowFilterCount` does, or by an
+  accessibility identifier, as `isOnCardMonoText` does for the cards' "D21"
+  identifiers, and run the UI tests on the iPad before calling an audit fix
+  done (W2793).
+- The iPad (A16) shows the split view's sidebar upright and on its side, and
+  iOS 27's audit fails the contrast of one sidebar row title or another from
+  run to run (the Now row with its count on its side, the Review row upright),
+  as iOS 26 did in dark; `isOnSidebarRow` ignores only the titles and the
+  count, whose token pairs a unit test holds. An `.accessibilityHidden` text
+  still shows in XCUI's tree and in audit issues. Dump the issues'
+  identifiers in a scratch copy before writing an ignore, rather than
+  guessing from the element screenshot (W2793).
+- The simulator keeps the rotation a screenshot session left, and the home
+  screen looks the same upright and upside down: open the app and take a
+  screenshot to see which way up it is before a UI test run. An upside-down
+  iPad fails the audits like an upright one (W2793).
+- `xcodebuild build-for-testing` alone did not report the strict-concurrency
+  errors in the test files that `mix ios.test` then failed on (W2793); trust
+  only a full `mix ios.test` run.
 - `SignInUITests.testFitsTheLargestTextInGerman` can still flake on the iPad in
   a full run with "Potentially inaccessible text"; rerun
   `StrideUITests/SignInUITests` alone before suspecting the change (W2792).
@@ -391,6 +447,21 @@ that has turned out wrong. Rules the app must follow belong in
 - `listMyDecisions`'s items carry `summary` as an object; to make a second,
   different state from the fixture change `since` with `FixtureChange.firstItem`
   (W2792).
+- A screen that both fetches and follows a channel needs a version counter: a
+  fetch that set out before a live list arrived must not replace it, and a
+  session counter drops anything that set out before a sign-out (`NowModel`,
+  W2793).
+
+## Decisions
+
+- An item's `details` is an `anyOf` of five shapes, and their optional fields
+  let more than one shape decode the same JSON, so pick `value1` to `value5` by
+  the item's `kind`, never by the first that is non-nil (W2793).
+- A `hook_failed` decision is a goal's `after_goal` attempt (identifier `G…`),
+  so View attempt opens the goal; `claim_expired` items may have a null agent,
+  and `ready_empty` items have no task, identifier, title or `since` (W2793).
+- `approve` and `request_changes` are offered on review items but never shown
+  on a Now card; they belong to the review screen, behind Face ID (W2793).
 
 ## Break-it checks
 
