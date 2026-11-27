@@ -162,7 +162,9 @@ struct NowCard: Identifiable, Hashable, Sendable {
         return Int((expiredAt.timeIntervalSince(claimedAt) / 60).rounded())
     }
 
-    private static func verdicts(_ verdicts: [Components.Schemas.DecisionVerdict]) -> [Verdict] {
+    /// The verdicts this build knows, in the server's order. The Review queue
+    /// reads them the same way.
+    static func verdicts(_ verdicts: [Components.Schemas.DecisionVerdict]) -> [Verdict] {
         verdicts.compactMap { verdict in
             let name = verdict.section.value1?.rawValue ?? verdict.section.value2
             guard let section = name.flatMap(VerdictSection.init(rawValue:)) else { return nil }

@@ -710,3 +710,43 @@ msgstr ""
 msgctxt "now_task_moved"
 msgid "This task has moved since. Now shows where it stands."
 msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_empty"
+msgid "No reviews are waiting for you."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_files"
+msgid "%{count} file"
+msgid_plural "%{count} files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_large"
+msgid "Large change"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_loading"
+msgid "Loading the review queue"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_too_large_phone"
+msgid "Too large to approve on a phone"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_waiting"
+msgid "%{count} waiting"
+msgid_plural "%{count} waiting"
+msgstr[0] ""
+msgstr[1] ""

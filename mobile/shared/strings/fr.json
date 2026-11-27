@@ -58,6 +58,14 @@
       "one": "{count} en révision",
       "other": "{count} en révision"
     },
+    "review_queue_files": {
+      "one": "{count} fichier",
+      "other": "{count} fichiers"
+    },
+    "review_queue_waiting": {
+      "one": "{count} en attente",
+      "other": "{count} en attente"
+    },
     "target_goal_count": {
       "one": "{count} objectif",
       "other": "{count} objectifs"
@@ -126,6 +134,10 @@
     "priority_low": "Priorité basse",
     "priority_medium": "Priorité moyenne",
     "progress_no_tasks": "Aucune tâche pour l’instant",
+    "review_queue_empty": "Aucune révision ne vous attend.",
+    "review_queue_large": "Modification importante",
+    "review_queue_loading": "Chargement des révisions",
+    "review_queue_too_large_phone": "Trop volumineux pour être approuvé sur un téléphone",
     "shell_close": "Fermer",
     "shell_new_task": "Nouvelle tâche",
     "shell_settings": "Paramètres",

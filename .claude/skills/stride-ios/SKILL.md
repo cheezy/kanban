@@ -66,6 +66,11 @@ that has turned out wrong. Rules the app must follow belong in
 - `after_doing` commits with `git add -A`, so any untracked file not in
   `.gitignore` lands in the task commit. Keep scratch copies and notes in the
   session scratchpad.
+- A completion the server refuses with a 422 has already run `after_doing`, so
+  the task commit is made, merged into main and its branch deleted. Fix the
+  payload and send it again from main; build every required field (the
+  reviewer's integers, `actual_files_changed` from the commit range) before the
+  first send (W2794).
 - Hook results are in `.stride/.hook-result-after_doing.json`. A failure that
   names a test outside `mobile/` may be a known flake: rerun that file alone with
   the hook's seed before changing anything. `inbox_channel_test.exs:315` (an
@@ -262,6 +267,17 @@ that has turned out wrong. Rules the app must follow belong in
   closure on a `DispatchSemaphore` and signal it once the other event has shown;
   the closure runs off the main actor, so the test's main-actor waits still run
   (`NowModelTests.liveDuringReloadKept`, W2793).
+- `FixtureAPI(answering:)` picks a body at send time from the operation id;
+  nil falls through to `replacing:` and then the fixture. Use it when one test
+  needs different answers from the same operation, such as a queue before and
+  after a review is decided elsewhere (`ReviewQueueModelTests`, W2795).
+- `DecisionFixtures.reviewsData(editingItems:)` edits `listMyReviews`, whose
+  `data` is a bare array, as `data(editingItems:)` edits `listMyDecisions`'
+  `data.items` (W2795).
+- A new lazy list of cards joins `lazyLists` in `AccessibilityAudit.swift`, and
+  its rows reuse the `card-identifier` and `card-age` identifiers, so the
+  existing audit filters (`isUnderBarsContrast`, `isOnLazyCard`,
+  `isOnCardMonoText`) cover it with no new filter (the Review queue, W2795).
 
 ## Test side effects
 

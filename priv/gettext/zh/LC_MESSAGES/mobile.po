@@ -693,3 +693,42 @@ msgstr "回复最多 10,000 个字符。"
 msgctxt "now_task_moved"
 msgid "This task has moved since. Now shows where it stands."
 msgstr "此任务已被移动。“现在”会显示它目前的位置。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_empty"
+msgid "No reviews are waiting for you."
+msgstr "没有等待你处理的审查。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_files"
+msgid "%{count} file"
+msgid_plural "%{count} files"
+msgstr[0] "%{count} 个文件"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_large"
+msgid "Large change"
+msgstr "大型变更"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_loading"
+msgid "Loading the review queue"
+msgstr "正在加载审查"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_too_large_phone"
+msgid "Too large to approve on a phone"
+msgstr "变更过大，无法在手机上批准"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_waiting"
+msgid "%{count} waiting"
+msgid_plural "%{count} waiting"
+
+msgstr[0] "%{count} 项等待中"

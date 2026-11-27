@@ -29,6 +29,12 @@ extension CacheKey where Value == Components.Schemas.DecisionList {
     public static var decisions: Self { Self(kind: .decisions, itemID: "me") }
 }
 
+extension CacheKey where Value == [Components.Schemas.DecisionItem] {
+    /// The person's pending reviews in the server's order, from
+    /// `GET /api/me/reviews`.
+    public static var reviewQueue: Self { Self(kind: .reviewQueue, itemID: "me") }
+}
+
 extension CacheKey where Value == Components.Schemas.ReviewDetail {
     /// One review, from `GET /api/me/reviews/{task_id}`.
     public static func review(taskID: Int) -> Self {

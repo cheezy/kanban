@@ -18,10 +18,11 @@ the type it decodes to:
 | Key | Response | How many |
 |---|---|---|
 | `.decisions` | `GET /api/me/decisions` | one |
+| `.reviewQueue` | `GET /api/me/reviews`, in the server's order | one |
 | `.review(taskID:)` | `GET /api/me/reviews/{task_id}` | the last 20 opened (`Cache.openedLimit`) |
 | `.reviewFile(taskID:index:filesVersion:)` | `GET /api/me/reviews/{task_id}/files/{index}` | as long as its review is kept |
 
-The other kinds section 11 lists, such as the review queue, boards, agents,
+The other kinds section 11 lists, such as boards, agents,
 targets and goals, are added with the screens that show them. Add each to
 `CacheKind` with its limit and its store, and a `CacheKey` for it.
 

@@ -710,3 +710,44 @@ msgstr "A reply can be up to 10,000 characters."
 msgctxt "now_task_moved"
 msgid "This task has moved since. Now shows where it stands."
 msgstr "This task has moved since. Now shows where it stands."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_empty"
+msgid "No reviews are waiting for you."
+msgstr "No reviews are waiting for you."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_files"
+msgid "%{count} file"
+msgid_plural "%{count} files"
+msgstr[0] "%{count} file"
+msgstr[1] "%{count} files"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_large"
+msgid "Large change"
+msgstr "Large change"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_loading"
+msgid "Loading the review queue"
+msgstr "Loading the review queue"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_too_large_phone"
+msgid "Too large to approve on a phone"
+msgstr "Too large to approve on a phone"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_queue_waiting"
+msgid "%{count} waiting"
+msgid_plural "%{count} waiting"
+
+msgstr[0] "%{count} waiting"
+msgstr[1] "%{count} waiting"

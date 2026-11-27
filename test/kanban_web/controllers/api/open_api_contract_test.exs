@@ -1333,7 +1333,14 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       details = %{
         review: %{
           verdicts: [%{section: :patterns, status: "passed"}],
-          first_failed_note: nil
+          first_failed_note: nil,
+          size: %{
+            files: 2,
+            files_unknown: false,
+            changed_lines: 40,
+            truncated: false,
+            large_change: false
+          }
         },
         released: %{reason: "Blocked", notification_id: 3},
         claim_expired: %{claimed_at: now, expired_at: now},
@@ -1367,6 +1374,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         {item.summary.board, "DecisionBoard"},
         {hd(item.details.verdicts), "DecisionVerdict"},
         {item.details, "DecisionReviewDetails"},
+        {item.details.size, "ReviewSize"},
         {by_kind["released"].details, "DecisionReleasedDetails"},
         {by_kind["claim_expired"].details, "DecisionClaimExpiredDetails"},
         {by_kind["hook_failed"].details, "DecisionHookFailedDetails"},

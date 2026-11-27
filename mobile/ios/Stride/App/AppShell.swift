@@ -25,7 +25,12 @@ struct AppShell: View {
         .task(id: scenePhase) {
             if scenePhase == .active { await router.refresh() }
         }
-        .task { await router.now.observe() }
+        .task {
+            await withDiscardingTaskGroup { group in
+                group.addTask { await router.now.observe() }
+                group.addTask { await router.reviews.observe() }
+            }
+        }
     }
 
     private var tabs: some View {
@@ -115,6 +120,8 @@ struct AppShell: View {
         switch tab {
         case .now:
             NowView(model: router.now, actions: router.nowActions, router: router, showsCornerButtons: showsCornerButtons)
+        case .review:
+            ReviewQueueView(model: router.reviews)
         default:
             TabRoot(tab: tab) {
                 if showsCornerButtons { ShellCornerButtons(router: router) }

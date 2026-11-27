@@ -40,8 +40,18 @@ A Now card's **Open backlog** button opens the Boards tab on
 `.board(id, column: .backlog)`, a board scrolled to one column. `BoardColumn`
 names the columns a route can open; it holds only Backlog so far.
 
-The screens the tabs will hold are still to be built, so each tab shows only its
-title.
+The Now tab shows the decisions waiting on the person, and the Review tab
+shows the review queue: `ReviewQueueView`, which renders `AppRouter.reviews`, a
+`ReviewQueueModel`. It lists `GET /api/me/reviews` in the server's order, one
+row per pending review with its identifier, age, title, what it holds up, its
+verdicts and its file count. A large change is labelled **Large change**, or
+**Too large to approve on a phone** when the server offers no Approve for it on
+this device. The queue is cached under `.reviewQueue`, so it reads offline with
+the offline banner, and it is fetched again on each `me:inbox` update, so a
+review decided elsewhere leaves it. The shell observes both models while it is
+shown, `refresh()` loads both, and `follow(_:)` forgets both. Opening a review
+comes with the review screen. The Boards and Agents screens are still to be
+built, so those tabs show only their titles.
 
 ## The corner buttons and the badge
 
@@ -78,7 +88,9 @@ becomes active, and a failed answer leaves what it already shows.
 
 Start a debug build with `-StrideStubSignIn allow` and press **Sign in**: the
 shell then reads the fixtures in `mobile/shared/fixtures/`, so Now shows a badge
-of 4 and the avatar reads "Alex Example". `AppRouterTests` covers the screen
+of 4, Review lists three reviews, one of them too large to approve on a phone,
+and the avatar reads "Alex Example". `ReviewQueueModelTests` covers the queue's
+order, sizes, states, cache and live updates. `AppRouterTests` covers the screen
 choice, the stacks and the badge, and `ShellUITests` opens every tab in light
 and dark, the two sheets and the German tab names at the largest text size,
 auditing each for accessibility, and hides the iPad's sidebar and brings it

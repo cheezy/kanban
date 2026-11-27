@@ -39,6 +39,7 @@ defmodule Kanban.Mobile.StringsTest do
     now_reply_field now_reply_send now_reply_too_long now_attempt_title
     now_attempt_exit_code now_attempt_duration now_attempt_not_reported now_attempt_loading
     now_attempt_unavailable now_attempt_no_output
+    review_queue_loading review_queue_empty review_queue_large review_queue_too_large_phone
   )
 
   @plural_forms %{
@@ -146,8 +147,8 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 94
-      assert length(pot_keys(:plural)) == 17
+      assert length(pot_keys(:string)) == 98
+      assert length(pot_keys(:plural)) == 19
 
       for {locale, strings} <- built do
         assert strings["strings"] |> Map.keys() |> Enum.sort() == pot_keys(:string),

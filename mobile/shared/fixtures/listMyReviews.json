@@ -35,7 +35,14 @@
             "status": null
           }
         ],
-        "first_failed_note": "One view model reads the store directly."
+        "first_failed_note": "One view model reads the store directly.",
+        "size": {
+          "files": 4,
+          "files_unknown": false,
+          "changed_lines": 120,
+          "truncated": false,
+          "large_change": false
+        }
       },
       "actions": [
         "open_review",
@@ -49,6 +56,113 @@
         "W102",
         "W103"
       ]
+    },
+    {
+      "id": "review-4818",
+      "kind": "review",
+      "since": "2026-11-18T08:00:00Z",
+      "task_id": 4818,
+      "board_id": 12,
+      "summary": {
+        "identifier": "W118",
+        "title": "Move the cache into the app group",
+        "priority": "medium",
+        "agent": "Codex",
+        "board": {
+          "id": 12,
+          "name": "Stride Development"
+        }
+      },
+      "details": {
+        "verdicts": [
+          {
+            "section": "acceptance_criteria",
+            "status": "passed"
+          },
+          {
+            "section": "testing_strategy",
+            "status": "passed"
+          },
+          {
+            "section": "patterns",
+            "status": "passed"
+          },
+          {
+            "section": "security_considerations",
+            "status": "passed"
+          }
+        ],
+        "first_failed_note": null,
+        "size": {
+          "files": 14,
+          "files_unknown": false,
+          "changed_lines": 860,
+          "truncated": false,
+          "large_change": true
+        }
+      },
+      "actions": [
+        "open_review",
+        "request_changes",
+        "open_on_web"
+      ],
+      "web_url": "https://stride.example/boards/12/tasks/4818",
+      "holds_up": 0,
+      "held_identifiers": []
+    },
+    {
+      "id": "review-4821",
+      "kind": "review",
+      "since": "2026-11-18T10:15:00Z",
+      "task_id": 4821,
+      "board_id": 12,
+      "summary": {
+        "identifier": "W121",
+        "title": "Label the agent avatars",
+        "priority": "medium",
+        "agent": "Claude",
+        "board": {
+          "id": 12,
+          "name": "Stride Development"
+        }
+      },
+      "details": {
+        "verdicts": [
+          {
+            "section": "acceptance_criteria",
+            "status": "passed"
+          },
+          {
+            "section": "testing_strategy",
+            "status": "not_assessed"
+          },
+          {
+            "section": "patterns",
+            "status": "passed"
+          },
+          {
+            "section": "security_considerations",
+            "status": "passed"
+          }
+        ],
+        "first_failed_note": null,
+        "size": {
+          "files": 2,
+          "files_unknown": false,
+          "changed_lines": 30,
+          "truncated": false,
+          "large_change": false
+        }
+      },
+      "actions": [
+        "open_review",
+        "approve",
+        "request_changes",
+        "open_on_web"
+      ],
+      "web_url": "https://stride.example/boards/12/tasks/4821",
+      "holds_up": 0,
+      "held_identifiers": []
     }
   ]
 }

@@ -199,6 +199,19 @@ struct AppRouterTests {
         #expect(router.badge(for: .now) == 0)
     }
 
+    @Test("a refresh loads the Review queue, and a sign-out clears it")
+    func refreshLoadsReviewQueue() async {
+        let router = AppRouter(api: FixtureAPI().client)
+        #expect(router.reviews.state == .loading)
+
+        await router.refresh()
+        #expect(router.reviews.rows.map(\.id) == ["review-4812", "review-4818", "review-4821"])
+
+        router.follow(.signIn)
+        #expect(router.reviews.rows.isEmpty)
+        #expect(router.reviews.state == .loading)
+    }
+
     @Test("an answer that set out before a sign-out is dropped")
     func lateAnswerDropped() async {
         let router = AppRouter(api: FixtureAPI().client)

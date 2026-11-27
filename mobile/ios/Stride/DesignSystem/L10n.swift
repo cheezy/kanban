@@ -117,6 +117,16 @@ extension LocalizedStringResource {
         LocalizedStringResource("progress_in_review", defaultValue: "\(count, specifier: "%lld") in review", table: "Localizable", bundle: .main)
     }
 
+    /// "{count} files"
+    static func reviewQueueFiles(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_queue_files", defaultValue: "\(count, specifier: "%lld") files", table: "Localizable", bundle: .main)
+    }
+
+    /// "{count} waiting"
+    static func reviewQueueWaiting(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_queue_waiting", defaultValue: "\(count, specifier: "%lld") waiting", table: "Localizable", bundle: .main)
+    }
+
     /// "{count} goals"
     static func targetGoalCount(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("target_goal_count", defaultValue: "\(count, specifier: "%lld") goals", table: "Localizable", bundle: .main)

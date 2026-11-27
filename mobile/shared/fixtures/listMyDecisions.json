@@ -36,7 +36,14 @@
               "status": null
             }
           ],
-          "first_failed_note": "One view model reads the store directly."
+          "first_failed_note": "One view model reads the store directly.",
+          "size": {
+            "files": 4,
+            "files_unknown": false,
+            "changed_lines": 120,
+            "truncated": false,
+            "large_change": false
+          }
         },
         "actions": [
           "open_review",

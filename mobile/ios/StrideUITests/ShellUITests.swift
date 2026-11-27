@@ -87,8 +87,9 @@ final class ShellUITests: XCTestCase {
             let title = app.staticTexts["tab-title"]
             XCTAssertTrue(title.waitForExistence(timeout: 10))
             XCTAssertEqual(title.label, tab)
-            // The audit's larger text pushes the lazy Now cards off the screen.
-            try app.auditAccessibility { $0.isOnLazyNowCard || self.ignoringSidebarContrast($0) }
+            // The audit's larger text pushes the lazy Now cards and Review
+            // rows off the screen.
+            try app.auditAccessibility { $0.isOnLazyCard || self.ignoringSidebarContrast($0) }
         }
     }
 

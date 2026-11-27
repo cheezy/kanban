@@ -175,7 +175,18 @@ defmodule Kanban.DecisionsTest do
                board: %{id: ctx.board.id, name: ctx.board.name}
              }
 
-      assert item.details == %{verdicts: [], first_failed_note: nil}
+      assert item.details == %{
+               verdicts: [],
+               first_failed_note: nil,
+               size: %{
+                 files: 0,
+                 files_unknown: false,
+                 changed_lines: 0,
+                 truncated: false,
+                 large_change: false
+               }
+             }
+
       assert item.actions == [:open_review, :approve, :request_changes, :open_on_web]
 
       assert item.web_url ==
@@ -263,6 +274,29 @@ defmodule Kanban.DecisionsTest do
                ctx.scope
                |> Decisions.review_queue(device_class: :phone)
                |> Enum.sort_by(&(&1.task_id != large.id))
+    end
+
+    test "a review carries its size and whether it is large, on every device", ctx do
+      files = Enum.map_join(1..11, ", ", &"lib/file_#{&1}.ex")
+
+      large =
+        ctx.cols["Review"]
+        |> pending_task!()
+        |> Ecto.Changeset.change(actual_files_changed: files)
+        |> Repo.update!()
+
+      small = pending_task!(ctx.cols["Review"])
+
+      for opts <- [[device_class: :phone], [device_class: :tablet], []] do
+        sizes =
+          ctx.scope
+          |> Decisions.build(opts)
+          |> of_kind(:review)
+          |> Map.new(&{&1.task_id, &1.details.size})
+
+        assert %{files: 11, files_unknown: false, large_change: true} = sizes[large.id]
+        assert %{files: 0, changed_lines: 0, large_change: false} = sizes[small.id]
+      end
     end
 
     test "an unknown device class raises", ctx do

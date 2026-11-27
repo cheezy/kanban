@@ -13,6 +13,10 @@ defmodule KanbanWeb.API.Me.DecisionJSON do
   Atoms are rendered as strings.
   """
 
+  # A review's size, as `Kanban.Reviews.MobileGuard.size/1` counts it plus
+  # `large_change`: the same keys as the review screen's `size`.
+  @size_keys [:files, :files_unknown, :changed_lines, :truncated, :large_change]
+
   @doc "The decisions waiting on the person and the summary, under `data`."
   def index(%{decisions: %{items: items, summary: summary}}) do
     %{data: %{items: Enum.map(items, &item/1), summary: summary(summary)}}
@@ -57,7 +61,8 @@ defmodule KanbanWeb.API.Me.DecisionJSON do
   defp details(:review, details) do
     %{
       verdicts: Enum.map(details.verdicts, &verdict/1),
-      first_failed_note: details.first_failed_note
+      first_failed_note: details.first_failed_note,
+      size: Map.take(details.size, @size_keys)
     }
   end
 

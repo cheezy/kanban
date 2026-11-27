@@ -10222,7 +10222,8 @@
         "description": "A pending review.",
         "required": [
           "verdicts",
-          "first_failed_note"
+          "first_failed_note",
+          "size"
         ],
         "properties": {
           "verdicts": {
@@ -10237,6 +10238,9 @@
               "null"
             ],
             "description": "The note of the first failed section."
+          },
+          "size": {
+            "$ref": "#/components/schemas/ReviewSize"
           }
         }
       },

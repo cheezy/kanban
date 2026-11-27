@@ -32,9 +32,14 @@ extension XCUIAccessibilityAuditIssue {
         if frame.minY < 0 || (tabBar.exists && frame.maxY > tabBar.frame.minY) { return true }
         guard !element.isHittable else { return false }
 
-        let list = app.otherElements["now-cards"]
-        return list.exists && list.frame.intersects(frame)
+        return Self.lazyLists.contains { id in
+            let list = app.otherElements[id]
+            return list.exists && list.frame.intersects(frame)
+        }
     }
+
+    /// The lazy lists of cards: the Now cards and the Review queue's rows.
+    private static let lazyLists = ["now-cards", "review-rows"]
 
     /// A contrast issue on a Now filter's count. The count is `ink-3` on
     /// `surface-sunken`, which reaches 5:1, but on an iPad the audit judges the thin
@@ -94,7 +99,8 @@ extension XCUIAccessibilityAuditIssue {
         return ["card-identifier", "card-age"].contains(element.identifier)
     }
 
-    /// A Dynamic Type issue on a Now card after the first. The audit makes the
+    /// A Dynamic Type issue on a Now card or a Review queue row after the
+    /// first. The audit makes the
     /// text larger, which pushes those cards out of the screen, and the lazy
     /// list then lets go of them, so the audit cannot find their text at the
     /// larger size. The same cards pass in an eager stack, and
@@ -102,14 +108,16 @@ extension XCUIAccessibilityAuditIssue {
     /// filter, since the audit has no larger size to try there. The first
     /// card stays on the screen, so it is still audited in full.
     @MainActor
-    var isOnLazyNowCard: Bool {
+    var isOnLazyCard: Bool {
         guard auditType == .dynamicType, let element, element.exists else { return false }
 
-        let list = XCUIApplication().otherElements["now-cards"]
-        let first = list.children(matching: .any).firstMatch
-        guard list.exists, first.exists else { return false }
-
         let frame = element.frame
-        return list.frame.contains(frame) && frame.minY >= first.frame.maxY
+        return Self.lazyLists.contains { id in
+            let list = XCUIApplication().otherElements[id]
+            let first = list.children(matching: .any).firstMatch
+            guard list.exists, first.exists else { return false }
+
+            return list.frame.contains(frame) && frame.minY >= first.frame.maxY
+        }
     }
 }

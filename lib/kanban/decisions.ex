@@ -38,7 +38,8 @@ defmodule Kanban.Decisions do
       and its board
     * `:summary` - `%{identifier:, title:, priority:, agent:, board: %{id:, name:}}`
       (all but `:board` are `nil` for `:ready_empty`)
-    * `:details` - the kind's own fields: `verdicts` and `first_failed_note` for a
+    * `:details` - the kind's own fields: `verdicts`, `first_failed_note` and
+      `size` (`Kanban.Reviews.MobileGuard.size/1` with `large_change`) for a
       review, `reason` and `notification_id` for a release, `claimed_at` and
       `expired_at` for an expired claim, `exit_code` and `duration_ms` for a
       failed hook (never its output), `idle_agents` and `backlog_count` for an

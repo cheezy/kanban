@@ -44,6 +44,12 @@
     "progress_in_review": {
       "other": "{count} 项审查中"
     },
+    "review_queue_files": {
+      "other": "{count} 个文件"
+    },
+    "review_queue_waiting": {
+      "other": "{count} 项等待中"
+    },
     "target_goal_count": {
       "other": "{count} 个目标"
     },
@@ -109,6 +115,10 @@
     "priority_low": "低优先级",
     "priority_medium": "中优先级",
     "progress_no_tasks": "还没有任务",
+    "review_queue_empty": "没有等待你处理的审查。",
+    "review_queue_large": "大型变更",
+    "review_queue_loading": "正在加载审查",
+    "review_queue_too_large_phone": "变更过大，无法在手机上批准",
     "shell_close": "关闭",
     "shell_new_task": "新任务",
     "shell_settings": "设置",

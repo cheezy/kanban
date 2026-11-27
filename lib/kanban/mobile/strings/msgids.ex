@@ -35,7 +35,8 @@ defmodule Kanban.Mobile.Strings.Msgids do
       now_label_msgids(),
       now_card_msgids(),
       now_count_msgids(),
-      now_action_msgids()
+      now_action_msgids(),
+      review_queue_msgids()
     ])
   end
 
@@ -356,6 +357,19 @@ defmodule Kanban.Mobile.Strings.Msgids do
         "now_attempt_no_output",
         "The hook's output is not shown on the phone. It can hold secrets or internal paths."
       )
+    ]
+  end
+
+  # The Review tab's queue: its states, the size of each change and the label
+  # on a change too large to approve on a phone (W2795).
+  defp review_queue_msgids do
+    [
+      dpgettext_noop("mobile", "review_queue_loading", "Loading the review queue"),
+      dpgettext_noop("mobile", "review_queue_empty", "No reviews are waiting for you."),
+      dpgettext_noop("mobile", "review_queue_large", "Large change"),
+      dpgettext_noop("mobile", "review_queue_too_large_phone", "Too large to approve on a phone"),
+      dpngettext_noop("mobile", "review_queue_waiting", "%{count} waiting", "%{count} waiting"),
+      dpngettext_noop("mobile", "review_queue_files", "%{count} file", "%{count} files")
     ]
   end
 end

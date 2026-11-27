@@ -51,7 +51,8 @@ from a board stops seeing its items on the next request.
         },
         "details": {
           "verdicts": [{"section": "acceptance_criteria", "status": "passed"}],
-          "first_failed_note": null
+          "first_failed_note": null,
+          "size": {"files": 4, "files_unknown": false, "changed_lines": 120, "truncated": false, "large_change": false}
         },
         "actions": ["open_review", "approve", "request_changes", "open_on_web"],
         "web_url": "https://www.stridelikeaboss.com/boards/55/tasks/8601/edit",
@@ -76,7 +77,7 @@ does not know.
 
   | Kind | What waits | `details` |
   |---|---|---|
-  | `review` | a task pending review | `verdicts` (the section pills, each `section` and `status`) and `first_failed_note` |
+  | `review` | a task pending review | `verdicts` (the section pills, each `section` and `status`), `first_failed_note` and `size` (see below) |
   | `released` | a task an agent released back to Ready that no one has claimed since; any later claim clears it for good, even one that expires or is released without a new notification | `reason` (the release notification's text) and `notification_id` |
   | `claim_expired` | a claim that expired while the task was in Doing | `claimed_at` and `expired_at` |
   | `hook_failed` | a goal whose `after_goal` hook failed | `exit_code` and `duration_ms`, never the hook's output |
@@ -134,6 +135,14 @@ any agent at work.
 ```json
 {"data": [{"id": "review:task:8601", "kind": "review", "...": "..."}]}
 ```
+
+A review's `size` is the change's size as the large-change guard counts it,
+with the same fields and meaning as `size` on
+[GET /api/me/reviews/:task_id](me_reviews.md#size-and-approvable_here):
+`files`, `files_unknown`, `changed_lines`, `truncated` and `large_change`.
+The app shows the file count on each queue row and labels a large change.
+A phone is offered `request_changes` but not `approve` on a large change,
+which is how the app knows to say it is approved on a tablet or the web.
 
 The review items are taken before the decisions list's 100-item cap, so a
 review never drops off the queue because other kinds filled the Now screen;

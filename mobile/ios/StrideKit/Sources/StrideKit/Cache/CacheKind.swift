@@ -4,6 +4,8 @@ import Foundation
 enum CacheKind: String, Sendable, CaseIterable {
     /// The decisions list, which the widget reads for its count.
     case decisions
+    /// The review queue, from the Review tab.
+    case reviewQueue = "review-queue"
     /// The reviews opened, the last `Cache.openedLimit` of them.
     case review
     /// A review's file with its highlighted diff, kept as long as its review is.
@@ -14,14 +16,14 @@ enum CacheKind: String, Sendable, CaseIterable {
     var limit: Int? {
         switch self {
         case .review: Cache.openedLimit
-        case .decisions, .reviewFile: nil
+        case .decisions, .reviewQueue, .reviewFile: nil
         }
     }
 
     var store: CacheStore {
         switch self {
         case .decisions: .afterFirstUnlock
-        case .review, .reviewFile: .whileUnlocked
+        case .reviewQueue, .review, .reviewFile: .whileUnlocked
         }
     }
 }

@@ -99,6 +99,7 @@ defmodule Kanban.Decisions.Sources do
   defp review_item(task, ctx) do
     board_id = task.column.board_id
     verdicts = MobileReview.verdicts(task)
+    size = review_size(task)
 
     item(ctx, :review, "review:task:#{task.id}", %{
       since: Reviews.waiting_since(task),
@@ -107,11 +108,20 @@ defmodule Kanban.Decisions.Sources do
       details: %{
         verdicts:
           for(v <- verdicts, v.section in @pill_sections, do: Map.take(v, [:section, :status])),
-        first_failed_note: first_failed_note(verdicts)
+        first_failed_note: first_failed_note(verdicts),
+        size: size
       },
-      actions: review_actions(task, ctx, board_id),
+      actions: review_actions(size, ctx, board_id),
       path: task_path(ctx, board_id, task.id)
     })
+  end
+
+  # The change's size as `MobileGuard` counts it, with its verdict, so the
+  # queue can show the file count and label a large change, and the approve
+  # check below reads the same numbers.
+  defp review_size(task) do
+    size = MobileGuard.size(task)
+    Map.put(size, :large_change, MobileGuard.large_change?(size))
   end
 
   defp first_failed_note(verdicts) do
@@ -127,14 +137,14 @@ defmodule Kanban.Decisions.Sources do
   # would pass. Archived tasks never reach here: the pending-review query
   # leaves them out. Approval is also refused on a phone for a change
   # `MobileGuard` finds too large; asking for changes never is.
-  defp review_actions(task, ctx, board_id) do
+  defp review_actions(size, ctx, board_id) do
     if writable?(ctx, board_id),
-      do: [:open_review] ++ approve(task, ctx) ++ [:request_changes, :open_on_web],
+      do: [:open_review] ++ approve(size, ctx) ++ [:request_changes, :open_on_web],
       else: [:open_on_web]
   end
 
-  defp approve(task, ctx) do
-    case MobileGuard.check(task, ctx.device_class) do
+  defp approve(size, ctx) do
+    case MobileGuard.check(size, ctx.device_class) do
       :ok -> [:approve]
       {:error, :too_large_for_phone} -> []
     end

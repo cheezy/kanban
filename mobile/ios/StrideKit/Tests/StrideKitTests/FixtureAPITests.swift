@@ -22,6 +22,25 @@ struct FixtureAPITests {
         #expect(try await api.listMyDecisions().ok.body.json.data.items.isEmpty == false)
     }
 
+    @Test("an answer picked at send time wins over a replacement, and nil falls through")
+    func answeredAtSendTime() async throws {
+        let empty = Data(#"{"data": []}"#.utf8)
+        let emptyNext = OSAllocatedUnfairLock(initialState: false)
+        let api = FixtureAPI(
+            replacing: [Operations.ListMyBoards.id: Data("{}".utf8)],
+            answering: { id in
+                guard id == Operations.ListMyBoards.id || id == Operations.ListMyReviews.id else { return nil }
+                return emptyNext.withLock { $0 } ? empty : nil
+            }
+        ).client
+
+        #expect(try await api.listMyReviews().ok.body.json.data.isEmpty == false)
+        emptyNext.withLock { $0 = true }
+        #expect(try await api.listMyReviews().ok.body.json.data.isEmpty)
+        #expect(try await api.listMyBoards().ok.body.json.data.isEmpty)
+        #expect(try await api.listMyDecisions().ok.body.json.data.items.isEmpty == false)
+    }
+
     @Test("a body that does not match the contract fails")
     func wrongBody() async {
         let api = FixtureAPI(replacing: [Operations.ListMyBoards.id: Data("{}".utf8)]).client

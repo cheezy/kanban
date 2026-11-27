@@ -3,8 +3,8 @@ import Observation
 import StrideKit
 
 /// Where the shell is: the selected tab, each tab's stack of pushed screens,
-/// the sheet a corner button opened, the avatar's name, and the Now screen's
-/// decisions, whose waiting count is the Now badge.
+/// the sheet a corner button opened, the avatar's name, the Now screen's
+/// decisions, whose waiting count is the Now badge, and the Review queue.
 @MainActor
 @Observable
 final class AppRouter {
@@ -24,6 +24,9 @@ final class AppRouter {
     /// The Now cards' buttons, with their sheets and notices.
     let nowActions: NowActions
 
+    /// The Review tab's queue of pending reviews.
+    let reviews: ReviewQueueModel
+
     @ObservationIgnored private let api: (any StrideAPI)?
 
     /// The live updates, which connect again each time the app comes back.
@@ -42,6 +45,7 @@ final class AppRouter {
         self.live = live
         now = NowModel(api: api, cache: cache, live: live, connectivity: connectivity)
         nowActions = NowActions(api: api, now: now)
+        reviews = ReviewQueueModel(api: api, cache: cache, live: live, connectivity: connectivity)
     }
 
     // MARK: Tabs
@@ -112,12 +116,14 @@ final class AppRouter {
         person = nil
         now.forget()
         nowActions.forget()
+        reviews.forget()
         // The live channels drop the last person's state too.
         let live = live
         Task { await live?.forget() }
     }
 
-    /// Asks the server for the person's name and how much waits on them, and
+    /// Asks the server for the person's name, how much waits on them and the
+    /// reviews in their queue, and
     /// connects the live updates again so each channel sends its full state. A
     /// failed answer leaves what the shell already shows.
     func refresh() async {
@@ -126,7 +132,9 @@ final class AppRouter {
 
         let asked = session
         async let me = Self.person(using: api)
+        async let queue: Void = reviews.load()
         await now.load()
+        await queue
         let person = await me
         guard asked == session else { return }
 
