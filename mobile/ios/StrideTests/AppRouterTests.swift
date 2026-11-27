@@ -1,9 +1,9 @@
 import Foundation
 import os
-import StrideKit
 import Testing
 
 @testable import Stride
+@testable import StrideKit
 
 /// Which screen the app shows, and how the shell's tabs, stacks and badge move.
 @MainActor
@@ -117,6 +117,50 @@ struct AppRouterTests {
         #expect(none.person == nil)
     }
 
+    @Test("coming back connects the live updates again")
+    func refreshResumesLive() async {
+        let asked = OSAllocatedUnfairLock(initialState: 0)
+        let live = LiveChannel(
+            socketToken: {
+                asked.withLock { $0 += 1 }
+                return .unavailable
+            },
+            connect: { _ in preconditionFailure("an unavailable answer never connects") },
+            pause: { _ in },
+            signOut: {}
+        )
+        let router = AppRouter(api: nil, live: live)
+        let updates = await live.updates(of: .inbox)
+
+        await Self.wait { asked.withLock { $0 } == 1 }
+        await router.refresh()
+        await Self.wait { asked.withLock { $0 } == 2 }
+        // The channel runs only while someone listens.
+        withExtendedLifetime(updates) {}
+
+        #expect(asked.withLock { $0 } == 2)
+    }
+
+    @Test("a sign-out closes the live updates and drops their state")
+    func signOutForgetsLive() async {
+        let live = LiveChannel(
+            socketToken: { .failed },
+            connect: { _ in preconditionFailure("a failed answer never connects") },
+            pause: { _ in try await Task.sleep(for: .seconds(3600)) },
+            signOut: {}
+        )
+        let router = AppRouter(api: nil, live: live)
+        let updates = await live.updates(of: .inbox)
+        await Self.waitFor { await live.current == .waiting }
+
+        router.follow(.signIn)
+
+        await Self.waitFor { await !live.isRunning }
+        withExtendedLifetime(updates) {}
+        #expect(await !live.isRunning)
+        #expect(await live.current == .idle)
+    }
+
     @Test("a failed answer keeps what the shell shows")
     func failedRefreshKeepsState() async {
         let isOffline = OSAllocatedUnfairLock(initialState: false)
@@ -212,5 +256,19 @@ struct AppRouterTests {
         #expect(Set(AppTab.allCases.map(\.systemImage)).count == AppTab.allCases.count)
         #expect(AppTab.allCases.map { $0.title.resolved(in: Locale(identifier: "en")) } == ["Now", "Review", "Boards", "Agents"])
         #expect(AppTab.allCases.map { $0.title.resolved(in: Locale(identifier: "de")) } == ["Jetzt", "Überprüfung", "Boards", "Agenten"])
+    }
+
+    /// Waits up to five seconds for `condition`.
+    private static func wait(until condition: () -> Bool) async {
+        for _ in 0..<500 where !condition() {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
+    private static func waitFor(_ condition: () async -> Bool) async {
+        for _ in 0..<500 {
+            if await condition() { return }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
     }
 }

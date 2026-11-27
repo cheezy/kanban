@@ -1075,7 +1075,7 @@ Decisions made offline and sent later are 1.2 ([§21](#21-not-in-phase-1)). They
 | Sign-in | `ASWebAuthenticationSession` with `prefersEphemeralWebBrowserSession = false`, so an existing web sign-in is reused |
 | Tokens | Keychain, shared with the extensions through an app group keychain access group |
 | Approval key | `SecKeyCreateRandomKey` in the Secure Enclave with `SecAccessControl` `.biometryCurrentSet` or `.devicePasscode`; signing through `LAContext` |
-| Live updates | SwiftPhoenixClient, one socket, `me:inbox` and `me:agents` |
+| Live updates | SwiftPhoenixClient (pinned at 5.3.5), one socket, `me:inbox` and `me:agents` ([iOS Live Channel](../ios-live-channel.md)) |
 | Cache | SwiftData (or GRDB) in the app group container, so the widget can read the count |
 | Push | APNs; one `UNNotificationCategory` per event type with an Open action; the service extension updates the badge and the widget |
 | Widget | WidgetKit, small and medium; timeline refresh every 30 minutes and on push |

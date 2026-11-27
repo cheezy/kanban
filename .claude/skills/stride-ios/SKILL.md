@@ -268,6 +268,9 @@ that has turned out wrong. Rules the app must follow belong in
   still scrolling; `app.auditAccessibility()` runs the contrast check alone
   first. iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
   link as a link or a button (commit 7975ed01).
+- `SignInUITests.testFitsTheLargestTextInGerman` can still flake on the iPad in
+  a full run with "Potentially inaccessible text"; rerun
+  `StrideUITests/SignInUITests` alone before suspecting the change (W2792).
 - An iPadOS sidebar `List(selection:)` sometimes fills the selected row with
   the tint and draws white text on it, and other times greys it, so the audit
   passes one run and fails the next. In dark the tint `stride-orange-ink` is
@@ -364,6 +367,31 @@ that has turned out wrong. Rules the app must follow belong in
 - A docs edit is outside `mobile/`, so a task that adds `docs/ios-*.md` runs the
   whole Elixir suite in `after_doing` (see Hook modes).
 
+## Live updates
+
+- The socket token from `POST /api/me/socket_token` works for one connect and
+  60 seconds, so `LiveChannel` builds a new SwiftPhoenixClient `Socket` for each
+  connect and lets the library reconnect nothing: its own reconnect resends the
+  used token and is refused with a bare 403 (W2792).
+- A revoke closes the socket with a plain 1000 and no message, so a client
+  cannot tell it from a drop; it shows only when the next token request fails
+  as `signedOut` (W2792).
+- Test an actor that runs its own loop through injected closures (token, connect,
+  pause, sign-out) and a fake connection the test sends events on, then wait
+  with `eventually` from `FakeLiveServer.swift`, which polls every 10 ms, rather
+  than sleeping a fixed time (W2792).
+- SwiftPhoenixClient's `Message.payload` for a `phx_reply` is already the
+  reply's `response`, so a join refusal's reason is `payload["reason"]`, not
+  `payload["response"]["reason"]`. Test the socket code through the `Socket`
+  initialiser's `transport:` closure with a fake `PhoenixTransport` that answers
+  through its delegate with JSON arrays, not by mocking the library (W2792).
+- An actor that keeps the last state it was sent (here `LiveChannel.latest`)
+  must drop it on a sign-out, or the next person's first listener gets the last
+  person's data; the review flagged it as a security finding (W2792).
+- `listMyDecisions`'s items carry `summary` as an object; to make a second,
+  different state from the fixture change `since` with `FixtureChange.firstItem`
+  (W2792).
+
 ## Break-it checks
 
 - Run deliberate breaks in a scratch copy of `mobile/` in the session scratchpad,
@@ -382,7 +410,11 @@ that has turned out wrong. Rules the app must follow belong in
   compile, and the last 4000 characters of the log hid why. Give such a sum a
   typed `let` first.
 - A broken `AsyncStream` that never ends makes a run take minutes; use a time
-  limit trait on such tests. A test stopped by its time limit logs `recorded an
+  limit trait on such tests.
+- Read a failed test's name from the log as the whole quoted string after
+  `Test "`; cutting it at a word such as " with" also cuts "without" and turns a
+  caught break into a false miss (W2792). Pick breaks that fail fast, such as
+  yielding the wrong event, over ones that make a test wait for its time limit. A test stopped by its time limit logs `recorded an
   issue ... Time limit was exceeded` and may never print a `failed` line before
   the run ends, so a break-it parser must count that line as caught (W2791).
 

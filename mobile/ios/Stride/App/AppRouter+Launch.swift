@@ -6,12 +6,13 @@ extension AppRouter {
     /// through the stub, which has no server to ask.
     static func atLaunch(
         arguments: [String] = ProcessInfo.processInfo.arguments,
-        api: (any StrideAPI)? = StrideApp.api
+        api: (any StrideAPI)? = StrideApp.api,
+        live: LiveChannel? = StrideApp.live
     ) -> AppRouter {
         #if DEBUG
         if StubSignIn(arguments: arguments) != nil { return AppRouter(api: FixtureAPI().client) }
         #endif
 
-        return AppRouter(api: api)
+        return AppRouter(api: api, live: live)
     }
 }

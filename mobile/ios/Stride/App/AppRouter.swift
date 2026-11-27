@@ -23,11 +23,15 @@ final class AppRouter {
 
     @ObservationIgnored private let api: (any StrideAPI)?
 
+    /// The live updates, which connect again each time the app comes back.
+    @ObservationIgnored private let live: LiveChannel?
+
     /// Bumped by every sign-out, so an answer that set out before one is dropped.
     @ObservationIgnored private var session = 0
 
-    init(api: (any StrideAPI)?) {
+    init(api: (any StrideAPI)?, live: LiveChannel? = nil) {
         self.api = api
+        self.live = live
     }
 
     // MARK: Tabs
@@ -82,11 +86,16 @@ final class AppRouter {
         sheet = nil
         person = nil
         waitingCount = 0
+        // The live channels drop the last person's state too.
+        let live = live
+        Task { await live?.forget() }
     }
 
-    /// Asks the server for the person's name and how much waits on them. A
+    /// Asks the server for the person's name and how much waits on them, and
+    /// connects the live updates again so each channel sends its full state. A
     /// failed answer leaves what the shell already shows.
     func refresh() async {
+        await live?.resume()
         guard let api else { return }
 
         let asked = session

@@ -16,6 +16,13 @@ struct StrideApp: App {
         return APIClient.make(version: version, store: authStore, update: update)
     }()
 
+    /// The one socket of the app, carrying both live channels.
+    static let live: LiveChannel? = {
+        guard let api, let authStore else { return nil }
+
+        return LiveChannel(api: api, store: authStore)
+    }()
+
     @State private var signIn = SignInModel.atLaunch()
     @State private var router = AppRouter.atLaunch()
 
