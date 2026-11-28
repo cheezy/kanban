@@ -22,11 +22,11 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "W193"
   end
 
-  test "GET / renders the Blog link in the nav and the footer", %{conn: conn} do
+  test "GET / renders the Blog link in the footer only", %{conn: conn} do
     document = conn |> get(~p"/") |> html_response(200) |> LazyHTML.from_document()
     blog_url = KanbanWeb.MarketingClosing.blog_url()
 
-    assert document |> LazyHTML.query("nav a[href='#{blog_url}']") |> Enum.count() == 2
+    assert document |> LazyHTML.query("nav a[href='#{blog_url}']") |> Enum.count() == 0
     assert document |> LazyHTML.query("footer a[href='#{blog_url}']") |> Enum.count() == 1
   end
 

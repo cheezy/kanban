@@ -875,22 +875,16 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert KanbanWeb.MarketingClosing.blog_url() == @blog_url
     end
 
-    test "the desktop nav and the mobile menu each render a Blog link to the Stride tag page" do
+    test "the desktop nav and the mobile menu render no Blog link; it lives in the footer" do
       assigns = %{current_scope: nil}
 
-      document =
+      html =
         rendered_to_string(~H"""
         <MarketingComponents.marketing_nav current_scope={@current_scope} />
         """)
-        |> LazyHTML.from_fragment()
 
-      desktop = LazyHTML.query(document, "nav > div.lg\\:flex a[href='#{@blog_url}']")
-      mobile = LazyHTML.query(document, "#marketing-mobile-menu a[href='#{@blog_url}']")
-
-      assert Enum.count(desktop) == 1
-      assert Enum.count(mobile) == 1
-      assert LazyHTML.text(desktop) =~ "Blog"
-      assert LazyHTML.text(mobile) =~ "Blog"
+      assert href_count(html, @blog_url) == 0
+      refute html =~ "Blog"
     end
 
     test "the footer renders a Blog link to the Stride tag page" do
@@ -920,11 +914,9 @@ defmodule KanbanWeb.MarketingComponentsTest do
 
       links = html |> LazyHTML.from_fragment() |> LazyHTML.query("a[href='#{@blog_url}']")
 
-      assert Enum.count(links) == 3
-      assert LazyHTML.attribute(links, "target") == ["_blank", "_blank", "_blank"]
-
-      assert LazyHTML.attribute(links, "rel") ==
-               ["noopener noreferrer", "noopener noreferrer", "noopener noreferrer"]
+      assert Enum.count(links) == 1
+      assert LazyHTML.attribute(links, "target") == ["_blank"]
+      assert LazyHTML.attribute(links, "rel") == ["noopener noreferrer"]
     end
 
     test "the Blog link text renders translated under a non-English locale" do
@@ -945,7 +937,7 @@ defmodule KanbanWeb.MarketingComponentsTest do
         |> LazyHTML.query("a[href='#{@blog_url}']")
         |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
 
-      assert texts == ["ブログ", "ブログ", "ブログ"]
+      assert texts == ["ブログ"]
     end
 
     test "docs/blog/README.md says the folder is a drafting area and where posts are published" do

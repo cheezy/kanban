@@ -16344,7 +16344,6 @@ msgid "The script installs copy the hook, but Codex does not load it from there:
 msgstr "Les installations par script copient le hook, mais Codex ne le charge pas depuis cet emplacement : enregistrez-le une fois à la main. L'installation depuis le marketplace ne demande aucune étape de plus."
 
 #: lib/kanban_web/components/marketing_closing.ex
-#: lib/kanban_web/components/marketing_components.ex
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr "Blog"
