@@ -135,7 +135,7 @@ struct FixtureAPITests {
         let sent = heard.withLock { $0 }
         #expect(sent.map(\.0) == [Operations.MoveMyTaskToBacklog.id, Operations.CommentOnMyTask.id, Operations.GetMyGoalAfterGoal.id])
         #expect(sent.last?.1 == nil)
-        let body = try #require(sent[1].1)
+        let body = try #require(sent.dropFirst().first?.1)
         let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
         #expect(json["content"] as? String == "返信")
     }

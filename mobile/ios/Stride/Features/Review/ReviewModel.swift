@@ -67,6 +67,14 @@ final class ReviewModel {
     /// Approving and requesting changes need the server.
     var canAct: Bool { !isOffline && conflict == nil && content != nil }
 
+    /// Whether the bar's buttons do anything yet. Sending a decision comes
+    /// with the next goal; until then the buttons stay disabled, so none
+    /// looks live while it does nothing.
+    var canDecide: Bool { canAct && Self.sendsDecisions }
+
+    /// Turned on by the task that sends Approve and Request changes.
+    static let sendsDecisions = false
+
     // MARK: Loading
 
     /// Asks the server for the review, and keeps it. When the request fails,
@@ -162,15 +170,4 @@ final class ReviewModel {
             return .failed
         }
     }
-}
-
-/// What the review screen shows.
-enum ReviewScreenState: Equatable, Sendable {
-    /// The first answer is still on its way.
-    case loading
-    /// Offline, with nothing saved on the device to show.
-    case nothingSaved
-    /// The review no longer waits on the person.
-    case unavailable
-    case review
 }

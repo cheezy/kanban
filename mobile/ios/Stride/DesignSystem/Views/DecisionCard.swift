@@ -28,15 +28,12 @@ struct DecisionCard<Actions: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if content.since != nil {
-                    age
+                    DecisionAge(content: content)
                 }
             }
 
             HStack(spacing: 8) {
-                Text(verbatim: content.identifier)
-                    .textStyle(.code)
-                    .foregroundStyle(ColorToken.ink3.color)
-                    .accessibilityIdentifier("card-identifier")
+                DecisionIdentifier(identifier: content.identifier)
                 if let priority = content.priority {
                     PriorityDot(priority: priority)
                 }
@@ -48,15 +45,7 @@ struct DecisionCard<Actions: View>: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if let agent = content.agent {
-                HStack(alignment: .top, spacing: 8) {
-                    AgentAvatar(agent, size: .small)
-                        .accessibilityHidden(true)
-                    Text(verbatim: agent.name)
-                        .textStyle(.footnote)
-                        .foregroundStyle(ColorToken.ink2.color)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .accessibilityElement(children: .combine)
+                DecisionAgentRow(agent: agent)
             }
 
             if let issue = content.issue {
@@ -67,26 +56,13 @@ struct DecisionCard<Actions: View>: View {
             }
 
             if !content.verdicts.isEmpty {
-                FlowLayout(spacing: 6) {
-                    ForEach(content.verdicts, id: \.self) { VerdictPill(verdict: $0) }
-                }
+                VerdictFlow(verdicts: content.verdicts)
             }
 
             actions
         }
         .cardChrome()
         .accessibilityElement(children: .contain)
-    }
-
-    /// The age, redrawn each minute.
-    private var age: some View {
-        TimelineView(.everyMinute) { context in
-            Text(verbatim: content.age(at: context.date, in: locale) ?? "")
-                .textStyle(.code)
-                .foregroundStyle(ColorToken.ink3.color)
-                .accessibilityLabel(Text(verbatim: content.age(at: context.date, in: locale, width: .wide) ?? ""))
-                .accessibilityIdentifier("card-age")
-        }
     }
 
     private var kind: some View {

@@ -47,7 +47,8 @@ struct ReviewQueueModelTests {
         await phone.load()
         // The server offers no Approve for a large change on a phone.
         #expect(phone.rows.map(\.sizeLabel) == [nil, .tooLargeForPhone, nil])
-        #expect(phone.rows[1].files == 14)
+        let phoneSecond = try #require(phone.rows.dropFirst().first)
+        #expect(phoneSecond.files == 14)
 
         let data = try DecisionFixtures.reviewsData { items in
             items[1]["actions"] = ["open_review", "approve", "request_changes", "open_on_web"]
@@ -61,7 +62,8 @@ struct ReviewQueueModelTests {
         }
         let viewer = ReviewQueueModel(api: FixtureAPI(replacing: [Operations.ListMyReviews.id: readOnly]).client)
         await viewer.load()
-        #expect(viewer.rows[1].sizeLabel == .large)
+        let viewerSecond = try #require(viewer.rows.dropFirst().first)
+        #expect(viewerSecond.sizeLabel == .large)
     }
 
     @Test("files the server could not count show no count")
@@ -121,7 +123,8 @@ struct ReviewQueueModelTests {
 
         #expect(offline.state == .rows)
         #expect(offline.rows.map(\.id) == Self.fixtureIDs)
-        #expect(offline.rows[1].sizeLabel == .tooLargeForPhone)
+        let offlineSecond = try #require(offline.rows.dropFirst().first)
+        #expect(offlineSecond.sizeLabel == .tooLargeForPhone)
         #expect(offline.isOffline)
         #expect(offline.offlineBanner == OfflineBannerContent(fetchedAt: Self.fetched))
         withExtendedLifetime(container) {}
@@ -199,10 +202,12 @@ struct ReviewQueueModelTests {
         let model = ReviewQueueModel(api: api.client)
 
         let slow = Task { await model.load() }
-        await waitUntil { firstAsked.withLock { $0 } }
-        await model.load()
-        #expect(model.rows.count == 2)
-        gate.signal()
+        do {
+            defer { gate.signal() }
+            await waitUntil { firstAsked.withLock { $0 } }
+            await model.load()
+            #expect(model.rows.count == 2)
+        }
         await slow.value
 
         #expect(model.rows.map(\.id) == Array(Self.fixtureIDs.dropFirst()))
@@ -231,7 +236,14 @@ struct ReviewQueueModelTests {
 
     @Test("forgetting drops everything shown, and an answer that set out before it")
     func forget() async {
-        let model = ReviewQueueModel(api: FixtureAPI().client)
+        let gate = DispatchSemaphore(value: 0)
+        let asking = OSAllocatedUnfairLock(initialState: 0)
+        let api = FixtureAPI(answering: { id in
+            // The first load answers at once; the second waits for the gate.
+            if id == Operations.ListMyReviews.id, asking.withLock({ $0 += 1; return $0 }) == 2 { gate.wait() }
+            return nil
+        })
+        let model = ReviewQueueModel(api: api.client)
         await model.load()
 
         model.forget()
@@ -240,9 +252,13 @@ struct ReviewQueueModelTests {
         #expect(model.state == .loading)
         #expect(model.fetchedAt == nil)
 
+        // The late load has set out before the second forget.
         let late = Task { await model.load() }
-        await Task.yield()
-        model.forget()
+        do {
+            defer { gate.signal() }
+            await waitUntil { asking.withLock { $0 } == 2 }
+            model.forget()
+        }
         await late.value
         #expect(model.rows.isEmpty)
     }

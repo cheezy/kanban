@@ -24,10 +24,10 @@ struct NowActionsTests {
         await waitUntil { actions.notice != nil }
 
         #expect(actions.notice == .movedToBacklog)
-        #expect(!now.cards.contains { $0.id == released.id })
+        #expect(now.cards.contains { $0.id == released.id } == false)
         #expect(now.cards.count == 4)
         #expect(sent.operations == [Self.list, Self.move])
-        #expect(!actions.isMoving(released))
+        #expect(actions.isMoving(released) == false)
     }
 
     @Test("a second tap on Move to Backlog sends one move")
@@ -118,7 +118,7 @@ struct NowActionsTests {
         let reply = try Self.reply(in: actions)
 
         reply.text = text
-        #expect(!reply.canSend)
+        #expect(reply.canSend == false)
         await actions.send(reply)
 
         #expect(sent.operations == [Self.list])
@@ -136,7 +136,7 @@ struct NowActionsTests {
         #expect(reply.canSend)
         reply.text += "a"
         #expect(reply.isTooLong)
-        #expect(!reply.canSend)
+        #expect(reply.canSend == false)
     }
 
     @Test("a refused reply stays open and says why")
@@ -174,7 +174,7 @@ struct NowActionsTests {
             }
         }
         await actions.moveToBacklog(try Self.card("claim_expired-4814", in: now))
-        #expect(!reply.canSend)
+        #expect(reply.canSend == false)
 
         #expect(actions.sheet == nil)
         #expect(actions.notice == nil)
@@ -206,7 +206,17 @@ struct NowActionsTests {
         #expect(Mirror(reflecting: shown).children.map(\.label) == ["exitCode", "duration"])
         let english = Locale(identifier: "en")
         #expect(shown.exitCodeText(in: english) == "1")
-        #expect(shown.durationText(in: english) == Duration.seconds(4).hookText(in: english))
+        #expect(shown.durationText(in: english) == "4s")
+    }
+
+    @Test("a hook's duration reads in at most two short units", arguments: [
+        (Duration.seconds(0), "0s"),
+        (Duration.seconds(4), "4s"),
+        (Duration.seconds(72), "1m 12s"),
+        (Duration.seconds(3725), "1h 2m"),
+    ])
+    func hookText(duration: Duration, text: String) {
+        #expect(duration.hookText(in: Locale(identifier: "en")) == text)
     }
 
     @Test("an attempt the server does not report says so")
@@ -262,15 +272,39 @@ struct NowActionsTests {
 
     @Test("a sign-out drops the sheet, the notice and an answer on its way")
     func forgetDropsAll() async throws {
-        let (actions, now, _) = await Self.screen()
-        _ = actions.perform(.reply, on: try Self.card("released-9001", in: now))
-        actions.notice = .replySent
+        let move = Self.move
+        let gate = DispatchSemaphore(value: 0)
+        let moveAsked = OSAllocatedUnfairLock(initialState: false)
+        let (actions, now, _) = await Self.screen(answering: { operation in
+            // The move's answer waits until after the sign-out.
+            if operation == move {
+                moveAsked.withLock { $0 = true }
+                gate.wait()
+            }
+            return nil
+        })
+        let expired = try Self.card("claim_expired-4814", in: now)
+        // `perform(.moveToBacklog)` starts this same call in a task of its own,
+        // which a test cannot wait for.
+        let moving = Task { await actions.moveToBacklog(expired) }
+        do {
+            defer { gate.signal() }
+            await waitUntil { moveAsked.withLock { $0 } }
+            _ = actions.perform(.reply, on: try Self.card("released-9001", in: now))
+            actions.notice = .replySent
 
-        actions.forget()
+            actions.forget()
 
-        #expect(actions.sheet == nil)
+            #expect(actions.sheet == nil)
+            #expect(actions.notice == nil)
+            #expect(actions.moving.isEmpty)
+        }
+        await moving.value
+
+        // The move's answer arrived after the sign-out, and is dropped.
         #expect(actions.notice == nil)
         #expect(actions.moving.isEmpty)
+        #expect(now.cards.contains { $0.id == expired.id })
     }
 
     // MARK: Helpers
@@ -279,12 +313,17 @@ struct NowActionsTests {
     private static func screen(
         replacing replacements: [String: Data] = [:],
         statuses: [String: Int] = [:],
-        isOffline: @escaping @Sendable () -> Bool = { false }
+        isOffline: @escaping @Sendable () -> Bool = { false },
+        answering answer: @escaping @Sendable (_ operationID: String) -> Data? = { _ in nil }
     ) async -> (NowActions, NowModel, SentOperations) {
         let sent = SentOperations()
-        let api = FixtureAPI(replacing: replacements, statuses: statuses, isOffline: isOffline) { operation, body in
-            sent.record(operation, body)
-        }.client
+        let api = FixtureAPI(
+            replacing: replacements,
+            statuses: statuses,
+            isOffline: isOffline,
+            onSend: { operation, body in sent.record(operation, body) },
+            answering: answer
+        ).client
         let now = NowModel(api: api)
         await now.load()
         return (NowActions(api: api, now: now), now, sent)

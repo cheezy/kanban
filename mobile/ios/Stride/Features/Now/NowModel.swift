@@ -164,8 +164,9 @@ final class NowModel {
         hasAnswer = true
     }
 
+    /// A failure after a newer list showed says nothing about the list shown.
     private func fail(asked: Int, started: Int) async {
-        guard asked == session else { return }
+        guard asked == session, started == version else { return }
 
         lastLoadFailed = true
         guard !hasAnswer, let cached = try? await cache?.cached(.decisions) else { return }

@@ -23,6 +23,17 @@ struct DiffLineContent: Hashable, Sendable {
 
     var text: String { spans.map(\.text).joined() }
 
+    /// The number and the marker, in one run, such as "42 +": a marker of its
+    /// own would be a text element of its own, which VoiceOver and the
+    /// accessibility audit reach even inside a line read as one element
+    /// (W2797). Empty for a line with neither, such as a hunk header, whose
+    /// blank text the audit called clipped.
+    func gutter(in locale: Locale) -> String {
+        guard let shownNumber else { return "" }
+
+        return shownNumber.formatted(.number.grouping(.never).locale(locale)) + " " + kind.marker
+    }
+
     /// What VoiceOver says before the text, such as "Added, line 42". Nil for a
     /// line with no number, which reads as its text alone.
     func reading(in locale: Locale) -> String? {

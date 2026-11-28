@@ -19,8 +19,8 @@ struct NowCardView: View {
         case .readyEmpty:
             // Opening a board needs no connection once it is cached, but
             // nothing is cached yet, so it waits too.
-            let canOpen = card.actions.contains(.openBacklog) && !isOffline
-            ReadyEmptyCardView(card: card, open: canOpen ? { perform(.openBacklog) } : nil)
+            let canOpen = card.actions.contains(.openBacklog)
+            ReadyEmptyCardView(card: card, open: canOpen ? { perform(.openBacklog) } : nil, isOffline: isOffline)
         }
     }
 }

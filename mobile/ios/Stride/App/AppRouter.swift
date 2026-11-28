@@ -58,6 +58,11 @@ final class AppRouter {
         ReviewModel(taskID: taskID, api: api, cache: cache, connectivity: connectivity)
     }
 
+    /// The model for one review file's screen, on the same API and cache.
+    func diffModel(for target: ReviewFileTarget) -> DiffModel {
+        DiffModel(target: target, api: api, cache: cache, connectivity: connectivity)
+    }
+
     // MARK: Tabs
 
     /// Selects `tab`. Selecting the tab already selected takes it back to its

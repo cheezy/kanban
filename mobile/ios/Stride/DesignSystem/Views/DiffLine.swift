@@ -6,18 +6,25 @@ import SwiftUI
 struct DiffLine: View {
     @Environment(\.locale) private var locale
 
-    @ScaledMetric(relativeTo: .caption) private var numberWidth = 34
+    /// The 34-point number column of the design and the marker after it.
+    @ScaledMetric(relativeTo: .caption) private var gutterWidth = 48
 
     let line: DiffLineContent
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(verbatim: line.shownNumber.map { $0.formatted(.number.grouping(.never).locale(locale)) } ?? "")
-                .foregroundStyle(line.kind.numberInk.color)
-                .frame(width: numberWidth, alignment: .trailing)
-
-            Text(verbatim: line.kind.marker)
-                .foregroundStyle(line.kind.numberInk.color)
+            // The marker shares the number's text: on its own it was an
+            // element the audit reached despite the line's ignored children,
+            // and it failed the thin "−" from a 7-by-16-point crop, though
+            // its ink reaches 7.3:1 on a removed line in dark (W2797).
+            let gutter = line.gutter(in: locale)
+            if gutter.isEmpty {
+                Color.clear.frame(width: gutterWidth, height: 1)
+            } else {
+                Text(verbatim: gutter)
+                    .foregroundStyle(line.kind.numberInk.color)
+                    .frame(width: gutterWidth, alignment: .trailing)
+            }
 
             Text(line.attributedText())
                 .foregroundStyle(line.kind.textInk.color)

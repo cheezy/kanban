@@ -40,7 +40,9 @@ defmodule Kanban.Mobile.Strings.Msgids do
       review_section_msgids(),
       review_check_msgids(),
       review_file_msgids(),
-      review_state_msgids()
+      review_state_msgids(),
+      diff_screen_msgids(),
+      diff_label_msgids()
     ])
   end
 
@@ -295,6 +297,7 @@ defmodule Kanban.Mobile.Strings.Msgids do
       ),
       dpgettext_noop("mobile", "now_released_reason", "“%{reason}”"),
       dpgettext_noop("mobile", "now_ready_empty_board", "Ready is empty · %{board}"),
+      dpgettext_noop("mobile", "now_ready_empty_body", "%{idle} %{backlog}"),
       dpgettext_noop("mobile", "now_header_summary", "%{waiting} · %{held_up}")
     ]
   end
@@ -482,6 +485,43 @@ defmodule Kanban.Mobile.Strings.Msgids do
         "The agent sent a new version. Reload to review it."
       ),
       dpgettext_noop("mobile", "review_reload", "Reload")
+    ]
+  end
+
+  # The flagged-file screen: its header, footer and buttons, and what it says
+  # of a capped, empty or removed diff (W2797).
+  defp diff_screen_msgids do
+    [
+      dpgettext_noop("mobile", "diff_position", "%{position} of %{count}"),
+      dpgettext_noop("mobile", "diff_region", "Diff of %{name}"),
+      dpgettext_noop("mobile", "diff_back_to_verdicts", "Back to verdicts"),
+      dpgettext_noop("mobile", "diff_next_file", "Next file"),
+      dpgettext_noop("mobile", "diff_previous_file", "Previous file"),
+      dpgettext_noop(
+        "mobile",
+        "diff_footer",
+        "Highlighted on the server. Long lines wrap. Notes on a single line come later; for now, put them in Request changes."
+      ),
+      dpgettext_noop("mobile", "diff_capped", "Only the first 500 lines of this diff are shown."),
+      dpgettext_noop("mobile", "diff_empty", "No diff to show. It may be a binary file."),
+      dpgettext_noop("mobile", "diff_file_gone", "This file is no longer in the review."),
+      dpgettext_noop("mobile", "diff_loading", "Loading the file")
+    ]
+  end
+
+  # The file's language and who wrote each inline note (W2797).
+  defp diff_label_msgids do
+    [
+      dpgettext_noop("mobile", "diff_language_elixir", "Elixir"),
+      dpgettext_noop("mobile", "diff_language_heex", "HEEx"),
+      dpgettext_noop("mobile", "diff_language_erlang", "Erlang"),
+      dpgettext_noop("mobile", "diff_language_plain", "Plain text"),
+      dpgettext_noop("mobile", "diff_note_testing", "Testing reviewer"),
+      dpgettext_noop("mobile", "diff_note_patterns", "Patterns reviewer"),
+      dpgettext_noop("mobile", "diff_note_pitfalls", "Pitfalls reviewer"),
+      dpgettext_noop("mobile", "diff_note_security", "Security reviewer"),
+      dpgettext_noop("mobile", "diff_note_reviewer", "Reviewer"),
+      dpgettext_noop("mobile", "diff_note", "%{reviewer}: %{note}")
     ]
   end
 end

@@ -33,7 +33,7 @@ defmodule Kanban.Mobile.StringsTest do
     now_filter_all now_filter_reviews now_filter_problems now_filter_ready now_sorted
     now_empty now_loading now_offline_nothing now_needs_connection now_open_review
     now_move_to_backlog now_open_on_web now_view_attempt now_reply now_claim_expired
-    now_hook_failed now_hook_failed_exit now_released_reason now_ready_empty_board
+    now_hook_failed now_hook_failed_exit now_released_reason now_ready_empty_board now_ready_empty_body
     now_header_summary
     now_moved_to_backlog now_reply_sent now_task_moved now_not_allowed now_action_failed
     now_reply_field now_reply_send now_reply_too_long now_attempt_title
@@ -49,6 +49,11 @@ defmodule Kanban.Mobile.StringsTest do
     review_reload review_holds_up review_criteria_count
     review_verdict_passed review_verdict_failed review_verdict_not_assessed
     review_file_in review_lines_added review_lines_removed
+    diff_position diff_region diff_back_to_verdicts diff_next_file diff_previous_file
+    diff_footer diff_capped diff_empty diff_file_gone diff_loading
+    diff_language_elixir diff_language_heex diff_language_erlang diff_language_plain
+    diff_note_testing diff_note_patterns diff_note_pitfalls diff_note_security
+    diff_note_reviewer diff_note
   )
 
   @plural_forms %{
@@ -156,7 +161,7 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 129
+      assert length(pot_keys(:string)) == 150
       assert length(pot_keys(:plural)) == 29
 
       for {locale, strings} <- built do

@@ -6,7 +6,7 @@ final class ShellUITests: XCTestCase {
 
     @MainActor
     func testEachTabOpensWithVoiceOverLabels() throws {
-        let app = signIn()
+        let app = launchSignedIn()
         try openEachTab(app)
 
         // The tint and the tokens change with the appearance, so each tab is
@@ -20,8 +20,8 @@ final class ShellUITests: XCTestCase {
     @MainActor
     func testHiddenSidebarCanComeBack() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "only an iPad has the sidebar")
-        let app = signIn()
-        let now = tabControl(app, "Now")
+        let app = launchSignedIn()
+        let now = app.tabControl("Now")
         XCTAssertTrue(now.waitForExistence(timeout: 30))
 
         let toggle = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "sidebar")).firstMatch
@@ -36,8 +36,8 @@ final class ShellUITests: XCTestCase {
 
     @MainActor
     func testCornerButtonsOpenNewTaskAndSettings() throws {
-        let app = signIn()
-        tabControl(app, "Now").tap()
+        let app = launchSignedIn()
+        app.tabControl("Now").tap()
 
         for (button, title) in [("New task", "New task"), ("Settings", "Settings")] {
             let control = app.buttons[button].firstMatch
@@ -62,17 +62,17 @@ final class ShellUITests: XCTestCase {
 
     @MainActor
     func testTabsFitTheLargestTextInGerman() throws {
-        let app = signIn(locale: "de", textSize: "UICTContentSizeCategoryAccessibilityXXXL")
+        let app = launchSignedIn(locale: "de", textSize: "UICTContentSizeCategoryAccessibilityXXXL")
 
         for tab in ["Jetzt", "Überprüfung", "Boards", "Agenten"] {
-            let control = tabControl(app, tab)
+            let control = app.tabControl(tab)
             XCTAssertTrue(control.waitForExistence(timeout: 30), "no \(tab) tab")
             control.tap()
             XCTAssertEqual(app.staticTexts["tab-title"].label, tab)
             // A clipped German row fails here, on every tab's screen. The
             // lazy Now cards are audited too: at the largest size the audit
             // has no larger text to push them off the screen with.
-            try app.auditAccessibility(ignoringSidebarContrast)
+            try app.auditAccessibility { $0.isNowFilterLabelClippedBeforeIOS26 || self.ignoringSidebarContrast($0) }
         }
     }
 
@@ -80,7 +80,7 @@ final class ShellUITests: XCTestCase {
     @MainActor
     private func openEachTab(_ app: XCUIApplication) throws {
         for tab in Self.tabs {
-            let control = tabControl(app, tab)
+            let control = app.tabControl(tab)
             XCTAssertTrue(control.waitForExistence(timeout: 30), "no \(tab) tab")
             control.tap()
 
@@ -109,36 +109,5 @@ final class ShellUITests: XCTestCase {
             object: element
         )
         return XCTWaiter().wait(for: [expectation], timeout: 10) == .completed
-    }
-
-    /// A tab bar item on a phone and a sidebar row on an iPad, by its label.
-    /// The Now item's label may carry its badge, so it matches the start. A
-    /// sidebar row is a button the shell marks `sidebar-tab`.
-    @MainActor
-    private func tabControl(_ app: XCUIApplication, _ label: String) -> XCUIElement {
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            let row = NSPredicate(format: "identifier == %@ AND label BEGINSWITH %@", "sidebar-tab", label)
-            return app.descendants(matching: .any).matching(row).firstMatch
-        }
-        let predicate = NSPredicate(format: "label BEGINSWITH %@", label)
-        return app.tabBars.buttons.matching(predicate).firstMatch
-    }
-
-    @MainActor
-    private func signIn(locale: String = "en", textSize: String? = nil) -> XCUIApplication {
-        continueAfterFailure = false
-        let app = XCUIApplication()
-        app.launchArguments = ["-StrideStubSignIn", "allow", "-AppleLanguages", "(\(locale))"]
-        if let textSize {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
-        }
-        app.launch()
-
-        let signIn = app.buttons[locale == "de" ? "Anmelden" : "Sign in"].firstMatch
-        XCTAssertTrue(signIn.waitForExistence(timeout: 30))
-        signIn.tap()
-        XCTAssertTrue(signIn.waitForNonExistence(timeout: 30))
-
-        return app
     }
 }

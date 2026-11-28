@@ -3,9 +3,12 @@
 # runs it before each task commit.
 #
 # A task that changed only mobile/ and .github/workflows/ios.yml runs the
-# ExUnit tests that read those files. Any other change, or a change set that
-# cannot be read, runs the whole partitioned suite, the format check, credo
-# and sobelow, as the Stride hook set does.
+# ExUnit tests that read those files. A task that also changed the app's
+# strings (the msgid list, the mobile gettext files and the strings test) runs
+# the same tests, plus the format check and credo on the Elixir files among
+# them: nothing in the web app reads the mobile domain. Any other change, or a
+# change set that cannot be read, runs the whole partitioned suite, the format
+# check, credo and sobelow, as the Stride hook set does.
 #
 # The change set is everything since the task's branch left main, committed or
 # not, untracked files included. .stride.md is left out because ios_dev.sh
@@ -31,6 +34,9 @@ guards=(
   test/mix/tasks/mobile
 )
 
+# The Elixir files among the string changes, for the format check and credo.
+string_sources=()
+
 ios_only() {
   local base paths path
   base="$(git merge-base main HEAD)" || return 1
@@ -40,19 +46,27 @@ ios_only() {
   while IFS= read -r path; do
     case "$path" in
       '' | mobile/* | .github/workflows/ios.yml) ;;
+      priv/gettext/mobile.pot | priv/gettext/*/LC_MESSAGES/mobile.po) ;;
+      lib/kanban/mobile/strings/msgids.ex | test/kanban/mobile/strings_test.exs)
+        if [ -f "$path" ]; then string_sources+=("$path"); fi
+        ;;
       *)
         echo "== $path is outside mobile/, so the whole Phoenix suite runs"
         return 1
         ;;
     esac
   done <<< "$paths"
+  return 0
 }
 
 export MIX_ENV=test
 
 if ios_only; then
-  echo "== only the iOS app changed, so the tests that read mobile/ run"
-  exec mix test --warnings-as-errors "${guards[@]}"
+  echo "== only the iOS app and its strings changed, so the tests that read mobile/ run"
+  mix test --warnings-as-errors "${guards[@]}" || exit 1
+  [ "${#string_sources[@]}" -eq 0 ] && exit 0
+  mix format --check-formatted "${string_sources[@]}" || exit 1
+  exec mix credo --strict "${string_sources[@]}"
 fi
 
 bash test/partitioned_test.sh --warnings-as-errors || exit 1

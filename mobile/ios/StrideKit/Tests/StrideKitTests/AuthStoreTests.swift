@@ -250,7 +250,7 @@ struct AuthStoreTests {
         let session = AuthSession(signIn: 1, pair: .example())
 
         for text in [String(describing: session), String(reflecting: session)] {
-            #expect(!text.contains("EXAMPLE"))
+            #expect(text.contains("EXAMPLE") == false)
         }
     }
 

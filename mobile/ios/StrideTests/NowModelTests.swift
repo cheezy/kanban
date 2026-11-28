@@ -80,6 +80,7 @@ struct NowModelTests {
 
     @Test("a live list that lands during a reload is not replaced by the reload's older answer")
     func liveDuringReloadKept() async throws {
+        let cleared = try await DecisionFixtures.list(DecisionFixtures.data { $0.removeFirst() })
         let gate = DispatchSemaphore(value: 0)
         let asking = OSAllocatedUnfairLock(initialState: false)
         let api = FixtureAPI(isOffline: {
@@ -94,13 +95,44 @@ struct NowModelTests {
 
         // The reload has asked; the live list arrives before its answer.
         let reload = Task { await model.load() }
-        await waitUntil { asking.withLock { $0 } }
-        let cleared = try await DecisionFixtures.list(DecisionFixtures.data { $0.removeFirst() })
-        live.continuation.yield(.decisions(cleared))
-        await waitUntil { model.cards.count == 4 }
-        gate.signal()
+        do {
+            defer { gate.signal() }
+            await waitUntil { asking.withLock { $0 } }
+            live.continuation.yield(.decisions(cleared))
+            await waitUntil { model.cards.count == 4 }
+        }
         await reload.value
 
+        #expect(model.cards.map(\.id) == Array(Self.fixtureIDs.dropFirst()))
+    }
+
+    @Test("a reload that fails after a newer live list landed leaves the screen online")
+    func failedReloadAfterLiveKeepsOnline() async throws {
+        let cleared = try await DecisionFixtures.list(DecisionFixtures.data { $0.removeFirst() })
+        let gate = DispatchSemaphore(value: 0)
+        let asking = OSAllocatedUnfairLock(initialState: false)
+        let api = FixtureAPI(isOffline: {
+            asking.withLock { $0 = true }
+            gate.wait()
+            return true
+        })
+        let live = ManualLive()
+        let model = NowModel(api: api.client, live: live, connectivity: ConnectivitySwitch(online: true).connectivity)
+        let observing = Task { await model.observe() }
+        defer { observing.cancel() }
+
+        // The reload has asked; the live list arrives before it fails.
+        let reload = Task { await model.load() }
+        do {
+            defer { gate.signal() }
+            await waitUntil { asking.withLock { $0 } }
+            live.continuation.yield(.decisions(cleared))
+            await waitUntil { model.cards.count == 4 }
+        }
+        await reload.value
+
+        #expect(model.isOffline == false)
+        #expect(model.offlineBanner == nil)
         #expect(model.cards.map(\.id) == Array(Self.fixtureIDs.dropFirst()))
     }
 
@@ -207,7 +239,14 @@ struct NowModelTests {
 
     @Test("forgetting drops everything shown, and an answer that set out before it")
     func forget() async {
-        let model = NowModel(api: FixtureAPI().client)
+        let gate = DispatchSemaphore(value: 0)
+        let asking = OSAllocatedUnfairLock(initialState: 0)
+        let api = FixtureAPI(isOffline: {
+            // The first load answers at once; the second waits for the gate.
+            if asking.withLock({ $0 += 1; return $0 }) == 2 { gate.wait() }
+            return false
+        })
+        let model = NowModel(api: api.client)
         await model.load()
         model.filter = .ready
 
@@ -218,9 +257,13 @@ struct NowModelTests {
         #expect(model.filter == .all)
         #expect(model.state == .loading)
 
+        // The late load has set out before the second forget.
         let late = Task { await model.load() }
-        await Task.yield()
-        model.forget()
+        do {
+            defer { gate.signal() }
+            await waitUntil { asking.withLock { $0 } == 2 }
+            model.forget()
+        }
         await late.value
         #expect(model.cards.isEmpty)
     }

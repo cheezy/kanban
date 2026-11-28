@@ -139,7 +139,7 @@ struct PhoenixConnectionTests {
 
         #expect(await Self.all(connection.events).isEmpty)
         try await Task.sleep(for: .milliseconds(200))
-        #expect(!transport.sent.contains { $0.event == "phx_join" })
+        #expect(transport.sent.contains { $0.event == "phx_join" } == false)
         #expect(transport.disconnects == 1)
     }
 
@@ -169,23 +169,31 @@ struct PhoenixConnectionTests {
     }
 
     /// A connection whose socket is open, with its `.opened` event read.
-    private func openConnection(joinTimeout: TimeInterval = 10) async throws -> (PhoenixConnection, FakePhoenixTransport) {
+    private func openConnection(
+        joinTimeout: TimeInterval = 10,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) async throws -> (PhoenixConnection, FakePhoenixTransport) {
         let connection = connect(joinTimeout: joinTimeout)
         let transport = try await transport()
         var events = connection.events.makeAsyncIterator()
         transport.open()
-        #expect(await events.next() == .opened)
+        let first = await events.next()
+        try #require(first == .opened, sourceLocation: sourceLocation)
         return (connection, transport)
     }
 
     /// A connection that has joined `topic`, with its events so far read.
-    private func openJoined(_ topic: LiveTopic) async throws -> (PhoenixConnection, FakePhoenixTransport) {
-        let (connection, transport) = try await openConnection()
+    private func openJoined(
+        _ topic: LiveTopic,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) async throws -> (PhoenixConnection, FakePhoenixTransport) {
+        let (connection, transport) = try await openConnection(sourceLocation: sourceLocation)
         var events = connection.events.makeAsyncIterator()
         connection.join(topic)
         await eventually("it sends the join") { transport.sent.contains { $0.event == "phx_join" } }
         try transport.reply(to: "phx_join", on: topic.rawValue, status: "ok")
-        #expect(await events.next() == .joined(topic))
+        let joined = await events.next()
+        try #require(joined == .joined(topic), sourceLocation: sourceLocation)
         return (connection, transport)
     }
 

@@ -67,6 +67,14 @@ struct SharedViewAccessibilityTests {
         #expect(DiffLineKind.added.marker != DiffLineKind.removed.marker)
     }
 
+    @Test("a line's gutter holds its number and its marker in one run")
+    func gutter() {
+        #expect(DiffLineContent(kind: .added, newNumber: 42, spans: []).gutter(in: Self.english) == "42 +")
+        #expect(DiffLineContent(kind: .removed, oldNumber: 1203, spans: []).gutter(in: Self.german) == "1203 −")
+        #expect(DiffLineContent(kind: .context, oldNumber: 7, newNumber: 7, spans: []).gutter(in: Self.english) == "7  ")
+        #expect(DiffLineContent(kind: .hunk, spans: []).gutter(in: Self.english).isEmpty)
+    }
+
     @Test("a highlighted span maps to its token colour")
     func highlightColours() {
         #expect(HighlightClass(apiValue: "keyword").ink == .stReview)

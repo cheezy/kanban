@@ -1016,3 +1016,129 @@ msgid "%{count} line removed"
 msgid_plural "%{count} lines removed"
 msgstr[0] "%{count} ligne supprimée"
 msgstr[1] "%{count} lignes supprimées"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_back_to_verdicts"
+msgid "Back to verdicts"
+msgstr "Retour aux verdicts"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_capped"
+msgid "Only the first 500 lines of this diff are shown."
+msgstr "Seules les 500 premières lignes de ce diff sont affichées."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_empty"
+msgid "No diff to show. It may be a binary file."
+msgstr "Aucun diff à afficher. C’est peut-être un fichier binaire."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_file_gone"
+msgid "This file is no longer in the review."
+msgstr "Ce fichier ne fait plus partie de la revue."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_footer"
+msgid "Highlighted on the server. Long lines wrap. Notes on a single line come later; for now, put them in Request changes."
+msgstr "Coloration faite sur le serveur. Les longues lignes sont renvoyées à la ligne. Les notes sur une seule ligne viendront plus tard ; pour l’instant, mettez-les dans Demander des modifications."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_elixir"
+msgid "Elixir"
+msgstr "Elixir"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_erlang"
+msgid "Erlang"
+msgstr "Erlang"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_heex"
+msgid "HEEx"
+msgstr "HEEx"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_plain"
+msgid "Plain text"
+msgstr "Texte brut"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_loading"
+msgid "Loading the file"
+msgstr "Chargement du fichier"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_next_file"
+msgid "Next file"
+msgstr "Fichier suivant"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note"
+msgid "%{reviewer}: %{note}"
+msgstr "%{reviewer} : %{note}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_patterns"
+msgid "Patterns reviewer"
+msgstr "Relecteur des modèles"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_pitfalls"
+msgid "Pitfalls reviewer"
+msgstr "Relecteur des pièges"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_reviewer"
+msgid "Reviewer"
+msgstr "Relecteur"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_security"
+msgid "Security reviewer"
+msgstr "Relecteur de sécurité"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_testing"
+msgid "Testing reviewer"
+msgstr "Relecteur des tests"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_position"
+msgid "%{position} of %{count}"
+msgstr "%{position} sur %{count}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_previous_file"
+msgid "Previous file"
+msgstr "Fichier précédent"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_region"
+msgid "Diff of %{name}"
+msgstr "Diff de %{name}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_ready_empty_body"
+msgid "%{idle} %{backlog}"
+msgstr "%{idle} %{backlog}"

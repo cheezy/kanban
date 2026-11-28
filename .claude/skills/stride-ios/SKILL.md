@@ -19,6 +19,41 @@ task, as one or two plain sentences with the task id. Correct or delete a line
 that has turned out wrong. Rules the app must follow belong in
 `mobile/ios/CLAUDE.md`, not here.
 
+## Working a task without extra rounds
+
+W2796 (the review screen) needed four review rounds and ran hours past its
+claim. Each round found something a first pass could have found. Do these
+before the first review:
+
+- **Map the artboard before coding.** List every visible element of the
+  artboard and its states (counts, identifiers, times, colours, empty and error
+  states) and give each a field in a content type the view only reads, as
+  `ReviewContent` does. Round 1 found four design elements missing and the
+  section logic in the views.
+- **Dispatch the planner on a medium task**, as the decision matrix says.
+  W2796 planned inline and missed what the planner would have listed.
+- **Write the largest-text UI test first**, launched with
+  `-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`,
+  before any audit filter. A filter written first hid a bar that covered half
+  the screen until round 2.
+- **Keep each audit filter to one container**, named by an identifier, with
+  its measured pair in a comment. A broad one is a review finding.
+- **Run all four test simulators in the first pass**: the iPhone and iPad on
+  27.2, and both on 26.4, which stands in for CI's 26.5. W2796 ran 26.4 only
+  after round 3, and it failed there.
+- **Check each `behaviour_test_matrix` row against its test**: the named test
+  must assert that behaviour itself. Round 3 found a test named for the
+  section order that did not check it.
+- **Read every new doc comment against the code** it describes; round 3 found
+  one that said a row stacks "when it does not fit" while the code stacks at
+  the accessibility sizes.
+- **Record the break-it list in full** in the completion notes, one break per
+  line with the test and `file:line` that caught it, before the first review.
+- **Run credo on any Elixir you touch** right away (see Strings).
+- **Plan for the claim's hour.** A medium screen with UI tests on four
+  simulators takes longer; the completion still counts after the claim
+  expires, but say so in the notes.
+
 ## Commands
 
 - Build and test from the repository root with the mix tasks, always in the test
@@ -53,16 +88,25 @@ that has turned out wrong. Rules the app must follow belong in
   simulator, then `bash test/ios_elixir_checks.sh`, then the task commit. It
   tests no iPad: run the iPad yourself before completing.
 - `ios_elixir_checks.sh` stays fast only while every file changed against main is
-  under `mobile/` (or is `ios.yml`). Any other file runs the whole partitioned
-  Elixir suite plus `mix format --check-formatted`, `credo --strict` and sobelow,
-  about 280 seconds. So keep an iOS task inside `mobile/` when it can be, and when
-  it cannot, write Elixir that passes credo the first time: no nested calls
+  under `mobile/` (or is `ios.yml`) or is one of the app's string files:
+  `lib/kanban/mobile/strings/msgids.ex`, `priv/gettext/mobile.pot`, a locale's
+  `mobile.po` and `test/kanban/mobile/strings_test.exs`. Those add only
+  `format --check-formatted` and `credo --strict` on the Elixir files among
+  them (W2797). Any other file, including `strings.ex`, a doc or a web `.po`,
+  runs the whole partitioned Elixir suite plus `mix format --check-formatted`,
+  `credo --strict` and sobelow, about 280 seconds. So keep an iOS task inside
+  `mobile/` and the string files when it can be, and when it cannot, write
+  Elixir that passes credo the first time: no nested calls
   (pipe instead), and functions under credo's ABC size limit of 20 (split a
   render function into helpers early). W2787 and W2788 each lost a completion
   attempt to credo, and so did W2789: each `dpgettext_noop` call in a msgid list
   counts one toward the ABC size, so keep each list in `strings/msgids.ex` to about 15
   strings, and rerun `MIX_ENV=test mix gettext.extract --merge` and
   `mix mobile.strings` after moving one, since the `.pot` records line numbers.
+- `before_doing` fails on `mix hex.outdated` even when the update is "not
+  possible" because another dependency caps it. igniter 0.9.0 was capped below
+  0.9 by oidcc 3.9.2; the user chose an `override: true` in `mix.exs`, committed
+  to main before the task branch (W2797). Ask before overriding another cap.
 - `after_doing` commits with `git add -A`, so any untracked file not in
   `.gitignore` lands in the task commit. Keep scratch copies and notes in the
   session scratchpad.
@@ -93,6 +137,10 @@ that has turned out wrong. Rules the app must follow belong in
   writes into the repository (W2787).
 - The app's text sizes live in `lib/kanban/mobile/type_scale.ex` and reach
   Swift through `tokens.json`; never write a type size as a Swift literal.
+- In the generated client a schema property named `class` is `_class` (a
+  diff span's `span._class`), and an `anyOf` of an enum and a string reads as
+  `x.value1?.rawValue ?? x.value2`. DerivedData's `Types.swift` can be stale
+  after a contract change; read the schema in `openapi.json` instead (W2797).
 
 ## Strings
 
@@ -101,6 +149,7 @@ that has turned out wrong. Rules the app must follow belong in
 - Xcode names no positional argument (`.targetRiskSlip(_:_:)`), so call the
   labelled accessor in `L10n.swift` for any string with arguments.
 - The shared locale `zh` is `zh-Hans` in the catalog and in `.lproj` names.
+- Keep each locale's form of address: German uses the formal "Sie" ("Ihre"), French "vous", Spanish "tú" and Portuguese "você" forms. W2794 and W2796 let five German strings slip into "du"; the W2797 iPad pass in German caught a sixth and fixed all six. Grep a new `mobile.po` entry for `du|dein|dich` (German) or `tu|ton` (French) before you commit it.
 - Status values arrive as API enums; map each to its `mobile` string in a view
   model.
 - To add a string: add `dpgettext_noop("mobile", key, text)` (or
@@ -125,11 +174,21 @@ that has turned out wrong. Rules the app must follow belong in
 - The msgid lists moved out of `strings.ex` into `strings/msgids.ex` when
   `strings.ex` passed 600 lines; `Strings.msgids/0` delegates there, and the
   generated `L10n.swift` header names the new file (W2794).
-- Editing `lib/kanban/mobile/strings/msgids.ex` is a change outside `mobile/`, so the
-  task's `after_doing` runs the whole Elixir suite and credo (see Hook modes).
-  Add a string to an existing `*_msgids` helper, or add a new helper to the
+- Editing `lib/kanban/mobile/strings/msgids.ex` runs credo on it in
+  `after_doing` but not the whole suite (see Hook modes). Run
+  `MIX_ENV=test mix credo --strict lib/kanban/mobile/strings/msgids.ex` as soon
+  as you add strings: W2796's review, not the hook, found its new helpers over
+  the ABC limit. Add a string to an existing `*_msgids` helper, or add a new helper to the
   list `msgids/0` passes to `Enum.concat/1`; a chain of `++` there went over
   credo's ABC size limit at eleven helpers (W2793).
+- List server values, or a reading built of parts, with
+  `.formatted(.list(type: .and, width: .narrow).locale(locale))`: "a, b, c" in
+  English, 、 in Japanese and Chinese, "und" in German. `ListFormatStyle.ListType`
+  has only `.and` and `.or` (there is no `.unit`), and `joined(separator: ", ")`
+  reads wrongly in four of the seven locales (W2797).
+- Format a count with its locale too: `n.formatted(.number.sign(strategy: .always()).locale(locale))`
+  for "+3", and U+2212 before `n.formatted(.number.locale(locale))` for "−2",
+  never `"+\(n)"` (W2797).
 
 ## Design
 
@@ -137,8 +196,10 @@ that has turned out wrong. Rules the app must follow belong in
   be cached under the scratchpad (`artifact-files/092b31aa-.../project/`);
   otherwise read it with the Artifact tool. `stride-mobile.css` holds the
   component specs, and the artboards (Main, Review, TabletReview, Targets,
-  Agents and others) show each screen. `Diff.dc.html` is not published; the diff
-  lines are in TabletReview.
+  Agents and others) show each screen. The cached copy can lack artboards: list
+  the live files with the Artifact tool (`action: "list"`, `scope: "files"`)
+  before deciding one is missing. `project/Diff.dc.html` is published, though
+  an older note here said it was not (W2797).
 - **Keep the design artifact current.** The artifact must always show the app
   as built plus what is still planned. When a task builds a screen or component
   differently from its artboard (layout, placement, a control, a state the
@@ -206,6 +267,9 @@ that has turned out wrong. Rules the app must follow belong in
   - iPhone Duo, iOS 27.2: `36216F0B-E373-43FB-AD2D-7B865897C011`
   - iPhone 17, iOS 26.4 (CI repro): `65FEB951-BC19-4DB3-B21F-694E01C50091`
   - iPad (A16), iOS 26.4: `DAA6D668-0204-4934-BA97-63084A1DD624`
+  - iPhone 15, iOS 17.5 (the app's minimum; for test runs, and the simulator tool
+    asks the user once before its first screenshot): `BCAC81DE-3D1B-4AF3-AE84-0A4EFE02192B`
+  - iPhone 16, iOS 18.6 (the same): `D3A49076-FA01-4039-B8AB-7C67EA1B077C`
 - Plain `xcodebuild` needs no consent, so `mix ios.test` runs on any simulator;
   only the simulator tool needs an approved one. Never work around the prompt.
 - Boot a simulator with `xcrun simctl bootstatus <UDID> -b` before a run. A run
@@ -220,6 +284,30 @@ that has turned out wrong. Rules the app must follow belong in
   narrow split view where the screen allows. German at the largest size can fit
   an iPad without scrolling, so check scrolling on a phone.
 
+## Gestures
+
+- A SwiftUI `DragGesture` inside a `ScrollView`, even as `.simultaneousGesture`,
+  stops a fast vertical flick that starts on it from scrolling on iOS 18 and
+  later, while a slow drag still scrolls, so slow manual checks and XCUI's
+  `.fast` drag both miss it. Page sideways with a `UIGestureRecognizerRepresentable`
+  `UIPanGestureRecognizer` instead, whose delegate's `gestureRecognizerShouldBegin`
+  passes only a mostly sideways velocity, as `DiffPagingSwipe` does; it needs
+  no other delegate method (W2797).
+- Never return true from `shouldRecognizeSimultaneouslyWith` for every
+  recognizer: iOS 26 and 27's swipe back from anywhere on a pushed screen then
+  takes the right swipe too and leaves the screen. A `UISwipeGestureRecognizer`
+  representable never paged under XCUI's `swipeLeft()` at all. Break-check each
+  delegate method you add: W2797's two extra ones turned out to do nothing.
+- To test a flick, drag with `press(forDuration: 0, thenDragTo:, withVelocity:
+  XCUIGestureVelocity(5000), thenHoldForDuration: 0)` and check how far a
+  header moved: the broken gesture moved it 0 points, the fix about 2,000
+  (`DiffUITests.testAFastFlickOnTheCodeScrolls`, W2797).
+- SwiftUI makes a representable's recognizer lazily, on the first touch and
+  again after the content changes. To see what one does, `NSLog` from it in a
+  scratch copy and read `xcrun simctl spawn <UDID> log show --last 2m --style
+  compact --predicate 'process == "Stride" AND eventMessage CONTAINS "TAG"'`;
+  the xcodebuild log holds the test runner's output, not the app's (W2797).
+
 ## Snapshot tests
 
 - There is no snapshot library and no stored reference image. "Snapshot test"
@@ -229,14 +317,25 @@ that has turned out wrong. Rules the app must follow belong in
   `drawnRows`, `drawnWidth`). Do not add a snapshot package for a task that says
   "snapshot"; extend `Drawing`.
 - `drawnRows` and `drawnWidth` compare against the top-left pixel, so they only
-  measure a view that does not paint the whole window. In a 1600-high window
-  `lastDrawnRow` landed near the bottom for any view, so measure a view's
-  height with `drawnRows`, not `lastDrawnRow`.
+  measure a view that does not paint the whole window. `firstDrawnRow` and
+  `lastDrawnRow` find a view's top and bottom; before W2797's flip (below)
+  `lastDrawnRow` found its top, which is why it once seemed to land near the
+  bottom of a 1600-high window for any view.
+- A `CGContext` bitmap has its origin at the bottom left, so `Drawing` flips it
+  before `drawHierarchy`; until W2797 it did not, and row 0 was the bottom of
+  the window. The window keeps its safe area, so a view starts under the
+  status bar's inset, which differs between models: give a part that a test
+  samples at fixed points `.ignoresSafeArea()`, as `SnapshotTests.reviewPart`
+  does. `inkBands` counts none when its point matches the corner, so a point
+  that misses the shape fails instead of counting the whole column.
 - `inkBands(x:y:)` counts the bands of ink inside a filled shape, such as a
   verdict tile, from a point on its fill: one band when the mark and the name
   sit side by side, two when they stack. Use it to test a layout that must
   stack at the accessibility sizes; the accessibility audit does not report
   a word broken mid-line (W2796).
+- `darkest(in:)` reads one band of rows, such as a button's line, to tell
+  enabled ink from disabled; a view's top line starts at `firstDrawnRow`
+  (`replyCancelWaitsWhileSending`, W2797).
 - `Drawing` takes no locale; wrap the view in
   `.environment(\.locale, Locale(identifier: "de"))`, as the previews do.
 - CI runs the drawing suites `SnapshotTests` and `SharedViewSnapshotTests`
@@ -282,6 +381,12 @@ that has turned out wrong. Rules the app must follow belong in
   nil falls through to `replacing:` and then the fixture. Use it when one test
   needs different answers from the same operation, such as a queue before and
   after a review is decided elsewhere (`ReviewQueueModelTests`, W2795).
+- `FixtureAPI(status:)` picks a status per call from the operation id and is
+  read before `statuses:`, so a test can answer 409 once and the fixture
+  after it (`DiffModelTests.filesChanged`, W2797).
+- The fixtures hold one file diff, `lib/example/greeting.ex`, and answer it
+  for every index, so a diff test reads the position from the target and the
+  content from the fixture (W2797).
 - `DecisionFixtures.reviewsData(editingItems:)` edits `listMyReviews`, whose
   `data` is a bare array, as `data(editingItems:)` edits `listMyDecisions`'
   `data.items` (W2795).
@@ -289,6 +394,10 @@ that has turned out wrong. Rules the app must follow belong in
   its rows reuse the `card-identifier` and `card-age` identifiers, so the
   existing audit filters (`isUnderBarsContrast`, `isOnLazyCard`,
   `isOnCardMonoText`) cover it with no new filter (the Review queue, W2795).
+
+- To prove a repeated state was not delivered, count deliveries in the type
+  under test (`LiveChannel.deliveries(of:)`) rather than waiting a while and
+  checking nothing arrived, which only passes slowly (W2797).
 
 ## Test side effects
 
@@ -301,9 +410,35 @@ that has turned out wrong. Rules the app must follow belong in
 ## Versions
 
 - CI (`.github/workflows/ios.yml`) pins Xcode 26.6 and iOS 26.5; this Mac has
-  Xcode 27.2 and runtimes 27.2 and 26.4, and no iOS 17 runtime. Say in the
-  completion notes that CI's Xcode was not run locally. Run the iOS 26.4
-  simulators when a change touches UI tests or accessibility.
+  Xcode 27.2 and runtimes 27.2, 26.4, 18.6 and 17.5. Say in the completion
+  notes that CI's Xcode was not run locally. Run the iOS 26.4 simulators when
+  a change touches UI tests or accessibility, and the iOS 17.5 and 18.6
+  iPhones when it adds an `#available` branch or an API newer than iOS 17.
+- Xcode 27.2's `xcodebuild -downloadPlatform iOS -buildVersion 17.5` answers
+  "not available for download", but Settings › Components lists iOS 17 and 18
+  runtimes and installs them. The newest iPhone an iOS 17.5 runtime takes is
+  the iPhone 15.
+- The first runs on iOS 17.5 and 18.6 (W2797) failed four tests from earlier
+  tasks, each a real difference from iOS 26 and 27, now fixed:
+  - A pushed screen's back button is `BackButton` only from iOS 26; on 17 and
+    18 it has no identifier and the label "Back". Match either.
+  - iOS 18's audit fails a `NavigationLink` row whose content is its own
+    `.accessibilityElement(children: .contain)` with an identifier and no
+    label ("Element has no description"). Give a linked card no container of
+    its own; the link reads its parts as one button.
+  - The iOS 17 and 18 audit reports medium-weight Geist text as clipped when
+    it is whole ("Prüfungen" in the Now filter, German, largest text). Regular
+    weight passes; stacking, lifting the line limit and the scale factor, and
+    passing the weight in the font did not. The variable font is the likely
+    cause. It is filtered before iOS 26 only (`isNowFilterLabelClippedBeforeIOS26`).
+  - `Drawing` drew upside down (see Snapshot tests), so a point the verdict
+    tile test meant to sample on the tile was blank background, and a 4-pixel
+    corner that iOS 17.5 antialiased differently added a band.
+- A UI test that ends in "Lost connection to the application" may be a crash
+  inside XCTest, not the app: read the newest `Stride-*.ips` in
+  `~/Library/Logs/DiagnosticReports`. On iOS 17.5 one was a segfault in
+  `XCTAutomationSupport` after the system quarantined the app's logging for
+  volume (W2797).
 - iOS 26 and 27 report a contrast failure on plain text when a
   `performAccessibilityAudit` call also resizes text, because the screen is
   still scrolling; `app.auditAccessibility()` runs the contrast check alone
@@ -313,7 +448,23 @@ that has turned out wrong. Rules the app must follow belong in
   `surface-sunken`. Read the failed test's "Element Screenshot" with `xcrun
   xcresulttool export attachments` to see which text it judged, then ignore
   only that element by an identifier on its container, as `isOnNowFilterCount`
-  and `isOnAttemptRowValue` do (W2794). iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
+  and `isOnAttemptRowValue` do (W2794). The same goes for a semibold
+  footnote status pill: the diff header's "flagged" pill (`st-blocked` on
+  `st-blocked-soft`, about 7:1 in dark) failed in dark on the iOS 27.2 iPad
+  and both iOS 26.4 simulators while the iOS 27.2 iPhone passed it, so a run
+  on the iPhone alone, as `after_doing` does, misses it; `isOnFlaggedPill`
+  ignores it by its identifier (W2797). The issue text says only "Contrast
+  failed for SwiftUI.AccessibilityNode"; the element screenshot names it.
+  Each failing audit here reported a single issue, so a new filter can
+  uncover the next misjudged element: after adding one,
+  rerun the whole suite on every simulator. In W2797 the pill's filter
+  uncovered a diff line judged from its lone line number "1" on both iPads
+  (`isOnDiffLineOnIPad`), and on iOS 26 the file screen's "Back to verdicts"
+  and a review section's heading just above the tab bar at the largest
+  text (`diff-bottom-bar` and `review-section-heading` in
+  `isOnReviewContrastMisjudgedOnIOS26`). Export the attachments of a run
+  you keep: `mix ios.test` reuses its derived data, and a later run removes
+  the earlier result bundle. iOS 26 reports some SwiftUI `Link`s as buttons, so a UI test finds a
   link as a link or a button (commit 7975ed01).
 - `performAccessibilityAudit` reaches every element of a scrolled screen by
   itself, scrolling as it goes, and leaves the screen near the top, so an audit
@@ -329,7 +480,7 @@ that has turned out wrong. Rules the app must follow belong in
   (once from a crop of the Approve button's lower edge), its header avatar and
   its `ink-2` "Flagged first" on every run, from a fresh launch too, while iOS
   27.2 passed them and their pairs reach 4.5:1; `ReviewUITests` ignores those
-  three containers on iOS 26 only (`#unavailable(iOS 27)`). CI runs the
+  three containers on iOS 26 only (a `guard #available(iOS 26, *)` and a `guard #unavailable(iOS 27)`; Swift rejects both in one statement. Until W2797 it had only the second, which also let iOS 17 and 18 skip them). CI runs the
   XCUITests on iOS 26.5, so run the 26.4 simulators before completing (W2796).
 - On the iOS 26.4 iPad, `ShellUITests.testEachTabOpensWithVoiceOverLabels`
   fails contrast on the Review queue's "3 waiting" (`ink-3` on `bg`, over
@@ -355,6 +506,40 @@ that has turned out wrong. Rules the app must follow belong in
   fails "Label not human-readable". Build a reading in the view model, such as
   "Logo.png in mobile/ios/Stride/Assets.xcassets, 3 lines added", and give the
   row that label (W2796).
+- `.accessibilityElement(children: .ignore)` gives VoiceOver one element, but
+  XCUI and the audit still see the children: the audit failed a diff line's
+  thin "−" marker (7.3:1 in dark) from a 7-by-16-point crop.
+  `.accessibilityHidden(true)` on that child did not take it out of XCUI or the
+  audit, as W2793 found for a sidebar count: search this skill before trying a
+  fix it may already rule out. Merge such a glyph into a neighbouring text
+  instead, as `DiffLineContent.gutter(in:)` puts the marker after the line
+  number, so there is no element of its own to fail (W2797).
+- Each audit call stops at the first issue it fails on, so one fix can
+  uncover the next: W2797's diff screen failed a marker's contrast, then a
+  blank hunk gutter as clipped text, then a header count's hit area, then a
+  heading half under the pinned bottom bar. Dump every issue the handler sees
+  in one run (below) rather than fixing them one run at a time.
+- The hit-area check holds every element on a screen with screen-wide
+  `.accessibilityAction(named:)` actions (or under a gesture) to 44 points, so
+  short plain texts fail: the diff header's "+3 −1" (35 by 16), "Elixir" and
+  even the 163-wide path. `.isStaticText` and moving the swipe onto the code
+  block did not help, and padding each text to a 44 by 20 frame only moved the
+  failure to the next text. `.accessibilityRespondsToUserInteraction(false)` on
+  each text that is not a control fixed them all (`DiffHeader`, `DiffNoteRow`,
+  W2797).
+- An audit filter that tells a pinned bar's own buttons apart by whether an
+  element's middle lies inside the bar also lets through a heading half under
+  the bar. Test membership instead: look for the element's label among the
+  bar's descendants, as `isUnderBarsContrast` does (W2797).
+- To see what an audit failed without exporting attachments, print
+  `issue.compactDescription` and `issue.element?.debugDescription` from the
+  issue handler, and `app.debugDescription` before the audit, in a one-off run;
+  remove the prints before review (W2797).
+- A navigation title that is a file name ("greeting.ex") fails "Label not
+  human-readable" at the largest text. A title takes no accessibility label,
+  and a principal toolbar `Text` would clip at the accessibility sizes, so
+  `isFileNameTitle` ignores that one issue only on a navigation bar title that
+  `diff-path`'s reading ("greeting.ex in lib/example") names (W2797).
 - An iPad audit failure on a count inside a tile can name the count as its own
   node without the tile's identifier; match it by frame containment in the
   tile, as `isOnCriteriaTile` does (W2796).
@@ -494,7 +679,7 @@ that has turned out wrong. Rules the app must follow belong in
   [docs/ios-cache.md](../../../docs/ios-cache.md) has the design.
 - The app supports iOS 17, so `#Unique`, `#Index`, `ModelContainer.deleteAllData()`,
   `Mutex` and AsyncSequence primary associated types are out without
-  `#available`; this Mac has no iOS 17 runtime, so only the compiler checks it.
+  `#available`; run the iOS 17.5 iPhone to check the branch that lacks them.
 - `ModelContainer` is Sendable and a `ModelContext` is not: open a fresh context
   inside each synchronous actor method and never let it or a model leave. A plain
   actor is used instead of `@ModelActor`, which on iOS 17 runs on the main queue
@@ -507,6 +692,11 @@ that has turned out wrong. Rules the app must follow belong in
   the change a moment later (W2791's break-it run caught a test that missed this).
 - A docs edit is outside `mobile/`, so a task that adds `docs/ios-*.md` runs the
   whole Elixir suite in `after_doing` (see Hook modes).
+- A child entry is stored only while its parent is cached: `.reviewFile`
+  needs `.review(taskID:)`, or `store` throws `parentNotCached`. So a model
+  that refreshes the parent (after a 409) stores it before the child, and an
+  offline test loads the parent first. Storing the parent under a new
+  generation drops its other generations' children (W2797).
 
 ## Live updates
 
@@ -568,12 +758,81 @@ that has turned out wrong. Rules the app must follow belong in
   the decision calls, so `ReviewModel.show(_:)` takes a `ReviewConflict` and
   the tests build one directly. An `edited` conflict reads as Resubmitted
   (W2796).
-- The diff screen is not built yet: `.reviewFile(taskID, index:path:)` shows
-  only the path (`review-file-path`), and a file with no stored diff
-  (`index` nil) does not open (W2796).
+- A file row opens `.reviewFile(ReviewFileTarget)`, which shows `DiffView`
+  and pages through the review's other files with a stored diff; a file with
+  no stored diff (`index` nil) does not open (`ReviewContent.fileTarget(for:)`,
+  W2797).
 - Resolve a catalog string in a test with
   `LocalizedStringResource.resolved(in: Locale(identifier: "en"))`, not
   `String(localized:)`, which follows the simulator's language (W2796).
+
+## Skill review before completion
+
+- Before dispatching the task reviewer, and again before completing, review
+  every new and changed Swift file against `swiftui-pro`, `swift-testing-pro`
+  and `swift-concurrency-pro`, and fix every finding, the low ones too. The
+  user asked for this after W2796's skill review found more than twenty issues
+  that loading the skills while writing had not prevented (W2797).
+- Apply what that review found while writing, not after:
+  - A model's failure handler checks the data version as well as its request
+    counter, so a failed reload never marks a newer live list offline
+    (`NowModel`, `ReviewQueueModel`).
+  - `TimelineView(.everyMinute)`, never `.periodic(from: .now, by:)`, which
+    takes a new start date on every body pass.
+  - A sheet that sends disables its Cancel button while sending, not only the
+    swipe to dismiss.
+  - Join two translated sentences through one catalog string with
+    placeholders (`now_ready_empty_body`), never `joined(separator: " ")`:
+    Japanese and Chinese put no space between sentences (W2797).
+  - Pick the expanded layout with `sizeClass == .regular`, so an unknown size
+    class gets the compact one.
+  - A button whose action is not built yet is disabled, never enabled with an
+    empty closure; the review bar waits on `ReviewModel.canDecide` (W2797).
+  - One type per file, and a view two features share goes in
+    `DesignSystem/Views` under a neutral name, not `Now…` (W2797).
+  - Tests: `#require` for a helper's preconditions, with a `sourceLocation`
+    parameter; a wait helper records an issue when it times out; a semaphore
+    gate is released with `defer`; never compare a function's output with the
+    same function; never index through `?? []`, which crashes the test host,
+    but `try #require(x.dropFirst(n).first)`; a loop over cases becomes
+    `@Test(arguments:)`; write `== false` inside `#expect`, not `!`; never
+    `preconditionFailure` in an injected closure.
+  - A UI assertion must be able to fail: an element off screen in a lazy list
+    never `exists`, so `XCTAssertFalse(...exists)` on it proves nothing. Match
+    Back by `identifier == "BackButton"`.
+  - Two kinds of element with one identifier make `firstMatch` pick the wrong
+    one: the diff's file notes and inline notes now have their own (W2797).
+  - The second review of W2797 still found these, so check them as you write:
+    - A layout decision over the data (tiles two to a row, which tiles have a
+      note) is a computed property on the content value with a unit test
+      (`ReviewContent.tileRows`, `failedNotes`), not a `stride` or `filter`
+      in the view body.
+    - A subview takes the values and closures it uses (`canDecide`,
+      `approvableHere`, `approve`), never the whole view model.
+    - Reuse the shared view (`DecisionIdentifier`) rather than repeating its
+      text, colour and identifier in a feature's header.
+    - Never name a generic parameter `Body`, which shadows `View.Body`; use
+      `Content`.
+    - A `ForEach` over values that can repeat (notes, rows) uses
+      `Array(x.enumerated())` with `id: \.offset`.
+    - A model's async reload checks its request counter after every `await`,
+      the cache store too, so a page or a newer request mid-store wins; test it
+      with a blocking `now` in `Cache` (`DiffModelTests.pageDuringReload`).
+    - Test doubles go in `StrideTests/Support/` (`IdleConnection`), shared UI
+      test steps in `StrideUITests/StubSignIn.swift` (`launchSignedIn`,
+      `openFirstReview`, `tabControl`, `scroll(untilHittable:)`), never a
+      private copy per suite.
+    - Never nest `#require` inside another `#require`: the build fails with
+      "recursive expansion of macro" (inside `#expect` it compiles). Bind the
+      inner value first (W2797).
+    - `try #require` a range's bound before building the range from it; a
+      UI test waits for an element to exist before asserting on `isEnabled`.
+    - A `FixtureAPI` that gives every call the same error answer hides a
+      retry or a fallback: the second ask fails the same way, so the test
+      still passes. Answer only the first call with the error (count calls in
+      `onSend`, then pick in `answering` and `status`) and assert the number
+      of calls. In W2797 the "409 for a path the new list lacks" test passed
+      with a fallback to the first file until it did this.
 
 ## Break-it checks
 
@@ -594,6 +853,13 @@ that has turned out wrong. Rules the app must follow belong in
   typed `let` first.
 - A broken `AsyncStream` that never ends makes a run take minutes; use a time
   limit trait on such tests.
+- Script the breaks: one entry per test with the file, the exact text, its
+  replacement and the test's name copied from its `@Test("...")`, checked to
+  occur once before any build. Record every test that failed, not only a match:
+  in W2797 two breaks read as missed because the expected name was a guess,
+  while the right tests had failed. Run each break with `-only-testing:` on its
+  own suite, so a build costs seconds, and end with a run of every touched suite
+  restored (W2797).
 - Read a failed test's name from the log as the whole quoted string after
   `Test "`; cutting it at a word such as " with" also cuts "without" and turns a
   caught break into a false miss (W2792). Pick breaks that fail fast, such as

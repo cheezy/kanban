@@ -91,7 +91,7 @@ struct SharedViewContentTests {
         #expect(english.contains("AM"))
         #expect(german.hasPrefix("Offline · Stand von "))
         #expect(german.hasSuffix("0:00"))
-        #expect(!german.contains("AM"))
+        #expect(german.contains("AM") == false)
     }
 
     @Test("a decision's age is its largest unit, and nothing without a start")
@@ -107,5 +107,17 @@ struct SharedViewContentTests {
         // A clock behind the server's says no time has passed.
         #expect(content.age(at: since.addingTimeInterval(-60), in: english) == "0m")
         #expect(DecisionCardContent(kind: .review, identifier: "W1", title: "T").age(at: since, in: english) == nil)
+    }
+
+    @Test("a file's line counts carry their sign and the locale's grouping", arguments: [
+        ("en", 3, "+3", "\u{2212}3"),
+        ("en", 1234, "+1,234", "\u{2212}1,234"),
+        ("de", 1234, "+1.234", "\u{2212}1.234"),
+    ])
+    func lineCounts(locale: String, count: Int, added: String, removed: String) {
+        let locale = Locale(identifier: locale)
+
+        #expect(LineCountText.added(count, in: locale) == added)
+        #expect(LineCountText.removed(count, in: locale) == removed)
     }
 }

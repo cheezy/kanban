@@ -71,29 +71,31 @@ struct LiveChannelTests {
         await eventually("it closes the socket") { connection.actions.last == .close }
         #expect(connection.actions.suffix(3) == [.leave(.inbox), .leave(.agents), .close])
         #expect(await live.current == .idle)
-        #expect(await !live.isRunning)
+        #expect(await live.isRunning == false)
     }
 
     @Test("the same state again is not delivered")
     func sameStateOnce() async throws {
         let live = server.channel()
         var updates = await live.updates(of: .inbox).makeAsyncIterator()
+        var agents = await live.updates(of: .agents).makeAsyncIterator()
         let connection = try await server.connection(1)
         connection.send(.opened)
         try connection.push(.inbox, Self.decisions())
         #expect(await updates.next() == Self.decisionsUpdate())
+        #expect(await live.deliveries(of: .inbox) == 1)
 
-        // The stream keeps only the newest update, so the change comes later:
-        // were the repeat delivered, it would be read before the change arrives.
-        let repeated = try Self.decisions()
+        // The channel handles the socket's events in order, so once the agents'
+        // update arrives the repeat sent before it has been handled.
+        try connection.push(.inbox, Self.decisions())
+        try connection.push(.agents, FixtureAPI.fixture(named: "listMyAgents"))
+        #expect(await agents.next() == Self.agentsUpdate())
+        #expect(await live.deliveries(of: .inbox) == 1)
+
         let changed = try Self.changedDecisions()
-        Task {
-            connection.push(.inbox, repeated)
-            try? await Task.sleep(for: .milliseconds(200))
-            connection.push(.inbox, changed)
-        }
-
+        connection.push(.inbox, changed)
         #expect(await updates.next() == Self.decisionsUpdate(changed))
+        #expect(await live.deliveries(of: .inbox) == 2)
     }
 
     @Test("a new listener gets the newest state at once, without another join")
@@ -240,7 +242,7 @@ struct LiveChannelTests {
 
         await live.resume()
 
-        #expect(await !live.isRunning)
+        #expect(await live.isRunning == false)
         #expect(server.asked == 0)
         #expect(await live.current == .idle)
     }
@@ -263,7 +265,7 @@ struct LiveChannelTests {
 
         await eventually("it signs out") { server.signOuts == 1 }
         #expect(await live.current == .signedOut)
-        #expect(await !live.isRunning)
+        #expect(await live.isRunning == false)
         #expect(server.asked == 2)
         #expect(server.connections.count == 1)
     }
@@ -304,7 +306,7 @@ struct LiveChannelTests {
 
         #expect(connection.actions.last == .close)
         #expect(await live.current == .idle)
-        #expect(await !live.isRunning)
+        #expect(await live.isRunning == false)
 
         var next = await live.updates(of: .inbox).makeAsyncIterator()
         let second = try await server.connection(2)
@@ -322,7 +324,7 @@ struct LiveChannelTests {
         defer { listener.stop() }
 
         await eventually("it stops") { await live.current == .unavailable }
-        #expect(await !live.isRunning)
+        #expect(await live.isRunning == false)
         #expect(server.connections.isEmpty)
         #expect(server.signOuts == 0)
 

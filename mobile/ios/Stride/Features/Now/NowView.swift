@@ -65,11 +65,11 @@ struct NowView: View {
     private var content: some View {
         switch model.state {
         case .loading:
-            NowSkeleton()
+            LoadingSkeleton(label: .nowLoading, cardHeight: 140, identifier: "now-loading")
         case .nothingSaved:
-            NowNothingSaved()
+            NothingSavedView(message: .nowOfflineNothing, identifier: "now-nothing-saved")
         case .empty:
-            NowEmptyState()
+            EmptyStateView(message: .nowEmpty, identifier: "now-empty")
         case .cards:
             LazyVStack(spacing: 12) {
                 ForEach(model.visibleCards) { card in

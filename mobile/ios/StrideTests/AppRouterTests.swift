@@ -125,7 +125,10 @@ struct AppRouterTests {
                 asked.withLock { $0 += 1 }
                 return .unavailable
             },
-            connect: { _ in preconditionFailure("an unavailable answer never connects") },
+            connect: { _ in
+                Issue.record("an unavailable answer never connects")
+                return IdleConnection()
+            },
             pause: { _ in },
             signOut: {}
         )
@@ -145,7 +148,10 @@ struct AppRouterTests {
     func signOutForgetsLive() async {
         let live = LiveChannel(
             socketToken: { .failed },
-            connect: { _ in preconditionFailure("a failed answer never connects") },
+            connect: { _ in
+                Issue.record("a failed answer never connects")
+                return IdleConnection()
+            },
             pause: { _ in try await Task.sleep(for: .seconds(3600)) },
             signOut: {}
         )
@@ -155,9 +161,9 @@ struct AppRouterTests {
 
         router.follow(.signIn)
 
-        await Self.waitFor { await !live.isRunning }
+        await Self.waitFor { await live.isRunning == false }
         withExtendedLifetime(updates) {}
-        #expect(await !live.isRunning)
+        #expect(await live.isRunning == false)
         #expect(await live.current == .idle)
     }
 
@@ -271,17 +277,21 @@ struct AppRouterTests {
         #expect(AppTab.allCases.map { $0.title.resolved(in: Locale(identifier: "de")) } == ["Jetzt", "Überprüfung", "Boards", "Agenten"])
     }
 
-    /// Waits up to five seconds for `condition`.
-    private static func wait(until condition: () -> Bool) async {
+    /// Waits up to five seconds for `condition`, and records an issue at the
+    /// caller when it never holds.
+    private static func wait(sourceLocation: SourceLocation = #_sourceLocation, until condition: () -> Bool) async {
         for _ in 0..<500 where !condition() {
             try? await Task.sleep(for: .milliseconds(10))
         }
+        #expect(condition(), "timed out", sourceLocation: sourceLocation)
     }
 
-    private static func waitFor(_ condition: () async -> Bool) async {
+    /// `wait(until:)` for a condition that awaits.
+    private static func waitFor(sourceLocation: SourceLocation = #_sourceLocation, _ condition: () async -> Bool) async {
         for _ in 0..<500 {
             if await condition() { return }
             try? await Task.sleep(for: .milliseconds(10))
         }
+        #expect(await condition(), "timed out", sourceLocation: sourceLocation)
     }
 }

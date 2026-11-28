@@ -12,12 +12,12 @@ enum DecisionFixtures {
     typealias List = Components.Schemas.DecisionList
 
     /// The fixture's body with `edit` applied to its list of items.
-    static func data(editingItems edit: (inout [[String: Any]]) -> Void = { _ in }) throws -> Data {
+    static func data(editingItems edit: (inout [[String: Any]]) throws -> Void = { _ in }) throws -> Data {
         let fixture = try FixtureAPI.fixture(named: Operations.ListMyDecisions.id)
         var root = try #require(try JSONSerialization.jsonObject(with: fixture) as? [String: Any])
         var data = try #require(root["data"] as? [String: Any])
         var items = try #require(data["items"] as? [[String: Any]])
-        edit(&items)
+        try edit(&items)
         data["items"] = items
         root["data"] = data
         return try JSONSerialization.data(withJSONObject: root)
@@ -25,22 +25,22 @@ enum DecisionFixtures {
 
     /// The `listMyReviews` fixture's body with `edit` applied to its queue,
     /// which is the bare `data` array.
-    static func reviewsData(editingItems edit: (inout [[String: Any]]) -> Void = { _ in }) throws -> Data {
+    static func reviewsData(editingItems edit: (inout [[String: Any]]) throws -> Void = { _ in }) throws -> Data {
         let fixture = try FixtureAPI.fixture(named: Operations.ListMyReviews.id)
         var root = try #require(try JSONSerialization.jsonObject(with: fixture) as? [String: Any])
         var items = try #require(root["data"] as? [[String: Any]])
-        edit(&items)
+        try edit(&items)
         root["data"] = items
         return try JSONSerialization.data(withJSONObject: root)
     }
 
     /// The `getMyReview` fixture's body with `edit` applied to its review,
     /// the `data` object.
-    static func reviewData(editing edit: (inout [String: Any]) -> Void = { _ in }) throws -> Data {
+    static func reviewData(editing edit: (inout [String: Any]) throws -> Void = { _ in }) throws -> Data {
         let fixture = try FixtureAPI.fixture(named: Operations.GetMyReview.id)
         var root = try #require(try JSONSerialization.jsonObject(with: fixture) as? [String: Any])
         var review = try #require(root["data"] as? [String: Any])
-        edit(&review)
+        try edit(&review)
         root["data"] = review
         return try JSONSerialization.data(withJSONObject: root)
     }
@@ -56,7 +56,7 @@ enum DecisionFixtures {
     }
 
     /// The fixture's cards, as the Now screen reads them.
-    static func cards(editingItems edit: (inout [[String: Any]]) -> Void = { _ in }) async throws -> [NowCard] {
+    static func cards(editingItems edit: (inout [[String: Any]]) throws -> Void = { _ in }) async throws -> [NowCard] {
         try await list(data(editingItems: edit)).items.compactMap(NowCard.init)
     }
 }
@@ -127,10 +127,12 @@ final class TemporaryContainer {
     }
 }
 
-/// Waits up to five seconds for `condition`.
+/// Waits up to five seconds for `condition`, and records an issue at the
+/// caller when it never holds.
 @MainActor
-func waitUntil(_ condition: () -> Bool) async {
+func waitUntil(sourceLocation: SourceLocation = #_sourceLocation, _ condition: () -> Bool) async {
     for _ in 0..<500 where !condition() {
         try? await Task.sleep(for: .milliseconds(10))
     }
+    #expect(condition(), "timed out", sourceLocation: sourceLocation)
 }

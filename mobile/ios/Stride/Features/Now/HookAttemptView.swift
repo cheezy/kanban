@@ -54,9 +54,9 @@ struct HookAttemptView: View {
             .frame(maxWidth: .infinity, minHeight: 88)
         case .loaded(let hook):
             VStack(spacing: 0) {
-                row(.nowAttemptExitCode, value: hook.exitCodeText(in: locale))
+                HookAttemptRow(name: .nowAttemptExitCode, value: hook.exitCodeText(in: locale))
                 Divider().overlay(ColorToken.line.color)
-                row(.nowAttemptDuration, value: hook.durationText(in: locale))
+                HookAttemptRow(name: .nowAttemptDuration, value: hook.durationText(in: locale))
             }
             .padding(.horizontal, 14)
             .background(ColorToken.surface.color, in: RoundedRectangle(cornerRadius: DesignTokens.Radius.lg))
@@ -70,39 +70,6 @@ struct HookAttemptView: View {
                 .foregroundStyle(ColorToken.stBlocked.color)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    /// A name on the left and its value on the right, or one above the other
-    /// when they do not fit side by side.
-    private func row(_ name: LocalizedStringResource, value: String) -> some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline) {
-                rowName(name)
-                Spacer(minLength: 12)
-                rowValue(value)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                rowName(name)
-                rowValue(value)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.vertical, 12)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("attempt-row")
-    }
-
-    private func rowName(_ name: LocalizedStringResource) -> some View {
-        Text(name)
-            .textStyle(.subheadline)
-            .foregroundStyle(ColorToken.ink2.color)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func rowValue(_ value: String) -> some View {
-        Text(verbatim: value)
-            .textStyle(.code)
-            .foregroundStyle(ColorToken.ink.color)
     }
 }
 

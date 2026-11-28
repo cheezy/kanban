@@ -82,7 +82,7 @@ struct SocketTokenAnswerTests {
         let answer = SocketTokenAnswer.token("EXAMPLE-socket-secret")
 
         for text in [String(describing: answer), String(reflecting: answer), "\(answer)", "\([answer])"] {
-            #expect(!text.contains("EXAMPLE-socket-secret"), "\(text)")
+            #expect(text.contains("EXAMPLE-socket-secret") == false, "\(text)")
         }
         #expect(Mirror(reflecting: answer).children.isEmpty)
     }

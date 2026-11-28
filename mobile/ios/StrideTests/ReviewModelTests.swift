@@ -17,11 +17,29 @@ struct ReviewModelTests {
         return ReviewModel(taskID: 4812, api: FixtureAPI(replacing: replacements, statuses: statuses).client)
     }
 
-    private static func loaded(_ data: Data? = nil) async throws -> ReviewContent {
+    private static func loaded(
+        _ data: Data? = nil,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) async throws -> ReviewContent {
         let model = model(data)
         await model.load()
-        #expect(model.state == .review)
-        return try #require(model.content)
+        try #require(model.state == .review, sourceLocation: sourceLocation)
+        return try #require(model.content, sourceLocation: sourceLocation)
+    }
+
+    /// Applies `change` to element `index` of the review's `key` array, and
+    /// stops the test when the fixture has no such element.
+    private static func edit(
+        _ key: String,
+        at index: Int,
+        of review: inout [String: Any],
+        sourceLocation: SourceLocation = #_sourceLocation,
+        _ change: (inout [String: Any]) -> Void
+    ) throws {
+        var list = try #require(review[key] as? [[String: Any]], "no \(key)", sourceLocation: sourceLocation)
+        try #require(list.indices.contains(index), "no \(key)[\(index)]", sourceLocation: sourceLocation)
+        change(&list[index])
+        review[key] = list
     }
 
     @Test("shows the header, the summary and the sections from the server")
@@ -51,9 +69,7 @@ struct ReviewModelTests {
     @Test("shows 3 of 4 passed with the failed note")
     func threeOfFourPassed() async throws {
         let data = try DecisionFixtures.reviewData { review in
-            var verdicts = review["verdicts"] as? [[String: Any]] ?? []
-            verdicts[4]["status"] = "passed"
-            review["verdicts"] = verdicts
+            try Self.edit("verdicts", at: 4, of: &review) { $0["status"] = "passed" }
         }
         let content = try await Self.loaded(data)
 
@@ -75,9 +91,7 @@ struct ReviewModelTests {
     @Test("a section not assessed is a tile that did not pass, and a passed note is not shown")
     func notAssessed() async throws {
         let data = try DecisionFixtures.reviewData { review in
-            var verdicts = review["verdicts"] as? [[String: Any]] ?? []
-            verdicts[0]["note"] = "Every criterion has a test."
-            review["verdicts"] = verdicts
+            try Self.edit("verdicts", at: 0, of: &review) { $0["note"] = "Every criterion has a test." }
         }
         let content = try await Self.loaded(data)
 
@@ -86,25 +100,43 @@ struct ReviewModelTests {
         #expect(content.tiles.first?.note == nil)
     }
 
+    @Test("the tiles go two to a row, and the failed notes follow in the tiles' order")
+    func tileRowsAndNotes() async throws {
+        let content = try await Self.loaded()
+
+        #expect(content.tileRows.map { $0.map(\.verdict.section) } == [
+            [.acceptanceCriteria, .testingStrategy], [.patterns, .securityConsiderations],
+        ])
+        #expect(content.failedNotes == ["One view model reads the store directly."])
+
+        // Three tiles leave the last one a row of its own.
+        let three = try await Self.loaded(try DecisionFixtures.reviewData { review in
+            let verdicts = try #require(review["verdicts"] as? [[String: Any]])
+            review["verdicts"] = verdicts.filter { $0["section"] as? String != "security_considerations" }
+        })
+        #expect(three.tileRows.map { $0.map(\.verdict.section) } == [[.acceptanceCriteria, .testingStrategy], [.patterns]])
+    }
+
     @Test("a review with no verdicts shows no tiles")
     func noVerdicts() async throws {
         let content = try await Self.loaded(try DecisionFixtures.reviewData { $0["verdicts"] = [] })
 
         #expect(content.tiles.isEmpty)
         #expect(content.pitfalls == nil)
+        #expect(content.tileRows.isEmpty)
+        #expect(content.failedNotes.isEmpty)
     }
 
     @Test("a failed note in German is kept as the server sent it")
     func germanNote() async throws {
         let note = "Ein View-Model liest den Speicher direkt – Größe prüfen."
         let data = try DecisionFixtures.reviewData { review in
-            var verdicts = review["verdicts"] as? [[String: Any]] ?? []
-            verdicts[2]["note"] = note
-            review["verdicts"] = verdicts
+            try Self.edit("verdicts", at: 2, of: &review) { $0["note"] = note }
         }
         let content = try await Self.loaded(data)
 
-        #expect(content.tiles[2].note == note)
+        let third = try #require(content.tiles.dropFirst(2).first)
+        #expect(third.note == note)
     }
 
     @Test("verdicts show before the checks and the files, and an empty section is left out")
@@ -131,9 +163,7 @@ struct ReviewModelTests {
         #expect(content.tiles.dropFirst().allSatisfy { $0.criteria == nil })
 
         let oneMet = try await Self.loaded(try DecisionFixtures.reviewData { review in
-            var criteria = review["acceptance_criteria"] as? [[String: Any]] ?? []
-            criteria[1]["status"] = "not_met"
-            review["acceptance_criteria"] = criteria
+            try Self.edit("acceptance_criteria", at: 1, of: &review) { $0["status"] = "not_met" }
         })
         #expect(oneMet.tiles.first?.criteria == ReviewCriteriaCount(met: 1, count: 2))
 
@@ -166,44 +196,41 @@ struct ReviewModelTests {
         #expect(none.checksResult(in: Self.en).text == Self.english(.nowAttemptNotReported))
     }
 
-    @Test("the pitfalls pill says the verdict, not the section's name again")
-    func pitfallsText() async throws {
-        let passed = try await Self.loaded()
-        #expect(passed.pitfallsText(in: Self.en) == "Passed")
+    @Test("the pitfalls pill says the verdict, not the section's name again", arguments: [
+        ("passed", "Passed"),
+        ("failed", "Failed"),
+        ("not_assessed", "Not assessed"),
+    ])
+    func pitfallsText(status: String, word: String) async throws {
+        let content = try await Self.loaded(try DecisionFixtures.reviewData { review in
+            try Self.edit("verdicts", at: 3, of: &review) { $0["status"] = status }
+        })
 
-        for (status, word) in [("failed", "Failed"), ("not_assessed", "Not assessed")] {
-            let content = try await Self.loaded(try DecisionFixtures.reviewData { review in
-                var verdicts = review["verdicts"] as? [[String: Any]] ?? []
-                verdicts[3]["status"] = status
-                review["verdicts"] = verdicts
-            })
-            #expect(content.pitfallsText(in: Self.en) == word)
-        }
+        #expect(content.pitfalls?.section == .pitfalls)
+        #expect(content.pitfallsText(in: Self.en) == word)
+    }
 
+    @Test("a review with no verdicts shows no pitfalls pill")
+    func noPitfallsText() async throws {
         let none = try await Self.loaded(try DecisionFixtures.reviewData { $0["verdicts"] = [] })
+
         #expect(none.pitfallsText(in: Self.en) == nil)
     }
 
-    @Test("the security row counts each severity and is red only for critical or important")
-    func securityResults() async throws {
-        let minor = try await Self.loaded()
-        #expect(minor.securityResult(in: Self.en) == ReviewResult(text: "1 minor", tone: .stDoing))
-
-        let mixed = try await Self.loaded(try DecisionFixtures.reviewData { review in
-            review["security_findings"] = ["critical": 1, "important": 0, "minor": 2]
+    // An important finding with no critical one is still red. A nil count
+    // leaves the fixture's one minor finding.
+    @Test("the security row counts each severity and is red only for critical or important", arguments: [
+        (nil, "1 minor", ColorToken.stDoing),
+        (["critical": 1, "important": 0, "minor": 2], "1 critical · 2 minor", .stBlocked),
+        (["critical": 0, "important": 1, "minor": 1], "1 important · 1 minor", .stBlocked),
+        (["critical": 0, "important": 0, "minor": 0], "No findings", .stDone),
+    ] as [([String: Int]?, String, ColorToken)])
+    func securityResults(findings: [String: Int]?, text: String, tone: ColorToken) async throws {
+        let content = try await Self.loaded(try DecisionFixtures.reviewData { review in
+            if let findings { review["security_findings"] = findings }
         })
-        #expect(mixed.securityResult(in: Self.en) == ReviewResult(text: "1 critical · 2 minor", tone: .stBlocked))
 
-        // An important finding with no critical one is still red.
-        let important = try await Self.loaded(try DecisionFixtures.reviewData { review in
-            review["security_findings"] = ["critical": 0, "important": 1, "minor": 1]
-        })
-        #expect(important.securityResult(in: Self.en) == ReviewResult(text: "1 important · 1 minor", tone: .stBlocked))
-
-        let none = try await Self.loaded(try DecisionFixtures.reviewData { review in
-            review["security_findings"] = ["critical": 0, "important": 0, "minor": 0]
-        })
-        #expect(none.securityResult(in: Self.en) == ReviewResult(text: "No findings", tone: .stDone))
+        #expect(content.securityResult(in: Self.en) == ReviewResult(text: text, tone: tone))
     }
 
     @Test("the exploratory row shows its findings, none, or the notes on the web")
@@ -235,26 +262,29 @@ struct ReviewModelTests {
         ])
 
         let root = try await Self.loaded(try DecisionFixtures.reviewData { review in
-            var files = review["files"] as? [[String: Any]] ?? []
-            files[0]["path"] = "README.md"
-            files[0]["additions"] = 1
-            files[0]["deletions"] = 1
-            review["files"] = files
+            try Self.edit("files", at: 0, of: &review) { file in
+                file["path"] = "README.md"
+                file["additions"] = 1
+                file["deletions"] = 1
+            }
         })
-        #expect(root.files[0].reading(in: Self.en) == "flagged, README.md, 1 line added, 1 line removed")
+        let readme = try #require(root.files.first)
+        #expect(readme.reading(in: Self.en) == "flagged, README.md, 1 line added, 1 line removed")
     }
 
     @Test("orders flagged files first")
     func flaggedFirst() async throws {
         let data = try DecisionFixtures.reviewData { review in
-            var files = review["files"] as? [[String: Any]] ?? []
             // The server sends flagged files first; the app keeps them first
             // even when an answer does not.
-            files[0]["flagged"] = false
-            files[0]["flag_reason"] = NSNull()
-            files[2]["flagged"] = true
-            files[2]["flag_reason"] = "security"
-            review["files"] = files
+            try Self.edit("files", at: 0, of: &review) { file in
+                file["flagged"] = false
+                file["flag_reason"] = NSNull()
+            }
+            try Self.edit("files", at: 2, of: &review) { file in
+                file["flagged"] = true
+                file["flag_reason"] = "security"
+            }
         }
         let content = try await Self.loaded(data)
 
@@ -271,10 +301,10 @@ struct ReviewModelTests {
     func fileWithoutDiff() async throws {
         let content = try await Self.loaded()
 
+        try #require(content.files.count == 3)
         #expect(content.files.map(\.opens) == [true, true, false])
-        #expect(content.files[0].additions == 120)
-        #expect(content.files[0].deletions == 4)
-        #expect(content.files[2].additions == nil)
+        #expect(content.files.map(\.additions) == [120, 64, nil])
+        #expect(content.files.first?.deletions == 4)
     }
 
     @Test("a review with no files shows no file list")
@@ -326,6 +356,8 @@ struct ReviewModelTests {
         let model = Self.model()
         await model.load()
         #expect(model.canAct)
+        // Nothing sends a decision yet, so the buttons stay disabled.
+        #expect(model.canDecide == false)
 
         model.show(Self.conflict(.alreadyDecided, status: .approved, by: "Sam Rivera"))
 

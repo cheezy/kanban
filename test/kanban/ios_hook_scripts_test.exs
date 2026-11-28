@@ -32,6 +32,70 @@ defmodule Kanban.IosHookScriptsTest do
       assert {_, 1} = run_script(repo, "ios_elixir_checks.sh", [{"STUB_MIX_FAILS", "test"}])
     end
 
+    test "adds the format check and credo on the string files when the app's strings changed",
+         %{repo: repo} do
+      write!(repo, "mobile/ios/View.swift")
+      write!(repo, "lib/kanban/mobile/strings/msgids.ex")
+      write!(repo, "priv/gettext/mobile.pot")
+      write!(repo, "priv/gettext/de/LC_MESSAGES/mobile.po")
+      write!(repo, "test/kanban/mobile/strings_test.exs")
+
+      assert {output, 0} = run_script(repo, "ios_elixir_checks.sh")
+      refute output =~ "STUB_SUITE_RAN"
+      sources = "lib/kanban/mobile/strings/msgids.ex test/kanban/mobile/strings_test.exs"
+
+      assert [_, _, _, _] =
+               Regex.run(
+                 ~r/(mix\[test\] test --warnings-as-errors test\/kanban\/mobile ).*(mix\[test\] format --check-formatted #{sources}\n).*(mix\[test\] credo --strict #{sources}\n)/s,
+                 output
+               )
+
+      refute output =~ "sobelow"
+    end
+
+    test "fails when the format check or credo fails on the string files", %{repo: repo} do
+      write!(repo, "lib/kanban/mobile/strings/msgids.ex")
+
+      for gate <- ~w(test format credo) do
+        assert {output, 1} = run_script(repo, "ios_elixir_checks.sh", [{"STUB_MIX_FAILS", gate}])
+        refute output =~ "STUB_SUITE_RAN"
+      end
+    end
+
+    test "runs only the tests when the string files changed are not Elixir", %{repo: repo} do
+      write!(repo, "priv/gettext/fr/LC_MESSAGES/mobile.po")
+
+      assert {output, 0} = run_script(repo, "ios_elixir_checks.sh")
+      refute output =~ "format"
+      refute output =~ "credo"
+    end
+
+    test "leaves a deleted string file out of the format check and credo", %{repo: repo} do
+      git!(repo, ["checkout", "--quiet", "main"])
+      write!(repo, "lib/kanban/mobile/strings/msgids.ex")
+      git!(repo, ["add", "-A"])
+      git!(repo, ["commit", "--quiet", "-m", "strings"])
+      git!(repo, ["checkout", "--quiet", "-B", "W1"])
+      git!(repo, ["rm", "--quiet", "lib/kanban/mobile/strings/msgids.ex"])
+      write!(repo, "test/kanban/mobile/strings_test.exs")
+
+      assert {output, 0} = run_script(repo, "ios_elixir_checks.sh")
+      assert output =~ "format --check-formatted test/kanban/mobile/strings_test.exs\n"
+      refute output =~ "msgids.ex"
+    end
+
+    test "runs the suite for the web's strings and the strings module's code", %{repo: repo} do
+      for path <- ["priv/gettext/de/LC_MESSAGES/default.po", "lib/kanban/mobile/strings.ex"] do
+        git!(repo, ["checkout", "--quiet", "--force", "W1"])
+        git!(repo, ["clean", "--quiet", "-fd"])
+        write!(repo, path)
+
+        assert {output, 0} = run_script(repo, "ios_elixir_checks.sh")
+        assert output =~ "#{path} is outside mobile/"
+        assert output =~ "STUB_SUITE_RAN"
+      end
+    end
+
     test "runs the suite and the static gates when anything else changed", %{repo: repo} do
       write!(repo, "mobile/ios/View.swift")
       write!(repo, "lib/x.ex")

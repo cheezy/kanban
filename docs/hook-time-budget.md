@@ -294,6 +294,15 @@ the task branch changed since it left `main`:
 
 - When only `mobile/` and `.github/workflows/ios.yml` changed, it runs the
   ExUnit tests that read those files, such as the fixture and contract checks.
+- The app's strings count as part of the iOS app: the msgid list
+  `lib/kanban/mobile/strings/msgids.ex`, `priv/gettext/mobile.pot`, each
+  locale's `mobile.po` and `test/kanban/mobile/strings_test.exs`. Nothing in
+  the web app reads the `mobile` domain. When any of them changed, it runs the
+  same tests, then `format --check-formatted` and `credo --strict` on the
+  Elixir files among them. This saves the two and a half minutes warm, and up
+  to about five cold, that the whole suite takes (the measurements above) on
+  every task that adds a visible string. The web's own `.po` files
+  and the code in `lib/kanban/mobile/strings.ex` still run the whole suite.
 - When anything else changed, or the branch's base cannot be found, it runs the
   partitioned suite, `format --check-formatted`, `credo --strict` and
   `sobelow --config`.

@@ -41,6 +41,24 @@ struct SnapshotTests {
         #expect(dark.lightest < 60)
     }
 
+    /// Pins which way up `Drawing` draws. Without its flip the rows ran from
+    /// the bottom of the window up, and a test that read the first drawn row
+    /// as the top line still passed when the bottom line behaved the same
+    /// (W2797).
+    @Test("Drawing's rows run from the top of the window down")
+    func drawingRunsTopDown() throws {
+        let band = VStack(spacing: 0) {
+            Color.white.frame(height: 10)
+            Color.black.frame(height: 20)
+            Color.white
+        }
+        .ignoresSafeArea()
+        let drawing = try Drawing(of: band, width: 100, height: 200)
+
+        #expect((9...11).contains(drawing.firstDrawnRow))
+        #expect((28...30).contains(drawing.lastDrawnRow))
+    }
+
     @Test("the root view shows the update screen when an update is required")
     func rootViewShowsUpdateScreen() throws {
         let required = try Drawing(of: Self.root(AppUpdateState(storeURL: Self.storeURL), Self.signedIn()))
@@ -170,6 +188,9 @@ struct SnapshotTests {
             .padding(16)
             .frame(width: 390)
             .frame(maxHeight: .infinity, alignment: .top)
+            // From the bitmap's top row, so a point such as (20, 30) is on
+            // the part on every device, whatever its status bar's height.
+            .ignoresSafeArea()
 
         return try Drawing(of: column, textSize: textSize, width: 390, height: 1600)
     }
@@ -210,5 +231,66 @@ struct SnapshotTests {
             largest.drawnRows * 2 < pathAlone.drawnRows * 5,
             "row \(largest.drawnRows), path \(pathAlone.drawnRows)"
         )
+    }
+
+    // MARK: Now
+
+    @Test("a View attempt row puts its value under its name at the accessibility sizes")
+    func attemptRowStacks() throws {
+        let row = HookAttemptRow(name: .nowAttemptExitCode, value: "1")
+            .padding(16)
+            .frame(width: 600)
+            .frame(maxHeight: .infinity, alignment: .top)
+        let normal = try Drawing(of: row, width: 600, height: 1200)
+        let largest = try Drawing(of: row, textSize: .accessibilityExtraExtraExtraLarge, width: 600, height: 1200)
+
+        // Side by side, the name and the value span the row less its padding;
+        // stacked, the row is only as wide as its name.
+        #expect(normal.drawnWidth > 500, "drawn width \(normal.drawnWidth)")
+        #expect(largest.drawnWidth < 400, "drawn width \(largest.drawnWidth)")
+    }
+
+    @Test("offline, the Ready card says it needs a connection, as the other cards' buttons do")
+    func readyCardOffline() async throws {
+        let cards = try await DecisionFixtures.cards()
+        let ready = try #require(cards.first { $0.kind == .readyEmpty })
+        let online = try Self.reviewPart(ReadyEmptyCardView(card: ready, open: {}, isOffline: false), textSize: .large)
+        let offline = try Self.reviewPart(ReadyEmptyCardView(card: ready, open: {}, isOffline: true), textSize: .large)
+
+        // The footnote's line adds about 20 rows; a disabled row alone adds one.
+        #expect(offline.drawnRows > online.drawnRows + 10, "offline \(offline.drawnRows), online \(online.drawnRows)")
+    }
+
+    @Test("the reply sheet's Cancel waits while the reply is on its way")
+    func replyCancelWaitsWhileSending() async throws {
+        let comment = Operations.CommentOnMyTask.id
+        let gate = DispatchSemaphore(value: 0)
+        let api = FixtureAPI(answering: { operation in
+            if operation == comment { gate.wait() }
+            return nil
+        }).client
+        let reply = ReplyModel(
+            cardID: "released-9001", taskID: 9001, identifier: "W100", title: "Drop the old column",
+            api: api, isOffline: { false }
+        )
+        reply.text = "Done."
+        let idle = try Drawing(of: ReplySheet(reply: reply, send: {}))
+
+        let sending = Task { await reply.send() }
+        do {
+            defer { gate.signal() }
+            await waitUntil { reply.isSending }
+            let waiting = try Drawing(of: ReplySheet(reply: reply, send: {}))
+
+            // Cancel is the sheet's top line, so it starts at the first drawn
+            // row. Disabled, its ink is lighter.
+            try #require(idle.firstDrawnRow >= 0)
+            let cancel = idle.firstDrawnRow..<idle.firstDrawnRow + 17
+            #expect(
+                Int(waiting.darkest(in: cancel)) > Int(idle.darkest(in: cancel)) + 40,
+                "Cancel darkest \(idle.darkest(in: cancel)) idle, \(waiting.darkest(in: cancel)) sending"
+            )
+        }
+        _ = await sending.value
     }
 }

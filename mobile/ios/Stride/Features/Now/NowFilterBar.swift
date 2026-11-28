@@ -36,6 +36,8 @@ struct NowFilterBar: View {
                     .textStyle(.footnote)
                     .fontWeight(.medium)
                     .foregroundStyle((isSelected ? ColorToken.ink : ColorToken.ink2).color)
+                    // The UI tests' audit filter finds the label by this.
+                    .accessibilityIdentifier("now-filter-label")
                 Text(count(filter), format: .number)
                     .textStyle(.code)
                     .foregroundStyle(ColorToken.ink3.color)

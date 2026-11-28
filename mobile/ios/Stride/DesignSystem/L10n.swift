@@ -27,6 +27,21 @@ extension LocalizedStringResource {
         LocalizedStringResource("diff_line_unchanged", defaultValue: "Line \(line)", table: "Localizable", bundle: .main)
     }
 
+    /// "{reviewer}: {note}"
+    static func diffNote(reviewer: String, note: String) -> LocalizedStringResource {
+        LocalizedStringResource("diff_note", defaultValue: "\(reviewer): \(note)", table: "Localizable", bundle: .main)
+    }
+
+    /// "{position} of {count}"
+    static func diffPosition(position: String, count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("diff_position", defaultValue: "\(position) of \(count, specifier: "%lld")", table: "Localizable", bundle: .main)
+    }
+
+    /// "Diff of {name}"
+    static func diffRegion(name: String) -> LocalizedStringResource {
+        LocalizedStringResource("diff_region", defaultValue: "Diff of \(name)", table: "Localizable", bundle: .main)
+    }
+
     /// "{count} archived"
     static func goalArchivedCount(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("goal_archived_count", defaultValue: "\(count, specifier: "%lld") archived", table: "Localizable", bundle: .main)
@@ -85,6 +100,11 @@ extension LocalizedStringResource {
     /// "Ready is empty · {board}"
     static func nowReadyEmptyBoard(board: String) -> LocalizedStringResource {
         LocalizedStringResource("now_ready_empty_board", defaultValue: "Ready is empty · \(board)", table: "Localizable", bundle: .main)
+    }
+
+    /// "{idle} {backlog}"
+    static func nowReadyEmptyBody(idle: String, backlog: String) -> LocalizedStringResource {
+        LocalizedStringResource("now_ready_empty_body", defaultValue: "\(idle) \(backlog)", table: "Localizable", bundle: .main)
     }
 
     /// "“{reason}”"

@@ -14,10 +14,12 @@ struct AppShell: View {
 
     var body: some View {
         Group {
-            if sizeClass == .compact {
-                tabs
-            } else {
+            // Only a regular width gets the sidebar; a compact or unknown
+            // width gets the tabs.
+            if sizeClass == .regular {
                 sidebar
+            } else {
+                tabs
             }
         }
         .tint(ColorToken.strideOrangeInk.color)
@@ -121,8 +123,8 @@ struct AppShell: View {
         switch route {
         case .review(let taskID):
             ReviewView(model: router.reviewModel(for: taskID))
-        case .reviewFile(_, _, let path):
-            ReviewFilePlaceholder(path: path)
+        case .reviewFile(let target):
+            DiffView(model: router.diffModel(for: target))
         default:
             TabRoot(tab: tab, isPushed: true)
         }

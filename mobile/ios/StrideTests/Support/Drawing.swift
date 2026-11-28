@@ -37,6 +37,11 @@ struct Drawing {
                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
             )
         )
+        // A bitmap context's origin is its bottom left, and UIKit draws from
+        // the top down, so without the flip the rows run from the bottom of
+        // the window up (W2797).
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: 1, y: -1)
         UIGraphicsPushContext(context)
         defer { UIGraphicsPopContext() }
         try #require(window.drawHierarchy(in: window.bounds, afterScreenUpdates: true))
@@ -59,9 +64,21 @@ struct Drawing {
         (0..<height).count(where: rowIsDrawn)
     }
 
+    /// The first row that holds such a pixel, or -1 when none does.
+    var firstDrawnRow: Int {
+        (0..<height).first(where: rowIsDrawn) ?? -1
+    }
+
     /// The last row that holds such a pixel, or -1 when none does.
     var lastDrawnRow: Int {
         (0..<height).last(where: rowIsDrawn) ?? -1
+    }
+
+    /// The darkest green in `rows`, such as one line of text.
+    func darkest(in rows: Range<Int>) -> UInt8 {
+        let clamped = rows.clamped(to: 0..<height)
+
+        return clamped.flatMap { row in (0..<width).map { pixel(x: $0, y: row)[1] } }.min() ?? 255
     }
 
     /// The width from the first to the last column that holds such a pixel.
@@ -79,8 +96,13 @@ struct Drawing {
     /// The shape is the run of rows whose pixel at `x` matches the one at
     /// (`x`, `y`), a point on its fill left of its content; a row holds ink
     /// when a pixel right of `x + 8` differs from the fill.
+    /// A point that is not on a shape, where the pixel matches the corner,
+    /// counts none, so a point that misses the shape fails its test rather
+    /// than counting the whole column.
     func inkBands(x: Int, y: Int) -> Int {
         let fill = pixel(x: x, y: y)
+        guard fill != corner else { return 0 }
+
         let isFill = { (column: Int, row: Int) in
             zip(pixel(x: column, y: row), fill).allSatisfy { abs(Int($0) - Int($1)) <= 24 }
         }

@@ -29,6 +29,8 @@ struct ReviewContent: Hashable, Sendable {
     let exploratory: ReviewExploratoryResult
     /// Flagged files first, otherwise in the server's order.
     let files: [ReviewFileRow]
+    /// The version of the file list, which a file's index points into.
+    let filesVersion: String
     /// The server lets this device approve the change.
     let approvableHere: Bool
     /// The change is too large for this device to approve.
@@ -36,6 +38,21 @@ struct ReviewContent: Hashable, Sendable {
 
     /// The tiles that passed.
     var passed: Int { tiles.count(where: { $0.verdict.state == .passed }) }
+
+    /// The tiles two to a row, as the verdicts grid lays them out; an odd
+    /// tile out has a row of its own.
+    var tileRows: [[ReviewTile]] {
+        stride(from: 0, to: tiles.count, by: 2).map { Array(tiles[$0..<min($0 + 2, tiles.count)]) }
+    }
+
+    /// The failed tiles' notes, in the tiles' order.
+    var failedNotes: [String] { tiles.compactMap(\.note) }
+
+    /// The file screen for a file with a stored diff, which pages through the
+    /// review's other files from it.
+    func fileTarget(for file: ReviewFileRow) -> ReviewFileTarget? {
+        file.index.map { ReviewFileTarget(taskID: taskID, index: $0, filesVersion: filesVersion, files: files) }
+    }
 
     /// Whether any file is flagged, so the list says it shows those first.
     var hasFlaggedFiles: Bool { files.contains(where: \.isFlagged) }
@@ -117,65 +134,6 @@ struct ReviewContent: Hashable, Sendable {
     }
 }
 
-/// A section of the review screen under its header.
-enum ReviewSectionKind: Hashable, Sendable {
-    case summary
-    case verdicts
-    case checks
-    case files
-}
-
-/// One result in "Tests and checks": its words and its colour.
-struct ReviewResult: Hashable, Sendable {
-    let text: String
-    let tone: ColorToken
-
-    init(text: String, tone: ColorToken) {
-        self.text = text
-        self.tone = tone
-    }
-
-    init(_ resource: LocalizedStringResource, tone: ColorToken, in locale: Locale) {
-        self.init(text: resource.resolved(in: locale), tone: tone)
-    }
-}
-
-/// How many security issues the reviewer reported at each severity.
-struct ReviewSeverityCounts: Hashable, Sendable {
-    let critical: Int
-    let important: Int
-    let minor: Int
-
-    var total: Int { critical + important + minor }
-}
-
-/// How many acceptance criteria the reviewer marked met, of how many.
-struct ReviewCriteriaCount: Hashable, Sendable {
-    let met: Int
-    let count: Int
-
-    init(met: Int, count: Int) {
-        self.met = met
-        self.count = count
-    }
-
-    /// The reviewer's results, or nil when it gave no status for any of them.
-    init?(_ criteria: [Components.Schemas.ReviewAcceptanceCriterion]) {
-        guard criteria.contains(where: { $0.status != nil }) else { return nil }
-
-        met = criteria.count(where: { $0.status == "met" })
-        count = criteria.count
-    }
-
-    /// "4/4", as the tile shows it.
-    var text: LocalizedStringResource { .reviewCriteriaCount(met: String(met), count: count) }
-
-    /// "4 of 4 criteria met", for VoiceOver.
-    func reading(in locale: Locale) -> String {
-        LocalizedStringResource.reviewCriteriaMet(met: String(met), count: count).resolved(in: locale)
-    }
-}
-
 extension ReviewContent {
     /// The fixed four the tiles show, as Now's pills do (design section 6.4).
     static let tileSections: [VerdictSection] = [.acceptanceCriteria, .testingStrategy, .patterns, .securityConsiderations]
@@ -212,6 +170,7 @@ extension ReviewContent {
         )
         exploratory = ReviewExploratoryResult(detail.exploratory)
         files = Self.flaggedFirst(detail.files.map(ReviewFileRow.init))
+        filesVersion = detail.filesVersion
         approvableHere = detail.approvableHere
         tooLargeHere = !detail.approvableHere
             && (detail.approvableHereReason?.value1 == .tooLargeForPhone || detail.size.largeChange)
@@ -238,152 +197,5 @@ extension ReviewContent {
             known[section] = (state, state == .failed ? verdict.note : nil)
         }
         return known
-    }
-}
-
-/// One verdict tile.
-struct ReviewTile: Hashable, Sendable {
-    let verdict: Verdict
-    /// The reviewer's note, for a failed tile.
-    let note: String?
-    /// How many criteria were met, on the acceptance tile.
-    let criteria: ReviewCriteriaCount?
-
-    /// The verdict in words, with the criteria met on the acceptance tile,
-    /// for VoiceOver.
-    func reading(in locale: Locale) -> String {
-        [verdict.reading(in: locale), criteria?.reading(in: locale)].compactMap { $0 }.joined(separator: ", ")
-    }
-}
-
-/// The project checks' result, for "Tests and checks".
-enum ReviewChecks: Hashable, Sendable {
-    case allPassed
-    case notMet(Int)
-    /// The reviewer reported no checks.
-    case notReported
-
-    init(_ checks: Components.Schemas.ReviewProjectChecks) {
-        if checks.notMet > 0 {
-            self = .notMet(checks.notMet)
-        } else if checks.met > 0 {
-            self = .allPassed
-        } else {
-            self = .notReported
-        }
-    }
-}
-
-/// What the exploratory testing row says.
-enum ReviewExploratoryResult: Hashable, Sendable {
-    case findings(Int)
-    /// No structured block was stored, so the notes are on the web.
-    case seeNotesOnWeb
-
-    init(_ exploratory: Components.Schemas.ReviewExploratory) {
-        self = exploratory.count.map(Self.findings) ?? .seeNotesOnWeb
-    }
-}
-
-/// One changed file in the list.
-struct ReviewFileRow: Hashable, Sendable, Identifiable {
-    /// The file's position in the stored diffs, or nil when no diff is stored.
-    let index: Int?
-    let path: String
-    let additions: Int?
-    let deletions: Int?
-    let isFlagged: Bool
-
-    var id: String { path }
-
-    /// A file with a stored diff opens it.
-    var opens: Bool { index != nil }
-
-    /// What VoiceOver reads for the row: flagged or not, the file's name in
-    /// its folder, and its added and removed lines in words, so it neither
-    /// reads a bare path nor "plus 120".
-    func reading(in locale: Locale) -> String {
-        let slash = path.lastIndex(of: "/")
-        let place: LocalizedStringResource? = slash.map {
-            .reviewFileIn(name: String(path[path.index(after: $0)...]), folder: String(path[..<$0]))
-        }
-        let parts: [String?] = [
-            isFlagged ? LocalizedStringResource.reviewFlagged.resolved(in: locale) : nil,
-            place?.resolved(in: locale) ?? path,
-            additions.map { LocalizedStringResource.reviewLinesAdded(count: $0).resolved(in: locale) },
-            deletions.map { LocalizedStringResource.reviewLinesRemoved(count: $0).resolved(in: locale) },
-        ]
-        return parts.compactMap { $0 }.joined(separator: ", ")
-    }
-
-    init(_ file: Components.Schemas.ReviewFile) {
-        index = file.index
-        path = file.path
-        additions = file.additions
-        deletions = file.deletions
-        isFlagged = file.flagged
-    }
-}
-
-/// A review that changed since the screen loaded it, from an HTTP 409.
-enum ReviewConflictState: Hashable, Sendable {
-    /// Someone decided it first: who, what they decided, and when.
-    case alreadyDecided(by: String?, decision: ReviewDecision, at: Date?)
-    /// The agent sent it for review again.
-    case resubmitted
-
-    /// The conflict the screen shows for the server's answer. An `edited`
-    /// conflict, which only the approval challenge sends, reads as
-    /// Resubmitted, since a reload settles it the same way.
-    init(_ conflict: Components.Schemas.ReviewConflict) {
-        let error = conflict.error.value1?.rawValue ?? conflict.error.value2
-        switch error {
-        case "already_decided":
-            let review = conflict.review
-            let status = review.reviewStatus.flatMap { $0.value1?.rawValue ?? $0.value2 }
-            self = .alreadyDecided(
-                by: review.reviewedBy,
-                decision: ReviewDecision(apiValue: status),
-                at: review.reviewedAt
-            )
-        default:
-            self = .resubmitted
-        }
-    }
-}
-
-/// What the person who decided first decided.
-enum ReviewDecision: Hashable, Sendable {
-    case approved
-    case changesRequested
-    case other
-
-    init(apiValue: String?) {
-        switch apiValue {
-        case "approved": self = .approved
-        case "changes_requested": self = .changesRequested
-        default: self = .other
-        }
-    }
-}
-
-/// What a conflict says, kept apart from the view so tests read it.
-enum ReviewConflictCopy {
-    static func message(for conflict: ReviewConflictState) -> LocalizedStringResource {
-        switch conflict {
-        case .resubmitted: .reviewResubmittedHint
-        case .alreadyDecided(by: nil, _, _): .reviewDecidedSomeone
-        case .alreadyDecided(by: let name?, decision: .approved, _): .reviewDecidedApproved(name: name)
-        case .alreadyDecided(by: let name?, decision: .changesRequested, _): .reviewDecidedChanges(name: name)
-        case .alreadyDecided(by: let name?, decision: .other, _): .reviewDecidedOther(name: name)
-        }
-    }
-
-    /// When it was decided, such as "2 minutes ago", as the locale says it.
-    static func when(_ date: Date, relativeTo now: Date, in locale: Locale) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = locale
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: now)
     }
 }

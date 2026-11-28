@@ -105,9 +105,12 @@ struct NowCard: Identifiable, Hashable, Sendable {
         case .hookFailed(let exitCode, let duration):
             hookFailedBody(exitCode: exitCode, duration: duration, locale: locale).resolved(in: locale)
         case .readyEmpty(_, let idle, let backlog):
-            [LocalizedStringResource.nowIdleAgents(count: idle), .nowBacklogTasks(count: backlog)]
-                .map { $0.resolved(in: locale) }
-                .joined(separator: " ")
+            // One catalog string joins the two sentences, so a language
+            // that puts no space between sentences gets none.
+            LocalizedStringResource.nowReadyEmptyBody(
+                idle: LocalizedStringResource.nowIdleAgents(count: idle).resolved(in: locale),
+                backlog: LocalizedStringResource.nowBacklogTasks(count: backlog).resolved(in: locale)
+            ).resolved(in: locale)
         }
     }
 

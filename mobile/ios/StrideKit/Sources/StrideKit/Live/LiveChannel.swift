@@ -29,6 +29,9 @@ public actor LiveChannel {
 
     private var listeners: [LiveTopic: [UUID: AsyncStream<LiveUpdate>.Continuation]] = [:]
     private var latest: [LiveTopic: LiveUpdate] = [:]
+    /// How many updates each channel has delivered, so a test can tell that a
+    /// repeated state was not.
+    private var delivered: [LiveTopic: Int] = [:]
     private var watchers: [UUID: AsyncStream<LiveState>.Continuation] = [:]
     private var state = LiveState.idle
     private var connection: (any LiveConnection)?
@@ -122,6 +125,10 @@ public actor LiveChannel {
 
     func listenerCount(of topic: LiveTopic) -> Int {
         listeners[topic]?.count ?? 0
+    }
+
+    func deliveries(of topic: LiveTopic) -> Int {
+        delivered[topic, default: 0]
     }
 
     // MARK: Running
@@ -219,6 +226,7 @@ public actor LiveChannel {
         guard let update, latest[topic] != update else { return }
 
         latest[topic] = update
+        delivered[topic, default: 0] += 1
         for listener in listeners[topic, default: [:]].values {
             listener.yield(update)
         }

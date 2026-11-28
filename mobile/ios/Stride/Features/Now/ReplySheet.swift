@@ -13,7 +13,9 @@ struct ReplySheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                // A reply on its way cannot be cancelled, or its answer is lost.
                 SheetCloseButton(label: .nowReplyCancel) { dismiss() }
+                    .disabled(reply.isSending)
 
                 Text(.nowReply)
                     .textStyle(.title)

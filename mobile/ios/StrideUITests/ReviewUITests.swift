@@ -26,9 +26,10 @@ final class ReviewUITests: XCTestCase {
         XCTAssertTrue(flagged.waitForExistence(timeout: 10), "no flagged file")
         flagged.tap()
 
-        let path = app.staticTexts["review-file-path"]
+        // The fixtures answer every file with the one diff they hold.
+        let path = app.staticTexts["diff-path"]
         XCTAssertTrue(path.waitForExistence(timeout: 10), "the flagged file did not open")
-        XCTAssertEqual(path.label, "mobile/ios/Stride/SignIn/SignInView.swift")
+        XCTAssertEqual(path.label, "greeting.ex in lib/example")
     }
 
     @MainActor
@@ -46,6 +47,11 @@ final class ReviewUITests: XCTestCase {
 
         let bar = app.buttons["review-request-changes"]
         XCTAssertTrue(bar.exists, "no bottom bar")
+        // Nothing sends a decision yet, so no button looks live.
+        XCTAssertFalse(bar.isEnabled, "Request changes is enabled but does nothing")
+        let approve = app.buttons["review-approve"].firstMatch
+        XCTAssertTrue(approve.waitForExistence(timeout: 10), "no Approve button")
+        XCTAssertFalse(approve.isEnabled, "Approve is enabled but does nothing")
     }
 
     /// At the largest text size the audit has no larger size to push the
@@ -96,38 +102,10 @@ final class ReviewUITests: XCTestCase {
 
     @MainActor
     private func openReview(textSize: String? = nil) -> XCUIApplication {
-        continueAfterFailure = false
-        let app = XCUIApplication()
-        app.launchArguments = ["-StrideStubSignIn", "allow", "-AppleLanguages", "(en)"]
-        if let textSize {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
-        }
-        app.launch()
-
-        let signIn = app.buttons["Sign in"].firstMatch
-        XCTAssertTrue(signIn.waitForExistence(timeout: 30))
-        signIn.tap()
-        XCTAssertTrue(signIn.waitForNonExistence(timeout: 30))
-
-        let tab = reviewTab(app)
-        XCTAssertTrue(tab.waitForExistence(timeout: 30), "no Review tab")
-        tab.tap()
-
-        let row = app.buttons["review-open"].firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10), "no review in the queue")
-        row.tap()
+        let app = launchSignedIn(textSize: textSize)
+        openFirstReview(app)
 
         XCTAssertTrue(app.staticTexts["review-title"].waitForExistence(timeout: 10), "the review did not open")
         return app
-    }
-
-    /// The tab bar item on a phone and the sidebar row on an iPad.
-    @MainActor
-    private func reviewTab(_ app: XCUIApplication) -> XCUIElement {
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            let row = NSPredicate(format: "identifier == %@ AND label BEGINSWITH %@", "sidebar-tab", "Review")
-            return app.descendants(matching: .any).matching(row).firstMatch
-        }
-        return app.tabBars.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Review")).firstMatch
     }
 }

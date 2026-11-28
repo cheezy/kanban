@@ -987,3 +987,129 @@ msgctxt "review_lines_removed"
 msgid "%{count} line removed"
 msgid_plural "%{count} lines removed"
 msgstr[0] "删除 %{count} 行"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_back_to_verdicts"
+msgid "Back to verdicts"
+msgstr "返回结论"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_capped"
+msgid "Only the first 500 lines of this diff are shown."
+msgstr "此差异只显示前 500 行。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_empty"
+msgid "No diff to show. It may be a binary file."
+msgstr "没有可显示的差异。这可能是二进制文件。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_file_gone"
+msgid "This file is no longer in the review."
+msgstr "这个文件已不在评审中。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_footer"
+msgid "Highlighted on the server. Long lines wrap. Notes on a single line come later; for now, put them in Request changes."
+msgstr "由服务器高亮。长行会自动换行。针对单行的备注稍后推出；目前请写在“请求修改”中。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_elixir"
+msgid "Elixir"
+msgstr "Elixir"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_erlang"
+msgid "Erlang"
+msgstr "Erlang"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_heex"
+msgid "HEEx"
+msgstr "HEEx"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_language_plain"
+msgid "Plain text"
+msgstr "纯文本"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_loading"
+msgid "Loading the file"
+msgstr "正在加载文件"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_next_file"
+msgid "Next file"
+msgstr "下一个文件"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note"
+msgid "%{reviewer}: %{note}"
+msgstr "%{reviewer}：%{note}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_patterns"
+msgid "Patterns reviewer"
+msgstr "模式评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_pitfalls"
+msgid "Pitfalls reviewer"
+msgstr "陷阱评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_reviewer"
+msgid "Reviewer"
+msgstr "评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_security"
+msgid "Security reviewer"
+msgstr "安全评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_note_testing"
+msgid "Testing reviewer"
+msgstr "测试评审"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_position"
+msgid "%{position} of %{count}"
+msgstr "第 %{position} 个，共 %{count} 个"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_previous_file"
+msgid "Previous file"
+msgstr "上一个文件"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "diff_region"
+msgid "Diff of %{name}"
+msgstr "%{name} 的差异"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "now_ready_empty_body"
+msgid "%{idle} %{backlog}"
+msgstr "%{idle}%{backlog}"

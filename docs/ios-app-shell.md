@@ -71,7 +71,9 @@ render them: the pitfalls pill says the verdict (Passed, Failed or Not
 assessed), and VoiceOver reads a file row as its name in its folder with its
 lines added and removed in words, never a bare path. The bottom
 bar holds **Request changes** and **Approve**, or **Approve on tablet or web**
-for a change too large for the device; the next goal wires them. At the
+for a change too large for the device. They stay disabled until the next goal
+wires them (`ReviewModel.canDecide`), so neither looks live while it does
+nothing. At the
 accessibility text sizes the bar is not pinned: its buttons follow the files,
 stacked, and the verdict tiles, the check rows and the file rows stack their
 parts, so no word breaks in the middle. The summary and
@@ -83,9 +85,33 @@ offline; the buttons wait for a connection. A 404 means the review no longer
 waits on the person, and the screen says so. A decision the server refuses with
 a 409 reaches `ReviewModel.show(_:)`: **Already decided** names who decided and
 what, and how long ago, and **Resubmitted** asks the person to reload, which fetches the new
-version. Either one disables the buttons. A file with a stored diff pushes
-`.reviewFile(taskID, index:path:)`, which shows only the file's path until the
-diff screen is built.
+version. A file with a stored diff pushes `.reviewFile(ReviewFileTarget)`,
+which carries the task, the file's index, the list's `files_version` and the
+review's files, flagged first, so the diff screen can page through them.
+
+## The diff screen
+
+`DiffView` shows one file of a review, read only, through `DiffModel`. Its title
+is the file's name; the header under it holds the Flagged pill, the lines added
+and removed, the language and the file's place in the list ("1 of 6"), then the
+full path. The body is the unified diff with its line numbers, a + or − marker,
+the server's highlighting and wrapped lines; the app highlights nothing itself,
+and a language with no lexer is plain text. Each reviewer's note sits under the
+line it names, and a note on the whole file, or on a line the diff lacks, sits
+above the diff. VoiceOver reads each line as "Added, line 2", "Removed, line 2"
+or "Line 1", with its text as the value. A capped diff says so, and a binary
+file says it has no diff to show.
+
+**Back to verdicts** returns to the review, and **Next file** and a swipe move
+through the files that have a stored diff, wrapping at either end; with one such
+file, Next file is disabled. At the accessibility text sizes the two buttons
+follow the diff, stacked, as the review's do. The model keeps each file in the
+cache under `.reviewFile(taskID:index:filesVersion:)`, which is stored only while
+its review is cached, and shows the cached copy with the offline banner while
+offline. A 409 means the files changed: the model reloads the review, stores
+it, finds the same path in the new list and asks again, and a path the new list
+lacks, a second 409 or a 404 shows that the file is gone. The diff text is shown
+as plain text, never run or linked.
 
 ## The corner buttons and the badge
 
@@ -127,7 +153,10 @@ and the avatar reads "Alex Example". `ReviewQueueModelTests` covers the queue's
 order, sizes, states, cache and live updates, and `ReviewModelTests` the review
 screen's sections, file order, offline copy and 409 states. `ReviewUITests`
 opens a review from the queue, audits it in light and dark and opens its flagged
-file. `AppRouterTests` covers the screen
+file. `DiffModelTests` covers the diff screen's notes, header, highlighting,
+paging, cache, 409 and 404, and `DiffUITests` reads its lines with VoiceOver,
+audits it in light and dark and in German at the largest text, and pages with
+Next file and a swipe. `AppRouterTests` covers the screen
 choice, the stacks and the badge, and `ShellUITests` opens every tab in light
 and dark, the two sheets and the German tab names at the largest text size,
 auditing each for accessibility, and hides the iPad's sidebar and brings it

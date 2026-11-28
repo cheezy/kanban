@@ -48,7 +48,9 @@ struct NowCardTests {
             for index in 1...3 { items[index]["task_id"] = NSNull() }
         }
 
-        for card in cards where [.claimExpired, .hookFailed].contains(card.kind) {
+        let affected = cards.filter { [.claimExpired, .hookFailed].contains($0.kind) }
+        try #require(affected.count == 2)
+        for card in affected {
             #expect(card.buttons == [.openOnWeb], "\(card.kind) still offers \(card.buttons)")
         }
         // A Released card has only actions on its task, so it keeps none.
@@ -144,6 +146,8 @@ struct NowCardTests {
         #expect(ready.readyHeading(in: Self.english) == "Ready is empty · Stride Development")
         #expect(ready.body(in: Self.english) == "2 agents idle. 5 tasks in Backlog to choose from.")
         #expect(ready.readyHeading(in: Self.german) == "Bereit ist leer · Stride Development")
+        // Japanese puts no space between sentences.
+        #expect(ready.body(in: Locale(identifier: "ja")) == "2 体のエージェントが待機中。バックログに選べるタスクが 5 件あります。")
         #expect(ready.content.since == nil)
     }
 

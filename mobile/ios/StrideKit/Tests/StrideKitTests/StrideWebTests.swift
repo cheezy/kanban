@@ -25,9 +25,9 @@ struct StrideWebTests {
             "https://",
         ]
     )
-    func otherAddresses(address: String) {
-        guard let url = URL(string: address) else { return }
+    func otherAddresses(address: String) throws {
+        let url = try #require(URL(string: address))
 
-        #expect(!StrideWeb.isStridePage(url))
+        #expect(StrideWeb.isStridePage(url) == false)
     }
 }

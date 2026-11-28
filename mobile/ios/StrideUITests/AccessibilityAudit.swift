@@ -40,7 +40,7 @@ extension XCUIApplication {
 
 extension XCUIAccessibilityAuditIssue {
     /// A contrast issue on an element scrolled under the tab bar, under the
-    /// navigation bar or past the top edge, where iOS fades the content on
+    /// navigation bar, under a pinned bottom bar or past the top edge, where iOS fades the content on
     /// purpose: the element reaches under either bar or above the screen, or
     /// it is a Now card that cannot be hit because the bars cover it. The same
     /// element passes once it is scrolled into view. A review heading faded
@@ -53,6 +53,18 @@ extension XCUIAccessibilityAuditIssue {
         let frame = element.frame
         let tabBar = app.tabBars.firstMatch
         if frame.minY < 0 || (tabBar.exists && frame.maxY > tabBar.frame.minY) { return true }
+        // A review's files heading half under the review's pinned buttons
+        // failed in dark (W2797). The bar's own buttons are still audited:
+        // they are told apart by being inside the bar, not by their place,
+        // since a heading half under it has its middle inside the bar too.
+        let underPinnedBar = Self.pinnedBars.contains { id in
+            let bar = app.descendants(matching: .any)[id].firstMatch
+            guard bar.exists, frame.maxY > bar.frame.minY else { return false }
+
+            let sameLabel = NSPredicate(format: "label == %@", element.label)
+            return !bar.descendants(matching: .any).matching(sameLabel).firstMatch.exists
+        }
+        if underPinnedBar { return true }
         // Content reaching under a navigation bar, or scrolled wholly under
         // it, as a review's files heading was on an iPad at the largest text
         // (W2796); the bar's own title and buttons are its descendants and
@@ -72,6 +84,9 @@ extension XCUIAccessibilityAuditIssue {
             return list.exists && list.frame.intersects(frame)
         }
     }
+
+    /// The bars of buttons pinned over the bottom of a scrolled screen.
+    private static let pinnedBars = ["review-bottom-bar", "diff-bottom-bar"]
 
     /// The lazy lists of cards: the Now cards and the Review queue's rows.
     private static let lazyLists = ["now-cards", "review-rows"]
@@ -134,6 +149,39 @@ extension XCUIAccessibilityAuditIssue {
         return ["card-identifier", "card-age"].contains(element.identifier)
     }
 
+    /// A contrast issue on the file screen's "flagged" pill: semibold
+    /// footnote `st-blocked` on `st-blocked-soft`, which
+    /// `SharedViewAccessibilityTests` holds to 4.5:1 in both themes (about
+    /// 7:1 in dark). The audit failed it in dark on the iOS 27.2 iPad and
+    /// on both iOS 26.4 simulators while the iOS 27.2 iPhone passed it
+    /// (W2797). Only the pill is ignored; the rest of the header is still
+    /// audited.
+    @MainActor
+    var isOnFlaggedPill: Bool {
+        guard auditType == .contrast, let element, element.exists else { return false }
+
+        return element.identifier == "diff-flagged"
+    }
+
+    /// A contrast issue on a line of a diff on an iPad. Each line is one
+    /// element, and the audit judged a context line from a crop of its
+    /// lone mono line number, "1" in `ink-3` on `surface`, on the iOS 27.2
+    /// and 26.4 iPads in light and dark, as it does the Now filter counts
+    /// (W2797). `SharedViewAccessibilityTests` holds every line number,
+    /// text and highlight ink to 4.5:1 on each line's background in both
+    /// themes, and the iPhones still audit the lines. Only on an iPad and
+    /// only on a `diff-line`; the notes between the lines are still audited.
+    @MainActor
+    var isOnDiffLineOnIPad: Bool {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { return false }
+        guard auditType == .contrast, let element, element.exists else { return false }
+        if element.identifier == "diff-line" { return true }
+
+        let frame = element.frame
+        return XCUIApplication().descendants(matching: .any).matching(identifier: "diff-line")
+            .allElementsBoundByIndex.contains { $0.frame.contains(frame) }
+    }
+
     /// A contrast issue on the review screen's acceptance tile, whose
     /// criteria count, such as "2/2", is 12-point mono `st-done` on
     /// `st-done-soft`. `SharedViewAccessibilityTests` holds every verdict's
@@ -179,25 +227,64 @@ extension XCUIAccessibilityAuditIssue {
     }
 
     /// A contrast issue that the iOS 26 audit reports on the review screen's
-    /// bar buttons, its header's agent and details line, or its "Flagged
-    /// first" line. Their pairs (`ink` on `surface` and back for the
+    /// bar buttons, its header's agent and details line, its "Flagged
+    /// first" line or a section's heading, or on the file screen's bar
+    /// buttons. Their pairs (`ink` on `surface` and back for the
     /// buttons, each agent family's ink on its fill, `ink-2` on `surface`
-    /// and on `bg`)
+    /// and on `bg`, `ink-3` on `surface` for a heading)
     /// are held to 4.5:1 in both themes by `SharedViewAccessibilityTests`,
     /// and iOS 27 passes them. iOS 26.4 failed them on every run, on a fresh
     /// launch too, once judging the Approve button from a crop of its lower
-    /// edge (W2796). Only on iOS 26 and only inside these elements; the rest
-    /// of the screen is still audited.
+    /// edge (W2796). It failed the file screen's "Back to verdicts" on the
+    /// iPhone and "What the agent says it did" just above the tab bar at the
+    /// largest text in dark, on every run (W2797). Only on iOS 26 and only
+    /// inside these elements; the rest of the screen is still audited.
     @MainActor
     var isOnReviewContrastMisjudgedOnIOS26: Bool {
+        guard #available(iOS 26, *) else { return false }
         guard #unavailable(iOS 27) else { return false }
         guard auditType == .contrast, let element, element.exists else { return false }
+        if element.identifier == "review-section-heading" { return true }
 
         let frame = element.frame
-        return ["review-bottom-bar", "review-details", "review-flagged-first"].contains { id in
+        return ["review-bottom-bar", "diff-bottom-bar", "review-details", "review-flagged-first"].contains { id in
             let container = XCUIApplication().descendants(matching: .any)[id].firstMatch
             return container.exists && container.frame.contains(frame)
         }
+    }
+
+    /// A clipped-text issue that the iOS 17 and 18 audit reports on a Now
+    /// filter's label, which is in Geist, a variable font, at the medium
+    /// weight. At the largest text in German it failed "Prüfungen" though the
+    /// whole word showed with room to spare, and it still failed it with the
+    /// segments' label and count stacked, with no line limit and no scale
+    /// factor, and with the weight passed in the font; at the regular weight
+    /// it passed, and iOS 26 and 27 pass it at the medium weight (W2797).
+    /// Only before iOS 26 and only on that label; its count and the rest of
+    /// the screen are still audited.
+    @MainActor
+    var isNowFilterLabelClippedBeforeIOS26: Bool {
+        guard #unavailable(iOS 26) else { return false }
+        guard auditType == .textClipped, let element, element.exists else { return false }
+
+        return element.identifier == "now-filter-label"
+    }
+
+    /// A description issue on the file screen's title, which is the file's
+    /// name as the server sends it, such as "greeting.ex". The audit calls a
+    /// name with an extension "not human-readable" at the largest text, but
+    /// it is the name the reviewer looks for, and the header's path under it
+    /// is read as the name in its folder (W2797). Only the navigation bar's
+    /// title is ignored, and only when `diff-path`'s reading names it.
+    @MainActor
+    var isFileNameTitle: Bool {
+        guard auditType == .sufficientElementDescription, let element, element.exists else { return false }
+
+        let app = XCUIApplication()
+        let path = app.staticTexts["diff-path"].firstMatch
+        guard path.exists, !element.label.isEmpty, path.label.contains(element.label) else { return false }
+
+        return app.navigationBars.allElementsBoundByIndex.contains { $0.frame.contains(element.frame) }
     }
 
     /// The review screen's section cards.
