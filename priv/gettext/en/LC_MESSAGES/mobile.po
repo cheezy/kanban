@@ -1148,3 +1148,39 @@ msgstr "%{idle} %{backlog}"
 msgctxt "info_plist_face_id_usage"
 msgid "Stride uses Face ID to confirm your approvals."
 msgstr "Stride uses Face ID to confirm your approvals."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_expired"
+msgid "The approval took too long to reach Stride. Approve again."
+msgstr "The approval took too long to reach Stride. Approve again."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_reason"
+msgid "Approve %{identifier}"
+msgstr "Approve %{identifier}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_refused"
+msgid "Stride did not accept this device's approval. Sign out and sign in again to approve."
+msgstr "Stride did not accept this device's approval. Sign out and sign in again to approve."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approved"
+msgid "Approved."
+msgstr "Approved."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approved_can_start"
+msgid "Approved. %{identifiers} can start."
+msgstr "Approved. %{identifiers} can start."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_next"
+msgid "Next"
+msgstr "Next"

@@ -132,6 +132,9 @@ struct SharedViewAccessibilityTests {
         pairs += [(.ink, .stDoneSoft), (.ink, .stBlockedSoft)]
         // The reply and attempt sheets' problems, on the screen's background.
         pairs += [(.stBlocked, .bg), (.ink2, .bg), (.ink3, .bg), (.ink, .bg)]
+        // The Approved toast: its text and Next in surface, and its checkmark,
+        // on ink.
+        pairs += [(.surface, .ink), (.stDoneSoft, .ink)]
 
         for kind in DiffLineKind.allCases {
             let background = kind.background ?? .surface

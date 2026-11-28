@@ -1,4 +1,5 @@
 import Foundation
+import HTTPTypes
 import os
 import Testing
 
@@ -138,5 +139,78 @@ struct FixtureAPITests {
         let body = try #require(sent.dropFirst().first?.1)
         let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
         #expect(json["content"] as? String == "返信")
+    }
+
+    @Test("the request listener hears each request's headers and body, even one that then fails offline")
+    func requestHeaders() async throws {
+        let heard = OSAllocatedUnfairLock<[(String, String?)]>(initialState: [])
+        let bodies = OSAllocatedUnfairLock<[Data?]>(initialState: [])
+        let key = HTTPField.Name("Idempotency-Key")!
+        let api = FixtureAPI(
+            unreachable: [Operations.ApproveMyReview.id],
+            onRequest: { id, headers, body in
+                heard.withLock { $0.append((id, headers[key])) }
+                bodies.withLock { $0.append(body) }
+            }
+        ).client
+        let body = Components.Schemas.ApproveReviewRequest(nonce: "N", signature: "S")
+
+        await #expect(throws: (any Error).self) {
+            try await api.approveMyReview(path: .init(taskId: 4812), headers: .init(idempotencyKey: "K-1"), body: .json(body))
+        }
+        _ = try await api.listMyReviews().ok
+
+        let sent = heard.withLock { $0 }
+        #expect(sent.map(\.0) == [Operations.ApproveMyReview.id, Operations.ListMyReviews.id])
+        #expect(sent.map(\.1) == ["K-1", nil])
+        let lost = try #require(bodies.withLock { $0.first } ?? nil)
+        let json = try #require(try JSONSerialization.jsonObject(with: lost) as? [String: Any])
+        #expect(json["nonce"] as? String == "N")
+        #expect(bodies.withLock { $0.last } == .some(nil))
+    }
+
+    @Test(
+        "a held request answers only after its hold returns, so another call finishes first",
+        .timeLimit(.minutes(1))
+    )
+    func holdsARequest() async throws {
+        let entered = AsyncStream<Void>.makeStream()
+        let release = AsyncStream<Void>.makeStream()
+        let finished = OSAllocatedUnfairLock<[String]>(initialState: [])
+        let api = FixtureAPI(hold: { id in
+            guard id == Operations.ListMyReviews.id else { return }
+            entered.continuation.yield()
+            for await _ in release.stream { break }
+        }).client
+
+        let held = Task {
+            _ = try await api.listMyReviews().ok
+            finished.withLock { $0.append("reviews") }
+        }
+        // A fixture that never holds never says it entered, and the time
+        // limit fails the test.
+        for await _ in entered.stream { break }
+        _ = try await api.listMyBoards().ok
+        finished.withLock { $0.append("boards") }
+        release.continuation.yield()
+        try await held.value
+
+        #expect(finished.withLock { $0 } == ["boards", "reviews"])
+    }
+
+    @Test("the example approval carries its challenge, and prints as redacted")
+    func exampleApproval() async throws {
+        let api = FixtureAPI().client
+        let challenge = try await api.createMyReviewApprovalChallenge(
+            path: .init(taskId: 4812),
+            body: .json(.init(reviewFingerprint: String(repeating: "a", count: 64)))
+        ).created.body.json.data
+
+        let approval = try SignedApproval.example(for: challenge)
+
+        #expect(approval.taskID == 4812)
+        #expect(approval.nonce == challenge.nonce)
+        #expect(approval.reviewRequestedAt == challenge.reviewRequestedAt)
+        #expect(String(describing: approval) == "SignedApproval(redacted)")
     }
 }

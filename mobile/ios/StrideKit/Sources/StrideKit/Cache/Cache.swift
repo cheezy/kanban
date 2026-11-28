@@ -120,6 +120,18 @@ public actor Cache {
         return fetchedAt
     }
 
+    // MARK: Forgetting
+
+    /// Removes one cached response and the entries that belong to it, such as
+    /// a review's files, so a review decided here never reopens offline as
+    /// still waiting. Nothing cached under the key is not an error.
+    public func forget<Value>(_ key: CacheKey<Value>) throws(CacheError) {
+        let context = try context(for: key.kind.store)
+        guard let entry = try entry(key.key, in: context) else { return }
+
+        try remove([entry], from: context)
+    }
+
     // MARK: Wiping
 
     /// Removes everything cached, for a sign-out, a revoked device or another

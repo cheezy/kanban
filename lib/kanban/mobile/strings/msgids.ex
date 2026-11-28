@@ -36,13 +36,22 @@ defmodule Kanban.Mobile.Strings.Msgids do
       now_card_msgids(),
       now_count_msgids(),
       now_action_msgids(),
+      review_msgids(),
+      diff_screen_msgids(),
+      diff_label_msgids()
+    ])
+  end
+
+  # The Review tab's queue and review screen, kept apart so `msgids/0` stays
+  # under credo's ABC size limit.
+  defp review_msgids do
+    Enum.concat([
       review_queue_msgids(),
       review_section_msgids(),
       review_check_msgids(),
       review_file_msgids(),
       review_state_msgids(),
-      diff_screen_msgids(),
-      diff_label_msgids()
+      review_approve_msgids()
     ])
   end
 
@@ -493,6 +502,31 @@ defmodule Kanban.Mobile.Strings.Msgids do
         "The agent sent a new version. Reload to review it."
       ),
       dpgettext_noop("mobile", "review_reload", "Reload")
+    ]
+  end
+
+  # Approving a review: Face ID's reason, the Approved state with Next, and
+  # what the screen says when the server refuses the signed approval (W2799).
+  defp review_approve_msgids do
+    [
+      dpgettext_noop("mobile", "review_approve_reason", "Approve %{identifier}"),
+      dpgettext_noop("mobile", "review_approved", "Approved."),
+      dpgettext_noop(
+        "mobile",
+        "review_approved_can_start",
+        "Approved. %{identifiers} can start."
+      ),
+      dpgettext_noop("mobile", "review_next", "Next"),
+      dpgettext_noop(
+        "mobile",
+        "review_approve_expired",
+        "The approval took too long to reach Stride. Approve again."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "review_approve_refused",
+        "Stride did not accept this device's approval. Sign out and sign in again to approve."
+      )
     ]
   end
 

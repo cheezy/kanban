@@ -17,8 +17,10 @@ public struct FixtureAPI: ClientTransport {
     private let unreachable: Set<String>
     private let isOffline: @Sendable () -> Bool
     private let onSend: @Sendable (_ operationID: String, _ body: Data?) -> Void
+    private let onRequest: @Sendable (_ operationID: String, _ headers: HTTPFields, _ body: Data?) -> Void
     private let answer: @Sendable (_ operationID: String) -> Data?
     private let pickStatus: @Sendable (_ operationID: String) -> Int?
+    private let hold: @Sendable (_ operationID: String) async -> Void
 
     /// Replaces the bodies of some operations, keyed by `Operations.<Name>.id`,
     /// and fails the `unreachable` ones as if the device were offline. While
@@ -31,7 +33,12 @@ public struct FixtureAPI: ClientTransport {
     /// picks a body when the operation is sent, before `replacements`, so a
     /// test can change an answer between two calls; nil falls through.
     /// `status` picks a status the same way, before `statuses`, so a test can
-    /// answer 409 once and then succeed.
+    /// answer 409 once and then succeed. `onRequest` hears each request's
+    /// header fields and body as it sets out, before an offline or
+    /// unreachable operation fails, so a test can tell what a request lost on
+    /// the way carried, such as its `Idempotency-Key`. `hold` runs next and
+    /// keeps the request on its way until it returns, so a test can let
+    /// another call finish first; the status and body are picked after it.
     public init(
         replacing replacements: [String: Data] = [:],
         statuses: [String: Int] = [:],
@@ -39,7 +46,9 @@ public struct FixtureAPI: ClientTransport {
         isOffline: @escaping @Sendable () -> Bool = { false },
         onSend: @escaping @Sendable (_ operationID: String, _ body: Data?) -> Void = { _, _ in },
         answering answer: @escaping @Sendable (_ operationID: String) -> Data? = { _ in nil },
-        status: @escaping @Sendable (_ operationID: String) -> Int? = { _ in nil }
+        status: @escaping @Sendable (_ operationID: String) -> Int? = { _ in nil },
+        onRequest: @escaping @Sendable (_ operationID: String, _ headers: HTTPFields, _ body: Data?) -> Void = { _, _, _ in },
+        hold: @escaping @Sendable (_ operationID: String) async -> Void = { _ in }
     ) {
         self.replacements = replacements
         self.statuses = statuses
@@ -48,6 +57,8 @@ public struct FixtureAPI: ClientTransport {
         self.onSend = onSend
         self.answer = answer
         self.pickStatus = status
+        self.onRequest = onRequest
+        self.hold = hold
     }
 
     /// `getMe` for a person whose plan does not include the app.
@@ -75,10 +86,12 @@ public struct FixtureAPI: ClientTransport {
         baseURL: URL,
         operationID: String
     ) async throws -> (HTTPResponse, HTTPBody?) {
-        if isOffline() || unreachable.contains(operationID) { throw URLError(.notConnectedToInternet) }
-
         var sent: Data?
         if let body { sent = try await Data(collecting: body, upTo: 1 << 20) }
+        onRequest(operationID, request.headerFields, sent)
+        await hold(operationID)
+        if isOffline() || unreachable.contains(operationID) { throw URLError(.notConnectedToInternet) }
+
         onSend(operationID, sent)
 
         if let code = pickStatus(operationID) ?? statuses[operationID] {

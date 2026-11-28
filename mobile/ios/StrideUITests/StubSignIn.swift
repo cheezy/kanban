@@ -3,15 +3,17 @@ import XCTest
 extension XCTestCase {
     /// Launches the app with the stub sign-in, in the given language and
     /// text size, and taps Sign in, which the stub always allows. The screens
-    /// after it answer from the shared fixtures.
+    /// after it answer from the shared fixtures. `arguments` go to the app
+    /// too, such as `-StrideStubApproval nomatch`.
     @MainActor
-    func launchSignedIn(locale: String = "en", textSize: String? = nil) -> XCUIApplication {
+    func launchSignedIn(locale: String = "en", textSize: String? = nil, arguments: [String] = []) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-StrideStubSignIn", "allow", "-AppleLanguages", "(\(locale))"]
         if let textSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
         }
+        app.launchArguments += arguments
         app.launch()
 
         let signIn = app.buttons[locale == "de" ? "Anmelden" : "Sign in"].firstMatch

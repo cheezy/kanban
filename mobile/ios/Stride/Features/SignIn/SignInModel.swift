@@ -98,27 +98,7 @@ final class SignInModel {
         do throws(SignInError) {
             guard let services else { throw .failed }
 
-            // Before the browser opens: the code lives 60 seconds, and a device
-            // that cannot hold a key should not go through the web first.
-            let key = try await services.keyMaker.makeKey()
-            let attempt = OAuthAttempt()
-            let callback = try await web.authenticate(
-                attempt.authorizeURL(for: services.device),
-                callbackScheme: OAuthFlow.callbackScheme
-            )
-            let code = try attempt.code(from: callback)
-            let pair = try await OAuthFlow.exchange(
-                code,
-                of: attempt,
-                device: services.device,
-                approvalPublicKey: key.publicKey,
-                using: services.api
-            )
-            do {
-                try await services.store.save(pair, approvalKey: key)
-            } catch {
-                throw .failed
-            }
+            try await OAuthSignIn.run(services, web: web)
         } catch {
             phase = .signedOut(error == .cancelled ? nil : error)
             return

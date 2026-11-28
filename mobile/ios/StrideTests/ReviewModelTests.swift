@@ -356,8 +356,10 @@ struct ReviewModelTests {
         let model = Self.model()
         await model.load()
         #expect(model.canAct)
-        // Nothing sends a decision yet, so the buttons stay disabled.
-        #expect(model.canDecide == false)
+        // A model without a signer cannot approve, and Request changes sends
+        // nothing yet, so neither button looks live.
+        #expect(model.canApprove == false)
+        #expect(model.canRequestChanges == false)
 
         model.show(Self.conflict(.alreadyDecided, status: .approved, by: "Sam Rivera"))
 

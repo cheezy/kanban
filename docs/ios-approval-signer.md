@@ -98,6 +98,43 @@ enrolment check is what replaces it.
 A key an earlier build kept as its bare handle reads as no key, so the next
 approval registers a new one.
 
+## Approving from the review screen
+
+`ApproveFlow` in the app runs one approval for `ReviewModel`. It asks for the
+challenge with the `review_fingerprint` and `review_requested_at` the screen
+loaded, so a review that changed since answers 409 (Already decided or
+Resubmitted) or 422 `too_large_for_phone` (the review loads again to say where
+to approve it). It signs through `ApprovalSigning`, which the app implements
+with `DeviceApprovalSigning` around `ApprovalSigner` and `SignInKeyRegistrar`,
+the new sign-in a new key needs. Then it sends the approval with a new UUID
+as its `Idempotency-Key`.
+
+A request that never reached the server (a `URLError`, as `CallFailure.isTransport`
+tells) is sent once more with the same key and the same body, so a lost answer
+cannot approve twice. A second loss says the approval failed; the next tap
+starts again from a new challenge, so a signature is never kept or sent late.
+A `signature_rejected` answer says the challenge ran out (`expired`, `reused`)
+or the device's signature was refused (`invalid`, `missing`), and Approve stays
+on. Approve is off while the device is offline, while an approval is on its
+way and after it went through; the toast then says which held-up tasks can
+start, and Next opens the next review in the queue. Once approved, the screen
+asks the server nothing more, since the review no longer waits and a refresh
+would say it is gone, and `Cache.forget` drops its cached copy, so it never
+reopens offline as still waiting. A load already on its way when the approval
+lands is dropped too, so its answer neither hides the toast nor caches the
+review again.
+
+The generated encoder leaves out a `review_requested_at` that is nil, and the
+server answers 400 when the approve body has no such key. Every task that
+enters Review gets the stamp, so this only matters for a review without one.
+
+A debug build started with `-StrideStubApproval` followed by `match`,
+`nomatch` or `passcode` answers Face ID without a prompt: `match` signs the
+challenge with an example signature the fixtures accept, `nomatch` closes the
+prompt, and `passcode` acts as a device with no passcode, so the review shows
+why it cannot approve and nothing is fetched or sent. A build signed in through
+`-StrideStubSignIn` matches unless told otherwise.
+
 ## Never logged
 
 `ApprovalPayload` and `SignedApproval` print, dump and reflect as redacted, like
@@ -116,6 +153,9 @@ the signature, and never put one in a fixture.
 | What the approve request sends | `StrideKit/Sources/StrideKit/Approval/SignedApproval.swift` |
 | Why it could not sign | `StrideKit/Sources/StrideKit/Approval/ApprovalSignerError.swift` |
 | The key itself | `StrideKit/Sources/StrideKit/Auth/ApprovalKey.swift` |
+| One approval from the review screen | `Stride/Features/Review/ApproveFlow.swift` |
+| The app's signer and its new sign-in | `Stride/Features/Review/DeviceApprovalSigning.swift`, `Stride/Features/SignIn/SignInKeyRegistrar.swift` |
+| The debug build's Face ID | `Stride/Debug/StubApprovalSigning.swift` |
 
 The paths are under `mobile/ios/`.
 
@@ -133,5 +173,15 @@ The paths are under `mobile/ios/`.
   a change and what each `LAError` means, from the prompt and from opening the
   key. `LocalizationTests` checks Face ID's reason in the Info.plist and in
   every locale.
+- `ApproveFlowTests` drives Approve through the fixtures: an approval and its
+  toast, what the challenge and the approval carry, the one resend with the
+  same idempotency key and the same body, an unreadable answer that is not
+  sent again, an approved review that is not loaded again, a load on its way
+  that the approval overtakes (held through `FixtureAPI`'s `hold`), each refused signature,
+  403, 404, 409 and 422 on the challenge and on the approval, a face that does
+  not match, a signer that cannot sign, and Approve off while offline.
+  `SignInKeyRegistrarTests` checks the new sign-in, `CallFailureTests` which
+  failures may have reached the server, and `ReviewUITests` approves through
+  the stub, opens the next review and shows and closes a problem.
 - Only a device has a Secure Enclave and a passcode. Approving with Face ID
   enrolled, removed and enrolled again is a manual check on a device.

@@ -245,6 +245,32 @@ struct AppRouterTests {
         #expect(router.badge(for: .now) == 4)
     }
 
+    @Test("Next opens the next review in the queue, wrapping round")
+    func nextReview() async throws {
+        let router = AppRouter(api: FixtureAPI().client)
+        await router.reviews.load()
+        try #require(router.reviews.rows.compactMap(\.taskID) == [4812, 4818, 4821])
+
+        router.push(.review(4812), on: .review)
+        router.openNextReview(after: 4812, on: .review)
+        #expect(router.paths[.review] == [.review(4818)])
+
+        router.openNextReview(after: 4821, on: .review)
+        #expect(router.paths[.review] == [.review(4818), .review(4812)])
+    }
+
+    @Test("Next on the last review left closes it")
+    func nextReviewOnLast() async throws {
+        let only = try JSONSerialization.data(withJSONObject: ["data": [[String: Any]]()])
+        let router = AppRouter(api: FixtureAPI(replacing: [Operations.ListMyReviews.id: only]).client)
+        await router.reviews.load()
+
+        router.push(.review(4812), on: .review)
+        router.openNextReview(after: 4812, on: .review)
+
+        #expect(router.paths[.review].isEmpty)
+    }
+
     @Test("the corner buttons open New task and Settings")
     func cornerButtons() {
         let router = AppRouter(api: nil)

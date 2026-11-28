@@ -111,6 +111,22 @@ struct CacheTests {
         #expect(try await cache.cached(.reviewFile(taskID: 1, index: 0, filesVersion: "v1")) == nil)
     }
 
+    @Test("forgetting a review removes it and its files, and leaves the others")
+    func forget() async throws {
+        let cache = makeCache()
+        let review = try await reviewDetail()
+        try await cache.store(review, for: .review(taskID: 1), since: cache.epoch)
+        try await cache.store(try await reviewFile(), for: .reviewFile(taskID: 1, index: 0, filesVersion: "v1"), since: cache.epoch)
+        try await cache.store(review, for: .review(taskID: 2), since: cache.epoch)
+
+        try await cache.forget(.review(taskID: 1))
+        try await cache.forget(.review(taskID: 3))
+
+        #expect(try await cache.cached(.review(taskID: 1)) == nil)
+        #expect(try await cache.cached(.reviewFile(taskID: 1, index: 0, filesVersion: "v1")) == nil)
+        #expect(try await cache.cached(.review(taskID: 2)) != nil)
+    }
+
     @Test("a file is kept only with its review, and only for its files version")
     func fileNeedsReview() async throws {
         let cache = makeCache()

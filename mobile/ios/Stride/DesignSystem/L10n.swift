@@ -137,6 +137,16 @@ extension LocalizedStringResource {
         LocalizedStringResource("progress_in_review", defaultValue: "\(count, specifier: "%lld") in review", table: "Localizable", bundle: .main)
     }
 
+    /// "Approve {identifier}"
+    static func reviewApproveReason(identifier: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_approve_reason", defaultValue: "Approve \(identifier)", table: "Localizable", bundle: .main)
+    }
+
+    /// "Approved. {identifiers} can start."
+    static func reviewApprovedCanStart(identifiers: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_approved_can_start", defaultValue: "Approved. \(identifiers) can start.", table: "Localizable", bundle: .main)
+    }
+
     /// "{met}/{count}"
     static func reviewCriteriaCount(met: String, count: Int) -> LocalizedStringResource {
         LocalizedStringResource("review_criteria_count", defaultValue: "\(met)/\(count, specifier: "%lld")", table: "Localizable", bundle: .main)

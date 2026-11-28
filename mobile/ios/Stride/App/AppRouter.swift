@@ -30,6 +30,8 @@ final class AppRouter {
     @ObservationIgnored private let api: (any StrideAPI)?
     @ObservationIgnored private let cache: Cache?
     @ObservationIgnored private let connectivity: Connectivity
+    /// Signs approvals; nil where the device cannot approve.
+    @ObservationIgnored private let approvals: (any ApprovalSigning)?
 
     /// The live updates, which connect again each time the app comes back.
     @ObservationIgnored private let live: LiveChannel?
@@ -41,9 +43,11 @@ final class AppRouter {
         api: (any StrideAPI)?,
         live: LiveChannel? = nil,
         cache: Cache? = nil,
-        connectivity: Connectivity = .system
+        connectivity: Connectivity = .system,
+        approvals: (any ApprovalSigning)? = nil
     ) {
         self.api = api
+        self.approvals = approvals
         self.live = live
         self.cache = cache
         self.connectivity = connectivity
@@ -55,7 +59,23 @@ final class AppRouter {
     /// The model for one review's screen, which reads the same API and cache
     /// as the queue.
     func reviewModel(for taskID: Int) -> ReviewModel {
-        ReviewModel(taskID: taskID, api: api, cache: cache, connectivity: connectivity)
+        let flow = api.flatMap { api in approvals.map { ApproveFlow(api: api, signer: $0) } }
+        return ReviewModel(taskID: taskID, api: api, cache: cache, connectivity: connectivity, approvals: flow)
+    }
+
+    /// After an approval on `tab`: replaces the review `taskID` with the next
+    /// one in the queue, after it and round to the start, or goes back when it
+    /// was the last. The queue is fetched again, since it left it.
+    func openNextReview(after taskID: Int, on tab: AppTab) {
+        let ids = reviews.rows.compactMap(\.taskID)
+        let start = ids.firstIndex(of: taskID).map { $0 + 1 } ?? 0
+        let next = (ids[start...] + ids[..<start]).first { $0 != taskID }
+
+        var path = paths[tab]
+        if path.last == .review(taskID) { path.removeLast() }
+        if let next { path.append(.review(next)) }
+        paths[tab] = path
+        Task { await reviews.load() }
     }
 
     /// The model for one review file's screen, on the same API and cache.

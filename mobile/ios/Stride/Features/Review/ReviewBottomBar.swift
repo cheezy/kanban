@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// Request changes, and Approve or where to approve a large change. The
-/// buttons stay disabled until they send their decisions, in the next goal
-/// (`ReviewModel.canDecide`). Pinned under the review side by side, or,
-/// `inline`, stacked at the end of the scrolled review.
+/// Request changes, and Approve or where to approve a large change. Each
+/// button is enabled only while it can send its decision: Approve while the
+/// device is online and nothing is on its way (`ReviewModel.canApprove`), and
+/// Request changes once it sends its notes. Pinned under the review side by
+/// side, or, `inline`, stacked at the end of the scrolled review.
 struct ReviewBottomBar: View {
-    let canDecide: Bool
+    let canApprove: Bool
+    let canRequestChanges: Bool
+    let isApproving: Bool
     let approvableHere: Bool
     var inline = false
     let requestChanges: () -> Void
@@ -16,12 +19,14 @@ struct ReviewBottomBar: View {
         layout {
             Button(action: requestChanges) { Text(.reviewRequestChanges) }
                 .buttonStyle(.stride)
+                .disabled(!canRequestChanges)
                 .accessibilityIdentifier("review-request-changes")
             if approvableHere {
                 Button(action: approve) {
-                    Label { Text(.reviewApprove) } icon: { Image(systemName: "faceid") }
+                    Label { Text(.reviewApprove) } icon: { approveIcon }
                 }
                 .buttonStyle(.stridePrimary)
+                .disabled(!canApprove)
                 .accessibilityIdentifier("review-approve")
             } else {
                 Button {} label: {
@@ -32,9 +37,18 @@ struct ReviewBottomBar: View {
                 .accessibilityIdentifier("review-approve-elsewhere")
             }
         }
-        .disabled(!canDecide)
         .modifier(PinnedBar(isPinned: !inline))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("review-bottom-bar")
+    }
+
+    /// Face ID's glyph, or a spinner while the approval is on its way.
+    @ViewBuilder
+    private var approveIcon: some View {
+        if isApproving {
+            ProgressView()
+        } else {
+            Image(systemName: "faceid")
+        }
     }
 }

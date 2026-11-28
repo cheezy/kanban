@@ -35,6 +35,11 @@ struct ReviewContent: Hashable, Sendable {
     let approvableHere: Bool
     /// The change is too large for this device to approve.
     let tooLargeHere: Bool
+    /// What the screen was rendered from, which an approval challenge is
+    /// bound to, so an edit made since it loaded is never signed unseen.
+    let reviewFingerprint: String
+    /// When the review was requested, which a decision sends back.
+    let reviewRequestedAt: Date?
 
     /// The tiles that passed.
     var passed: Int { tiles.count(where: { $0.verdict.state == .passed }) }
@@ -174,6 +179,8 @@ extension ReviewContent {
         approvableHere = detail.approvableHere
         tooLargeHere = !detail.approvableHere
             && (detail.approvableHereReason?.value1 == .tooLargeForPhone || detail.size.largeChange)
+        reviewFingerprint = detail.reviewFingerprint
+        reviewRequestedAt = detail.reviewRequestedAt
     }
 
     /// Flagged files first; the sort is stable, so each group keeps the

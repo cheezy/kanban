@@ -251,6 +251,12 @@ before the first review:
   - `.dcard` (decision card): padding 14, radius 14, `line` border, small
     shadow; kind dot, "holds up N" pill, identifier, priority dot labelled like
     "Critical priority", title 16 at weight 500, small agent avatar, verdicts.
+- The design's `.toast` puts its Next action in `stride-orange` on `ink`,
+  which falls to about 2.6:1 on the dark theme's light ink. The app and the
+  artboard use `surface`, semibold and underlined, and
+  `SharedViewAccessibilityTests` holds `surface` on `ink` to 4.5:1 (W2799).
+- A notice two screens show lives in `DesignSystem/Views/NoticeView.swift`;
+  Now's `NowNoticeView` wraps it, and Review's approve problem uses it (W2799).
 - The tokens have no diff or syntax colours: the web's `--stride-diff-*`
   colours are dark-only and left out of the generated set
   (`mobile/shared/tokens/README.md`). Map diff lines and highlighted spans onto
@@ -324,6 +330,44 @@ before the first review:
 - A Secure Enclave or `LAContext` path cannot run in a unit test: put it behind
   a small protocol (`ApprovalKeyUnlocking`) with an actor fake, and test the
   `LAError` mapping and the enrolment rules as pure functions.
+- The approve body must carry the `review_requested_at` key, but the generated
+  encoder drops a nil `Date`, so a review without the stamp gets a 400. Every
+  task entering Review is stamped (`positioning.ex`), so W2799 left it as a
+  known gap; fix it in the contract (a nullable string) if it ever bites.
+- Resend an approval only when the request never reached the server:
+  `CallFailure.isTransport(error)` unwraps a `ClientError` to its `URLError`.
+  Send the same key and the same body once, then fail; a new tap starts from a
+  new challenge (W2799).
+- A new key's sign-in for an approval runs through `SignInKeyRegistrar`, which
+  shares `OAuthSignIn.run` with the Sign in screen; a cancel is `false`, not an
+  error, and the stub web authenticator's `deny` is a cancel too (W2799).
+- `-StrideStubApproval match|nomatch|passcode` stands in for Face ID in a
+  debug build; a stub sign-in defaults to `match`, so a UI test that needs a
+  live Approve needs no extra argument. `passcode` throws `passcodeNotSet`, the
+  one way a UI test can show the approve problem notice. A stub must do what
+  the real signer does before its answer: `nomatch` fetches the challenge
+  first, as `ApprovalSigner` does before Face ID, or a test pins the stub's
+  behaviour instead of the app's (W2799).
+- Test what a request carries, not only that it was sent: the fixtures accept
+  any body, so a dropped `review_fingerprint` passed every test until
+  `ApproveFlowTests.requestBodies` decoded the bodies. `FixtureAPI`'s
+  `onRequest` hears each body before an offline failure, so a resend can be
+  compared byte for byte. Compare a nonce or signature into a `Bool` before
+  `#expect`, so a failure never prints it (W2799).
+- Check a count with `try #require` before indexing the array it counts.
+  `#expect(keys.count == 2)` then `keys[1]` passes on the real code, but a
+  break that sends once crashes the test host with "Index out of range"; the
+  run restarts, skips the rest of the suite and prints a passing total for
+  what is left (W2799).
+- Once approved, the review screen asks nothing more (a refresh or reconnect
+  would turn the toast into "gone") and `Cache.forget` drops its cached copy,
+  so it never reopens offline as still waiting (W2799).
+- Stopping new loads is not enough after a decision: a load already on its
+  way lands afterwards, and a 404 then hides the toast or a 200 caches the
+  review again. Move the shown-request number past it (`shownRequest =
+  requests`) when the decision lands. To test such a race deterministically,
+  hold the request with `FixtureAPI`'s async `hold` until the decision is
+  done, as `ApproveFlowTests.loadOnItsWay` does, never with a sleep (W2799).
 
 ## Simulators
 
@@ -597,6 +641,18 @@ before the first review:
   failure to the next text. `.accessibilityRespondsToUserInteraction(false)` on
   each text that is not a control fixed them all (`DiffHeader`, `DiffNoteRow`,
   W2797).
+- Anything pinned above a bar covers the text scrolled behind it too: on a
+  phone the review's problem notice failed contrast on the row behind it,
+  while the iPad, with the content short of the notice, passed. Wrap such a
+  notice in an `.accessibilityElement(children: .contain)` with an
+  identifier and add it to `pinnedBars` (`review-problem-notice`,
+  `review-approved-toast`, W2799), and excuse only text behind it
+  (`frame.minY < bar.frame.maxY`), or the buttons below it go unaudited.
+- A `.contain` container with an identifier around a single child that is
+  itself a `.contain` element with an identifier takes over the child's
+  identifier: wrapping the review's notice-or-toast stack hid
+  `review-approved-toast` from XCUI whenever the toast showed alone. Name
+  each notice on its own view instead (W2799).
 - An audit filter that tells a pinned bar's own buttons apart by whether an
   element's middle lies inside the bar also lets through a heading half under
   the bar. Test membership instead: look for the element's label among the
@@ -835,6 +891,24 @@ before the first review:
 - Resolve a catalog string in a test with
   `LocalizedStringResource.resolved(in: Locale(identifier: "en"))`, not
   `String(localized:)`, which follows the simulator's language (W2796).
+- `FixtureAPI`'s `onRequest` hears each request's headers before an offline
+  or unreachable call fails, so a test can read the `Idempotency-Key` of a
+  request lost on the way. The test target does not import `HTTPTypes`, so read
+  a header with `headers.first { $0.name.canonicalName == "idempotency-key" }`
+  in a closure whose types are inferred, and label `onRequest:` explicitly: a
+  trailing closure lands on `answering` (W2799).
+- To lose exactly one call, have `isOffline` read what `onRequest` recorded:
+  `onRequest` runs first, so the last operation heard is the one being sent
+  (W2799).
+- The approve 422 is a `oneOf` with no discriminator; the generated decoder
+  tries `TooLargeForPhone`, `SignatureRejected` and `ApprovalFailed` in turn,
+  and each one's `error` enum keeps them apart, so a test body needs the exact
+  `error` value (W2799).
+- A `NavigationStack` destination that replaces the last route with another
+  of the same case at the same depth (Review's Next) keeps the old view's
+  identity, so its `State(initialValue:)` model and everything shown from it
+  stay. Key such a destination with `.id(<route's id>)`; a unit test of the
+  router's path cannot see this, only a UI test can (W2799).
 
 ## Skill review before completion
 
@@ -923,6 +997,13 @@ before the first review:
   typed `let` first.
 - A broken `AsyncStream` that never ends makes a run take minutes; use a time
   limit trait on such tests.
+- To run one Swift Testing test, `-only-testing:` (and `mix ios.test`) needs
+  the function name with its parentheses, `StrideTests/ApproveFlowTests/requestBodies()`
+  (quoted in bash). Without them xcodebuild runs "0 tests in 1 suite" and
+  reports TEST SUCCEEDED, so a break looks missed; treat a 0-test run as a
+  broken filter, never as a pass. XCTest names take no parentheses, and their
+  failures print as `File.swift:69: error: -[...]` with no column, so grep for
+  `Test Case .* failed` too (W2799).
 - Script the breaks: one entry per test with the file, the exact text, its
   replacement and the test's name copied from its `@Test("...")`, checked to
   occur once before any build. Record every test that failed, not only a match:

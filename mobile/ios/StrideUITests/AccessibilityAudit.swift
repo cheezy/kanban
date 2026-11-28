@@ -59,7 +59,9 @@ extension XCUIAccessibilityAuditIssue {
         // since a heading half under it has its middle inside the bar too.
         let underPinnedBar = Self.pinnedBars.contains { id in
             let bar = app.descendants(matching: .any)[id].firstMatch
-            guard bar.exists, frame.maxY > bar.frame.minY else { return false }
+            // Behind it, not below it: the review's buttons under a notice
+            // pinned above them are still audited.
+            guard bar.exists, frame.maxY > bar.frame.minY, frame.minY < bar.frame.maxY else { return false }
 
             let sameLabel = NSPredicate(format: "label == %@", element.label)
             return !bar.descendants(matching: .any).matching(sameLabel).firstMatch.exists
@@ -85,8 +87,10 @@ extension XCUIAccessibilityAuditIssue {
         }
     }
 
-    /// The bars of buttons pinned over the bottom of a scrolled screen.
-    private static let pinnedBars = ["review-bottom-bar", "diff-bottom-bar"]
+    /// The bars of buttons pinned over the bottom of a scrolled screen, and
+    /// the review's problem notice or Approved toast pinned above its bar,
+    /// which on a phone covers the review text scrolled behind it (W2799).
+    private static let pinnedBars = ["review-bottom-bar", "review-problem-notice", "review-approved-toast", "diff-bottom-bar"]
 
     /// The lazy lists of cards: the Now cards and the Review queue's rows.
     private static let lazyLists = ["now-cards", "review-rows"]

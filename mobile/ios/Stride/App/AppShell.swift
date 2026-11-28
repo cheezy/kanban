@@ -122,7 +122,13 @@ struct AppShell: View {
     private func destination(for route: AppRoute, on tab: AppTab) -> some View {
         switch route {
         case .review(let taskID):
-            ReviewView(model: router.reviewModel(for: taskID))
+            // Keyed by the task, so Next, which replaces this route with
+            // another review at the same depth, gets a new model rather than
+            // keeping this one's state.
+            ReviewView(model: router.reviewModel(for: taskID)) {
+                router.openNextReview(after: taskID, on: tab)
+            }
+            .id(taskID)
         case .reviewFile(let target):
             DiffView(model: router.diffModel(for: target))
         default:

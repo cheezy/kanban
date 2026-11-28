@@ -90,6 +90,14 @@ SwiftData's `#Unique`, `#Index` and `deleteAllData()` need iOS 18, and the app
 supports iOS 17, so the key is `@Attribute(.unique)` and a wipe deletes the rows
 itself.
 
+## Forgetting
+
+`forget(_:)` removes one entry, and a review's files with it, and leaves every
+other entry and `epoch` as they are; a key with no entry is not an error. The
+review screen forgets a review once it is approved here, so the approved
+review never reopens offline as still waiting, and it drops any load of that
+review already on its way, so the answer cannot store it again (W2799).
+
 ## Wiping
 
 `wipe()` deletes every row, then the `Cache/` folder, and moves `epoch` on.
@@ -113,8 +121,8 @@ While offline a screen shows `OfflineBanner` with the cached response's
 ## Testing it
 
 `CacheTests` covers storing and reading with the fetch time, the limits,
-files going with their review, wiping, a write that set out before a wipe, a
-second reader during writes, a damaged store, a store from another schema
+files going with their review, forgetting one review and its files,
+wiping, a write that set out before a wipe, a second reader during writes, a damaged store, a store from another schema
 version, a response this version cannot read, a store that cannot be read, the
 protection classes and the app group container. `ConnectivityTests` covers the
 changes and stopping the source, and `SignInModelTests` checks that a sign-out

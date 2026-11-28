@@ -6,7 +6,8 @@ import StrideKit
 /// keeps each answer in the cache, which holds the last 20 reviews opened,
 /// and shows the cached review with its fetch time while offline. A decision
 /// the server refuses with an HTTP 409 shows as Already decided or
-/// Resubmitted; the buttons that send one come with the next goal.
+/// Resubmitted. Approve signs a one-time challenge after Face ID
+/// (`ApproveFlow`), and says when it went through and what can start.
 @MainActor
 @Observable
 final class ReviewModel {
@@ -22,11 +23,19 @@ final class ReviewModel {
     private(set) var isUnavailable = false
     /// The review changed since it loaded.
     private(set) var conflict: ReviewConflictState?
+    /// An approval is on its way.
+    private(set) var isApproving = false
+    /// Approved here: the tasks the review held up, which can start now.
+    private(set) var approved: [String]?
+    /// Why the last approval did not go through.
+    private(set) var approveProblem: ApproveProblem?
 
     @ObservationIgnored private let api: (any StrideAPI)?
     @ObservationIgnored private let cache: Cache?
     @ObservationIgnored private let connectivity: Connectivity
     @ObservationIgnored private let now: @Sendable () -> Date
+    /// Nil where the device cannot approve, as in a build without a signer.
+    @ObservationIgnored private let approvals: ApproveFlow?
 
     /// Numbers each request, so an answer that set out before the one shown
     /// never replaces it, whichever arrives first.
@@ -38,13 +47,15 @@ final class ReviewModel {
         api: (any StrideAPI)?,
         cache: Cache? = nil,
         connectivity: Connectivity = .system,
-        now: @escaping @Sendable () -> Date = { .now }
+        now: @escaping @Sendable () -> Date = { .now },
+        approvals: ApproveFlow? = nil
     ) {
         self.taskID = taskID
         self.api = api
         self.cache = cache
         self.connectivity = connectivity
         self.now = now
+        self.approvals = approvals
     }
 
     // MARK: What the screen shows
@@ -67,19 +78,40 @@ final class ReviewModel {
     /// Approving and requesting changes need the server.
     var canAct: Bool { !isOffline && conflict == nil && content != nil }
 
-    /// Whether the bar's buttons do anything yet. Sending a decision comes
-    /// with the next goal; until then the buttons stay disabled, so none
-    /// looks live while it does nothing.
-    var canDecide: Bool { canAct && Self.sendsDecisions }
+    /// Approve sends a signed approval: never offline, so an approval is never
+    /// sent late, never twice at once and never after it went through.
+    var canApprove: Bool {
+        canAct && approvals != nil && content?.approvableHere == true && !isApproving && approved == nil
+    }
 
-    /// Turned on by the task that sends Approve and Request changes.
-    static let sendsDecisions = false
+    /// "Approved. W2702 and W2703 can start.", the identifiers as the locale
+    /// lists them, or "Approved." when the review held nothing up; nil until
+    /// approved.
+    func approvedMessage(in locale: Locale) -> LocalizedStringResource? {
+        guard let approved else { return nil }
+        guard !approved.isEmpty else { return .reviewApproved }
+
+        return .reviewApprovedCanStart(identifiers: approved.formatted(.list(type: .and).locale(locale)))
+    }
+
+    /// A problem or the Approved toast shows above the buttons, which then
+    /// need a gap below it.
+    var showsDecisionNotice: Bool { approveProblem != nil || approved != nil }
+
+    /// Request changes sends its notes in the next task, so it stays disabled
+    /// until then rather than looking live.
+    var canRequestChanges: Bool { false }
 
     // MARK: Loading
 
     /// Asks the server for the review, and keeps it. When the request fails,
     /// the review shown stays, or the cached one shows if nothing does yet.
+    /// Once approved here it asks nothing more, and an answer already on its
+    /// way is dropped: the server no longer has the review waiting, so a
+    /// refresh or a reconnect would replace the Approved toast and Next with
+    /// "gone", or cache the review again.
     func load() async {
+        guard approved == nil else { return }
         requests += 1
         let request = requests
         guard let api else { return }
@@ -113,14 +145,53 @@ final class ReviewModel {
     }
 
     /// Shows the server's 409: the review was decided or resubmitted since it
-    /// loaded. The next goal's Approve and Request changes call this.
+    /// loaded. Approve and Request changes call this.
     func show(_ conflict: Components.Schemas.ReviewConflict) {
         self.conflict = ReviewConflictState(conflict)
+    }
+
+    /// Approves the review shown: a challenge, Face ID and the approval. `web`
+    /// opens the sign-in a new approval key needs. A 409 shows as Already
+    /// decided or Resubmitted, a 404 as gone, and a change found too large is
+    /// loaded again to say where to approve it.
+    func approve(web: any WebAuthenticating) async {
+        guard canApprove, let content, let approvals else { return }
+
+        isApproving = true
+        approveProblem = nil
+        defer { isApproving = false }
+        let reason = String(localized: .reviewApproveReason(identifier: content.identifier))
+
+        switch await approvals.approve(content, reason: reason, web: web) {
+        case .approved(let holdsUp):
+            approved = holdsUp
+            // A load already on its way set out before the approval: its
+            // answer, a 404 or the review as it was, must not land.
+            shownRequest = requests
+            // Decided here, so it never reopens offline as still waiting.
+            try? await cache?.forget(.review(taskID: taskID))
+        case .cancelled:
+            break
+        case .conflict(let conflict):
+            show(conflict)
+        case .gone:
+            isUnavailable = true
+        case .tooLarge:
+            await reload()
+        case .problem(let problem):
+            approveProblem = problem
+        }
+    }
+
+    /// Closes the problem notice.
+    func dismissApproveProblem() {
+        approveProblem = nil
     }
 
     /// Loads the new version after a resubmission.
     func reload() async {
         conflict = nil
+        approveProblem = nil
         await load()
     }
 

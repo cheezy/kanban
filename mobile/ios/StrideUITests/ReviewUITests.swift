@@ -47,11 +47,79 @@ final class ReviewUITests: XCTestCase {
 
         let bar = app.buttons["review-request-changes"]
         XCTAssertTrue(bar.exists, "no bottom bar")
-        // Nothing sends a decision yet, so no button looks live.
+        // Request changes sends nothing yet, so it does not look live.
         XCTAssertFalse(bar.isEnabled, "Request changes is enabled but does nothing")
         let approve = app.buttons["review-approve"].firstMatch
         XCTAssertTrue(approve.waitForExistence(timeout: 10), "no Approve button")
-        XCTAssertFalse(approve.isEnabled, "Approve is enabled but does nothing")
+        XCTAssertTrue(approve.isEnabled, "Approve is disabled")
+    }
+
+    /// The stub matches the face, so Approve sends the fixtures' approval and
+    /// the toast names the tasks the review held up; Next opens the next
+    /// review in the queue, whose Approve is live again.
+    @MainActor
+    func testApprovingShowsTheToastAndNextOpensTheNextReview() throws {
+        let app = openReview()
+
+        let approve = app.buttons["review-approve"].firstMatch
+        XCTAssertTrue(approve.waitForExistence(timeout: 10), "no Approve button")
+        approve.tap()
+
+        let toast = app.descendants(matching: .any)["review-approved-toast"].firstMatch
+        XCTAssertTrue(toast.waitForExistence(timeout: 10), "no Approved toast")
+        XCTAssertEqual(app.staticTexts["review-approved"].label, "Approved. W102 and W103 can start.")
+        XCTAssertFalse(approve.isEnabled, "Approve is still live after the approval")
+        try app.auditAccessibility(ignoringKnownContrast)
+
+        let next = app.buttons["review-next"].firstMatch
+        XCTAssertTrue(next.isHittable, "Next cannot be tapped")
+        next.tap()
+
+        // The fixtures answer every review alike, so a new review shows as a
+        // new model: no toast, and Approve live again.
+        XCTAssertTrue(toast.waitForNonExistence(timeout: 10), "the toast stayed after Next")
+        let live = expectation(for: NSPredicate(format: "isEnabled == true"), evaluatedWith: app.buttons["review-approve"].firstMatch)
+        wait(for: [live], timeout: 10)
+    }
+
+    /// When the face does not match, the person closes the prompt and the
+    /// review stays as it was, with nothing sent.
+    @MainActor
+    func testAFaceThatDoesNotMatchLeavesTheReviewOpen() throws {
+        let app = openReview(arguments: ["-StrideStubApproval", "nomatch"])
+
+        let approve = app.buttons["review-approve"].firstMatch
+        XCTAssertTrue(approve.waitForExistence(timeout: 10), "no Approve button")
+        approve.tap()
+
+        let toast = app.descendants(matching: .any)["review-approved-toast"].firstMatch
+        XCTAssertFalse(toast.waitForExistence(timeout: 3), "a face that did not match approved the review")
+        XCTAssertFalse(app.descendants(matching: .any)["review-approve-problem"].firstMatch.exists, "a closed prompt showed a problem")
+        XCTAssertTrue(app.staticTexts["review-title"].exists, "the review closed")
+        XCTAssertTrue(approve.isEnabled, "Approve is off after a closed prompt")
+    }
+
+    /// An approval that cannot be made says why above the buttons, leaves
+    /// Approve on, and closes with its button.
+    @MainActor
+    func testAProblemSaysWhyAndCloses() throws {
+        let app = openReview(arguments: ["-StrideStubApproval", "passcode"])
+
+        let approve = app.buttons["review-approve"].firstMatch
+        XCTAssertTrue(approve.waitForExistence(timeout: 10), "no Approve button")
+        approve.tap()
+
+        let problem = app.staticTexts["review-approve-problem"].firstMatch
+        XCTAssertTrue(problem.waitForExistence(timeout: 10), "no problem notice")
+        XCTAssertEqual(problem.label, "Set a passcode on this device first. Stride uses it to confirm your approvals.")
+        XCTAssertFalse(app.descendants(matching: .any)["review-approved-toast"].firstMatch.exists, "the review was approved")
+        XCTAssertTrue(approve.isEnabled, "Approve is off after a problem")
+        try app.auditAccessibility(ignoringKnownContrast)
+
+        let close = app.buttons["Close"].firstMatch
+        XCTAssertTrue(close.isHittable, "the notice cannot be closed")
+        close.tap()
+        XCTAssertTrue(problem.waitForNonExistence(timeout: 5), "the notice stayed after Close")
     }
 
     /// At the largest text size the audit has no larger size to push the
@@ -101,8 +169,8 @@ final class ReviewUITests: XCTestCase {
     }
 
     @MainActor
-    private func openReview(textSize: String? = nil) -> XCUIApplication {
-        let app = launchSignedIn(textSize: textSize)
+    private func openReview(textSize: String? = nil, arguments: [String] = []) -> XCUIApplication {
+        let app = launchSignedIn(textSize: textSize, arguments: arguments)
         openFirstReview(app)
 
         XCTAssertTrue(app.staticTexts["review-title"].waitForExistence(timeout: 10), "the review did not open")

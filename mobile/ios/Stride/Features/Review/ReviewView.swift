@@ -1,3 +1,4 @@
+import AuthenticationServices
 import StrideKit
 import SwiftUI
 
@@ -7,10 +8,16 @@ import SwiftUI
 /// first) and the bottom bar. The server's text is shown as plain text.
 struct ReviewView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.locale) private var locale
+    @Environment(\.webAuthenticationSession) private var webSession
     @State private var model: ReviewModel
 
-    init(model: ReviewModel) {
+    /// Opens the next review in the queue, after an approval.
+    private let next: () -> Void
+
+    init(model: ReviewModel, next: @escaping () -> Void = {}) {
         _model = State(initialValue: model)
+        self.next = next
     }
 
     var body: some View {
@@ -25,7 +32,7 @@ struct ReviewView: View {
                 // half the screen and split its words, so the buttons follow
                 // the files instead.
                 if typeSize.isAccessibilitySize {
-                    bottomBar(inline: true)
+                    decisions(inline: true)
                 }
             }
             .padding(.horizontal, 16)
@@ -39,7 +46,7 @@ struct ReviewView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             if !typeSize.isAccessibilitySize {
-                bottomBar(inline: false)
+                decisions(inline: false)
             }
         }
         .refreshable { await model.load() }
@@ -47,19 +54,46 @@ struct ReviewView: View {
         .task { await model.observe() }
     }
 
+    /// What an approval came to, above the buttons, and the buttons.
     @ViewBuilder
-    private func bottomBar(inline: Bool) -> some View {
+    private func decisions(inline: Bool) -> some View {
         if model.state == .review, let content = model.content {
-            // The decisions are sent in the next goal; until then the bar
-            // stays disabled (`ReviewModel.canDecide`).
-            ReviewBottomBar(
-                canDecide: model.canDecide,
-                approvableHere: content.approvableHere,
-                inline: inline,
-                requestChanges: {},
-                approve: {}
-            )
+            VStack(spacing: 0) {
+                VStack(spacing: 8) {
+                    if let problem = model.approveProblem {
+                        NoticeView(text: problem.text, isProblem: true, identifier: "review-approve-problem") {
+                            model.dismissApproveProblem()
+                        }
+                        // The whole notice, Close included, for the audit;
+                        // the toast names itself, and a container around it
+                        // alone would take its identifier.
+                        .accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("review-problem-notice")
+                    }
+                    if let message = model.approvedMessage(in: locale) {
+                        ApprovedToast(message: message, next: next)
+                    }
+                }
+                // Over the pinned bar, in its readable column.
+                .padding(.horizontal, inline ? 0 : 12)
+                .padding(.bottom, model.showsDecisionNotice ? 8 : 0)
+                .frame(maxWidth: inline ? .infinity : 640)
+                ReviewBottomBar(
+                    canApprove: model.canApprove,
+                    canRequestChanges: model.canRequestChanges,
+                    isApproving: model.isApproving,
+                    approvableHere: content.approvableHere,
+                    inline: inline,
+                    requestChanges: {},
+                    approve: approve
+                )
+            }
         }
+    }
+
+    private func approve() {
+        let web = SystemWebAuthenticator(session: webSession)
+        Task { await model.approve(web: web) }
     }
 
     @ViewBuilder
