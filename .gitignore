@@ -176,3 +176,5 @@ docs/blog/
 /.stride/
 design_handoff_stride/
 launchdarkly-copilot/
+
+print/
