@@ -8,8 +8,9 @@ defmodule KanbanWeb.Blog.Loader do
 
   Each file is parsed with `KanbanWeb.Blog.FrontMatter`, its author is looked
   up in `KanbanWeb.Blog.Authors`, and its body is rendered with
-  `KanbanWeb.Blog.Renderer`. Drafts are left out and the rest are sorted
-  newest first. Every problem raises `ArgumentError` naming the file.
+  `KanbanWeb.Blog.Renderer`. Slugs must be unique across every file,
+  drafts included. Drafts are then left out and the rest are sorted newest
+  first. Every problem raises `ArgumentError` naming the file.
   """
 
   alias KanbanWeb.Blog.Authors
@@ -42,9 +43,9 @@ defmodule KanbanWeb.Blog.Loader do
     dir
     |> post_files()
     |> Enum.map(&load_post!(&1, opts))
-    |> Enum.reject(& &1.draft)
-    |> Enum.map(&Map.delete(&1, :draft))
     |> check_unique_slugs!()
+    |> Enum.reject(& &1.draft)
+    |> Enum.map(&Map.drop(&1, [:draft, :path]))
     |> Enum.sort_by(& &1.date, {:desc, DateTime})
   end
 
@@ -69,16 +70,25 @@ defmodule KanbanWeb.Blog.Loader do
       raise ArgumentError, "#{path}: unknown author \"#{fields.author}\""
     end
 
-    Map.put(fields, :html, Renderer.render!(body, path, opts))
+    fields
+    |> Map.put(:html, Renderer.render!(body, path, opts))
+    |> Map.put(:path, path)
   end
 
+  # Drafts are checked too, so publishing a draft can never collide with a
+  # live post's URL. The error names every file that uses the slug.
   defp check_unique_slugs!(posts) do
     posts
-    |> Enum.frequencies_by(& &1.slug)
-    |> Enum.find(fn {_slug, count} -> count > 1 end)
+    |> Enum.group_by(& &1.slug, & &1.path)
+    |> Enum.sort()
+    |> Enum.find(fn {_slug, paths} -> length(paths) > 1 end)
     |> case do
-      nil -> posts
-      {slug, _count} -> raise ArgumentError, "two posts share the slug \"#{slug}\""
+      nil ->
+        posts
+
+      {slug, paths} ->
+        raise ArgumentError,
+              "two posts share the slug \"#{slug}\": #{Enum.join(Enum.sort(paths), ", ")}"
     end
   end
 end

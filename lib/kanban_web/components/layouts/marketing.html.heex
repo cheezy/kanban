@@ -76,7 +76,7 @@
         current_locale={Gettext.get_locale(KanbanWeb.Gettext)}
       />
       {@inner_content}
-      <.marketing_footer />
+      <.marketing_footer current_scope={@current_scope} />
     </div>
   </body>
 </html>

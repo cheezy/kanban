@@ -948,6 +948,90 @@ defmodule KanbanWeb.MarketingComponentsTest do
     end
   end
 
+  describe "the footer Blog link and the :blog flag (W2952)" do
+    defp footer_html(scope) do
+      assigns = %{current_scope: scope}
+
+      rendered_to_string(~H"""
+      <KanbanWeb.MarketingClosing.marketing_footer current_scope={@current_scope} />
+      """)
+    end
+
+    defp blog_links(html) do
+      html
+      |> LazyHTML.from_fragment()
+      |> LazyHTML.query("footer a")
+      |> Enum.filter(&(&1 |> LazyHTML.text() |> String.trim() == "Blog"))
+    end
+
+    test "with the flag off the Blog link goes to cheezyworld.ca in a new tab" do
+      html = footer_html(nil)
+
+      assert [link] = blog_links(html)
+      assert LazyHTML.attribute(link, "href") == [KanbanWeb.MarketingClosing.blog_url()]
+      assert LazyHTML.attribute(link, "target") == ["_blank"]
+      assert href_count(html, "/blog") == 0
+    end
+
+    test "with the flag on for everyone the Blog link goes to /blog in the same tab" do
+      :ok = Kanban.FeatureFlags.enable_for_everyone(:blog)
+      html = footer_html(nil)
+
+      assert [link] = blog_links(html)
+      assert LazyHTML.attribute(link, "href") == ["/blog"]
+      assert LazyHTML.attribute(link, "target") == []
+      assert href_count(html, KanbanWeb.MarketingClosing.blog_url()) == 0
+    end
+
+    test "with the flag on for one user only that user's footer links to /blog" do
+      previewer = Kanban.AccountsFixtures.user_fixture()
+      other = Kanban.AccountsFixtures.user_fixture()
+      :ok = Kanban.FeatureFlags.enable_for_user(:blog, previewer)
+
+      assert previewer |> Kanban.Accounts.Scope.for_user() |> footer_html() |> href_count("/blog") ==
+               1
+
+      for scope <- [nil, Kanban.Accounts.Scope.for_user(other)] do
+        html = footer_html(scope)
+        assert href_count(html, "/blog") == 0
+        assert href_count(html, KanbanWeb.MarketingClosing.blog_url()) == 1
+      end
+    end
+
+    # A per-user gate, so the footer can only link /blog if the layout passed
+    # the signed-in scope: with no scope it would read the everyone gate.
+    test "the marketing layout passes the signed-in scope to the footer", %{conn: conn} do
+      previewer = Kanban.AccountsFixtures.user_fixture()
+      :ok = Kanban.FeatureFlags.enable_for_user(:blog, previewer)
+
+      footer_blog_links = fn conn ->
+        conn
+        |> get(~p"/privacy")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query(~s|footer a[href="/blog"]|)
+        |> Enum.count()
+      end
+
+      assert conn |> log_in_user(previewer) |> footer_blog_links.() == 1
+      assert footer_blog_links.(build_conn()) == 0
+    end
+
+    test "the flag-on link text is translated" do
+      Gettext.put_locale(KanbanWeb.Gettext, "ja")
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+      :ok = Kanban.FeatureFlags.enable_for_everyone(:blog)
+
+      links =
+        nil
+        |> footer_html()
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query(~s|footer a[href="/blog"]|)
+
+      assert links |> LazyHTML.text() |> String.trim() == "ブログ"
+    end
+  end
+
   describe "marketing_footer/1" do
     test "renders the Stride logo, wordmark, domain, copyright, the integrations link and the legal links" do
       assigns = %{}

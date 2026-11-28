@@ -9,6 +9,10 @@ defmodule KanbanWeb.Blog.FrontMatter do
   `false`, or a bare token such as `cheezy`. Only the known keys are accepted:
   `title`, `date`, `draft`, `tags`, `author`, `slug` and `description`.
 
+  `title`, `slug` and `description` must not be blank, and `slug` must be
+  lower-case letters and digits joined by single hyphens, so it is safe in a
+  URL.
+
   Anything else raises `ArgumentError` naming the file and the key or line,
   so a malformed post fails the build instead of publishing. No YAML or TOML
   library is used: the subset is small and parsing it loudly is the point.
@@ -25,6 +29,12 @@ defmodule KanbanWeb.Blog.FrontMatter do
   }
 
   @required [:title, :date, :author, :slug, :description]
+
+  # Quoted strings that must say something: a blank one fails the build.
+  @non_blank [:title, :slug, :description]
+
+  # A slug is the last part of `/blog/<slug>`, so it stays URL-safe.
+  @slug_format ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/
 
   @type t :: %{
           title: String.t(),
@@ -72,9 +82,28 @@ defmodule KanbanWeb.Blog.FrontMatter do
       |> Enum.reject(fn {line, _number} -> String.trim(line) == "" end)
       |> Enum.reduce(%{}, &put_line!(&1, &2, path))
 
-    Enum.each(@required, &require_key!(fields, &1, path))
+    check_fields!(fields, path)
 
     Map.merge(%{draft: false, tags: []}, fields)
+  end
+
+  defp check_fields!(fields, path) do
+    Enum.each(@required, &require_key!(fields, &1, path))
+    Enum.each(@non_blank, &require_text!(fields, &1, path))
+    check_slug!(fields.slug, path)
+  end
+
+  defp require_text!(fields, key, path) do
+    if fields |> Map.fetch!(key) |> String.trim() == "" do
+      raise ArgumentError, "#{path}: empty front matter key \"#{key}\""
+    end
+  end
+
+  defp check_slug!(slug, path) do
+    unless Regex.match?(@slug_format, slug) do
+      raise ArgumentError,
+            "#{path}: front matter key \"slug\" must be lower-case letters, digits and single hyphens"
+    end
   end
 
   defp put_line!({line, number}, fields, path) do

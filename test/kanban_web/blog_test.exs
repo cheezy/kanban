@@ -169,13 +169,45 @@ defmodule KanbanWeb.BlogTest do
       assert error.message =~ "bad.md: link"
     end
 
-    test "raises on two posts with the same slug", %{tmp_dir: dir} do
+    test "raises on two posts with the same slug, naming both files", %{tmp_dir: dir} do
       write_post(dir, "a.md", front_matter("same", "2026-01-01T00:00:00Z"))
       write_post(dir, "b.md", front_matter("same", "2026-02-01T00:00:00Z"))
 
-      assert_raise ArgumentError, ~s(two posts share the slug "same"), fn ->
+      error = assert_raise ArgumentError, fn -> Loader.load_posts(dir) end
+      assert error.message =~ ~s(two posts share the slug "same": )
+      assert error.message =~ ~r/a\.md, .*b\.md\z/
+    end
+
+    test "raises when a draft shares its slug with a published post", %{tmp_dir: dir} do
+      write_post(dir, "live.md", front_matter("same", "2026-01-01T00:00:00Z"))
+
+      write_post(
+        dir,
+        "draft.md",
+        front_matter("same", "2026-02-01T00:00:00Z", ["draft: true"])
+      )
+
+      error = assert_raise ArgumentError, fn -> Loader.load_posts(dir) end
+      assert error.message =~ ~s(two posts share the slug "same")
+      assert error.message =~ "draft.md"
+      assert error.message =~ "live.md"
+    end
+
+    test "raises when two drafts share a slug", %{tmp_dir: dir} do
+      write_post(dir, "a.md", front_matter("same", "2026-01-01T00:00:00Z", ["draft: true"]))
+      write_post(dir, "b.md", front_matter("same", "2026-02-01T00:00:00Z", ["draft: true"]))
+
+      assert_raise ArgumentError, ~r/two posts share the slug "same"/, fn ->
         Loader.load_posts(dir)
       end
+    end
+
+    test "loaded posts carry no internal :path or :draft key", %{tmp_dir: dir} do
+      write_post(dir, "a.md", front_matter("a", "2026-01-01T00:00:00Z"))
+
+      assert [post] = Loader.load_posts(dir)
+      refute Map.has_key?(post, :path)
+      refute Map.has_key?(post, :draft)
     end
 
     test "listing_hash/2 changes when a post is added", %{tmp_dir: dir} do

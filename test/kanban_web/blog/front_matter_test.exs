@@ -148,6 +148,36 @@ defmodule KanbanWeb.Blog.FrontMatterTest do
       )
     end
 
+    test "raises on an empty or blank title, slug or description" do
+      raises(List.replace_at(@valid, 2, "title: ''"), ~s(empty front matter key "title"))
+      raises(List.replace_at(@valid, 2, ~s(title: "   ")), ~s(empty front matter key "title"))
+
+      raises(
+        List.replace_at(@valid, 6, ~s(description: "")),
+        ~s(empty front matter key "description")
+      )
+
+      raises(List.replace_at(@valid, 5, "slug: ''"), ~s(empty front matter key "slug"))
+    end
+
+    test "raises on a slug that is not URL-safe" do
+      for slug <- ["two words", "a/b", "../x", "Upper", "-lead", "trail-", "a--b", "a_b", "é"] do
+        raises(
+          List.replace_at(@valid, 5, "slug: '#{slug}'"),
+          ~s(front matter key "slug" must be lower-case letters, digits and single hyphens)
+        )
+      end
+    end
+
+    test "accepts a slug of lower-case letters and digits joined by hyphens" do
+      for slug <- ["a", "how-much", "part-2-of-3", "2026"] do
+        {fields, _body} =
+          @valid |> List.replace_at(5, "slug: '#{slug}'") |> post() |> FrontMatter.parse!(@path)
+
+        assert fields.slug == slug
+      end
+    end
+
     test "raises on a date that is not ISO 8601 with an offset" do
       raises(List.replace_at(@valid, 0, "date: 'yesterday'"), ~s(invalid front matter key "date"))
     end

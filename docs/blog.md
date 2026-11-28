@@ -15,9 +15,9 @@ Each post is one markdown file directly in
 
 - Name the file after the post in lower case with hyphens, such as
   `how-much.md`. The file name is not used in the URL; the `slug` key is.
-- A post's page is `/blog/<slug>`. Two published posts with the same slug
-  fail the build. Drafts are left out before that check, so a draft can share
-  a slug with a published post without an error.
+- A post's page is `/blog/<slug>`. Two posts with the same slug fail the
+  build, drafts included, so publishing a draft can never take over another
+  post's URL.
 - The index at `/blog` lists every post that is not a draft, newest `date`
   first.
 
@@ -69,9 +69,10 @@ allowed. The file must start with the opening `---` line, and the closing
 matter, not YAML, so anything else (comments, multi-line values, other keys)
 fails the build.
 
-The parser checks that each required key is there and has the right form, not
-what it says: an empty `title`, `slug` or `description`, or a `slug` with
-spaces or slashes, does not fail the build. The 150 to 160 character
+The parser also checks a little of what the keys say: a blank `title`, `slug`
+or `description` fails the build, and so does a `slug` that is not lower-case
+letters and digits joined by single hyphens (no spaces, slashes, underscores
+or capitals, and no hyphen at either end). The 150 to 160 character
 description is checked by the tests, as [Updating the tests](#updating-the-tests)
 describes, not by the parser.
 
@@ -119,17 +120,20 @@ widening.
 ## What fails the build
 
 Every problem raises `ArgumentError` when the app compiles, so a bad post
-never reaches a page. The message names the post's file, except for a shared
-slug, where it names the slug. The build fails when a post:
+never reaches a page. The message names the post's file; for a shared slug it
+names the slug and every file that uses it. The build fails when a post:
 
 - has no front matter block, a line that is not `key: value`, or a value in
   the wrong form or type;
 - uses a key that is not one of the seven above, or uses a key twice;
-- leaves out `title`, `date`, `author`, `slug` or `description`;
+- leaves out `title`, `date`, `author`, `slug` or `description`, or leaves
+  `title`, `slug` or `description` blank;
+- has a `slug` that is not lower-case letters and digits joined by single
+  hyphens;
 - has a `date` that `DateTime.from_iso8601/1` cannot read, including one
   with no offset;
 - names an author who is not in `KanbanWeb.Blog.Authors`;
-- shares its slug with another published post;
+- shares its slug with another post, draft or not;
 - links to anything but an `http`, `https` or `mailto` URL. The one
   exception is `/post/<slug>/`, which becomes a link to that post on
   cheezyworld.ca;
@@ -161,7 +165,12 @@ the way to see a post is to turn the flag on for your own account:
 2. Have a site admin open `/admin/feature-flags`, find **Blog (experiment)**,
    and turn it on for your account, as [The admin page](feature-flags.md#the-admin-page)
    in the feature flags guide describes.
-3. Sign in and open `/blog` or `/blog/<slug>`.
+3. Sign in and open `/blog` or `/blog/<slug>`, or follow the **Blog** link in
+   the footer of any marketing page.
+
+The footer's **Blog** link follows the flag too: for anyone the flag is on
+for, it goes to `/blog` in the same tab; for everyone else it still opens the
+Stride posts on cheezyworld.ca in a new tab.
 
 Do not turn the flag on for everyone to preview a post: that publishes the
 blog to every visitor.

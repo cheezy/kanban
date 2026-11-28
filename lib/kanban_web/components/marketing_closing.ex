@@ -26,8 +26,8 @@ defmodule KanbanWeb.MarketingClosing do
 
   @doc """
   The Stride tag page on the blog where the Stride posts are published, linked
-  from the marketing nav, the mobile marketing menu and the footer. It is an
-  external site, so it is not listed in the sitemap or named as `sameAs`.
+  from the footer while the `:blog` flag is off. It is an external site, so
+  it is not listed in the sitemap or named as `sameAs`.
   """
   def blog_url, do: @blog_url
 
@@ -116,11 +116,22 @@ defmodule KanbanWeb.MarketingClosing do
     * Below `md` it stacks into a column and the links wrap; the design is
       one desktop row.
 
+  The Blog link follows the `:blog` feature flag for `current_scope`: off,
+  it opens the cheezyworld.ca Stride tag page in a new tab; on, it goes to
+  the blog served at `/blog` in the same tab, like the legal links.
+
   ## Examples
 
-      <.marketing_footer />
+      <.marketing_footer current_scope={@current_scope} />
   """
+  attr :current_scope, :map,
+    default: nil,
+    doc: "The `@current_scope` assign — `nil` when no user is signed in."
+
   def marketing_footer(assigns) do
+    assigns =
+      assign(assigns, :blog_enabled, Kanban.FeatureFlags.enabled?(assigns.current_scope, :blog))
+
     ~H"""
     <footer
       class="flex flex-col md:flex-row md:items-center gap-4 md:gap-7 px-5 py-6 md:px-16 md:py-8"
@@ -167,6 +178,14 @@ defmodule KanbanWeb.MarketingClosing do
           {gettext("Security")}
         </.link>
         <.link
+          :if={@blog_enabled}
+          href={~p"/blog"}
+          class="hover:opacity-70 transition-opacity focus-visible:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {gettext("Blog")}
+        </.link>
+        <.link
+          :if={!@blog_enabled}
           href={blog_url()}
           target="_blank"
           rel="noopener noreferrer"
