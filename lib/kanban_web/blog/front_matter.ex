@@ -37,6 +37,21 @@ defmodule KanbanWeb.Blog.FrontMatter do
         }
 
   @doc """
+  The names of every front matter key a post may use, sorted.
+
+  `test/kanban/blog_docs_test.exs` compares them with the key table in
+  `docs/blog.md`, so the guide cannot drift from the parser.
+  """
+  @spec keys() :: [String.t()]
+  def keys, do: @keys |> Map.keys() |> Enum.sort()
+
+  @doc """
+  The names of the front matter keys a post must set, sorted.
+  """
+  @spec required_keys() :: [String.t()]
+  def required_keys, do: @required |> Enum.map(&Atom.to_string/1) |> Enum.sort()
+
+  @doc """
   Splits `contents`, the file at `path`, into its parsed front matter and the
   markdown body that follows it. Raises `ArgumentError` naming `path` on any
   problem.

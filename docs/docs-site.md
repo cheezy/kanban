@@ -104,3 +104,8 @@ The sitemap picks the new page up from `KanbanWeb.Docs.sitemap_paths/0`; see
 The guides stay in English, and so do their meta descriptions. The page chrome
 around them (the index headings, "On this page", "View this page on GitHub")
 goes through gettext and is translated into every supported language.
+
+## See also
+
+- [Writing Blog Posts](blog.md) for the flag-gated `/blog` experiment, whose
+  posts are also markdown compiled into the app, from `priv/blog/posts/`.

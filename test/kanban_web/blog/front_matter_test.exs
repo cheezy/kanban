@@ -23,6 +23,22 @@ defmodule KanbanWeb.Blog.FrontMatterTest do
     assert error.message =~ message
   end
 
+  describe "keys/0 and required_keys/0" do
+    test "list the seven accepted keys and the five required ones, sorted" do
+      assert FrontMatter.keys() == ~w(author date description draft slug tags title)
+      assert FrontMatter.required_keys() == ~w(author date description slug title)
+    end
+
+    test "every listed key parses and a key outside the list raises" do
+      {fields, _body} = @valid |> post() |> FrontMatter.parse!(@path)
+
+      assert fields |> Map.keys() |> Enum.map(&Atom.to_string/1) |> Enum.sort() ==
+               FrontMatter.keys()
+
+      raises(@valid ++ ["summary: 'x'"], ~s(unknown front matter key "summary"))
+    end
+  end
+
   describe "parse!/2" do
     test "parses quoted strings, string lists, booleans and a bare author" do
       {fields, body} = @valid |> post() |> FrontMatter.parse!(@path)
