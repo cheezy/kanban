@@ -16956,3 +16956,13 @@ msgstr[1] "Diese Spalte kann nicht gelöscht werden: %{count} Aufgaben in andere
 #, elixir-autogen, elixir-format
 msgid "Backend for the upcoming mobile apps"
 msgstr "Backend für die kommenden mobilen Apps"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Blog (experiment)"
+msgstr "Blog (Experiment)"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
+msgstr "Zeigt den Blog unter /blog, ein Experiment mit von cheezyworld.ca kopierten Beiträgen, den Benutzern, für die es aktiviert ist."

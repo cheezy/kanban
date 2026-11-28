@@ -16859,3 +16859,13 @@ msgstr[0] "この列を削除できません: 他の列のタスク %{count} 件
 #, elixir-autogen, elixir-format
 msgid "Backend for the upcoming mobile apps"
 msgstr "今後登場するモバイルアプリのバックエンド"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Blog (experiment)"
+msgstr "ブログ（試験運用）"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
+msgstr "cheezyworld.ca からコピーした投稿を使った試験運用のブログを、有効になっているユーザーに /blog で表示します。"

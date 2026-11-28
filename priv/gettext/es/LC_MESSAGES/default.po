@@ -16951,3 +16951,13 @@ msgstr[1] "No se puede eliminar esta columna: %{count} tareas de otras columnas 
 #, elixir-autogen, elixir-format
 msgid "Backend for the upcoming mobile apps"
 msgstr "Backend para las próximas aplicaciones móviles"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Blog (experiment)"
+msgstr "Blog (experimento)"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
+msgstr "Muestra el blog en /blog, un experimento con entradas copiadas de cheezyworld.ca, a los usuarios para los que está activado."

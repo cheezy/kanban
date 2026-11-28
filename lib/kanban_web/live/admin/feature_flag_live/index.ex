@@ -236,11 +236,18 @@ defmodule KanbanWeb.Admin.FeatureFlagLive.Index do
   defp parse_id(_id), do: nil
 
   defp flag_label(:mobile_app_preview), do: gettext("Mobile app preview")
+  defp flag_label(:blog), do: gettext("Blog (experiment)")
 
   defp flag_description(:mobile_app_preview),
     do:
       gettext(
         "Shows the screens that matter only once the phone apps ship: the device list in account settings, the push notification settings, and the Organization policy that hides task titles in pushes."
+      )
+
+  defp flag_description(:blog),
+    do:
+      gettext(
+        "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
       )
 
   defp state_label(%{everyone?: true}), do: gettext("On for everyone")

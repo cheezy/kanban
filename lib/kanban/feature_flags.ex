@@ -85,7 +85,7 @@ defmodule Kanban.FeatureFlags do
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
 
-  @flags [:mobile_app_preview]
+  @flags [:mobile_app_preview, :blog]
   @topic "feature_flags"
 
   # users.email accepts at most 160 characters (validate_length counts
@@ -97,7 +97,7 @@ defmodule Kanban.FeatureFlags do
   # hold are ever passed on to a query.
   @max_bigint 9_223_372_036_854_775_807
 
-  @type flag :: :mobile_app_preview
+  @type flag :: :mobile_app_preview | :blog
   @type state :: :off | :everyone | {:users, [pos_integer()]}
   @type overview :: %{
           flag: flag(),

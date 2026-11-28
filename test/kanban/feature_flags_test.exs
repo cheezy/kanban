@@ -23,8 +23,8 @@ defmodule Kanban.FeatureFlagsTest do
 
   defp on_for?(user), do: user |> Scope.for_user() |> FeatureFlags.enabled?(@flag)
 
-  test "flags/0 registers :mobile_app_preview, and it is off by default" do
-    assert FeatureFlags.flags() == [:mobile_app_preview]
+  test "flags/0 registers :mobile_app_preview and :blog, and both are off by default" do
+    assert FeatureFlags.flags() == [:mobile_app_preview, :blog]
     assert FeatureFlags.state(@flag) == :off
     refute FeatureFlags.enabled?(nil, @flag)
   end

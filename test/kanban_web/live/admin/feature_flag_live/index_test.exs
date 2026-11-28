@@ -20,6 +20,8 @@ defmodule KanbanWeb.Admin.FeatureFlagLive.IndexTest do
     "Feature flags",
     "Turn unreleased features on for chosen users or for everyone. A change applies the next time a page loads; no restart is needed.",
     "Mobile app preview",
+    "Blog (experiment)",
+    "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for.",
     "Shows the screens that matter only once the phone apps ship: the device list in account settings, the push notification settings, and the Organization policy that hides task titles in pushes.",
     "Off",
     "On for everyone",
@@ -103,6 +105,20 @@ defmodule KanbanWeb.Admin.FeatureFlagLive.IndexTest do
 
       assert has_element?(view, "#flag-#{@flag}-state", "On for 1 user")
       assert has_element?(view, "#flag-#{@flag}-user-#{user.id}", user.email)
+    end
+
+    test "lists the Blog (experiment) flag, off, with its label and description", %{conn: conn} do
+      {:ok, view, _html} = live(conn, @path)
+
+      assert has_element?(view, "#flag-blog h2", "Blog (experiment)")
+
+      assert has_element?(
+               view,
+               "#flag-blog p",
+               "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca"
+             )
+
+      assert has_element?(view, "#flag-blog-state", "Off")
     end
 
     test "a flag with no gates shows the translated empty state", %{conn: conn} do

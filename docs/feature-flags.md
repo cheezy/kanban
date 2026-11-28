@@ -3,9 +3,9 @@
 Stride hides unreleased work behind feature flags, so it can ship to
 production switched off and be turned on for a few people before everyone.
 This guide covers the flag registry, how to add and check a flag, the admin
-page that switches a flag, what each change records, and the one flag Stride
-has today, `:mobile_app_preview`: what it hides, what it leaves alone, and how
-it is rolled out and then removed.
+page that switches a flag, what each change records, and, in detail, the
+`:mobile_app_preview` flag: what it hides, what it leaves alone, and how it is
+rolled out and then removed.
 
 ## The registry
 
@@ -13,12 +13,13 @@ it is rolled out and then removed.
 calls the fun_with_flags library. Every screen, context or job that hides
 unreleased work asks it, through `Kanban.FeatureFlags.enabled?/2`.
 
-The `@flags` list in that module is the whole registry. Today it holds one
-flag:
+The `@flags` list in that module is the whole registry. Today it holds two
+flags:
 
 | Flag | What it shows |
 |---|---|
 | `:mobile_app_preview` | The web screens that matter only once the Stride app ships: the push settings on `/users/notifications`, the Devices section of `/users/settings`, and the **Notification privacy** card on `/org/security`. [The mobile app preview](#the-mobile-app-preview) has the exact rules |
+| `:blog` | The blog experiment at `/blog`, file-based posts copied from cheezyworld.ca (`KanbanWeb.Blog`), for the users it is on for |
 
 To add a flag:
 

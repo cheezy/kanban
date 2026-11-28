@@ -16929,3 +16929,13 @@ msgstr[1] "Não é possível excluir esta coluna: %{count} tarefas de outras col
 #, elixir-autogen, elixir-format
 msgid "Backend for the upcoming mobile apps"
 msgstr "Backend dos próximos aplicativos móveis"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Blog (experiment)"
+msgstr "Blog (experimento)"
+
+#: lib/kanban_web/live/admin/feature_flag_live/index.ex
+#, elixir-autogen, elixir-format
+msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
+msgstr "Mostra o blog em /blog, um experimento com publicações copiadas de cheezyworld.ca, aos usuários para quem está ativado."
