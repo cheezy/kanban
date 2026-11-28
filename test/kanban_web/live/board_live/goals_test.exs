@@ -89,6 +89,33 @@ defmodule KanbanWeb.BoardLive.GoalsTest do
       assert goal.flow.total == 2
       assert goal.promoted == true
     end
+
+    test "sorts by identifier number, not insertion time or string order, ties by id" do
+      goal = fn id, identifier, inserted_at ->
+        {id,
+         %{
+           id: id,
+           identifier: identifier,
+           short: identifier,
+           color: "c",
+           ink: "i",
+           inserted_at: inserted_at
+         }}
+      end
+
+      goals_by_id =
+        Map.new([
+          goal.(1, "G10", ~N[2026-01-01 00:00:00]),
+          goal.(2, "G9", ~N[2026-03-01 00:00:00]),
+          goal.(3, "G2", ~N[2026-02-01 00:00:00]),
+          goal.(5, nil, ~N[2026-01-01 00:00:00]),
+          goal.(4, "G9", ~N[2026-01-01 00:00:00])
+        ])
+
+      result = Goals.compute_active_goals(%{}, [], goals_by_id, MapSet.new())
+
+      assert Enum.map(result, & &1.id) == [5, 3, 2, 4, 1]
+    end
   end
 
   describe "compute_goals_by_id/1" do

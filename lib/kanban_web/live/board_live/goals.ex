@@ -19,15 +19,24 @@ defmodule KanbanWeb.BoardLive.Goals do
   # Build the list of active goals shaped for KanbanWeb.GoalsStrip.
   # Each entry has :identifier, :name, :color, :ink, :promoted plus a
   # :flow map of segmented child-task counts per status. The list is
-  # sorted by identifier so the strip's order is stable across refreshes.
-  @doc "Builds the active-goals list for the goals strip, sorted by inserted_at."
+  # sorted by the identifier's number (G9 before G10), ties broken by id,
+  # so the strip's order is stable across refreshes.
+  @doc "Builds the active-goals list for the goals strip, sorted by identifier number."
   def compute_active_goals(tasks_by_column, columns, goals_by_id, backlog_promotable) do
     status_by_column_id =
       Map.new(columns, fn col -> {col.id, ColumnActions.column_status(col.name)} end)
 
     goals_by_id
     |> Enum.map(&build_active_goal(&1, tasks_by_column, status_by_column_id, backlog_promotable))
-    |> Enum.sort_by(& &1.inserted_at, NaiveDateTime)
+    |> Enum.sort_by(&{identifier_number(&1.identifier), &1.id})
+  end
+
+  # The number in an identifier such as "G131"; 0 when there is none.
+  defp identifier_number(identifier) do
+    case Regex.run(~r/\d+/, identifier || "") do
+      [digits] -> String.to_integer(digits)
+      nil -> 0
+    end
   end
 
   defp build_active_goal({goal_id, info}, tasks_by_column, status_by_column_id, promotable) do
