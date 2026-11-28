@@ -1113,3 +1113,9 @@ msgstr "%{name} 的差异"
 msgctxt "now_ready_empty_body"
 msgid "%{idle} %{backlog}"
 msgstr "%{idle}%{backlog}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "info_plist_face_id_usage"
+msgid "Stride uses Face ID to confirm your approvals."
+msgstr "Stride 会用面容 ID 来确认你的批准。"

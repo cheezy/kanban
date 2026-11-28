@@ -2123,6 +2123,53 @@
         }
       }
     },
+    "info_plist_face_id_usage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride bestätigt Ihre Genehmigungen mit Face ID."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride uses Face ID to confirm your approvals."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride usa Face ID para confirmar tus aprobaciones."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride utilise Face ID pour confirmer vos approbations."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride は承認の確認に Face ID を使います。"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Stride usa o Face ID para confirmar suas aprovações."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stride 会用面容 ID 来确认你的批准。"
+          }
+        }
+      }
+    },
     "now_action_failed": {
       "extractionState": "manual",
       "localizations": {

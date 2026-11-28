@@ -2,9 +2,11 @@
 # Runs the Phoenix checks an iOS task needs. The iOS hook set (.ios_dev.md)
 # runs it before each task commit.
 #
-# A task that changed only mobile/ and .github/workflows/ios.yml runs the
-# ExUnit tests that read those files. A task that also changed the app's
-# strings (the msgid list, the mobile gettext files and the strings test) runs
+# A task that changed only mobile/, .github/workflows/ios.yml and the
+# stride-ios skill runs the ExUnit tests that read those files. Nothing in the
+# Phoenix app reads the skill, which every iOS task adds its lessons to. A
+# task that also changed the app's strings (the msgid list, the mobile gettext
+# files and the strings test) runs
 # the same tests, plus the format check and credo on the Elixir files among
 # them: nothing in the web app reads the mobile domain. Any other change, or a
 # change set that cannot be read, runs the whole partitioned suite, the format
@@ -45,7 +47,7 @@ ios_only() {
 
   while IFS= read -r path; do
     case "$path" in
-      '' | mobile/* | .github/workflows/ios.yml) ;;
+      '' | mobile/* | .github/workflows/ios.yml | .claude/skills/stride-ios/*) ;;
       priv/gettext/mobile.pot | priv/gettext/*/LC_MESSAGES/mobile.po) ;;
       lib/kanban/mobile/strings/msgids.ex | test/kanban/mobile/strings_test.exs)
         if [ -f "$path" ]; then string_sources+=("$path"); fi

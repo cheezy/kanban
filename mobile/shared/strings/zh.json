@@ -123,6 +123,7 @@
     "diff_previous_file": "上一个文件",
     "diff_region": "{name} 的差异",
     "goal_hook_failed": "钩子失败",
+    "info_plist_face_id_usage": "Stride 会用面容 ID 来确认你的批准。",
     "now_action_failed": "操作未完成，请重试。",
     "now_attempt_duration": "耗时",
     "now_attempt_exit_code": "退出码",

@@ -93,10 +93,12 @@ public actor AuthStore {
     /// already there. The key is a second item of the same service, so every
     /// `clear` removes it with the pair.
     public func save(_ pair: TokenPair, approvalKey: ApprovalKey) throws(AuthStoreError) {
+        guard let key = try? JSONEncoder().encode(approvalKey) else { throw .invalidPair }
+
         try clearItemsFromPreviousInstall()
         try write(
             [
-                kSecValueData as String: approvalKey.handle,
+                kSecValueData as String: key,
                 kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             ],
             to: approvalKeyQuery
@@ -107,15 +109,17 @@ public actor AuthStore {
         publish(true)
     }
 
-    /// The stored approval key's handle, or nil when there is none.
-    func approvalKeyHandle() throws(AuthStoreError) -> Data? {
+    /// The stored approval key, or nil when there is none. A key this version
+    /// cannot read, such as one an earlier build kept as its bare handle, is
+    /// none too, so the signer has a new one made.
+    func approvalKey() throws(AuthStoreError) -> ApprovalKey? {
         guard marker.exists else { return nil }
 
         let (status, data) = keychain.copyData(matching: approvalKeyQuery)
         if status == errSecItemNotFound { return nil }
         try check(status)
 
-        return data
+        return data.flatMap { try? JSONDecoder().decode(ApprovalKey.self, from: $0) }
     }
 
     /// Replaces the pair that was refreshed with the pair the server answered.

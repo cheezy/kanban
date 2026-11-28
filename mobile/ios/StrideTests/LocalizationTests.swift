@@ -42,6 +42,26 @@ struct LocalizationTests {
         }
     }
 
+    @Test("the Info.plist names Face ID's reason, in English")
+    func faceIDReason() throws {
+        let shared = try SharedStrings("en")
+        // `infoDictionary`, not `object(forInfoDictionaryKey:)`: the latter
+        // answers from InfoPlist.strings even when the Info.plist lacks the key,
+        // and iOS refuses Face ID to an app whose Info.plist lacks it.
+        let reason = Bundle.main.infoDictionary?["NSFaceIDUsageDescription"] as? String
+
+        #expect(reason == shared.strings["info_plist_face_id_usage"])
+    }
+
+    @Test("Face ID's reason is translated in every locale", arguments: locales.keys.sorted())
+    func faceIDReasonTranslated(locale: String) throws {
+        let shared = try SharedStrings(Self.locales[locale])
+        let bundle = try Self.bundle(locale)
+        let text = bundle.localizedString(forKey: "NSFaceIDUsageDescription", value: nil, table: "InfoPlist")
+
+        #expect(text == shared.strings["info_plist_face_id_usage"])
+    }
+
     @Test("%{name} placeholders become positional specifiers", arguments: locales.keys.sorted())
     func placeholders(locale: String) throws {
         let source = try SharedStrings("en")

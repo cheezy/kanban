@@ -63,6 +63,10 @@ targets:
         INFOPLIST_FILE: Stride/Info.plist
         CODE_SIGN_ENTITLEMENTS: Stride/Stride.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Stride
+        # Face ID's reason, in English; mix mobile.strings writes each locale's
+        # text to Stride/Resources/InfoPlist.xcstrings, and
+        # info_plist_catalog_test.exs fails when this one differs.
+        INFOPLIST_KEY_NSFaceIDUsageDescription: "Stride uses Face ID to confirm your approvals."
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         # The app has no icon yet; the asset catalog would otherwise require one.
         ASSETCATALOG_COMPILER_APPICON_NAME: ""

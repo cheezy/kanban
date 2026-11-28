@@ -42,6 +42,17 @@ defmodule Kanban.Mobile.StringCatalog do
   def output_path, do: @output_path
 
   @doc """
+  The name iOS gives a shared locale.
+
+      iex> Kanban.Mobile.StringCatalog.ios_locale("zh")
+      "zh-Hans"
+      iex> Kanban.Mobile.StringCatalog.ios_locale("de")
+      "de"
+  """
+  @spec ios_locale(String.t()) :: String.t()
+  def ios_locale(locale), do: Map.get(@ios_locales, locale, locale)
+
+  @doc """
   Renders the catalog from what `Kanban.Mobile.Strings.build!/1` returns: pretty
   JSON, keys sorted, ending in a newline.
   """
@@ -119,7 +130,7 @@ defmodule Kanban.Mobile.StringCatalog do
   defp entry(strings_by_locale, localization) do
     localizations =
       Map.new(strings_by_locale, fn {locale, strings} ->
-        {Map.get(@ios_locales, locale, locale), localization.(strings)}
+        {ios_locale(locale), localization.(strings)}
       end)
 
     sorted(%{"extractionState" => "manual", "localizations" => sorted(localizations)})

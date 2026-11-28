@@ -1142,3 +1142,9 @@ msgstr "Diff de %{name}"
 msgctxt "now_ready_empty_body"
 msgid "%{idle} %{backlog}"
 msgstr "%{idle} %{backlog}"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "info_plist_face_id_usage"
+msgid "Stride uses Face ID to confirm your approvals."
+msgstr "O Stride usa o Face ID para confirmar suas aprovações."

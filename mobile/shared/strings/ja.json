@@ -123,6 +123,7 @@
     "diff_previous_file": "前のファイル",
     "diff_region": "{name} の差分",
     "goal_hook_failed": "フック失敗",
+    "info_plist_face_id_usage": "Stride は承認の確認に Face ID を使います。",
     "now_action_failed": "完了できませんでした。もう一度お試しください。",
     "now_attempt_duration": "実行時間",
     "now_attempt_exit_code": "終了コード",

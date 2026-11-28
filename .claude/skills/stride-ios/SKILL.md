@@ -74,6 +74,11 @@ before the first review:
   pass two minutes. Run one simulator at a time; several at once overload this Mac.
 - The full log of each run is in `build/`. In xcresult output and the logs a
   failed test's `✘` is written `\x{2718}`, so search for that, not the symbol.
+  A plain `xcodebuild test` log (a break-it run) writes the symbol itself,
+  sometimes after a zero-width space, so search it for `✘ Test "` with no line
+  anchor. Never filter on `: error:`: StrideKit's tests print CoreData
+  `error:` lines on every run, which hide both compile errors and failed tests;
+  match `\.swift:[0-9]+:[0-9]+: error:` instead (W2798).
 - After changing `mobile/shared/` sources, run the generator in the test
   environment: `MIX_ENV=test mix mobile.strings`, `MIX_ENV=test mix mobile.tokens`,
   `MIX_ENV=test mix mobile.api`. Their staleness tests are in `test/kanban/mobile/`
@@ -88,7 +93,8 @@ before the first review:
   simulator, then `bash test/ios_elixir_checks.sh`, then the task commit. It
   tests no iPad: run the iPad yourself before completing.
 - `ios_elixir_checks.sh` stays fast only while every file changed against main is
-  under `mobile/` (or is `ios.yml`) or is one of the app's string files:
+  under `mobile/` (or is `ios.yml` or this skill, `.claude/skills/stride-ios/`,
+  since W2798) or is one of the app's string files:
   `lib/kanban/mobile/strings/msgids.ex`, `priv/gettext/mobile.pot`, a locale's
   `mobile.po` and `test/kanban/mobile/strings_test.exs`. Those add only
   `format --check-formatted` and `credo --strict` on the Elixir files among
@@ -115,6 +121,19 @@ before the first review:
   payload and send it again from main; build every required field (the
   reviewer's integers, `actual_files_changed` from the commit range) before the
   first send (W2794).
+- `after_doing` has an 890-second budget (the plugin's clamp, set in
+  `.claude/settings.local.json`), and an overrun is a kill, not a refusal: the
+  complete call goes through and the task is Done with nothing committed. On
+  W2797 `mix ios.test` alone took 13 minutes on the iPhone, so the Elixir
+  checks and the commit never ran, and `after_goal` refused to push the dirty
+  tree. After every completion, check `git log -1` and `git status`; if the
+  commit is missing, make it with the hook's own `git add -A` and commit
+  command, run the skipped checks by hand, then finish `after_goal`. On W2798
+  (12 minutes) `before_review` still ran after the kill: it switched to main
+  with the work uncommitted and deleted the unchanged task branch, so the
+  recovery commit is made on main. Run `bash test/ios_elixir_checks.sh` by hand
+  before that commit. No `.hook-result-after_doing.json` is written for a
+  killed run; `mobile/ios/build/ios.test.log` shows how far it got.
 - Hook results are in `.stride/.hook-result-after_doing.json`. A failure that
   names a test outside `mobile/` may be a known flake: rerun that file alone with
   the hook's seed before changing anything. `inbox_channel_test.exs:315` (an
@@ -124,17 +143,21 @@ before the first review:
 ## Generated files
 
 - Never edit these by hand or in Xcode: `Stride.xcodeproj` (from `project.yml`,
-  ignored, never committed), `Stride/Resources/Localizable.xcstrings` and
-  `Stride/DesignSystem/L10n.swift` (`mix mobile.strings`),
+  ignored, never committed), `Stride/Resources/Localizable.xcstrings`,
+  `Stride/Resources/InfoPlist.xcstrings` and `Stride/DesignSystem/L10n.swift`
+  (`mix mobile.strings`),
   `Stride/DesignSystem/Colors.xcassets` and `DesignTokens.swift`
   (`mix mobile.tokens`), `StrideKit/Sources/StrideKit/openapi.json`
   (`mix mobile.api`).
 - The generators are Elixir modules in `lib/kanban/mobile/` (`StringCatalog`,
-  `StringAccessors`, `IosDesignSystem`, `TypeScale`, `SwiftContract`), on
+  `StringAccessors`, `InfoPlistCatalog`, `IosDesignSystem`, `TypeScale`,
+  `SwiftContract`), on
   purpose: a generated copy has an ExUnit staleness test. Write a new generator
   the same way rather than as a Swift script, even when a task names a script.
 - A mix task test that calls a generator must pass a `root:` in a tmp dir, or it
-  writes into the repository (W2787).
+  writes into the repository (W2787). When a mix task gains an output, every
+  test that calls its `generate/1` with explicit paths needs the new path too,
+  or that test writes the real file (W2798's `:info_plist`).
 - The app's text sizes live in `lib/kanban/mobile/type_scale.ex` and reach
   Swift through `tokens.json`; never write a type size as a Swift literal.
 - In the generated client a schema property named `class` is `_class` (a
@@ -254,6 +277,53 @@ before the first review:
   set `resource.locale` as `SignInPoint` does.
 - The Sign in and Update required screens still use system colours and fonts;
   move a screen to the tokens when a task next changes it.
+
+## Approval key
+
+- The key is made at sign-in (W2786) and its public half (65-byte X9.63 point,
+  unpadded base64url, 87 characters) goes only with the token exchange's
+  `approval_public_key`; `PUT /api/me/devices/current` takes no key. So a new
+  key always means a new sign-in, which `ApprovalSigner` asks for through
+  `ApprovalKeyRegistering` (W2798).
+- The signing string is `Kanban.Reviews.ApprovalSignature`'s five lines
+  (`stride-approval-v1`, nonce, task id, `review_requested_at` verbatim or empty,
+  `approve`), with no trailing line feed. The signature is CryptoKit's
+  `derRepresentation` in unpadded base64url; the server refuses the raw r and s.
+  `test/kanban/reviews/approval_test.exs` and the OpenAPI challenge description
+  have strings to test against; no fixed key and signature vector exists, so
+  verify with the public key instead.
+- With `.biometryCurrentSet` `.or` `.devicePasscode` the passcode branch may keep
+  the key working after a new face is enrolled, so the signer compares the
+  enrolment hash stored with the key (`BiometryState`) before it asks. Treat an
+  unknown state (lockout, Face ID off for the app) as no change.
+- StrideKit has no strings of its own: user-visible text such as the Face ID
+  reason ("Approve W2701") is passed in from the app.
+- Face ID needs `NSFaceIDUsageDescription` in the app's Info.plist, or iOS
+  refuses it to the app: the enrolment then reads as unknown and approvals fall
+  back to the passcode, which no simulator test can show. It is the `mobile`
+  string `info_plist_face_id_usage`, translated through `InfoPlist.xcstrings`,
+  with its English value in `project.yml` (W2798's review found it missing).
+  To test that the Info.plist has a key, read `Bundle.main.infoDictionary`, never
+  `object(forInfoDictionaryKey:)`: the latter answers from `InfoPlist.strings`
+  even when the built Info.plist lacks the key, so its test passed with the key
+  removed (W2798's break-it). After a `project.yml` break, check the built
+  `Stride.app/Info.plist` with `PlistBuddy` to see that the break took.
+- One approval asks for at most one new sign-in: a key the signer has just made
+  that the enclave refuses is an error, not a reason to sign in again (W2798).
+- Map an error from opening the Secure Enclave key or signing with it through
+  `ApprovalUnlockError(keyError:)`, not `try?`: the enclave can show its own
+  passcode sheet, and closing it is a cancel, not an unusable key (W2798).
+  That cancel can arrive as a CryptoTokenKit `TKError(.canceledByUser)` rather
+  than an `LAError`, and `LAError.invalidContext` there is a failed unlock, not
+  a bad key; only other errors replace the key. Confirm the real error type on a
+  device when the approval flow is first tried there (W2798 round 2).
+- Break-it records go with every test a fix adds or changes, not only the
+  first round's, and each break is in product code: a break in a test helper
+  (such as `Data+Base64URLDecoding.swift`) does not show the test catches
+  anything (W2798 round 2).
+- A Secure Enclave or `LAContext` path cannot run in a unit test: put it behind
+  a small protocol (`ApprovalKeyUnlocking`) with an actor fake, and test the
+  `LAError` mapping and the enrolment rules as pure functions.
 
 ## Simulators
 

@@ -152,6 +152,7 @@
     "diff_previous_file": "Arquivo anterior",
     "diff_region": "Diff de {name}",
     "goal_hook_failed": "Hook com falha",
+    "info_plist_face_id_usage": "O Stride usa o Face ID para confirmar suas aprovações.",
     "now_action_failed": "Não foi possível concluir. Tente de novo.",
     "now_attempt_duration": "Duração",
     "now_attempt_exit_code": "Código de saída",

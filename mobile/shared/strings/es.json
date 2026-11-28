@@ -152,6 +152,7 @@
     "diff_previous_file": "Archivo anterior",
     "diff_region": "Diff de {name}",
     "goal_hook_failed": "Hook fallido",
+    "info_plist_face_id_usage": "Stride usa Face ID para confirmar tus aprobaciones.",
     "now_action_failed": "No se pudo completar. Inténtalo de nuevo.",
     "now_attempt_duration": "Duración",
     "now_attempt_exit_code": "Código de salida",

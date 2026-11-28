@@ -26,7 +26,7 @@ struct AuthStoreApprovalKeyTests {
         try await store.save(.example(), approvalKey: key)
 
         #expect(try await store.read() == .example())
-        #expect(try await store.approvalKeyHandle() == key.handle)
+        #expect(try await store.approvalKey() == key)
     }
 
     @Test("keeps the key as a second item of the same service, on this device only")
@@ -38,7 +38,31 @@ struct AuthStoreApprovalKeyTests {
         #expect(item.service == AuthStore.service)
         #expect(item.accessGroup == Self.accessGroup)
         #expect(item.accessible == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
-        #expect(item.data == key.handle)
+        let data = try #require(item.data)
+        #expect(try JSONDecoder().decode(ApprovalKey.self, from: data) == key)
+    }
+
+    @Test("keeps the enrolment the key was made under")
+    func biometry() async throws {
+        let enrolled = ApprovalKey.example(biometry: .enrolled(Data([1, 2, 3])))
+
+        try await store.save(.example(), approvalKey: enrolled)
+
+        #expect(try await store.approvalKey()?.biometry == .enrolled(Data([1, 2, 3])))
+    }
+
+    @Test("a key an earlier build kept as its bare handle reads as no key")
+    func bareHandle() async throws {
+        try await store.save(.example(), approvalKey: key)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: AuthStore.service,
+            kSecAttrAccessGroup as String: Self.accessGroup,
+            kSecAttrAccount as String: AuthStore.approvalKeyAccount
+        ]
+        #expect(keychain.update(query, to: [kSecValueData as String: key.handle]) == errSecSuccess)
+
+        #expect(try await store.approvalKey() == nil)
     }
 
     @Test("announces the sign-in once")
@@ -59,7 +83,7 @@ struct AuthStoreApprovalKeyTests {
         try await store.save(.example(2), approvalKey: second)
 
         #expect(try await store.read() == .example(2))
-        #expect(try await store.approvalKeyHandle() == second.handle)
+        #expect(try await store.approvalKey() == second)
         #expect(keychain.items.count == 2)
     }
 
@@ -69,7 +93,7 @@ struct AuthStoreApprovalKeyTests {
 
         try await store.clear()
 
-        #expect(try await store.approvalKeyHandle() == nil)
+        #expect(try await store.approvalKey() == nil)
         #expect(keychain.items.isEmpty)
     }
 
@@ -88,12 +112,12 @@ struct AuthStoreApprovalKeyTests {
         try FileManager.default.removeItem(at: marker.url)
         let reinstalled = AuthStore(accessGroup: Self.accessGroup, marker: marker, keychain: keychain)
 
-        #expect(try await reinstalled.approvalKeyHandle() == nil)
+        #expect(try await reinstalled.approvalKey() == nil)
 
         let second = ApprovalKey.example()
         try await reinstalled.save(.example(2), approvalKey: second)
 
-        #expect(try await reinstalled.approvalKeyHandle() == second.handle)
+        #expect(try await reinstalled.approvalKey() == second)
         #expect(keychain.items.count == 2)
     }
 
@@ -108,6 +132,6 @@ struct AuthStoreApprovalKeyTests {
 
         keychain.recover()
         #expect(try await store.read() == nil)
-        #expect(try await store.approvalKeyHandle() == nil)
+        #expect(try await store.approvalKey() == nil)
     }
 }

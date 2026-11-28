@@ -86,6 +86,7 @@ which returns with none.
 | The token exchange | `StrideKit/Sources/StrideKit/Auth/OAuthFlow.swift` |
 | What the server records about the device | `StrideKit/Sources/StrideKit/Auth/DeviceDetails.swift` |
 | The approval key | `StrideKit/Sources/StrideKit/Auth/ApprovalKey.swift` |
+| Signing an approval with it | `StrideKit/Sources/StrideKit/Approval/` ([iOS Approval Signer](ios-approval-signer.md)) |
 | Whether the plan includes the app | `StrideKit/Sources/StrideKit/Auth/AppAccess.swift` |
 | Why a sign-in did not finish | `StrideKit/Sources/StrideKit/Auth/SignInError.swift` |
 | The model and its phases | `Stride/Features/SignIn/SignInModel.swift`, `SignInPhase.swift` |

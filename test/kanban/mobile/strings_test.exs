@@ -18,13 +18,14 @@ defmodule Kanban.Mobile.StringsTest do
   # shares the web's "Sign in" msgid, but the web's Spanish and French nav link
   # is in title case and the app's button in sentence case, as iOS buttons are.
   # The shared views' readings and kinds (W2789), the Now tab (W2790) and the
-  # Now screen (W2793) and its card actions (W2794) are the app's own words.
+  # Now screen (W2793) and its card actions (W2794) are the app's own words, as
+  # is Face ID's reason in the app's Info.plist (W2798).
   @app_only ~w(
     sign_in_action sign_in_create_account sign_in_failed sign_in_locked_action
     sign_in_locked_message sign_in_locked_title sign_in_network_error sign_in_note
     sign_in_passcode_required sign_in_point_ready sign_in_point_review_face_id
     sign_in_point_review_passcode sign_in_point_review_touch_id sign_in_point_unblock
-    sign_in_tagline sign_in_working
+    sign_in_tagline sign_in_working info_plist_face_id_usage
     update_required_action update_required_message update_required_title
     decision_kind_claim_expired decision_kind_hook_failed decision_kind_ready_empty
     decision_kind_released diff_line_added diff_line_removed diff_line_unchanged
@@ -161,7 +162,7 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 150
+      assert length(pot_keys(:string)) == 151
       assert length(pot_keys(:plural)) == 29
 
       for {locale, strings} <- built do

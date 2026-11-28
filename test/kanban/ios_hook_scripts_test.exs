@@ -26,6 +26,20 @@ defmodule Kanban.IosHookScriptsTest do
       refute output =~ "STUB_SUITE_RAN"
     end
 
+    test "counts the stride-ios skill as part of the iOS app, but no other skill", %{repo: repo} do
+      write!(repo, "mobile/ios/View.swift")
+      write!(repo, ".claude/skills/stride-ios/SKILL.md")
+
+      assert {output, 0} = run_script(repo, "ios_elixir_checks.sh")
+      refute output =~ "STUB_SUITE_RAN"
+
+      write!(repo, ".claude/skills/stride-development-guidelines/SKILL.md")
+
+      assert {output, 0} = run_script(repo, "ios_elixir_checks.sh")
+      assert output =~ ".claude/skills/stride-development-guidelines/SKILL.md is outside mobile/"
+      assert output =~ "STUB_SUITE_RAN"
+    end
+
     test "fails when one of those tests fails", %{repo: repo} do
       write!(repo, "mobile/ios/View.swift")
 

@@ -166,7 +166,15 @@ defmodule Kanban.Mobile.Strings.Msgids do
         "sign_in_locked_message",
         "You're signed in, but you aren't in an Organization. Join one, or choose the Organization plan, to review and unblock your agents' work here."
       ),
-      dpgettext_noop("mobile", "sign_in_locked_action", "See the plans")
+      dpgettext_noop("mobile", "sign_in_locked_action", "See the plans"),
+      # The reason iOS gives when the app first asks for Face ID (W2798).
+      # `mix mobile.strings` also writes it to the app's InfoPlist.xcstrings,
+      # under the Info.plist key `Kanban.Mobile.InfoPlistCatalog` names for it.
+      dpgettext_noop(
+        "mobile",
+        "info_plist_face_id_usage",
+        "Stride uses Face ID to confirm your approvals."
+      )
     ]
   end
 

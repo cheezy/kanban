@@ -292,8 +292,11 @@ XcodeGen.
 [`test/ios_elixir_checks.sh`](../test/ios_elixir_checks.sh) looks at everything
 the task branch changed since it left `main`:
 
-- When only `mobile/` and `.github/workflows/ios.yml` changed, it runs the
-  ExUnit tests that read those files, such as the fixture and contract checks.
+- When only `mobile/`, `.github/workflows/ios.yml` and the `stride-ios` skill
+  (`.claude/skills/stride-ios/`) changed, it runs the ExUnit tests that read
+  those files, such as the fixture and contract checks. Every iOS task adds its
+  lessons to that skill and nothing in the Phoenix app reads it, so it no longer
+  costs each task the whole suite. Any other skill still does.
 - The app's strings count as part of the iOS app: the msgid list
   `lib/kanban/mobile/strings/msgids.ex`, `priv/gettext/mobile.pot`, each
   locale's `mobile.po` and `test/kanban/mobile/strings_test.exs`. Nothing in
