@@ -47,14 +47,9 @@ final class ShellUITests: XCTestCase {
             let heading = app.staticTexts["sheet-title"]
             XCTAssertTrue(heading.waitForExistence(timeout: 10))
             XCTAssertEqual(heading.label, title)
-            // On an iPad the form sheet leaves the shell visible, dimmed and out
-            // of VoiceOver's reach, around it, and the audit reports that text as
-            // "potentially inaccessible text" with no element. Only that is ignored.
-            try app.auditAccessibility { issue in
-                UIDevice.current.userInterfaceIdiom == .pad
-                    && issue.auditType == .elementDetection
-                    && issue.element == nil
-            }
+            // On an iPad the shell, dimmed behind the form sheet, is out of
+            // VoiceOver's reach.
+            try app.auditAccessibility { issue in issue.isBehindFormSheet }
             app.buttons["Close"].firstMatch.tap()
             XCTAssertTrue(heading.waitForNonExistence(timeout: 10))
         }

@@ -745,14 +745,6 @@ msgstr "Too large to approve on a phone"
 
 #: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
-msgctxt "review_queue_waiting"
-msgid "%{count} waiting"
-msgid_plural "%{count} waiting"
-msgstr[0] "%{count} waiting"
-msgstr[1] "%{count} waiting"
-
-#: lib/kanban/mobile/strings/msgids.ex
-#, elixir-autogen, elixir-format
 msgctxt "review_all_passed"
 msgid "All passed"
 msgstr "All passed"
@@ -1184,3 +1176,57 @@ msgstr "Approved. %{identifiers} can start."
 msgctxt "review_next"
 msgid "Next"
 msgstr "Next"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_add_finding"
+msgid "Add the %{section} finding"
+msgstr "Add the %{section} finding"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_dictate"
+msgid "Dictate with the keyboard's microphone"
+msgstr "Dictate with the keyboard's microphone"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_field"
+msgid "What needs to change"
+msgstr "What needs to change"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_footnote"
+msgid "%{agent} gets this note. The task stays in Review until the changes are picked up."
+msgstr "%{agent} gets this note. The task stays in Review until the changes are picked up."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_footnote_no_agent"
+msgid "The agent gets this note. The task stays in Review until the changes are picked up."
+msgstr "The agent gets this note. The task stays in Review until the changes are picked up."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_refused"
+msgid "Stride did not accept this note. Remove any unusual characters and send it again."
+msgstr "Stride did not accept this note. Remove any unusual characters and send it again."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_sent"
+msgid "Changes requested. %{identifier} is waiting for %{agent} to pick up the changes."
+msgstr "Changes requested. %{identifier} is waiting for %{agent} to pick up the changes."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_sent_no_agent"
+msgid "Changes requested. %{identifier} is waiting for the agent to pick up the changes."
+msgstr "Changes requested. %{identifier} is waiting for the agent to pick up the changes."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_too_long"
+msgid "A note can be up to 10,000 characters."
+msgstr "A note can be up to 10,000 characters."

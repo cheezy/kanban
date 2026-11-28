@@ -745,14 +745,6 @@ msgstr ""
 
 #: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
-msgctxt "review_queue_waiting"
-msgid "%{count} waiting"
-msgid_plural "%{count} waiting"
-msgstr[0] ""
-msgstr[1] ""
-
-#: lib/kanban/mobile/strings/msgids.ex
-#, elixir-autogen, elixir-format
 msgctxt "review_all_passed"
 msgid "All passed"
 msgstr ""
@@ -1183,4 +1175,58 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "review_next"
 msgid "Next"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_add_finding"
+msgid "Add the %{section} finding"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_dictate"
+msgid "Dictate with the keyboard's microphone"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_field"
+msgid "What needs to change"
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_footnote"
+msgid "%{agent} gets this note. The task stays in Review until the changes are picked up."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_footnote_no_agent"
+msgid "The agent gets this note. The task stays in Review until the changes are picked up."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_refused"
+msgid "Stride did not accept this note. Remove any unusual characters and send it again."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_sent"
+msgid "Changes requested. %{identifier} is waiting for %{agent} to pick up the changes."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_sent_no_agent"
+msgid "Changes requested. %{identifier} is waiting for the agent to pick up the changes."
+msgstr ""
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_too_long"
+msgid "A note can be up to 10,000 characters."
 msgstr ""

@@ -77,9 +77,6 @@
     "review_queue_files": {
       "other": "{count}件のファイル"
     },
-    "review_queue_waiting": {
-      "other": "{count}件待機中"
-    },
     "target_goal_count": {
       "other": "{count} 件のゴール"
     },
@@ -176,6 +173,15 @@
     "review_approve_refused": "Stride はこのデバイスからの承認を受け付けませんでした。承認するには、サインアウトしてからもう一度サインインしてください。",
     "review_approved": "承認しました。",
     "review_approved_can_start": "承認しました。{identifiers} を開始できます。",
+    "review_changes_add_finding": "{section}の指摘を追加",
+    "review_changes_dictate": "キーボードのマイクで音声入力",
+    "review_changes_field": "変更が必要な点",
+    "review_changes_footnote": "{agent} にこのメモが届きます。変更に取りかかるまで、タスクはレビューのままです。",
+    "review_changes_footnote_no_agent": "エージェントにこのメモが届きます。変更に取りかかるまで、タスクはレビューのままです。",
+    "review_changes_refused": "Stride はこのメモを受け付けませんでした。特殊な文字を削除して、もう一度送信してください。",
+    "review_changes_sent": "変更を依頼しました。{identifier} は {agent} が変更に取りかかるのを待っています。",
+    "review_changes_sent_no_agent": "変更を依頼しました。{identifier} はエージェントが変更に取りかかるのを待っています。",
+    "review_changes_too_long": "メモは 10,000 文字までです。",
     "review_checks": "テストとチェック",
     "review_criteria_count": "{met}/{count}",
     "review_decided_approved": "{name}さんが承認しました。",

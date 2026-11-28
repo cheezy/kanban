@@ -14,74 +14,6 @@ struct ApproveFlowTests {
     private nonisolated static let approveID = Operations.ApproveMyReview.id
     private nonisolated static let reviewID = Operations.GetMyReview.id
 
-    /// What the fixture server heard: each request in order, with its
-    /// idempotency key and body, including one lost on the way.
-    private final class Heard: Sendable {
-        private struct Request: Sendable {
-            let operation: String
-            let key: String?
-            let body: Data?
-        }
-
-        private let state = OSAllocatedUnfairLock(initialState: [Request]())
-
-        var operations: [String] { state.withLock { $0.map(\.operation) } }
-        /// The idempotency key of each approval sent.
-        var keys: [String?] { state.withLock { $0.filter { $0.operation == ApproveFlowTests.approveID }.map(\.key) } }
-        var approvals: Int { keys.count }
-
-        /// The body of each request of the operation, in order.
-        func bodies(of operation: String) -> [Data?] {
-            state.withLock { $0.filter { $0.operation == operation }.map(\.body) }
-        }
-
-        /// A fixture server that tells this what it hears.
-        func fixtures(
-            replacing replacements: [String: Data] = [:],
-            statuses: [String: Int] = [:],
-            isOffline: @escaping @Sendable () -> Bool = { false },
-            onSend: @escaping @Sendable (String, Data?) -> Void = { _, _ in },
-            status: @escaping @Sendable (String) -> Int? = { _ in nil },
-            hold: @escaping @Sendable (String) async -> Void = { _ in }
-        ) -> FixtureAPI {
-            FixtureAPI(
-                replacing: replacements,
-                statuses: statuses,
-                isOffline: isOffline,
-                onSend: onSend,
-                status: status,
-                onRequest: { id, headers, body in
-                    self.hear(id, key: headers.first { $0.name.canonicalName == "idempotency-key" }?.value, body: body)
-                },
-                hold: hold
-            )
-        }
-
-        private func hear(_ operationID: String, key: String?, body: Data?) {
-            state.withLock { $0.append(Request(operation: operationID, key: key, body: body)) }
-        }
-    }
-
-    /// Holds a request until the test opens it, and says when one is held.
-    private final class Gate: Sendable {
-        private let held = AsyncStream<Void>.makeStream()
-        private let opened = AsyncStream<Void>.makeStream()
-
-        /// Called by the held request: says it arrived, then waits.
-        func wait() async {
-            held.continuation.yield()
-            for await _ in opened.stream { break }
-        }
-
-        func untilHeld() async {
-            for await _ in held.stream { break }
-        }
-
-        func open() {
-            opened.continuation.yield()
-        }
-    }
-
     /// A signer that throws instead of signing.
     private struct FailingSigner: ApprovalSigning {
         let error: ApprovalSignerError
@@ -151,7 +83,7 @@ struct ApproveFlowTests {
 
     @Test("approves and says which tasks can start")
     func approves() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let model = try await Self.loaded(heard.fixtures())
 
         await model.approve(web: Self.web)
@@ -171,7 +103,7 @@ struct ApproveFlowTests {
     /// nonce or the signature.
     @Test("the challenge is bound to the review shown, and the approval answers it")
     func requestBodies() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let model = try await Self.loaded(heard.fixtures())
         let content = try #require(model.content)
         let requestedAt = try #require(content.reviewRequestedAt)
@@ -198,7 +130,7 @@ struct ApproveFlowTests {
     func approvedStays() async throws {
         let container = try TemporaryContainer()
         let cache = Cache(container: container.url)
-        let heard = Heard()
+        let heard = HeardRequests()
         let api = heard.fixtures().client
         let model = ReviewModel(
             taskID: 4812, api: api, cache: cache, approvals: ApproveFlow(api: api, signer: StubApprovalSigning.match)
@@ -226,8 +158,8 @@ struct ApproveFlowTests {
     func loadOnItsWay(status: Int?) async throws {
         let container = try TemporaryContainer()
         let cache = Cache(container: container.url)
-        let heard = Heard()
-        let gate = Gate()
+        let heard = HeardRequests()
+        let gate = RequestGate()
         let api = heard.fixtures(
             // The late load answers as the server would after the approval:
             // gone, or the fixture's review as it was (nil).
@@ -267,7 +199,7 @@ struct ApproveFlowTests {
 
     @Test("a lost approval is sent once more with the same key and body")
     func resendsWithTheSameKey() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let fixtures = heard.fixtures(
             isOffline: { heard.operations.last == Self.approveID && heard.approvals == 1 }
         )
@@ -288,7 +220,7 @@ struct ApproveFlowTests {
 
     @Test("two lost approvals say it failed, and a new tap starts again with a new key")
     func twoLostApprovals() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let fixtures = heard.fixtures(
             isOffline: { heard.operations.last == Self.approveID && heard.approvals <= 2 }
         )
@@ -330,7 +262,7 @@ struct ApproveFlowTests {
 
     @Test("an answer that reached the server but could not be read is not sent again")
     func unreadableAnswer() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let model = try await Self.loaded(
             heard.fixtures(replacing: [Self.approveID: Data("not json".utf8)], statuses: [Self.approveID: 200])
         )
@@ -394,7 +326,7 @@ struct ApproveFlowTests {
 
     @Test("a change found too large loads the review again")
     func tooLarge() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let body = try Self.json([
             "error": "too_large_for_phone",
             "message": "Approve it on a tablet or on the web.",
@@ -419,7 +351,7 @@ struct ApproveFlowTests {
     /// challenge is spent; the approval is never sent.
     @Test("a face that does not match sends no approval")
     func noMatch() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let model = try await Self.loaded(heard.fixtures(), signer: StubApprovalSigning.nomatch)
 
         await model.approve(web: Self.web)
@@ -440,7 +372,7 @@ struct ApproveFlowTests {
         ]
     )
     func signerFails(error: ApprovalSignerError, problem: ApproveProblem) async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let model = try await Self.loaded(heard.fixtures(), signer: FailingSigner(error: error))
 
         await model.approve(web: Self.web)
@@ -452,7 +384,7 @@ struct ApproveFlowTests {
 
     @Test("offline, Approve is off and nothing is sent")
     func offline() async throws {
-        let heard = Heard()
+        let heard = HeardRequests()
         let isOffline = OSAllocatedUnfairLock(initialState: false)
         let model = try await Self.loaded(
             heard.fixtures(isOffline: { isOffline.withLock { $0 } })
@@ -468,14 +400,15 @@ struct ApproveFlowTests {
         #expect(model.approved == nil)
     }
 
-    @Test("a build without a signer never offers Approve")
+    @Test("a build without a signer never offers Approve, but can request changes")
     func noSigner() async throws {
         let model = ReviewModel(taskID: 4812, api: FixtureAPI().client)
         await model.load()
 
         #expect(model.canAct)
         #expect(model.canApprove == false)
-        #expect(model.canRequestChanges == false)
+        // Request changes signs nothing, so it needs no key.
+        #expect(model.canRequestChanges)
     }
 
     @Test("a review to approve on a tablet or the web never offers Approve")
@@ -488,4 +421,10 @@ struct ApproveFlowTests {
         #expect(model.content?.approvableHere == false)
         #expect(model.canApprove == false)
     }
+}
+
+private extension HeardRequests {
+    /// The idempotency key of each approval sent.
+    var keys: [String?] { keys(of: Operations.ApproveMyReview.id) }
+    var approvals: Int { keys.count }
 }

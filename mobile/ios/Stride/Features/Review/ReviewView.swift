@@ -12,7 +12,7 @@ struct ReviewView: View {
     @Environment(\.webAuthenticationSession) private var webSession
     @State private var model: ReviewModel
 
-    /// Opens the next review in the queue, after an approval.
+    /// Opens the next review in the queue, after a decision.
     private let next: () -> Void
 
     init(model: ReviewModel, next: @escaping () -> Void = {}) {
@@ -49,12 +49,15 @@ struct ReviewView: View {
                 decisions(inline: false)
             }
         }
+        .sheet(item: $model.changesSheet) { sheet in
+            RequestChangesSheet(model: sheet)
+        }
         .refreshable { await model.load() }
         .task { await model.load() }
         .task { await model.observe() }
     }
 
-    /// What an approval came to, above the buttons, and the buttons.
+    /// What a decision came to, above the buttons, and the buttons.
     @ViewBuilder
     private func decisions(inline: Bool) -> some View {
         if model.state == .review, let content = model.content {
@@ -71,7 +74,10 @@ struct ReviewView: View {
                         .accessibilityIdentifier("review-problem-notice")
                     }
                     if let message = model.approvedMessage(in: locale) {
-                        ApprovedToast(message: message, next: next)
+                        DecisionToast(message: message, kind: .approved, next: next)
+                    }
+                    if let message = model.changesRequestedMessage {
+                        DecisionToast(message: message, kind: .changesRequested, next: next)
                     }
                 }
                 // Over the pinned bar, in its readable column.
@@ -84,7 +90,7 @@ struct ReviewView: View {
                     isApproving: model.isApproving,
                     approvableHere: content.approvableHere,
                     inline: inline,
-                    requestChanges: {},
+                    requestChanges: model.openRequestChanges,
                     approve: approve
                 )
             }

@@ -135,6 +135,10 @@ struct SharedViewAccessibilityTests {
         // The Approved toast: its text and Next in surface, and its checkmark,
         // on ink.
         pairs += [(.surface, .ink), (.stDoneSoft, .ink)]
+        // The Request changes sheet draws Cancel and Send in strideOrangeInk,
+        // the meta line in ink3, and the field's label and the chips in ink2,
+        // all on surface: ink3 and ink2 are paired with surface above, and
+        // strideOrangeInk is the diff's atom colour on a context line below.
 
         for kind in DiffLineKind.allCases {
             let background = kind.background ?? .surface

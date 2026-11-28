@@ -727,13 +727,6 @@ msgstr "变更过大，无法在手机上批准"
 
 #: lib/kanban/mobile/strings/msgids.ex
 #, elixir-autogen, elixir-format
-msgctxt "review_queue_waiting"
-msgid "%{count} waiting"
-msgid_plural "%{count} waiting"
-msgstr[0] "%{count} 项等待中"
-
-#: lib/kanban/mobile/strings/msgids.ex
-#, elixir-autogen, elixir-format
 msgctxt "review_all_passed"
 msgid "All passed"
 msgstr "全部通过"
@@ -1155,3 +1148,57 @@ msgstr "已批准。%{identifiers} 现在可以开始。"
 msgctxt "review_next"
 msgid "Next"
 msgstr "下一个"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_add_finding"
+msgid "Add the %{section} finding"
+msgstr "添加%{section}的发现"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_dictate"
+msgid "Dictate with the keyboard's microphone"
+msgstr "用键盘的麦克风听写"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_field"
+msgid "What needs to change"
+msgstr "需要修改的内容"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_footnote"
+msgid "%{agent} gets this note. The task stays in Review until the changes are picked up."
+msgstr "%{agent} 会收到这条说明。在修改被接手之前，任务会留在审查中。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_footnote_no_agent"
+msgid "The agent gets this note. The task stays in Review until the changes are picked up."
+msgstr "代理会收到这条说明。在修改被接手之前，任务会留在审查中。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_refused"
+msgid "Stride did not accept this note. Remove any unusual characters and send it again."
+msgstr "Stride 未接受这条说明。请删除不常见的字符后重新发送。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_sent"
+msgid "Changes requested. %{identifier} is waiting for %{agent} to pick up the changes."
+msgstr "已请求修改。%{identifier} 正在等待 %{agent} 接手修改。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_sent_no_agent"
+msgid "Changes requested. %{identifier} is waiting for the agent to pick up the changes."
+msgstr "已请求修改。%{identifier} 正在等待代理接手修改。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_changes_too_long"
+msgid "A note can be up to 10,000 characters."
+msgstr "说明最多 10,000 个字符。"

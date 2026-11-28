@@ -102,10 +102,6 @@
       "one": "{count} archivo",
       "other": "{count} archivos"
     },
-    "review_queue_waiting": {
-      "one": "{count} en espera",
-      "other": "{count} en espera"
-    },
     "target_goal_count": {
       "one": "{count} objetivo",
       "other": "{count} objetivos"
@@ -205,6 +201,15 @@
     "review_approve_refused": "Stride no aceptó la aprobación de este dispositivo. Cierra sesión y vuelve a iniciarla para aprobar.",
     "review_approved": "Aprobado.",
     "review_approved_can_start": "Aprobado. Ya se puede empezar con {identifiers}.",
+    "review_changes_add_finding": "Añadir el hallazgo de {section}",
+    "review_changes_dictate": "Dicta con el micrófono del teclado",
+    "review_changes_field": "Qué hay que cambiar",
+    "review_changes_footnote": "{agent} recibe esta nota. La tarea sigue en Revisión hasta que se retomen los cambios.",
+    "review_changes_footnote_no_agent": "El agente recibe esta nota. La tarea sigue en Revisión hasta que se retomen los cambios.",
+    "review_changes_refused": "Stride no aceptó esta nota. Quita los caracteres poco habituales y vuelve a enviarla.",
+    "review_changes_sent": "Cambios solicitados. {identifier} espera a que {agent} retome los cambios.",
+    "review_changes_sent_no_agent": "Cambios solicitados. {identifier} espera a que el agente retome los cambios.",
+    "review_changes_too_long": "Una nota puede tener hasta 10.000 caracteres.",
     "review_checks": "Pruebas y comprobaciones",
     "review_criteria_count": "{met}/{count}",
     "review_decided_approved": "{name} lo aprobó.",

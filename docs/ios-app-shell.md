@@ -71,9 +71,11 @@ render them: the pitfalls pill says the verdict (Passed, Failed or Not
 assessed), and VoiceOver reads a file row as its name in its folder with its
 lines added and removed in words, never a bare path. The bottom
 bar holds **Request changes** and **Approve**, or **Approve on tablet or web**
-for a change too large for the device. They stay disabled until the next goal
-wires them (`ReviewModel.canDecide`), so neither looks live while it does
-nothing. At the
+for a change too large for the device. Each is enabled only while it can send
+its decision (`ReviewModel.canRequestChanges` and `ReviewModel.canApprove`):
+online, with no conflict showing, nothing on its way and nothing decided here.
+Approving is described in [ios-approval-signer.md](ios-approval-signer.md)
+and requesting changes below. At the
 accessibility text sizes the bar is not pinned: its buttons follow the files,
 stacked, and the verdict tiles, the check rows and the file rows stack their
 parts, so no word breaks in the middle. The summary and
@@ -88,6 +90,39 @@ what, and how long ago, and **Resubmitted** asks the person to reload, which fet
 version. A file with a stored diff pushes `.reviewFile(ReviewFileTarget)`,
 which carries the task, the file's index, the list's `files_version` and the
 review's files, flagged first, so the diff screen can page through them.
+
+## Requesting changes
+
+**Request changes** opens `RequestChangesSheet` with a `RequestChangesModel`
+from `ReviewModel.openRequestChanges()` (design section 6.7). Across the top
+are Cancel, the title and Send; below them the task, the required **What needs
+to change** field, which takes the keyboard's dictation, one chip for each
+failed verdict with a note (`ReviewContent.findings`, pitfalls included), and
+who gets the note. A chip adds its verdict's note to the end of the text once.
+Send stays off until the text holds something visible: text that is only
+spaces, line breaks, control, format or combining characters is refused, as
+the server refuses it, and so is text over 10,000 codepoints. Offline it waits
+and says it needs a connection. At the accessibility text sizes the title,
+Cancel and Send each take their own line, so German's longer labels still
+fit without a word breaking (side by side on an iPhone, "Abbrechen" broke in
+the middle), and the task's identifier sits above its title; the title wraps at every size rather
+than being cut off. Cancel and
+Send use `NavButtonStyle` and the chips `ChipButtonStyle`: off, each reads in
+ink-3 at full strength, where `.buttonStyle(.plain)` would fade it below the
+4.5:1 contrast the accessibility audit checks.
+
+Send asks for no Face ID. `RequestChangesFlow` posts the trimmed notes to
+`POST /api/me/reviews/:task_id/request_changes` with the `review_requested_at`
+the screen loaded and a new UUID as its `Idempotency-Key`, and a request that
+never reached the server is sent once more with the same key and body, as an
+approval is. The notes go only to that endpoint and are never logged. A 409
+closes the sheet and shows Already decided or Resubmitted, a 404 closes it and
+says the review is gone, and a 403, a 422 or any other failure stays in the
+sheet with the notes kept. Once sent, the toast says "Changes requested. W2701
+is waiting for Claude to pick up the changes." (decision 10: the task stays in
+Review until the agent picks the changes up), and Next opens the next review.
+As after an approval, the screen asks nothing more, a load already on its way
+is dropped and the cached copy is forgotten.
 
 ## The diff screen
 

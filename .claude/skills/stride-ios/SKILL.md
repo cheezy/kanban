@@ -72,6 +72,17 @@ before the first review:
   `-skipPackagePluginValidation`, because the OpenAPI generator is a build plugin.
 - Wrap long runs in `timeout 900`, and run them in the background when they can
   pass two minutes. Run one simulator at a time; several at once overload this Mac.
+- Re-running tests across devices: build once, test many. `mix ios.test`
+  builds again for every simulator. For a sweep, run `xcodegen generate`, then
+  one `xcodebuild build-for-testing -destination 'generic/platform=iOS Simulator'
+  -derivedDataPath <dir> -skipPackagePluginValidation`, then
+  `xcodebuild test-without-building -destination id=<UDID> -derivedDataPath <dir>
+  -only-testing:...` per device. One simulator build serves the iOS 26.4 and
+  27.2 runtimes, since the target is iOS 17. Order the runs to fail fast: the
+  tests the change touches first, on every device, stopping at the first
+  failure; the broad suites once, last. Fix every failure the run shows before
+  the next run, never one per sweep. W2800 lost hours to full sweeps that each
+  found one failure.
 - The full log of each run is in `build/`. In xcresult output and the logs a
   failed test's `✘` is written `\x{2718}`, so search for that, not the symbol.
   A plain `xcodebuild test` log (a break-it run) writes the symbol itself,
@@ -597,8 +608,8 @@ before the first review:
   three containers on iOS 26 only (a `guard #available(iOS 26, *)` and a `guard #unavailable(iOS 27)`; Swift rejects both in one statement. Until W2797 it had only the second, which also let iOS 17 and 18 skip them). CI runs the
   XCUITests on iOS 26.5, so run the 26.4 simulators before completing (W2796).
 - On the iOS 26.4 iPad, `ShellUITests.testEachTabOpensWithVoiceOverLabels`
-  fails contrast on the Review queue's "3 waiting" (`ink-3` on `bg`, over
-  5:1) on main as well, and `NowUITests.testRepliesToAReleasedTask` fails now
+  failed contrast on the Review queue's "3 waiting" on main as well, and
+  `NowUITests.testRepliesToAReleasedTask` fails now
   and then on the keyboard's prediction bar ("TUIPredictionViewCell is missing
   useful accessibility information"), a system view (W2796).
 - The audit's Dynamic Type check flags text inside a `LazyVGrid` or a
@@ -657,10 +668,13 @@ before the first review:
   element's middle lies inside the bar also lets through a heading half under
   the bar. Test membership instead: look for the element's label among the
   bar's descendants, as `isUnderBarsContrast` does (W2797).
-- To see what an audit failed without exporting attachments, print
-  `issue.compactDescription` and `issue.element?.debugDescription` from the
-  issue handler, and `app.debugDescription` before the audit, in a one-off run;
-  remove the prints before review (W2797).
+- An audit failure names only the kind of issue. `XCUIApplication.audit` in
+  `AccessibilityAudit.swift` prints an `AUDIT-ISSUE:` line for every issue it
+  does not ignore, with the element's identifier, type, frame and label, so a
+  failing run says what failed; grep the log for `AUDIT-ISSUE` rather than
+  running again to find it (W2800). For more, print
+  `issue.element?.debugDescription`, or `app.debugDescription` before the audit,
+  in a one-off run in the scratch copy (W2797).
 - A navigation title that is a file name ("greeting.ex") fails "Label not
   human-readable" at the largest text. A title takes no accessibility label,
   and a principal toolbar `Text` would clip at the accessibility sizes, so
@@ -909,6 +923,92 @@ before the first review:
   identity, so its `State(initialValue:)` model and everything shown from it
   stay. Key such a destination with `.id(<route's id>)`; a unit test of the
   router's path cannot see this, only a UI test can (W2799).
+- Request changes needs no approval key, so `ReviewModel` makes its
+  `RequestChangesFlow` from the API alone; a test that expects it off builds
+  the model with `api: nil` or a conflict, not by leaving out a signer (W2800).
+- Mirror a server-side "blank" rule on the client by Unicode properties, not
+  by `trimmingCharacters`: the server's `[\s\p{Z}\p{Cc}\p{Cf}\p{M}]` is
+  `isWhitespace` plus the space, line and paragraph separator, control, format
+  and mark general categories, so a zero-width space, a lone combining accent
+  or a BOM keeps Send off, as the server would refuse it (W2800).
+- A pitfalls verdict has no tile, but its note is still a finding the
+  Request changes sheet offers, so `ReviewContent` keeps every failed verdict's
+  note in `findings`, while `tiles` keeps only the four (W2800).
+- Present a sheet that a model owns with `.sheet(item: $model.changesSheet)`
+  on the `@State` model, the sheet's model `Identifiable` through a stored
+  `UUID`; the Cancel button's `dismiss()` sets the item to nil, and the model
+  closes it on success by setting it to nil itself (W2800).
+- `HeardRequests` and `RequestGate` in `StrideTests/Support` replace the
+  copies a decision test once kept private; give a new decision's tests a
+  file-private extension for its own operation's keys rather than copying
+  them again (W2800).
+- A `JSONSerialization` body built in a test crashes on a Swift `Optional`
+  boxed as `Any`; write a verdict's note as a `String`, or `NSNull()` for null
+  (W2800).
+- A weak-self closure that returns an optional must not read
+  `self?.f() ?? fallback`: the optional chain flattens, so f's own nil (a send
+  that went through) becomes the fallback. Write `guard let self else
+  { return fallback }; return await self.f()` (W2800).
+- A test body for a documented error status must match the contract's schema
+  for it (a 403 is `PlanRequired`): the client refuses a body it cannot
+  decode, and the flow then reads the answer as failed (W2800).
+- Before adding a pair to `SharedViewAccessibilityTests.textPairs`, check
+  that it is not there already: ink3 and ink2 on surface are listed, and the
+  diff loop pairs every highlight ink, strideOrangeInk among them, with
+  surface on a context line (W2800).
+- Never show a disabled control with `.opacity`: the audit fails its faded
+  text (a sheet's Send at 0.4 did on the iPad). Draw it in `ink3`, as the
+  design's `.btn[disabled]` does (W2800).
+- `.buttonStyle(.plain)` fades a disabled label by itself, so an `ink3`
+  foreground still fails the audit there (ink3 on surface is 5.49:1 in light
+  and 8.16:1 in dark before the fade). Give a text button that can be off
+  `NavButtonStyle` (a sheet's Cancel and Send) or `ChipButtonStyle` (a chip);
+  both read `isEnabled` and draw ink3 without fading.
+  `SharedViewSnapshotTests.disabledButtonsReadInInk3` pins it (W2800).
+- An iPad's form sheet is 660 points high in an 1180-point screen, so at
+  the largest text a sheet's lower content scrolls past its edge, and the
+  audit judges it against the dimmed screen behind and fails its contrast.
+  Ignore it with `isPastSheetEdge`, which applies on an iPad only, then drag
+  the sheet in its side margin (a text field covering the middle scrolls on
+  its own) until each later part, down to the last line, is inside the
+  sheet's frame, and audit at each stop, so no row past the edge goes
+  unaudited; any sheet audit on an iPad also needs `isBehindFormSheet`
+  (W2800). Gate every device-specific filter to its idiom, or it hides the
+  same issue on the phones, where nothing explains it.
+- Never put `.lineLimit(1)` on server text a person must read, such as a
+  task title: the Dynamic Type audit grows it and reports "Text clipped".
+  An iPad's wider sheet hid it, and both iPhones (27.2 and 26.4) failed.
+  Let it wrap with `.fixedSize(horizontal: false, vertical: true)` and stack
+  it under its identifier at the accessibility sizes through `AnyLayout`
+  (W2800, `RequestChangesSheet.task`).
+- Two nav buttons sharing a row can break a word on an iPhone at the largest
+  text even where the iPad fits them: German "Abbrechen" beside "Senden"
+  split as "Abbrech / en" on the iPhone 18 Pro at AX XXXL, and the audit did
+  not catch it. At the accessibility sizes give each button its own line,
+  and pin it in the UI test by asserting the buttons are stacked and their
+  heights match, since a broken word adds a line (W2800). Look at every
+  sheet on a phone in German at the largest size, not only on the iPad.
+- Fix an audit failure in the app rather than filtering it, even one that
+  is older than the task, and even one in system UI the app brought up. A
+  sheet that focused its field on opening brought the keyboard up, and the
+  iOS 26.4 audit on an iPad failed the empty slots of its suggestion bar
+  ("Element has no description", type Other, 172x49, in
+  `SystemInputAssistantView`); the fix was to stop focusing the field, which
+  the design never drew and which also spares VoiceOver a jump into the
+  editor. The Review queue's "3 waiting" failed contrast there on main too,
+  in ink-3 and still in ink-2 (11:1), while the Now header's "4 waiting on
+  you · 3 tasks held up", in the same style and place, passed: the iOS 26
+  iPad audit misjudges a very short run of thin glyphs. A brighter ink did
+  not fix it; the Now header's longer string "3 waiting on you" did, and the
+  two headers now read alike (W2800). Compare a failing text with a passing
+  one in the same style before changing its colour.
+- To find such a failure's element, print each unignored issue and dump
+  `XCUIApplication().debugDescription` at the first one, in the scratch copy;
+  an element with no identifier is found by its frame in the dump.
+- The audit's failure says only "Contrast failed", with no element. To find
+  it, wrap the issue handler in the scratch copy's `AccessibilityAudit.swift`
+  to print each unignored issue's `element?.identifier`, label and frame,
+  and run that one test there (W2800).
 
 ## Skill review before completion
 

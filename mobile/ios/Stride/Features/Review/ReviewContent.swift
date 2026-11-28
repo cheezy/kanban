@@ -23,6 +23,9 @@ struct ReviewContent: Hashable, Sendable {
     let tiles: [ReviewTile]
     /// The `pitfalls` verdict, which "Tests and checks" shows.
     let pitfalls: Verdict?
+    /// Every failed verdict with a note, pitfalls included, in the sections'
+    /// order, which Request changes offers as chips.
+    let findings: [ReviewFinding]
     let checks: ReviewChecks
     /// The security issues the reviewer reported, by severity.
     let securityFindings: ReviewSeverityCounts
@@ -167,6 +170,13 @@ extension ReviewContent {
             }
         }
         pitfalls = verdicts[.pitfalls].map { Verdict(section: .pitfalls, state: $0.state) }
+        findings = VerdictSection.allCases.compactMap { section in
+            guard let note = verdicts[section]?.note,
+                  !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else { return nil }
+
+            return ReviewFinding(section: section, note: note)
+        }
         checks = ReviewChecks(detail.projectChecks)
         securityFindings = ReviewSeverityCounts(
             critical: detail.securityFindings.critical,

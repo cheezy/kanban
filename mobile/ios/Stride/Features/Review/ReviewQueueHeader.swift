@@ -12,7 +12,11 @@ struct ReviewQueueHeader: View {
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("tab-title")
             if let waiting {
-                Text(.reviewQueueWaiting(count: waiting))
+                // "3 waiting on you", as the Now header says it. The iOS 26
+                // audit on an iPad failed the contrast of the short "3
+                // waiting" in ink-2 and ink-3 alike, and passes the Now
+                // header's longer line in the same style (W2800).
+                Text(.goalWaitingOnYou(count: waiting))
                     .textStyle(.subheadline)
                     .foregroundStyle(ColorToken.ink3.color)
                     .fixedSize(horizontal: false, vertical: true)

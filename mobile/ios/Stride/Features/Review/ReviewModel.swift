@@ -8,6 +8,8 @@ import StrideKit
 /// the server refuses with an HTTP 409 shows as Already decided or
 /// Resubmitted. Approve signs a one-time challenge after Face ID
 /// (`ApproveFlow`), and says when it went through and what can start.
+/// Request changes sends the reviewer's notes from a sheet
+/// (`RequestChangesFlow`), and says the task waits for the agent.
 @MainActor
 @Observable
 final class ReviewModel {
@@ -29,6 +31,12 @@ final class ReviewModel {
     private(set) var approved: [String]?
     /// Why the last approval did not go through.
     private(set) var approveProblem: ApproveProblem?
+    /// A request for changes is on its way.
+    private(set) var isRequestingChanges = false
+    /// Changes were requested here, and the task waits for the agent.
+    private(set) var changesRequested = false
+    /// The open Request changes sheet.
+    var changesSheet: RequestChangesModel?
 
     @ObservationIgnored private let api: (any StrideAPI)?
     @ObservationIgnored private let cache: Cache?
@@ -36,6 +44,7 @@ final class ReviewModel {
     @ObservationIgnored private let now: @Sendable () -> Date
     /// Nil where the device cannot approve, as in a build without a signer.
     @ObservationIgnored private let approvals: ApproveFlow?
+    @ObservationIgnored private let changes: RequestChangesFlow?
 
     /// Numbers each request, so an answer that set out before the one shown
     /// never replaces it, whichever arrives first.
@@ -48,7 +57,8 @@ final class ReviewModel {
         cache: Cache? = nil,
         connectivity: Connectivity = .system,
         now: @escaping @Sendable () -> Date = { .now },
-        approvals: ApproveFlow? = nil
+        approvals: ApproveFlow? = nil,
+        changes: RequestChangesFlow? = nil
     ) {
         self.taskID = taskID
         self.api = api
@@ -56,6 +66,8 @@ final class ReviewModel {
         self.connectivity = connectivity
         self.now = now
         self.approvals = approvals
+        // Any build with an API can request changes: no key is needed.
+        self.changes = changes ?? api.map { RequestChangesFlow(api: $0) }
     }
 
     // MARK: What the screen shows
@@ -81,8 +93,18 @@ final class ReviewModel {
     /// Approve sends a signed approval: never offline, so an approval is never
     /// sent late, never twice at once and never after it went through.
     var canApprove: Bool {
-        canAct && approvals != nil && content?.approvableHere == true && !isApproving && approved == nil
+        canAct && approvals != nil && content?.approvableHere == true && !isBusy && !isDecided
     }
+
+    /// Request changes opens its sheet while the device is online, nothing is
+    /// on its way and the review is not decided here.
+    var canRequestChanges: Bool { canAct && changes != nil && !isBusy && !isDecided }
+
+    /// Approved or changes requested here.
+    var isDecided: Bool { approved != nil || changesRequested }
+
+    /// A decision is on its way.
+    private var isBusy: Bool { isApproving || isRequestingChanges }
 
     /// "Approved. W2702 and W2703 can start.", the identifiers as the locale
     /// lists them, or "Approved." when the review held nothing up; nil until
@@ -94,24 +116,32 @@ final class ReviewModel {
         return .reviewApprovedCanStart(identifiers: approved.formatted(.list(type: .and).locale(locale)))
     }
 
-    /// A problem or the Approved toast shows above the buttons, which then
-    /// need a gap below it.
-    var showsDecisionNotice: Bool { approveProblem != nil || approved != nil }
+    /// "Changes requested. W2701 is waiting for Claude to pick up the
+    /// changes." (decision 10), or "the agent" when the review names none; nil
+    /// until changes are requested.
+    var changesRequestedMessage: LocalizedStringResource? {
+        guard changesRequested, let content else { return nil }
+        guard let agent = content.agent?.name else {
+            return .reviewChangesSentNoAgent(identifier: content.identifier)
+        }
 
-    /// Request changes sends its notes in the next task, so it stays disabled
-    /// until then rather than looking live.
-    var canRequestChanges: Bool { false }
+        return .reviewChangesSent(identifier: content.identifier, agent: agent)
+    }
+
+    /// A problem or a decision's toast shows above the buttons, which then
+    /// need a gap below it.
+    var showsDecisionNotice: Bool { approveProblem != nil || isDecided }
 
     // MARK: Loading
 
     /// Asks the server for the review, and keeps it. When the request fails,
     /// the review shown stays, or the cached one shows if nothing does yet.
-    /// Once approved here it asks nothing more, and an answer already on its
+    /// Once decided here it asks nothing more, and an answer already on its
     /// way is dropped: the server no longer has the review waiting, so a
-    /// refresh or a reconnect would replace the Approved toast and Next with
-    /// "gone", or cache the review again.
+    /// refresh or a reconnect would replace the toast and Next with "gone", or
+    /// cache the review again.
     func load() async {
-        guard approved == nil else { return }
+        guard !isDecided else { return }
         requests += 1
         let request = requests
         guard let api else { return }
@@ -165,11 +195,7 @@ final class ReviewModel {
         switch await approvals.approve(content, reason: reason, web: web) {
         case .approved(let holdsUp):
             approved = holdsUp
-            // A load already on its way set out before the approval: its
-            // answer, a 404 or the review as it was, must not land.
-            shownRequest = requests
-            // Decided here, so it never reopens offline as still waiting.
-            try? await cache?.forget(.review(taskID: taskID))
+            await settle()
         case .cancelled:
             break
         case .conflict(let conflict):
@@ -181,6 +207,51 @@ final class ReviewModel {
         case .problem(let problem):
             approveProblem = problem
         }
+    }
+
+    /// Opens the Request changes sheet for the review shown.
+    func openRequestChanges() {
+        guard canRequestChanges, let content else { return }
+
+        approveProblem = nil
+        changesSheet = RequestChangesModel(
+            content: content,
+            isOffline: { [weak self] in self?.isOffline ?? true },
+            send: { [weak self] notes in
+                // A model gone with its screen sends nothing. Never write
+                // `self?.requestChanges(notes:) ?? .failed`: the optional
+                // chain flattens, so a send that went through (nil) would
+                // read as failed.
+                guard let self else { return .failed }
+                return await self.requestChanges(notes: notes)
+            }
+        )
+    }
+
+    /// Sends the sheet's notes, and closes it once they went through, the
+    /// review was decided elsewhere (Already decided or Resubmitted) or it
+    /// left the person's queue. A problem stays in the sheet with the notes.
+    func requestChanges(notes: String) async -> RequestChangesProblem? {
+        guard canRequestChanges, let content, let changes else { return .failed }
+
+        isRequestingChanges = true
+        defer { isRequestingChanges = false }
+
+        switch await changes.send(notes, for: content) {
+        case .sent:
+            changesRequested = true
+            changesSheet = nil
+            await settle()
+        case .conflict(let conflict):
+            show(conflict)
+            changesSheet = nil
+        case .gone:
+            isUnavailable = true
+            changesSheet = nil
+        case .problem(let problem):
+            return problem
+        }
+        return nil
     }
 
     /// Closes the problem notice.
@@ -196,6 +267,14 @@ final class ReviewModel {
     }
 
     // MARK: Helpers
+
+    /// After a decision here: a load already on its way set out before it, so
+    /// its answer, a 404 or the review as it was, must not land, and the
+    /// cached review is dropped so it never reopens offline as still waiting.
+    private func settle() async {
+        shownRequest = requests
+        try? await cache?.forget(.review(taskID: taskID))
+    }
 
     private func show(_ detail: Components.Schemas.ReviewDetail, fetchedAt: Date) {
         content = ReviewContent(detail)

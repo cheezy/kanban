@@ -19,8 +19,8 @@ defmodule Kanban.Mobile.StringsTest do
   # is in title case and the app's button in sentence case, as iOS buttons are.
   # The shared views' readings and kinds (W2789), the Now tab (W2790) and the
   # Now screen (W2793) and its card actions (W2794) are the app's own words, as
-  # is Face ID's reason in the app's Info.plist (W2798), and approving a review
-  # (W2799).
+  # is Face ID's reason in the app's Info.plist (W2798), approving a review
+  # (W2799) and requesting changes (W2800).
   @app_only ~w(
     sign_in_action sign_in_create_account sign_in_failed sign_in_locked_action
     sign_in_locked_message sign_in_locked_title sign_in_network_error sign_in_note
@@ -51,6 +51,9 @@ defmodule Kanban.Mobile.StringsTest do
     review_reload review_holds_up review_criteria_count
     review_approve_reason review_approved review_approved_can_start review_next
     review_approve_expired review_approve_refused
+    review_changes_field review_changes_dictate review_changes_add_finding review_changes_sent
+    review_changes_sent_no_agent review_changes_footnote review_changes_footnote_no_agent
+    review_changes_too_long review_changes_refused
     review_verdict_passed review_verdict_failed review_verdict_not_assessed
     review_file_in review_lines_added review_lines_removed
     diff_position diff_region diff_back_to_verdicts diff_next_file diff_previous_file
@@ -165,8 +168,8 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 157
-      assert length(pot_keys(:plural)) == 29
+      assert length(pot_keys(:string)) == 166
+      assert length(pot_keys(:plural)) == 28
 
       for {locale, strings} <- built do
         assert strings["strings"] |> Map.keys() |> Enum.sort() == pot_keys(:string),

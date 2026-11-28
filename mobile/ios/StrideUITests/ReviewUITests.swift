@@ -47,8 +47,7 @@ final class ReviewUITests: XCTestCase {
 
         let bar = app.buttons["review-request-changes"]
         XCTAssertTrue(bar.exists, "no bottom bar")
-        // Request changes sends nothing yet, so it does not look live.
-        XCTAssertFalse(bar.isEnabled, "Request changes is enabled but does nothing")
+        XCTAssertTrue(bar.isEnabled, "Request changes is disabled")
         let approve = app.buttons["review-approve"].firstMatch
         XCTAssertTrue(approve.waitForExistence(timeout: 10), "no Approve button")
         XCTAssertTrue(approve.isEnabled, "Approve is disabled")

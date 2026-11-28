@@ -77,9 +77,6 @@
     "review_queue_files": {
       "other": "{count} 个文件"
     },
-    "review_queue_waiting": {
-      "other": "{count} 项等待中"
-    },
     "target_goal_count": {
       "other": "{count} 个目标"
     },
@@ -176,6 +173,15 @@
     "review_approve_refused": "Stride 未接受此设备的批准。请退出登录后重新登录，再进行批准。",
     "review_approved": "已批准。",
     "review_approved_can_start": "已批准。{identifiers} 现在可以开始。",
+    "review_changes_add_finding": "添加{section}的发现",
+    "review_changes_dictate": "用键盘的麦克风听写",
+    "review_changes_field": "需要修改的内容",
+    "review_changes_footnote": "{agent} 会收到这条说明。在修改被接手之前，任务会留在审查中。",
+    "review_changes_footnote_no_agent": "代理会收到这条说明。在修改被接手之前，任务会留在审查中。",
+    "review_changes_refused": "Stride 未接受这条说明。请删除不常见的字符后重新发送。",
+    "review_changes_sent": "已请求修改。{identifier} 正在等待 {agent} 接手修改。",
+    "review_changes_sent_no_agent": "已请求修改。{identifier} 正在等待代理接手修改。",
+    "review_changes_too_long": "说明最多 10,000 个字符。",
     "review_checks": "测试与检查",
     "review_criteria_count": "{met}/{count}",
     "review_decided_approved": "{name} 已批准。",

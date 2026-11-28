@@ -356,15 +356,16 @@ struct ReviewModelTests {
         let model = Self.model()
         await model.load()
         #expect(model.canAct)
-        // A model without a signer cannot approve, and Request changes sends
-        // nothing yet, so neither button looks live.
+        // A model without a signer cannot approve; Request changes needs no
+        // key, so it is live until the conflict shows.
         #expect(model.canApprove == false)
-        #expect(model.canRequestChanges == false)
+        #expect(model.canRequestChanges)
 
         model.show(Self.conflict(.alreadyDecided, status: .approved, by: "Sam Rivera"))
 
         #expect(model.conflict == .alreadyDecided(by: "Sam Rivera", decision: .approved, at: Self.fetched))
         #expect(model.canAct == false)
+        #expect(model.canRequestChanges == false)
         let message = ReviewConflictCopy.message(for: try #require(model.conflict))
         #expect(Self.english(message) == "Sam Rivera approved this.")
         let when = ReviewConflictCopy.when(Self.fetched, relativeTo: Self.fetched.addingTimeInterval(120), in: Self.en)

@@ -102,10 +102,6 @@
       "one": "{count} fichier",
       "other": "{count} fichiers"
     },
-    "review_queue_waiting": {
-      "one": "{count} en attente",
-      "other": "{count} en attente"
-    },
     "target_goal_count": {
       "one": "{count} objectif",
       "other": "{count} objectifs"
@@ -205,6 +201,15 @@
     "review_approve_refused": "Stride n’a pas accepté l’approbation de cet appareil. Déconnectez-vous puis reconnectez-vous pour approuver.",
     "review_approved": "Approuvé.",
     "review_approved_can_start": "Approuvé. Démarrage possible : {identifiers}.",
+    "review_changes_add_finding": "Ajouter le constat sur {section}",
+    "review_changes_dictate": "Dictez avec le micro du clavier",
+    "review_changes_field": "Ce qui doit changer",
+    "review_changes_footnote": "{agent} reçoit cette note. La tâche reste en Révision jusqu’à ce que les modifications soient reprises.",
+    "review_changes_footnote_no_agent": "L’agent reçoit cette note. La tâche reste en Révision jusqu’à ce que les modifications soient reprises.",
+    "review_changes_refused": "Stride n’a pas accepté cette note. Retirez les caractères inhabituels et renvoyez-la.",
+    "review_changes_sent": "Modifications demandées. {identifier} attend que {agent} reprenne les modifications.",
+    "review_changes_sent_no_agent": "Modifications demandées. {identifier} attend que l’agent reprenne les modifications.",
+    "review_changes_too_long": "Une note peut contenir jusqu'à 10 000 caractères.",
     "review_checks": "Tests et vérifications",
     "review_criteria_count": "{met}/{count}",
     "review_decided_approved": "{name} l’a approuvée.",

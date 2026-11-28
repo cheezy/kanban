@@ -70,7 +70,7 @@ final class NowUITests: XCTestCase {
         field.tap()
         field.typeText("Keep the old column for now.")
         XCTAssertTrue(send.isEnabled, "a reply cannot be sent")
-        try app.auditAccessibility(ignoringFormSheetBackdrop)
+        try app.auditAccessibility { issue in issue.isBehindFormSheet }
 
         send.tap()
         XCTAssertTrue(heading.waitForNonExistence(timeout: 10), "the reply sheet stayed open")
@@ -98,19 +98,10 @@ final class NowUITests: XCTestCase {
         // The hook's output is never on the phone, so there is nothing to open.
         XCTAssertFalse(app.buttons["View log"].exists)
         try app.auditAccessibility { issue in
-            self.ignoringFormSheetBackdrop(issue) || (UIDevice.current.userInterfaceIdiom == .pad && issue.isOnAttemptRowValue)
+            issue.isBehindFormSheet || (UIDevice.current.userInterfaceIdiom == .pad && issue.isOnAttemptRowValue)
         }
 
         app.buttons["Close"].firstMatch.tap()
         XCTAssertTrue(heading.waitForNonExistence(timeout: 10))
-    }
-
-    /// On an iPad the form sheet leaves the Now screen visible, dimmed and out
-    /// of VoiceOver's reach, around it, and the audit reports that text as
-    /// "potentially inaccessible text" with no element, as `ShellUITests`
-    /// notes for the corner sheets. Only that is ignored.
-    @MainActor
-    private func ignoringFormSheetBackdrop(_ issue: XCUIAccessibilityAuditIssue) -> Bool {
-        UIDevice.current.userInterfaceIdiom == .pad && issue.auditType == .elementDetection && issue.element == nil
     }
 }

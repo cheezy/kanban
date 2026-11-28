@@ -102,10 +102,6 @@
       "one": "{count} arquivo",
       "other": "{count} arquivos"
     },
-    "review_queue_waiting": {
-      "one": "{count} aguardando",
-      "other": "{count} aguardando"
-    },
     "target_goal_count": {
       "one": "{count} meta",
       "other": "{count} metas"
@@ -205,6 +201,15 @@
     "review_approve_refused": "O Stride não aceitou a aprovação deste dispositivo. Saia e entre de novo para aprovar.",
     "review_approved": "Aprovado.",
     "review_approved_can_start": "Aprovado. Já é possível começar {identifiers}.",
+    "review_changes_add_finding": "Adicionar o achado de {section}",
+    "review_changes_dictate": "Dite com o microfone do teclado",
+    "review_changes_field": "O que precisa mudar",
+    "review_changes_footnote": "{agent} recebe esta nota. A tarefa fica em Revisão até que as alterações sejam retomadas.",
+    "review_changes_footnote_no_agent": "O agente recebe esta nota. A tarefa fica em Revisão até que as alterações sejam retomadas.",
+    "review_changes_refused": "O Stride não aceitou esta nota. Remova caracteres incomuns e envie de novo.",
+    "review_changes_sent": "Alterações solicitadas. {identifier} aguarda que {agent} retome as alterações.",
+    "review_changes_sent_no_agent": "Alterações solicitadas. {identifier} aguarda que o agente retome as alterações.",
+    "review_changes_too_long": "Uma nota pode ter até 10.000 caracteres.",
     "review_checks": "Testes e verificações",
     "review_criteria_count": "{met}/{count}",
     "review_decided_approved": "{name} aprovou isto.",

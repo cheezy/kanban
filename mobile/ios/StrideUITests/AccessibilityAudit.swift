@@ -24,17 +24,37 @@ extension XCUIApplication {
     /// One audit, run a second time only when the first ran out of time
     /// (code -56), which reports nothing about the screen. A long screen at
     /// the largest text sometimes overran on one call or another (W2796); an
-    /// issue the audit finds still fails at once.
+    /// issue the audit finds still fails at once. Each issue not ignored is
+    /// also printed with its element, since the failure itself names only
+    /// the kind of issue, so a failing run says what failed without a
+    /// second run to find it (W2800).
     @MainActor
     private func audit(
         _ types: XCUIAccessibilityAuditType,
         _ issueHandler: ((XCUIAccessibilityAuditIssue) throws -> Bool)?
     ) throws {
-        do {
-            try performAccessibilityAudit(for: types, issueHandler)
-        } catch let error as NSError where error.domain == "com.apple.xcode.xctest.accessibilityAudit" && error.code == -56 {
-            try performAccessibilityAudit(for: types, issueHandler)
+        let reporting: (XCUIAccessibilityAuditIssue) throws -> Bool = { issue in
+            let ignored = try issueHandler?(issue) ?? false
+            if !ignored { print(Self.describe(issue)) }
+            return ignored
         }
+        do {
+            try performAccessibilityAudit(for: types, reporting)
+        } catch let error as NSError where error.domain == "com.apple.xcode.xctest.accessibilityAudit" && error.code == -56 {
+            try performAccessibilityAudit(for: types, reporting)
+        }
+    }
+
+    /// One line naming an issue's element: its identifier, type, frame and
+    /// label. The label is the app's own text or fixture text, never a token.
+    @MainActor
+    private static func describe(_ issue: XCUIAccessibilityAuditIssue) -> String {
+        guard let element = issue.element, element.exists else {
+            return "AUDIT-ISSUE: \(issue.compactDescription) | no element"
+        }
+        let identifier = element.identifier.isEmpty ? "-" : element.identifier
+        return "AUDIT-ISSUE: \(issue.compactDescription) | id=\(identifier) | type=\(element.elementType.rawValue) "
+            + "| frame=\(element.frame) | label=\(element.label)"
     }
 }
 
@@ -87,10 +107,40 @@ extension XCUIAccessibilityAuditIssue {
         }
     }
 
+    /// A contrast issue on a sheet's content scrolled past the sheet's edge.
+    /// On an iPad a form sheet is shorter than the screen, and at the largest
+    /// text the Request changes sheet's chip scrolled below it, where the
+    /// audit judged it against the dimmed screen behind the sheet (W2800).
+    /// Only on an iPad, and only an element of the sheet's own scroll view
+    /// that the sheet does not wholly show is ignored; the test scrolls the
+    /// sheet on to its last line and audits each part there, so no row past
+    /// the edge goes unaudited.
+    @MainActor
+    var isPastSheetEdge: Bool {
+        guard UIDevice.current.userInterfaceIdiom == .pad,
+              auditType == .contrast, let element, element.exists else { return false }
+
+        let sheet = XCUIApplication().scrollViews.containing(.staticText, identifier: "sheet-title").firstMatch
+        guard sheet.exists, !sheet.frame.contains(element.frame) else { return false }
+
+        let sameLabel = NSPredicate(format: "label == %@", element.label)
+        return sheet.descendants(matching: .any).matching(sameLabel).firstMatch.exists
+    }
+
+    /// On an iPad a form sheet leaves the screen behind it dimmed and out of
+    /// VoiceOver's reach, and the audit reports that text as "potentially
+    /// inaccessible text" with no element (W2790). Only that issue is
+    /// ignored, and only on an iPad.
+    @MainActor
+    var isBehindFormSheet: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && auditType == .elementDetection && element == nil
+    }
+
     /// The bars of buttons pinned over the bottom of a scrolled screen, and
-    /// the review's problem notice or Approved toast pinned above its bar,
-    /// which on a phone covers the review text scrolled behind it (W2799).
-    private static let pinnedBars = ["review-bottom-bar", "review-problem-notice", "review-approved-toast", "diff-bottom-bar"]
+    /// the review's problem notice, Approved toast or Changes requested toast
+    /// pinned above its bar, which on a phone covers the review text scrolled
+    /// behind it (W2799, W2800).
+    private static let pinnedBars = ["review-bottom-bar", "review-problem-notice", "review-approved-toast", "review-changes-toast", "diff-bottom-bar"]
 
     /// The lazy lists of cards: the Now cards and the Review queue's rows.
     private static let lazyLists = ["now-cards", "review-rows"]

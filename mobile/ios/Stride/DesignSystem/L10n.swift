@@ -147,6 +147,26 @@ extension LocalizedStringResource {
         LocalizedStringResource("review_approved_can_start", defaultValue: "Approved. \(identifiers) can start.", table: "Localizable", bundle: .main)
     }
 
+    /// "Add the {section} finding"
+    static func reviewChangesAddFinding(section: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_changes_add_finding", defaultValue: "Add the \(section) finding", table: "Localizable", bundle: .main)
+    }
+
+    /// "{agent} gets this note. The task stays in Review until the changes are picked up."
+    static func reviewChangesFootnote(agent: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_changes_footnote", defaultValue: "\(agent) gets this note. The task stays in Review until the changes are picked up.", table: "Localizable", bundle: .main)
+    }
+
+    /// "Changes requested. {identifier} is waiting for {agent} to pick up the changes."
+    static func reviewChangesSent(identifier: String, agent: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_changes_sent", defaultValue: "Changes requested. \(identifier) is waiting for \(agent) to pick up the changes.", table: "Localizable", bundle: .main)
+    }
+
+    /// "Changes requested. {identifier} is waiting for the agent to pick up the changes."
+    static func reviewChangesSentNoAgent(identifier: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_changes_sent_no_agent", defaultValue: "Changes requested. \(identifier) is waiting for the agent to pick up the changes.", table: "Localizable", bundle: .main)
+    }
+
     /// "{met}/{count}"
     static func reviewCriteriaCount(met: String, count: Int) -> LocalizedStringResource {
         LocalizedStringResource("review_criteria_count", defaultValue: "\(met)/\(count, specifier: "%lld")", table: "Localizable", bundle: .main)
@@ -230,11 +250,6 @@ extension LocalizedStringResource {
     /// "{count} files"
     static func reviewQueueFiles(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("review_queue_files", defaultValue: "\(count, specifier: "%lld") files", table: "Localizable", bundle: .main)
-    }
-
-    /// "{count} waiting"
-    static func reviewQueueWaiting(count: Int) -> LocalizedStringResource {
-        LocalizedStringResource("review_queue_waiting", defaultValue: "\(count, specifier: "%lld") waiting", table: "Localizable", bundle: .main)
     }
 
     /// "{count} goals"

@@ -63,6 +63,51 @@ struct SharedViewSnapshotTests {
         }
     }
 
+    /// A disabled nav button or chip draws its label in full ink-3, as a plain
+    /// ink-3 `Text` does, never faded: `.plain` fades a disabled label below
+    /// 4.5:1, which the accessibility audit fails (W2800).
+    @Test("a disabled nav button and chip read in ink-3, never faded", arguments: [UIUserInterfaceStyle.light, .dark])
+    func disabledButtonsReadInInk3(style: UIUserInterfaceStyle) throws {
+        let send = Text(.nowReplySend)
+        let chip = Text(.reviewChangesAddFinding(section: "Patterns"))
+
+        let navOff = try Self.drawing(Button {} label: { send }.buttonStyle(NavButtonStyle(weight: .semibold)).disabled(true), in: style)
+        let navOn = try Self.drawing(Button {} label: { send }.buttonStyle(NavButtonStyle(weight: .semibold)), in: style)
+        let navInk3 = try Self.drawing(
+            send.textStyle(.headline).fontWeight(.semibold).foregroundStyle(ColorToken.ink3.color).frame(minWidth: 44, minHeight: 44),
+            in: style
+        )
+        let chipOff = try Self.drawing(Button {} label: { chip }.buttonStyle(ChipButtonStyle()).disabled(true), in: style)
+        let chipOn = try Self.drawing(Button {} label: { chip }.buttonStyle(ChipButtonStyle()), in: style)
+        let chipInk3 = try Self.drawing(
+            chip.textStyle(.footnote).foregroundStyle(ColorToken.ink3.color)
+                .padding(.horizontal, 12).frame(minHeight: 32)
+                .background(ColorToken.surface.color, in: Capsule())
+                .overlay { Capsule().strokeBorder(ColorToken.line.color, lineWidth: 1) }
+                .padding(.vertical, 6),
+            in: style
+        )
+
+        // The text's strongest pixel: the darkest in light, the lightest in dark.
+        func ink(_ drawing: Drawing) -> Int {
+            Int(style == .dark ? drawing.lightest : drawing.darkest)
+        }
+        #expect(abs(ink(navOff) - ink(navInk3)) <= 4, "a disabled nav button is faded: \(ink(navOff)) against \(ink(navInk3))")
+        #expect(abs(ink(chipOff) - ink(chipInk3)) <= 4, "a disabled chip is faded: \(ink(chipOff)) against \(ink(chipInk3))")
+        #expect(navOn.pixels != navOff.pixels, "a nav button looks the same on and off")
+        #expect(chipOn.pixels != chipOff.pixels, "a chip looks the same on and off")
+    }
+
+    /// A view with the screen's 16-point margins, from the top of the window.
+    private static func drawing(_ view: some View, in style: UIUserInterfaceStyle) throws -> Drawing {
+        let framed = view
+            .padding(16)
+            .frame(width: 390, height: 200, alignment: .topLeading)
+            .environment(\.locale, english)
+
+        return try Drawing(of: framed, in: style, width: 390, height: 200)
+    }
+
     /// The window's height: tall enough for the samples at the largest text in
     /// a narrow width, and under the 8192-pixel limit at 3x, beyond which
     /// `drawHierarchy` draws nothing.

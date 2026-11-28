@@ -51,7 +51,8 @@ defmodule Kanban.Mobile.Strings.Msgids do
       review_check_msgids(),
       review_file_msgids(),
       review_state_msgids(),
-      review_approve_msgids()
+      review_approve_msgids(),
+      review_changes_msgids()
     ])
   end
 
@@ -392,7 +393,6 @@ defmodule Kanban.Mobile.Strings.Msgids do
       dpgettext_noop("mobile", "review_queue_empty", "No reviews are waiting for you."),
       dpgettext_noop("mobile", "review_queue_large", "Large change"),
       dpgettext_noop("mobile", "review_queue_too_large_phone", "Too large to approve on a phone"),
-      dpngettext_noop("mobile", "review_queue_waiting", "%{count} waiting", "%{count} waiting"),
       dpngettext_noop("mobile", "review_queue_files", "%{count} file", "%{count} files")
     ]
   end
@@ -526,6 +526,51 @@ defmodule Kanban.Mobile.Strings.Msgids do
         "mobile",
         "review_approve_refused",
         "Stride did not accept this device's approval. Sign out and sign in again to approve."
+      )
+    ]
+  end
+
+  # Requesting changes: the sheet's field, dictation hint, chips and
+  # footnote, the Changes requested toast, and why a request did not go
+  # through (W2800).
+  defp review_changes_msgids do
+    [
+      dpgettext_noop("mobile", "review_changes_field", "What needs to change"),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_dictate",
+        "Dictate with the keyboard's microphone"
+      ),
+      dpgettext_noop("mobile", "review_changes_add_finding", "Add the %{section} finding"),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_sent",
+        "Changes requested. %{identifier} is waiting for %{agent} to pick up the changes."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_sent_no_agent",
+        "Changes requested. %{identifier} is waiting for the agent to pick up the changes."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_footnote",
+        "%{agent} gets this note. The task stays in Review until the changes are picked up."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_footnote_no_agent",
+        "The agent gets this note. The task stays in Review until the changes are picked up."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_too_long",
+        "A note can be up to 10,000 characters."
+      ),
+      dpgettext_noop(
+        "mobile",
+        "review_changes_refused",
+        "Stride did not accept this note. Remove any unusual characters and send it again."
       )
     ]
   end

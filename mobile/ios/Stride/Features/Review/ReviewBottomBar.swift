@@ -3,7 +3,8 @@ import SwiftUI
 /// Request changes, and Approve or where to approve a large change. Each
 /// button is enabled only while it can send its decision: Approve while the
 /// device is online and nothing is on its way (`ReviewModel.canApprove`), and
-/// Request changes once it sends its notes. Pinned under the review side by
+/// Request changes likewise (`ReviewModel.canRequestChanges`), which opens
+/// its sheet. Pinned under the review side by
 /// side, or, `inline`, stacked at the end of the scrolled review.
 struct ReviewBottomBar: View {
     let canApprove: Bool

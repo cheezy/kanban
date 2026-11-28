@@ -1,30 +1,35 @@
 import SwiftUI
 
-/// The design's `.toast` after an approval: "Approved. W2702 and W2703 can
-/// start." in surface on ink, with Next, which opens the next review. Next is
-/// surface and underlined rather than the design's stride-orange, which falls
-/// to about 2.6:1 on the dark theme's light ink. VoiceOver reads it out when
-/// it appears.
-struct ApprovedToast: View {
+/// The design's `.toast` after a decision: "Approved. W2702 and W2703 can
+/// start." with a checkmark, or "Changes requested. W2701 is waiting for
+/// Claude to pick up the changes.", in surface on ink, with Next, which opens
+/// the next review. Next is surface and underlined rather than the design's
+/// stride-orange, which falls to about 2.6:1 on the dark theme's light ink.
+/// VoiceOver reads it out when it appears.
+struct DecisionToast: View {
     @Environment(\.locale) private var locale
 
     let message: LocalizedStringResource
+    let kind: DecisionToastKind
     let next: () -> Void
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DesignTokens.Radius.xl)
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: "checkmark")
-                .fontWeight(.semibold)
-                .foregroundStyle(ColorToken.stDoneSoft.color)
-                .accessibilityHidden(true)
+            if kind.showsCheckmark {
+                Image(systemName: "checkmark")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(ColorToken.stDoneSoft.color)
+                    .accessibilityHidden(true)
+            }
 
             Text(message)
                 .textStyle(.subheadline)
                 .foregroundStyle(ColorToken.surface.color)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityIdentifier("review-approved")
+                .padding(.vertical, 8)
+                .accessibilityIdentifier(kind.messageIdentifier)
 
             Button(action: next) {
                 Text(.reviewNext)
@@ -46,7 +51,7 @@ struct ApprovedToast: View {
                 .shadow(color: ColorToken.ink.color.opacity(0.18), radius: 12, y: 4)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("review-approved-toast")
+        .accessibilityIdentifier(kind.toastIdentifier)
         .onAppear {
             AccessibilityNotification.Announcement(message.resolved(in: locale)).post()
         }
