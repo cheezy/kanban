@@ -1202,3 +1202,22 @@ msgstr "変更を依頼しました。%{identifier} はエージェントが変�
 msgctxt "review_changes_too_long"
 msgid "A note can be up to 10,000 characters."
 msgstr "メモは 10,000 文字までです。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_elsewhere_hint"
+msgid "Opens this review on the web"
+msgstr "このレビューをWebで開きます"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_lines"
+msgid "%{count} changed line"
+msgid_plural "%{count} changed lines"
+msgstr[0] "%{count}行の変更"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_size"
+msgid "%{files} and %{lines}"
+msgstr "%{files}、%{lines}"

@@ -120,6 +120,10 @@ before the first review:
   counts one toward the ABC size, so keep each list in `strings/msgids.ex` to about 15
   strings, and rerun `MIX_ENV=test mix gettext.extract --merge` and
   `mix mobile.strings` after moving one, since the `.pot` records line numbers.
+  The nested-call rule covers tests too: write `stats(1, 1, nil) |> Subtitle.text()`,
+  never `Subtitle.text(stats(1, 1, nil))`. When `after_doing` overruns, credo
+  never runs on the task, so `after_goal` is the first to see such a call and
+  stops before its push (W2801).
 - `before_doing` fails on `mix hex.outdated` even when the update is "not
   possible" because another dependency caps it. igniter 0.9.0 was capped below
   0.9 by oidcc 3.9.2; the user chose an `override: true` in `mix.exs`, committed
@@ -258,7 +262,10 @@ before the first review:
     `ink-4`, added lines `st-done-soft`, removed lines `st-blocked-soft`. Token
     colours: keyword `st-review`, function `st-ready`, string `st-done`,
     attribute `stride-orange-ink`.
-  - `.notice` (the offline banner) is `st-doing-soft`.
+  - `.notice` (the offline banner, the large-change notice) is `st-doing-soft`
+    with 14-point text (`.subheadline`) in `ink` and only its icon in
+    `st-doing`; a title in it is weight 600. W2801 first drew the whole
+    notice in `st-doing`, which the review caught against the artboard.
   - `.dcard` (decision card): padding 14, radius 14, `line` border, small
     shadow; kind dot, "holds up N" pill, identifier, priority dot labelled like
     "Critical priority", title 16 at weight 500, small agent avatar, verdicts.
@@ -292,6 +299,13 @@ before the first review:
   `@Environment(\.locale)` and resolve each string in it with
   `resource.resolved(in: locale)` (`LocalizedStringResource+Locale.swift`), or
   set `resource.locale` as `SignInPoint` does.
+- `IosLarge.dc.html` and `AndroidLarge.dc.html` only import `Review.dc.html` at
+  its `large` step, so the large-change notice and button are drawn, and
+  edited, in `Review.dc.html` for both platforms. Keep its file rows summing to
+  the fixture's `changed_lines` (W2801: they summed to 700 against 652). The
+  same goes for a fixture variant that changes `size`: give it file rows that
+  agree, or the stub screen shows a 14-file notice over a 3-file list (W2801's
+  `FixtureAPI.largeReview`).
 - The Sign in and Update required screens still use system colours and fonts;
   move a screen to the tokens when a task next changes it.
 
@@ -531,6 +545,10 @@ before the first review:
 - `UpdateRequiredUITests` taps the App Store link; a simulator has no App Store,
   so Safari stays open with "address is invalid". Close it and relaunch the app
   if the user's panel shows it.
+- `LargeChangeUITests` opens the web review in Safari. It waits for
+  `XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")` to run in the
+  foreground and terminates it in a teardown block, so no Safari is left over
+  the app (W2801).
 
 ## Versions
 
@@ -564,6 +582,23 @@ before the first review:
   `~/Library/Logs/DiagnosticReports`. On iOS 17.5 one was a segfault in
   `XCTAutomationSupport` after the system quarantined the app's logging for
   volume (W2797).
+- Before auditing an element a UI test scrolled to, scroll until the window's
+  frame contains the element's frame, not just until it is hittable: a
+  half-visible button is hittable, and the iPad audit failed its contrast
+  (W2801, after the fixture's file list grew).
+- The clipped-text check reaches sections off the screen by scrolling to
+  them, so the audit at the top of a long screen already covers its end. In
+  the second audit at the end, skip `.textClipped` as well as `.dynamicType`:
+  on the iPad on iOS 27.2 it scrolled back up a 14-file review and failed the
+  summary's heading as clipped on every run, though the heading shows whole
+  there (W2801). Read the issue's frame against the screen by hand before
+  filtering anything.
+- The iPhone 18 Pro (iOS 27.2) audits differently from the iPhone 17 on
+  the same 402-by-874 screen: it failed `ReviewUITests` on main (a section
+  heading just above the review's bar reported clipped, and text just above
+  the Approved toast's shadow reported low contrast) while the iPhone 17
+  passed. Run a task's UI tests on the 18 Pro too, and when one fails there,
+  run main's copy on it before blaming the change (W2801).
 - iOS 26 and 27 report a contrast failure on plain text when a
   `performAccessibilityAudit` call also resizes text, because the screen is
   still scrolling; `app.auditAccessibility()` runs the contrast check alone
@@ -837,6 +872,14 @@ before the first review:
   that refreshes the parent (after a 409) stores it before the child, and an
   offline test loads the parent first. Storing the parent under a new
   generation drops its other generations' children (W2797).
+
+- `ReviewContent` is declared `Hashable`, as the review's other value types
+  are, so a value type added to it must be `Hashable` too, not just
+  `Equatable`; the build fails on `ReviewContent` itself, not on the new type
+  (W2801). No route carries it: `AppRoute`'s cases carry a task identifier
+  (`task`, `goal`), a review's numeric task id (`review`), a
+  `ReviewFileTarget` (`reviewFile`) or a board id and optional column
+  (`board`).
 
 ## Live updates
 
@@ -1117,6 +1160,12 @@ before the first review:
   yielding the wrong event, over ones that make a test wait for its time limit. A test stopped by its time limit logs `recorded an
   issue ... Time limit was exceeded` and may never print a `failed` line before
   the run ends, so a break-it parser must count that line as caught (W2791).
+- Every test a task adds or changes needs its own break-it record, including a
+  test changed by a review fix and a new pair in `SharedViewAccessibilityTests`;
+  W2801's round-2 review sent back seven tests that had none. A status ink is
+  tighter on its soft fill than on `surface` in both themes, so a token break
+  that fails a new ink-on-surface pair also fails the ink-on-soft pair: say so
+  in the record rather than claim the new pair alone caught it (W2801).
 
 ## Stride review rules for iOS tasks
 

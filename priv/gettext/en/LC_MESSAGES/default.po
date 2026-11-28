@@ -3977,8 +3977,8 @@ msgid "Your rights"
 msgstr ""
 
 #: lib/kanban_web/components/board_pulse_card.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -4913,20 +4913,20 @@ msgstr ""
 msgid "live"
 msgstr ""
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr ""
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr ""
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr ""
@@ -4975,14 +4975,14 @@ msgstr[1] ""
 msgid "No files changed."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr ""
@@ -5037,7 +5037,7 @@ msgstr "Unable to approve task."
 msgid "Unable to request changes on task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr ""

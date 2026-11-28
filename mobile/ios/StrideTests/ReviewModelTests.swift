@@ -63,7 +63,7 @@ struct ReviewModelTests {
         #expect(details.contains("35"))
         #expect(details.hasSuffix(" · G11 Ship the first app build"))
         #expect(content.approvableHere)
-        #expect(content.tooLargeHere == false)
+        #expect(content.size == ReviewChangeSize(files: 3, changedLines: 188))
     }
 
     @Test("shows 3 of 4 passed with the failed note")
@@ -340,17 +340,6 @@ struct ReviewModelTests {
         #expect(none.checks == .notReported)
     }
 
-    @Test("a change too large for this device says where to approve it")
-    func tooLarge() async throws {
-        let content = try await Self.loaded(try DecisionFixtures.reviewData { review in
-            review["approvable_here"] = false
-            review["approvable_here_reason"] = "too_large_for_phone"
-        })
-
-        #expect(content.approvableHere == false)
-        #expect(content.tooLargeHere)
-    }
-
     @Test("409 already decided shows who decided")
     func alreadyDecided() async throws {
         let model = Self.model()
@@ -360,12 +349,15 @@ struct ReviewModelTests {
         // key, so it is live until the conflict shows.
         #expect(model.canApprove == false)
         #expect(model.canRequestChanges)
+        #expect(model.canOpenOnWeb)
 
         model.show(Self.conflict(.alreadyDecided, status: .approved, by: "Sam Rivera"))
 
         #expect(model.conflict == .alreadyDecided(by: "Sam Rivera", decision: .approved, at: Self.fetched))
         #expect(model.canAct == false)
         #expect(model.canRequestChanges == false)
+        // The web would open on another task once this one is decided.
+        #expect(model.canOpenOnWeb == false)
         let message = ReviewConflictCopy.message(for: try #require(model.conflict))
         #expect(Self.english(message) == "Sam Rivera approved this.")
         let when = ReviewConflictCopy.when(Self.fetched, relativeTo: Self.fetched.addingTimeInterval(120), in: Self.en)

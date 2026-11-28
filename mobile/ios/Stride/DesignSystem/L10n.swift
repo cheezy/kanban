@@ -227,6 +227,16 @@ extension LocalizedStringResource {
         LocalizedStringResource("review_holds_up", defaultValue: "holds up \(identifiers)", table: "Localizable", bundle: .main)
     }
 
+    /// "{count} changed lines"
+    static func reviewLargeLines(count: Int) -> LocalizedStringResource {
+        LocalizedStringResource("review_large_lines", defaultValue: "\(count, specifier: "%lld") changed lines", table: "Localizable", bundle: .main)
+    }
+
+    /// "{files} and {lines}"
+    static func reviewLargeSize(files: String, lines: String) -> LocalizedStringResource {
+        LocalizedStringResource("review_large_size", defaultValue: "\(files) and \(lines)", table: "Localizable", bundle: .main)
+    }
+
     /// "{count} lines added"
     static func reviewLinesAdded(count: Int) -> LocalizedStringResource {
         LocalizedStringResource("review_lines_added", defaultValue: "\(count, specifier: "%lld") lines added", table: "Localizable", bundle: .main)

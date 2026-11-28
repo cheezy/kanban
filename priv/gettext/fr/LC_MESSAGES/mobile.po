@@ -1230,3 +1230,23 @@ msgstr "Modifications demandées. %{identifier} attend que l’agent reprenne le
 msgctxt "review_changes_too_long"
 msgid "A note can be up to 10,000 characters."
 msgstr "Une note peut contenir jusqu'à 10 000 caractères."
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_elsewhere_hint"
+msgid "Opens this review on the web"
+msgstr "Ouvre cette revue sur le web"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_lines"
+msgid "%{count} changed line"
+msgid_plural "%{count} changed lines"
+msgstr[0] "%{count} ligne modifiée"
+msgstr[1] "%{count} lignes modifiées"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_size"
+msgid "%{files} and %{lines}"
+msgstr "%{files} et %{lines}"

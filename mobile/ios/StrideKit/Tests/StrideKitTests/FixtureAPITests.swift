@@ -91,6 +91,25 @@ struct FixtureAPITests {
         #expect(me.user.id == fixture.user.id)
     }
 
+    @Test("the large review answers a change no phone may approve")
+    func largeReview() async throws {
+        let api = FixtureAPI(replacing: try FixtureAPI.largeReview).client
+        let review = try await api.getMyReview(path: .init(taskId: 4812)).ok.body.json.data
+        let fixture = try await FixtureAPI().client.getMyReview(path: .init(taskId: 4812)).ok.body.json.data
+
+        #expect(review.approvableHere == false)
+        #expect(review.approvableHereReason?.value1 == .tooLargeForPhone)
+        #expect(review.size.files == 14)
+        #expect(review.size.changedLines == 652)
+        #expect(review.size.largeChange)
+        // The file list agrees with the size: 14 rows, 652 changed lines.
+        #expect(review.files.count == 14)
+        #expect(review.files.reduce(0) { $0 + ($1.additions ?? 0) + ($1.deletions ?? 0) } == 652)
+        #expect(Set(review.files.map(\.path)).count == 14)
+        #expect(fixture.approvableHere)
+        #expect(review.task.id == fixture.task.id)
+    }
+
     @Test("throws for an operation with no fixture")
     func missingFixture() {
         #expect(throws: (any Error).self) { try FixtureAPI.fixture(named: "noSuchOperation") }

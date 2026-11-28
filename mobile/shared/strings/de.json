@@ -82,6 +82,10 @@
       "one": "{count} geringfügig",
       "other": "{count} geringfügig"
     },
+    "review_large_lines": {
+      "one": "{count} geänderte Zeile",
+      "other": "{count} geänderte Zeilen"
+    },
     "review_lines_added": {
       "one": "{count} Zeile hinzugefügt",
       "other": "{count} Zeilen hinzugefügt"
@@ -196,6 +200,7 @@
     "review_already_decided": "Bereits entschieden",
     "review_approve": "Freigeben",
     "review_approve_elsewhere": "Auf Tablet oder im Web freigeben",
+    "review_approve_elsewhere_hint": "Öffnet diese Prüfung im Web",
     "review_approve_expired": "Die Freigabe hat Stride zu spät erreicht. Geben Sie sie erneut frei.",
     "review_approve_reason": "{identifier} freigeben",
     "review_approve_refused": "Stride hat die Freigabe von diesem Gerät nicht angenommen. Melden Sie sich ab und wieder an, um freizugeben.",
@@ -222,6 +227,7 @@
     "review_flagged_first": "Markierte zuerst",
     "review_holds_up": "blockiert {identifiers}",
     "review_large_hint": "Geben Sie sie auf einem Tablet oder im Web frei. Änderungen können Sie hier trotzdem anfordern.",
+    "review_large_size": "{files} und {lines}",
     "review_loading": "Review wird geladen",
     "review_next": "Weiter",
     "review_no_findings": "Keine Befunde",

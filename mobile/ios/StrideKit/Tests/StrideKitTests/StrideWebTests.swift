@@ -12,6 +12,16 @@ struct StrideWebTests {
         #expect(StrideWeb.isStridePage(StrideWeb.pricing))
     }
 
+    @Test("the web review selects the task on the Stride server")
+    func review() throws {
+        let url = StrideWeb.review(taskID: 4812)
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+
+        #expect(StrideWeb.isStridePage(url))
+        #expect(components.path == "/review")
+        #expect(components.queryItems == [URLQueryItem(name: "task", value: "4812")])
+    }
+
     @Test(
         "any other address is not",
         arguments: [

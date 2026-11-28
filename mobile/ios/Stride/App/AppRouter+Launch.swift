@@ -4,7 +4,8 @@ import StrideKit
 extension AppRouter {
     /// The app's one client, or the fixtures in a debug build that signs in
     /// through the stub, which has no server to ask and keeps nothing in the
-    /// cache.
+    /// cache, with a review too large for a phone when asked
+    /// (`StubLargeReview`).
     static func atLaunch(
         arguments: [String] = ProcessInfo.processInfo.arguments,
         api: (any StrideAPI)? = StrideApp.api,
@@ -14,7 +15,10 @@ extension AppRouter {
     ) -> AppRouter {
         #if DEBUG
         if StubSignIn(arguments: arguments) != nil {
-            return AppRouter(api: FixtureAPI().client, approvals: StubApprovalSigning(arguments: arguments))
+            return AppRouter(
+                api: FixtureAPI(replacing: StubLargeReview.replacements(arguments: arguments)).client,
+                approvals: StubApprovalSigning(arguments: arguments)
+            )
         }
         #endif
 

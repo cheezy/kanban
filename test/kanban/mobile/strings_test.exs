@@ -46,6 +46,7 @@ defmodule Kanban.Mobile.StringsTest do
     review_all_passed review_security review_no_findings review_exploratory
     review_see_notes_on_web review_flagged_first review_flagged review_request_changes
     review_approve review_approve_elsewhere review_large_hint review_unavailable
+    review_large_size review_large_lines review_approve_elsewhere_hint
     review_already_decided review_decided_approved review_decided_changes
     review_decided_other review_decided_someone review_resubmitted review_resubmitted_hint
     review_reload review_holds_up review_criteria_count
@@ -168,8 +169,8 @@ defmodule Kanban.Mobile.StringsTest do
       built = Strings.build!(@gettext)
 
       assert built |> Map.keys() |> Enum.sort() == ~w(de en es fr ja pt zh)
-      assert length(pot_keys(:string)) == 166
-      assert length(pot_keys(:plural)) == 28
+      assert length(pot_keys(:string)) == 168
+      assert length(pot_keys(:plural)) == 29
 
       for {locale, strings} <- built do
         assert strings["strings"] |> Map.keys() |> Enum.sort() == pot_keys(:string),

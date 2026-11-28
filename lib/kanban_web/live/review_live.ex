@@ -6,7 +6,9 @@ defmodule KanbanWeb.ReviewLive do
   `KanbanWeb.ReviewStatsStrip`, `KanbanWeb.ReviewDiffPanel`, and the
   existing `KanbanWeb.AcceptanceChecklist` into a two-pane page where
   the reviewer scans the queue on the left and inspects the selected
-  task on the right.
+  task on the right. The oldest task is selected first, or the one named by
+  `?task=ID` when it waits in the viewer's queue, which is how the iOS app's
+  Approve on tablet or web opens a change too large to approve on a phone.
 
   All read data flows through `Kanban.Reviews.list_pending_reviews/1`,
   `Kanban.Reviews.queue_stats/1` and `Kanban.Reviews.reviewable_board_ids/2`,
@@ -32,6 +34,7 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewDetailHeader
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
+  alias KanbanWeb.ReviewQueueSubtitle
   alias KanbanWeb.ReviewReportHelpers
   alias KanbanWeb.ReviewReportHelpers.ChangedFiles
   alias KanbanWeb.ReviewReportHelpers.Tokens
@@ -39,8 +42,8 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewStatsStrip
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, load_queue(socket)}
+  def mount(params, _session, socket) do
+    {:ok, load_queue(socket, params["task"])}
   end
 
   @impl true
@@ -315,17 +318,18 @@ defmodule KanbanWeb.ReviewLive do
 
   # --- Data loading ---------------------------------------------------------
 
-  defp load_queue(socket) do
+  defp load_queue(socket, requested_id) do
     scope = socket.assigns.current_scope
     pending = Reviews.list_pending_reviews(scope: scope)
     stats = Reviews.queue_stats(scope: scope)
+    selected = initial_selection(pending, requested_id)
 
     socket
     |> assign(:pending, pending)
     |> assign(:reviewable_board_ids, Reviews.reviewable_board_ids(scope, pending))
     |> assign(:stats, stats)
-    |> assign(:selected, List.first(pending))
-    |> ReviewReportPanel.track_view(List.first(pending))
+    |> assign(:selected, selected)
+    |> ReviewReportPanel.track_view(selected)
     |> assign(:request_changes_open?, false)
     |> keep_notes("")
     |> assign(:selected_changed_file, nil)
@@ -354,6 +358,14 @@ defmodule KanbanWeb.ReviewLive do
 
   defp next_selection(selected, _new_pending, _removed_id), do: selected
 
+  # `/review?task=ID`, which the iOS app's Approve on tablet or web opens for a
+  # change too large to approve on a phone, starts on that task when it waits
+  # in the viewer's queue, and on the oldest otherwise.
+  defp initial_selection(pending, id) when is_binary(id),
+    do: find_pending_by_id(pending, id) || List.first(pending)
+
+  defp initial_selection(pending, _id), do: List.first(pending)
+
   defp find_pending_by_id(pending, id) when is_list(pending) do
     Enum.find(pending, fn task -> to_string(task.id) == to_string(id) end)
   end
@@ -371,36 +383,6 @@ defmodule KanbanWeb.ReviewLive do
   defp selected?(%{id: a}, %{id: b}), do: a == b
 
   # --- Derived display values ----------------------------------------------
-
-  # Used in review_live.html.heex (analyzer does not scan HEEx files).
-  defp queue_subtitle(%{count: 0}) do
-    gettext("0 tasks waiting on you.")
-  end
-
-  defp queue_subtitle(%{count: count, distinct_agents: agents, oldest_age_minutes: oldest}) do
-    head =
-      ngettext(
-        "%{count} task from %{agents} agent waiting on you",
-        "%{count} tasks from %{agents} agents waiting on you",
-        count,
-        count: count,
-        agents: agents
-      )
-
-    case oldest_age_label(oldest) do
-      nil -> head
-      age -> "#{head} · #{gettext("oldest %{age}", age: age)}"
-    end
-  end
-
-  defp oldest_age_label(nil), do: nil
-  defp oldest_age_label(0), do: gettext("just now")
-  defp oldest_age_label(minutes) when minutes < 60, do: gettext("%{m}m ago", m: minutes)
-
-  defp oldest_age_label(minutes) when minutes < 1440,
-    do: gettext("%{h}h ago", h: div(minutes, 60))
-
-  defp oldest_age_label(minutes), do: gettext("%{d}d ago", d: div(minutes, 1440))
 
   # Used in review_live.html.heex (analyzer does not scan HEEx files).
   defp summary_text(%{what: what}) when is_binary(what) and what != "", do: what

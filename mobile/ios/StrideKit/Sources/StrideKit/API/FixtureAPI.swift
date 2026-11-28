@@ -64,16 +64,62 @@ public struct FixtureAPI: ClientTransport {
     /// `getMe` for a person whose plan does not include the app.
     public static var lockedPlan: [String: Data] {
         get throws {
-            let fixture = try fixture(named: Operations.GetMe.id)
-            guard
-                var me = try JSONSerialization.jsonObject(with: fixture) as? [String: Any],
-                var data = me["data"] as? [String: Any]
-            else { throw CocoaError(.coderReadCorrupt) }
-
-            data["app_unlocked"] = false
-            me["data"] = data
-            return [Operations.GetMe.id: try JSONSerialization.data(withJSONObject: me)]
+            try editing(Operations.GetMe.id) { data in data["app_unlocked"] = false }
         }
+    }
+
+    /// `getMyReview` for a change the server lets no phone approve: 14 files
+    /// and 652 changed lines, over the phone's limits. The fixture's three
+    /// files gain eleven more, so the file list agrees with the size.
+    public static var largeReview: [String: Data] {
+        get throws {
+            try editing(Operations.GetMyReview.id) { data in
+                data["approvable_here"] = false
+                data["approvable_here_reason"] = "too_large_for_phone"
+                let files = data["files"] as? [[String: Any]] ?? []
+                data["files"] = files + largeReviewFiles(from: files.count)
+                data["size"] = [
+                    "files": 14,
+                    "files_unknown": false,
+                    "changed_lines": 652,
+                    "truncated": false,
+                    "large_change": true,
+                ] as [String: Any]
+            }
+        }
+    }
+
+    /// The eleven files `largeReview` adds to the fixture's three, from index
+    /// `start`: 464 changed lines, so with the fixture's 188 the change has
+    /// 652.
+    private static func largeReviewFiles(from start: Int) -> [[String: Any]] {
+        (0..<11).map { offset in
+            [
+                "index": start + offset,
+                "path": "lib/kanban/export/part_\(offset + 1).ex",
+                "additions": offset == 10 ? 20 : 42,
+                "deletions": offset == 10 ? 4 : 2,
+                "truncated": false,
+                "flagged": false,
+                "flag_reason": NSNull(),
+            ] as [String: Any]
+        }
+    }
+
+    /// The fixture of `operationID` with its `data` object changed by `edit`.
+    private static func editing(
+        _ operationID: String,
+        _ edit: (inout [String: Any]) -> Void
+    ) throws -> [String: Data] {
+        let fixture = try fixture(named: operationID)
+        guard
+            var body = try JSONSerialization.jsonObject(with: fixture) as? [String: Any],
+            var data = body["data"] as? [String: Any]
+        else { throw CocoaError(.coderReadCorrupt) }
+
+        edit(&data)
+        body["data"] = data
+        return [operationID: try JSONSerialization.data(withJSONObject: body)]
     }
 
     public var client: some StrideAPI {

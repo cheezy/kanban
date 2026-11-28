@@ -82,6 +82,10 @@
       "one": "{count} menor",
       "other": "{count} menores"
     },
+    "review_large_lines": {
+      "one": "{count} línea cambiada",
+      "other": "{count} líneas cambiadas"
+    },
     "review_lines_added": {
       "one": "{count} línea añadida",
       "other": "{count} líneas añadidas"
@@ -196,6 +200,7 @@
     "review_already_decided": "Ya decidida",
     "review_approve": "Aprobar",
     "review_approve_elsewhere": "Aprobar en la tableta o en la web",
+    "review_approve_elsewhere_hint": "Abre esta revisión en la web",
     "review_approve_expired": "La aprobación tardó demasiado en llegar a Stride. Vuelve a aprobar.",
     "review_approve_reason": "Aprobar {identifier}",
     "review_approve_refused": "Stride no aceptó la aprobación de este dispositivo. Cierra sesión y vuelve a iniciarla para aprobar.",
@@ -222,6 +227,7 @@
     "review_flagged_first": "Marcados primero",
     "review_holds_up": "frena {identifiers}",
     "review_large_hint": "Apruébala en una tableta o en la web. Aquí todavía puedes solicitar cambios.",
+    "review_large_size": "{files} y {lines}",
     "review_loading": "Cargando la revisión",
     "review_next": "Siguiente",
     "review_no_findings": "Sin hallazgos",

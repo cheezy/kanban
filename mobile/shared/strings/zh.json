@@ -62,6 +62,9 @@
     "review_findings_minor": {
       "other": "轻微 {count} 项"
     },
+    "review_large_lines": {
+      "other": "{count} 行更改"
+    },
     "review_lines_added": {
       "other": "新增 {count} 行"
     },
@@ -168,6 +171,7 @@
     "review_already_decided": "已有决定",
     "review_approve": "批准",
     "review_approve_elsewhere": "请在平板或网页上批准",
+    "review_approve_elsewhere_hint": "在网页上打开此审查",
     "review_approve_expired": "批准未能及时送达 Stride，请重新批准。",
     "review_approve_reason": "批准 {identifier}",
     "review_approve_refused": "Stride 未接受此设备的批准。请退出登录后重新登录，再进行批准。",
@@ -194,6 +198,7 @@
     "review_flagged_first": "已标记的排在前面",
     "review_holds_up": "阻塞 {identifiers}",
     "review_large_hint": "请在平板或网页上批准。你仍可以在这里请求修改。",
+    "review_large_size": "{files}，{lines}",
     "review_loading": "正在加载评审",
     "review_next": "下一个",
     "review_no_findings": "无发现",

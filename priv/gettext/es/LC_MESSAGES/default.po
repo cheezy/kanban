@@ -3977,8 +3977,8 @@ msgid "Your rights"
 msgstr "Tus derechos"
 
 #: lib/kanban_web/components/board_pulse_card.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "justo ahora"
@@ -4913,20 +4913,20 @@ msgstr "Aún no hay agentes con actividad."
 msgid "live"
 msgstr "en vivo"
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "hace %{d}d"
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "hace %{h}h"
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "hace %{m}m"
@@ -4975,14 +4975,14 @@ msgstr[1] "%{count} pruebas fallidas"
 msgid "No files changed."
 msgstr "No hay archivos modificados."
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} tarea de %{agents} agente esperando por ti"
 msgstr[1] "%{count} tareas de %{agents} agentes esperando por ti"
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 tareas esperándote."
@@ -5037,7 +5037,7 @@ msgstr "No se pudo aprobar la tarea."
 msgid "Unable to request changes on task."
 msgstr "No se pudieron solicitar cambios en la tarea."
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "más antigua %{age}"

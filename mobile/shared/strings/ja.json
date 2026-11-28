@@ -62,6 +62,9 @@
     "review_findings_minor": {
       "other": "軽微 {count}件"
     },
+    "review_large_lines": {
+      "other": "{count}行の変更"
+    },
     "review_lines_added": {
       "other": "{count} 行追加"
     },
@@ -168,6 +171,7 @@
     "review_already_decided": "決定済み",
     "review_approve": "承認",
     "review_approve_elsewhere": "タブレットかWebで承認",
+    "review_approve_elsewhere_hint": "このレビューをWebで開きます",
     "review_approve_expired": "承認が Stride に届くまでに時間がかかりすぎました。もう一度承認してください。",
     "review_approve_reason": "{identifier} を承認",
     "review_approve_refused": "Stride はこのデバイスからの承認を受け付けませんでした。承認するには、サインアウトしてからもう一度サインインしてください。",
@@ -194,6 +198,7 @@
     "review_flagged_first": "フラグ付きを先頭に表示",
     "review_holds_up": "{identifiers}を待たせています",
     "review_large_hint": "タブレットかWebで承認してください。変更の依頼はここからでもできます。",
+    "review_large_size": "{files}、{lines}",
     "review_loading": "レビューを読み込み中",
     "review_next": "次へ",
     "review_no_findings": "指摘なし",

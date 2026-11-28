@@ -37,6 +37,9 @@ final class ReviewModel {
     private(set) var changesRequested = false
     /// The open Request changes sheet.
     var changesSheet: RequestChangesModel?
+    /// The server refused to let this device approve the review shown, which
+    /// it had said it could: when that review was requested.
+    private(set) var refusedHere: RefusedReview?
 
     @ObservationIgnored private let api: (any StrideAPI)?
     @ObservationIgnored private let cache: Cache?
@@ -90,10 +93,40 @@ final class ReviewModel {
     /// Approving and requesting changes need the server.
     var canAct: Bool { !isOffline && conflict == nil && content != nil }
 
+    /// The server lets this device approve the review shown: its
+    /// `approvable_here`, until the server refuses an approval of that same
+    /// review. The app never works it out from the size.
+    var approvableHere: Bool {
+        guard let content, content.approvableHere else { return false }
+
+        return refusedHere != RefusedReview(requestedAt: content.reviewRequestedAt)
+    }
+
+    /// The change's size when this device may not approve it, for the notice
+    /// above the verdicts; nil when it may.
+    var largeChange: ReviewChangeSize? {
+        guard let content, !approvableHere else { return nil }
+
+        return content.size
+    }
+
     /// Approve sends a signed approval: never offline, so an approval is never
     /// sent late, never twice at once and never after it went through.
     var canApprove: Bool {
-        canAct && approvals != nil && content?.approvableHere == true && !isBusy && !isDecided
+        canAct && approvals != nil && approvableHere && !isBusy && !isDecided
+    }
+
+    /// Approve on tablet or web opens the web's Review page while the review
+    /// shown waits on the person; it needs no key and sends nothing. Off once
+    /// it is decided here or elsewhere (a conflict), since the web would then
+    /// open on another task.
+    var canOpenOnWeb: Bool { content != nil && conflict == nil && !isDecided && webReviewURL != nil }
+
+    /// The web's Review page with this task selected, only ever on the Stride
+    /// server.
+    var webReviewURL: URL? {
+        let url = StrideWeb.review(taskID: taskID)
+        return StrideWeb.isStridePage(url) ? url : nil
     }
 
     /// Request changes opens its sheet while the device is online, nothing is
@@ -182,8 +215,10 @@ final class ReviewModel {
 
     /// Approves the review shown: a challenge, Face ID and the approval. `web`
     /// opens the sign-in a new approval key needs. A 409 shows as Already
-    /// decided or Resubmitted, a 404 as gone, and a change found too large is
-    /// loaded again to say where to approve it.
+    /// decided or Resubmitted, a 404 as gone, and a change the server refuses
+    /// as too large shows the large-change notice and Approve on tablet or
+    /// web, even when the review said it could be approved here, and is
+    /// loaded again for its new size.
     func approve(web: any WebAuthenticating) async {
         guard canApprove, let content, let approvals else { return }
 
@@ -203,6 +238,7 @@ final class ReviewModel {
         case .gone:
             isUnavailable = true
         case .tooLarge:
+            refusedHere = RefusedReview(requestedAt: content.reviewRequestedAt)
             await reload()
         case .problem(let problem):
             approveProblem = problem

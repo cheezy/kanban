@@ -1202,3 +1202,22 @@ msgstr "已请求修改。%{identifier} 正在等待代理接手修改。"
 msgctxt "review_changes_too_long"
 msgid "A note can be up to 10,000 characters."
 msgstr "说明最多 10,000 个字符。"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_approve_elsewhere_hint"
+msgid "Opens this review on the web"
+msgstr "在网页上打开此审查"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_lines"
+msgid "%{count} changed line"
+msgid_plural "%{count} changed lines"
+msgstr[0] "%{count} 行更改"
+
+#: lib/kanban/mobile/strings/msgids.ex
+#, elixir-autogen, elixir-format
+msgctxt "review_large_size"
+msgid "%{files} and %{lines}"
+msgstr "%{files}，%{lines}"

@@ -79,9 +79,13 @@ extension XCUIAccessibilityAuditIssue {
         // since a heading half under it has its middle inside the bar too.
         let underPinnedBar = Self.pinnedBars.contains { id in
             let bar = app.descendants(matching: .any)[id].firstMatch
+            // A toast's shadow reaches above it over the content, which the
+            // audit read as faded: "1 minor" just above the Approved toast
+            // failed on the iOS 27.2 iPhone 18 Pro, on main too (W2801).
+            let top = bar.exists ? bar.frame.minY - (Self.shadowedBars.contains(id) ? Self.toastShadowReach : 0) : 0
             // Behind it, not below it: the review's buttons under a notice
             // pinned above them are still audited.
-            guard bar.exists, frame.maxY > bar.frame.minY, frame.minY < bar.frame.maxY else { return false }
+            guard bar.exists, frame.maxY > top, frame.minY < bar.frame.maxY else { return false }
 
             let sameLabel = NSPredicate(format: "label == %@", element.label)
             return !bar.descendants(matching: .any).matching(sameLabel).firstMatch.exists
@@ -141,6 +145,11 @@ extension XCUIAccessibilityAuditIssue {
     /// pinned above its bar, which on a phone covers the review text scrolled
     /// behind it (W2799, W2800).
     private static let pinnedBars = ["review-bottom-bar", "review-problem-notice", "review-approved-toast", "review-changes-toast", "diff-bottom-bar"]
+
+    /// The pinned toasts drawn with a shadow, and how far above them it
+    /// reaches: `DecisionToast`'s shadow radius, 12 points.
+    private static let shadowedBars: Set<String> = ["review-approved-toast", "review-changes-toast"]
+    private static let toastShadowReach: CGFloat = 12
 
     /// The lazy lists of cards: the Now cards and the Review queue's rows.
     private static let lazyLists = ["now-cards", "review-rows"]
@@ -257,8 +266,9 @@ extension XCUIAccessibilityAuditIssue {
     /// the text, which pushes the rest of that section under the bar, and
     /// reports the text's frame at the normal size, so the section's frame is
     /// what is checked: "Tests and checks" sat above the bar and was still
-    /// reported "may be clipped at larger Dynamic Type sizes". Sections
-    /// wholly above the bar, and the bar's own buttons, are still audited,
+    /// reported "may be clipped at larger Dynamic Type sizes". The last
+    /// section above the bar counts too when the next one starts under it.
+    /// Sections higher up, and the bar's own buttons, are still audited,
     /// and `ReviewUITests`' largest-text test audits the whole screen
     /// without this filter (W2796).
     @MainActor
@@ -274,9 +284,18 @@ extension XCUIAccessibilityAuditIssue {
         if bar.frame.contains(CGPoint(x: frame.midX, y: frame.midY)) { return false }
         let barTop = bar.frame.minY
         if frame.maxY > barTop { return true }
-        return Self.reviewSections.contains { id in
-            let section = app.descendants(matching: .any)[id].firstMatch
-            return section.exists && section.frame.contains(frame) && section.frame.maxY > barTop
+        return Self.reviewSections.indices.contains { index in
+            let section = app.descendants(matching: .any)[Self.reviewSections[index]].firstMatch
+            guard section.exists, section.frame.contains(frame) else { return false }
+            if section.frame.maxY > barTop { return true }
+
+            // The last section above the bar, which the audit's larger text
+            // pushes under it: the next section already starts under the
+            // bar. "Tests and checks" ended just above the bar on the iOS
+            // 27.2 iPhone 18 Pro and failed there, on main too (W2801).
+            guard index + 1 < Self.reviewSections.count else { return false }
+            let next = app.descendants(matching: .any)[Self.reviewSections[index + 1]].firstMatch
+            return next.exists && next.frame.minY >= barTop
         }
     }
 

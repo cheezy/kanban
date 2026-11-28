@@ -489,6 +489,15 @@ defmodule Kanban.Mobile.Strings.Msgids do
         "review_large_hint",
         "Approve it on a tablet or on the web. You can still request changes here."
       ),
+      # The large-change notice's counts and the web button's hint (W2801).
+      dpgettext_noop("mobile", "review_large_size", "%{files} and %{lines}"),
+      dpngettext_noop(
+        "mobile",
+        "review_large_lines",
+        "%{count} changed line",
+        "%{count} changed lines"
+      ),
+      dpgettext_noop("mobile", "review_approve_elsewhere_hint", "Opens this review on the web"),
       dpgettext_noop("mobile", "review_unavailable", "This review is no longer waiting for you."),
       dpgettext_noop("mobile", "review_already_decided", "Already decided"),
       dpgettext_noop("mobile", "review_decided_approved", "%{name} approved this."),

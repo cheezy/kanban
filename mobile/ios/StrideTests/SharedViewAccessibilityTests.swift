@@ -126,6 +126,10 @@ struct SharedViewAccessibilityTests {
         pairs += StatusTone.allCases.map { ($0.ink, $0.fill) }
         pairs += AgentFamily.allCases.map { ($0.ink, $0.fill) }
         pairs += [(.ink, .stDoingSoft), (.ink, .surface), (.stBlocked, .surface), (.ink3, .surface), (.ink2, .surface)]
+        // The review's checks rows: each result in its tone on the card, such
+        // as "1 minor" in stDoing, which the iOS 27 audit once failed on an
+        // iPhone 18 Pro (W2801).
+        pairs += [(.stDone, .surface), (.stDoing, .surface)]
         // The selected sidebar row on an iPad.
         pairs += [(.strideOrangeInk, .strideOrangeSoft)]
         // The Now screen's notices after a card's action.

@@ -4,6 +4,8 @@ import SwiftUI
 struct ReviewSections: View {
     let content: ReviewContent
     let conflict: ReviewConflictState?
+    /// The change's size when this device may not approve it, for the notice.
+    let largeChange: ReviewChangeSize?
     let reload: () -> Void
 
     var body: some View {
@@ -12,8 +14,8 @@ struct ReviewSections: View {
             if let conflict {
                 ReviewConflictNotice(conflict: conflict, reload: reload)
             }
-            if content.tooLargeHere {
-                ReviewLargeNotice()
+            if let largeChange {
+                ReviewLargeNotice(size: largeChange)
             }
             ForEach(content.sections, id: \.self) { section in
                 switch section {

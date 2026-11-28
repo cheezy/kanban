@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Request changes, and Approve or where to approve a large change. Each
-/// button is enabled only while it can send its decision: Approve while the
+/// Request changes, and Approve or, on a change this device may not approve,
+/// Approve on tablet or web, which opens the web's Review page with the task
+/// selected. Approve is enabled only while it can send its decision: while the
 /// device is online and nothing is on its way (`ReviewModel.canApprove`), and
 /// Request changes likewise (`ReviewModel.canRequestChanges`), which opens
 /// its sheet. Pinned under the review side by
@@ -11,9 +12,11 @@ struct ReviewBottomBar: View {
     let canRequestChanges: Bool
     let isApproving: Bool
     let approvableHere: Bool
+    let canOpenOnWeb: Bool
     var inline = false
     let requestChanges: () -> Void
     let approve: () -> Void
+    let openOnWeb: () -> Void
 
     var body: some View {
         let layout = inline ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
@@ -30,11 +33,12 @@ struct ReviewBottomBar: View {
                 .disabled(!canApprove)
                 .accessibilityIdentifier("review-approve")
             } else {
-                Button {} label: {
-                    Label { Text(.reviewApproveElsewhere) } icon: { Image(systemName: "lock") }
+                Button(action: openOnWeb) {
+                    Label { Text(.reviewApproveElsewhere) } icon: { Image(systemName: "arrow.up.right.square") }
                 }
                 .buttonStyle(.stride)
-                .disabled(true)
+                .disabled(!canOpenOnWeb)
+                .accessibilityHint(Text(.reviewApproveElsewhereHint))
                 .accessibilityIdentifier("review-approve-elsewhere")
             }
         }

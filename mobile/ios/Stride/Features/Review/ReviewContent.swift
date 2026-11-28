@@ -34,10 +34,11 @@ struct ReviewContent: Hashable, Sendable {
     let files: [ReviewFileRow]
     /// The version of the file list, which a file's index points into.
     let filesVersion: String
-    /// The server lets this device approve the change.
+    /// The server lets this device approve the change. The app never works
+    /// this out from the size: the server decides, and refuses.
     let approvableHere: Bool
-    /// The change is too large for this device to approve.
-    let tooLargeHere: Bool
+    /// How many files and lines the change has, as the server counted them.
+    let size: ReviewChangeSize
     /// What the screen was rendered from, which an approval challenge is
     /// bound to, so an edit made since it loaded is never signed unseen.
     let reviewFingerprint: String
@@ -187,8 +188,7 @@ extension ReviewContent {
         files = Self.flaggedFirst(detail.files.map(ReviewFileRow.init))
         filesVersion = detail.filesVersion
         approvableHere = detail.approvableHere
-        tooLargeHere = !detail.approvableHere
-            && (detail.approvableHereReason?.value1 == .tooLargeForPhone || detail.size.largeChange)
+        size = ReviewChangeSize(detail.size)
         reviewFingerprint = detail.reviewFingerprint
         reviewRequestedAt = detail.reviewRequestedAt
     }

@@ -91,6 +91,29 @@ version. A file with a stored diff pushes `.reviewFile(ReviewFileTarget)`,
 which carries the task, the file's index, the list's `files_version` and the
 review's files, flagged first, so the diff screen can page through them.
 
+## A change too large for a phone
+
+Only the server decides whether this device may approve a review: the app
+reads the review's `approvable_here` and never works out a limit from the size
+(`ReviewModel.approvableHere`). When it is false, a notice above the verdicts
+(`ReviewLargeNotice`) says **Too large to approve on a phone**, the change's
+size from the response's `size` ("14 files and 652 changed lines", or the lines
+alone when `files_unknown` is true, `ReviewChangeSize`) and where it can be
+approved, and the bottom bar's **Approve on tablet or web** replaces Approve.
+That button opens the web's Review page with the task selected,
+`StrideWeb.review(taskID:)` (`/review?task=ID` on the Stride host, only when
+`StrideWeb.isStridePage` passes it), in the system browser; it sends nothing and
+needs no key, and turns off once the review is decided here. **Request changes**
+stays available. When the server refuses an approval with
+`422 too_large_for_phone` though the review said `approvable_here` true, the
+model keeps the guard on for that review (`RefusedReview`, by its
+`review_requested_at`) and loads it again; a resubmitted review is judged
+afresh. A 403 is not the guard: it says the person may no longer approve.
+The web's Review page selects the task its `task` parameter names when that
+task waits on the person, and the oldest otherwise. Start a debug build with
+`-StrideStubSignIn allow -StrideStubLargeReview` to have every review answer as
+one no phone may approve.
+
 ## Requesting changes
 
 **Request changes** opens `RequestChangesSheet` with a `RequestChangesModel`
@@ -186,7 +209,7 @@ shell then reads the fixtures in `mobile/shared/fixtures/`, so Now shows a badge
 of 4, Review lists three reviews, one of them too large to approve on a phone,
 and the avatar reads "Alex Example". `ReviewQueueModelTests` covers the queue's
 order, sizes, states, cache and live updates, and `ReviewModelTests` the review
-screen's sections, file order, offline copy and 409 states. `ReviewUITests`
+screen's sections, file order, offline copy and 409 states. `LargeChangeTests` covers the large-change guard, its counts, a server refusal and the web link, and `LargeChangeUITests` opens the web review from the notice's screen and fits German at the largest text. `ReviewUITests`
 opens a review from the queue, audits it in light and dark and opens its flagged
 file. `DiffModelTests` covers the diff screen's notes, header, highlighting,
 paging, cache, 409 and 404, and `DiffUITests` reads its lines with VoiceOver,

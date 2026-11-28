@@ -144,6 +144,48 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "?task= selects a task on mount (W2801)" do
+    setup [:register_and_log_in_user]
+
+    # The iOS app's Approve on tablet or web opens /review?task=ID for a
+    # change too large to approve on a phone.
+    test "starts on the named task instead of the oldest", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      first = pending_task!(column, %{identifier: "W101"})
+      second = pending_task!(column, %{identifier: "W102"})
+      _ = backdate_waiting_since!(first, -60)
+
+      {:ok, view, _html} = live(conn, ~p"/review?task=#{second.id}")
+
+      assert view |> element("[data-review-detail-header]") |> render() =~ "W102"
+    end
+
+    test "starts on the oldest when the named task is not in the queue",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      first = pending_task!(column, %{identifier: "W101"})
+      _second = pending_task!(column, %{identifier: "W102"})
+      _ = backdate_waiting_since!(first, -60)
+
+      for task <- ["999999999", "not-a-task", ""] do
+        {:ok, view, _html} = live(conn, ~p"/review?task=#{task}")
+
+        assert view |> element("[data-review-detail-header]") |> render() =~ "W101"
+      end
+    end
+
+    test "ignores a task param that is not a string", %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      first = pending_task!(column, %{identifier: "W101"})
+      _second = pending_task!(column, %{identifier: "W102"})
+      _ = backdate_waiting_since!(first, -60)
+
+      {:ok, view, _html} = live(conn, "/review?task[id]=1")
+
+      assert view |> element("[data-review-detail-header]") |> render() =~ "W101"
+    end
+  end
+
   describe "select_item event" do
     setup [:register_and_log_in_user]
 

@@ -3977,8 +3977,8 @@ msgid "Your rights"
 msgstr "Ihre Rechte"
 
 #: lib/kanban_web/components/board_pulse_card.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "gerade eben"
@@ -4913,20 +4913,20 @@ msgstr "Noch keine Agenten mit Aktivität."
 msgid "live"
 msgstr "live"
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "vor %{d} Tg."
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "vor %{h} Std."
 
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #: lib/kanban_web/components/time_ago.ex
-#: lib/kanban_web/live/review_live.ex
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "vor %{m} Min."
@@ -4975,14 +4975,14 @@ msgstr[1] "%{count} fehlgeschlagene Tests"
 msgid "No files changed."
 msgstr "Keine Dateien geändert."
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} Aufgabe von %{agents} Agent wartet auf Sie"
 msgstr[1] "%{count} Aufgaben von %{agents} Agenten warten auf Sie"
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 Aufgaben warten auf Sie."
@@ -5037,7 +5037,7 @@ msgstr "Aufgabe konnte nicht genehmigt werden."
 msgid "Unable to request changes on task."
 msgstr "Änderungen an der Aufgabe konnten nicht angefordert werden."
 
-#: lib/kanban_web/live/review_live.ex
+#: lib/kanban_web/components/review_queue_subtitle.ex
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "älteste %{age}"

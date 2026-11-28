@@ -9,6 +9,7 @@ import SwiftUI
 struct ReviewView: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.locale) private var locale
+    @Environment(\.openURL) private var openURL
     @Environment(\.webAuthenticationSession) private var webSession
     @State private var model: ReviewModel
 
@@ -60,7 +61,7 @@ struct ReviewView: View {
     /// What a decision came to, above the buttons, and the buttons.
     @ViewBuilder
     private func decisions(inline: Bool) -> some View {
-        if model.state == .review, let content = model.content {
+        if model.state == .review, model.content != nil {
             VStack(spacing: 0) {
                 VStack(spacing: 8) {
                     if let problem = model.approveProblem {
@@ -88,13 +89,20 @@ struct ReviewView: View {
                     canApprove: model.canApprove,
                     canRequestChanges: model.canRequestChanges,
                     isApproving: model.isApproving,
-                    approvableHere: content.approvableHere,
+                    approvableHere: model.approvableHere,
+                    canOpenOnWeb: model.canOpenOnWeb,
                     inline: inline,
                     requestChanges: model.openRequestChanges,
-                    approve: approve
+                    approve: approve,
+                    openOnWeb: openOnWeb
                 )
             }
         }
+    }
+
+    /// The web's Review page with this task selected, in the browser.
+    private func openOnWeb() {
+        if let url = model.webReviewURL { openURL(url) }
     }
 
     private func approve() {
@@ -113,7 +121,7 @@ struct ReviewView: View {
             EmptyStateView(message: .reviewUnavailable, identifier: "review-unavailable")
         case .review:
             if let content = model.content {
-                ReviewSections(content: content, conflict: model.conflict) {
+                ReviewSections(content: content, conflict: model.conflict, largeChange: model.largeChange) {
                     Task { await model.reload() }
                 }
             }
