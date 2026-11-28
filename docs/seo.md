@@ -122,6 +122,11 @@ session, each token and account LiveView declares it itself, and a nested
 scope adds the pipeline. `/users/log-in` and `/users/register` stay
 indexable, because people search for them.
 
+A public page that is still an experiment can be noindex too. The flag-gated
+blog at `/blog` and `/blog/:slug` sits in its own router scope with
+`:put_noindex`, and it is deliberately left out of `SeoXML.public_paths/0` and
+the noindex test's public list until the experiment ends.
+
 A LiveView can also assign `noindex: true` for one state, as
 `KanbanWeb.ResourcesLive.Show` does for an unknown guide id, which renders a
 200 "Not Found" page.
@@ -301,11 +306,14 @@ CSP nonce:
 <.structured_data data={pricing_structured_data()} nonce={assigns[:csp_nonce]} />
 ```
 
-Two pages render one today, both built in
+Three templates render one today. Two are built in
 [`page_html.ex`](../lib/kanban_web/controllers/page_html.ex). The home page
 has an `Organization` from `home_structured_data/0`. The pricing page has a
 `SoftwareApplication` with one `Offer` per fixed-price plan from
-`pricing_structured_data/1`. There is deliberately no rating or review.
+`pricing_structured_data/1`. There is deliberately no rating or review. Each
+blog post page has a `BlogPosting` from `post_structured_data/2` in
+[`blog_html.ex`](../lib/kanban_web/controllers/blog_html.ex), built from the
+compile-time post catalog.
 
 Build `data` in code, never from request params. `encode_json_ld/1` encodes it
 with `Jason.encode!(data, escape: :html_safe)`, so every `<` becomes `\u003C`
@@ -380,6 +388,13 @@ These run as part of `mix test`:
   librsvg.
 - [`test/kanban_web/components/structured_data_test.exs`](../test/kanban_web/components/structured_data_test.exs)
   covers the JSON-LD blocks and their escaping.
+- [`test/kanban_web/controllers/blog_controller_test.exs`](../test/kanban_web/controllers/blog_controller_test.exs)
+  and [`test/kanban_web/controllers/blog_html_test.exs`](../test/kanban_web/controllers/blog_html_test.exs)
+  cover the flag-gated blog: the 404 gate, noindex on both pages, the
+  translated titles and descriptions, and the `BlogPosting` structured data.
+  The W2951 case in `seo_noindex_test.exs` fails when the blog leaves
+  `:put_noindex`, enters the sitemap, or the noindex paragraph above is
+  reworded.
 
 - [`test/kanban_web/controllers/docs_controller_test.exs`](../test/kanban_web/controllers/docs_controller_test.exs)
   and [`test/kanban_web/docs_test.exs`](../test/kanban_web/docs_test.exs)

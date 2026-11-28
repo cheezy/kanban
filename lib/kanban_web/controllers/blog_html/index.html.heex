@@ -1,0 +1,62 @@
+<main class="min-h-screen" data-blog-index>
+  <div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="text-center mb-14">
+      <h1
+        class="text-4xl md:text-5xl font-bold text-base-content mb-4"
+        style="overflow-wrap: break-word; hyphens: auto;"
+      >
+        {gettext("Blog")}
+      </h1>
+      <p class="text-lg max-w-2xl mx-auto" style="color: var(--ink-2);">
+        {gettext(
+          "Notes from the Stride team on working with AI coding agents and delivering software."
+        )}
+      </p>
+      <p class="text-sm max-w-2xl mx-auto mt-3" style="color: var(--ink-3);">
+        {gettext("The posts are written in English.")}
+      </p>
+    </div>
+
+    <ul class="space-y-5" role="list">
+      <li :for={post <- @posts}>
+        <% author = post_author(post) %>
+        <.link
+          href={~p"/blog/#{post.slug}"}
+          class="stride-docs-card block rounded-2xl p-6"
+          data-blog-link={post.slug}
+        >
+          <span
+            class="block text-xl font-semibold"
+            style="color: var(--ink); overflow-wrap: anywhere;"
+            lang="en"
+          >
+            {post.title}
+          </span>
+          <span
+            class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-3 text-sm"
+            style="color: var(--ink-3);"
+          >
+            <img
+              src={author.avatar}
+              alt=""
+              width="28"
+              height="28"
+              loading="lazy"
+              class="stride-blog-avatar h-7 w-7"
+            />
+            <span style="color: var(--ink-2);">{author.name}</span>
+            <span aria-hidden="true">·</span>
+            <.local_time value={post.date} style={:date} />
+          </span>
+          <span class="block text-sm mt-3 leading-relaxed" style="color: var(--ink-2);" lang="en">
+            {post.description}
+          </span>
+          <span :if={post.tags != []} class="flex flex-wrap gap-2 mt-4">
+            <span class="sr-only">{gettext("Tags")}</span>
+            <span :for={tag <- post.tags} class="stride-blog-tag" lang="en">{tag}</span>
+          </span>
+        </.link>
+      </li>
+    </ul>
+  </div>
+</main>

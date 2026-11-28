@@ -447,6 +447,20 @@ defmodule KanbanWeb.SeoNoindexTest do
         refute :put_noindex in pipe_through("GET", path), "#{path} pipes :put_noindex"
       end
     end
+
+    test "the flag-gated blog is noindex, out of the sitemap, and docs/seo.md says so (W2951)" do
+      for path <- ["/blog", "/blog/a-post"] do
+        assert :put_noindex in pipe_through("GET", path), "#{path} does not pipe :put_noindex"
+        refute path in @public_paths
+        refute path in KanbanWeb.SeoXML.public_paths()
+      end
+
+      seo_doc = "../../docs/seo.md" |> Path.expand(__DIR__) |> File.read!()
+      assert seo_doc =~ "`/blog`"
+
+      assert seo_doc =~
+               "`:put_noindex`, and it is deliberately left out of `SeoXML.public_paths/0`"
+    end
   end
 
   defp authorize_path(params), do: "/oauth/authorize?" <> URI.encode_query(params)

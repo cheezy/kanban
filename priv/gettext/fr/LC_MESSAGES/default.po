@@ -14422,6 +14422,8 @@ msgstr "Splunk a indiqué le premier événement refusé : les événements pré
 msgid "Stride keeps trying, and delivery carries on once the destination is fixed."
 msgstr "Stride continue d'essayer, et la livraison reprend dès que la destination est corrigée."
 
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#: lib/kanban_web/controllers/blog_html/show.html.heex
 #: lib/kanban_web/emails/audit_stream_email.ex
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex
 #, elixir-autogen, elixir-format
@@ -16044,6 +16046,7 @@ msgstr "Référence de l’API"
 msgid "All documentation"
 msgstr "Toute la documentation"
 
+#: lib/kanban_web/controllers/blog_html/show.html.heex
 #: lib/kanban_web/controllers/docs_html/show.html.heex
 #: lib/kanban_web/controllers/integrations_html/show.html.heex
 #, elixir-autogen, elixir-format
@@ -16344,6 +16347,7 @@ msgid "The script installs copy the hook, but Codex does not load it from there:
 msgstr "Les installations par script copient le hook, mais Codex ne le charge pas depuis cet emplacement : enregistrez-le une fois à la main. L'installation depuis le marketplace ne demande aucune étape de plus."
 
 #: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/blog_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr "Blog"
@@ -16916,3 +16920,38 @@ msgstr "Blog (expérience)"
 #, elixir-autogen, elixir-format
 msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
 msgstr "Affiche le blog sur /blog, une expérience avec des articles copiés de cheezyworld.ca, aux utilisateurs pour qui il est activé."
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "About the author"
+msgstr "À propos de l'auteur"
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All posts"
+msgstr "Tous les articles"
+
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Notes from the Stride team on working with AI coding agents and delivering software."
+msgstr "Notes de l'équipe Stride sur le travail avec des agents de codage IA et la livraison de logiciels."
+
+#: lib/kanban_web/controllers/blog_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Posts from the Stride team on AI coding agents, software delivery and what it costs to build with AI."
+msgstr "Articles de l'équipe Stride sur les agents de codage IA, la livraison de logiciels et ce que coûte le développement avec l'IA."
+
+#: lib/kanban_web/controllers/blog_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride blog"
+msgstr "Blog Stride"
+
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "The posts are written in English."
+msgstr "Les articles sont rédigés en anglais."
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Written by"
+msgstr "Écrit par"

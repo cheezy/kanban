@@ -51,10 +51,10 @@ defmodule KanbanWeb.BlogTest do
       {:ok, post} = Blog.fetch("how-much")
 
       assert post.html =~
-               ~s(<img src="/images/blog/one-developer-cost.png" alt="Cost for one developer" />)
+               ~s(<img loading="lazy" src="/images/blog/one-developer-cost.png" alt="Cost for one developer" />)
 
       assert post.html =~
-               ~s(<img src="/images/blog/one-developer-with-ai.png" alt="Cost increase for one developer with AI" />)
+               ~s(<img loading="lazy" src="/images/blog/one-developer-with-ai.png" alt="Cost increase for one developer with AI" />)
 
       assert @images_dir |> Path.join("one-developer-cost.png") |> File.regular?()
       assert @images_dir |> Path.join("one-developer-with-ai.png") |> File.regular?()

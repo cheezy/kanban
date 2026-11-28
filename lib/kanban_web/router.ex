@@ -218,6 +218,18 @@ defmodule KanbanWeb.Router do
     get "/compare/:competitor", CompareController, :show
   end
 
+  # The blog experiment (W2951), behind the :blog feature flag: BlogController
+  # answers 404 unless the flag is on for the visitor. :put_noindex keeps both
+  # pages out of search results while hidden, and they are deliberately not in
+  # KanbanWeb.SeoXML.public_paths/0. The slug is only looked up through
+  # KanbanWeb.Blog.fetch/1.
+  scope "/", KanbanWeb do
+    pipe_through [:browser_headers, :browser, :put_noindex, :put_analytics]
+
+    get "/blog", BlogController, :index
+    get "/blog/:slug", BlogController, :show
+  end
+
   scope "/", KanbanWeb do
     pipe_through [:browser_headers, :browser]
 

@@ -22,6 +22,9 @@ defmodule KanbanWeb.Blog.Renderer do
       source (an external URL, a `data:` URI) raises: the blog serves images
       only from the site itself, so a post can never load third-party
       content or need the Content Security Policy widened.
+
+  Every image is lazy-loaded (`loading="lazy"`, W2951), so a long post does
+  not fetch images the reader never scrolls to.
   """
 
   @options [
@@ -53,7 +56,13 @@ defmodule KanbanWeb.Blog.Renderer do
     |> MDEx.parse_document!(@options)
     |> MDEx.traverse_and_update(&check_node(&1, path, image_root))
     |> MDEx.to_html!(@options)
+    |> lazy_images()
   end
+
+  # Raw HTML is escaped (render: [escape: true]), so a literal `<img ` in a
+  # post body comes out as `&lt;img` and only the image nodes checked by
+  # check_node/3 render as a real `<img ` tag here.
+  defp lazy_images(html), do: String.replace(html, "<img ", ~s(<img loading="lazy" ))
 
   defp check_node(%MDEx.Link{url: url} = link, path, _image_root),
     do: %{link | url: link_url!(url, path)}

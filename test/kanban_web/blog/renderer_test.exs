@@ -85,7 +85,22 @@ defmodule KanbanWeb.Blog.RendererTest do
     test "rewrites /img/x.png to /images/blog/x.png", %{opts: opts} do
       html = Renderer.render!("![A chart](/img/x.png)\n", @path, opts)
 
-      assert html =~ ~s(<img src="/images/blog/x.png" alt="A chart" />)
+      assert html =~ ~s(<img loading="lazy" src="/images/blog/x.png" alt="A chart" />)
+    end
+
+    test "lazy-loads every image", %{opts: opts} do
+      html = Renderer.render!("![One](/img/x.png)\n\n![Two](/img/x.png)\n", @path, opts)
+
+      assert length(Regex.scan(~r/<img /, html)) == 2
+      assert length(Regex.scan(~r/<img loading="lazy" /, html)) == 2
+    end
+
+    test "leaves a raw <img> in the body escaped, with no loading attribute", %{opts: opts} do
+      html = Renderer.render!("<img src=\"x.png\">\n", @path, opts)
+
+      assert html =~ "&lt;img"
+      refute html =~ "<img "
+      refute html =~ "loading="
     end
 
     test "reads alt text that wraps over a line break", %{opts: opts} do

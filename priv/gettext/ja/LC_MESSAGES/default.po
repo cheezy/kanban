@@ -14391,6 +14391,8 @@ msgstr "Splunk が最初に拒否したイベントを示したため、それ�
 msgid "Stride keeps trying, and delivery carries on once the destination is fixed."
 msgstr "Stride は試行を続け、送信先が修正されると配信が再開されます。"
 
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#: lib/kanban_web/controllers/blog_html/show.html.heex
 #: lib/kanban_web/emails/audit_stream_email.ex
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex
 #, elixir-autogen, elixir-format
@@ -15998,6 +16000,7 @@ msgstr "API リファレンス"
 msgid "All documentation"
 msgstr "ドキュメント一覧"
 
+#: lib/kanban_web/controllers/blog_html/show.html.heex
 #: lib/kanban_web/controllers/docs_html/show.html.heex
 #: lib/kanban_web/controllers/integrations_html/show.html.heex
 #, elixir-autogen, elixir-format
@@ -16298,6 +16301,7 @@ msgid "The script installs copy the hook, but Codex does not load it from there:
 msgstr "スクリプトでのインストールはフックをコピーしますが、Codex はそこからフックを読み込みません。一度だけ手動で登録してください。マーケットプレイスからのインストールでは追加の手順は不要です。"
 
 #: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/blog_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr "ブログ"
@@ -16869,3 +16873,38 @@ msgstr "ブログ（試験運用）"
 #, elixir-autogen, elixir-format
 msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
 msgstr "cheezyworld.ca からコピーした投稿を使った試験運用のブログを、有効になっているユーザーに /blog で表示します。"
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "About the author"
+msgstr "著者について"
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All posts"
+msgstr "すべての記事"
+
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Notes from the Stride team on working with AI coding agents and delivering software."
+msgstr "AI コーディングエージェントとの協働とソフトウェアのデリバリーについての Stride チームのノート。"
+
+#: lib/kanban_web/controllers/blog_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Posts from the Stride team on AI coding agents, software delivery and what it costs to build with AI."
+msgstr "AI コーディングエージェント、ソフトウェアのデリバリー、そして AI で開発するコストについての Stride チームの記事。"
+
+#: lib/kanban_web/controllers/blog_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride blog"
+msgstr "Stride ブログ"
+
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "The posts are written in English."
+msgstr "記事は英語で書かれています。"
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Written by"
+msgstr "執筆者"

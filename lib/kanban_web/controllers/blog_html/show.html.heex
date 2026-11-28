@@ -1,0 +1,83 @@
+<main class="min-h-screen" data-blog-post={@post.slug}>
+  <.structured_data data={post_structured_data(@post, @author)} nonce={assigns[:csp_nonce]} />
+  <div class="max-w-3xl mx-auto px-6 py-12">
+    <nav class="mb-8 text-sm" aria-label={gettext("Breadcrumb")}>
+      <.link
+        href={~p"/blog"}
+        class="inline-flex items-center gap-1 font-medium"
+        style="color: var(--stride-orange-ink); text-decoration: none;"
+        data-blog-back
+      >
+        <.icon name="hero-arrow-left" class="h-3.5 w-3.5" />
+        {gettext("All posts")}
+      </.link>
+    </nav>
+
+    <article class="min-w-0" lang="en">
+      <header class="mb-10">
+        <h1
+          class="text-3xl md:text-4xl font-bold text-base-content mb-5"
+          style="overflow-wrap: break-word; hyphens: auto;"
+        >
+          {@post.title}
+        </h1>
+        <div
+          class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm"
+          style="color: var(--ink-3);"
+        >
+          <img
+            src={@author.avatar}
+            alt=""
+            width="36"
+            height="36"
+            class="stride-blog-avatar h-9 w-9"
+          />
+          <span style="color: var(--ink-2);" data-blog-author>{@author.name}</span>
+          <span aria-hidden="true">·</span>
+          <.local_time value={@post.date} style={:date} />
+        </div>
+        <ul
+          :if={@post.tags != []}
+          class="flex flex-wrap gap-2 mt-4"
+          role="list"
+          aria-label={gettext("Tags")}
+          lang={Gettext.get_locale(KanbanWeb.Gettext)}
+        >
+          <li :for={tag <- @post.tags} class="stride-blog-tag" lang="en">{tag}</li>
+        </ul>
+      </header>
+
+      <div class="stride-docs-prose stride-blog-prose" data-blog-body>
+        <%!-- Safe to render raw: KanbanWeb.Blog.Renderer renders committed
+              markdown at compile time with raw HTML escaped (render: [escape: true]),
+              every link checked to be http(s)/mailto and every image checked to be
+              a local /images/blog/ file with alt text. --%>
+        {Phoenix.HTML.raw(@post.html)}
+      </div>
+
+      <footer
+        class="stride-blog-byline mt-12 pt-8 flex items-start gap-4"
+        aria-label={gettext("About the author")}
+        lang={Gettext.get_locale(KanbanWeb.Gettext)}
+      >
+        <img
+          src={@author.avatar}
+          alt={@author.name}
+          width="56"
+          height="56"
+          loading="lazy"
+          class="stride-blog-avatar h-14 w-14 shrink-0"
+        />
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide" style="color: var(--ink-3);">
+            {gettext("Written by")}
+          </p>
+          <p class="font-semibold mt-1" style="color: var(--ink);" lang="en">{@author.name}</p>
+          <p class="text-sm mt-1 leading-relaxed" style="color: var(--ink-2);" lang="en">
+            {@author.bio}
+          </p>
+        </div>
+      </footer>
+    </article>
+  </div>
+</main>

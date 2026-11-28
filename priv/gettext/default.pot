@@ -14383,6 +14383,8 @@ msgstr ""
 msgid "Stride keeps trying, and delivery carries on once the destination is fixed."
 msgstr ""
 
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#: lib/kanban_web/controllers/blog_html/show.html.heex
 #: lib/kanban_web/emails/audit_stream_email.ex
 #: lib/kanban_web/live/org_live/audit_stream_destination_view.ex
 #, elixir-autogen, elixir-format
@@ -16005,6 +16007,7 @@ msgstr ""
 msgid "All documentation"
 msgstr ""
 
+#: lib/kanban_web/controllers/blog_html/show.html.heex
 #: lib/kanban_web/controllers/docs_html/show.html.heex
 #: lib/kanban_web/controllers/integrations_html/show.html.heex
 #, elixir-autogen, elixir-format
@@ -16305,6 +16308,7 @@ msgid "The script installs copy the hook, but Codex does not load it from there:
 msgstr ""
 
 #: lib/kanban_web/components/marketing_closing.ex
+#: lib/kanban_web/controllers/blog_html/index.html.heex
 #, elixir-autogen, elixir-format
 msgid "Blog"
 msgstr ""
@@ -16876,4 +16880,39 @@ msgstr ""
 #: lib/kanban_web/live/admin/feature_flag_live/index.ex
 #, elixir-autogen, elixir-format
 msgid "Shows the blog at /blog, an experiment with posts copied from cheezyworld.ca, to the users it is on for."
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "About the author"
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "All posts"
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "Notes from the Stride team on working with AI coding agents and delivering software."
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Posts from the Stride team on AI coding agents, software delivery and what it costs to build with AI."
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_controller.ex
+#, elixir-autogen, elixir-format
+msgid "Stride blog"
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_html/index.html.heex
+#, elixir-autogen, elixir-format
+msgid "The posts are written in English."
+msgstr ""
+
+#: lib/kanban_web/controllers/blog_html/show.html.heex
+#, elixir-autogen, elixir-format
+msgid "Written by"
 msgstr ""

@@ -2107,6 +2107,35 @@
   vertical-align: top;
 }
 .stride-docs-prose th { color: var(--ink); font-weight: 600; background: var(--surface-2); }
+.stride-docs-prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+/* W2951: the /blog experiment. Post bodies reuse .stride-docs-prose; these
+   add the reading width, the tag chips, the avatars and the byline rule,
+   with theme tokens only so they read in light and dark mode. */
+.stride-blog-prose { max-width: 70ch; }
+.stride-blog-tag {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.stride-blog-avatar {
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+.stride-blog-byline { border-top: 1px solid var(--line); }
 
 /* The /docs index cards and the guide's "On this page" links. */
 .stride-docs-card {

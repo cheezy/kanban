@@ -329,6 +329,17 @@ defmodule KanbanWeb.AnalyticsTest do
       end
     end
 
+    test "the flag-gated blog pages render the script (W2951)" do
+      configure()
+      :ok = Kanban.FeatureFlags.enable_for_everyone(:blog)
+
+      for path <- ["/blog", "/blog/how-much", "/blog/tw-retreat-response"] do
+        conn = get(build_conn(), path)
+        assert conn.status == 200, "#{path} answered #{conn.status}"
+        assert [_tag] = tracker_tags(conn), "#{path} does not render the tracker"
+      end
+    end
+
     test "a signed-in user still gets the tracker on /pricing, and never on boards or settings",
          %{conn: conn} do
       configure()
