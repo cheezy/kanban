@@ -65,7 +65,7 @@ defmodule KanbanWeb.Layouts do
     <div
       id="app-shell"
       phx-hook="Sidebar"
-      class="stride-screen flex h-screen w-full overflow-hidden"
+      class="stride-screen flex h-dvh w-full overflow-hidden"
     >
       <%= if @current_scope do %>
         <div

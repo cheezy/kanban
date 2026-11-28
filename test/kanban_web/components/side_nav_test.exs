@@ -30,6 +30,26 @@ defmodule KanbanWeb.SideNavTest do
   defp text(doc, selector),
     do: doc |> LazyHTML.query(selector) |> LazyHTML.text() |> String.trim()
 
+  describe "phone drawer height" do
+    # 100vh is taller than a phone's visible screen while the browser toolbar
+    # shows, so a 100vh drawer hid its footer (Settings and Log out) under the
+    # toolbar. dvh follows the visible height.
+    test "the drawer is sized to the visible viewport, so its footer stays on screen" do
+      [class] = render_side_nav() |> attrs("#app-sidebar", "class")
+      classes = String.split(class)
+
+      assert "h-dvh" in classes
+      refute "h-screen" in classes
+    end
+
+    test "the footer still renders the Settings link and Log out" do
+      doc = render_side_nav()
+
+      assert attrs(doc, "#app-sidebar a[aria-label='Settings']", "href") == ["/users/settings"]
+      assert text(doc, "#app-sidebar a[data-method='delete'][href='/users/log-out']") =~ "Log out"
+    end
+  end
+
   describe "language menu" do
     test "renders the language menu with the seven supported locales" do
       Gettext.put_locale(KanbanWeb.Gettext, "en")

@@ -44,7 +44,7 @@ defmodule KanbanWeb.SideNav do
     <aside
       id="app-sidebar"
       aria-label={gettext("Primary navigation")}
-      class="w-[200px] md:w-[160px] flex-shrink-0 fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform md:static md:translate-x-0 md:z-auto h-screen"
+      class="w-[200px] md:w-[160px] flex-shrink-0 fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform md:static md:translate-x-0 md:z-auto h-dvh"
       style={
         [
           "background: var(--surface-2); border-right: 1px solid var(--line);",
